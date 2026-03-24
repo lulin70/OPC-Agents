@@ -1,0 +1,72 @@
+[
+  {
+    "name": "phase-2-foundation",
+    "department": "playbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "phase-1-strategy",
+    "department": "playbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "phase-0-discovery",
+    "department": "playbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "phase-4-hardening",
+    "department": "playbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "phase-3-build",
+    "department": "playbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "phase-6-operate",
+    "department": "playbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "phase-5-launch",
+    "department": "playbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "name": "game-audio-engineer",
+    "department": "game-development",
+    "frontmatter": {
+      "name": "Game Audio Engineer",
+      "description": "Interactive audio specialist - Masters FMOD/Wwise integration, adaptive music systems, spatial audio, and audio performance budgeting across all game engines",
+      "color": "indigo",
+      "emoji": "🎵",
+      "vibe": "Makes every gunshot, footstep, and musical cue feel alive in the game world."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "technical-artist",
+    "department": "game-development",
+    "frontmatter": {
+      "name": "Technical Artist",
+      "description": "Art-to-engine pipeline specialist - Masters shaders, VFX systems, LOD pipelines, performance budgeting, and cross-engine asset optimization",
+      "color": "pink",
+      "emoji": "🎨",
+      "vibe": "The bridge between artistic vision and engine reality."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "level-designer",
+    "department": "game-development",
+    "frontmatter": {
+      "name": "Level Designer",
+      "description": "Spatial storytelling and flow specialist - Masters layout theory, pacing architecture, encounter design, and environmental narrative across all game engines",
+      "color": "teal",
+      "emoji": "🗺️",
+      "vibe": "Treats every level as an authored experience where space tells the story."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "narrative-designer",
+    "department": "game-development",
+    "frontmatter": {
+      "name": "Narrative Designer",
+      "description": "Story systems and dialogue architect - Masters GDD-aligned narrative design, branching dialogue, lore architecture, and environmental storytelling across all game engines",
+      "color": "red",
+      "emoji": "📖",
+      "vibe": "Architects story systems where narrative and gameplay are inseparable."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "game-designer",
+    "department": "game-development",
+    "frontmatter": {
+      "name": "Game Designer",
+      "description": "Systems and mechanics architect - Masters GDD authorship, player psychology, economy balancing, and gameplay loop design across all engines and genres",
+      "color": "yellow",
+      "emoji": "🎮",
+      "vibe": "Thinks in loops, levers, and player motivations to architect compelling gameplay."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]

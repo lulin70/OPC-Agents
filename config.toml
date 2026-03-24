@@ -1,0 +1,50 @@
+# Agency-Agents Configuration
+
+# Core Settings
+[core]
+name = "OPC Agency"
+description = "AI-powered agency system for One Person Company"
+version = "1.0.0"
+
+# TRAE Integration
+[trae]
+api_key = "sk-KCGKNVVDgnQByDOFr0Nb2A9d2gKNHB8stNTsrkoaHpPBFzU0"
+base_url = "https://api.trae.cn/v1/chat"
+
+# Agent Configuration
+[agents]
+# Design Team
+design = ["ui_designer", "ux_researcher", "graphic_designer", "motion_designer"]
+
+# Development Team
+development = ["frontend_developer", "backend_developer", "fullstack_developer", "devops_engineer", "qa_engineer"]
+
+# Marketing Team
+marketing = ["digital_marketer", "content_marketer", "social_media_specialist", "seo_specialist", "email_marketer"]
+
+# Legal Team
+legal = ["contract_specialist", "compliance_officer"]
+
+# HR Team
+hr = ["recruiter", "onboarding_specialist"]
+
+# Finance Team
+finance = ["accountant", "financial_analyst"]
+
+# Operations Team
+operations = ["project_coordinator", "process_analyst"]
+
+# Research Team
+research = ["market_researcher", "data_analyst"]
+
+# Sales Team
+sales = ["account_executive", "sales_development_rep"]
+
+# Project Management Team
+project_management = ["project_manager", "scrum_master"]
+
+# Customer Service Team
+customer_service = ["support_specialist", "account_manager"]
+
+# Content Team
+content = ["copywriter", "editor", "content_strategist"]

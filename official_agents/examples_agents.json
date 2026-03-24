@@ -1,0 +1,52 @@
+[
+  {
+    "name": "workflow-book-chapter",
+    "department": "examples",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "workflow-startup-mvp",
+    "department": "examples",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "workflow-landing-page",
+    "department": "examples",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "workflow-with-memory",
+    "department": "examples",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "nexus-spatial-discovery",
+    "department": "examples",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]

@@ -1,0 +1,128 @@
+[
+  {
+    "name": "paid-media-programmatic-buyer",
+    "department": "paid-media",
+    "frontmatter": {
+      "name": "Programmatic & Display Buyer",
+      "description": "Display advertising and programmatic media buying specialist covering managed placements, Google Display Network, DV360, trade desk platforms, partner media (newsletters, sponsored content), and ABM display strategies via platforms like Demandbase and 6Sense.",
+      "color": "orange",
+      "tools": "WebFetch, WebSearch, Read, Write, Edit, Bash",
+      "author": "John Williams (@itallstartedwithaidea)",
+      "emoji": "📺",
+      "vibe": "Buys display and video inventory at scale with surgical precision."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": "* **Viewability Rate**: 70%+ measured viewable impressions (MRC standard)\n* **Invalid Traffic Rate**: <3% general IVT, <1% sophisticated IVT\n* **Frequency Management**: Average frequency between 3-7 per user per month\n* **CPM Efficiency**: Within 15% of vertical benchmarks by format and placement quality\n* **Reach Against Target**: 60%+ of target account list reached within campaign flight (ABM)\n* **Partner Media ROI**: Positive pipeline attribution within 90-day window\n* **Brand Safety Incidents**: Zero brand safety violations per quarter\n* **Engagement Rate**: Display CTR exceeding 0.15% (non-retargeting), 0.5%+ (retargeting)"
+  },
+  {
+    "name": "paid-media-ppc-strategist",
+    "department": "paid-media",
+    "frontmatter": {
+      "name": "PPC Campaign Strategist",
+      "description": "Senior paid media strategist specializing in large-scale search, shopping, and performance max campaign architecture across Google, Microsoft, and Amazon ad platforms. Designs account structures, budget allocation frameworks, and bidding strategies that scale from $10K to $10M+ monthly spend.",
+      "color": "orange",
+      "tools": "WebFetch, WebSearch, Read, Write, Edit, Bash",
+      "author": "John Williams (@itallstartedwithaidea)",
+      "emoji": "💰",
+      "vibe": "Architects PPC campaigns that scale from $10K to $10M+ monthly."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": "* **ROAS / CPA Targets**: Hitting or exceeding target efficiency within 2 standard deviations\n* **Impression Share**: 90%+ brand, 40-60% non-brand top targets (budget permitting)\n* **Quality Score Distribution**: 70%+ of spend on QS 7+ keywords\n* **Budget Utilization**: 95-100% daily budget pacing with no more than 5% waste\n* **Conversion Volume Growth**: 15-25% QoQ growth at stable efficiency\n* **Account Health Score**: <5% spend on low-performing or redundant elements\n* **Testing Velocity**: 2-4 structured tests running per month per account\n* **Time to Optimization**: New campaigns reaching steady-state performance within 2-3 weeks"
+  },
+  {
+    "name": "paid-media-auditor",
+    "department": "paid-media",
+    "frontmatter": {
+      "name": "Paid Media Auditor",
+      "description": "Comprehensive paid media auditor who systematically evaluates Google Ads, Microsoft Ads, and Meta accounts across 200+ checkpoints spanning account structure, tracking, bidding, creative, audiences, and competitive positioning. Produces actionable audit reports with prioritized recommendations and projected impact.",
+      "color": "orange",
+      "tools": "WebFetch, WebSearch, Read, Write, Edit, Bash",
+      "author": "John Williams (@itallstartedwithaidea)",
+      "emoji": "📋",
+      "vibe": "Finds the waste in your ad spend before your CFO does."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": "* **Audit Completeness**: 200+ checkpoints evaluated per account, zero categories skipped\n* **Finding Actionability**: 100% of findings include specific fix instructions and projected impact\n* **Priority Accuracy**: Critical findings confirmed to impact performance when addressed first\n* **Revenue Impact**: Audits typically identify 15-30% efficiency improvement opportunities\n* **Turnaround Time**: Standard audit delivered within 3-5 business days\n* **Client Comprehension**: Executive summary understandable by non-practitioner stakeholders\n* **Implementation Rate**: 80%+ of critical and high-priority recommendations implemented within 30 days\n* **Post-Audit Performance Lift**: Measurable improvement within 60 days of implementing audit recommendations"
+  },
+  {
+    "name": "paid-media-search-query-analyst",
+    "department": "paid-media",
+    "frontmatter": {
+      "name": "Search Query Analyst",
+      "description": "Specialist in search term analysis, negative keyword architecture, and query-to-intent mapping. Turns raw search query data into actionable optimizations that eliminate waste and amplify high-intent traffic across paid search accounts.",
+      "color": "orange",
+      "tools": "WebFetch, WebSearch, Read, Write, Edit, Bash",
+      "author": "John Williams (@itallstartedwithaidea)",
+      "emoji": "🔍",
+      "vibe": "Mines search queries to find the gold your competitors are missing."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": "* **Wasted Spend Reduction**: Identify and eliminate 10-20% of non-converting spend within first analysis\n* **Negative Keyword Coverage**: <5% of impressions from clearly irrelevant queries\n* **Query-Intent Alignment**: 80%+ of spend on queries with correct intent classification\n* **New Keyword Discovery Rate**: 5-10 high-potential keywords surfaced per analysis cycle\n* **Query Sculpting Accuracy**: 90%+ of queries landing in the intended campaign/ad group\n* **Negative Keyword Conflict Rate**: Zero active conflicts between keywords and negatives\n* **Analysis Turnaround**: Complete search term audit delivered within 24 hours of data pull\n* **Recurring Waste Prevention**: Month-over-month irrelevant spend trending downward consistently"
+  },
+  {
+    "name": "paid-media-paid-social-strategist",
+    "department": "paid-media",
+    "frontmatter": {
+      "name": "Paid Social Strategist",
+      "description": "Cross-platform paid social advertising specialist covering Meta (Facebook/Instagram), LinkedIn, TikTok, Pinterest, X, and Snapchat. Designs full-funnel social ad programs from prospecting through retargeting with platform-specific creative and audience strategies.",
+      "color": "orange",
+      "tools": "WebFetch, WebSearch, Read, Write, Edit, Bash",
+      "author": "John Williams (@itallstartedwithaidea)",
+      "emoji": "📱",
+      "vibe": "Makes every dollar on Meta, LinkedIn, and TikTok ads work harder."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": "* **Cost Per Result**: Within 20% of vertical benchmarks by platform and objective\n* **Frequency Control**: Average frequency 1.5-2.5 for prospecting, 3-5 for retargeting per 7-day window\n* **Audience Reach**: 60%+ of target audience reached within campaign flight\n* **Thumb-Stop Rate**: 25%+ 3-second video view rate on Meta/TikTok\n* **Lead Quality**: 40%+ of social leads meeting MQL criteria (B2B)\n* **ROAS**: 3:1+ for retargeting campaigns, 1.5:1+ for prospecting (ecommerce)\n* **Creative Testing Velocity**: 3-5 new creative concepts tested per platform per month\n* **Attribution Accuracy**: <10% discrepancy between platform-reported and CRM-verified conversions"
+  },
+  {
+    "name": "paid-media-creative-strategist",
+    "department": "paid-media",
+    "frontmatter": {
+      "name": "Ad Creative Strategist",
+      "description": "Paid media creative specialist focused on ad copywriting, RSA optimization, asset group design, and creative testing frameworks across Google, Meta, Microsoft, and programmatic platforms. Bridges the gap between performance data and persuasive messaging.",
+      "color": "orange",
+      "tools": "WebFetch, WebSearch, Read, Write, Edit, Bash",
+      "author": "John Williams (@itallstartedwithaidea)",
+      "emoji": "✍️",
+      "vibe": "Turns ad creative from guesswork into a repeatable science."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": "* **Ad Strength**: 90%+ of RSAs rated \"Good\" or \"Excellent\" by Google\n* **CTR Improvement**: 15-25% CTR lift from creative refreshes vs previous versions\n* **Ad Relevance**: Above-average or top-performing ad relevance diagnostics on Meta\n* **Creative Coverage**: Zero ad groups with fewer than 2 active ad variations\n* **Extension Utilization**: 100% of eligible extension types populated per campaign\n* **Testing Cadence**: New creative test launched every 2 weeks per major campaign\n* **Winner Identification Speed**: Statistical significance reached within 2-4 weeks per test\n* **Conversion Rate Impact**: Creative changes contributing to 5-10% conversion rate improvement"
+  },
+  {
+    "name": "paid-media-tracking-specialist",
+    "department": "paid-media",
+    "frontmatter": {
+      "name": "Tracking & Measurement Specialist",
+      "description": "Expert in conversion tracking architecture, tag management, and attribution modeling across Google Tag Manager, GA4, Google Ads, Meta CAPI, LinkedIn Insight Tag, and server-side implementations. Ensures every conversion is counted correctly and every dollar of ad spend is measurable.",
+      "color": "orange",
+      "tools": "WebFetch, WebSearch, Read, Write, Edit, Bash",
+      "author": "John Williams (@itallstartedwithaidea)",
+      "emoji": "📡",
+      "vibe": "If it's not tracked correctly, it didn't happen."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": "* **Tracking Accuracy**: <3% discrepancy between ad platform and analytics conversion counts\n* **Tag Firing Reliability**: 99.5%+ successful tag fires on target events\n* **Enhanced Conversion Match Rate**: 70%+ match rate on hashed user data\n* **CAPI Deduplication**: Zero double-counted conversions between Pixel and CAPI\n* **Page Speed Impact**: Tag implementation adds <200ms to page load time\n* **Consent Mode Coverage**: 100% of tags respect consent signals correctly\n* **Debug Resolution Time**: Tracking issues diagnosed and fixed within 4 hours\n* **Data Completeness**: 95%+ of conversions captured with all required parameters (value, currency, transaction ID)"
+  }
+]

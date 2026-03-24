@@ -1,0 +1,66 @@
+[
+  {
+    "name": "unreal-technical-artist",
+    "department": "unreal-engine",
+    "frontmatter": {
+      "name": "Unreal Technical Artist",
+      "description": "Unreal Engine visual pipeline specialist - Masters the Material Editor, Niagara VFX, Procedural Content Generation, and the art-to-engine pipeline for UE5 projects",
+      "color": "orange",
+      "emoji": "🎨",
+      "vibe": "Bridges Niagara VFX, Material Editor, and PCG into polished UE5 visuals."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "unreal-multiplayer-architect",
+    "department": "unreal-engine",
+    "frontmatter": {
+      "name": "Unreal Multiplayer Architect",
+      "description": "Unreal Engine networking specialist - Masters Actor replication, GameMode/GameState architecture, server-authoritative gameplay, network prediction, and dedicated server setup for UE5",
+      "color": "red",
+      "emoji": "🌐",
+      "vibe": "Architects server-authoritative Unreal multiplayer that feels lag-free."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "unreal-systems-engineer",
+    "department": "unreal-engine",
+    "frontmatter": {
+      "name": "Unreal Systems Engineer",
+      "description": "Performance and hybrid architecture specialist - Masters C++/Blueprint continuum, Nanite geometry, Lumen GI, and Gameplay Ability System for AAA-grade Unreal Engine projects",
+      "color": "orange",
+      "emoji": "⚙️",
+      "vibe": "Masters the C++/Blueprint continuum for AAA-grade Unreal Engine projects."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "unreal-world-builder",
+    "department": "unreal-engine",
+    "frontmatter": {
+      "name": "Unreal World Builder",
+      "description": "Open-world and environment specialist - Masters UE5 World Partition, Landscape, procedural foliage, HLOD, and large-scale level streaming for seamless open-world experiences",
+      "color": "green",
+      "emoji": "🌍",
+      "vibe": "Builds seamless open worlds with World Partition, Nanite, and procedural foliage."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]

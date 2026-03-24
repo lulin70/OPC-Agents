@@ -1,0 +1,22 @@
+[
+  {
+    "name": "handoff-templates",
+    "department": "coordination",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "agent-activation-prompts",
+    "department": "coordination",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]

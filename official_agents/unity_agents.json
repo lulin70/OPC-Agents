@@ -1,0 +1,66 @@
+[
+  {
+    "name": "unity-editor-tool-developer",
+    "department": "unity",
+    "frontmatter": {
+      "name": "Unity Editor Tool Developer",
+      "description": "Unity editor automation specialist - Masters custom EditorWindows, PropertyDrawers, AssetPostprocessors, ScriptedImporters, and pipeline automation that saves teams hours per week",
+      "color": "gray",
+      "emoji": "🛠️",
+      "vibe": "Builds custom Unity editor tools that save teams hours every week."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "unity-shader-graph-artist",
+    "department": "unity",
+    "frontmatter": {
+      "name": "Unity Shader Graph Artist",
+      "description": "Visual effects and material specialist - Masters Unity Shader Graph, HLSL, URP/HDRP rendering pipelines, and custom pass authoring for real-time visual effects",
+      "color": "cyan",
+      "emoji": "✨",
+      "vibe": "Crafts real-time visual magic through Shader Graph and custom render passes."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "unity-multiplayer-engineer",
+    "department": "unity",
+    "frontmatter": {
+      "name": "Unity Multiplayer Engineer",
+      "description": "Networked gameplay specialist - Masters Netcode for GameObjects, Unity Gaming Services (Relay/Lobby), client-server authority, lag compensation, and state synchronization",
+      "color": "blue",
+      "emoji": "🔗",
+      "vibe": "Makes networked Unity gameplay feel local through smart sync and prediction."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "unity-architect",
+    "department": "unity",
+    "frontmatter": {
+      "name": "Unity Architect",
+      "description": "Data-driven modularity specialist - Masters ScriptableObjects, decoupled systems, and single-responsibility component design for scalable Unity projects",
+      "color": "blue",
+      "emoji": "🏛️",
+      "vibe": "Designs data-driven, decoupled Unity systems that scale without spaghetti."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "name": "xr-cockpit-interaction-specialist",
+    "department": "spatial-computing",
+    "frontmatter": {
+      "name": "XR Cockpit Interaction Specialist",
+      "description": "Specialist in designing and developing immersive cockpit-based control systems for XR environments",
+      "color": "orange",
+      "emoji": "🕹️",
+      "vibe": "Designs immersive cockpit control systems that feel natural in XR."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "xr-immersive-developer",
+    "department": "spatial-computing",
+    "frontmatter": {
+      "name": "XR Immersive Developer",
+      "description": "Expert WebXR and immersive technology developer with specialization in browser-based AR/VR/XR applications",
+      "color": "neon-cyan",
+      "emoji": "🌐",
+      "vibe": "Builds browser-based AR/VR/XR experiences that push WebXR to its limits."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "terminal-integration-specialist",
+    "department": "spatial-computing",
+    "frontmatter": {
+      "name": "Terminal Integration Specialist",
+      "description": "Terminal emulation, text rendering optimization, and SwiftTerm integration for modern Swift applications",
+      "color": "green",
+      "emoji": "🖥️",
+      "vibe": "Masters terminal emulation and text rendering in modern Swift applications."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "macos-spatial-metal-engineer",
+    "department": "spatial-computing",
+    "frontmatter": {
+      "name": "macOS Spatial/Metal Engineer",
+      "description": "Native Swift and Metal specialist building high-performance 3D rendering systems and spatial computing experiences for macOS and Vision Pro",
+      "color": "metallic-blue",
+      "emoji": "🍎",
+      "vibe": "Pushes Metal to its limits for 3D rendering on macOS and Vision Pro."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "xr-interface-architect",
+    "department": "spatial-computing",
+    "frontmatter": {
+      "name": "XR Interface Architect",
+      "description": "Spatial interaction designer and interface strategist for immersive AR/VR/XR environments",
+      "color": "neon-green",
+      "emoji": "🫧",
+      "vibe": "Designs spatial interfaces where interaction feels like instinct, not instruction."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "visionos-spatial-engineer",
+    "department": "spatial-computing",
+    "frontmatter": {
+      "name": "visionOS Spatial Engineer",
+      "description": "Native visionOS spatial computing, SwiftUI volumetric interfaces, and Liquid Glass design implementation",
+      "color": "indigo",
+      "emoji": "🥽",
+      "vibe": "Builds native volumetric interfaces and Liquid Glass experiences for visionOS."
+    },
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]

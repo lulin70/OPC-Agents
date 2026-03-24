@@ -1,0 +1,42 @@
+[
+  {
+    "name": "scenario-incident-response",
+    "department": "runbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "scenario-marketing-campaign",
+    "department": "runbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "scenario-enterprise-feature",
+    "department": "runbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  },
+  {
+    "name": "scenario-startup-mvp",
+    "department": "runbooks",
+    "frontmatter": {},
+    "identity": "",
+    "mission": "",
+    "deliverables": "",
+    "workflow": "",
+    "metrics": ""
+  }
+]
