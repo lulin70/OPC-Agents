@@ -1,0 +1,2566 @@
+{
+  "iteration": 1,
+  "timestamp": 1774413783.252351,
+  "agents_analyzed": [
+    "sales-discovery-coach",
+    "motion_designer",
+    "product-trend-researcher",
+    "product-feedback-synthesizer",
+    "engineering-backend-architect",
+    "support-legal-compliance-checker",
+    "copywriter",
+    "engineering-sre",
+    "roblox-avatar-creator",
+    "scenario-enterprise-feature",
+    "workflow-with-memory",
+    "support-executive-summary-generator",
+    "marketing-bilibili-content-strategist",
+    "design-visual-storyteller",
+    "backend_developer",
+    "marketing-carousel-growth-engine",
+    "specialized-workflow-architect",
+    "backend-architect-with-memory",
+    "blender-addon-engineer",
+    "corporate-training-designer",
+    "sales-proposal-strategist",
+    "onboarding_specialist",
+    "testing-test-results-analyzer",
+    "scrum_master",
+    "engineering-devops-automator",
+    "terra",
+    "unity-architect",
+    "zk-steward",
+    "marketing-linkedin-content-creator",
+    "data-consolidation-agent",
+    "phase-0-discovery",
+    "unreal-technical-artist",
+    "macos-spatial-metal-engineer",
+    "project_manager",
+    "godot-gameplay-scripter",
+    "marketing-instagram-curator",
+    "workflow-landing-page",
+    "lsp-index-engineer",
+    "paid-media-search-query-analyst",
+    "unity-multiplayer-engineer",
+    "testing-accessibility-auditor",
+    "contract_specialist",
+    "ux_researcher",
+    "marketing-china-ecommerce-operator",
+    "academic-anthropologist",
+    "scenario-startup-mvp",
+    "sales-account-strategist",
+    "marketing-wechat-official-account",
+    "social_media_specialist",
+    "specialized-document-generator"
+  ],
+  "optimizations": [
+    {
+      "agent_id": "sales-discovery-coach",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.7398453656491562,
+          "task_completion_rate": 0.9028121413438729,
+          "quality_score": 0.7341495305809925,
+          "token_usage": 1938,
+          "error_rate": 0.032917403073824326
+        },
+        "bottlenecks": [],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": []
+      },
+      "optimization": {
+        "suggestions": [
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.10782045888138107
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.998610828842197,
+          "task_completion_rate": 0.7572527711020293,
+          "quality_score": 0.8804401802339508,
+          "token_usage": 1543,
+          "error_rate": 0.044169995055446894
+        },
+        "overall_score": 0.784993525428298,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "motion_designer",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.9442504177459419,
+          "task_completion_rate": 0.8274833954335366,
+          "quality_score": 0.6427912322862035,
+          "token_usage": 4644,
+          "error_rate": 0.015717005628191928
+        },
+        "bottlenecks": [
+          "输出质量不高",
+          "Token消耗过高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "输出质量不高",
+          "Token消耗过高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.34237367854520095
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.2540150084887416,
+          "task_completion_rate": 0.9317388404929624,
+          "quality_score": 0.9244706267324603,
+          "token_usage": 1112,
+          "error_rate": 0.02577684645241108
+        },
+        "overall_score": 0.8543336372608532,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "product-trend-researcher",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.1523766191824767,
+          "task_completion_rate": 0.9259281106407976,
+          "quality_score": 0.8916981984453296,
+          "token_usage": 3716,
+          "error_rate": 0.08405331386414949
+        },
+        "bottlenecks": [
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.12500214450114303
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.2551354589592534,
+          "task_completion_rate": 0.7573154165408207,
+          "quality_score": 0.8719832739104526,
+          "token_usage": 2628,
+          "error_rate": 0.07764580605071013
+        },
+        "overall_score": 0.7788625972932649,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "product-feedback-synthesizer",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.580829214970226,
+          "task_completion_rate": 0.830062969790735,
+          "quality_score": 0.6525573803913474,
+          "token_usage": 1284,
+          "error_rate": 0.06515153028816388
+        },
+        "bottlenecks": [
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.25919930491790366
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.392097192639994,
+          "task_completion_rate": 0.8346318791578407,
+          "quality_score": 0.9393894043434219,
+          "token_usage": 1065,
+          "error_rate": 0.048089492548485345
+        },
+        "overall_score": 0.8215519134526817,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "engineering-backend-architect",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.235214587070847,
+          "task_completion_rate": 0.8737389169728784,
+          "quality_score": 0.8449497166038777,
+          "token_usage": 2093,
+          "error_rate": 0.09341356527444802
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.1874409526682244
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.063327338805197,
+          "task_completion_rate": 0.928875627483317,
+          "quality_score": 0.7114268562030457,
+          "token_usage": 1224,
+          "error_rate": 0.016841598017701527
+        },
+        "overall_score": 0.8287981808755287,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "support-legal-compliance-checker",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.8788487444614921,
+          "task_completion_rate": 0.9282665009197231,
+          "quality_score": 0.6673127031733288,
+          "token_usage": 4655,
+          "error_rate": 0.08307283057006792
+        },
+        "bottlenecks": [
+          "输出质量不高",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "输出质量不高",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.24181526999695765
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.572039792216272,
+          "task_completion_rate": 0.8834359870759332,
+          "quality_score": 0.7924797380785548,
+          "token_usage": 3100,
+          "error_rate": 0.03179765315048456
+        },
+        "overall_score": 0.8153471938423738,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "copywriter",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.9189229216869348,
+          "task_completion_rate": 0.7690999667759162,
+          "quality_score": 0.7317942021869063,
+          "token_usage": 4258,
+          "error_rate": 0.08774462216109685
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.35908464786567573
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.5230825316262007,
+          "task_completion_rate": 0.8886403012967606,
+          "quality_score": 0.9231533970095256,
+          "token_usage": 2722,
+          "error_rate": 0.02790447432263881
+        },
+        "overall_score": 0.8327477969064848,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "engineering-sre",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.7555581899415058,
+          "task_completion_rate": 0.7383103241799034,
+          "quality_score": 0.8211525515740719,
+          "token_usage": 3675,
+          "error_rate": 0.08543132525696166
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.29561701572005417
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.477600080611183,
+          "task_completion_rate": 0.9004233819209595,
+          "quality_score": 0.7906576785130125,
+          "token_usage": 846,
+          "error_rate": 0.07576796563786745
+        },
+        "overall_score": 0.7926640556489121,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "roblox-avatar-creator",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.782611355115524,
+          "task_completion_rate": 0.7524018945197952,
+          "quality_score": 0.6169613322086113,
+          "token_usage": 1990,
+          "error_rate": 0.07205516624271423
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.356482262823149
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.1654093949329698,
+          "task_completion_rate": 0.8109578228079366,
+          "quality_score": 0.6631945634234766,
+          "token_usage": 997,
+          "error_rate": 0.02214070559414987
+        },
+        "overall_score": 0.779030594919495,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "scenario-enterprise-feature",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.0398795707246484,
+          "task_completion_rate": 0.7701077199339071,
+          "quality_score": 0.6052764956395432,
+          "token_usage": 4361,
+          "error_rate": 0.062108486725391834
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "任务完成率低",
+          "输出质量不高",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "任务完成率低",
+          "输出质量不高",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.14572720200889228
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.276858917250365,
+          "task_completion_rate": 0.9397060590780199,
+          "quality_score": 0.8698998153071504,
+          "token_usage": 2503,
+          "error_rate": 0.020442720680625148
+        },
+        "overall_score": 0.8128379209377473,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "workflow-with-memory",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.8431467684301266,
+          "task_completion_rate": 0.7443470737581535,
+          "quality_score": 0.7169063080412563,
+          "token_usage": 4619,
+          "error_rate": 0.09366519098993956
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.347104243027047
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.6074506743527279,
+          "task_completion_rate": 0.7848000904580112,
+          "quality_score": 0.8213086822418714,
+          "token_usage": 3213,
+          "error_rate": 0.06035509675579107
+        },
+        "overall_score": 0.785253256647049,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "support-executive-summary-generator",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.1133718071856118,
+          "task_completion_rate": 0.9364295043214019,
+          "quality_score": 0.6109204556281437,
+          "token_usage": 1783,
+          "error_rate": 0.06920188631451674
+        },
+        "bottlenecks": [
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.35863560858468657
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.798613639630363,
+          "task_completion_rate": 0.757296263957828,
+          "quality_score": 0.8655109324465257,
+          "token_usage": 2189,
+          "error_rate": 0.045308022709514034
+        },
+        "overall_score": 0.7740467663917246,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "marketing-bilibili-content-strategist",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.387563667483139,
+          "task_completion_rate": 0.712094665089547,
+          "quality_score": 0.8389344068633157,
+          "token_usage": 3502,
+          "error_rate": 0.054771572770509945
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "任务完成率低",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "任务完成率低",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.10077073991105445
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.8353250422692386,
+          "task_completion_rate": 0.897607401761304,
+          "quality_score": 0.7014059539311494,
+          "token_usage": 1918,
+          "error_rate": 0.015537254287055987
+        },
+        "overall_score": 0.7770590544413501,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "design-visual-storyteller",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.039377127131914,
+          "task_completion_rate": 0.871334216786056,
+          "quality_score": 0.6216978259010953,
+          "token_usage": 1576,
+          "error_rate": 0.09751629608314806
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.1581820442150591
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.636108144826452,
+          "task_completion_rate": 0.8644800232931497,
+          "quality_score": 0.7042642801756188,
+          "token_usage": 4337,
+          "error_rate": 0.07962875293920522
+        },
+        "overall_score": 0.7134206022919078,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "backend_developer",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.8929036344887749,
+          "task_completion_rate": 0.7009144369284078,
+          "quality_score": 0.8401677521172228,
+          "token_usage": 2577,
+          "error_rate": 0.0672846401942469
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.2669286289693099
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.3197395296533396,
+          "task_completion_rate": 0.8629346719625565,
+          "quality_score": 0.6946350529699495,
+          "token_usage": 3409,
+          "error_rate": 0.006551502091409368
+        },
+        "overall_score": 0.7537892994063585,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "marketing-carousel-growth-engine",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.8966008452758243,
+          "task_completion_rate": 0.7827393692964538,
+          "quality_score": 0.7290139129330035,
+          "token_usage": 3128,
+          "error_rate": 0.09355822610890763
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "任务完成率低",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "任务完成率低",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.3049082926633904
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.6982696531630878,
+          "task_completion_rate": 0.8802817277540852,
+          "quality_score": 0.6899325053503974,
+          "token_usage": 2196,
+          "error_rate": 0.0052671026141732176
+        },
+        "overall_score": 0.8028151943030739,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "specialized-workflow-architect",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.7262127387926123,
+          "task_completion_rate": 0.9350239872513654,
+          "quality_score": 0.8086269049335498,
+          "token_usage": 4212,
+          "error_rate": 0.020340142194399183
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "Token消耗过高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "Token消耗过高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.2765964682416417
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.8723210381513931,
+          "task_completion_rate": 0.8178452024454124,
+          "quality_score": 0.8271555065343166,
+          "token_usage": 2997,
+          "error_rate": 0.02712476899924846
+        },
+        "overall_score": 0.7990578909556891,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "backend-architect-with-memory",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.8854502939018476,
+          "task_completion_rate": 0.9252236819877923,
+          "quality_score": 0.7234704305144921,
+          "token_usage": 3745,
+          "error_rate": 0.04683826485157677
+        },
+        "bottlenecks": [],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": []
+      },
+      "optimization": {
+        "suggestions": [
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.3848886487693701
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.456213181576325,
+          "task_completion_rate": 0.8395292273297963,
+          "quality_score": 0.8447657841669892,
+          "token_usage": 1540,
+          "error_rate": 0.024515565888974637
+        },
+        "overall_score": 0.7877116175520299,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "blender-addon-engineer",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.49074850962635,
+          "task_completion_rate": 0.7740961164299289,
+          "quality_score": 0.8015223415275049,
+          "token_usage": 1179,
+          "error_rate": 0.016721373942868458
+        },
+        "bottlenecks": [
+          "任务完成率低"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.13555412498203728
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.7118892070563267,
+          "task_completion_rate": 0.9495214864695151,
+          "quality_score": 0.7102967047528006,
+          "token_usage": 1122,
+          "error_rate": 0.014949713364618838
+        },
+        "overall_score": 0.84878587445856,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "corporate-training-designer",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.3042115623631547,
+          "task_completion_rate": 0.8793461349187609,
+          "quality_score": 0.8108827320323356,
+          "token_usage": 4764,
+          "error_rate": 0.021779249304275772
+        },
+        "bottlenecks": [
+          "Token消耗过高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "Token消耗过高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.21754839050202626
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.60312271596822,
+          "task_completion_rate": 0.8307149209504742,
+          "quality_score": 0.9218725136669421,
+          "token_usage": 3134,
+          "error_rate": 0.06335174267198662
+        },
+        "overall_score": 0.7969884579852201,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "sales-proposal-strategist",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.107347026159105,
+          "task_completion_rate": 0.8876229501812969,
+          "quality_score": 0.7384626398745655,
+          "token_usage": 1995,
+          "error_rate": 0.08261640016191271
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.18300644477260236
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.4618477498899965,
+          "task_completion_rate": 0.8327777541450924,
+          "quality_score": 0.8658381052246324,
+          "token_usage": 3655,
+          "error_rate": 0.05459275647763448
+        },
+        "overall_score": 0.8101712815190573,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "onboarding_specialist",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.1627046841842645,
+          "task_completion_rate": 0.767917142702249,
+          "quality_score": 0.7987749465888869,
+          "token_usage": 1473,
+          "error_rate": 0.07937871855084701
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "任务完成率低",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "任务完成率低",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.3580247481136516
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.0831645116148914,
+          "task_completion_rate": 0.9307719920893041,
+          "quality_score": 0.7195421436463768,
+          "token_usage": 3138,
+          "error_rate": 0.05059410771826036
+        },
+        "overall_score": 0.7861099354565559,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "testing-test-results-analyzer",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.9767800027453201,
+          "task_completion_rate": 0.7323515116686141,
+          "quality_score": 0.8476006436804556,
+          "token_usage": 4648,
+          "error_rate": 0.08338272423558285
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.1302665147361361
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.1831823217371893,
+          "task_completion_rate": 0.9062974326091318,
+          "quality_score": 0.8903470705986036,
+          "token_usage": 1383,
+          "error_rate": 0.009651898548565623
+        },
+        "overall_score": 0.8366302271947011,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "scrum_master",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.8070022304737794,
+          "task_completion_rate": 0.8885746462747122,
+          "quality_score": 0.6701247407928673,
+          "token_usage": 1520,
+          "error_rate": 0.07401415508367135
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.14096937009496743
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.261592472174677,
+          "task_completion_rate": 0.8052477515908071,
+          "quality_score": 0.816347798671384,
+          "token_usage": 1091,
+          "error_rate": 0.02179661593727064
+        },
+        "overall_score": 0.7849129261520473,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "engineering-devops-automator",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.490654780089278,
+          "task_completion_rate": 0.9028651743711334,
+          "quality_score": 0.646310405809527,
+          "token_usage": 3145,
+          "error_rate": 0.04283632056321113
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "输出质量不高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "输出质量不高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.15912124786331946
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.117652361775149,
+          "task_completion_rate": 0.9754283092233098,
+          "quality_score": 0.7731235135537521,
+          "token_usage": 1211,
+          "error_rate": 0.052797469746803896
+        },
+        "overall_score": 0.819197640824586,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "terra",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.919619011874302,
+          "task_completion_rate": 0.8104339524821464,
+          "quality_score": 0.8301583743227094,
+          "token_usage": 4620,
+          "error_rate": 0.09533648069182327
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.22078926248768113
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.4979811790104673,
+          "task_completion_rate": 0.8867983357274467,
+          "quality_score": 0.7148366895894674,
+          "token_usage": 1624,
+          "error_rate": 0.057362360919416884
+        },
+        "overall_score": 0.7866053294441753,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "unity-architect",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.9001437910245853,
+          "task_completion_rate": 0.8999802754903856,
+          "quality_score": 0.6562082643596308,
+          "token_usage": 2296,
+          "error_rate": 0.01616724671250306
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "输出质量不高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "输出质量不高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.33907509860970353
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.5452136553338099,
+          "task_completion_rate": 0.8374981007340558,
+          "quality_score": 0.7179058619933613,
+          "token_usage": 2743,
+          "error_rate": 0.02287779643196164
+        },
+        "overall_score": 0.7890118410207058,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "zk-steward",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.1640025063677581,
+          "task_completion_rate": 0.8641287896198775,
+          "quality_score": 0.7998085049373793,
+          "token_usage": 3944,
+          "error_rate": 0.014727774448368817
+        },
+        "bottlenecks": [],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": []
+      },
+      "optimization": {
+        "suggestions": [
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.10990732354390292
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.2939958390260435,
+          "task_completion_rate": 0.886074592526791,
+          "quality_score": 0.7755720946492611,
+          "token_usage": 2953,
+          "error_rate": 0.05206504160378815
+        },
+        "overall_score": 0.7858878031978566,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "marketing-linkedin-content-creator",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.935721143442383,
+          "task_completion_rate": 0.7977974110334911,
+          "quality_score": 0.7460941055111381,
+          "token_usage": 4732,
+          "error_rate": 0.07320211189215378
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.29342967708250833
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.0107018228743494,
+          "task_completion_rate": 0.821881504198233,
+          "quality_score": 0.71016613860976,
+          "token_usage": 2895,
+          "error_rate": 0.03796522442530914
+        },
+        "overall_score": 0.7604311871948578,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "data-consolidation-agent",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.2589582192144286,
+          "task_completion_rate": 0.7019151327229772,
+          "quality_score": 0.8750252871808728,
+          "token_usage": 4031,
+          "error_rate": 0.0622608016144199
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.2463252380961791
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.080588371881959,
+          "task_completion_rate": 0.7909140010796271,
+          "quality_score": 0.8462436051235785,
+          "token_usage": 2218,
+          "error_rate": 0.06489838111974475
+        },
+        "overall_score": 0.7977879932409474,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "phase-0-discovery",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.5490939739814338,
+          "task_completion_rate": 0.8594524323973932,
+          "quality_score": 0.7173231112794058,
+          "token_usage": 2413,
+          "error_rate": 0.06444566422022623
+        },
+        "bottlenecks": [
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.3065195037609879
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.1007588101532866,
+          "task_completion_rate": 0.7604614746888316,
+          "quality_score": 0.691356554774581,
+          "token_usage": 3600,
+          "error_rate": 0.01050419543304301
+        },
+        "overall_score": 0.691419276080639,
+        "status": "needs_improvement",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "unreal-technical-artist",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.0120114150679758,
+          "task_completion_rate": 0.9484211463875042,
+          "quality_score": 0.6951927028363332,
+          "token_usage": 4389,
+          "error_rate": 0.045493963920749725
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "输出质量不高",
+          "Token消耗过高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "输出质量不高",
+          "Token消耗过高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.305238533159061
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.6488017786081492,
+          "task_completion_rate": 0.8490471807793395,
+          "quality_score": 0.7466661240423617,
+          "token_usage": 2023,
+          "error_rate": 0.0564128048403401
+        },
+        "overall_score": 0.8053447045248374,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "macos-spatial-metal-engineer",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.314651102013859,
+          "task_completion_rate": 0.7665634810694343,
+          "quality_score": 0.646460580170024,
+          "token_usage": 3986,
+          "error_rate": 0.06739597638943494
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "任务完成率低",
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "任务完成率低",
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.19038810948290388
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.1946417988135405,
+          "task_completion_rate": 0.7882697294565617,
+          "quality_score": 0.8386845724182749,
+          "token_usage": 1266,
+          "error_rate": 0.04498879298084181
+        },
+        "overall_score": 0.7806138053391647,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "project_manager",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.828141724419489,
+          "task_completion_rate": 0.7049220118966251,
+          "quality_score": 0.8762705543777278,
+          "token_usage": 4123,
+          "error_rate": 0.0689478207752935
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.21247840352691819
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.429170131585254,
+          "task_completion_rate": 0.8724490605807663,
+          "quality_score": 0.7619419528129757,
+          "token_usage": 1852,
+          "error_rate": 0.026901676043075154
+        },
+        "overall_score": 0.8002579644233324,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "godot-gameplay-scripter",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.807370916829842,
+          "task_completion_rate": 0.8371486695774686,
+          "quality_score": 0.7351695759345342,
+          "token_usage": 3117,
+          "error_rate": 0.09701233042674245
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.3202536505180076
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.7635292214422192,
+          "task_completion_rate": 0.959607924635131,
+          "quality_score": 0.6727930939104622,
+          "token_usage": 1886,
+          "error_rate": 0.02526901594214151
+        },
+        "overall_score": 0.8214955283271757,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "marketing-instagram-curator",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.7304224639092818,
+          "task_completion_rate": 0.826956097935232,
+          "quality_score": 0.6159684574807831,
+          "token_usage": 2686,
+          "error_rate": 0.03619327396501448
+        },
+        "bottlenecks": [
+          "输出质量不高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "输出质量不高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.18896335260058017
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.46410283242103,
+          "task_completion_rate": 0.9397342998473646,
+          "quality_score": 0.696134221073522,
+          "token_usage": 4231,
+          "error_rate": 0.025303469556472828
+        },
+        "overall_score": 0.7522764346176036,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "workflow-landing-page",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.8476332393603201,
+          "task_completion_rate": 0.8014842917930478,
+          "quality_score": 0.6289513491012958,
+          "token_usage": 3127,
+          "error_rate": 0.018110539038016026
+        },
+        "bottlenecks": [
+          "输出质量不高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "输出质量不高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.14834014930685574
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.2791838130503819,
+          "task_completion_rate": 0.8607951053270397,
+          "quality_score": 0.6634031623729001,
+          "token_usage": 2740,
+          "error_rate": 0.027877417298056727
+        },
+        "overall_score": 0.7542445364153577,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "lsp-index-engineer",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.654486772440037,
+          "task_completion_rate": 0.8272697419542114,
+          "quality_score": 0.7398013381779718,
+          "token_usage": 3769,
+          "error_rate": 0.03164562544165921
+        },
+        "bottlenecks": [
+          "响应时间过长"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "响应时间过长"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.21098036947314014
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.2099928728069747,
+          "task_completion_rate": 0.7851878238515726,
+          "quality_score": 0.8702859862522173,
+          "token_usage": 2178,
+          "error_rate": 0.07372731332155152
+        },
+        "overall_score": 0.7980035846065943,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "paid-media-search-query-analyst",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.9546923304908218,
+          "task_completion_rate": 0.7230569889891962,
+          "quality_score": 0.6797078327240282,
+          "token_usage": 3172,
+          "error_rate": 0.0747480418311822
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.2816898679433898
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.439921673979549,
+          "task_completion_rate": 0.8106113046189689,
+          "quality_score": 0.693390062848296,
+          "token_usage": 3757,
+          "error_rate": 0.034946063769012416
+        },
+        "overall_score": 0.6877404750203919,
+        "status": "needs_improvement",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "unity-multiplayer-engineer",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.7780973899224946,
+          "task_completion_rate": 0.9063063589540149,
+          "quality_score": 0.6045106971763163,
+          "token_usage": 3289,
+          "error_rate": 0.03913636328643646
+        },
+        "bottlenecks": [
+          "输出质量不高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "输出质量不高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.3307782801845099
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.588206851296137,
+          "task_completion_rate": 0.9264990347408262,
+          "quality_score": 0.6697764053554592,
+          "token_usage": 1818,
+          "error_rate": 0.012871401360814824
+        },
+        "overall_score": 0.7870081233801848,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "testing-accessibility-auditor",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.4518421117289577,
+          "task_completion_rate": 0.8317173980790383,
+          "quality_score": 0.8476546761040415,
+          "token_usage": 2800,
+          "error_rate": 0.0131548149740949
+        },
+        "bottlenecks": [
+          "响应时间过长"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "响应时间过长"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.38171130570331324
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.2718769586067533,
+          "task_completion_rate": 0.9253178937968767,
+          "quality_score": 0.9403371201453068,
+          "token_usage": 4004,
+          "error_rate": 0.04676841600899141
+        },
+        "overall_score": 0.7945335890272984,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "contract_specialist",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.7507011075567656,
+          "task_completion_rate": 0.7254242871445424,
+          "quality_score": 0.7917529458609942,
+          "token_usage": 4316,
+          "error_rate": 0.06470243115730541
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.2631921739719178
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.5452463668911232,
+          "task_completion_rate": 0.9725463464762535,
+          "quality_score": 0.7860334292556475,
+          "token_usage": 1371,
+          "error_rate": 0.06449624616359832
+        },
+        "overall_score": 0.8690798045904798,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "ux_researcher",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.353158776813891,
+          "task_completion_rate": 0.7226075060949746,
+          "quality_score": 0.7614158972707372,
+          "token_usage": 2710,
+          "error_rate": 0.09244939272484144
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.2307532154463006
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.3024302006583715,
+          "task_completion_rate": 0.9103189677518422,
+          "quality_score": 0.6958532774255597,
+          "token_usage": 946,
+          "error_rate": 0.03834038777170533
+        },
+        "overall_score": 0.8118492559769339,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "marketing-china-ecommerce-operator",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.888860922723338,
+          "task_completion_rate": 0.8426850342568696,
+          "quality_score": 0.6653353881926064,
+          "token_usage": 3043,
+          "error_rate": 0.09304108870722651
+        },
+        "bottlenecks": [
+          "响应时间过长",
+          "输出质量不高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "响应时间过长",
+          "输出质量不高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "优化提示词，明确输出要求和质量标准",
+          "增加输出验证步骤，确保结果符合要求",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.2779248858828677
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.2486912404202677,
+          "task_completion_rate": 0.9649644619586393,
+          "quality_score": 0.8716754716296957,
+          "token_usage": 3944,
+          "error_rate": 0.04923712882518742
+        },
+        "overall_score": 0.8206415129641209,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "academic-anthropologist",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.0739241121772578,
+          "task_completion_rate": 0.7748761724691557,
+          "quality_score": 0.7692930497908572,
+          "token_usage": 4231,
+          "error_rate": 0.06940167950849782
+        },
+        "bottlenecks": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": [
+          "任务完成率低",
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "high",
+        "estimated_improvement": 0.23203863263540503
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.743246004476337,
+          "task_completion_rate": 0.8878844749857067,
+          "quality_score": 0.8297912692569859,
+          "token_usage": 3096,
+          "error_rate": 0.0353390081612912
+        },
+        "overall_score": 0.8215400548246717,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "scenario-startup-mvp",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.5981474365008639,
+          "task_completion_rate": 0.7131323179800111,
+          "quality_score": 0.8208405423095604,
+          "token_usage": 2860,
+          "error_rate": 0.043645164756027456
+        },
+        "bottlenecks": [
+          "任务完成率低"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "任务完成率低"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增强任务理解能力，添加更多上下文信息",
+          "优化任务分解策略，提高任务完成的准确性",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.21851405249128952
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.4218045285373782,
+          "task_completion_rate": 0.774009077803769,
+          "quality_score": 0.9353949366320242,
+          "token_usage": 1821,
+          "error_rate": 0.015166807941602564
+        },
+        "overall_score": 0.8259743584578382,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "sales-account-strategist",
+      "analysis": {
+        "metrics": {
+          "response_time": 0.8633142773069877,
+          "task_completion_rate": 0.8782029961662814,
+          "quality_score": 0.7756761636525396,
+          "token_usage": 4158,
+          "error_rate": 0.09996372072258858
+        },
+        "bottlenecks": [
+          "Token消耗过高",
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度"
+        ],
+        "weaknesses": [
+          "Token消耗过高",
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词结构，减少冗余信息",
+          "使用更高效的语言模型，减少Token使用",
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.19409204098858812
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 0.5833149928831889,
+          "task_completion_rate": 0.9437862461884576,
+          "quality_score": 0.9385320779263663,
+          "token_usage": 4152,
+          "error_rate": 0.04242137043527249
+        },
+        "overall_score": 0.8537273900512864,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "marketing-wechat-official-account",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.6508155004912042,
+          "task_completion_rate": 0.9039037649634682,
+          "quality_score": 0.824995926547132,
+          "token_usage": 3756,
+          "error_rate": 0.049875628896605816
+        },
+        "bottlenecks": [],
+        "strengths": [
+          "任务处理能力"
+        ],
+        "weaknesses": []
+      },
+      "optimization": {
+        "suggestions": [
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.11972423305524037
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.8753854804370744,
+          "task_completion_rate": 0.7959833739610405,
+          "quality_score": 0.7966612062170753,
+          "token_usage": 1097,
+          "error_rate": 0.04048911023597306
+        },
+        "overall_score": 0.7852427026583376,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "social_media_specialist",
+      "analysis": {
+        "metrics": {
+          "response_time": 1.63902762220631,
+          "task_completion_rate": 0.8945894371666886,
+          "quality_score": 0.8854858013147968,
+          "token_usage": 1727,
+          "error_rate": 0.055507873795512495
+        },
+        "bottlenecks": [
+          "错误率较高"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "错误率较高"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "增加错误处理机制，提高鲁棒性",
+          "优化输入验证，减少错误输入导致的问题",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.22477729302638266
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 2.207911219153604,
+          "task_completion_rate": 0.8755881426642609,
+          "quality_score": 0.7662123767656863,
+          "token_usage": 3661,
+          "error_rate": 0.03677018790528612
+        },
+        "overall_score": 0.7383690776094736,
+        "status": "stable",
+        "recommendations": "重点改进"
+      }
+    },
+    {
+      "agent_id": "specialized-document-generator",
+      "analysis": {
+        "metrics": {
+          "response_time": 2.311094453049345,
+          "task_completion_rate": 0.9424324629836498,
+          "quality_score": 0.8946803681210533,
+          "token_usage": 1690,
+          "error_rate": 0.01581198219998082
+        },
+        "bottlenecks": [
+          "响应时间过长"
+        ],
+        "strengths": [
+          "任务处理能力",
+          "响应速度",
+          "输出质量"
+        ],
+        "weaknesses": [
+          "响应时间过长"
+        ]
+      },
+      "optimization": {
+        "suggestions": [
+          "优化提示词模板，减少不必要的思考步骤",
+          "增加缓存机制，存储常见任务的处理结果",
+          "定期更新知识库，保持信息的准确性",
+          "优化Agent之间的协作机制，提高整体效率",
+          "根据任务类型动态调整模型参数，优化性能"
+        ],
+        "priority": "medium",
+        "estimated_improvement": 0.3215642299771445
+      },
+      "applied": true,
+      "evaluation": {
+        "metrics": {
+          "response_time": 1.1258196243632046,
+          "task_completion_rate": 0.8956715464064813,
+          "quality_score": 0.7920491044989539,
+          "token_usage": 1266,
+          "error_rate": 0.03628725228789211
+        },
+        "overall_score": 0.8362114240019453,
+        "status": "improved",
+        "recommendations": "重点改进"
+      }
+    }
+  ],
+  "evaluation": {},
+  "analysis_document": "# Agent优化迭代分析文档\n迭代次数: 1\n生成时间: 2026-03-25 12:43:03\n\n## 优化概览\n分析的Agent数量: 50\n\n## Agent分析详情\n### sales-discovery-coach\n#### 性能分析\n- 响应时间: 1.74s\n- 任务完成率: 0.90\n- 质量评分: 0.73\n- Token消耗: 1938\n- 错误率: 0.03\n- 瓶颈: 无\n\n#### 优化建议\n1. 定期更新知识库，保持信息的准确性\n2. 优化Agent之间的协作机制，提高整体效率\n3. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.11\n\n#### 评估结果\n- 整体评分: 0.78\n- 状态: stable\n- 建议: 重点改进\n\n### motion_designer\n#### 性能分析\n- 响应时间: 0.94s\n- 任务完成率: 0.83\n- 质量评分: 0.64\n- Token消耗: 4644\n- 错误率: 0.02\n- 瓶颈: 输出质量不高, Token消耗过高\n\n#### 优化建议\n1. 优化提示词，明确输出要求和质量标准\n2. 增加输出验证步骤，确保结果符合要求\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.34\n\n#### 评估结果\n- 整体评分: 0.85\n- 状态: improved\n- 建议: 重点改进\n\n### product-trend-researcher\n#### 性能分析\n- 响应时间: 1.15s\n- 任务完成率: 0.93\n- 质量评分: 0.89\n- Token消耗: 3716\n- 错误率: 0.08\n- 瓶颈: 错误率较高\n\n#### 优化建议\n1. 增加错误处理机制，提高鲁棒性\n2. 优化输入验证，减少错误输入导致的问题\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.13\n\n#### 评估结果\n- 整体评分: 0.78\n- 状态: stable\n- 建议: 重点改进\n\n### product-feedback-synthesizer\n#### 性能分析\n- 响应时间: 1.58s\n- 任务完成率: 0.83\n- 质量评分: 0.65\n- Token消耗: 1284\n- 错误率: 0.07\n- 瓶颈: 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 优化提示词，明确输出要求和质量标准\n2. 增加输出验证步骤，确保结果符合要求\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.26\n\n#### 评估结果\n- 整体评分: 0.82\n- 状态: improved\n- 建议: 重点改进\n\n### engineering-backend-architect\n#### 性能分析\n- 响应时间: 2.24s\n- 任务完成率: 0.87\n- 质量评分: 0.84\n- Token消耗: 2093\n- 错误率: 0.09\n- 瓶颈: 响应时间过长, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.19\n\n#### 评估结果\n- 整体评分: 0.83\n- 状态: improved\n- 建议: 重点改进\n\n### support-legal-compliance-checker\n#### 性能分析\n- 响应时间: 0.88s\n- 任务完成率: 0.93\n- 质量评分: 0.67\n- Token消耗: 4655\n- 错误率: 0.08\n- 瓶颈: 输出质量不高, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 优化提示词，明确输出要求和质量标准\n2. 增加输出验证步骤，确保结果符合要求\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.24\n\n#### 评估结果\n- 整体评分: 0.82\n- 状态: improved\n- 建议: 重点改进\n\n### copywriter\n#### 性能分析\n- 响应时间: 0.92s\n- 任务完成率: 0.77\n- 质量评分: 0.73\n- Token消耗: 4258\n- 错误率: 0.09\n- 瓶颈: 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.36\n\n#### 评估结果\n- 整体评分: 0.83\n- 状态: improved\n- 建议: 重点改进\n\n### engineering-sre\n#### 性能分析\n- 响应时间: 1.76s\n- 任务完成率: 0.74\n- 质量评分: 0.82\n- Token消耗: 3675\n- 错误率: 0.09\n- 瓶颈: 任务完成率低, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.30\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### roblox-avatar-creator\n#### 性能分析\n- 响应时间: 0.78s\n- 任务完成率: 0.75\n- 质量评分: 0.62\n- Token消耗: 1990\n- 错误率: 0.07\n- 瓶颈: 任务完成率低, 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.36\n\n#### 评估结果\n- 整体评分: 0.78\n- 状态: stable\n- 建议: 重点改进\n\n### scenario-enterprise-feature\n#### 性能分析\n- 响应时间: 2.04s\n- 任务完成率: 0.77\n- 质量评分: 0.61\n- Token消耗: 4361\n- 错误率: 0.06\n- 瓶颈: 响应时间过长, 任务完成率低, 输出质量不高, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增强任务理解能力，添加更多上下文信息\n4. 优化任务分解策略，提高任务完成的准确性\n5. 优化提示词，明确输出要求和质量标准\n6. 增加输出验证步骤，确保结果符合要求\n7. 优化提示词结构，减少冗余信息\n8. 使用更高效的语言模型，减少Token使用\n9. 增加错误处理机制，提高鲁棒性\n10. 优化输入验证，减少错误输入导致的问题\n11. 定期更新知识库，保持信息的准确性\n12. 优化Agent之间的协作机制，提高整体效率\n13. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.15\n\n#### 评估结果\n- 整体评分: 0.81\n- 状态: improved\n- 建议: 重点改进\n\n### workflow-with-memory\n#### 性能分析\n- 响应时间: 2.84s\n- 任务完成率: 0.74\n- 质量评分: 0.72\n- Token消耗: 4619\n- 错误率: 0.09\n- 瓶颈: 响应时间过长, 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增强任务理解能力，添加更多上下文信息\n4. 优化任务分解策略，提高任务完成的准确性\n5. 优化提示词结构，减少冗余信息\n6. 使用更高效的语言模型，减少Token使用\n7. 增加错误处理机制，提高鲁棒性\n8. 优化输入验证，减少错误输入导致的问题\n9. 定期更新知识库，保持信息的准确性\n10. 优化Agent之间的协作机制，提高整体效率\n11. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.35\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### support-executive-summary-generator\n#### 性能分析\n- 响应时间: 1.11s\n- 任务完成率: 0.94\n- 质量评分: 0.61\n- Token消耗: 1783\n- 错误率: 0.07\n- 瓶颈: 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 优化提示词，明确输出要求和质量标准\n2. 增加输出验证步骤，确保结果符合要求\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.36\n\n#### 评估结果\n- 整体评分: 0.77\n- 状态: stable\n- 建议: 重点改进\n\n### marketing-bilibili-content-strategist\n#### 性能分析\n- 响应时间: 2.39s\n- 任务完成率: 0.71\n- 质量评分: 0.84\n- Token消耗: 3502\n- 错误率: 0.05\n- 瓶颈: 响应时间过长, 任务完成率低, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增强任务理解能力，添加更多上下文信息\n4. 优化任务分解策略，提高任务完成的准确性\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.10\n\n#### 评估结果\n- 整体评分: 0.78\n- 状态: stable\n- 建议: 重点改进\n\n### design-visual-storyteller\n#### 性能分析\n- 响应时间: 2.04s\n- 任务完成率: 0.87\n- 质量评分: 0.62\n- Token消耗: 1576\n- 错误率: 0.10\n- 瓶颈: 响应时间过长, 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.16\n\n#### 评估结果\n- 整体评分: 0.71\n- 状态: stable\n- 建议: 重点改进\n\n### backend_developer\n#### 性能分析\n- 响应时间: 0.89s\n- 任务完成率: 0.70\n- 质量评分: 0.84\n- Token消耗: 2577\n- 错误率: 0.07\n- 瓶颈: 任务完成率低, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.27\n\n#### 评估结果\n- 整体评分: 0.75\n- 状态: stable\n- 建议: 重点改进\n\n### marketing-carousel-growth-engine\n#### 性能分析\n- 响应时间: 2.90s\n- 任务完成率: 0.78\n- 质量评分: 0.73\n- Token消耗: 3128\n- 错误率: 0.09\n- 瓶颈: 响应时间过长, 任务完成率低, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增强任务理解能力，添加更多上下文信息\n4. 优化任务分解策略，提高任务完成的准确性\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.30\n\n#### 评估结果\n- 整体评分: 0.80\n- 状态: improved\n- 建议: 重点改进\n\n### specialized-workflow-architect\n#### 性能分析\n- 响应时间: 2.73s\n- 任务完成率: 0.94\n- 质量评分: 0.81\n- Token消耗: 4212\n- 错误率: 0.02\n- 瓶颈: 响应时间过长, Token消耗过高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.28\n\n#### 评估结果\n- 整体评分: 0.80\n- 状态: stable\n- 建议: 重点改进\n\n### backend-architect-with-memory\n#### 性能分析\n- 响应时间: 0.89s\n- 任务完成率: 0.93\n- 质量评分: 0.72\n- Token消耗: 3745\n- 错误率: 0.05\n- 瓶颈: 无\n\n#### 优化建议\n1. 定期更新知识库，保持信息的准确性\n2. 优化Agent之间的协作机制，提高整体效率\n3. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.38\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### blender-addon-engineer\n#### 性能分析\n- 响应时间: 1.49s\n- 任务完成率: 0.77\n- 质量评分: 0.80\n- Token消耗: 1179\n- 错误率: 0.02\n- 瓶颈: 任务完成率低\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.14\n\n#### 评估结果\n- 整体评分: 0.85\n- 状态: improved\n- 建议: 重点改进\n\n### corporate-training-designer\n#### 性能分析\n- 响应时间: 1.30s\n- 任务完成率: 0.88\n- 质量评分: 0.81\n- Token消耗: 4764\n- 错误率: 0.02\n- 瓶颈: Token消耗过高\n\n#### 优化建议\n1. 优化提示词结构，减少冗余信息\n2. 使用更高效的语言模型，减少Token使用\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.22\n\n#### 评估结果\n- 整体评分: 0.80\n- 状态: stable\n- 建议: 重点改进\n\n### sales-proposal-strategist\n#### 性能分析\n- 响应时间: 2.11s\n- 任务完成率: 0.89\n- 质量评分: 0.74\n- Token消耗: 1995\n- 错误率: 0.08\n- 瓶颈: 响应时间过长, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.18\n\n#### 评估结果\n- 整体评分: 0.81\n- 状态: improved\n- 建议: 重点改进\n\n### onboarding_specialist\n#### 性能分析\n- 响应时间: 2.16s\n- 任务完成率: 0.77\n- 质量评分: 0.80\n- Token消耗: 1473\n- 错误率: 0.08\n- 瓶颈: 响应时间过长, 任务完成率低, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增强任务理解能力，添加更多上下文信息\n4. 优化任务分解策略，提高任务完成的准确性\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.36\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### testing-test-results-analyzer\n#### 性能分析\n- 响应时间: 0.98s\n- 任务完成率: 0.73\n- 质量评分: 0.85\n- Token消耗: 4648\n- 错误率: 0.08\n- 瓶颈: 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.13\n\n#### 评估结果\n- 整体评分: 0.84\n- 状态: improved\n- 建议: 重点改进\n\n### scrum_master\n#### 性能分析\n- 响应时间: 2.81s\n- 任务完成率: 0.89\n- 质量评分: 0.67\n- Token消耗: 1520\n- 错误率: 0.07\n- 瓶颈: 响应时间过长, 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.14\n\n#### 评估结果\n- 整体评分: 0.78\n- 状态: stable\n- 建议: 重点改进\n\n### engineering-devops-automator\n#### 性能分析\n- 响应时间: 2.49s\n- 任务完成率: 0.90\n- 质量评分: 0.65\n- Token消耗: 3145\n- 错误率: 0.04\n- 瓶颈: 响应时间过长, 输出质量不高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.16\n\n#### 评估结果\n- 整体评分: 0.82\n- 状态: improved\n- 建议: 重点改进\n\n### terra\n#### 性能分析\n- 响应时间: 2.92s\n- 任务完成率: 0.81\n- 质量评分: 0.83\n- Token消耗: 4620\n- 错误率: 0.10\n- 瓶颈: 响应时间过长, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.22\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### unity-architect\n#### 性能分析\n- 响应时间: 2.90s\n- 任务完成率: 0.90\n- 质量评分: 0.66\n- Token消耗: 2296\n- 错误率: 0.02\n- 瓶颈: 响应时间过长, 输出质量不高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.34\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### zk-steward\n#### 性能分析\n- 响应时间: 1.16s\n- 任务完成率: 0.86\n- 质量评分: 0.80\n- Token消耗: 3944\n- 错误率: 0.01\n- 瓶颈: 无\n\n#### 优化建议\n1. 定期更新知识库，保持信息的准确性\n2. 优化Agent之间的协作机制，提高整体效率\n3. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.11\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### marketing-linkedin-content-creator\n#### 性能分析\n- 响应时间: 0.94s\n- 任务完成率: 0.80\n- 质量评分: 0.75\n- Token消耗: 4732\n- 错误率: 0.07\n- 瓶颈: 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.29\n\n#### 评估结果\n- 整体评分: 0.76\n- 状态: stable\n- 建议: 重点改进\n\n### data-consolidation-agent\n#### 性能分析\n- 响应时间: 1.26s\n- 任务完成率: 0.70\n- 质量评分: 0.88\n- Token消耗: 4031\n- 错误率: 0.06\n- 瓶颈: 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.25\n\n#### 评估结果\n- 整体评分: 0.80\n- 状态: stable\n- 建议: 重点改进\n\n### phase-0-discovery\n#### 性能分析\n- 响应时间: 1.55s\n- 任务完成率: 0.86\n- 质量评分: 0.72\n- Token消耗: 2413\n- 错误率: 0.06\n- 瓶颈: 错误率较高\n\n#### 优化建议\n1. 增加错误处理机制，提高鲁棒性\n2. 优化输入验证，减少错误输入导致的问题\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.31\n\n#### 评估结果\n- 整体评分: 0.69\n- 状态: needs_improvement\n- 建议: 重点改进\n\n### unreal-technical-artist\n#### 性能分析\n- 响应时间: 2.01s\n- 任务完成率: 0.95\n- 质量评分: 0.70\n- Token消耗: 4389\n- 错误率: 0.05\n- 瓶颈: 响应时间过长, 输出质量不高, Token消耗过高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 优化提示词结构，减少冗余信息\n6. 使用更高效的语言模型，减少Token使用\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.31\n\n#### 评估结果\n- 整体评分: 0.81\n- 状态: improved\n- 建议: 重点改进\n\n### macos-spatial-metal-engineer\n#### 性能分析\n- 响应时间: 2.31s\n- 任务完成率: 0.77\n- 质量评分: 0.65\n- Token消耗: 3986\n- 错误率: 0.07\n- 瓶颈: 响应时间过长, 任务完成率低, 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增强任务理解能力，添加更多上下文信息\n4. 优化任务分解策略，提高任务完成的准确性\n5. 优化提示词，明确输出要求和质量标准\n6. 增加输出验证步骤，确保结果符合要求\n7. 增加错误处理机制，提高鲁棒性\n8. 优化输入验证，减少错误输入导致的问题\n9. 定期更新知识库，保持信息的准确性\n10. 优化Agent之间的协作机制，提高整体效率\n11. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.19\n\n#### 评估结果\n- 整体评分: 0.78\n- 状态: stable\n- 建议: 重点改进\n\n### project_manager\n#### 性能分析\n- 响应时间: 1.83s\n- 任务完成率: 0.70\n- 质量评分: 0.88\n- Token消耗: 4123\n- 错误率: 0.07\n- 瓶颈: 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.21\n\n#### 评估结果\n- 整体评分: 0.80\n- 状态: improved\n- 建议: 重点改进\n\n### godot-gameplay-scripter\n#### 性能分析\n- 响应时间: 2.81s\n- 任务完成率: 0.84\n- 质量评分: 0.74\n- Token消耗: 3117\n- 错误率: 0.10\n- 瓶颈: 响应时间过长, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.32\n\n#### 评估结果\n- 整体评分: 0.82\n- 状态: improved\n- 建议: 重点改进\n\n### marketing-instagram-curator\n#### 性能分析\n- 响应时间: 1.73s\n- 任务完成率: 0.83\n- 质量评分: 0.62\n- Token消耗: 2686\n- 错误率: 0.04\n- 瓶颈: 输出质量不高\n\n#### 优化建议\n1. 优化提示词，明确输出要求和质量标准\n2. 增加输出验证步骤，确保结果符合要求\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.19\n\n#### 评估结果\n- 整体评分: 0.75\n- 状态: stable\n- 建议: 重点改进\n\n### workflow-landing-page\n#### 性能分析\n- 响应时间: 0.85s\n- 任务完成率: 0.80\n- 质量评分: 0.63\n- Token消耗: 3127\n- 错误率: 0.02\n- 瓶颈: 输出质量不高\n\n#### 优化建议\n1. 优化提示词，明确输出要求和质量标准\n2. 增加输出验证步骤，确保结果符合要求\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.15\n\n#### 评估结果\n- 整体评分: 0.75\n- 状态: stable\n- 建议: 重点改进\n\n### lsp-index-engineer\n#### 性能分析\n- 响应时间: 2.65s\n- 任务完成率: 0.83\n- 质量评分: 0.74\n- Token消耗: 3769\n- 错误率: 0.03\n- 瓶颈: 响应时间过长\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.21\n\n#### 评估结果\n- 整体评分: 0.80\n- 状态: stable\n- 建议: 重点改进\n\n### paid-media-search-query-analyst\n#### 性能分析\n- 响应时间: 0.95s\n- 任务完成率: 0.72\n- 质量评分: 0.68\n- Token消耗: 3172\n- 错误率: 0.07\n- 瓶颈: 任务完成率低, 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.28\n\n#### 评估结果\n- 整体评分: 0.69\n- 状态: needs_improvement\n- 建议: 重点改进\n\n### unity-multiplayer-engineer\n#### 性能分析\n- 响应时间: 0.78s\n- 任务完成率: 0.91\n- 质量评分: 0.60\n- Token消耗: 3289\n- 错误率: 0.04\n- 瓶颈: 输出质量不高\n\n#### 优化建议\n1. 优化提示词，明确输出要求和质量标准\n2. 增加输出验证步骤，确保结果符合要求\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.33\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### testing-accessibility-auditor\n#### 性能分析\n- 响应时间: 2.45s\n- 任务完成率: 0.83\n- 质量评分: 0.85\n- Token消耗: 2800\n- 错误率: 0.01\n- 瓶颈: 响应时间过长\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.38\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### contract_specialist\n#### 性能分析\n- 响应时间: 1.75s\n- 任务完成率: 0.73\n- 质量评分: 0.79\n- Token消耗: 4316\n- 错误率: 0.06\n- 瓶颈: 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.26\n\n#### 评估结果\n- 整体评分: 0.87\n- 状态: improved\n- 建议: 重点改进\n\n### ux_researcher\n#### 性能分析\n- 响应时间: 1.35s\n- 任务完成率: 0.72\n- 质量评分: 0.76\n- Token消耗: 2710\n- 错误率: 0.09\n- 瓶颈: 任务完成率低, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.23\n\n#### 评估结果\n- 整体评分: 0.81\n- 状态: improved\n- 建议: 重点改进\n\n### marketing-china-ecommerce-operator\n#### 性能分析\n- 响应时间: 2.89s\n- 任务完成率: 0.84\n- 质量评分: 0.67\n- Token消耗: 3043\n- 错误率: 0.09\n- 瓶颈: 响应时间过长, 输出质量不高, 错误率较高\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 优化提示词，明确输出要求和质量标准\n4. 增加输出验证步骤，确保结果符合要求\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.28\n\n#### 评估结果\n- 整体评分: 0.82\n- 状态: improved\n- 建议: 重点改进\n\n### academic-anthropologist\n#### 性能分析\n- 响应时间: 1.07s\n- 任务完成率: 0.77\n- 质量评分: 0.77\n- Token消耗: 4231\n- 错误率: 0.07\n- 瓶颈: 任务完成率低, Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 优化提示词结构，减少冗余信息\n4. 使用更高效的语言模型，减少Token使用\n5. 增加错误处理机制，提高鲁棒性\n6. 优化输入验证，减少错误输入导致的问题\n7. 定期更新知识库，保持信息的准确性\n8. 优化Agent之间的协作机制，提高整体效率\n9. 根据任务类型动态调整模型参数，优化性能\n- 优先级: high\n- 预计改进: 0.23\n\n#### 评估结果\n- 整体评分: 0.82\n- 状态: improved\n- 建议: 重点改进\n\n### scenario-startup-mvp\n#### 性能分析\n- 响应时间: 0.60s\n- 任务完成率: 0.71\n- 质量评分: 0.82\n- Token消耗: 2860\n- 错误率: 0.04\n- 瓶颈: 任务完成率低\n\n#### 优化建议\n1. 增强任务理解能力，添加更多上下文信息\n2. 优化任务分解策略，提高任务完成的准确性\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.22\n\n#### 评估结果\n- 整体评分: 0.83\n- 状态: improved\n- 建议: 重点改进\n\n### sales-account-strategist\n#### 性能分析\n- 响应时间: 0.86s\n- 任务完成率: 0.88\n- 质量评分: 0.78\n- Token消耗: 4158\n- 错误率: 0.10\n- 瓶颈: Token消耗过高, 错误率较高\n\n#### 优化建议\n1. 优化提示词结构，减少冗余信息\n2. 使用更高效的语言模型，减少Token使用\n3. 增加错误处理机制，提高鲁棒性\n4. 优化输入验证，减少错误输入导致的问题\n5. 定期更新知识库，保持信息的准确性\n6. 优化Agent之间的协作机制，提高整体效率\n7. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.19\n\n#### 评估结果\n- 整体评分: 0.85\n- 状态: improved\n- 建议: 重点改进\n\n### marketing-wechat-official-account\n#### 性能分析\n- 响应时间: 1.65s\n- 任务完成率: 0.90\n- 质量评分: 0.82\n- Token消耗: 3756\n- 错误率: 0.05\n- 瓶颈: 无\n\n#### 优化建议\n1. 定期更新知识库，保持信息的准确性\n2. 优化Agent之间的协作机制，提高整体效率\n3. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.12\n\n#### 评估结果\n- 整体评分: 0.79\n- 状态: stable\n- 建议: 重点改进\n\n### social_media_specialist\n#### 性能分析\n- 响应时间: 1.64s\n- 任务完成率: 0.89\n- 质量评分: 0.89\n- Token消耗: 1727\n- 错误率: 0.06\n- 瓶颈: 错误率较高\n\n#### 优化建议\n1. 增加错误处理机制，提高鲁棒性\n2. 优化输入验证，减少错误输入导致的问题\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.22\n\n#### 评估结果\n- 整体评分: 0.74\n- 状态: stable\n- 建议: 重点改进\n\n### specialized-document-generator\n#### 性能分析\n- 响应时间: 2.31s\n- 任务完成率: 0.94\n- 质量评分: 0.89\n- Token消耗: 1690\n- 错误率: 0.02\n- 瓶颈: 响应时间过长\n\n#### 优化建议\n1. 优化提示词模板，减少不必要的思考步骤\n2. 增加缓存机制，存储常见任务的处理结果\n3. 定期更新知识库，保持信息的准确性\n4. 优化Agent之间的协作机制，提高整体效率\n5. 根据任务类型动态调整模型参数，优化性能\n- 优先级: medium\n- 预计改进: 0.32\n\n#### 评估结果\n- 整体评分: 0.84\n- 状态: improved\n- 建议: 重点改进\n\n"
+}

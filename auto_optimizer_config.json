@@ -1,0 +1,35 @@
+{
+  "enabled": true,
+  "schedule": {
+    "type": "daily",
+    "hour": 3,
+    "minute": 0
+  },
+  "optimization": {
+    "iterations": 2
+  },
+  "notifications": {
+    "enabled": true,
+    "channels": [
+      "console",
+      "file"
+    ],
+    "email": {
+      "enabled": false,
+      "recipients": [],
+      "smtp_server": "",
+      "smtp_port": 587,
+      "username": "",
+      "password": ""
+    },
+    "webhook": {
+      "enabled": false,
+      "url": "",
+      "headers": {}
+    }
+  },
+  "history": {
+    "max_records": 100,
+    "retention_days": 90
+  }
+}

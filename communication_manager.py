@@ -18,6 +18,7 @@ class CommunicationManager:
         self.context_store = {}
         self.token_usage = {}
         self.task_status = {}  # 任务状态跟踪
+        self.task_history = {}  # 任务历史记录
     
     def _compress_content(self, content: str) -> str:
         """压缩消息内容，减少Token消耗"""
@@ -227,6 +228,13 @@ class CommunicationManager:
             "progress": 0
         }
         print(f"[任务管理] 创建任务: {task_name} (ID: {task_id}) 分配给: {agent}")
+        
+        # 添加任务创建历史记录
+        self.add_task_history(task_id, "created", f"任务创建: {task_name} 分配给: {agent}", {
+            "task_name": task_name,
+            "agent": agent,
+            "initial_status": initial_status
+        })
     
     def update_task_status(self, task_id: str, status: str, progress: int = None):
         """更新任务状态
@@ -287,6 +295,108 @@ class CommunicationManager:
             指定状态的任务列表
         """
         return [task for task in self.task_status.values() if task["status"] == status]
+    
+    def add_task_history(self, task_id: str, event_type: str, description: str, details: Optional[Dict[str, Any]] = None):
+        """添加任务历史记录
+        
+        Args:
+            task_id: 任务ID
+            event_type: 事件类型，如"created", "updated", "completed", "failed", "tested"
+            description: 事件描述
+            details: 事件详细信息
+        """
+        if task_id not in self.task_history:
+            self.task_history[task_id] = []
+        
+        history_entry = {
+            "event_type": event_type,
+            "description": description,
+            "details": details,
+            "timestamp": time.time()
+        }
+        
+        self.task_history[task_id].append(history_entry)
+        print(f"[任务历史] 任务 {task_id} 添加事件: {event_type} - {description}")
+    
+    def get_task_history(self, task_id: str) -> List[Dict[str, Any]]:
+        """获取任务的历史记录
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            任务历史记录列表
+        """
+        return self.task_history.get(task_id, [])
+    
+    def get_all_task_history(self) -> Dict[str, List[Dict[str, Any]]]:
+        """获取所有任务的历史记录
+        
+        Returns:
+            所有任务的历史记录
+        """
+        return self.task_history
+    
+    def update_task_with_history(self, task_id: str, status: str, progress: int = None, description: str = ""):
+        """更新任务状态并添加历史记录
+        
+        Args:
+            task_id: 任务ID
+            status: 新的状态
+            progress: 任务进度 (0-100)
+            description: 状态更新描述
+        """
+        self.update_task_status(task_id, status, progress)
+        
+        # 添加历史记录
+        event_type = "updated"
+        if status == "completed":
+            event_type = "completed"
+        elif status == "failed":
+            event_type = "failed"
+        
+        details = {
+            "status": status
+        }
+        if progress is not None:
+            details["progress"] = progress
+        
+        history_description = description if description else f"任务状态更新为: {status}"
+        if progress is not None:
+            history_description += f"，进度: {progress}%"
+        
+        self.add_task_history(task_id, event_type, history_description, details)
+    
+    def complete_task(self, task_id: str, result: Optional[Any] = None, description: str = "任务完成"):
+        """完成任务并添加历史记录
+        
+        Args:
+            task_id: 任务ID
+            result: 任务结果
+            description: 完成描述
+        """
+        self.update_task_with_history(task_id, "completed", 100, description)
+        
+        # 添加结果到历史记录
+        self.add_task_history(task_id, "result", "任务结果", {
+            "result": result
+        })
+    
+    def test_task(self, task_id: str, test_result: bool, test_details: Optional[Dict[str, Any]] = None):
+        """测试任务并添加历史记录
+        
+        Args:
+            task_id: 任务ID
+            test_result: 测试结果
+            test_details: 测试详细信息
+        """
+        status = "tested" if test_result else "failed"
+        self.add_task_history(task_id, "tested", f"任务测试{'通过' if test_result else '失败'}", {
+            "test_result": test_result,
+            "test_details": test_details
+        })
+        if not test_result:
+            self.update_task_with_history(task_id, status, None, f"测试{'通过' if test_result else '失败'}")
 
 class ContextManager:
     """管理代理之间的共享上下文"""
