@@ -60,12 +60,15 @@ def create_task():
     task_name = data.get('task_name')
     agent = data.get('agent')
     initial_status = data.get('status', 'pending')
+    model = data.get('model')
     
     if not task_name or not agent:
         return jsonify({'error': 'Task name and agent are required'}), 400
     
     manager.create_task(task_id, task_name, agent, initial_status)
-    return jsonify({'task_id': task_id, 'message': 'Task created successfully'})
+    # 这里可以将模型信息存储到任务属性中，以便后续使用
+    # 目前系统使用内存存储，后续可以扩展为持久化存储
+    return jsonify({'task_id': task_id, 'message': 'Task created successfully', 'model': model})
 
 # 更新任务状态
 @app.route('/api/tasks/<task_id>', methods=['PUT'])
@@ -113,6 +116,12 @@ def get_tasks():
         tasks.append(task)
     return jsonify(tasks)
 
+# 获取可用模型
+@app.route('/api/models')
+def get_models():
+    models = manager.get_available_models()
+    return jsonify(models)
+
 # 分配任务
 @app.route('/api/assign_task', methods=['POST'])
 def assign_task():
@@ -120,11 +129,12 @@ def assign_task():
     task = data.get('task')
     department = data.get('department')
     agent = data.get('agent')
+    model = data.get('model')
     
     if not task or not department:
         return jsonify({'error': 'Task and department are required'}), 400
     
-    result = manager.assign_task(task, department, agent)
+    result = manager.assign_task(task, department, agent, model)
     return jsonify({'result': result})
 
 if __name__ == '__main__':
@@ -182,26 +192,39 @@ if __name__ == '__main__':
                     <h3>创建任务</h3>
                     <form id="create-task-form">
                         <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="task-name" class="form-label">任务名称</label>
-                                <input type="text" class="form-control" id="task-name" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="task-agent" class="form-label">负责代理</label>
-                                <input type="text" class="form-control" id="task-agent" required>
-                            </div>
+                        <div class="col-md-4">
+                            <label for="task-name" class="form-label">任务名称</label>
+                            <input type="text" class="form-control" id="task-name" required>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="task-status" class="form-label">初始状态</label>
-                                <select class="form-select" id="task-status">
-                                    <option value="pending">待处理</option>
-                                    <option value="in_progress">进行中</option>
-                                    <option value="completed">已完成</option>
-                                    <option value="failed">失败</option>
-                                </select>
-                            </div>
+                        <div class="col-md-4">
+                            <label for="task-agent" class="form-label">负责代理</label>
+                            <input type="text" class="form-control" id="task-agent" required>
                         </div>
+                        <div class="col-md-4">
+                            <label for="task-model" class="form-label">AI模型</label>
+                            <select class="form-select" id="task-model">
+                                <option value="">默认模型</option>
+                                <option value="trae">TRAE</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="google">Google</option>
+                                <option value="azure">Azure</option>
+                                <option value="glm">GLM</option>
+                                <option value="local">本地模型</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="task-status" class="form-label">初始状态</label>
+                            <select class="form-select" id="task-status">
+                                <option value="pending">待处理</option>
+                                <option value="in_progress">进行中</option>
+                                <option value="completed">已完成</option>
+                                <option value="failed">失败</option>
+                            </select>
+                        </div>
+                    </div>
                         <button type="submit" class="btn btn-primary">创建任务</button>
                     </form>
                 </div>
@@ -368,12 +391,13 @@ if __name__ == '__main__':
             const taskName = $('#task-name').val();
             const agent = $('#task-agent').val();
             const status = $('#task-status').val();
+            const model = $('#task-model').val();
             
             $.ajax({
                 url: '/api/tasks',
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ task_name: taskName, agent: agent, status: status }),
+                data: JSON.stringify({ task_name: taskName, agent: agent, status: status, model: model }),
                 success: function(response) {
                     alert('任务创建成功！');
                     location.reload();
