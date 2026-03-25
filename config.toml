@@ -6,10 +6,50 @@ name = "OPC Agency"
 description = "AI-powered agency system for One Person Company"
 version = "1.0.0"
 
-# TRAE Integration
-[trae]
-api_key = "sk-KCGKNVVDgnQByDOFr0Nb2A9d2gKNHB8stNTsrkoaHpPBFzU0"
+# AI Model Integration
+[models]
+# Default model to use
+default = "trae"
+
+# TRAE Model
+[models.trae]
+api_key = "your_tra_api_key"
 base_url = "https://api.trae.cn/v1/chat"
+
+# OpenAI Model
+[models.openai]
+api_key = "your_openai_api_key"
+base_url = "https://api.openai.com/v1/chat/completions"
+model = "gpt-4o"
+
+# Anthropic Model
+[models.anthropic]
+api_key = "your_anthropic_api_key"
+base_url = "https://api.anthropic.com/v1/messages"
+model = "claude-3-opus-20240229"
+
+# Google Model
+[models.google]
+api_key = "your_google_api_key"
+base_url = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+model = "gemini-pro"
+
+# Azure OpenAI
+[models.azure]
+api_key = "your_azure_api_key"
+base_url = "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-name/chat/completions?api-version=2024-02-15-preview"
+model = "gpt-4"
+
+# Local Model (e.g., Ollama)
+[models.local]
+base_url = "http://localhost:11434/api/chat"
+model = "llama3"
+
+# GLM Model
+[models.glm]
+api_key = "your_glm_api_key"
+base_url = "https://open.bigmodel.cn/api/messages"
+model = "glm-4"
 
 # Agent Configuration
 [agents]
