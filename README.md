@@ -40,6 +40,11 @@ OPC-Agents/
 ├── official_agents/           # Official agents from Agency-Agents project
 ├── optimization_records/      # Optimization iteration records
 ├── optimization_notifications/ # Optimization notification files
+├── project_management/        # Project management documents
+│   ├── 需求范围承诺书模板.md   # Requirements scope commitment template
+│   ├── 项目管理规范.md         # Project management specification
+│   ├── 迭代计划/             # Iteration plans and retrospectives
+│   └── 需求文档/             # Approved requirements documents
 ├── templates/                 # Web interface templates
 ├── SKILL.md                   # TRAE skill definition
 ├── TRAE_SKILL_UPDATE.md       # TRAE skill update guide

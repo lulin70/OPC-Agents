@@ -205,6 +205,12 @@ def get_three_layer_architecture():
     else:
         return jsonify({'error': 'Three layer architecture not initialized'}), 500
 
+# 获取所有部门
+@app.route('/api/departments')
+def get_departments():
+    departments = manager.get_departments()
+    return jsonify(departments)
+
 # 任务分解
 @app.route('/api/decompose_task', methods=['POST'])
 def decompose_task():
@@ -750,6 +756,20 @@ if __name__ == '__main__':
                 </div>
             </div>
             
+            <!-- Agent活动状态 -->
+            <div class="mb-4">
+                <h3>Agent活动状态</h3>
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div id="agent-activity" class="mb-3" style="height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; background-color: #f8f9fa;">
+                            <div class="mb-2">
+                                <p class="text-muted">等待Agent活动...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- 任务分解 -->
             <div class="mb-4">
                 <h3>任务分解</h3>
@@ -909,6 +929,38 @@ if __name__ == '__main__':
             </div>
         </div>
         
+        <!-- 人事部 -->
+        <div id="hr" class="section">
+            <h1 class="mb-4">人事部</h1>
+            
+            <!-- 部门清单 -->
+            <div class="mb-4">
+                <h3>部门清单</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">部门列表</h5>
+                                <div id="department-list" class="mt-2">
+                                    <p>加载中...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">部门Agent清单</h5>
+                                <div id="agent-list" class="mt-2">
+                                    <p>请选择一个部门查看Agent清单</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- 个人助理功能 -->
         <div id="personal-assistant" class="section">
             <h1 class="mb-4">个人助理功能</h1>
@@ -1016,22 +1068,7 @@ if __name__ == '__main__':
         </div>
     </div>
     
-    <!-- 部门互动可视化区域 -->
-    <div class="mt-5">
-        <h2>部门互动流程</h2>
-        <div class="card">
-            <div class="card-body">
-                <div id="interaction-visualization" style="position: relative; height: 300px; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px;">
-                    <div id="departments-container" style="display: flex; justify-content: space-around; margin-bottom: 20px;">
-                        <!-- 部门将通过JavaScript动态添加 -->
-                    </div>
-                    <div id="arrows-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
-                        <!-- 箭头将通过JavaScript动态添加 -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
     
     <!-- 任务详情模态框 -->
     <div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
@@ -1112,6 +1149,31 @@ if __name__ == '__main__':
     </div>
     
     <script>
+        // 更新Agent活动状态
+        function updateAgentActivity(agent, action) {
+            const timestamp = new Date().toLocaleTimeString();
+            const activityHtml = `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="font-weight-bold">${agent}</span>
+                        <span class="text-muted text-sm">${timestamp}</span>
+                    </div>
+                    <p class="mb-0">${action}</p>
+                </div>
+            `;
+            
+            // 清空初始提示并添加新活动
+            if ($('#agent-activity').find('.text-muted').length > 0) {
+                $('#agent-activity').empty();
+            }
+            
+            $('#agent-activity').prepend(activityHtml);
+            
+            // 保持滚动到底部
+            const activityContainer = document.getElementById('agent-activity');
+            activityContainer.scrollTop = 0;
+        }
+        
         // 导航功能
         $('.nav-link').click(function(e) {
             e.preventDefault();
@@ -2011,6 +2073,9 @@ if __name__ == '__main__':
                     clearTimeout(typingId);
                     $('.typing-indicator').remove();
                     
+                    // 更新Agent活动状态
+                    updateAgentActivity('chief_executive_agent', '开始处理任务分解请求');
+                    
                     // 显示总裁办理解过程
                     $('#executive-office-chat').append(`
                         <div class="mb-3">
@@ -2031,6 +2096,7 @@ if __name__ == '__main__':
                     
                     // 调用任务分解API
                     setTimeout(function() {
+                        updateAgentActivity('chief_executive_agent', '调用任务分解API');
                         $.ajax({
                             url: '/api/decompose_task',
                             type: 'POST',
@@ -2043,6 +2109,8 @@ if __name__ == '__main__':
                                     reply += `<li><strong>${task.task}</strong> (部门: ${task.department}, 代理: ${task.agent}, 优先级: ${task.priority})</li>`;
                                 });
                                 reply += '</ul>';
+                                
+                                updateAgentActivity('chief_executive_agent', '任务分解完成，开始分派任务');
                                 
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
@@ -2074,8 +2142,72 @@ if __name__ == '__main__':
                                 // 滚动到底部
                                 chatWindow.scrollTop = chatWindow.scrollHeight;
                                 
-                                // 模拟任务分派完成
+                                // 真正分派任务给各个部门
                                 setTimeout(function() {
+                                    let tasksAssigned = 0;
+                                    let tasksCompleted = 0;
+                                    
+                                    response.tasks.forEach(task => {
+                                        // 更新Agent活动状态
+                                        updateAgentActivity(`${task.agent} (${task.department})`, `处理分派来的任务：${task.task}`);
+                                        
+                                        // 真正调用assign_task接口分派任务
+                                        $.ajax({
+                                            url: '/api/assign_task',
+                                            type: 'POST',
+                                            contentType: 'application/json',
+                                            data: JSON.stringify({
+                                                task: task.task,
+                                                department: task.department,
+                                                agent: task.agent,
+                                                context: { 
+                                                    priority: task.priority, 
+                                                    time_horizon: task.time_horizon,
+                                                    description: task.description
+                                                }
+                                            }),
+                                            success: function(assignResponse) {
+                                                tasksCompleted++;
+                                                updateAgentActivity(`${task.agent} (${task.department})`, `任务完成：${task.task}`);
+                                                
+                                                // 所有任务都完成后显示汇总信息
+                                                if (tasksCompleted === response.tasks.length) {
+                                                    $('#executive-office-chat').append(`
+                                                        <div class="mb-3">
+                                                            <div class="d-flex justify-content-start mb-2">
+                                                                <div class="flex-shrink-0">
+                                                                    <span class="badge bg-primary p-2">总裁办</span>
+                                                                </div>
+                                                                <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
+                                                                    <p class="mb-0">所有任务已分派完成并执行完毕！以下是各部门的执行结果汇总：</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `);
+                                                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                                                }
+                                            },
+                                            error: function(error) {
+                                                tasksCompleted++;
+                                                updateAgentActivity(`${task.agent} (${task.department})`, `任务执行失败：${task.task}`);
+                                                
+                                                $('#executive-office-chat').append(`
+                                                    <div class="mb-3">
+                                                        <div class="d-flex justify-content-start mb-2">
+                                                            <div class="flex-shrink-0">
+                                                                <span class="badge bg-danger p-2">${task.department}部门</span>
+                                                            </div>
+                                                            <div class="ml-2 p-2 bg-danger text-white rounded-lg max-w-75">
+                                                                <p class="mb-0">任务执行失败：${task.task}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                `);
+                                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                                            }
+                                        });
+                                    });
+                                    
                                     $('#executive-office-chat').append(`
                                         <div class="mb-3">
                                             <div class="d-flex justify-content-start mb-2">
@@ -2083,7 +2215,7 @@ if __name__ == '__main__':
                                                     <span class="badge bg-primary p-2">总裁办</span>
                                                 </div>
                                                 <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                    <p class="mb-0">任务已成功分派给各个部门，我会持续跟踪任务进度并及时向您汇报。</p>
+                                                    <p class="mb-0">正在将任务分派给各个部门并执行，请稍候...</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -2093,6 +2225,7 @@ if __name__ == '__main__':
                                 }, 1000);
                             },
                             error: function(error) {
+                                updateAgentActivity('chief_executive_agent', '任务分解失败');
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-start mb-2">
@@ -2115,6 +2248,9 @@ if __name__ == '__main__':
                     clearTimeout(typingId);
                     $('.typing-indicator').remove();
                     
+                    // 更新Agent活动状态
+                    updateAgentActivity('chief_executive_agent', '开始处理决策请求，准备咨询三贤者');
+                    
                     // 显示总裁办理解过程
                     $('#executive-office-chat').append(`
                         <div class="mb-3">
@@ -2135,6 +2271,7 @@ if __name__ == '__main__':
                     
                     // 调用三贤者决策API
                     setTimeout(function() {
+                        updateAgentActivity('chief_executive_agent', '调用三贤者决策API');
                         $.ajax({
                             url: '/api/three_sages_decision',
                             type: 'POST',
@@ -2162,6 +2299,7 @@ if __name__ == '__main__':
                                 setTimeout(function() {
                                     response.sages.forEach(function(sage, index) {
                                         setTimeout(function() {
+                                            updateAgentActivity(sage.name, `思考决策：${response.issue}`);
                                             $('#executive-office-chat').append(`
                                                 <div class="mb-3">
                                                     <div class="d-flex justify-content-start mb-2">
@@ -2188,6 +2326,8 @@ if __name__ == '__main__':
                                         if (response.advice) {
                                             reply += `<strong>决策建议：</strong>${response.advice}`;
                                         }
+                                        
+                                        updateAgentActivity('chief_executive_agent', '三贤者决策完成，开始分派任务');
                                         
                                         $('#executive-office-chat').append(`
                                             <div class="mb-3">
@@ -2219,49 +2359,29 @@ if __name__ == '__main__':
                                         // 滚动到底部
                                         chatWindow.scrollTop = chatWindow.scrollHeight;
                                         
-                                        // 模拟任务分派给调研部门
+                                        // 真正分派任务给调研部门
                                         setTimeout(function() {
-                                            const researchTaskId = 'task_' + Date.now();
-                                            // 触发任务分派事件
-                                            $(document).trigger('taskAssigned', { from: '总裁办', to: '调研部门', taskId: researchTaskId });
+                                            let tasksCompleted = 0;
+                                            const totalTasks = 2;
                                             
-                                            $('#executive-office-chat').append(`
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-start mb-2">
-                                                        <div class="flex-shrink-0">
-                                                            <span class="badge bg-secondary p-2">调研部门</span>
-                                                        </div>
-                                                        <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                                            <p class="mb-0">收到任务 (${researchTaskId})，开始进行市场调研和数据分析...</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            `);
-                                            
-                                            // 模拟任务分派给开发部门
-                                            setTimeout(function() {
-                                                const devTaskId = 'task_' + Date.now();
-                                                // 触发任务分派事件
-                                                $(document).trigger('taskAssigned', { from: '总裁办', to: '开发部门', taskId: devTaskId });
-                                                
-                                                $('#executive-office-chat').append(`
-                                                    <div class="mb-3">
-                                                        <div class="d-flex justify-content-start mb-2">
-                                                            <div class="flex-shrink-0">
-                                                                <span class="badge bg-secondary p-2">开发部门</span>
-                                                            </div>
-                                                            <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                                                <p class="mb-0">收到任务 (${devTaskId})，开始进行技术方案设计和实现...</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                `);
-                                                
-                                                // 滚动到底部
-                                                chatWindow.scrollTop = chatWindow.scrollHeight;
-                                                
-                                                // 模拟部门完成任务
-                                                setTimeout(function() {
+                                            // 分派任务给调研部门
+                                            $.ajax({
+                                                url: '/api/assign_task',
+                                                type: 'POST',
+                                                contentType: 'application/json',
+                                                data: JSON.stringify({
+                                                    task: '基于三贤者决策进行市场调研和数据分析',
+                                                    department: 'research',
+                                                    context: { 
+                                                        issue: response.issue,
+                                                        decision: response.decision,
+                                                        total_score: response.total_score
+                                                    }
+                                                }),
+                                                success: function(researchResponse) {
+                                                    tasksCompleted++;
+                                                    updateAgentActivity('调研部门agent', '完成市场调研，提交调研报告');
+                                                    
                                                     $('#executive-office-chat').append(`
                                                         <div class="mb-3">
                                                             <div class="d-flex justify-content-start mb-2">
@@ -2269,28 +2389,116 @@ if __name__ == '__main__':
                                                                     <span class="badge bg-secondary p-2">调研部门</span>
                                                                 </div>
                                                                 <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                                                    <p class="mb-0">调研完成，已提交调研报告。</p>
+                                                                    <p class="mb-0">调研完成：${researchResponse.result || '已提交调研报告'}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     `);
+                                                    chatWindow.scrollTop = chatWindow.scrollHeight;
                                                     
+                                                    checkAllTasksCompleted();
+                                                },
+                                                error: function(error) {
+                                                    tasksCompleted++;
+                                                    updateAgentActivity('调研部门agent', '市场调研失败');
+                                                    
+                                                    $('#executive-office-chat').append(`
+                                                        <div class="mb-3">
+                                                            <div class="d-flex justify-content-start mb-2">
+                                                                <div class="flex-shrink-0">
+                                                                    <span class="badge bg-danger p-2">调研部门</span>
+                                                                </div>
+                                                                <div class="ml-2 p-2 bg-danger text-white rounded-lg max-w-75">
+                                                                    <p class="mb-0">调研失败：${error.responseJSON?.error || '未知错误'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `);
+                                                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                                                    
+                                                    checkAllTasksCompleted();
+                                                }
+                                            });
+                                            
+                                            // 分派任务给开发部门
+                                            $.ajax({
+                                                url: '/api/assign_task',
+                                                type: 'POST',
+                                                contentType: 'application/json',
+                                                data: JSON.stringify({
+                                                    task: '基于三贤者决策进行技术方案设计和实现',
+                                                    department: 'development',
+                                                    context: { 
+                                                        issue: response.issue,
+                                                        decision: response.decision,
+                                                        total_score: response.total_score
+                                                    }
+                                                }),
+                                                success: function(devResponse) {
+                                                    tasksCompleted++;
+                                                    updateAgentActivity('开发部门agent', '完成技术方案设计和实现');
+                                                    
+                                                    $('#executive-office-chat').append(`
+                                                        <div class="mb-3">
+                                                            <div class="d-flex justify-content-start mb-2">
+                                                                <div class="flex-shrink-0">
+                                                                    <span class="badge bg-secondary p-2">开发部门</span>
+                                                                </div>
+                                                                <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
+                                                                    <p class="mb-0">开发完成：${devResponse.result || '已提交技术方案'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `);
+                                                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                                                    
+                                                    checkAllTasksCompleted();
+                                                },
+                                                error: function(error) {
+                                                    tasksCompleted++;
+                                                    updateAgentActivity('开发部门agent', '技术方案设计失败');
+                                                    
+                                                    $('#executive-office-chat').append(`
+                                                        <div class="mb-3">
+                                                            <div class="d-flex justify-content-start mb-2">
+                                                                <div class="flex-shrink-0">
+                                                                    <span class="badge bg-danger p-2">开发部门</span>
+                                                                </div>
+                                                                <div class="ml-2 p-2 bg-danger text-white rounded-lg max-w-75">
+                                                                    <p class="mb-0">开发失败：${error.responseJSON?.error || '未知错误'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `);
+                                                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                                                    
+                                                    checkAllTasksCompleted();
+                                                }
+                                            });
+                                            
+                                            // 检查所有任务是否完成
+                                            function checkAllTasksCompleted() {
+                                                if (tasksCompleted === totalTasks) {
+                                                    // 显示总裁办汇总报告
                                                     setTimeout(function() {
+                                                        updateAgentActivity('chief_executive_agent', '汇总分析各部门报告');
                                                         $('#executive-office-chat').append(`
                                                             <div class="mb-3">
                                                                 <div class="d-flex justify-content-start mb-2">
                                                                     <div class="flex-shrink-0">
-                                                                        <span class="badge bg-secondary p-2">开发部门</span>
+                                                                        <span class="badge bg-primary p-2">总裁办</span>
                                                                     </div>
-                                                                    <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                                                        <p class="mb-0">开发完成，已提交技术方案。</p>
+                                                                    <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
+                                                                        <p class="mb-0">已收到各部门的报告，正在汇总分析...</p>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         `);
+                                                        chatWindow.scrollTop = chatWindow.scrollHeight;
                                                         
-                                                        // 显示总裁办汇总报告
+                                                        // 显示最终结果
                                                         setTimeout(function() {
+                                                            updateAgentActivity('chief_executive_agent', '完成决策任务，向用户汇报结果');
                                                             $('#executive-office-chat').append(`
                                                                 <div class="mb-3">
                                                                     <div class="d-flex justify-content-start mb-2">
@@ -2298,41 +2506,22 @@ if __name__ == '__main__':
                                                                             <span class="badge bg-primary p-2">总裁办</span>
                                                                         </div>
                                                                         <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                                            <p class="mb-0">已收到各部门的报告，正在汇总分析...</p>
+                                                                            <p class="mb-0">报告已汇总完成，基于三贤者的决策和各部门的执行结果，我们已完成相关任务。</p>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             `);
-                                                            
-                                                            // 显示最终结果
-                                                            setTimeout(function() {
-                                                                $('#executive-office-chat').append(`
-                                                                    <div class="mb-3">
-                                                                        <div class="d-flex justify-content-start mb-2">
-                                                                            <div class="flex-shrink-0">
-                                                                                <span class="badge bg-primary p-2">总裁办</span>
-                                                                            </div>
-                                                                            <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                                                <p class="mb-0">报告已汇总完成，基于三贤者的决策和各部门的执行结果，我们已完成相关任务。以下是关键发现和建议：</p>
-                                                                                <p class="mb-0">1. 市场调研显示该领域有显著增长潜力</p>
-                                                                                <p class="mb-0">2. 技术方案已设计完成，可在3个月内实现</p>
-                                                                                <p class="mb-0">3. 建议按计划推进项目实施，预计投资回报率为15%</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                `);
-                                                                // 滚动到底部
-                                                                chatWindow.scrollTop = chatWindow.scrollHeight;
-                                                            }, 1000);
+                                                            chatWindow.scrollTop = chatWindow.scrollHeight;
                                                         }, 1000);
                                                     }, 1000);
-                                                }, 1000);
-                                            }, 1000);
+                                                }
+                                            }
                                         }, 1000);
                                     }, response.sages.length * 1000);
                                 }, 1000);
                             },
                             error: function(error) {
+                                updateAgentActivity('chief_executive_agent', '决策分析失败');
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-start mb-2">
@@ -2355,6 +2544,9 @@ if __name__ == '__main__':
                     clearTimeout(typingId);
                     $('.typing-indicator').remove();
                     
+                    // 更新Agent活动状态
+                    updateAgentActivity('chief_executive_agent', '开始收集各部门的任务进度信息');
+                    
                     // 显示总裁办理解过程
                     $('#executive-office-chat').append(`
                         <div class="mb-3">
@@ -2375,6 +2567,7 @@ if __name__ == '__main__':
                     
                     // 调用进度跟踪API
                     setTimeout(function() {
+                        updateAgentActivity('chief_executive_agent', '调用进度跟踪API');
                         $.ajax({
                             url: '/api/track_progress',
                             type: 'POST',
@@ -2390,6 +2583,8 @@ if __name__ == '__main__':
                                 if (response.insights && response.insights.length > 0) {
                                     reply += `<strong>智能洞察：</strong>${response.insights.join('; ')}`;
                                 }
+                                
+                                updateAgentActivity('chief_executive_agent', '完成进度跟踪，分析各部门进度');
                                 
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
@@ -2424,6 +2619,8 @@ if __name__ == '__main__':
                                         const deptData = response.by_department[department];
                                         const avgProgress = (deptData.average_progress * 100).toFixed(1);
                                         
+                                        updateAgentActivity(`${department}部门agent`, `当前进度：${avgProgress}%`);
+                                        
                                         $('#executive-office-chat').append(`
                                             <div class="mb-3">
                                                 <div class="d-flex justify-content-start mb-2">
@@ -2443,6 +2640,7 @@ if __name__ == '__main__':
                                 chatWindow.scrollTop = chatWindow.scrollHeight;
                             },
                             error: function(error) {
+                                updateAgentActivity('chief_executive_agent', '进度跟踪失败');
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-start mb-2">
@@ -2465,6 +2663,9 @@ if __name__ == '__main__':
                     clearTimeout(typingId);
                     $('.typing-indicator').remove();
                     
+                    // 更新Agent活动状态
+                    updateAgentActivity('chief_executive_agent', '分析天气/机票请求，准备创建优化任务');
+                    
                     // 显示总裁办理解过程
                     $('#executive-office-chat').append(`
                         <div class="mb-3">
@@ -2483,52 +2684,29 @@ if __name__ == '__main__':
                     const chatWindow = document.getElementById('executive-office-chat');
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                     
-                    // 模拟任务分派给技术部门和市场部门
+                    // 真正分派任务给技术部门和市场部门
                     setTimeout(function() {
-                        const techTaskId = 'task_' + Date.now();
-                        // 触发任务分派事件
-                        $(document).trigger('taskAssigned', { from: '总裁办', to: '技术部门', taskId: techTaskId });
+                        let tasksCompleted = 0;
+                        const totalTasks = 2;
+                        const requestType = message.includes('天气') ? '天气' : '机票';
                         
-                        $('#executive-office-chat').append(`
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-start mb-2">
-                                    <div class="flex-shrink-0">
-                                        <span class="badge bg-secondary p-2">技术部门</span>
-                                    </div>
-                                    <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                        <p class="mb-0">收到任务 (${techTaskId})，开始集成实时天气/机票API...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `);
-                        
-                        // 滚动到底部
-                        chatWindow.scrollTop = chatWindow.scrollHeight;
-                        
-                        // 模拟任务分派给市场部门
-                        setTimeout(function() {
-                            const marketTaskId = 'task_' + Date.now();
-                            // 触发任务分派事件
-                            $(document).trigger('taskAssigned', { from: '总裁办', to: '市场部门', taskId: marketTaskId });
-                            
-                            $('#executive-office-chat').append(`
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-start mb-2">
-                                        <div class="flex-shrink-0">
-                                            <span class="badge bg-secondary p-2">市场部门</span>
-                                        </div>
-                                        <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                            <p class="mb-0">收到任务 (${marketTaskId})，开始调研最佳天气/机票服务提供商...</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `);
-                            
-                            // 滚动到底部
-                            chatWindow.scrollTop = chatWindow.scrollHeight;
-                            
-                            // 模拟部门完成任务
-                            setTimeout(function() {
+                        // 分派任务给技术部门
+                        $.ajax({
+                            url: '/api/assign_task',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                task: `集成实时${requestType}API`,
+                                department: 'engineering',
+                                context: { 
+                                    request_type: requestType,
+                                    user_message: message
+                                }
+                            }),
+                            success: function(techResponse) {
+                                tasksCompleted++;
+                                updateAgentActivity('技术部门agent', `完成${requestType}API集成方案设计`);
+                                
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-start mb-2">
@@ -2536,28 +2714,122 @@ if __name__ == '__main__':
                                                 <span class="badge bg-secondary p-2">技术部门</span>
                                             </div>
                                             <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                                <p class="mb-0">已完成API集成方案设计，准备实施...</p>
+                                                <p class="mb-0">API集成完成：${techResponse.result || '已完成方案设计'}</p>
                                             </div>
                                         </div>
                                     </div>
                                 `);
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
                                 
+                                checkAllTasksCompleted();
+                            },
+                            error: function(error) {
+                                tasksCompleted++;
+                                updateAgentActivity('技术部门agent', `${requestType}API集成失败`);
+                                
+                                $('#executive-office-chat').append(`
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-start mb-2">
+                                            <div class="flex-shrink-0">
+                                                <span class="badge bg-danger p-2">技术部门</span>
+                                            </div>
+                                            <div class="ml-2 p-2 bg-danger text-white rounded-lg max-w-75">
+                                                <p class="mb-0">API集成失败：${error.responseJSON?.error || '未知错误'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `);
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                                
+                                checkAllTasksCompleted();
+                            }
+                        });
+                        
+                        // 分派任务给市场部门
+                        $.ajax({
+                            url: '/api/assign_task',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                task: `调研最佳${requestType}服务提供商`,
+                                department: 'marketing',
+                                context: { 
+                                    request_type: requestType,
+                                    user_message: message
+                                }
+                            }),
+                            success: function(marketResponse) {
+                                tasksCompleted++;
+                                updateAgentActivity('市场部门agent', `完成${requestType}服务提供商调研`);
+                                
+                                $('#executive-office-chat').append(`
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-start mb-2">
+                                            <div class="flex-shrink-0">
+                                                <span class="badge bg-secondary p-2">市场部门</span>
+                                            </div>
+                                            <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
+                                                <p class="mb-0">调研完成：${marketResponse.result || '已提交调研报告'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `);
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                                
+                                checkAllTasksCompleted();
+                            },
+                            error: function(error) {
+                                tasksCompleted++;
+                                updateAgentActivity('市场部门agent', `${requestType}服务提供商调研失败`);
+                                
+                                $('#executive-office-chat').append(`
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-start mb-2">
+                                            <div class="flex-shrink-0">
+                                                <span class="badge bg-danger p-2">市场部门</span>
+                                            </div>
+                                            <div class="ml-2 p-2 bg-danger text-white rounded-lg max-w-75">
+                                                <p class="mb-0">调研失败：${error.responseJSON?.error || '未知错误'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `);
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                                
+                                checkAllTasksCompleted();
+                            }
+                        });
+                        
+                        // 检查所有任务是否完成
+                        function checkAllTasksCompleted() {
+                            if (tasksCompleted === totalTasks) {
+                                // 显示总裁办汇总报告
                                 setTimeout(function() {
+                                    updateAgentActivity('chief_executive_agent', '制定系统优化计划');
                                     $('#executive-office-chat').append(`
                                         <div class="mb-3">
                                             <div class="d-flex justify-content-start mb-2">
                                                 <div class="flex-shrink-0">
-                                                    <span class="badge bg-secondary p-2">市场部门</span>
+                                                    <span class="badge bg-primary p-2">总裁办</span>
                                                 </div>
-                                                <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                                    <p class="mb-0">已完成服务提供商调研，推荐使用OpenWeather API和Amadeus API...</p>
+                                                <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
+                                                    <p class="mb-0">已收到各部门的报告，正在汇总分析...</p>
                                                 </div>
                                             </div>
                                         </div>
                                     `);
+                                    chatWindow.scrollTop = chatWindow.scrollHeight;
                                     
-                                    // 显示总裁办汇总报告
+                                    // 显示最终结果
                                     setTimeout(function() {
+                                        updateAgentActivity('chief_executive_agent', '完成系统优化计划制定');
+                                        
+                                        let optimizationPlan = '根据各部门的调研和开发结果，我们已制定了系统优化计划：<br>';
+                                        optimizationPlan += '1. 技术部门已完成API集成方案设计<br>';
+                                        optimizationPlan += '2. 市场部门已完成服务提供商调研<br>';
+                                        optimizationPlan += '3. 我们将尽快推进系统优化，以满足您的需求<br>';
+                                        optimizationPlan += '<br>感谢您的理解和支持，我们正在不断优化系统！';
+                                        
                                         $('#executive-office-chat').append(`
                                             <div class="mb-3">
                                                 <div class="d-flex justify-content-start mb-2">
@@ -2565,44 +2837,25 @@ if __name__ == '__main__':
                                                         <span class="badge bg-primary p-2">总裁办</span>
                                                     </div>
                                                     <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                        <p class="mb-0">已收到各部门的报告，正在制定系统优化计划...</p>
+                                                        <p class="mb-0">${optimizationPlan}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                         `);
-                                        
-                                        // 显示最终决策
-                                        setTimeout(function() {
-                                            let optimizationPlan = '根据各部门的调研结果，我们已制定了系统优化计划：<br>';
-                                            optimizationPlan += '1. 技术部门将集成OpenWeather API和Amadeus API<br>';
-                                            optimizationPlan += '2. 市场部门将负责服务提供商的对接和认证<br>';
-                                            optimizationPlan += '3. 预计在2周内完成集成，届时系统将能够提供实时天气和机票信息<br>';
-                                            optimizationPlan += '<br>感谢您的理解和支持，我们正在不断优化系统以更好地满足您的需求。';
-                                            
-                                            $('#executive-office-chat').append(`
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-start mb-2">
-                                                        <div class="flex-shrink-0">
-                                                            <span class="badge bg-primary p-2">总裁办</span>
-                                                        </div>
-                                                        <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                            <p class="mb-0">${optimizationPlan}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            `);
-                                            // 滚动到底部
-                                            chatWindow.scrollTop = chatWindow.scrollHeight;
-                                        }, 1000);
+                                        // 滚动到底部
+                                        chatWindow.scrollTop = chatWindow.scrollHeight;
                                     }, 1000);
                                 }, 1000);
-                            }, 2000);
-                        }, 1000);
+                            }
+                        }
                     }, 1000);
                 } else if (message.includes('报告') || message.includes('生成报告')) {
                     // 显示总裁办处理过程
                     clearTimeout(typingId);
                     $('.typing-indicator').remove();
+                    
+                    // 更新Agent活动状态
+                    updateAgentActivity('chief_executive_agent', '开始收集数据并生成报告');
                     
                     // 显示总裁办理解过程
                     $('#executive-office-chat').append(`
@@ -2624,6 +2877,7 @@ if __name__ == '__main__':
                     
                     // 调用生成报告API
                     setTimeout(function() {
+                        updateAgentActivity('chief_executive_agent', '调用生成报告API');
                         $.ajax({
                             url: '/api/generate_report',
                             type: 'POST',
@@ -2638,6 +2892,8 @@ if __name__ == '__main__':
                                 if (response.recommendations && response.recommendations.length > 0) {
                                     reply += `<strong>建议：</strong>${response.recommendations[0]}`;
                                 }
+                                
+                                updateAgentActivity('chief_executive_agent', '报告生成完成，分析报告内容');
                                 
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
@@ -2701,6 +2957,7 @@ if __name__ == '__main__':
                                 chatWindow.scrollTop = chatWindow.scrollHeight;
                             },
                             error: function(error) {
+                                updateAgentActivity('chief_executive_agent', '报告生成失败');
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-start mb-2">
@@ -2720,10 +2977,13 @@ if __name__ == '__main__':
                     }, 1000);
                 } else {
                     // 调用大模型API获取回复
+                    updateAgentActivity('chief_executive_agent', '调用大模型API获取回复');
                     callLLM(message, function(response) {
                         // 清除正在输入状态
                         clearTimeout(typingId);
                         $('.typing-indicator').remove();
+                        
+                        updateAgentActivity('chief_executive_agent', '收到大模型回复，向用户展示');
                         
                         $('#executive-office-chat').append(`
                             <div class="mb-3">
@@ -2971,11 +3231,66 @@ if __name__ == '__main__':
             });
         });
         
+        // 加载部门列表
+        function loadDepartmentList() {
+            $.ajax({
+                url: '/api/departments',
+                type: 'GET',
+                success: function(departments) {
+                    let departmentHtml = '<ul class="list-group">';
+                    departments.forEach(department => {
+                        departmentHtml += `<li class="list-group-item department-item" data-department="${department}">
+                            ${department}
+                        </li>`;
+                    });
+                    departmentHtml += '</ul>';
+                    $('#department-list').html(departmentHtml);
+                    
+                    // 绑定部门点击事件
+                    $('.department-item').click(function() {
+                        const department = $(this).data('department');
+                        loadAgentList(department);
+                    });
+                },
+                error: function() {
+                    $('#department-list').html('<p class="text-danger">加载部门失败</p>');
+                }
+            });
+        }
+        
+        // 加载部门Agent列表
+        function loadAgentList(department) {
+            $.ajax({
+                url: `/api/department/${department}`,
+                type: 'GET',
+                success: function(agents) {
+                    let agentHtml = '<ul class="list-group">';
+                    if (agents.length === 0) {
+                        agentHtml += '<li class="list-group-item">该部门暂无Agent</li>';
+                    } else {
+                        agents.forEach(agent => {
+                            agentHtml += `<li class="list-group-item">
+                                <strong>${agent.name}</strong>
+                                ${agent.description ? `<p class="text-sm text-muted">${agent.description}</p>` : ''}
+                            </li>`;
+                        });
+                    }
+                    agentHtml += '</ul>';
+                    $('#agent-list').html(agentHtml);
+                },
+                error: function() {
+                    $('#agent-list').html('<p class="text-danger">加载Agent失败</p>');
+                }
+            });
+        }
+        
         // 页面加载时加载个人助理功能列表
         $(document).ready(function() {
             loadTodoList();
             loadHobbyList();
             loadTripList();
+            // 加载部门列表
+            loadDepartmentList();
         });
     </script>
 </body>
