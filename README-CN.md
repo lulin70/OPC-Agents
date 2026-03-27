@@ -52,11 +52,7 @@ OPC-Agents/
 ├── official_agents/           # 来自 Agency-Agents 项目的官方代理
 ├── optimization_records/      # 优化迭代记录
 ├── optimization_notifications/ # 优化通知文件
-├── project_management/        # 项目管理文档
-│   ├── 需求范围承诺书模板.md   # 需求范围承诺书模板
-│   ├── 项目管理规范.md         # 项目管理规范
-│   ├── 迭代计划/             # 迭代计划和回顾
-│   └── 需求文档/             # 已批准的需求文档
+
 ├── templates/                 # Web 界面模板
 ├── SKILL.md                   # TRAE 技能定义
 ├── TRAE_SKILL_UPDATE.md       # TRAE 技能更新指南
