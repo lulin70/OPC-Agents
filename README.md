@@ -616,4 +616,6 @@ Each agent is defined with a specific role and expertise, and tasks are sent to 
 
 ## License
 
-MIT License - feel free to use and modify this project as needed.
+Apache License 2.0 - See [LICENSE](./LICENSE) file for details.
+
+By using this project, you agree to comply with the terms of the Apache 2.0 License. This license allows you to freely use, modify, and distribute this project while providing patent protection.
