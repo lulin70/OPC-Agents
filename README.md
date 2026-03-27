@@ -12,7 +12,7 @@ This project implements a virtual agency with multiple specialized AI agents tha
 - **157+ specialized agents** across different domains (from official Agency-Agents project)
 - **TRAE integration** for powerful AI capabilities
 - **Multi-model support** including TRAE, OpenAI, Anthropic, Google, Azure, GLM, and local models
-- **Task assignment** system for delegating work to specific agents
+- **Task assignment** system for delegating work to specific agents (now with actual task dispatching, not just simulation)
 - **Project management** for coordinating multiple tasks
 - **Internal communication** system for agent-to-agent messaging
 - **Consensus mechanism** for multi-agent decision making
@@ -21,22 +21,34 @@ This project implements a virtual agency with multiple specialized AI agents tha
 - **Three Sages Decision System** (三贤者决策系统) for high-dimensional strategic decision making
 - **Agent Self-Optimization** for automatic performance improvement
 - **Auto-Optimization Scheduler** for regular automated optimization
-- **Web Interface** for easy management and monitoring
+- **Web Interface** for easy management and monitoring (with Agent activity status area)
 - **Comprehensive reporting** with intelligent insights
 - **Task decomposition** into short, medium, and long-term goals
 - **Progress tracking** across departments and priorities
 - **Resource optimization** for efficient agent utilization
+- **A2A (Agent-to-Agent Protocol)** integration for standardized agent communication
+- **HR Lifecycle Management** including recruitment, training, and performance evaluation
+- **ZeroClaw integration** for enhanced LLM connectivity
+- **HR Department Page** showing department and agent lists
+- **Actual task dispatching** to department agents with real-time status updates
 
 ## Directory Structure
 
 ```
 OPC-Agents/
 ├── config.toml               # Main configuration file
+├── config.toml.sample        # Configuration file template
 ├── opc_manager.py             # Core management script
 ├── communication_manager.py    # Communication management script
 ├── web_interface.py           # Web interface implementation
 ├── auto_optimizer.py          # Auto-optimization scheduler
 ├── opc_skill.py               # TRAE skill implementation
+├── a2a_protocol.py            # A2A (Agent-to-Agent) Protocol implementation
+├── a2a_integration.py         # A2A protocol integration with OPC-Agents
+├── a2a_api.py                 # REST API endpoints for A2A protocol
+├── hr_enhancement.py          # HR lifecycle management implementation
+├── hr_api.py                  # REST API endpoints for HR functionality
+├── OPCstart.sh                # Startup script for OPC-Agents
 ├── official_agents/           # Official agents from Agency-Agents project
 ├── optimization_records/      # Optimization iteration records
 ├── optimization_notifications/ # Optimization notification files
@@ -60,9 +72,12 @@ OPC-Agents/
    ```bash
    pip install requests toml flask
    ```
-3. **Configure API keys** in `config.toml`:
-   - TRAE API key
-   - Other model API keys (OpenAI, Anthropic, Google, Azure, GLM) if needed
+3. **Configure API keys**:
+   - Copy `config.toml.sample` to `config.toml`
+   - Update API keys in `config.toml`:
+     - TRAE API key
+     - Other model API keys (OpenAI, Anthropic, Google, Azure, GLM) if needed
+     - ZeroClaw configuration if using ZeroClaw integration
 
 ## Usage
 
@@ -234,6 +249,76 @@ auto_optimizer.run_optimization()
 print("手动优化执行完成")
 ```
 
+### A2A (Agent-to-Agent) Protocol Usage
+
+```python
+from a2a_integration import A2AIntegration
+
+# Initialize A2A integration
+a2a_integration = A2AIntegration()
+
+# Register agents with A2A
+a2a_integration.register_agents()
+print("Agents registered with A2A protocol")
+
+# Create a workflow
+workflow = a2a_integration.create_workflow(
+    "Website Development Project",
+    [
+        {"agent": "ui_designer", "task": "Design website UI"},
+        {"agent": "frontend_developer", "task": "Implement frontend"},
+        {"agent": "backend_developer", "task": "Implement backend"}
+    ]
+)
+print(f"Workflow created: {workflow['id']}")
+
+# Send message between agents using A2A
+message_result = a2a_integration.send_message(
+    "ui_designer",
+    "frontend_developer",
+    "design_specs",
+    "Please implement the UI according to these specifications"
+)
+print(f"Message sent: {message_result['id']}")
+```
+
+### HR Lifecycle Management Usage
+
+```python
+from hr_enhancement import HRLifecycleManager
+
+# Initialize HR manager
+hr_manager = HRLifecycleManager()
+
+# Recruit new agents
+recruitment_result = hr_manager.recruit_agents(
+    department="marketing",
+    skills=["digital_marketing", "social_media"],
+    count=2
+)
+print(f"Recruited {len(recruitment_result['agents'])} new agents")
+
+# Train agents
+training_result = hr_manager.train_agents(
+    agent_ids=["digital_marketer", "social_media_specialist"],
+    skills=["content_creation", "analytics"]
+)
+print(f"Training completed for {len(training_result['trained_agents'])} agents")
+
+# Evaluate agent performance
+evaluation_result = hr_manager.evaluate_performance(
+    agent_id="digital_marketer",
+    period="monthly"
+)
+print(f"Agent performance score: {evaluation_result['score']}")
+
+# Optimize agent performance
+optimization_result = hr_manager.optimize_agent(
+    agent_id="digital_marketer"
+)
+print(f"Agent optimization completed: {optimization_result['status']}")
+```
+
 ### Web Interface Usage
 
 #### Using OPCstart.sh (Recommended)
@@ -275,6 +360,10 @@ print("手动优化执行完成")
    - Auto-optimization scheduler configuration
    - Token usage monitoring
    - Optimization statistics and history
+   - Agent activity status area (showing which agent is doing what)
+   - HR Department page with department and agent lists
+   - A2A protocol integration status
+   - ZeroClaw integration status
 
 ### Command Line Usage
 

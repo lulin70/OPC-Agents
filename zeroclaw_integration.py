@@ -62,7 +62,11 @@ class ZeroClawIntegration:
                 "Content-Type": "application/json"
             }
             
-            # 尝试调用API，不依赖配对状态
+            # 如果已经配对，添加认证令牌
+            if self.auth_token:
+                headers["Authorization"] = f"Bearer {self.auth_token}"
+            
+            # 尝试调用API
             data = {
                 "message": prompt
             }
@@ -72,9 +76,18 @@ class ZeroClawIntegration:
             if response.status_code == 200:
                 # 直接返回响应内容，因为 ZeroClaw Gateway 返回的是纯文本
                 return response.text
-            else:
-                print(f"[ZeroClaw] API returned error: {response.text}")
-                return None
+            elif response.status_code == 401 and self.pairing_code:
+                # 如果未认证且有配对代码，尝试重新配对
+                print("[ZeroClaw] 认证失败，尝试重新配对...")
+                if self.pair(self.pairing_code):
+                    # 重新配对成功后，再次尝试调用
+                    headers["Authorization"] = f"Bearer {self.auth_token}"
+                    response = requests.post(self.api_endpoints["chat_completions"], headers=headers, json=data, timeout=30)
+                    if response.status_code == 200:
+                        return response.text
+            
+            print(f"[ZeroClaw] API returned error: {response.text}")
+            return None
         except Exception as e:
             print(f"[ZeroClaw] Error calling chat completion API: {e}")
             return None

@@ -507,26 +507,48 @@ class OPCManager:
         Returns:
             评分 (0-1)
         """
-        # 基于意见的质量和相关性进行评分
-        # 实际应用中可以使用更复杂的NLP分析
-        import random
-        
-        # 简单的评分逻辑
-        if factor == "战略价值":
-            # 检查是否包含战略相关关键词
-            strategic_keywords = ["战略", "趋势", "长期", "竞争", "定位", "规划"]
-            score = 0.7 + 0.3 * sum(1 for keyword in strategic_keywords if keyword in opinion)
-        elif factor == "执行可行性":
-            # 检查是否包含执行相关关键词
-            execution_keywords = ["执行", "资源", "时间", "风险", "指标", "计划"]
-            score = 0.6 + 0.4 * sum(1 for keyword in execution_keywords if keyword in opinion)
-        else:  # 创新潜力
-            # 检查是否包含创新相关关键词
-            innovation_keywords = ["创新", "技术", "模式", "机会", "突破", "差异化"]
-            score = 0.65 + 0.35 * sum(1 for keyword in innovation_keywords if keyword in opinion)
-        
-        # 确保评分在0-1之间
-        return min(1.0, max(0.5, score))
+        try:
+            from zeroclaw_integration import ZeroClawIntegration
+            zero_claw = ZeroClawIntegration()
+            
+            # 构建评分请求
+            prompt = f"请对以下贤者意见在'{factor}'方面进行评分（0-1之间的小数），并简要说明理由：\n意见：{opinion}\n\n评分："
+            
+            # 调用大模型获取评分
+            response = zero_claw.call_llm(prompt, model="glm")
+            
+            # 解析评分
+            import re
+            score_match = re.search(r'\d+\.\d+', response)
+            if score_match:
+                score = float(score_match.group())
+                # 确保评分在0-1之间
+                return min(1.0, max(0.0, score))
+            else:
+                # 如果解析失败，使用基于关键词的评分
+                if factor == "战略价值":
+                    strategic_keywords = ["战略", "趋势", "长期", "竞争", "定位", "规划"]
+                    score = 0.7 + 0.3 * sum(1 for keyword in strategic_keywords if keyword in opinion)
+                elif factor == "执行可行性":
+                    execution_keywords = ["执行", "资源", "时间", "风险", "指标", "计划"]
+                    score = 0.6 + 0.4 * sum(1 for keyword in execution_keywords if keyword in opinion)
+                else:  # 创新潜力
+                    innovation_keywords = ["创新", "技术", "模式", "机会", "突破", "差异化"]
+                    score = 0.65 + 0.35 * sum(1 for keyword in innovation_keywords if keyword in opinion)
+                return min(1.0, max(0.5, score))
+        except Exception as e:
+            print(f"[三贤者] 分析贤者意见失败: {e}")
+            # 失败时使用基于关键词的评分
+            if factor == "战略价值":
+                strategic_keywords = ["战略", "趋势", "长期", "竞争", "定位", "规划"]
+                score = 0.7 + 0.3 * sum(1 for keyword in strategic_keywords if keyword in opinion)
+            elif factor == "执行可行性":
+                execution_keywords = ["执行", "资源", "时间", "风险", "指标", "计划"]
+                score = 0.6 + 0.4 * sum(1 for keyword in execution_keywords if keyword in opinion)
+            else:  # 创新潜力
+                innovation_keywords = ["创新", "技术", "模式", "机会", "突破", "差异化"]
+                score = 0.65 + 0.35 * sum(1 for keyword in innovation_keywords if keyword in opinion)
+            return min(1.0, max(0.5, score))
     
     def _generate_decision_advice(self, issue: str, decision: bool, scores: Dict[str, float], sage_opinions: Dict[str, str]) -> str:
         """生成决策建议
@@ -540,32 +562,47 @@ class OPCManager:
         Returns:
             决策建议
         """
-        if decision:
-            advice = f"基于三贤者的共识分析，建议批准 '{issue}'。"
+        try:
+            from zeroclaw_integration import ZeroClawIntegration
+            zero_claw = ZeroClawIntegration()
             
-            # 根据评分提供具体建议
-            if scores["战略价值"] > 0.8:
-                advice += " 战略层面分析充分，具有长期发展潜力。"
-            if scores["执行可行性"] > 0.8:
-                advice += " 执行计划可行，资源配置合理。"
-            if scores["创新潜力"] > 0.8:
-                advice += " 创新思路突出，有望形成竞争优势。"
+            # 构建建议生成请求
+            opinions_text = "\n".join([f"{sage}: {opinion}" for sage, opinion in sage_opinions.items()])
+            scores_text = "\n".join([f"{factor}: {score:.2f}" for factor, score in scores.items()])
             
-            advice += " 建议按照三贤者的具体建议制定详细实施计划，定期评估进展。"
-        else:
-            advice = f"基于三贤者的共识分析，建议暂缓 '{issue}'。"
+            prompt = f"基于以下信息，为议题'{issue}'生成详细的决策建议：\n\n决策结果：{'通过' if decision else '否决'}\n\n各因素评分：\n{scores_text}\n\n三贤者意见：\n{opinions_text}\n\n请提供详细的决策建议，包括具体的行动方案和注意事项。"
             
-            # 分析不足
-            if scores["战略价值"] < 0.7:
-                advice += " 战略层面需要进一步完善，建议重新评估市场定位。"
-            if scores["执行可行性"] < 0.7:
-                advice += " 执行计划存在风险，建议优化资源配置和时间表。"
-            if scores["创新潜力"] < 0.7:
-                advice += " 创新思路不够突出，建议探索更多可能性。"
-            
-            advice += " 建议根据三贤者的意见进行修改后重新提交决策。"
-        
-        return advice
+            # 调用大模型生成建议
+            advice = zero_claw.call_llm(prompt, model="glm")
+            return advice
+        except Exception as e:
+            print(f"[三贤者] 生成决策建议失败: {e}")
+            # 失败时使用默认建议
+            if decision:
+                advice = f"基于三贤者的共识分析，建议批准 '{issue}'。"
+                
+                # 根据评分提供具体建议
+                if scores["战略价值"] > 0.8:
+                    advice += " 战略层面分析充分，具有长期发展潜力。"
+                if scores["执行可行性"] > 0.8:
+                    advice += " 执行计划可行，资源配置合理。"
+                if scores["创新潜力"] > 0.8:
+                    advice += " 创新思路突出，有望形成竞争优势。"
+                
+                advice += " 建议按照三贤者的具体建议制定详细实施计划，定期评估进展。"
+            else:
+                advice = f"基于三贤者的共识分析，建议暂缓 '{issue}'。"
+                
+                # 分析不足
+                if scores["战略价值"] < 0.7:
+                    advice += " 战略层面需要进一步完善，建议重新评估市场定位。"
+                if scores["执行可行性"] < 0.7:
+                    advice += " 执行计划存在风险，建议优化资源配置和时间表。"
+                if scores["创新潜力"] < 0.7:
+                    advice += " 创新思路不够突出，建议探索更多可能性。"
+                
+                advice += " 建议根据三贤者的意见进行修改后重新提交决策。"
+            return advice
     
     def track_progress(self, tasks: List[str] = None) -> Dict[str, Any]:
         """Track progress of tasks
@@ -1210,18 +1247,63 @@ class OPCManager:
         Returns:
             天气信息
         """
-        # 模拟天气数据
-        weather_data = {
-            "location": location,
-            "temperature": 22,
-            "humidity": 65,
-            "condition": "晴",
-            "wind_speed": 10,
-            "timestamp": time.time()
-        }
-        
-        print(f"[个人助理] 获取天气信息: {location} - {weather_data['condition']}, {weather_data['temperature']}°C")
-        return weather_data
+        # 尝试使用OpenWeatherMap API获取真实天气数据
+        try:
+            # 从配置中获取API密钥
+            weather_api_key = self.config.get('services', {}).get('weather_api_key', '')
+            
+            if weather_api_key:
+                import requests
+                # 构建API请求
+                url = f"http://api.openweathermap.org/data/2.5/weather"
+                params = {
+                    "q": location,
+                    "appid": weather_api_key,
+                    "units": "metric",  # 使用摄氏度
+                    "lang": "zh_cn"  # 使用中文
+                }
+                
+                # 发送请求
+                response = requests.get(url, params=params, timeout=5)
+                response.raise_for_status()
+                data = response.json()
+                
+                # 解析天气数据
+                weather_data = {
+                    "location": location,
+                    "temperature": data.get("main", {}).get("temp", 0),
+                    "humidity": data.get("main", {}).get("humidity", 0),
+                    "condition": data.get("weather", [{}])[0].get("description", "未知"),
+                    "wind_speed": data.get("wind", {}).get("speed", 0),
+                    "timestamp": time.time()
+                }
+                
+                print(f"[个人助理] 获取天气信息: {location} - {weather_data['condition']}, {weather_data['temperature']}°C")
+                return weather_data
+            else:
+                # 如果没有API密钥，使用模拟数据
+                print("[个人助理] 未配置天气API密钥，使用模拟数据")
+                weather_data = {
+                    "location": location,
+                    "temperature": 22,
+                    "humidity": 65,
+                    "condition": "晴",
+                    "wind_speed": 10,
+                    "timestamp": time.time()
+                }
+                return weather_data
+        except Exception as e:
+            print(f"[个人助理] 获取天气信息失败: {e}")
+            # 失败时使用模拟数据
+            weather_data = {
+                "location": location,
+                "temperature": 22,
+                "humidity": 65,
+                "condition": "晴",
+                "wind_speed": 10,
+                "timestamp": time.time()
+            }
+            return weather_data
     
     def update_task_with_history(self, task_id: str, status: str, progress: int = None, description: str = ""):
         """更新任务状态并添加历史记录

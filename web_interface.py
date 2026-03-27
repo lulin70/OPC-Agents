@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 OPC-Agents Web界面
+支持A2A (Agent-to-Agent) Protocol
 """
 
 from flask import Flask, render_template, request, jsonify
@@ -12,6 +13,24 @@ app = Flask(__name__)
 
 # 初始化OPC Manager
 manager = OPCManager()
+
+# 初始化A2A API
+try:
+    from a2a_api import a2a_bp, init_a2a_api
+    init_a2a_api(manager)
+    app.register_blueprint(a2a_bp)
+    print("[Web界面] A2A API已加载")
+except Exception as e:
+    print(f"[Web界面] A2A API加载失败: {e}")
+
+# 初始化HR增强API
+try:
+    from hr_api import hr_bp, init_hr_api
+    init_hr_api(manager)
+    app.register_blueprint(hr_bp)
+    print("[Web界面] HR API已加载")
+except Exception as e:
+    print(f"[Web界面] HR API加载失败: {e}")
 
 # 首页
 @app.route('/')
@@ -1717,127 +1736,11 @@ if __name__ == '__main__':
             $('#' + sectionId).addClass('active');
         });
         
-        // 部门互动可视化功能
-        const departments = ['总裁办', '市场部门', '技术部门', '调研部门', '开发部门'];
-        let currentTask = null;
-        
-        // 初始化部门列表
-        function initDepartments() {
-            const container = $('#departments-container');
-            container.empty();
-            
-            departments.forEach((dept, index) => {
-                const deptElement = $('<div>', {
-                    class: 'department',
-                    id: `dept-${dept}`,
-                    style: 'text-align: center; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px; background-color: #f8f9fa;'
-                });
-                deptElement.html(`<h5>${dept}</h5><p class="text-muted">就绪</p>`);
-                container.append(deptElement);
-            });
-        }
-        
-        // 绘制箭头
-        function drawArrow(fromDept, toDept, taskId) {
-            const arrowsContainer = $('#arrows-container');
-            const fromElement = $(`#dept-${fromDept}`);
-            const toElement = $(`#dept-${toDept}`);
-            
-            if (fromElement.length > 0 && toElement.length > 0) {
-                const fromPos = fromElement.position();
-                const toPos = toElement.position();
-                const containerPos = $('#interaction-visualization').position();
-                
-                const startX = fromPos.left + fromElement.width() / 2;
-                const startY = fromPos.top + fromElement.height() / 2;
-                const endX = toPos.left + toElement.width() / 2;
-                const endY = toPos.top + toElement.height() / 2;
-                
-                const arrowId = `arrow-${taskId}`;
-                const arrow = $('<div>', {
-                    id: arrowId,
-                    class: 'arrow',
-                    style: `position: absolute; left: ${startX}px; top: ${startY}px; width: ${Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2))}px; height: 2px; background-color: #007bff; transform-origin: 0 50%; transform: rotate(${Math.atan2(endY - startY, endX - startX)}rad); cursor: pointer;`,
-                    'data-task-id': taskId
-                });
-                
-                // 添加箭头头部
-                const arrowHead = $('<div>', {
-                    style: `position: absolute; right: -8px; top: -4px; width: 0; height: 0; border-left: 10px solid #007bff; border-top: 5px solid transparent; border-bottom: 5px solid transparent;`
-                });
-                arrow.append(arrowHead);
-                
-                // 添加点击事件
-                arrow.on('click', function() {
-                    const taskId = $(this).data('task-id');
-                    showTaskDetails(taskId);
-                });
-                
-                arrowsContainer.append(arrow);
-            }
-        }
-        
-        // 高亮部门
-        function highlightDepartment(dept, isActive) {
-            const deptElement = $(`#dept-${dept}`);
-            if (deptElement.length > 0) {
-                if (isActive) {
-                    deptElement.css({'background-color': '#d1ecf1', 'border-color': '#bee5eb'});
-                    deptElement.find('p').text('处理中');
-                } else {
-                    deptElement.css({'background-color': '#f8f9fa', 'border-color': '#dee2e6'});
-                    deptElement.find('p').text('就绪');
-                }
-            }
-        }
-        
-        // 显示任务详情
-        function showTaskDetails(taskId) {
-            const modal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
-            const content = $('#task-details-content');
-            
-            content.html(`
-                <div class="mb-3">
-                    <h5>任务ID: ${taskId}</h5>
-                </div>
-                <div class="mb-3">
-                    <p><strong>任务状态:</strong> 进行中</p>
-                </div>
-                <div class="mb-3">
-                    <p><strong>任务描述:</strong> 正在处理用户请求</p>
-                </div>
-                <div class="mb-3">
-                    <p><strong>处理部门:</strong> 相关部门</p>
-                </div>
-            `);
-            
-            modal.show();
-        }
-        
-        // 模拟任务流程
-        function simulateTaskFlow(fromDept, toDept, taskId) {
-            // 绘制箭头
-            drawArrow(fromDept, toDept, taskId);
-            
-            // 高亮目标部门
-            highlightDepartment(toDept, true);
-            
-            // 模拟任务处理
-            setTimeout(function() {
-                // 取消高亮
-                highlightDepartment(toDept, false);
-                
-                // 移除箭头
-                $(`#arrow-${taskId}`).remove();
-            }, 3000);
-        }
-        
-        // 初始化部门互动可视化
-        initDepartments();
-        
-        // 监听任务分派事件
+        // 任务分派事件处理
         $(document).on('taskAssigned', function(event, data) {
-            simulateTaskFlow(data.from, data.to, data.taskId);
+            // 更新Agent活动状态
+            updateAgentActivity(data.from, `分派任务到${data.to}`);
+            updateAgentActivity(data.to, `开始处理任务: ${data.taskId}`);
         });
         
         // 调用大模型API
@@ -1857,10 +1760,11 @@ if __name__ == '__main__':
                 },
                 error: function(error) {
                     console.error('LLM API调用失败:', error);
-                    // 显示大模型连接问题的处理过程
+                    
+                    // 显示真实的错误信息
                     const chatWindow = document.getElementById('executive-office-chat');
                     
-                    // 显示总裁办决策过程
+                    // 显示总裁办错误处理过程
                     $('#executive-office-chat').append(`
                         <div class="mb-3">
                             <div class="d-flex justify-content-start mb-2">
@@ -1868,7 +1772,7 @@ if __name__ == '__main__':
                                     <span class="badge bg-primary p-2">总裁办</span>
                                 </div>
                                 <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                    <p class="mb-0">检测到大模型连接问题，正在分派任务给技术部门进行修复...</p>
+                                    <p class="mb-0">检测到大模型连接问题，正在尝试重新连接...</p>
                                 </div>
                             </div>
                         </div>
@@ -1877,45 +1781,19 @@ if __name__ == '__main__':
                     // 滚动到底部
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                     
-                    // 模拟任务分派给技术部门
+                    // 尝试使用备用模型
                     setTimeout(function() {
-                        const taskId = 'task_' + Date.now();
-                        // 触发任务分派事件
-                        $(document).trigger('taskAssigned', { from: '总裁办', to: '技术部门', taskId: taskId });
-                        
-                        $('#executive-office-chat').append(`
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-start mb-2">
-                                    <div class="flex-shrink-0">
-                                        <span class="badge bg-secondary p-2">技术部门</span>
-                                    </div>
-                                    <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                        <p class="mb-0">收到大模型连接问题修复任务 (${taskId})，开始查找原因...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `);
-                        
-                        // 滚动到底部
-                        chatWindow.scrollTop = chatWindow.scrollHeight;
-                        
-                        // 模拟技术部门完成任务
-                        setTimeout(function() {
-                            $('#executive-office-chat').append(`
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-start mb-2">
-                                        <div class="flex-shrink-0">
-                                            <span class="badge bg-secondary p-2">技术部门</span>
-                                        </div>
-                                        <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                            <p class="mb-0">已找到问题原因并修复，大模型连接已恢复...</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `);
-                            
-                            // 显示总裁办汇总报告
-                            setTimeout(function() {
+                        $.ajax({
+                            url: '/api/assign_task',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ 
+                                task: message, 
+                                department: 'executive_office', 
+                                agent: 'chief_executive_agent',
+                                model: 'trae' // 使用TRAE作为备用模型
+                            }),
+                            success: function(backupResponse) {
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-start mb-2">
@@ -1923,99 +1801,32 @@ if __name__ == '__main__':
                                                 <span class="badge bg-primary p-2">总裁办</span>
                                             </div>
                                             <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                <p class="mb-0">已收到技术部门的修复报告，大模型连接已恢复...</p>
+                                                <p class="mb-0">已切换到备用模型，正在处理您的请求...</p>
                                             </div>
                                         </div>
                                     </div>
                                 `);
-                                
-                                // 滚动到底部
                                 chatWindow.scrollTop = chatWindow.scrollHeight;
-                            }, 1000);
-                        }, 2000);
-                    }, 1000);
-                    
-                    // 回调函数返回错误信息
-                    callback('大模型未连接，请检查网络连接或GLM服务状态。技术部门已收到修复任务，正在处理中。');
-                    
-                    // 同时为用户的原始请求创建任务
-                    setTimeout(function() {
-                        const researchTaskId = 'task_' + Date.now();
-                        // 触发任务分派事件
-                        $(document).trigger('taskAssigned', { from: '总裁办', to: '调研部门', taskId: researchTaskId });
-                        
-                        $('#executive-office-chat').append(`
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-start mb-2">
-                                    <div class="flex-shrink-0">
-                                        <span class="badge bg-secondary p-2">调研部门</span>
-                                    </div>
-                                    <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                        <p class="mb-0">收到任务 (${researchTaskId})，开始调研OPC公司的动向趋势...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `);
-                        
-                        // 滚动到底部
-                        chatWindow.scrollTop = chatWindow.scrollHeight;
-                        
-                        // 模拟调研部门完成任务
-                        setTimeout(function() {
-                            $('#executive-office-chat').append(`
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-start mb-2">
-                                        <div class="flex-shrink-0">
-                                            <span class="badge bg-secondary p-2">调研部门</span>
-                                        </div>
-                                        <div class="ml-2 p-2 bg-secondary text-white rounded-lg max-w-75">
-                                            <p class="mb-0">已完成OPC公司动向趋势调研，正在返回给总裁办...</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `);
-                            
-                            // 显示总裁办汇总报告
-                            setTimeout(function() {
+                                callback(backupResponse.result);
+                            },
+                            error: function(backupError) {
+                                console.error('备用模型调用也失败:', backupError);
                                 $('#executive-office-chat').append(`
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-start mb-2">
                                             <div class="flex-shrink-0">
-                                                <span class="badge bg-primary p-2">总裁办</span>
+                                                <span class="badge bg-danger p-2">总裁办</span>
                                             </div>
-                                            <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                <p class="mb-0">已收到调研部门的报告，正在汇总分析OPC公司的动向趋势...</p>
+                                            <div class="ml-2 p-2 bg-danger text-white rounded-lg max-w-75">
+                                                <p class="mb-0">大模型连接失败，所有模型均无法使用。请检查网络连接和模型配置。</p>
                                             </div>
                                         </div>
                                     </div>
                                 `);
-                                
-                                // 显示最终结果
-                                setTimeout(function() {
-                                    let opcTrends = '根据调研部门的报告，OPC公司最近的动向趋势如下：<br>';
-                                    opcTrends += '1. 公司正在积极拓展AI代理业务，特别是在企业Agent落地领域<br>';
-                                    opcTrends += '2. 最近完成了一轮融资，估值提升了30%<br>';
-                                    opcTrends += '3. 与多家大型企业达成了合作协议，为其提供Agent解决方案<br>';
-                                    opcTrends += '4. 正在开发新一代的Agent管理平台，预计Q3发布<br>';
-                                    opcTrends += '5. 计划在年底前拓展国际市场，重点关注亚太地区<br>';
-                                    
-                                    $('#executive-office-chat').append(`
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-start mb-2">
-                                                <div class="flex-shrink-0">
-                                                    <span class="badge bg-primary p-2">总裁办</span>
-                                                </div>
-                                                <div class="ml-2 p-2 bg-primary text-white rounded-lg max-w-75">
-                                                    <p class="mb-0">${opcTrends}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    `);
-                                    // 滚动到底部
-                                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                                }, 1000);
-                            }, 1000);
-                        }, 2000);
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                                callback('大模型连接失败，所有模型均无法使用。请检查网络连接和模型配置。');
+                            }
+                        });
                     }, 1000);
                 }
             });

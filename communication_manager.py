@@ -100,16 +100,52 @@ class CommunicationManager:
         Returns:
             消息传递结果
         """
-        # 在实际实现中，这里会调用接收代理的消息处理方法
-        # 目前返回模拟结果
         print(f"[通信] 消息从 {message['sender']} 发送到 {receiver}: {message['type']}")
         print(f"[通信] 内容: {message['content'][:100]}...")
         
-        return {
-            "success": True,
-            "message_id": f"msg_{int(time.time())}",
-            "timestamp": time.time()
-        }
+        # 尝试通过ZeroClaw发送消息给接收代理
+        try:
+            from zeroclaw_integration import ZeroClawIntegration
+            zero_claw = ZeroClawIntegration()
+            
+            # 构建消息内容
+            prompt = f"你是{receiver}，收到来自{message['sender']}的消息：\n{message['content']}\n请根据你的角色给出响应。"
+            
+            # 调用ZeroClaw获取响应
+            response = zero_claw.call_llm(prompt, model="glm")
+            
+            # 存储响应
+            if receiver not in self.message_history:
+                self.message_history[receiver] = []
+            
+            response_message = {
+                "type": "response",
+                "content": response,
+                "sender": receiver,
+                "timestamp": time.time(),
+                "context": message.get("context", {})
+            }
+            
+            # 记录Token使用
+            token_count = len(response) // 4
+            if receiver not in self.token_usage:
+                self.token_usage[receiver] = 0
+            self.token_usage[receiver] += token_count
+            
+            return {
+                "success": True,
+                "message_id": f"msg_{int(time.time())}",
+                "timestamp": time.time(),
+                "response": response
+            }
+        except Exception as e:
+            print(f"[通信] 消息传递失败: {e}")
+            return {
+                "success": False,
+                "message_id": f"msg_{int(time.time())}",
+                "timestamp": time.time(),
+                "error": str(e)
+            }
     
     def start_consensus(self, issue: str, agents: List[str], voting_method: str = "majority", decision_threshold: float = 0.6) -> Dict[str, Any]:
         """启动共识过程
@@ -128,17 +164,43 @@ class CommunicationManager:
         print(f"[共识] 投票方式: {voting_method}")
         print(f"[共识] 决策阈值: {decision_threshold * 100}%")
         
-        # 模拟投票过程
-        time.sleep(1)  # 模拟处理时间
-        
-        # 模拟代理投票
+        # 真正的共识过程
         votes = {}
-        for agent in agents:
-            # 模拟投票结果，80%的概率投赞成票
+        opinions = {}
+        
+        try:
+            from zeroclaw_integration import ZeroClawIntegration
+            zero_claw = ZeroClawIntegration()
+            
+            # 收集每个代理的意见和投票
+            for agent in agents:
+                # 构建共识请求
+                prompt = f"你是{agent}，现在需要对以下议题进行投票：\n{issue}\n请明确回答'赞成'或'反对'，并简要说明你的理由。"
+                
+                # 调用大模型获取代理的意见
+                response = zero_claw.call_llm(prompt, model="glm")
+                opinions[agent] = response
+                
+                # 解析投票结果
+                vote = "赞成" in response
+                votes[agent] = vote
+                print(f"[共识] {agent} 投票: {'赞成' if vote else '反对'}")
+                print(f"[共识] {agent} 理由: {response[:100]}...")
+                
+                # 记录Token使用
+                token_count = len(prompt) // 4 + len(response) // 4
+                if agent not in self.token_usage:
+                    self.token_usage[agent] = 0
+                self.token_usage[agent] += token_count
+        except Exception as e:
+            print(f"[共识] 共识过程失败: {e}")
+            #  fallback到模拟投票
             import random
-            vote = random.random() < 0.8
-            votes[agent] = vote
-            print(f"[共识] {agent} 投票: {'赞成' if vote else '反对'}")
+            for agent in agents:
+                vote = random.random() < 0.8
+                votes[agent] = vote
+                opinions[agent] = "无法获取代理意见，使用默认投票"
+                print(f"[共识] {agent} 投票: {'赞成' if vote else '反对'} (模拟)")
         
         # 计算投票结果
         yes_votes = sum(1 for vote in votes.values() if vote)
@@ -158,6 +220,7 @@ class CommunicationManager:
             "issue": issue,
             "agents": agents,
             "votes": votes,
+            "opinions": opinions,
             "yes_votes": yes_votes,
             "total_votes": total_votes,
             "approval_rate": approval_rate,
@@ -168,13 +231,6 @@ class CommunicationManager:
         
         print(f"[共识] 共识结果: {consensus_result['status']}")
         print(f"[共识] 决策: {consensus_result['decision']}")
-        
-        # 记录Token使用
-        token_count = len(issue) // 2  # 粗略估算Token数量
-        for agent in agents:
-            if agent not in self.token_usage:
-                self.token_usage[agent] = 0
-            self.token_usage[agent] += token_count
         
         return consensus_result
     
