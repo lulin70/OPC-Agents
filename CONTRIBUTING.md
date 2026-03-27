@@ -171,7 +171,7 @@ OPC-Agents/
 ├── a2a_protocol.py         # A2A 协议实现
 ├── a2a_integration.py      # A2A 集成
 ├── hr_enhancement.py       # HR 生命周期
-├── opc_skill.py            # TRAE 技能
+├── opc_skill.py            # 技能
 └── official_agents/        # 官方代理定义
 ```
 

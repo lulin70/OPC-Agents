@@ -1,17 +1,16 @@
-# OPC-Agents for TRAE
+# OPC-Agents
 
-一个为一人公司 (OPC) 设计的多代理系统，灵感来自流行的 GitHub 项目 Agency-Agents，与 TRAE 集成以增强 AI 能力。
+一个为一人公司 (OPC) 设计的多代理系统，灵感来自流行的 GitHub 项目 Agency-Agents，具有增强的 AI 能力。
 
 ## 概述
 
-本项目实现了一个虚拟代理机构，包含多个专业 AI 代理，可以处理各种任务。每个代理都设计有特定的专业知识，可以通过 TRAE API 分配任务。系统增强了总裁办功能、三贤者决策系统和代理自我优化能力。
+本项目实现了一个虚拟代理机构，包含多个专业 AI 代理，可以处理各种任务。每个代理都设计有特定的专业知识，可以通过各种 AI 模型 API 分配任务。系统增强了总裁办功能、三贤者决策系统和代理自我优化能力。
 
 ## 功能
 
 - **多部门结构**，包含 35 个专业部门
 - **157+ 专业代理**，涵盖不同领域（来自官方 Agency-Agents 项目）
-- **TRAE 集成**，提供强大的 AI 能力
-- **多模型支持**，包括 TRAE、OpenAI、Anthropic、Google、Azure、GLM 和本地模型
+- **多模型支持**，包括 GLM、OpenAI、Anthropic、Google、Azure 和本地模型
 - **任务分配系统**，用于将工作委派给特定代理（现在支持实际任务分派，而不仅仅是模拟）
 - **项目管理**，用于协调多个任务
 - **内部通信系统**，用于代理间消息传递
@@ -38,27 +37,44 @@
 OPC-Agents/
 ├── config.toml               # 主要配置文件
 ├── config.toml.sample        # 配置文件模板
-├── opc_manager.py             # 核心管理脚本
 ├── communication_manager.py    # 通信管理脚本
-├── web_interface.py           # Web 界面实现
-├── auto_optimizer.py          # 自动优化调度器
-├── opc_skill.py               # TRAE 技能实现
-├── a2a_protocol.py            # A2A（代理到代理）协议实现
-├── a2a_integration.py         # A2A 协议与 OPC-Agents 集成
-├── a2a_api.py                 # A2A 协议的 REST API 端点
-├── hr_enhancement.py          # HR 生命周期管理实现
-├── hr_api.py                  # HR 功能的 REST API 端点
+├── opc_skill.py               # 技能实现
 ├── OPCstart.sh                # OPC-Agents 启动脚本
 ├── official_agents/           # 来自 Agency-Agents 项目的官方代理
 ├── optimization_records/      # 优化迭代记录
 ├── optimization_notifications/ # 优化通知文件
-
 ├── templates/                 # Web 界面模板
-├── SKILL.md                   # TRAE 技能定义
-├── TRAE_SKILL_UPDATE.md       # TRAE 技能更新指南
-├── test_enhanced_features.py  # 增强功能测试脚本
-├── test_agent_optimization.py # 代理优化测试脚本
-└── test_auto_optimizer.py     # 自动优化器测试脚本
+├── logs/                      # 日志文件目录
+├── temp-use/                  # 临时目录，用于存放旧文件
+├── opc_manager/               # 核心管理模块
+│   ├── __init__.py
+│   ├── core.py                # 主要 OPCManager 类
+│   ├── log_config.py          # 日志配置
+│   ├── config.py              # 配置管理
+│   ├── agent_manager.py       # 代理管理
+│   ├── task_manager.py        # 任务管理
+│   ├── architecture.py        # 系统架构
+│   ├── three_sages.py         # 三贤者决策系统
+│   └── personal_assistant.py  # 个人助理功能
+├── web_interface/             # Web 界面模块
+│   ├── __init__.py
+│   ├── app.py                 # 主要 Flask 应用
+│   └── routes/                # API 路由
+│       ├── executive_office.py
+│       ├── task_management.py
+│       ├── department_management.py
+│       ├── personal_assistant.py
+│       ├── model_management.py
+│       └── auto_optimizer.py
+├── opc_hr/                    # HR 和 A2A 相关模块
+│   ├── a2a_api.py             # A2A 协议的 REST API 端点
+│   ├── a2a_integration.py     # A2A 协议集成
+│   ├── a2a_protocol.py        # A2A（代理到代理）协议实现
+│   ├── auto_optimizer.py      # 自动优化调度器
+│   ├── hr_api.py              # HR 功能的 REST API 端点
+│   └── hr_enhancement.py      # HR 生命周期管理实现
+├── test_opc_manager.py        # OPCManager 测试脚本
+└── zeroclaw_integration.py    # ZeroClaw 集成
 ```
 
 ## 安装
@@ -71,8 +87,8 @@ OPC-Agents/
 3. **配置 API 密钥**：
    - 将 `config.toml.sample` 复制为 `config.toml`
    - 在 `config.toml` 中更新 API 密钥：
-     - TRAE API 密钥
-     - 其他模型 API 密钥（OpenAI、Anthropic、Google、Azure、GLM）（如果需要）
+     - GLM API 密钥
+     - 其他模型 API 密钥（OpenAI、Anthropic、Google、Azure）（如果需要）
      - ZeroClaw 配置（如果使用 ZeroClaw 集成）
 
 ## 使用
@@ -210,7 +226,7 @@ print(f"优化的Agent: {specific_optimization['summary']['optimized_agents']}")
 ### 自动优化调度器使用
 
 ```python
-from auto_optimizer import AutoOptimizer
+from opc_hr.auto_optimizer import AutoOptimizer
 
 # 创建自动优化器
 auto_optimizer = AutoOptimizer()
@@ -248,17 +264,20 @@ print("手动优化执行完成")
 ### A2A（代理到代理）协议使用
 
 ```python
-from a2a_integration import A2AIntegration
+from opc_hr.a2a_integration import OPCA2AIntegration
+from opc_manager import OPCManager
+
+# 初始化 OPC Manager
+opc_manager = OPCManager()
 
 # 初始化 A2A 集成
-a2a_integration = A2AIntegration()
+a2a_integration = OPCA2AIntegration(opc_manager)
 
-# 注册代理到 A2A
-a2a_integration.register_agents()
+# 注册代理到 A2A（初始化时自动完成）
 print("Agents registered with A2A protocol")
 
-# 创建工作流
-workflow = a2a_integration.create_workflow(
+# 创建工作流（使用工作流模块）
+workflow = a2a_integration.workflow.create_workflow(
     "Website Development Project",
     [
         {"agent": "ui_designer", "task": "Design website UI"},
@@ -266,53 +285,53 @@ workflow = a2a_integration.create_workflow(
         {"agent": "backend_developer", "task": "Implement backend"}
     ]
 )
-print(f"Workflow created: {workflow['id']}")
+print(f"Workflow created: {workflow}")
 
 # 使用 A2A 在代理之间发送消息
-message_result = a2a_integration.send_message(
+message_result = a2a_integration.send_a2a_message(
     "ui_designer",
     "frontend_developer",
-    "design_specs",
     "Please implement the UI according to these specifications"
 )
-print(f"Message sent: {message_result['id']}")
+print(f"Message sent: {message_result.id}")
 ```
 
 ### HR 生命周期管理使用
 
 ```python
-from hr_enhancement import HRLifecycleManager
+from opc_hr.hr_enhancement import HREnhancement
+from opc_manager import OPCManager
 
-# 初始化 HR 管理器
-hr_manager = HRLifecycleManager()
+# 初始化 OPC Manager
+opc_manager = OPCManager()
 
-# 招聘新代理
-recruitment_result = hr_manager.recruit_agents(
-    department="marketing",
-    skills=["digital_marketing", "social_media"],
-    count=2
-)
-print(f"Recruited {len(recruitment_result['agents'])} new agents")
+# 初始化 HR 增强
+hr_enhancement = HREnhancement(opc_manager)
+
+# 获取所有代理
+agents = hr_enhancement.get_all_agents()
+print(f"Total agents: {len(agents)}")
 
 # 培训代理
-training_result = hr_manager.train_agents(
-    agent_ids=["digital_marketer", "social_media_specialist"],
-    skills=["content_creation", "analytics"]
+training_result = hr_enhancement.train_agent(
+    agent_id="digital_marketer",
+    skills={"content_creation": "high", "analytics": "medium"}
 )
-print(f"Training completed for {len(training_result['trained_agents'])} agents")
+print(f"Training result: {training_result}")
 
 # 评估代理绩效
-evaluation_result = hr_manager.evaluate_performance(
+evaluation_result = hr_enhancement.evaluate_performance(
     agent_id="digital_marketer",
-    period="monthly"
+    rating=4.5,
+    feedback="Excellent performance in content creation"
 )
-print(f"Agent performance score: {evaluation_result['score']}")
+print(f"Evaluation result: {evaluation_result}")
 
 # 优化代理绩效
-optimization_result = hr_manager.optimize_agent(
+optimization_result = hr_enhancement.optimize_agent(
     agent_id="digital_marketer"
 )
-print(f"Agent optimization completed: {optimization_result['status']}")
+print(f"Agent optimization completed: {optimization_result['success']}")
 ```
 
 ### Web 界面使用
@@ -341,7 +360,7 @@ print(f"Agent optimization completed: {optimization_result['status']}")
 
 1. **启动 Web 服务器**：
    ```bash
-   python web_interface.py
+   python -m web_interface.app
    ```
 
 2. **访问 Web 界面**：`http://localhost:5007`
@@ -464,7 +483,7 @@ python opc_skill.py 查看Token使用
 `config.toml` 文件包含以下部分：
 
 - **core**：基本代理机构信息
-- **models**：AI 模型配置（TRAE、OpenAI、Anthropic、Google、Azure、GLM、本地）
+- **models**：AI 模型配置（GLM、OpenAI、Anthropic、Google、Azure、本地）
 - **agents**：按部门划分的代理定义，包括 executive_office 和 three_sages
 
 ### 示例配置
@@ -479,12 +498,7 @@ version = "1.0.0"
 # AI Model Integration
 [models]
 # Default model to use
-default = "trae"
-
-# TRAE Model
-[models.trae]
-api_key = "your_trae_api_key"
-base_url = "https://api.trae.cn/v1/chat"
+default = "glm"
 
 # OpenAI Model
 [models.openai]
@@ -576,16 +590,15 @@ terra = "terra"  # 执行贤者
 nova = "nova"  # 创新贤者
 ```
 
-## 与 TRAE 和其他模型的集成
+## 与 AI 模型的集成
 
 系统通过各自的 API 集成多个 AI 模型：
 
-- **TRAE**：代理交互的主要 AI 引擎
+- **GLM**：中文语言优化（默认模型）
 - **OpenAI**：用于高级语言理解的 GPT 模型
 - **Anthropic**：用于详细推理的 Claude 模型
 - **Google**：用于多模态能力的 Gemini 模型
 - **Azure OpenAI**：企业级 AI 解决方案
-- **GLM**：中文语言优化
 - **本地模型**：注重隐私的本地部署
 
 每个代理都定义了特定的角色和专业知识，任务被发送到适当的模型，并使用定制的提示以确保高质量的响应。系统会根据任务类型和上下文自动选择最佳模型。
@@ -601,11 +614,12 @@ nova = "nova"  # 创新贤者
 
 ### 添加新功能
 
-1. **总裁办扩展**：在 `opc_manager.py` 的总裁办部分添加新功能
-2. **三贤者增强**：修改 `start_three_sages_decision` 函数，添加新的决策因素
-3. **代理优化**：在 `optimize_agents` 函数中扩展优化逻辑
-4. **自动优化**：更新 `auto_optimizer.py` 文件，添加新的调度选项
-5. **Web 界面**：在 `web_interface.py` 中添加新的 API 端点和 UI 组件
+1. **总裁办扩展**：在 `opc_manager/core.py` 的总裁办部分添加新功能
+2. **三贤者增强**：修改 `three_sages.py` 文件，添加新的决策因素
+3. **代理优化**：在 `opc_hr/auto_optimizer.py` 中扩展优化逻辑
+4. **Web 界面**：在 `web_interface/routes/` 下的相应路由文件中添加新的 API 端点
+5. **HR 增强**：在 `opc_hr/hr_enhancement.py` 中扩展 HR 功能
+6. **A2A 协议**：在 `opc_hr/a2a_protocol.py` 中添加新功能
 
 ### 定制选项
 

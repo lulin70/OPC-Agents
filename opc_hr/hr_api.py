@@ -7,7 +7,7 @@
 from flask import Blueprint, request, jsonify
 from typing import Dict, Any, Optional
 import time
-from hr_enhancement import HREnhancement, AgentStatus, SkillLevel
+from opc_hr.hr_enhancement import HREnhancement, AgentStatus, SkillLevel
 
 # 创建蓝图
 hr_bp = Blueprint('hr', __name__, url_prefix='/api/hr')

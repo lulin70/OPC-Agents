@@ -1,17 +1,16 @@
-# OPC-Agents for TRAE
+# OPC-Agents
 
-A multi-agent system for One Person Company (OPC), inspired by the popular GitHub project Agency-Agents, integrated with TRAE for enhanced AI capabilities.
+A multi-agent system for One Person Company (OPC), inspired by the popular GitHub project Agency-Agents, with enhanced AI capabilities.
 
 ## Overview
 
-This project implements a virtual agency with multiple specialized AI agents that can handle various tasks. Each agent is designed with specific expertise and can be assigned tasks through the TRAE API. The system is enhanced with executive office functionality, three sages decision system, and agent self-optimization capabilities.
+This project implements a virtual agency with multiple specialized AI agents that can handle various tasks. Each agent is designed with specific expertise and can be assigned tasks through various AI model APIs. The system is enhanced with executive office functionality, three sages decision system, and agent self-optimization capabilities.
 
 ## Features
 
 - **Multi-department structure** with 35 specialized departments
 - **157+ specialized agents** across different domains (from official Agency-Agents project)
-- **TRAE integration** for powerful AI capabilities
-- **Multi-model support** including TRAE, OpenAI, Anthropic, Google, Azure, GLM, and local models
+- **Multi-model support** including GLM, OpenAI, Anthropic, Google, Azure, and local models
 - **Task assignment** system for delegating work to specific agents (now with actual task dispatching, not just simulation)
 - **Project management** for coordinating multiple tasks
 - **Internal communication** system for agent-to-agent messaging
@@ -38,27 +37,44 @@ This project implements a virtual agency with multiple specialized AI agents tha
 OPC-Agents/
 ├── config.toml               # Main configuration file
 ├── config.toml.sample        # Configuration file template
-├── opc_manager.py             # Core management script
 ├── communication_manager.py    # Communication management script
-├── web_interface.py           # Web interface implementation
-├── auto_optimizer.py          # Auto-optimization scheduler
-├── opc_skill.py               # TRAE skill implementation
-├── a2a_protocol.py            # A2A (Agent-to-Agent) Protocol implementation
-├── a2a_integration.py         # A2A protocol integration with OPC-Agents
-├── a2a_api.py                 # REST API endpoints for A2A protocol
-├── hr_enhancement.py          # HR lifecycle management implementation
-├── hr_api.py                  # REST API endpoints for HR functionality
+├── opc_skill.py               # Skill implementation
 ├── OPCstart.sh                # Startup script for OPC-Agents
 ├── official_agents/           # Official agents from Agency-Agents project
 ├── optimization_records/      # Optimization iteration records
 ├── optimization_notifications/ # Optimization notification files
-
 ├── templates/                 # Web interface templates
-├── SKILL.md                   # TRAE skill definition
-├── TRAE_SKILL_UPDATE.md       # TRAE skill update guide
-├── test_enhanced_features.py  # Test script for enhanced features
-├── test_agent_optimization.py # Test script for agent optimization
-└── test_auto_optimizer.py     # Test script for auto-optimizer
+├── logs/                      # Log files directory
+├── temp-use/                  # Temporary directory for old files
+├── opc_manager/               # Core management modules
+│   ├── __init__.py
+│   ├── core.py                # Main OPCManager class
+│   ├── log_config.py          # Logging configuration
+│   ├── config.py              # Configuration management
+│   ├── agent_manager.py       # Agent management
+│   ├── task_manager.py        # Task management
+│   ├── architecture.py        # System architecture
+│   ├── three_sages.py         # Three sages decision system
+│   └── personal_assistant.py  # Personal assistant functionality
+├── web_interface/             # Web interface modules
+│   ├── __init__.py
+│   ├── app.py                 # Main Flask application
+│   └── routes/                # API routes
+│       ├── executive_office.py
+│       ├── task_management.py
+│       ├── department_management.py
+│       ├── personal_assistant.py
+│       ├── model_management.py
+│       └── auto_optimizer.py
+├── opc_hr/                    # HR and A2A related modules
+│   ├── a2a_api.py             # REST API endpoints for A2A protocol
+│   ├── a2a_integration.py     # A2A protocol integration
+│   ├── a2a_protocol.py        # A2A (Agent-to-Agent) Protocol implementation
+│   ├── auto_optimizer.py      # Auto-optimization scheduler
+│   ├── hr_api.py              # REST API endpoints for HR functionality
+│   └── hr_enhancement.py      # HR lifecycle management implementation
+├── test_opc_manager.py        # Test script for OPCManager
+└── zeroclaw_integration.py    # ZeroClaw integration
 ```
 
 ## Installation
@@ -71,8 +87,8 @@ OPC-Agents/
 3. **Configure API keys**:
    - Copy `config.toml.sample` to `config.toml`
    - Update API keys in `config.toml`:
-     - TRAE API key
-     - Other model API keys (OpenAI, Anthropic, Google, Azure, GLM) if needed
+     - GLM API key
+     - Other model API keys (OpenAI, Anthropic, Google, Azure) if needed
      - ZeroClaw configuration if using ZeroClaw integration
 
 ## Usage
@@ -210,7 +226,7 @@ print(f"优化的Agent: {specific_optimization['summary']['optimized_agents']}")
 ### Auto-Optimization Scheduler Usage
 
 ```python
-from auto_optimizer import AutoOptimizer
+from opc_hr.auto_optimizer import AutoOptimizer
 
 # Create auto optimizer
 auto_optimizer = AutoOptimizer()
@@ -248,17 +264,20 @@ print("手动优化执行完成")
 ### A2A (Agent-to-Agent) Protocol Usage
 
 ```python
-from a2a_integration import A2AIntegration
+from opc_hr.a2a_integration import OPCA2AIntegration
+from opc_manager import OPCManager
+
+# Initialize OPC Manager
+opc_manager = OPCManager()
 
 # Initialize A2A integration
-a2a_integration = A2AIntegration()
+a2a_integration = OPCA2AIntegration(opc_manager)
 
-# Register agents with A2A
-a2a_integration.register_agents()
+# Register agents with A2A (automatically done in initialization)
 print("Agents registered with A2A protocol")
 
-# Create a workflow
-workflow = a2a_integration.create_workflow(
+# Create a workflow (using workflow module)
+workflow = a2a_integration.workflow.create_workflow(
     "Website Development Project",
     [
         {"agent": "ui_designer", "task": "Design website UI"},
@@ -266,53 +285,53 @@ workflow = a2a_integration.create_workflow(
         {"agent": "backend_developer", "task": "Implement backend"}
     ]
 )
-print(f"Workflow created: {workflow['id']}")
+print(f"Workflow created: {workflow}")
 
 # Send message between agents using A2A
-message_result = a2a_integration.send_message(
+message_result = a2a_integration.send_a2a_message(
     "ui_designer",
     "frontend_developer",
-    "design_specs",
     "Please implement the UI according to these specifications"
 )
-print(f"Message sent: {message_result['id']}")
+print(f"Message sent: {message_result.id}")
 ```
 
 ### HR Lifecycle Management Usage
 
 ```python
-from hr_enhancement import HRLifecycleManager
+from opc_hr.hr_enhancement import HREnhancement
+from opc_manager import OPCManager
 
-# Initialize HR manager
-hr_manager = HRLifecycleManager()
+# Initialize OPC Manager
+opc_manager = OPCManager()
 
-# Recruit new agents
-recruitment_result = hr_manager.recruit_agents(
-    department="marketing",
-    skills=["digital_marketing", "social_media"],
-    count=2
-)
-print(f"Recruited {len(recruitment_result['agents'])} new agents")
+# Initialize HR enhancement
+hr_enhancement = HREnhancement(opc_manager)
+
+# Get all agents
+agents = hr_enhancement.get_all_agents()
+print(f"Total agents: {len(agents)}")
 
 # Train agents
-training_result = hr_manager.train_agents(
-    agent_ids=["digital_marketer", "social_media_specialist"],
-    skills=["content_creation", "analytics"]
+training_result = hr_enhancement.train_agent(
+    agent_id="digital_marketer",
+    skills={"content_creation": "high", "analytics": "medium"}
 )
-print(f"Training completed for {len(training_result['trained_agents'])} agents")
+print(f"Training result: {training_result}")
 
 # Evaluate agent performance
-evaluation_result = hr_manager.evaluate_performance(
+evaluation_result = hr_enhancement.evaluate_performance(
     agent_id="digital_marketer",
-    period="monthly"
+    rating=4.5,
+    feedback="Excellent performance in content creation"
 )
-print(f"Agent performance score: {evaluation_result['score']}")
+print(f"Evaluation result: {evaluation_result}")
 
 # Optimize agent performance
-optimization_result = hr_manager.optimize_agent(
+optimization_result = hr_enhancement.optimize_agent(
     agent_id="digital_marketer"
 )
-print(f"Agent optimization completed: {optimization_result['status']}")
+print(f"Agent optimization completed: {optimization_result['success']}")
 ```
 
 ### Web Interface Usage
@@ -341,7 +360,7 @@ print(f"Agent optimization completed: {optimization_result['status']}")
 
 1. **Start the web server**:
    ```bash
-   python web_interface.py
+   python -m web_interface.app
    ```
 
 2. **Access the web interface** at `http://localhost:5007`
@@ -464,7 +483,7 @@ python opc_skill.py 查看Token使用
 The `config.toml` file contains the following sections:
 
 - **core**: Basic agency information
-- **models**: AI model configurations (TRAE, OpenAI, Anthropic, Google, Azure, GLM, local)
+- **models**: AI model configurations (GLM, OpenAI, Anthropic, Google, Azure, local)
 - **agents**: Agent definitions by department, including executive_office and three_sages
 
 ### Example Configuration
@@ -479,12 +498,7 @@ version = "1.0.0"
 # AI Model Integration
 [models]
 # Default model to use
-default = "trae"
-
-# TRAE Model
-[models.trae]
-api_key = "your_trae_api_key"
-base_url = "https://api.trae.cn/v1/chat"
+default = "glm"
 
 # OpenAI Model
 [models.openai]
@@ -576,16 +590,15 @@ terra = "terra"  # 执行贤者
 nova = "nova"  # 创新贤者
 ```
 
-## Integration with TRAE and Other Models
+## Integration with AI Models
 
 The system integrates with multiple AI models through their respective APIs:
 
-- **TRAE**: Primary AI engine for agent interactions
+- **GLM**: Chinese language optimization (default model)
 - **OpenAI**: GPT models for advanced language understanding
 - **Anthropic**: Claude models for detailed reasoning
 - **Google**: Gemini models for multimodal capabilities
 - **Azure OpenAI**: Enterprise-grade AI solutions
-- **GLM**: Chinese language optimization
 - **Local models**: Privacy-focused local deployment
 
 Each agent is defined with a specific role and expertise, and tasks are sent to the appropriate model with tailored prompts to ensure high-quality responses. The system automatically selects the best model based on the task type and context.
@@ -601,11 +614,12 @@ Each agent is defined with a specific role and expertise, and tasks are sent to 
 
 ### Adding New Features
 
-1. **Executive Office Extensions**: Add new functions in `opc_manager.py` under the executive office section
-2. **Three Sages Enhancements**: Modify the `start_three_sages_decision` function to add new decision factors
-3. **Agent Optimization**: Extend the optimization logic in the `optimize_agents` function
-4. **Auto-Optimization**: Update the `auto_optimizer.py` file to add new scheduling options
-5. **Web Interface**: Add new API endpoints and UI components in `web_interface.py`
+1. **Executive Office Extensions**: Add new functions in `opc_manager/core.py` under the executive office section
+2. **Three Sages Enhancements**: Modify the `three_sages.py` file to add new decision factors
+3. **Agent Optimization**: Extend the optimization logic in `opc_hr/auto_optimizer.py`
+4. **Web Interface**: Add new API endpoints in the appropriate route files under `web_interface/routes/`
+5. **HR Enhancements**: Extend HR functionality in `opc_hr/hr_enhancement.py`
+6. **A2A Protocol**: Add new features in `opc_hr/a2a_protocol.py`
 
 ### Customization Options
 

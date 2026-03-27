@@ -2,13 +2,27 @@
 
 # OPC-Agents 启动脚本
 # 功能：启动 ZeroClaw Gateway，等待配对码，启动 OPC-Agents，提供 kill gateway 的方法
+# 参数：--debug 启用调试模式
 
 echo "========================================"
 echo "OPC-Agents 启动脚本"
 echo "========================================"
 
+# 解析命令行参数
+DEBUG_MODE=false
+for arg in "$@"
+do
+    case $arg in
+        --debug)
+        DEBUG_MODE=true
+        shift # 移除 --debug 参数
+        ;;
+    esac
+done
+
 # 切换到 OPC-Agents 目录
-OPC_AGENTS_DIR="$(dirname "$0")"
+OPC_AGENTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "OPC_AGENTS_DIR: $OPC_AGENTS_DIR"
 cd "$OPC_AGENTS_DIR"
 echo "当前目录: $(pwd)"
 
@@ -23,7 +37,7 @@ if [ -d "$ZEROCLAW_DIR" ]; then
     
     # 构建 ZeroClaw 项目
     echo "构建 ZeroClaw 项目..."
-    cargo build --release
+    # cargo build --release
     
     # 启动 gateway，使用 nohup 后台运行，输出到 gateway.log
     echo "启动 ZeroClaw Gateway..."
@@ -43,7 +57,9 @@ if [ -d "$ZEROCLAW_DIR" ]; then
     # 提示用户输入配对码
     echo "\n请将配对码输入到 config.toml 文件中的 pairing_code 字段"
     echo "然后按 Enter 键继续..."
-    read -p "按 Enter 键继续启动 OPC-Agents..."
+    # 添加超时机制，5秒后自动继续
+    read -t 5 -p "按 Enter 键继续启动 OPC-Agents... (5秒后自动继续) " || echo ""
+    echo "继续启动 OPC-Agents..."
 else
     echo "错误：ZeroClaw 目录不存在: $ZEROCLAW_DIR"
     echo "请确保 ZeroClaw 项目已克隆到正确的位置"
@@ -57,7 +73,13 @@ echo "\n切换回 OPC-Agents 目录: $(pwd)"
 # 启动 OPC-Agents Web 界面
 echo "\n启动 OPC-Agents Web 界面..."
 echo "Web 页面网址: http://localhost:5007"
-python3 web_interface.py
+
+if [ "$DEBUG_MODE" = true ]; then
+    echo "启用调试模式..."
+    python3 -m web_interface.app --debug --gateway-pid $GATEWAY_PID
+else
+    python3 -m web_interface.app --gateway-pid $GATEWAY_PID
+fi
 
 # 注意：由于上面的命令会阻塞，下面的代码不会执行
 # 因此我们需要在另一个终端中执行 kill 命令

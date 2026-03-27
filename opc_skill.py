@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-TRAE Agency Skill
+OPC-Agents Skill
 
-Integration of Agency-Agents system with TRAE
+Integration of Agency-Agents system
 """
 
 import os

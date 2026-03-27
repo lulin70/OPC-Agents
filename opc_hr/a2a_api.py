@@ -8,11 +8,11 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 from typing import Dict, Any, Optional
 import json
 import time
-from a2a_protocol import (
+from opc_hr.a2a_protocol import (
     A2AProtocol, TaskState, Part, AuthScheme,
     AgentCard, AgentSkill, AgentCapability
 )
-from a2a_integration import OPCA2AIntegration
+from opc_hr.a2a_integration import OPCA2AIntegration
 
 # 创建蓝图
 a2a_bp = Blueprint('a2a', __name__, url_prefix='/a2a')

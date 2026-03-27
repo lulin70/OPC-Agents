@@ -7,7 +7,7 @@ A2A Protocol Integration for OPC-Agents
 import json
 import os
 from typing import Dict, List, Optional, Any
-from a2a_protocol import (
+from opc_hr.a2a_protocol import (
     A2AProtocol, A2AWorkflow, MCPIntegration,
     AgentCard, AgentSkill, AgentCapability,
     Task, TaskState, Part, Message,

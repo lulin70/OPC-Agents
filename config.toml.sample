@@ -9,12 +9,7 @@ version = "1.0.0"
 # AI Model Integration
 [models]
 # Default model to use
-default = "zeroclaw"
-
-# TRAE Model
-[models.trae]
-api_key = "your_trae_api_key"
-base_url = "https://api.trae.cn/v1/chat/completions"
+default = "glm"
 
 # OpenAI Model
 [models.openai]

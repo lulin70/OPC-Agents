@@ -7,18 +7,25 @@ Manages communication between agents, including message passing, context sharing
 
 import time
 import json
+import logging
 from typing import Dict, List, Optional, Any
 
 class CommunicationManager:
     """管理代理之间的通信"""
     
-    def __init__(self):
+    def __init__(self, debug_mode: bool = False):
         """初始化通信管理器"""
+        self.debug_mode = debug_mode
+        self.logger = logging.getLogger("OPC-Agents.Communication")
+        self.logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
+        
         self.message_history = {}
         self.context_store = {}
         self.token_usage = {}
         self.task_status = {}  # 任务状态跟踪
         self.task_history = {}  # 任务历史记录
+        
+        self.logger.info(f"Communication Manager initialized in {'debug' if debug_mode else 'normal'} mode")
     
     def _compress_content(self, content: str) -> str:
         """压缩消息内容，减少Token消耗"""
@@ -100,8 +107,8 @@ class CommunicationManager:
         Returns:
             消息传递结果
         """
-        print(f"[通信] 消息从 {message['sender']} 发送到 {receiver}: {message['type']}")
-        print(f"[通信] 内容: {message['content'][:100]}...")
+        self.logger.info(f"消息从 {message['sender']} 发送到 {receiver}: {message['type']}")
+        self.logger.debug(f"内容: {message['content'][:100]}...")
         
         # 尝试通过ZeroClaw发送消息给接收代理
         try:
@@ -132,6 +139,7 @@ class CommunicationManager:
                 self.token_usage[receiver] = 0
             self.token_usage[receiver] += token_count
             
+            self.logger.debug(f"收到响应: {response[:100]}...")
             return {
                 "success": True,
                 "message_id": f"msg_{int(time.time())}",
@@ -139,7 +147,7 @@ class CommunicationManager:
                 "response": response
             }
         except Exception as e:
-            print(f"[通信] 消息传递失败: {e}")
+            self.logger.error(f"消息传递失败: {e}")
             return {
                 "success": False,
                 "message_id": f"msg_{int(time.time())}",
@@ -159,10 +167,10 @@ class CommunicationManager:
         Returns:
             共识结果
         """
-        print(f"[共识] 启动关于 '{issue}' 的共识过程")
-        print(f"[共识] 参与代理: {', '.join(agents)}")
-        print(f"[共识] 投票方式: {voting_method}")
-        print(f"[共识] 决策阈值: {decision_threshold * 100}%")
+        self.logger.info(f"启动关于 '{issue}' 的共识过程")
+        self.logger.info(f"参与代理: {', '.join(agents)}")
+        self.logger.info(f"投票方式: {voting_method}")
+        self.logger.info(f"决策阈值: {decision_threshold * 100}%")
         
         # 真正的共识过程
         votes = {}
@@ -184,8 +192,8 @@ class CommunicationManager:
                 # 解析投票结果
                 vote = "赞成" in response
                 votes[agent] = vote
-                print(f"[共识] {agent} 投票: {'赞成' if vote else '反对'}")
-                print(f"[共识] {agent} 理由: {response[:100]}...")
+                self.logger.info(f"{agent} 投票: {'赞成' if vote else '反对'}")
+                self.logger.debug(f"{agent} 理由: {response[:100]}...")
                 
                 # 记录Token使用
                 token_count = len(prompt) // 4 + len(response) // 4
@@ -193,21 +201,21 @@ class CommunicationManager:
                     self.token_usage[agent] = 0
                 self.token_usage[agent] += token_count
         except Exception as e:
-            print(f"[共识] 共识过程失败: {e}")
+            self.logger.error(f"共识过程失败: {e}")
             #  fallback到模拟投票
             import random
             for agent in agents:
                 vote = random.random() < 0.8
                 votes[agent] = vote
                 opinions[agent] = "无法获取代理意见，使用默认投票"
-                print(f"[共识] {agent} 投票: {'赞成' if vote else '反对'} (模拟)")
+                self.logger.info(f"{agent} 投票: {'赞成' if vote else '反对'} (模拟)")
         
         # 计算投票结果
         yes_votes = sum(1 for vote in votes.values() if vote)
         total_votes = len(votes)
         approval_rate = yes_votes / total_votes
         
-        print(f"[共识] 投票结果: {yes_votes}/{total_votes} ({approval_rate * 100:.1f}%)")
+        self.logger.info(f"投票结果: {yes_votes}/{total_votes} ({approval_rate * 100:.1f}%)")
         
         # 做出决策
         if voting_method == "unanimous":
@@ -229,8 +237,8 @@ class CommunicationManager:
             "status": "达成共识" if decision else "未达成共识"
         }
         
-        print(f"[共识] 共识结果: {consensus_result['status']}")
-        print(f"[共识] 决策: {consensus_result['decision']}")
+        self.logger.info(f"共识结果: {consensus_result['status']}")
+        self.logger.info(f"决策: {consensus_result['decision']}")
         
         return consensus_result
     
@@ -283,7 +291,7 @@ class CommunicationManager:
             "updated_at": time.time(),
             "progress": 0
         }
-        print(f"[任务管理] 创建任务: {task_name} (ID: {task_id}) 分配给: {agent}")
+        self.logger.info(f"创建任务: {task_name} (ID: {task_id}) 分配给: {agent}")
         
         # 添加任务创建历史记录
         self.add_task_history(task_id, "created", f"任务创建: {task_name} 分配给: {agent}", {
@@ -305,11 +313,11 @@ class CommunicationManager:
             self.task_status[task_id]["updated_at"] = time.time()
             if progress is not None:
                 self.task_status[task_id]["progress"] = min(100, max(0, progress))
-            print(f"[任务管理] 更新任务 {task_id} 状态: {status}")
+            self.logger.info(f"更新任务 {task_id} 状态: {status}")
             if progress is not None:
-                print(f"[任务管理] 更新任务 {task_id} 进度: {progress}%")
+                self.logger.info(f"更新任务 {task_id} 进度: {progress}%")
         else:
-            print(f"[任务管理] 任务 {task_id} 不存在")
+            self.logger.warning(f"任务 {task_id} 不存在")
     
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         """获取任务状态
@@ -372,7 +380,7 @@ class CommunicationManager:
         }
         
         self.task_history[task_id].append(history_entry)
-        print(f"[任务历史] 任务 {task_id} 添加事件: {event_type} - {description}")
+        self.logger.info(f"任务 {task_id} 添加事件: {event_type} - {description}")
     
     def get_task_history(self, task_id: str) -> List[Dict[str, Any]]:
         """获取任务的历史记录
