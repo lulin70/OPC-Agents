@@ -41,3 +41,6 @@ templates/
 # Dependencies
 venv/
 env/
+
+# Temporary files and development artifacts
+temp-use/
