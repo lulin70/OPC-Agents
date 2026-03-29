@@ -704,10 +704,10 @@ MCPConfig {
 ## 5. 技术栈
 
 ### 5.1 核心技术
-- **Python**：主要开发语言
+- **Python 3**：主要开发语言
 - **Flask**：Web框架
 - **TOML**：配置文件格式
-- **Requests**：HTTP客户端库
+- **JSON**：数据交换格式
 
 ### 5.2 AI模型集成
 - **GLM**：中文语言优化（默认模型）
@@ -719,14 +719,16 @@ MCPConfig {
 
 ### 5.3 工具和库
 - **Git**：版本控制
-- **ZeroClaw**：LLM连接增强
-- **SkillFramework**：Skill管理框架
-- **MCP Client**：MCP协议客户端
-- **SQLAlchemy**：ORM框架（用于数据存储）
-- **Jinja2**：模板引擎（用于报告生成）
-- **NetworkX**：图论库（用于工作流管理）
+- **ZeroClaw**：LLM连接增强（已集成）
+- **Jinja2**：模板引擎（用于Web界面和报告生成）
+- **jQuery**：前端库（用于Web界面）
+- **Bootstrap**：前端框架（用于Web界面）
 
 ### 5.4 待办工具和库
+- **SkillFramework**：Skill管理框架（待办）
+- **MCP Client**：MCP协议客户端（待办）
+- **SQLAlchemy**：ORM框架（用于数据存储，待办）
+- **NetworkX**：图论库（用于工作流管理，待办）
 - **Ripgrep**：代码搜索（待办）
 - **PyInstaller**：打包工具（用于安装优化，待办）
 - **Safety**：依赖安全扫描（待办）
