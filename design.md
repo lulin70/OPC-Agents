@@ -284,32 +284,47 @@ OPC-Agents 采用模块化、分层的架构设计，主要分为以下几个核
 **职责**：数据存储管理，负责系统数据的持久化。
 
 **设计决策**：
-- 采用分层存储架构，支持多种存储后端
-- 提供数据访问的统一接口
-- 支持数据的版本控制和备份
+- 采用分层存储架构，支持多种存储后端（文件系统、数据库等）
+- 提供数据访问的统一接口，隐藏底层存储实现细节
+- 支持数据的版本控制和备份，确保数据安全
+- 实现数据加密，保护敏感信息
+- 支持数据迁移和同步，确保数据一致性
 
 **关键方法**：
-- `save_data()`：保存数据
-- `load_data()`：加载数据
-- `delete_data()`：删除数据
-- `backup_data()`：备份数据
-- `restore_data()`：恢复数据
+- `save_data()`：保存数据到存储后端
+- `load_data()`：从存储后端加载数据
+- `delete_data()`：删除指定数据
+- `backup_data()`：备份数据到安全位置
+- `restore_data()`：从备份恢复数据
+- `encrypt_data()`：加密敏感数据
+- `decrypt_data()`：解密敏感数据
+- `migrate_data()`：数据迁移到新存储后端
+- `sync_data()`：同步数据到多个存储后端
 
 ### 2.18 KnowledgeBase
 
 **职责**：知识库管理，存储和检索系统知识。
 
 **设计决策**：
-- 采用向量存储技术，支持语义搜索
-- 支持知识的自动更新和维护
-- 提供知识的分类和标签管理
+- 采用向量存储技术，支持语义搜索和相似性匹配
+- 支持知识的自动更新和维护，确保知识的时效性
+- 提供知识的分类和标签管理，便于组织和检索
+- 实现知识的版本控制，跟踪知识的演变过程
+- 支持知识的导入和导出，便于知识的迁移和共享
+- 集成自然语言处理技术，提高知识理解和检索能力
 
 **关键方法**：
-- `store_knowledge()`：存储知识
-- `retrieve_knowledge()`：检索知识
-- `update_knowledge()`：更新知识
-- `delete_knowledge()`：删除知识
-- `search_knowledge()`：搜索知识
+- `store_knowledge()`：存储知识到知识库
+- `retrieve_knowledge()`：根据ID检索知识
+- `update_knowledge()`：更新现有知识
+- `delete_knowledge()`：删除指定知识
+- `search_knowledge()`：根据关键词搜索知识
+- `semantic_search()`：根据语义相似度搜索知识
+- `classify_knowledge()`：对知识进行分类
+- `tag_knowledge()`：为知识添加标签
+- `import_knowledge()`：从外部源导入知识
+- `export_knowledge()`：导出知识到外部格式
+- `get_knowledge_version()`：获取知识的版本信息
 
 ### 2.19 MessageQueue
 
