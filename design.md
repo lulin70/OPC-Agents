@@ -718,31 +718,33 @@ MCPConfig {
 - **本地模型**：如Ollama
 
 ### 5.3 工具和库
-- **Ripgrep**：代码搜索
 - **Git**：版本控制
 - **ZeroClaw**：LLM连接增强
 - **SkillFramework**：Skill管理框架
 - **MCP Client**：MCP协议客户端
-- **PyInstaller**：打包工具（用于安装优化）
-- **Safety**：依赖安全扫描
-- **PyLint**：代码质量检查
 - **SQLAlchemy**：ORM框架（用于数据存储）
-- **Redis**：缓存和消息队列
-- **Elasticsearch**：搜索引擎（用于知识库）
-- **Prometheus**：监控系统
-- **Grafana**：监控数据可视化
-- **Celery**：分布式任务队列
 - **Jinja2**：模板引擎（用于报告生成）
-- **PyPDF2**：PDF处理（用于报告生成）
 - **NetworkX**：图论库（用于工作流管理）
+
+### 5.4 待办工具和库
+- **Ripgrep**：代码搜索（待办）
+- **PyInstaller**：打包工具（用于安装优化，待办）
+- **Safety**：依赖安全扫描（待办）
+- **PyLint**：代码质量检查（待办）
+- **Redis**：缓存和消息队列（待办）
+- **Elasticsearch**：搜索引擎（用于知识库，待办）
+- **Prometheus**：监控系统（待办）
+- **Grafana**：监控数据可视化（待办）
+- **Celery**：分布式任务队列（待办）
+- **PyPDF2**：PDF处理（用于报告生成，待办）
 
 ## 6. 部署与集成
 
 ### 6.1 部署方式
 - **本地部署**：直接在本地运行
-- **Docker部署**：使用Docker容器化部署，包含所有依赖服务
+- **Docker部署**：使用Docker容器化部署，包含所有依赖服务（待办）
 - **云部署**：部署到云服务器，支持弹性扩展
-- **Kubernetes部署**：使用Kubernetes进行容器编排，提高可靠性和可扩展性
+- **Kubernetes部署**：使用Kubernetes进行容器编排，提高可靠性和可扩展性（待办）
 
 ### 6.2 集成方式
 - **API集成**：通过RESTful API与其他系统集成
