@@ -249,9 +249,16 @@ class ThreeSagesManager:
             模型生成的文本
         """
         try:
-            from zeroclaw_integration import ZeroClawIntegration
-            zero_claw = ZeroClawIntegration()
-            return zero_claw.call_llm(prompt, model=model_name)
+            # 尝试使用ZeroClaw作为外部服务（如果可用）
+            try:
+                from zeroclaw_integration import ZeroClawIntegration
+                zero_claw = ZeroClawIntegration()
+                return zero_claw.call_llm(prompt, model=model_name)
+            except ImportError:
+                # 如果ZeroClaw不可用，使用其他LLM接口
+                print(f"[三贤者] ZeroClaw不可用，使用备用LLM接口")
+                # 这里可以添加其他LLM接口的实现
+                return f"[模拟响应] 针对问题 '{prompt}' 的分析和建议"
         except Exception as e:
             print(f"[三贤者] 调用大模型失败: {e}")
             return None

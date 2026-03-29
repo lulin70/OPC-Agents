@@ -35,7 +35,9 @@ OPC-Agents 采用模块化、分层的架构设计，主要分为以下几个核
 
 ### 1.4 外部集成层
 - **ModelIntegration**：AI模型集成，支持多种AI模型
-- **ZeroClawIntegration**：ZeroClaw集成，增强LLM连接性
+
+### 1.5 独立系统
+- **ZeroClaw**：独立的LLM连接增强系统，可作为外部服务集成
 
 ## 2. 模块设计
 
@@ -227,20 +229,7 @@ OPC-Agents 采用模块化、分层的架构设计，主要分为以下几个核
 - `switch_model()`：切换模型
 - `evaluate_model_performance()`：评估模型性能
 
-### 2.13 ZeroClawIntegration
 
-**职责**：实现ZeroClaw集成，增强LLM连接性。
-
-**设计决策**：
-- 采用插件式架构，便于集成和扩展
-- 提供ZeroClaw Gateway的管理和监控
-- 支持多个LLM的连接和管理
-
-**关键方法**：
-- `start_gateway()`：启动ZeroClaw Gateway
-- `stop_gateway()`：停止ZeroClaw Gateway
-- `get_gateway_status()`：获取Gateway状态
-- `connect_to_llm()`：连接到LLM
 
 ### 2.14 SkillManager
 
@@ -719,7 +708,6 @@ MCPConfig {
 
 ### 5.3 工具和库
 - **Git**：版本控制
-- **ZeroClaw**：LLM连接增强（已集成）
 - **Jinja2**：模板引擎（用于Web界面和报告生成）
 - **jQuery**：前端库（用于Web界面）
 - **Bootstrap**：前端框架（用于Web界面）

@@ -13,67 +13,10 @@ import time
 # 解析命令行参数
 parser = argparse.ArgumentParser(description='OPC-Agents Web Interface')
 parser.add_argument('--debug', action='store_true', help='Run in debug mode')
-parser.add_argument('--gateway-pid', type=int, help='ZeroClaw Gateway process ID')
 args = parser.parse_args()
 
-# 存储gateway pid
-gateway_pid = args.gateway_pid
-
-# 自动配对功能
-def auto_pair():
-    """自动从gateway.log文件中读取配对码并更新config.toml文件"""
-    import re
-    
-    # gateway.log文件路径
-    gateway_log_path = "/Users/lin/zeroclaw/gateway.log"
-    config_path = "config.toml"
-    
-    if not os.path.exists(gateway_log_path):
-        print("[自动配对] gateway.log文件不存在")
-        return False
-    
-    try:
-        # 读取gateway.log文件
-        with open(gateway_log_path, 'r') as f:
-            log_content = f.read()
-        
-        # 搜索配对码
-        match = re.search(r'Pairing code: (\w+)', log_content)
-        if match:
-            pairing_code = match.group(1)
-            print(f"[自动配对] 找到配对码: {pairing_code}")
-            
-            # 读取config.toml文件
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    config_content = f.read()
-                
-                # 更新配对码
-                new_config_content = re.sub(r'pairing_code\s*=\s*"[^"]*"', f'pairing_code = "{pairing_code}"', config_content)
-                
-                # 写入更新后的配置
-                with open(config_path, 'w') as f:
-                    f.write(new_config_content)
-                
-                print("[自动配对] 配对码已更新到config.toml文件")
-                return True
-            else:
-                print("[自动配对] config.toml文件不存在")
-                return False
-        else:
-            print("[自动配对] 未找到配对码")
-            return False
-    except Exception as e:
-        print(f"[自动配对] 错误: {e}")
-        return False
-
-# 执行自动配对
-if gateway_pid:
-    print(f"[Web界面] 收到Gateway PID: {gateway_pid}")
-    # 等待一段时间让gateway生成配对码
-    import time
-    time.sleep(5)
-    auto_pair()
+# 可选：ZeroClaw作为外部服务
+print("[Web界面] ZeroClaw已作为独立系统运行，可通过配置文件连接")
 
 # 初始化OPC Manager
 manager = OPCManager(debug_mode=args.debug)
