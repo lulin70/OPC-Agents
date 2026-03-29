@@ -232,6 +232,54 @@ OPC-Agents 采用模块化、分层的架构设计，主要分为以下几个核
 - `get_gateway_status()`：获取Gateway状态
 - `connect_to_llm()`：连接到LLM
 
+### 2.14 SkillManager
+
+**职责**：实现Skill管理系统，支持代理主动使用和优化本地Skill。
+
+**设计决策**：
+- 采用插件式架构，便于添加和管理Skill
+- 支持Skill的版本控制和优化跟踪
+- 提供Skill的搜索和推荐功能
+
+**关键方法**：
+- `register_skill()`：注册新Skill
+- `get_skill()`：获取指定Skill
+- `search_skills()`：搜索适合的Skill
+- `optimize_skill()`：优化Skill性能
+- `get_skill_usage_stats()`：获取Skill使用统计
+
+### 2.15 MCPIntegration
+
+**职责**：实现MCP（Model Control Protocol）能力，从Git或其他官方网站抓取可信赖、安全的Skill。
+
+**设计决策**：
+- 采用安全验证机制，确保从可信来源获取Skill
+- 支持Skill的安全性扫描和沙箱运行
+- 提供MCP连接的重试和缓存机制
+
+**关键方法**：
+- `connect_to_mcp()`：连接到MCP服务
+- `fetch_skills()`：从MCP获取Skill
+- `verify_skill()`：验证Skill的安全性
+- `install_skill()`：安装新Skill
+- `get_mcp_status()`：获取MCP连接状态
+
+### 2.16 InstallationManager
+
+**职责**：优化系统的安装和使用流程，提高用户体验。
+
+**设计决策**：
+- 提供一键安装和配置功能
+- 支持自动依赖管理和环境配置
+- 提供清晰的使用指南和帮助文档
+
+**关键方法**：
+- `install_dependencies()`：安装系统依赖
+- `configure_system()`：配置系统参数
+- `setup_environment()`：设置运行环境
+- `generate_documentation()`：生成使用文档
+- `validate_installation()`：验证安装状态
+
 ## 3. 数据结构
 
 ### 3.1 配置数据
@@ -323,6 +371,45 @@ Log {
 }
 ```
 
+### 3.7 Skill数据
+
+**结构**：
+```python
+Skill {
+    id: str,              # Skill ID
+    name: str,            # Skill名称
+    description: str,     # Skill描述
+    version: str,         # Skill版本
+    author: str,          # 作者
+    source: str,          # 来源（本地或外部）
+    dependencies: List[str], # 依赖项
+    code: str,            # Skill代码
+    usage_count: int,     # 使用次数
+    last_used: datetime,  # 最后使用时间
+    optimization_score: float, # 优化得分
+    created_at: datetime, # 创建时间
+    updated_at: datetime  # 更新时间
+}
+```
+
+### 3.8 MCP配置数据
+
+**结构**：
+```python
+MCPConfig {
+    id: str,              # 配置ID
+    name: str,            # 配置名称
+    url: str,             # MCP服务URL
+    api_key: str,         # API密钥
+    trusted_sources: List[str], # 可信来源列表
+    security_rules: Dict, # 安全验证规则
+    connection_timeout: int, # 连接超时时间
+    retry_attempts: int,  # 重试次数
+    created_at: datetime, # 创建时间
+    updated_at: datetime  # 更新时间
+}
+```
+
 ## 4. 接口设计
 
 ### 4.1 Web API 接口
@@ -382,6 +469,32 @@ Log {
 - `POST /api/a2a/workflow`：创建工作流
 - `GET /api/a2a/agents`：获取注册的代理
 
+#### 4.1.10 Skill管理
+- `GET /api/skills`：获取所有Skill
+- `GET /api/skills/{skill_id}`：获取指定Skill
+- `POST /api/skills`：创建新Skill
+- `PUT /api/skills/{skill_id}`：更新Skill
+- `DELETE /api/skills/{skill_id}`：删除Skill
+- `POST /api/skills/{skill_id}/optimize`：优化Skill
+- `GET /api/skills/search`：搜索Skill
+- `GET /api/skills/stats`：获取Skill使用统计
+
+#### 4.1.11 MCP能力
+- `GET /api/mcp/status`：获取MCP连接状态
+- `POST /api/mcp/connect`：连接到MCP服务
+- `GET /api/mcp/skills`：获取可用的Skill
+- `POST /api/mcp/fetch`：从MCP获取Skill
+- `POST /api/mcp/install`：安装新Skill
+- `PUT /api/mcp/config`：更新MCP配置
+
+#### 4.1.12 安装与使用优化
+- `GET /api/installation/status`：获取安装状态
+- `POST /api/installation/install`：安装系统
+- `POST /api/installation/configure`：配置系统
+- `GET /api/installation/dependencies`：获取依赖状态
+- `POST /api/installation/validate`：验证安装
+- `GET /api/installation/documentation`：获取使用文档
+
 ### 4.2 命令行接口
 
 - `python opc_skill.py 查看所有部门`：查看所有部门
@@ -391,6 +504,13 @@ Log {
 - `python opc_skill.py 发送消息 {sender} {receiver} {type} {content}`：发送消息
 - `python opc_skill.py 启动共识 {topic} {agents}`：启动共识过程
 - `python opc_skill.py 查看Token使用`：查看Token使用情况
+- `python opc_skill.py 查看所有Skill`：查看所有Skill
+- `python opc_skill.py 搜索Skill {keyword}`：搜索Skill
+- `python opc_skill.py 优化Skill {skill_id}`：优化Skill
+- `python opc_skill.py 从MCP获取Skill {skill_name}`：从MCP获取Skill
+- `python opc_skill.py 安装系统`：安装系统
+- `python opc_skill.py 配置系统`：配置系统
+- `python opc_skill.py 验证安装`：验证安装状态
 
 ## 5. 技术栈
 
@@ -412,6 +532,11 @@ Log {
 - **Ripgrep**：代码搜索
 - **Git**：版本控制
 - **ZeroClaw**：LLM连接增强
+- **SkillFramework**：Skill管理框架
+- **MCP Client**：MCP协议客户端
+- **PyInstaller**：打包工具（用于安装优化）
+- **Safety**：依赖安全扫描
+- **PyLint**：代码质量检查
 
 ## 6. 部署与集成
 
