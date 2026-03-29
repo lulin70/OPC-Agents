@@ -170,16 +170,42 @@ def register_routes(manager):
         if not message:
             return jsonify({'error': 'Message is required'}), 400
         
-        # 模拟发送消息
-        response = {
-            "id": f"msg_{int(time.time())}",
-            "type": "executive",
-            "content": "收到您的消息，我正在处理...",
-            "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
-        }
-        
-        # 这里可以添加实际的消息处理逻辑
-        # 例如调用总裁办代理处理消息
+        try:
+            # 尝试调用ZeroClaw Gateway处理消息
+            from zeroclaw_integration import ZeroClawIntegration
+            zero_claw = ZeroClawIntegration()
+            
+            # 构建提示词
+            prompt = f"你是总裁办助理，收到用户的消息：{message}\n请根据你的角色给出响应。"
+            
+            # 调用ZeroClaw获取响应
+            ai_response = zero_claw.call_chat_completion(prompt, model="glm")
+            
+            if ai_response:
+                response = {
+                    "id": f"msg_{int(time.time())}",
+                    "type": "executive",
+                    "content": ai_response,
+                    "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+                }
+            else:
+                # 如果ZeroClaw调用失败，使用manager处理
+                result = manager.send_message("user", "chief_executive_agent", "request", message)
+                response = {
+                    "id": f"msg_{int(time.time())}",
+                    "type": "executive",
+                    "content": result.get("response", "收到您的消息，正在处理..."),
+                    "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+                }
+        except Exception as e:
+            # 如果所有处理都失败，返回错误信息
+            print(f"[消息处理错误] {e}")
+            response = {
+                "id": f"msg_{int(time.time())}",
+                "type": "executive",
+                "content": f"处理消息时出现错误：{str(e)}。请检查系统配置或稍后重试。",
+                "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+            }
         
         return jsonify(response)
     

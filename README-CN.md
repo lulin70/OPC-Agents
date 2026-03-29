@@ -550,7 +550,7 @@ marketing = ["digital_marketer", "content_marketer", "social_media_specialist", 
 legal = ["contract_specialist", "compliance_officer"]
 
 # HR Team
-tr = ["recruiter", "onboarding_specialist"]
+hr = ["recruiter", "onboarding_specialist"]
 
 # Finance Team
 finance = ["accountant", "financial_analyst"]

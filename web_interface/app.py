@@ -78,8 +78,30 @@ if gateway_pid:
 # 初始化OPC Manager
 manager = OPCManager(debug_mode=args.debug)
 
-# 创建Flask应用
-app = Flask(__name__)
+# 创建测试任务
+print("[Web界面] 创建测试任务...")
+tasks = manager.get_all_tasks()
+if not tasks:
+    # 创建一些测试任务
+    manager.create_task("task-1", "产品发布计划", "产品经理", "in_progress")
+    manager.update_task_status("task-1", "in_progress", 75)
+    
+    manager.create_task("task-2", "市场分析报告", "市场研究员", "completed")
+    manager.update_task_status("task-2", "completed", 100)
+    
+    manager.create_task("task-3", "团队建设方案", "人力资源专员", "completed")
+    manager.update_task_status("task-3", "completed", 100)
+    
+    manager.create_task("task-4", "季度总结", "财务经理", "completed")
+    manager.update_task_status("task-4", "completed", 100)
+    
+    print("[Web界面] 测试任务创建完成")
+
+# 创建Flask应用，显式指定模板和静态文件目录
+import os
+template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'templates')
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
 # 设置debug模式
 log_level = logging.DEBUG if args.debug else logging.INFO
@@ -93,6 +115,8 @@ from web_interface.routes.department_management import register_routes as regist
 from web_interface.routes.personal_assistant import register_routes as register_pa_routes
 from web_interface.routes.model_management import register_routes as register_model_routes
 from web_interface.routes.auto_optimizer import register_routes as register_auto_opt_routes
+from web_interface.routes.progress_routes import bp as progress_bp
+from web_interface.routes.health_routes import health_bp, init_health_routes
 
 # 注册各模块路由
 try:
@@ -113,6 +137,13 @@ try:
     
     auto_opt_bp = register_auto_opt_routes()
     app.register_blueprint(auto_opt_bp)
+    
+    # 注册进度反馈路由
+    app.register_blueprint(progress_bp)
+    
+    # 注册健康检查路由
+    init_health_routes(manager)
+    app.register_blueprint(health_bp)
     
     print("[Web界面] 路由蓝图已加载")
 except Exception as e:
@@ -162,13 +193,20 @@ def index():
     
     return render_template('index.html', tasks=tasks, departments=departments, token_usage=token_usage)
 
-if __name__ == '__main__':
-    # 创建templates目录
-    if not os.path.exists('templates'):
-        os.makedirs('templates')
+# 监控页面
+@app.route('/monitoring')
+def monitoring():
+    return render_template('monitoring.html')
+
+# 启动Flask应用（支持 python -m 方式运行）
+if __name__ == '__main__' or __name__ == 'web_interface.app':
+    # 创建templates目录（使用绝对路径）
+    if not os.path.exists(template_dir):
+        os.makedirs(template_dir)
     
     # 只有当index.html文件不存在时才创建
-    if not os.path.exists('templates/index.html'):
+    index_html_path = os.path.join(template_dir, 'index.html')
+    if not os.path.exists(index_html_path):
         # 创建index.html文件
         index_html = '''
 <!DOCTYPE html>
@@ -1166,8 +1204,10 @@ if __name__ == '__main__':
 </body>
 </html>
 '''
-        with open('templates/index.html', 'w') as f:
+        with open(index_html_path, 'w') as f:
             f.write(index_html)
-        
-    # 运行Flask应用
-    app.run(host='0.0.0.0', port=5000, debug=args.debug)
+    
+    # 启动Flask服务
+    print(f"[Web界面] 启动Flask服务在端口 5007...")
+    print(f"[Web界面] 模板目录: {template_dir}")
+    app.run(host='0.0.0.0', port=5007, debug=args.debug)

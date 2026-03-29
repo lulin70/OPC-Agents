@@ -13,11 +13,11 @@ from typing import Dict, List, Optional, Any
 class ZeroClawIntegration:
     """ZeroClaw 框架集成类"""
     
-    def __init__(self, base_url: str = "http://localhost:8081", pairing_code: str = None):
+    def __init__(self, base_url: str = "http://localhost:8080", pairing_code: str = None):
         """初始化 ZeroClaw 集成
         
         Args:
-            base_url: ZeroClaw 服务的基础 URL
+            base_url: ZeroClaw 服务的基础 URL（默认端口8080）
             pairing_code: 配对代码
         """
         self.base_url = base_url
@@ -35,15 +35,54 @@ class ZeroClawIntegration:
             response = requests.get(self.api_endpoints["health"], timeout=10)
             if response.status_code == 200:
                 health_data = response.json()
-                if health_data.get("paired", False):
-                    print("[ZeroClaw] Gateway 已配对，跳过配对步骤")
-                    self.paired = True
-                else:
-                    # 如果未配对且提供了配对代码，自动进行配对
+                print(f"[ZeroClaw] Gateway健康状态: {health_data.get('status', 'unknown')}")
+                
+                # 检查是否需要配对（如果没有auth_token）
+                if not self.auth_token:
                     if pairing_code:
+                        # 使用提供的配对码
+                        print(f"[ZeroClaw] 使用提供的配对码: {pairing_code}")
                         self.pair(pairing_code)
+                    else:
+                        # 尝试从gateway.log中提取配对码
+                        extracted_code = self._extract_pairing_code_from_log()
+                        if extracted_code:
+                            print(f"[ZeroClaw] 从日志中提取到配对码: {extracted_code}")
+                            self.pair(extracted_code)
+                        else:
+                            print("[ZeroClaw] 未找到配对码，请手动配对")
         except Exception as e:
             print(f"[ZeroClaw] 检查健康状态失败: {e}")
+    
+    def _extract_pairing_code_from_log(self) -> Optional[str]:
+        """从gateway.log中提取配对码
+        
+        Returns:
+            配对码字符串，如果未找到则返回None
+        """
+        import os
+        import re
+        
+        # 尝试多个可能的日志文件位置
+        log_paths = [
+            "/Users/lin/zeroclaw/gateway.log",
+            "/Users/lin/zeroclaw/target/release/gateway.log",
+            "/tmp/zeroclaw_gateway.log"
+        ]
+        
+        for log_path in log_paths:
+            if os.path.exists(log_path):
+                try:
+                    with open(log_path, 'r') as f:
+                        content = f.read()
+                        # 查找配对码，格式为：│  285443  │
+                        match = re.search(r'│\s*(\d{6})\s*│', content)
+                        if match:
+                            return match.group(1)
+                except Exception as e:
+                    print(f"[ZeroClaw] 读取日志文件失败 {log_path}: {e}")
+        
+        return None
     
     def call_chat_completion(self, prompt: str, model: str = "zhipu/glm-4.7", temperature: float = 1.0, max_tokens: int = 65536) -> Optional[str]:
         """调用 ZeroClaw 的聊天完成 API
@@ -91,6 +130,18 @@ class ZeroClawIntegration:
         except Exception as e:
             print(f"[ZeroClaw] Error calling chat completion API: {e}")
             return None
+    
+    def call_llm(self, prompt: str, model: str = "glm") -> Optional[str]:
+        """调用 LLM 的别名方法，为了兼容性
+        
+        Args:
+            prompt: 提示词
+            model: 使用的模型
+            
+        Returns:
+            模型的响应
+        """
+        return self.call_chat_completion(prompt, model)
     
     def get_agents(self) -> Optional[List[Dict[str, Any]]]:
         """获取所有 Agent

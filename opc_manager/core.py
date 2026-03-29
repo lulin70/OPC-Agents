@@ -12,12 +12,14 @@ from .architecture import ArchitectureManager
 from .task_manager import TaskManager
 from .three_sages import ThreeSagesManager
 from .personal_assistant import PersonalAssistantManager
+from .task_executor import TaskExecutor, TaskExecutorManager, TaskPriority
 from communication_manager import CommunicationManager, ContextManager
+from data_storage.dao import DatabaseManager
 
 class OPCManager:
     """Manager class for the OPC-Agents system"""
     
-    def __init__(self, config_path: str = "config.toml", debug_mode: bool = False):
+    def __init__(self, config_path: str = "config.toml", debug_mode: bool = False, db_path: str = None):
         """Initialize the OPC Manager"""
         # 初始化日志配置
         global log_config
@@ -28,16 +30,32 @@ class OPCManager:
         self.config_manager = ConfigManager(config_path)
         self.config = self.config_manager.config
         
+        # 初始化数据库管理器
+        if db_path is None:
+            db_path = "data_storage/opc_agents.db"
+        self.db_manager = DatabaseManager(db_path)
+        self.logger.info(f"数据库管理器已初始化: {db_path}")
+        
         # 初始化通信管理器和上下文管理器
-        self.communication_manager = CommunicationManager(debug_mode=debug_mode)
+        self.communication_manager = CommunicationManager(debug_mode=debug_mode, db_manager=self.db_manager)
         self.context_manager = ContextManager()
         
         # 初始化各功能模块
         self.agent_manager = AgentManager(self.config.get('agents', {}))
         self.architecture_manager = ArchitectureManager(self.agent_manager)
-        self.task_manager = TaskManager(self.communication_manager)
+        self.task_manager = TaskManager(self.communication_manager, db_manager=self.db_manager)
         self.three_sages_manager = ThreeSagesManager()
         self.personal_assistant_manager = PersonalAssistantManager()
+        
+        # 初始化任务执行器
+        self.task_executor = TaskExecutor(
+            opc_manager=self,
+            max_workers=5,
+            progress_streamer=None,
+            db_manager=self.db_manager
+        )
+        self.executor_manager = TaskExecutorManager(self)
+        self.executor_manager.executors.append(self.task_executor)
         
         self.logger.info(f"OPC Manager initialized in {'debug' if debug_mode else 'normal'} mode")
     

@@ -4,14 +4,23 @@ Task management for OPC Manager
 """
 
 import time
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from data_storage.dao import DatabaseManager
 
 class TaskManager:
     """Task manager for OPC-Agents system"""
     
-    def __init__(self, communication_manager):
-        """Initialize the Task Manager"""
+    def __init__(self, communication_manager, db_manager: 'DatabaseManager' = None):
+        """Initialize the Task Manager
+        
+        Args:
+            communication_manager: 通信管理器实例
+            db_manager: 数据库管理器实例（可选）
+        """
         self.communication_manager = communication_manager
+        self.db_manager = db_manager
     
     def decompose_task(self, task: str, time_horizon: str = "medium") -> List[Dict[str, str]]:
         """Decompose a task into smaller tasks based on time horizon
@@ -525,3 +534,247 @@ class TaskManager:
             所有任务的历史记录
         """
         return self.communication_manager.get_all_task_history()
+    
+    def complete_task_with_deliverable(self, task_id: str, result: Any = None, 
+                                        description: str = "任务完成",
+                                        deliverable_type: str = None) -> Dict[str, Any]:
+        """完成任务并生成成果物
+        
+        Args:
+            task_id: 任务ID
+            result: 任务结果
+            description: 完成描述
+            deliverable_type: 成果物类型 (如果不指定，会根据任务类型自动推断)
+            
+        Returns:
+            包含任务和成果物信息的字典
+        """
+        import logging
+        logger = logging.getLogger("OPC-Agents.TaskManager")
+        
+        # 获取任务信息
+        task_info = self.get_task_status(task_id)
+        if not task_info:
+            logger.warning(f"任务 {task_id} 不存在")
+            return {"success": False, "error": "任务不存在"}
+        
+        # 更新任务状态
+        self.communication_manager.complete_task(task_id, result, description)
+        
+        # 生成成果物
+        deliverable = None
+        try:
+            from task_deliverables.deliverable_generator import DeliverableGenerator
+            from task_deliverables.deliverable_manager import DeliverableManager
+            
+            # 确定成果物类型
+            if not deliverable_type:
+                deliverable_type = self._infer_deliverable_type(task_info)
+            
+            # 生成成果物
+            generator = DeliverableGenerator()
+            deliverable = generator.generate_deliverable(
+                task_id=task_id,
+                task_name=task_info.get("task_name", ""),
+                task_type=deliverable_type,
+                content=result or description,
+                metadata={
+                    "agent": task_info.get("agent"),
+                    "department": task_info.get("department"),
+                    "created_at": task_info.get("created_at"),
+                    "completed_at": time.time()
+                }
+            )
+            
+            # 存储成果物
+            if self.db_manager:
+                manager = DeliverableManager(self.db_manager)
+                manager.save_deliverable(deliverable)
+                logger.info(f"成果物已保存: {deliverable.id}")
+            
+            logger.info(f"任务 {task_id} 完成，成果物类型: {deliverable_type}")
+            
+        except Exception as e:
+            logger.warning(f"生成成果物失败: {e}，任务仍标记为完成")
+        
+        return {
+            "success": True,
+            "task_id": task_id,
+            "status": "completed",
+            "deliverable": deliverable.to_dict() if deliverable else None
+        }
+    
+    def _infer_deliverable_type(self, task_info: Dict[str, Any]) -> str:
+        """根据任务信息推断成果物类型
+        
+        Args:
+            task_info: 任务信息字典
+            
+        Returns:
+            成果物类型字符串
+        """
+        task_name = task_info.get("task_name", "").lower()
+        department = task_info.get("department", "").lower()
+        agent = task_info.get("agent", "").lower()
+        
+        # 根据关键词推断类型
+        if "分析" in task_name or "analysis" in task_name:
+            return "analysis_report"
+        elif "设计" in task_name or "design" in task_name:
+            return "design_document"
+        elif "开发" in task_name or "develop" in task_name:
+            return "code_document"
+        elif "测试" in task_name or "test" in task_name:
+            return "test_report"
+        elif "报告" in task_name or "report" in task_name:
+            return "summary_report"
+        elif "规划" in task_name or "plan" in task_name:
+            return "plan_document"
+        elif "评估" in task_name or "assessment" in task_name:
+            return "assessment_report"
+        elif department == "design":
+            return "design_document"
+        elif department == "development":
+            return "code_document"
+        elif department == "marketing":
+            return "marketing_report"
+        else:
+            return "summary_report"
+    
+    def assign_task_to_agent(self, task_id: str, agent_name: str, 
+                             department: str = None) -> Dict[str, Any]:
+        """将任务分配给指定Agent
+        
+        Args:
+            task_id: 任务ID
+            agent_name: Agent名称
+            department: 部门名称（可选）
+            
+        Returns:
+            分配结果
+        """
+        import logging
+        logger = logging.getLogger("OPC-Agents.TaskManager")
+        
+        # 获取任务信息
+        task_info = self.get_task_status(task_id)
+        if not task_info:
+            logger.warning(f"任务 {task_id} 不存在")
+            return {"success": False, "error": "任务不存在"}
+        
+        # 更新任务分配
+        task_info["agent"] = agent_name
+        if department:
+            task_info["department"] = department
+        
+        # 更新状态
+        self.communication_manager.update_task_status(task_id, task_info.get("status", "pending"))
+        
+        # 发送通知给Agent
+        try:
+            self.communication_manager.send_message(
+                sender="task_manager",
+                receiver=agent_name,
+                message_type="task_assignment",
+                content=f"您已被分配任务: {task_info.get('task_name', task_id)}",
+                context={"task_id": task_id, "department": department}
+            )
+            logger.info(f"任务 {task_id} 已分配给 {agent_name}")
+        except Exception as e:
+            logger.warning(f"发送任务分配通知失败: {e}")
+        
+        return {
+            "success": True,
+            "task_id": task_id,
+            "agent": agent_name,
+            "department": department
+        }
+    
+    def find_best_agent_for_task(self, task_name: str, task_type: str = None) -> Dict[str, Any]:
+        """为任务找到最合适的Agent
+        
+        Args:
+            task_name: 任务名称
+            task_type: 任务类型（可选）
+            
+        Returns:
+            推荐的Agent信息
+        """
+        import logging
+        logger = logging.getLogger("OPC-Agents.TaskManager")
+        
+        try:
+            # 加载Agent配置
+            import json
+            import os
+            
+            agents_file = os.path.join(os.path.dirname(__file__), "..", "official_agents", "agents.json")
+            if os.path.exists(agents_file):
+                with open(agents_file, 'r', encoding='utf-8') as f:
+                    agents_config = json.load(f)
+                
+                # 分析任务关键词
+                task_keywords = set(task_name.lower().split())
+                if task_type:
+                    task_keywords.add(task_type.lower())
+                
+                # 匹配Agent
+                best_match = None
+                best_score = 0
+                
+                for dept_name, dept_info in agents_config.get("departments", {}).items():
+                    for agent in dept_info.get("agents", []):
+                        agent_name = agent.get("name", "").lower()
+                        agent_skills = set(s.lower() for s in agent.get("skills", []))
+                        agent_keywords = set(agent_name.split()) | agent_skills
+                        
+                        # 计算匹配分数
+                        common_keywords = task_keywords & agent_keywords
+                        score = len(common_keywords)
+                        
+                        if score > best_score:
+                            best_score = score
+                            best_match = {
+                                "agent_name": agent.get("name"),
+                                "department": dept_name,
+                                "skills": agent.get("skills", []),
+                                "match_score": score,
+                                "matched_keywords": list(common_keywords)
+                            }
+                
+                if best_match:
+                    logger.info(f"为任务 '{task_name}' 找到最佳Agent: {best_match['agent_name']} (分数: {best_score})")
+                    return best_match
+        except Exception as e:
+            logger.warning(f"查找最佳Agent失败: {e}")
+        
+        # 默认返回
+        return {
+            "agent_name": "general_assistant",
+            "department": "executive_office",
+            "skills": [],
+            "match_score": 0,
+            "matched_keywords": []
+        }
+    
+    def get_task_deliverables(self, task_id: str) -> List[Dict[str, Any]]:
+        """获取任务的成果物列表
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            成果物列表
+        """
+        if not self.db_manager:
+            return []
+        
+        try:
+            from task_deliverables.deliverable_manager import DeliverableManager
+            manager = DeliverableManager(self.db_manager)
+            deliverables = manager.get_deliverables_by_task(task_id)
+            return [d.to_dict() for d in deliverables]
+        except Exception as e:
+            import logging
+            logging.getLogger("OPC-Agents.TaskManager").warning(f"获取成果物失败: {e}")
+            return []

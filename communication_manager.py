@@ -8,24 +8,91 @@ Manages communication between agents, including message passing, context sharing
 import time
 import json
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from data_storage.dao import DatabaseManager
 
 class CommunicationManager:
     """管理代理之间的通信"""
     
-    def __init__(self, debug_mode: bool = False):
-        """初始化通信管理器"""
+    def __init__(self, debug_mode: bool = False, db_manager: 'DatabaseManager' = None, 
+                 use_message_queue: bool = True, ai_client=None, progress_streamer=None):
+        """初始化通信管理器
+        
+        Args:
+            debug_mode: 是否启用调试模式
+            db_manager: 数据库管理器实例
+            use_message_queue: 是否使用消息队列
+            ai_client: AI客户端实例（用于异步处理）
+            progress_streamer: 进度流式传输器实例
+        """
         self.debug_mode = debug_mode
         self.logger = logging.getLogger("OPC-Agents.Communication")
         self.logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
         
+        # 数据库管理器
+        self.db_manager = db_manager
+        
+        # 内存缓存（用于快速访问）
         self.message_history = {}
         self.context_store = {}
         self.token_usage = {}
         self.task_status = {}  # 任务状态跟踪
         self.task_history = {}  # 任务历史记录
         
-        self.logger.info(f"Communication Manager initialized in {'debug' if debug_mode else 'normal'} mode")
+        # 消息队列相关
+        self.use_message_queue = use_message_queue
+        self.message_queue = None
+        self.message_processor = None
+        
+        # 初始化消息队列
+        if use_message_queue:
+            self._init_message_queue(ai_client, progress_streamer)
+        
+        # 从数据库加载现有任务到内存缓存
+        if self.db_manager:
+            self._load_tasks_from_db()
+        
+        self.logger.info(f"Communication Manager initialized in {'debug' if debug_mode else 'normal'} mode, queue={'enabled' if use_message_queue else 'disabled'}")
+    
+    def _init_message_queue(self, ai_client=None, progress_streamer=None):
+        """初始化消息队列"""
+        try:
+            from message_queue.queue_manager import MessageQueue
+            from message_queue.message_processor import MessageProcessor
+            
+            self.message_queue = MessageQueue(max_size=1000)
+            self.message_processor = MessageProcessor(
+                message_queue=self.message_queue,
+                ai_client=ai_client,
+                progress_streamer=progress_streamer
+            )
+            self.logger.info("消息队列初始化完成")
+        except Exception as e:
+            self.logger.warning(f"消息队列初始化失败: {e}，将使用同步模式")
+            self.use_message_queue = False
+            self.message_queue = None
+            self.message_processor = None
+    
+    def _load_tasks_from_db(self):
+        """从数据库加载任务到内存缓存"""
+        try:
+            tasks = self.db_manager.get_all_tasks()
+            for task in tasks:
+                self.task_status[task.id] = {
+                    "task_id": task.id,
+                    "task_name": task.name,
+                    "agent": task.assigned_to or "",
+                    "status": task.status,
+                    "created_at": task.created_at,
+                    "updated_at": task.updated_at,
+                    "progress": task.progress,
+                    "description": task.description or ""
+                }
+            self.logger.info(f"从数据库加载了 {len(tasks)} 个任务到内存缓存")
+        except Exception as e:
+            self.logger.error(f"从数据库加载任务失败: {e}")
     
     def _compress_content(self, content: str) -> str:
         """压缩消息内容，减少Token消耗"""
@@ -120,6 +187,11 @@ class CommunicationManager:
             
             # 调用ZeroClaw获取响应
             response = zero_claw.call_llm(prompt, model="glm")
+            
+            # 检查响应是否有效
+            if not response:
+                self.logger.warning("ZeroClaw调用失败，使用默认响应")
+                response = f"收到来自{message['sender']}的消息，正在处理中..."
             
             # 存储响应
             if receiver not in self.message_history:
@@ -282,16 +354,36 @@ class CommunicationManager:
             agent: 负责的代理
             initial_status: 初始状态，默认为"pending"
         """
+        now = time.time()
         self.task_status[task_id] = {
             "task_id": task_id,
             "task_name": task_name,
             "agent": agent,
             "status": initial_status,
-            "created_at": time.time(),
-            "updated_at": time.time(),
+            "created_at": now,
+            "updated_at": now,
             "progress": 0
         }
         self.logger.info(f"创建任务: {task_name} (ID: {task_id}) 分配给: {agent}")
+        
+        # 同步写入数据库
+        if self.db_manager:
+            try:
+                from data_storage.models import TaskRecord
+                task_record = TaskRecord(
+                    id=task_id,
+                    name=task_name,
+                    status=initial_status,
+                    progress=0,
+                    created_at=now,
+                    updated_at=now,
+                    assigned_to=agent,
+                    description=""
+                )
+                self.db_manager.save_task(task_record)
+                self.logger.debug(f"任务已持久化到数据库: {task_id}")
+            except Exception as e:
+                self.logger.error(f"持久化任务到数据库失败: {e}")
         
         # 添加任务创建历史记录
         self.add_task_history(task_id, "created", f"任务创建: {task_name} 分配给: {agent}", {
@@ -309,13 +401,34 @@ class CommunicationManager:
             progress: 任务进度 (0-100)
         """
         if task_id in self.task_status:
+            now = time.time()
             self.task_status[task_id]["status"] = status
-            self.task_status[task_id]["updated_at"] = time.time()
+            self.task_status[task_id]["updated_at"] = now
             if progress is not None:
                 self.task_status[task_id]["progress"] = min(100, max(0, progress))
             self.logger.info(f"更新任务 {task_id} 状态: {status}")
             if progress is not None:
                 self.logger.info(f"更新任务 {task_id} 进度: {progress}%")
+            
+            # 同步更新数据库
+            if self.db_manager:
+                try:
+                    from data_storage.models import TaskRecord
+                    task_data = self.task_status[task_id]
+                    task_record = TaskRecord(
+                        id=task_id,
+                        name=task_data.get("task_name", ""),
+                        status=status,
+                        progress=task_data.get("progress", 0),
+                        created_at=task_data.get("created_at", now),
+                        updated_at=now,
+                        assigned_to=task_data.get("agent", ""),
+                        description=task_data.get("description", "")
+                    )
+                    self.db_manager.save_task(task_record)
+                    self.logger.debug(f"任务状态已更新到数据库: {task_id}")
+                except Exception as e:
+                    self.logger.error(f"更新任务到数据库失败: {e}")
         else:
             self.logger.warning(f"任务 {task_id} 不存在")
     
@@ -461,6 +574,92 @@ class CommunicationManager:
         })
         if not test_result:
             self.update_task_with_history(task_id, status, None, f"测试{'通过' if test_result else '失败'}")
+    
+    def send_message_async(self, sender: str, receiver: str, message_type: str, content: str, 
+                          context: Optional[Dict[str, Any]] = None, task_id: str = "") -> Dict[str, Any]:
+        """异步发送消息（通过消息队列）
+        
+        Args:
+            sender: 发送者名称
+            receiver: 接收者名称
+            message_type: 消息类型
+            content: 消息内容
+            context: 上下文信息
+            task_id: 关联的任务ID
+            
+        Returns:
+            消息ID和状态
+        """
+        if not self.message_queue:
+            self.logger.warning("消息队列未初始化，使用同步发送")
+            return self.send_message(sender, receiver, message_type, content, context)
+        
+        from message_queue.models import Message, MessageType, MessageStatus
+        
+        message = Message(
+            task_id=task_id,
+            sender=sender,
+            receiver=receiver,
+            content=content,
+            message_type=MessageType.USER if message_type == "user" else MessageType.TASK,
+            status=MessageStatus.PENDING,
+            metadata={"message_type": message_type, "context": context or {}}
+        )
+        
+        success = self.message_queue.add_message(message)
+        
+        if success:
+            return {
+                "success": True,
+                "message_id": message.id,
+                "status": "queued",
+                "timestamp": message.timestamp
+            }
+        else:
+            return {
+                "success": False,
+                "error": "消息队列已满"
+            }
+    
+    def get_message_progress(self, message_id: str) -> Optional[Dict[str, Any]]:
+        """获取消息处理进度
+        
+        Args:
+            message_id: 消息ID
+            
+        Returns:
+            进度信息
+        """
+        if not self.message_queue:
+            return None
+        
+        progress = self.message_queue.get_progress(message_id)
+        if progress:
+            return progress.to_dict()
+        return None
+    
+    def get_queue_statistics(self) -> Dict[str, Any]:
+        """获取消息队列统计信息
+        
+        Returns:
+            统计信息
+        """
+        if not self.message_queue:
+            return {"error": "消息队列未初始化"}
+        
+        return self.message_queue.get_statistics()
+    
+    def start_async_processing(self):
+        """启动异步消息处理"""
+        if self.message_processor:
+            self.message_processor.start()
+            self.logger.info("异步消息处理器已启动")
+    
+    def stop_async_processing(self):
+        """停止异步消息处理"""
+        if self.message_processor:
+            self.message_processor.stop()
+            self.logger.info("异步消息处理器已停止")
 
 class ContextManager:
     """管理代理之间的共享上下文"""

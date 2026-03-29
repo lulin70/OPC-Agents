@@ -31,13 +31,14 @@ ZEROCLAW_DIR="/Users/lin/zeroclaw"
 
 # 启动 ZeroClaw Gateway
 echo "\n启动 ZeroClaw Gateway..."
+lsof -ti:8080 | xargs kill -9   
 if [ -d "$ZEROCLAW_DIR" ]; then
     cd "$ZEROCLAW_DIR"
     echo "进入 ZeroClaw 目录: $(pwd)"
     
     # 构建 ZeroClaw 项目
     echo "构建 ZeroClaw 项目..."
-    # cargo build --release
+    cargo build --release
     
     # 启动 gateway，使用 nohup 后台运行，输出到 gateway.log
     echo "启动 ZeroClaw Gateway..."
@@ -46,19 +47,26 @@ if [ -d "$ZEROCLAW_DIR" ]; then
     echo "ZeroClaw Gateway 已启动，PID: $GATEWAY_PID"
     echo "正在等待 Gateway 启动并生成配对码..."
     
-    # 等待 10 秒，让用户看到匹配码
+    # 等待 10 秒，让 Gateway 生成配对码
     sleep 10
     
     echo "\n========================================"
-    echo "请查看 ZeroClaw Gateway 日志获取配对码:"
-    echo "cat $ZEROCLAW_DIR/gateway.log"
+    echo "ZeroClaw Gateway 配对码:"
+    # 从日志中提取配对码
+    PAIRING_CODE=$(grep -A 3 "PAIRING REQUIRED" gateway.log 2>/dev/null | grep -oE "[0-9]{6}" | head -1)
+    if [ -n "$PAIRING_CODE" ]; then
+        echo "🔐 配对码: $PAIRING_CODE"
+        echo "请将此配对码输入到 config.toml 文件中的 pairing_code 字段"
+    else
+        echo "未能自动提取配对码，请查看日志:"
+        tail -20 gateway.log
+    fi
     echo "========================================"
     
     # 提示用户输入配对码
-    echo "\n请将配对码输入到 config.toml 文件中的 pairing_code 字段"
-    echo "然后按 Enter 键继续..."
+    echo "\n按 Enter 键继续启动 OPC-Agents..."
     # 添加超时机制，5秒后自动继续
-    read -t 5 -p "按 Enter 键继续启动 OPC-Agents... (5秒后自动继续) " || echo ""
+    read -t 5 -p "(5秒后自动继续) " || echo ""
     echo "继续启动 OPC-Agents..."
 else
     echo "错误：ZeroClaw 目录不存在: $ZEROCLAW_DIR"
@@ -72,19 +80,12 @@ echo "\n切换回 OPC-Agents 目录: $(pwd)"
 
 # 启动 OPC-Agents Web 界面
 echo "\n启动 OPC-Agents Web 界面..."
+lsof -ti:5007 | xargs kill -9
 echo "Web 页面网址: http://localhost:5007"
 
 if [ "$DEBUG_MODE" = true ]; then
     echo "启用调试模式..."
-    python3 -m web_interface.app --debug --gateway-pid $GATEWAY_PID
+    python3 -m web_interface.app --debug --gateway-pid $PAIRING_CODE
 else
-    python3 -m web_interface.app --gateway-pid $GATEWAY_PID
+    python3 -m web_interface.app --gateway-pid $PAIRING_CODE
 fi
-
-# 注意：由于上面的命令会阻塞，下面的代码不会执行
-# 因此我们需要在另一个终端中执行 kill 命令
-echo "\n========================================"
-echo "如何停止 ZeroClaw Gateway:"
-echo "kill $GATEWAY_PID"
-echo "或使用: kill -9 $GATEWAY_PID"
-echo "========================================"
