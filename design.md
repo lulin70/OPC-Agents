@@ -17,6 +17,16 @@ OPC-Agents 采用模块化、分层的架构设计，主要分为以下几个核
 - **AutoOptimizer**：自动优化调度器，用于定期自动优化
 - **HREnhancement**：HR生命周期管理，包括招聘、培训和绩效评估
 - **A2AIntegration**：A2A协议集成，用于标准化代理通信
+- **SkillManager**：Skill管理系统，支持代理主动使用和优化本地Skill
+- **MCPIntegration**：MCP能力，从Git或其他官方网站抓取可信赖、安全的Skill
+- **InstallationManager**：安装与使用优化，提高用户体验
+- **DataStorage**：数据存储管理，负责系统数据的持久化
+- **KnowledgeBase**：知识库管理，存储和检索系统知识
+- **MessageQueue**：消息队列管理，处理异步消息
+- **Monitoring**：系统监控，监控系统运行状态和性能
+- **TaskDeliverables**：任务交付物管理，处理任务的输出和结果
+- **TaskReporting**：任务报告管理，生成任务执行报告
+- **WorkflowEngine**：工作流引擎，管理和执行复杂的工作流程
 
 ### 1.3 接口层
 - **WebInterface**：Web界面，提供可视化管理功能
@@ -280,6 +290,119 @@ OPC-Agents 采用模块化、分层的架构设计，主要分为以下几个核
 - `generate_documentation()`：生成使用文档
 - `validate_installation()`：验证安装状态
 
+### 2.17 DataStorage
+
+**职责**：数据存储管理，负责系统数据的持久化。
+
+**设计决策**：
+- 采用分层存储架构，支持多种存储后端
+- 提供数据访问的统一接口
+- 支持数据的版本控制和备份
+
+**关键方法**：
+- `save_data()`：保存数据
+- `load_data()`：加载数据
+- `delete_data()`：删除数据
+- `backup_data()`：备份数据
+- `restore_data()`：恢复数据
+
+### 2.18 KnowledgeBase
+
+**职责**：知识库管理，存储和检索系统知识。
+
+**设计决策**：
+- 采用向量存储技术，支持语义搜索
+- 支持知识的自动更新和维护
+- 提供知识的分类和标签管理
+
+**关键方法**：
+- `store_knowledge()`：存储知识
+- `retrieve_knowledge()`：检索知识
+- `update_knowledge()`：更新知识
+- `delete_knowledge()`：删除知识
+- `search_knowledge()`：搜索知识
+
+### 2.19 MessageQueue
+
+**职责**：消息队列管理，处理异步消息。
+
+**设计决策**：
+- 采用可靠的消息队列实现，确保消息的可靠传递
+- 支持消息的优先级和过期时间
+- 提供消息的持久化和重试机制
+
+**关键方法**：
+- `send_message()`：发送消息
+- `receive_message()`：接收消息
+- `process_message()`：处理消息
+- `ack_message()`：确认消息处理
+- `requeue_message()`：重新入队消息
+
+### 2.20 Monitoring
+
+**职责**：系统监控，监控系统运行状态和性能。
+
+**设计决策**：
+- 采用实时监控技术，提供系统状态的实时视图
+- 支持监控指标的自定义和告警
+- 提供监控数据的可视化和分析
+
+**关键方法**：
+- `collect_metrics()`：收集监控指标
+- `analyze_metrics()`：分析监控指标
+- `generate_alerts()`：生成告警
+- `visualize_metrics()`：可视化监控指标
+- `export_metrics()`：导出监控指标
+
+### 2.21 TaskDeliverables
+
+**职责**：任务交付物管理，处理任务的输出和结果。
+
+**设计决策**：
+- 支持多种交付物格式，如文本、JSON、文件等
+- 提供交付物的版本控制和管理
+- 支持交付物的分享和协作
+
+**关键方法**：
+- `generate_deliverable()`：生成交付物
+- `store_deliverable()`：存储交付物
+- `retrieve_deliverable()`：检索交付物
+- `update_deliverable()`：更新交付物
+- `share_deliverable()`：分享交付物
+
+### 2.22 TaskReporting
+
+**职责**：任务报告管理，生成任务执行报告。
+
+**设计决策**：
+- 支持多种报告格式，如PDF、HTML、JSON等
+- 提供报告的模板化和自定义
+- 支持报告的自动生成和发送
+
+**关键方法**：
+- `generate_report()`：生成报告
+- `format_report()`：格式化报告
+- `send_report()`：发送报告
+- `store_report()`：存储报告
+- `retrieve_report()`：检索报告
+
+### 2.23 WorkflowEngine
+
+**职责**：工作流引擎，管理和执行复杂的工作流程。
+
+**设计决策**：
+- 采用可视化的工作流定义和执行
+- 支持工作流的版本控制和管理
+- 提供工作流的监控和调试
+
+**关键方法**：
+- `create_workflow()`：创建工作流
+- `execute_workflow()`：执行工作流
+- `monitor_workflow()`：监控工作流
+- `pause_workflow()`：暂停工作流
+- `resume_workflow()`：恢复工作流
+- `cancel_workflow()`：取消工作流
+
 ## 3. 数据结构
 
 ### 3.1 配置数据
@@ -495,6 +618,56 @@ MCPConfig {
 - `POST /api/installation/validate`：验证安装
 - `GET /api/installation/documentation`：获取使用文档
 
+#### 4.1.13 数据存储
+- `POST /api/storage/save`：保存数据
+- `GET /api/storage/load`：加载数据
+- `DELETE /api/storage/delete`：删除数据
+- `POST /api/storage/backup`：备份数据
+- `POST /api/storage/restore`：恢复数据
+
+#### 4.1.14 知识库
+- `POST /api/knowledge/store`：存储知识
+- `GET /api/knowledge/retrieve`：检索知识
+- `PUT /api/knowledge/update`：更新知识
+- `DELETE /api/knowledge/delete`：删除知识
+- `GET /api/knowledge/search`：搜索知识
+
+#### 4.1.15 消息队列
+- `POST /api/queue/send`：发送消息
+- `GET /api/queue/receive`：接收消息
+- `POST /api/queue/process`：处理消息
+- `POST /api/queue/ack`：确认消息处理
+- `POST /api/queue/requeue`：重新入队消息
+
+#### 4.1.16 系统监控
+- `GET /api/monitoring/metrics`：获取监控指标
+- `POST /api/monitoring/analyze`：分析监控指标
+- `GET /api/monitoring/alerts`：获取告警
+- `GET /api/monitoring/visualize`：可视化监控指标
+- `GET /api/monitoring/export`：导出监控指标
+
+#### 4.1.17 任务交付物
+- `POST /api/deliverables/generate`：生成交付物
+- `POST /api/deliverables/store`：存储交付物
+- `GET /api/deliverables/retrieve`：检索交付物
+- `PUT /api/deliverables/update`：更新交付物
+- `POST /api/deliverables/share`：分享交付物
+
+#### 4.1.18 任务报告
+- `POST /api/reporting/generate`：生成报告
+- `POST /api/reporting/format`：格式化报告
+- `POST /api/reporting/send`：发送报告
+- `POST /api/reporting/store`：存储报告
+- `GET /api/reporting/retrieve`：检索报告
+
+#### 4.1.19 工作流
+- `POST /api/workflow/create`：创建工作流
+- `POST /api/workflow/execute`：执行工作流
+- `GET /api/workflow/monitor`：监控工作流
+- `POST /api/workflow/pause`：暂停工作流
+- `POST /api/workflow/resume`：恢复工作流
+- `POST /api/workflow/cancel`：取消工作流
+
 ### 4.2 命令行接口
 
 - `python opc_skill.py 查看所有部门`：查看所有部门
@@ -511,6 +684,22 @@ MCPConfig {
 - `python opc_skill.py 安装系统`：安装系统
 - `python opc_skill.py 配置系统`：配置系统
 - `python opc_skill.py 验证安装`：验证安装状态
+- `python opc_skill.py 存储数据 {key} {value}`：存储数据
+- `python opc_skill.py 加载数据 {key}`：加载数据
+- `python opc_skill.py 备份数据`：备份数据
+- `python opc_skill.py 恢复数据 {backup_file}`：恢复数据
+- `python opc_skill.py 存储知识 {content}`：存储知识
+- `python opc_skill.py 搜索知识 {keyword}`：搜索知识
+- `python opc_skill.py 发送消息队列 {queue} {message}`：发送消息队列
+- `python opc_skill.py 接收消息队列 {queue}`：接收消息队列
+- `python opc_skill.py 查看监控指标`：查看监控指标
+- `python opc_skill.py 生成交付物 {task_id}`：生成交付物
+- `python opc_skill.py 查看交付物 {deliverable_id}`：查看交付物
+- `python opc_skill.py 生成报告 {report_type}`：生成报告
+- `python opc_skill.py 查看报告 {report_id}`：查看报告
+- `python opc_skill.py 创建工作流 {name} {steps}`：创建工作流
+- `python opc_skill.py 执行工作流 {workflow_id}`：执行工作流
+- `python opc_skill.py 监控工作流 {workflow_id}`：监控工作流
 
 ## 5. 技术栈
 
@@ -537,32 +726,62 @@ MCPConfig {
 - **PyInstaller**：打包工具（用于安装优化）
 - **Safety**：依赖安全扫描
 - **PyLint**：代码质量检查
+- **SQLAlchemy**：ORM框架（用于数据存储）
+- **Redis**：缓存和消息队列
+- **Elasticsearch**：搜索引擎（用于知识库）
+- **Prometheus**：监控系统
+- **Grafana**：监控数据可视化
+- **Celery**：分布式任务队列
+- **Jinja2**：模板引擎（用于报告生成）
+- **PyPDF2**：PDF处理（用于报告生成）
+- **NetworkX**：图论库（用于工作流管理）
 
 ## 6. 部署与集成
 
 ### 6.1 部署方式
 - **本地部署**：直接在本地运行
-- **Docker部署**：使用Docker容器化部署
-- **云部署**：部署到云服务器
+- **Docker部署**：使用Docker容器化部署，包含所有依赖服务
+- **云部署**：部署到云服务器，支持弹性扩展
+- **Kubernetes部署**：使用Kubernetes进行容器编排，提高可靠性和可扩展性
 
 ### 6.2 集成方式
 - **API集成**：通过RESTful API与其他系统集成
 - **SDK集成**：提供Python SDK供其他应用使用
 - **命令行集成**：通过命令行工具与其他系统集成
+- **Webhook集成**：支持通过Webhook接收外部事件
+- **消息队列集成**：通过消息队列与其他系统异步通信
+
+### 6.3 依赖服务部署
+- **数据库服务**：部署PostgreSQL或MySQL用于数据存储
+- **缓存服务**：部署Redis用于缓存和消息队列
+- **搜索引擎**：部署Elasticsearch用于知识库搜索
+- **监控服务**：部署Prometheus和Grafana用于系统监控
+- **任务队列**：部署Celery用于异步任务处理
 
 ## 7. 监控与维护
 
 ### 7.1 监控
-- **日志监控**：记录系统运行日志
-- **性能监控**：监控系统性能指标
-- **错误监控**：监控系统错误和异常
-- **Token使用监控**：监控AI模型Token使用情况
+- **日志监控**：记录系统运行日志，包括各模块的详细日志
+- **性能监控**：监控系统性能指标，如响应时间、CPU/内存使用等
+- **错误监控**：监控系统错误和异常，及时告警
+- **Token使用监控**：监控AI模型Token使用情况，避免过度消耗
+- **存储监控**：监控数据存储使用情况，避免存储空间不足
+- **知识库监控**：监控知识库大小和检索性能
+- **消息队列监控**：监控消息队列积压情况，确保消息及时处理
+- **工作流监控**：监控工作流执行状态和性能
+- **Skill使用监控**：监控Skill使用情况和性能
+- **MCP连接监控**：监控MCP连接状态和响应时间
 
 ### 7.2 维护
-- **定期优化**：定期运行代理优化过程
-- **模型更新**：定期更新AI模型配置
-- **依赖更新**：定期更新系统依赖
-- **备份**：定期备份配置和数据
+- **定期优化**：定期运行代理优化过程，提高代理性能
+- **模型更新**：定期更新AI模型配置，保持模型的最新状态
+- **依赖更新**：定期更新系统依赖，修复安全漏洞
+- **备份**：定期备份配置和数据，确保数据安全
+- **知识库维护**：定期清理和更新知识库，保持知识的准确性
+- **消息队列维护**：定期清理消息队列，避免消息积压
+- **Skill维护**：定期更新和优化Skill，提高Skill性能
+- **系统健康检查**：定期进行系统健康检查，确保系统正常运行
+- **安全审计**：定期进行安全审计，发现和修复安全问题
 
 ## 8. 扩展性设计
 
@@ -600,4 +819,21 @@ MCPConfig {
 
 OPC-Agents 项目采用模块化、分层的架构设计，具有良好的可扩展性、可靠性和易用性。系统通过整合多个专业 AI 代理，为用户提供全方位的业务支持，能够帮助用户高效完成各种任务，做出更明智的商业决策。
 
-系统的设计注重模块化和可扩展性，能够轻松添加新的代理和部门，处理各种异常情况，提供直观的用户界面。通过合理的技术选型和架构设计，确保系统能够按时、高质量地完成开发和部署。
+系统的设计注重模块化和可扩展性，包含了丰富的功能模块：
+- **核心功能**：多部门结构、多模型支持、任务分配、项目管理、内部通信、共识机制
+- **高级功能**：总裁办功能、三贤者决策系统、代理优化、自动优化调度器、HR生命周期管理、A2A协议集成
+- **新增功能**：Skill管理系统、MCP能力、安装与使用优化
+- **基础服务**：数据存储、知识库、消息队列、系统监控、任务交付物、任务报告、工作流引擎
+
+通过合理的技术选型和架构设计，系统能够：
+- 支持代理主动使用和优化本地Skill
+- 从Git或其他官方网站抓取可信赖、安全的Skill
+- 提供一键安装和配置功能，提高用户体验
+- 实现数据的持久化存储和管理
+- 构建和管理知识库，支持知识的存储和检索
+- 处理异步消息，提高系统的可靠性和性能
+- 监控系统运行状态和性能，及时发现和解决问题
+- 管理任务交付物和报告，提高工作效率
+- 管理和执行复杂的工作流程，提高系统的自动化程度
+
+系统的设计考虑了安全性、性能、可扩展性和易用性，确保系统能够按时、高质量地完成开发和部署，为用户提供一个功能强大、安全可靠、易于使用的多代理系统。
