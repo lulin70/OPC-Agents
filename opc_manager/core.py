@@ -14,7 +14,7 @@ from .task_manager import TaskManager
 from .three_sages import ThreeSagesManager
 from .personal_assistant import PersonalAssistantManager
 from .task_executor import TaskExecutor, TaskExecutorManager, TaskPriority
-from communication_manager import CommunicationManager, ContextManager
+from opc_manager.communication_manager import CommunicationManager, ContextManager
 from data_storage.dao import DatabaseManager
 from opc_hr.skill_manager import SkillManager
 from opc_hr.mcp_integration import MCPIntegration
