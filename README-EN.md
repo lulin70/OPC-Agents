@@ -1,6 +1,6 @@
 # OPC-Agents
 
-> **You give one instruction to the Executive Office, it mobilizes all 36 departments and 180+ AI employees to collaborate and get it done.**
+> **You give one instruction to the Executive Office, it mobilizes all 18 specialized departments and 180+ AI employees to collaborate and get it done.**
 
 An AI multi-agent operating system for One Person Company (OPC). You don't call AI tools one by one — just tell the Executive Office what you want like a CEO giving orders. The system automatically breaks down tasks, dispatches the right AI departments, coordinates execution, and reports results back to you.
 
@@ -10,11 +10,11 @@ An AI multi-agent operating system for One Person Company (OPC). You don't call 
 You → Executive Office → Three Sages Decision → HR Resource Assessment → Task Decomposition → AI Departments Collaborate → Results Reported
 ```
 
-**In one sentence: You are the CEO, the Executive Office is your AI Chief of Staff, and 36 departments are your AI team.**
+**In one sentence: You are the CEO, the Executive Office is your AI Chief of Staff, and 18 specialized departments are your AI team.**
 
 ## Core Capabilities
 
-- **36 departments** covering design, development, marketing, finance, operations, etc.
+- **18 specialized departments** covering design, development, marketing, finance, gaming, spatial computing, etc.
 - **180+ specialized agents** (from Agency-Agents + A2A protocol)
 - **Multi-model support**: GLM, OpenAI, Anthropic, Google, Azure, local models
 - **Executive Office**: chat/search/task three-mode intent detection
