@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify
 import time
+import os
+import subprocess
+import sys
 
 # 创建蓝图
 task_bp = Blueprint('task', __name__, url_prefix='/api/tasks')
@@ -168,5 +171,46 @@ def register_routes(manager):
         
         best_agent = manager.find_best_agent_for_task(task_name, task_type, priority, deadline)
         return jsonify(best_agent)
+    
+    @task_bp.route('/<task_id>/rename', methods=['PUT'])
+    def rename_task(task_id):
+        data = request.json
+        new_name = data.get('name', '').strip()
+        if not new_name:
+            return jsonify({'error': 'New name is required'}), 400
+        ok = manager.rename_task(task_id, new_name)
+        if ok:
+            return jsonify({'message': f'Task renamed to: {new_name}'})
+        return jsonify({'error': 'Task not found'}), 404
+    
+    @task_bp.route('/<task_id>', methods=['DELETE'])
+    def delete_task(task_id):
+        ok = manager.delete_task(task_id)
+        if ok:
+            return jsonify({'message': 'Task deleted'})
+        return jsonify({'error': 'Task not found'}), 404
+    
+    @task_bp.route('/<task_id>/workdir')
+    def get_work_dir(task_id):
+        work_dir = manager.get_work_dir(task_id)
+        if work_dir:
+            return jsonify({'work_dir': work_dir})
+        return jsonify({'error': 'Task not found or no work dir'}), 404
+    
+    @task_bp.route('/<task_id>/open_workdir', methods=['POST'])
+    def open_work_dir(task_id):
+        work_dir = manager.get_work_dir(task_id)
+        if not work_dir or not os.path.isdir(work_dir):
+            return jsonify({'error': 'Work directory not found'}), 404
+        try:
+            if sys.platform == 'darwin':
+                subprocess.Popen(['open', work_dir])
+            elif sys.platform == 'win32':
+                subprocess.Popen(['explorer', work_dir])
+            else:
+                subprocess.Popen(['xdg-open', work_dir])
+            return jsonify({'message': f'Opened: {work_dir}'})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
     
     return task_bp

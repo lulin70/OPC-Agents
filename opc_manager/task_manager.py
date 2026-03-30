@@ -4,6 +4,10 @@ Task management for OPC Manager
 """
 
 import time
+import os
+import shutil
+import subprocess
+from datetime import datetime
 from typing import Dict, List, Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -455,15 +459,72 @@ class TaskManager:
         return report
     
     def create_task(self, task_id: str, task_name: str, agent: str, initial_status: str = "pending"):
-        """创建任务并设置初始状态
-        
-        Args:
-            task_id: 任务ID
-            task_name: 任务名称
-            agent: 负责的代理
-            initial_status: 初始状态，默认为"pending"
-        """
         self.communication_manager.create_task(task_id, task_name, agent, initial_status)
+        work_dir = self._create_work_dir(task_id, task_name)
+        if work_dir:
+            task = self.communication_manager.task_status.get(task_id, {})
+            task["work_dir"] = work_dir
+    
+    def _create_work_dir(self, task_id: str, task_name: str) -> str:
+        base_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "task_workspaces")
+        safe_name = "".join(c for c in task_name if c.isalnum() or c in "_ -")[:30].strip()
+        dir_name = datetime.now().strftime("%Y%m%d_%H%M") + "_" + safe_name
+        work_dir = os.path.join(base_dir, dir_name)
+        os.makedirs(work_dir, exist_ok=True)
+        readme_path = os.path.join(work_dir, "README.md")
+        if not os.path.exists(readme_path):
+            with open(readme_path, "w", encoding="utf-8") as f:
+                f.write(f"# {task_name}\n\n- Task ID: {task_id}\n- Created: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+        return work_dir
+    
+    def rename_task(self, task_id: str, new_name: str) -> bool:
+        task = self.communication_manager.task_status.get(task_id)
+        if not task:
+            return False
+        old_name = task.get("task_name", "")
+        task["task_name"] = new_name
+        task["updated_at"] = time.time()
+        old_work_dir = task.get("work_dir", "")
+        if old_work_dir and os.path.isdir(old_work_dir):
+            safe_new = "".join(c for c in new_name if c.isalnum() or c in "_ -")[:30].strip()
+            parent = os.path.dirname(old_work_dir)
+            prefix = old_work_dir.split("_", 1)[0] + "_" if "_" in os.path.basename(old_work_dir) else ""
+            new_dir = os.path.join(parent, prefix + safe_new)
+            if not os.path.exists(new_dir):
+                os.rename(old_work_dir, new_dir)
+                task["work_dir"] = new_dir
+        if self.db_manager:
+            try:
+                from data_storage.models import TaskRecord
+                record = self.db_manager.session.query(TaskRecord).filter_by(id=task_id).first()
+                if record:
+                    record.name = new_name
+                    self.db_manager.session.commit()
+            except Exception:
+                pass
+        return True
+    
+    def delete_task(self, task_id: str) -> bool:
+        task = self.communication_manager.task_status.pop(task_id, None)
+        if not task:
+            return False
+        work_dir = task.get("work_dir", "")
+        if work_dir and os.path.isdir(work_dir):
+            shutil.rmtree(work_dir, ignore_errors=True)
+        if self.db_manager:
+            try:
+                from data_storage.models import TaskRecord
+                record = self.db_manager.session.query(TaskRecord).filter_by(id=task_id).first()
+                if record:
+                    self.db_manager.session.delete(record)
+                    self.db_manager.session.commit()
+            except Exception:
+                pass
+        return True
+    
+    def get_work_dir(self, task_id: str) -> Optional[str]:
+        task = self.communication_manager.task_status.get(task_id, {})
+        return task.get("work_dir")
     
     def update_task_status(self, task_id: str, status: str, progress: int = None):
         """更新任务状态

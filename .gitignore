@@ -44,3 +44,6 @@ env/
 
 # Temporary files and development artifacts
 temp-use/
+
+# Task workspaces (user data)
+task_workspaces/

@@ -274,6 +274,18 @@ class OPCManager:
         status = "completed" if test_result else "failed"
         self.task_manager.update_task_status(task_id, status)
     
+    def rename_task(self, task_id: str, new_name: str) -> bool:
+        """重命名任务"""
+        return self.task_manager.rename_task(task_id, new_name)
+    
+    def delete_task(self, task_id: str) -> bool:
+        """删除任务及其工作目录"""
+        return self.task_manager.delete_task(task_id)
+    
+    def get_work_dir(self, task_id: str) -> Optional[str]:
+        """获取任务工作目录"""
+        return self.task_manager.get_work_dir(task_id)
+    
     def assign_task(self, task: str, department: str, agent: str = None, model: str = None, context: Dict[str, Any] = None):
         """分配任务到部门/Agent"""
         task_id = f"task-{int(time.time())}"
