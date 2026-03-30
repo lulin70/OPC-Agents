@@ -18,6 +18,7 @@ from opc_manager.communication_manager import CommunicationManager, ContextManag
 from data_storage.dao import DatabaseManager
 from opc_hr.skill_manager import SkillManager
 from opc_hr.mcp_integration import MCPIntegration
+from opc_hr.web_search import WebSearchMCP
 
 class OPCManager:
     """Manager class for the OPC-Agents system"""
@@ -54,6 +55,7 @@ class OPCManager:
         self.skill_manager = SkillManager()
         github_token = self.config.get('mcp', {}).get('github_token', None)
         self.mcp_integration = MCPIntegration(github_token=github_token)
+        self.web_search = WebSearchMCP()
         
         # 初始化财务部
         from opc_finance.finance_manager import FinanceManager
@@ -472,3 +474,15 @@ class OPCManager:
     def get_mcp_status(self) -> Dict[str, Any]:
         """获取MCP集成状态"""
         return self.mcp_integration.get_status()
+    
+    def web_search_query(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
+        """网页搜索"""
+        return self.web_search.search(query, max_results=max_results)
+    
+    def web_fetch_content(self, url: str, max_chars: int = 3000) -> Dict[str, Any]:
+        """获取网页内容"""
+        return self.web_search.fetch_content(url, max_chars=max_chars)
+    
+    def web_search_summarize(self, query: str, max_results: int = 3) -> str:
+        """搜索并生成摘要文本"""
+        return self.web_search.search_and_summarize(query, max_results=max_results)

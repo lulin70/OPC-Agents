@@ -120,11 +120,30 @@ def register_routes(manager):
             intent_prompt = (
                 f"判断以下用户消息的意图，只回复一个词：\n"
                 f"如果是闲聊、问候、提问，回复「chat」\n"
-                f"如果是需要执行的任务、工作安排、项目需求，回复「task」\n\n"
+                f"如果是需要执行的任务、工作安排、项目需求，回复「task」\n"
+                f"如果需要搜索互联网获取最新信息（如新闻、技术文档、市场数据等），回复「search」\n\n"
                 f"用户消息：{message}"
             )
             intent_response = model_manager.generate_response(intent_prompt, model="glm")
-            is_task = "task" in intent_response.lower()
+            intent_lower = intent_response.lower()
+            
+            if "search" in intent_lower and "task" not in intent_lower:
+                search_results = manager.web_search_query(message, max_results=3)
+                if search_results:
+                    context = "\n".join([f"- {r.get('title','')}: {r.get('body','')}" for r in search_results[:3]])
+                    search_prompt = f"用户问题：{message}\n\n搜索到的信息：\n{context}\n\n请根据以上搜索结果，用中文回答用户的问题。"
+                    ai_response = model_manager.generate_response(search_prompt, model="glm")
+                    response = {
+                        "id": f"msg_{int(time.time())}",
+                        "type": "executive",
+                        "content": ai_response,
+                        "has_search": True,
+                        "search_results": len(search_results),
+                        "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+                    }
+                    return jsonify(response)
+            
+            is_task = "task" in intent_lower
             
             if not is_task:
                 chat_prompt = f"你是总裁办助理，收到用户的消息：{message}\n请友好地回复。"
@@ -138,8 +157,18 @@ def register_routes(manager):
                 return jsonify(response)
             
             # 任务模式：启动完整处理链
-            # 步骤2: 调用三贤者进行决策分析
-            decision = manager.start_three_sages_decision(message)
+            # 步骤1.5: 搜索相关信息辅助决策
+            search_context = ""
+            try:
+                search_results = manager.web_search_query(message, max_results=2)
+                if search_results:
+                    search_context = "\n".join([f"- {r.get('title','')}: {r.get('body','')[:100]}" for r in search_results])
+                    search_context = f"\n\n[互联网搜索参考]\n{search_context}"
+            except Exception as e:
+                print(f"[网页搜索] 失败: {e}")
+            
+            # 步骤2: 调用三贤者进行决策分析（含搜索上下文）
+            decision = manager.start_three_sages_decision(message + search_context)
             decision_advice = decision.get('decision_advice', '三贤者建议：需要进一步分析')
             
             # 步骤3: 任务分解

@@ -68,4 +68,23 @@ def register_routes(manager):
             "verifications": mcp.get_verification_history()
         })
 
+    @mcp_bp.route('/web/search')
+    def web_search():
+        query = request.args.get('q', '')
+        max_results = request.args.get('max_results', 5, type=int)
+        if not query:
+            return jsonify({"error": "请提供搜索关键词 q"}), 400
+        results = manager.web_search_query(query, max_results=max_results)
+        return jsonify({"query": query, "results": results, "count": len(results)})
+
+    @mcp_bp.route('/web/fetch', methods=['POST'])
+    def web_fetch():
+        data = request.json or {}
+        url = data.get('url', '')
+        max_chars = data.get('max_chars', 3000)
+        if not url:
+            return jsonify({"error": "请提供URL"}), 400
+        result = manager.web_fetch_content(url, max_chars=max_chars)
+        return jsonify(result)
+
     return mcp_bp
