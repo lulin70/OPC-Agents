@@ -228,6 +228,36 @@ def department_detail(department):
 def agent_management():
     return render_template('agent_management.html')
 
+# 财务部页面
+@app.route('/finance')
+def finance_page():
+    return render_template('finance.html')
+
+# SSE实时进度推送
+@app.route('/api/progress/stream')
+def progress_stream():
+    def generate():
+        import json
+        while True:
+            all_tasks = manager.get_all_tasks()
+            active_tasks = []
+            for task_id, task_info in all_tasks.items():
+                if task_info.get('status') == 'in_progress':
+                    active_tasks.append({
+                        'task_id': task_id,
+                        'task_name': task_info.get('task_name', ''),
+                        'progress': task_info.get('progress', 0),
+                        'status': task_info.get('status', ''),
+                        'assigned_to': task_info.get('assigned_to', ''),
+                        'agent': task_info.get('agent', '')
+                    })
+            if active_tasks:
+                data = json.dumps({"type": "progress", "tasks": active_tasks})
+                yield f"data: {data}\n\n"
+            import time
+            time.sleep(5)
+    return app.response_class(generate(), mimetype='text/event-stream')
+
 # 启动Flask应用（支持 python -m 方式运行）
 if __name__ == '__main__' or __name__ == 'web_interface.app':
     # 创建templates目录（使用绝对路径）
