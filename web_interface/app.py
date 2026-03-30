@@ -3,10 +3,15 @@
 OPC-Agents Web Interface Application
 """
 
+import sys
+import os
+
+# 添加项目根目录到Python路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, render_template
 from opc_manager import OPCManager
 import argparse
-import os
 import logging
 import time
 
@@ -61,6 +66,9 @@ from web_interface.routes.auto_optimizer import register_routes as register_auto
 from web_interface.routes.agent_management import register_routes as register_agent_routes
 from web_interface.routes.progress_routes import bp as progress_bp
 from web_interface.routes.health_routes import health_bp, init_health_routes
+from web_interface.routes.mcp_management import register_routes as register_mcp_routes
+from opc_finance.finance_routes import register_routes as register_finance_routes
+from web_interface.routes.settings import register_routes as register_settings_routes
 
 # 注册各模块路由
 try:
@@ -85,6 +93,18 @@ try:
     # 注册代理管理路由
     agent_bp = register_agent_routes(manager)
     app.register_blueprint(agent_bp)
+    
+    # 注册MCP管理路由
+    mcp_bp = register_mcp_routes(manager)
+    app.register_blueprint(mcp_bp)
+    
+    # 注册财务部路由
+    finance_bp = register_finance_routes(manager)
+    app.register_blueprint(finance_bp)
+    
+    # 注册系统设置路由
+    settings_bp = register_settings_routes(manager)
+    app.register_blueprint(settings_bp)
     
     # 注册进度反馈路由
     app.register_blueprint(progress_bp)
@@ -1373,6 +1393,6 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
             f.write(index_html)
     
     # 启动Flask服务
-    print(f"[Web界面] 启动Flask服务在端口 5007...")
+    print(f"[Web界面] 启动Flask服务在端口 5009...")
     print(f"[Web界面] 模板目录: {template_dir}")
-    app.run(host='0.0.0.0', port=5007, debug=args.debug)
+    app.run(host='0.0.0.0', port=5009, debug=args.debug)

@@ -206,9 +206,10 @@ class SystemMonitor:
     def _check_llm_status(self) -> str:
         """检查LLM服务状态"""
         try:
-            from zeroclaw_integration import ZeroClawIntegration
-            zc = ZeroClawIntegration()
-            if zc.auth_token:
+            from model_integration.model_manager import ModelManager
+            model_manager = ModelManager()
+            models = model_manager.list_models()
+            if models:
                 return "healthy"
             else:
                 return "not_configured"

@@ -96,7 +96,6 @@ class MessageProcessor:
             # 步骤2: 分析意图
             self._update_progress(message.id, 1, "分析意图", len(self.processing_steps), 1)
             intent = self._analyze_intent(message.content)
-            time.sleep(0.1)  # 模拟处理时间
             
             # 步骤3: 调用AI服务
             self._update_progress(message.id, 2, "调用AI服务", len(self.processing_steps), 2)
@@ -108,7 +107,6 @@ class MessageProcessor:
             # 步骤4: 生成响应
             self._update_progress(message.id, 3, "生成响应", len(self.processing_steps), 3)
             processed_response = self._process_response(response)
-            time.sleep(0.1)  # 模拟处理时间
             
             # 步骤5: 完成处理
             self._update_progress(message.id, 4, "完成处理", len(self.processing_steps), 4)
@@ -196,16 +194,11 @@ class MessageProcessor:
             AI响应，如果失败则返回None
         """
         try:
-            if self.ai_client:
-                # 构建提示词
-                prompt = f"用户消息: {content}\n意图: {intent}\n请根据你的角色给出响应。"
-                
-                # 调用AI服务
-                response = self.ai_client.call_llm(prompt)
-                return response
-            else:
-                # 如果没有AI客户端，返回默认响应
-                return f"收到您的消息，正在处理中...（意图: {intent}）"
+            from model_integration.model_manager import ModelManager
+            model_manager = ModelManager()
+            prompt = f"用户消息: {content}\n意图: {intent}\n请根据你的角色给出响应。"
+            response = model_manager.generate_response(prompt, model="glm")
+            return response
         except Exception as e:
             self.logger.error(f"AI服务调用失败: {e}")
             return None

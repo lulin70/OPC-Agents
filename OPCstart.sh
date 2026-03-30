@@ -42,8 +42,20 @@ fi
 
 # 启动 OPC-Agents Web 界面
 echo "\n启动 OPC-Agents Web 界面..."
-lsof -ti:5007 | xargs kill -9 2>/dev/null
-echo "Web 页面网址: http://localhost:5007"
+# 检查并清理端口 5007, 5008, 5009 上的旧进程
+for port in 5007 5008 5009; do
+    echo "检查端口 $port..."
+    PIDS=$(lsof -ti:$port 2>/dev/null)
+    if [ -n "$PIDS" ]; then
+        echo "发现旧进程占用端口 $port: $PIDS"
+        echo "清理旧进程..."
+        kill -9 $PIDS 2>/dev/null
+        echo "旧进程已清理"
+    else
+        echo "端口 $port 未被占用"
+    fi
+done
+echo "Web 页面网址: http://localhost:5009"
 
 if [ "$DEBUG_MODE" = true ]; then
     echo "启用调试模式..."

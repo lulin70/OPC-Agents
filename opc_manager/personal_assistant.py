@@ -183,32 +183,42 @@ class PersonalAssistantManager:
         Returns:
             天气信息
         """
-        # 模拟天气数据
+        try:
+            import requests
+            url = f"https://wttr.in/{location}?format=j1"
+            resp = requests.get(url, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                current = data.get("current_condition", [{}])[0]
+                weather_data = {
+                    "location": location,
+                    "temperature": int(current.get("temp_C", 0)),
+                    "humidity": int(current.get("humidity", 0)),
+                    "condition": current.get("lang_zh", [{}])[0].get("value", current.get("weatherDesc", [{}])[0].get("value", "未知")),
+                    "wind_speed": int(current.get("windspeedKmph", 0)),
+                    "forecast": [],
+                    "timestamp": time.time()
+                }
+                for day in data.get("weather", [])[:3]:
+                    weather_data["forecast"].append({
+                        "day": day.get("date", ""),
+                        "temperature": int(day.get("avgtempC", 0)),
+                        "condition": day.get("hourly", [{}])[4].get("lang_zh", [{}])[0].get("value", "未知")
+                    })
+                print(f"[个人助理] 获取天气信息: {location} (真实数据)")
+                return weather_data
+        except Exception as e:
+            print(f"[个人助理] 获取天气失败: {e}")
+        
         weather_data = {
             "location": location,
-            "temperature": 25,
-            "humidity": 60,
-            "condition": "晴朗",
-            "wind_speed": 10,
-            "forecast": [
-                {
-                    "day": "今天",
-                    "temperature": 25,
-                    "condition": "晴朗"
-                },
-                {
-                    "day": "明天",
-                    "temperature": 23,
-                    "condition": "多云"
-                },
-                {
-                    "day": "后天",
-                    "temperature": 26,
-                    "condition": "晴朗"
-                }
-            ],
-            "timestamp": time.time()
+            "temperature": None,
+            "humidity": None,
+            "condition": "无法获取天气数据",
+            "wind_speed": None,
+            "forecast": [],
+            "timestamp": time.time(),
+            "error": "天气API调用失败"
         }
-        
-        print(f"[个人助理] 获取天气信息: {location}")
+        print(f"[个人助理] 获取天气信息: {location} (获取失败)")
         return weather_data

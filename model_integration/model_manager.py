@@ -20,6 +20,9 @@ class ModelManager:
         self.current_model = None
         self.evaluator = ModelEvaluator()
         self.model_performance = {}
+        
+        # 从配置文件加载模型
+        self._load_models_from_config()
     
     def register_model(self, model_name: str, model_type: str, config: Dict[str, Any]):
         """
@@ -240,6 +243,62 @@ class ModelManager:
         perf['avg_time'] = perf['total_time'] / perf['total_calls']
         perf['avg_output_length'] = perf['total_output_length'] / perf['total_calls']
     
+    def _load_models_from_config(self):
+        """
+        从配置文件加载模型
+        """
+        try:
+            from opc_manager.config import ConfigManager
+            config_manager = ConfigManager()
+            
+            # 获取所有可用的模型
+            model_names = config_manager.get_available_models()
+            
+            # 为每个模型创建实例并注册
+            for model_name in model_names:
+                # 跳过zeroclaw模型
+                if model_name == 'zeroclaw':
+                    continue
+                
+                model_config = config_manager.get_model_config(model_name)
+                
+                # 根据模型名称确定模型类型
+                if model_name == 'openai':
+                    model_type = 'openai'
+                elif model_name == 'anthropic':
+                    model_type = 'anthropic'
+                elif model_name == 'google':
+                    model_type = 'google'
+                elif model_name == 'azure':
+                    model_type = 'azure'
+                elif model_name == 'glm':
+                    model_type = 'glm'
+                elif model_name == 'local':
+                    model_type = 'local'
+                elif model_name == 'trae':
+                    model_type = 'openai'  # trae使用openai兼容的API
+                else:
+                    continue
+                
+                # 注册模型
+                try:
+                    self.register_model(model_name, model_type, model_config)
+                except Exception as e:
+                    self.logger.warning(f"注册模型 {model_name} 失败: {e}")
+            
+            # 设置默认模型
+            default_model = config_manager.get_model_config().get('default', 'glm')
+            # 如果默认模型是zeroclaw，使用glm作为默认模型
+            if default_model == 'zeroclaw':
+                default_model = 'glm'
+            
+            if default_model in self.models:
+                self.set_current_model(default_model)
+                self.logger.info(f"设置默认模型: {default_model}")
+            
+        except Exception as e:
+            self.logger.error(f"从配置文件加载模型失败: {e}")
+    
     def auto_select_model(self, task_type: str) -> str:
         """
         根据任务类型自动选择模型
@@ -274,6 +333,29 @@ class ModelManager:
         
         # 如果没有模型，返回None
         return None
+    
+    def generate_response(self, prompt: str, model: str = None, **kwargs) -> str:
+        """
+        生成响应
+        
+        Args:
+            prompt: 提示词
+            model: 模型名称
+            **kwargs: 额外参数
+            
+        Returns:
+            生成的响应
+        """
+        try:
+            # 如果指定了模型，使用指定的模型
+            if model and model in self.models:
+                return self.generate(prompt, model_name=model, **kwargs)
+            # 否则使用当前模型
+            return self.generate(prompt, **kwargs)
+        except Exception as e:
+            self.logger.error(f"生成响应失败: {e}")
+            # 返回默认响应
+            return "我正在处理您的请求，请稍候..."
 
 # 导入time模块
 import time

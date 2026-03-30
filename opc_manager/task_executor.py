@@ -180,7 +180,6 @@ class TaskExecutor:
             # 阶段1: 任务分析
             self._broadcast_progress(task_id, TaskState.RUNNING, 10, "分析任务需求")
             analysis_result = self._analyze_task(task_data)
-            time.sleep(0.5)  # 模拟处理时间
             
             # 阶段2: 分配Agent（如果未指定）
             if not agent_name:

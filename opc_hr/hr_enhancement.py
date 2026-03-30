@@ -334,60 +334,32 @@ class HREnhancement:
         return agent_value / required_value
     
     def _search_agent_marketplace(self, job: JobRequirement) -> List[Dict[str, Any]]:
-        """从外部市场搜索Agent"""
-        # 模拟外部Agent市场
-        marketplace_agents = [
-            {
-                "id": "market_agent_1",
-                "name": "高级前端开发",
-                "department": "development",
-                "skills": {
-                    "编程": "advanced",
-                    "前端框架": "expert",
-                    "UI设计": "intermediate"
-                },
-                "experience": 3,
-                "match_score": 0.85
-            },
-            {
-                "id": "market_agent_2",
-                "name": "市场分析师",
-                "department": "marketing",
-                "skills": {
-                    "市场分析": "advanced",
-                    "数据可视化": "intermediate",
-                    "报告撰写": "expert"
-                },
-                "experience": 2,
-                "match_score": 0.75
-            },
-            {
-                "id": "market_agent_3",
-                "name": "UI/UX设计师",
-                "department": "design",
-                "skills": {
-                    "设计": "expert",
-                    "用户体验": "advanced",
-                    "原型制作": "expert"
-                },
-                "experience": 4,
-                "match_score": 0.9
-            }
-        ]
-        
-        # 过滤匹配的Agent
-        matches = []
-        for agent in marketplace_agents:
-            if agent["department"] == job.department:
+        """从外部市场搜索Agent（通过MCP连接GitHub搜索）"""
+        try:
+            from opc_hr.mcp_integration import MCPIntegration
+            mcp = MCPIntegration()
+
+            search_query = job.title
+            agents = mcp.search_agents(search_query, department=job.department, limit=5)
+
+            matches = []
+            for agent in agents:
                 matches.append({
-                    "agent_id": agent["id"],
-                    "agent_name": agent["name"],
-                    "match_score": agent["match_score"],
+                    "agent_id": agent.get("repo_full_name", ""),
+                    "agent_name": agent.get("name", "未知Agent"),
+                    "description": agent.get("description", ""),
+                    "match_score": float(agent.get("match_score", 0.5)),
                     "status": "available",
-                    "source": "marketplace"
+                    "source": "github_mcp",
+                    "stars": agent.get("stars", 0),
+                    "url": agent.get("url", "")
                 })
-        
-        return matches
+
+            self.logger.info(f"通过MCP GitHub搜索到 {len(matches)} 个匹配Agent")
+            return matches
+        except Exception as e:
+            self.logger.error(f"MCP GitHub搜索Agent失败: {e}")
+            return []
     
     def hire_agent(self, agent_id: str, job_id: str) -> AgentProfile:
         """招聘Agent"""
@@ -405,7 +377,7 @@ class HREnhancement:
         if not job:
             raise ValueError(f"职位需求不存在: {job_id}")
         
-        # 模拟市场Agent详情
+        # 查找市场Agent详情
         marketplace_agent = next(
             (agent for agent in self._search_agent_marketplace(job) 
              if agent["agent_id"] == agent_id),
@@ -783,8 +755,8 @@ class HREnhancement:
 
 # 使用示例
 if __name__ == "__main__":
-    # 模拟OPC Manager
-    class MockOPCManager:
+    # 测试用OPC Manager
+    class TestOPCManager:
         def get_departments(self):
             return ["design", "development", "marketing", "research", "finance", "hr"]
         

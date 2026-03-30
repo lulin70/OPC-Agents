@@ -297,8 +297,7 @@ class GLMModel(BaseModel):
         """初始化GLM客户端"""
         try:
             import zhipuai
-            zhipuai.api_key = self.api_key
-            self.client = zhipuai
+            self.client = zhipuai.ZhipuAI(api_key=self.api_key)
             self.logger.info(f"初始化GLM客户端成功: {self.model}")
         except ImportError:
             self.logger.warning("ZhipuAI库未安装，将使用模拟实现")

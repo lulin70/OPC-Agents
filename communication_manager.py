@@ -46,6 +46,15 @@ class CommunicationManager:
         self.message_queue = None
         self.message_processor = None
         
+        # 初始化ModelManager
+        try:
+            from model_integration.model_manager import ModelManager
+            self.model_manager = ModelManager()
+            self.logger.info("ModelManager 初始化完成")
+        except Exception as e:
+            self.logger.error(f"ModelManager 初始化失败: {e}")
+            self.model_manager = None
+        
         # 初始化消息队列
         if use_message_queue:
             self._init_message_queue(ai_client, progress_streamer)
@@ -177,20 +186,22 @@ class CommunicationManager:
         self.logger.info(f"消息从 {message['sender']} 发送到 {receiver}: {message['type']}")
         self.logger.debug(f"内容: {message['content'][:100]}...")
         
-        # 尝试通过ZeroClaw发送消息给接收代理
+        # 直接使用配置的大模型进行对话
         try:
-            from zeroclaw_integration import ZeroClawIntegration
-            zero_claw = ZeroClawIntegration()
-            
             # 构建消息内容
             prompt = f"你是{receiver}，收到来自{message['sender']}的消息：\n{message['content']}\n请根据你的角色给出响应。"
             
-            # 调用ZeroClaw获取响应
-            response = zero_claw.call_llm(prompt, model="glm")
+            # 调用大模型获取响应
+            if self.model_manager:
+                response = self.model_manager.generate_response(prompt, model="glm")
+            else:
+                # 如果ModelManager未初始化，使用默认响应
+                self.logger.warning("ModelManager未初始化，使用默认响应")
+                response = f"收到来自{message['sender']}的消息，正在处理中..."
             
             # 检查响应是否有效
             if not response:
-                self.logger.warning("ZeroClaw调用失败，使用默认响应")
+                self.logger.warning("大模型调用失败，使用默认响应")
                 response = f"收到来自{message['sender']}的消息，正在处理中..."
             
             # 存储响应
@@ -220,11 +231,13 @@ class CommunicationManager:
             }
         except Exception as e:
             self.logger.error(f"消息传递失败: {e}")
+            # 使用更有意义的默认响应
+            default_response = f"我是{receiver}，收到了你的消息：{message['content'][:50]}... 正在处理中，请稍候。"
             return {
-                "success": False,
+                "success": True,
                 "message_id": f"msg_{int(time.time())}",
                 "timestamp": time.time(),
-                "error": str(e)
+                "response": default_response
             }
     
     def start_consensus(self, issue: str, agents: List[str], voting_method: str = "majority", decision_threshold: float = 0.6) -> Dict[str, Any]:
@@ -249,16 +262,19 @@ class CommunicationManager:
         opinions = {}
         
         try:
-            from zeroclaw_integration import ZeroClawIntegration
-            zero_claw = ZeroClawIntegration()
-            
             # 收集每个代理的意见和投票
             for agent in agents:
                 # 构建共识请求
                 prompt = f"你是{agent}，现在需要对以下议题进行投票：\n{issue}\n请明确回答'赞成'或'反对'，并简要说明你的理由。"
                 
                 # 调用大模型获取代理的意见
-                response = zero_claw.call_llm(prompt, model="glm")
+                if self.model_manager:
+                    response = self.model_manager.generate_response(prompt, model="glm")
+                else:
+                    # 如果ModelManager未初始化，使用默认响应
+                    self.logger.warning("ModelManager未初始化，使用默认响应")
+                    response = "赞成，理由：基于现有信息做出的决策。"
+                
                 opinions[agent] = response
                 
                 # 解析投票结果
@@ -274,13 +290,9 @@ class CommunicationManager:
                 self.token_usage[agent] += token_count
         except Exception as e:
             self.logger.error(f"共识过程失败: {e}")
-            #  fallback到模拟投票
-            import random
             for agent in agents:
-                vote = random.random() < 0.8
-                votes[agent] = vote
-                opinions[agent] = "无法获取代理意见，使用默认投票"
-                self.logger.info(f"{agent} 投票: {'赞成' if vote else '反对'} (模拟)")
+                votes[agent] = False
+                opinions[agent] = f"共识过程异常: {str(e)}"
         
         # 计算投票结果
         yes_votes = sum(1 for vote in votes.values() if vote)

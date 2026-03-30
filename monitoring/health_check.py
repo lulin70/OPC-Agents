@@ -237,16 +237,17 @@ class HealthChecker:
         start_time = time.time()
         
         try:
-            from zeroclaw_integration import ZeroClawIntegration
+            from model_integration.model_manager import ModelManager
             
-            zc = ZeroClawIntegration()
+            model_manager = ModelManager()
+            models = model_manager.list_models()
             
-            if not zc.auth_token:
+            if not models:
                 return HealthCheckResult(
                     component="llm_service",
                     status=HealthStatus.DEGRADED,
-                    message="LLM service not configured",
-                    details={"auth_status": "not_configured"},
+                    message="No LLM models configured",
+                    details={"model_count": 0},
                     duration=time.time() - start_time
                 )
             
@@ -254,7 +255,7 @@ class HealthChecker:
                 component="llm_service",
                 status=HealthStatus.HEALTHY,
                 message="LLM service configured",
-                details={"auth_status": "configured"},
+                details={"model_count": len(models), "models": models},
                 duration=time.time() - start_time
             )
             

@@ -417,10 +417,8 @@ class WorkflowEngine:
                             context: WorkflowContext) -> Any:
         """执行步骤动作"""
         if not self.opc_manager:
-            # 模拟执行
-            self.logger.warning(f"No OPCManager, simulating step: {step.id}")
-            time.sleep(0.5)
-            return {"simulated": True, "step": step.id}
+            self.logger.error(f"No OPCManager available for step: {step.id}")
+            return {"success": False, "error": "No OPCManager available"}
         
         # 通过通信管理器发送任务给Agent
         if step.agent:
@@ -436,6 +434,8 @@ class WorkflowEngine:
                 }
             )
             return result
+        
+        return {"success": False, "error": f"No agent assigned for step: {step.id}"}
         
         return {"executed": True, "step": step.id}
     

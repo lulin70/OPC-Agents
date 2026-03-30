@@ -142,14 +142,14 @@ class ThreeSagesManager:
             评分 (0-1)
         """
         try:
-            from zeroclaw_integration import ZeroClawIntegration
-            zero_claw = ZeroClawIntegration()
+            from model_integration.model_manager import ModelManager
+            model_manager = ModelManager()
             
             # 构建评分请求
             prompt = f"请对以下贤者意见在'{factor}'方面进行评分（0-1之间的小数），并简要说明理由：\n意见：{opinion}\n\n评分："
             
             # 调用大模型获取评分
-            response = zero_claw.call_llm(prompt, model="glm")
+            response = model_manager.generate_response(prompt, model="glm")
             
             # 解析评分
             import re
@@ -197,8 +197,8 @@ class ThreeSagesManager:
             决策建议
         """
         try:
-            from zeroclaw_integration import ZeroClawIntegration
-            zero_claw = ZeroClawIntegration()
+            from model_integration.model_manager import ModelManager
+            model_manager = ModelManager()
             
             # 构建建议生成请求
             opinions_text = "\n".join([f"{sage}: {opinion}" for sage, opinion in sage_opinions.items()])
@@ -207,7 +207,7 @@ class ThreeSagesManager:
             prompt = f"基于以下信息，为议题'{issue}'生成详细的决策建议：\n\n决策结果：{'通过' if decision else '否决'}\n\n各因素评分：\n{scores_text}\n\n三贤者意见：\n{opinions_text}\n\n请提供详细的决策建议，包括具体的行动方案和注意事项。"
             
             # 调用大模型生成建议
-            advice = zero_claw.call_llm(prompt, model="glm")
+            advice = model_manager.generate_response(prompt, model="glm")
             return advice
         except Exception as e:
             print(f"[三贤者] 生成决策建议失败: {e}")
@@ -249,16 +249,10 @@ class ThreeSagesManager:
             模型生成的文本
         """
         try:
-            # 尝试使用ZeroClaw作为外部服务（如果可用）
-            try:
-                from zeroclaw_integration import ZeroClawIntegration
-                zero_claw = ZeroClawIntegration()
-                return zero_claw.call_llm(prompt, model=model_name)
-            except ImportError:
-                # 如果ZeroClaw不可用，使用其他LLM接口
-                print(f"[三贤者] ZeroClaw不可用，使用备用LLM接口")
-                # 这里可以添加其他LLM接口的实现
-                return f"[模拟响应] 针对问题 '{prompt}' 的分析和建议"
+            # 使用ModelManager调用大模型
+            from model_integration.model_manager import ModelManager
+            model_manager = ModelManager()
+            return model_manager.generate_response(prompt, model=model_name)
         except Exception as e:
             print(f"[三贤者] 调用大模型失败: {e}")
-            return None
+            raise

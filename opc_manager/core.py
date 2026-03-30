@@ -51,7 +51,16 @@ class OPCManager:
         
         # 初始化技能管理和MCP集成
         self.skill_manager = SkillManager()
-        self.mcp_integration = MCPIntegration()
+        github_token = self.config.get('mcp', {}).get('github_token', None)
+        self.mcp_integration = MCPIntegration(github_token=github_token)
+        
+        # 初始化财务部
+        from opc_finance.finance_manager import FinanceManager
+        self.finance_manager = FinanceManager(communication_manager=self.communication_manager)
+        
+        # 初始化人事部增强
+        from opc_hr.hr_enhancement import HREnhancement
+        self.hr_enhancement = HREnhancement(self)
         
         # 加载默认技能
         self._load_default_skills()
@@ -320,26 +329,42 @@ class OPCManager:
     
     # MCP集成相关方法
     def fetch_skills_from_mcp(self, category: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
-        """从MCP获取技能列表"""
-        return self.mcp_integration.fetch_skills(category, limit)
+        """从MCP GitHub搜索Skill"""
+        query = category or "MCP server"
+        return self.mcp_integration.search_skills(query, category=category, limit=limit)
     
     def fetch_skill_details_from_mcp(self, skill_name: str) -> Optional[Dict[str, Any]]:
-        """从MCP获取技能详情"""
+        """从MCP获取Skill详情（通过GitHub仓库）"""
         return self.mcp_integration.fetch_skill_details(skill_name)
     
-    def import_skill_from_mcp(self, skill_name: str) -> Dict[str, Any]:
-        """从MCP导入技能"""
-        result = self.mcp_integration.import_skill(skill_name)
+    def import_skill_from_mcp(self, repo_full_name: str) -> Dict[str, Any]:
+        """从MCP GitHub导入Skill"""
+        result = self.mcp_integration.import_skill(repo_full_name)
         if result.get('success'):
-            # 注册导入的技能
             skill_data = result.get('skill_data', {})
-            self.skill_manager.register_skill(skill_name, skill_data)
+            self.skill_manager.register_skill(skill_data.get('name', repo_full_name), skill_data)
         return result
     
-    def search_skills_in_mcp(self, query: str, category: Optional[str] = None) -> List[Dict[str, Any]]:
-        """在MCP中搜索技能"""
-        return self.mcp_integration.search_skills(query, category)
+    def search_skills_in_mcp(self, query: str, category: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+        """在MCP GitHub中搜索Skill"""
+        return self.mcp_integration.search_skills(query, category=category, limit=limit)
     
     def get_skill_categories_from_mcp(self) -> List[str]:
-        """从MCP获取技能类别列表"""
+        """从MCP获取Skill类别列表"""
         return self.mcp_integration.get_skill_categories()
+    
+    def search_agents_in_mcp(self, query: str, department: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+        """在MCP GitHub中搜索Agent"""
+        return self.mcp_integration.search_agents(query, department=department, limit=limit)
+    
+    def fetch_agent_details_from_mcp(self, repo_full_name: str) -> Optional[Dict[str, Any]]:
+        """从MCP获取Agent详情"""
+        return self.mcp_integration.fetch_agent_details(repo_full_name)
+    
+    def import_agent_from_mcp(self, repo_full_name: str, target_department: Optional[str] = None) -> Dict[str, Any]:
+        """从MCP GitHub导入Agent"""
+        return self.mcp_integration.import_agent(repo_full_name, target_department=target_department)
+    
+    def get_mcp_status(self) -> Dict[str, Any]:
+        """获取MCP集成状态"""
+        return self.mcp_integration.get_status()

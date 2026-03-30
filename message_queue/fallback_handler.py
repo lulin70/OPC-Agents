@@ -14,7 +14,7 @@ import random
 
 class FallbackLevel(Enum):
     """降级级别枚举"""
-    PRIMARY = "primary"  # 主要服务（ZeroClaw Gateway）
+    PRIMARY = "primary"  # 主要服务（ModelManager）
     SECONDARY = "secondary"  # 次要服务（GLM API直接调用）
     TERTIARY = "tertiary"  # 第三级（预设响应模板）
     FALLBACK = "fallback"  # 最终降级（友好错误提示）
@@ -85,7 +85,7 @@ class FallbackHandler:
         """初始化降级处理器
         
         Args:
-            primary_client: 主要AI客户端（ZeroClaw Gateway）
+            primary_client: 主要AI客户端（ModelManager）
             secondary_client: 次要AI客户端（GLM API直接调用）
         """
         self.primary_client = primary_client
@@ -175,7 +175,7 @@ class FallbackHandler:
         return result
     
     def _try_primary(self, prompt: str, retry_count: int = 0) -> Optional[str]:
-        """尝试主要服务（ZeroClaw Gateway）
+        """尝试主要服务（ModelManager）
         
         Args:
             prompt: 提示词
@@ -188,8 +188,8 @@ class FallbackHandler:
             return None
         
         try:
-            self.logger.info(f"尝试主要服务（ZeroClaw Gateway），重试次数: {retry_count}")
-            response = self.primary_client.call_llm(prompt)
+            self.logger.info(f"尝试主要服务（ModelManager），重试次数: {retry_count}")
+            response = self.primary_client.generate_response(prompt)
             
             if response:
                 self.logger.info("主要服务调用成功")
@@ -270,7 +270,7 @@ class FallbackHandler:
         
         return (
             "抱歉，目前AI服务暂时不可用。这可能是由于以下原因：\n\n"
-            "1. ZeroClaw Gateway未启动或未配对\n"
+            "1. ModelManager未初始化或配置错误\n"
             "2. 网络连接问题\n"
             "3. AI服务正在维护中\n\n"
             "请稍后重试，或联系系统管理员获取帮助。"

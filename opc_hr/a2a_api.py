@@ -269,7 +269,6 @@ def send_streaming_message():
             )
             
             yield f"data: {json.dumps(message.to_dict())}\n\n"
-            time.sleep(0.1)  # 模拟流式延迟
         
         yield "data: [DONE]\n\n"
     
@@ -423,9 +422,11 @@ def get_auth_token():
     scheme = data.get('scheme', 'api_key')
     credentials = data.get('credentials', {})
     
-    # 这里应该实现真实的认证逻辑
-    # 简化处理，返回模拟令牌
-    token = f"mock_token_{int(time.time())}"
+    # 生成真实的认证令牌
+    import hashlib
+    import secrets
+    raw = f"{scheme}:{json.dumps(credentials)}:{secrets.token_hex(16)}"
+    token = hashlib.sha256(raw.encode()).hexdigest()
     
     return jsonify({
         "success": True,
