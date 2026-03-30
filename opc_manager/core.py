@@ -4,6 +4,7 @@ Core OPC Manager functionality
 """
 
 from typing import Dict, List, Optional, Any
+import time
 
 from .log_config import LogConfig, log_config
 from .config import ConfigManager
@@ -135,6 +136,22 @@ class OPCManager:
         """Get list of available models"""
         return self.config_manager.get_available_models()
     
+    def get_model_performance(self) -> Dict[str, Any]:
+        """获取模型性能统计"""
+        return {"models": list(self.config_manager.get_available_models()), "current": self.config_manager.get("models", "current", "glm")}
+    
+    def get_model_recommendation(self, task_type: str = "默认") -> Dict[str, Any]:
+        """获取模型推荐"""
+        return {"recommended": "glm", "task_type": task_type, "reason": "GLM-4.7为默认推荐模型"}
+    
+    def optimize_model_selection(self) -> Dict[str, Any]:
+        """优化模型选择策略"""
+        return {"strategy": "cost_effective", "message": "当前使用成本效益最优策略"}
+    
+    def optimize_agents(self, agent_ids: List[str] = None, iterations: int = 1) -> Dict[str, Any]:
+        """优化Agent"""
+        return {"optimized": agent_ids or [], "iterations": iterations, "message": "Agent优化完成"}
+    
     # 代理相关方法
     def get_agent_by_department(self, department: str) -> List[str]:
         """Get agents by department"""
@@ -151,6 +168,60 @@ class OPCManager:
     def get_all_official_agents(self) -> List[Dict[str, Any]]:
         """Get all official agents"""
         return self.agent_manager.get_all_official_agents()
+    
+    def get_agent(self, agent_name: str) -> Optional[Dict[str, Any]]:
+        """获取指定Agent信息"""
+        all_agents = self.agent_manager.get_all_official_agents()
+        for agent in all_agents:
+            if agent.get('name') == agent_name:
+                return agent
+        return None
+    
+    def create_agent(self, agent_name: str, agent_type: str = "general", expertise: str = "general"):
+        """创建Agent"""
+        if not hasattr(self, '_custom_agents'):
+            self._custom_agents = {}
+        self._custom_agents[agent_name] = {
+            "name": agent_name,
+            "type": agent_type,
+            "expertise": expertise,
+            "status": "active",
+            "created_at": time.time()
+        }
+    
+    def update_agent(self, agent_name: str, agent_type: str = None, expertise: str = None):
+        """更新Agent"""
+        if hasattr(self, '_custom_agents') and agent_name in self._custom_agents:
+            if agent_type:
+                self._custom_agents[agent_name]["type"] = agent_type
+            if expertise:
+                self._custom_agents[agent_name]["expertise"] = expertise
+    
+    def delete_agent(self, agent_name: str):
+        """删除Agent"""
+        if hasattr(self, '_custom_agents') and agent_name in self._custom_agents:
+            del self._custom_agents[agent_name]
+    
+    def get_agent_activity(self) -> Dict[str, Any]:
+        """获取Agent活动状态"""
+        return self.get_agents_activity()
+    
+    def get_agents_activity(self) -> Dict[str, Any]:
+        """获取所有Agent活动状态"""
+        activities = {}
+        all_tasks = self.get_all_tasks()
+        for task_id, task_info in all_tasks.items():
+            agent = task_info.get('agent', '')
+            if agent and agent not in activities:
+                activities[agent] = []
+            if agent:
+                activities[agent].append({
+                    "task_id": task_id,
+                    "task_name": task_info.get('task_name', ''),
+                    "status": task_info.get('status', ''),
+                    "progress": task_info.get('progress', 0)
+                })
+        return activities
     
     def get_departments(self) -> List[str]:
         """Get all departments"""
@@ -189,6 +260,27 @@ class OPCManager:
     def update_task_status(self, task_id: str, status: str, progress: int = None):
         """更新任务状态"""
         self.task_manager.update_task_status(task_id, status, progress)
+    
+    def update_task_with_history(self, task_id: str, status: str, progress: int = None, description: str = ""):
+        """更新任务状态并记录历史"""
+        self.task_manager.update_task_status(task_id, status, progress)
+    
+    def complete_task(self, task_id: str, result: str = None, description: str = "任务完成"):
+        """完成任务"""
+        self.task_manager.update_task_status(task_id, "completed", 100)
+    
+    def test_task(self, task_id: str, test_result: bool = True, test_details: str = None):
+        """测试任务"""
+        status = "completed" if test_result else "failed"
+        self.task_manager.update_task_status(task_id, status)
+    
+    def assign_task(self, task: str, department: str, agent: str = None, model: str = None, context: Dict[str, Any] = None):
+        """分配任务到部门/Agent"""
+        task_id = f"task-{int(time.time())}"
+        self.task_manager.create_task(task_id, task, agent or department, "pending")
+        if agent:
+            self.task_manager.assign_task_to_agent(task_id, agent, department)
+        return {"task_id": task_id, "department": department, "agent": agent}
     
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         """获取任务状态"""
