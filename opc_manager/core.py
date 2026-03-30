@@ -443,9 +443,9 @@ class OPCManager:
         """从MCP获取Skill详情（通过GitHub仓库）"""
         return self.mcp_integration.fetch_skill_details(skill_name)
     
-    def import_skill_from_mcp(self, repo_full_name: str) -> Dict[str, Any]:
+    def import_skill_from_mcp(self, repo_full_name: str, force: bool = False) -> Dict[str, Any]:
         """从MCP GitHub导入Skill"""
-        result = self.mcp_integration.import_skill(repo_full_name)
+        result = self.mcp_integration.import_skill(repo_full_name, force=force)
         if result.get('success'):
             skill_data = result.get('skill_data', {})
             self.skill_manager.register_skill(skill_data.get('name', repo_full_name), skill_data)
@@ -467,9 +467,9 @@ class OPCManager:
         """从MCP获取Agent详情"""
         return self.mcp_integration.fetch_agent_details(repo_full_name)
     
-    def import_agent_from_mcp(self, repo_full_name: str, target_department: Optional[str] = None) -> Dict[str, Any]:
+    def import_agent_from_mcp(self, repo_full_name: str, target_department: Optional[str] = None, force: bool = False) -> Dict[str, Any]:
         """从MCP GitHub导入Agent"""
-        return self.mcp_integration.import_agent(repo_full_name, target_department=target_department)
+        return self.mcp_integration.import_agent(repo_full_name, target_department=target_department, force=force)
     
     def get_mcp_status(self) -> Dict[str, Any]:
         """获取MCP集成状态"""

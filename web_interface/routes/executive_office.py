@@ -378,15 +378,16 @@ def register_routes(manager):
         import_type = data.get('type', 'agent')
         repo_full_name = data.get('repo_full_name', '')
         target_department = data.get('department', None)
+        force = data.get('force', False)
         
         if not repo_full_name:
             return jsonify({"error": "repo_full_name is required"}), 400
         
         try:
             if import_type == 'agent':
-                result = manager.import_agent_from_mcp(repo_full_name, target_department=target_department)
+                result = manager.import_agent_from_mcp(repo_full_name, target_department=target_department, force=force)
             else:
-                result = manager.import_skill_from_mcp(repo_full_name)
+                result = manager.import_skill_from_mcp(repo_full_name, force=force)
             return jsonify(result)
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500

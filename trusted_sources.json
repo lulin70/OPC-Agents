@@ -1,0 +1,20 @@
+{
+  "description": "可信来源白名单 - 来自这些仓库的Agent/Skip跳过深度代码扫描",
+  "trusted_repos": [
+    "Eladlev/AutoGen",
+    "microsoft/autogen",
+    "langchain-ai/langchain",
+    "run-llama/llama_index",
+    "crewAIInc/crewAI",
+    "jina-ai/reader",
+    "paul-gauthier/aider"
+  ],
+  "trusted_orgs": [
+    "microsoft",
+    "openai",
+    "anthropics",
+    "google",
+    "langchain-ai",
+    "crewAIInc"
+  ]
+}

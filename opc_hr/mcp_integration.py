@@ -359,7 +359,7 @@ class MCPIntegration:
             self.logger.error(f"获取Skill详情失败: {e}")
             return None
 
-    def import_agent(self, repo_full_name: str, target_department: Optional[str] = None) -> Dict[str, Any]:
+    def import_agent(self, repo_full_name: str, target_department: Optional[str] = None, force: bool = False) -> Dict[str, Any]:
         """从GitHub导入Agent到系统"""
         try:
             details = self.fetch_agent_details(repo_full_name)
@@ -367,10 +367,12 @@ class MCPIntegration:
                 return {"success": False, "error": f"无法获取仓库信息: {repo_full_name}"}
 
             verification = self._verify_resource(details, "agent")
-            if not verification["verified"]:
+
+            if not verification["verified"] and not force:
                 return {
                     "success": False,
-                    "error": "Agent验证未通过",
+                    "needs_confirmation": True,
+                    "error": "Agent安全验证未通过，请确认后使用force=true强制导入",
                     "verification": verification
                 }
 
@@ -416,7 +418,7 @@ class MCPIntegration:
             self.logger.error(f"导入Agent失败: {e}")
             return {"success": False, "error": str(e)}
 
-    def import_skill(self, repo_full_name: str) -> Dict[str, Any]:
+    def import_skill(self, repo_full_name: str, force: bool = False) -> Dict[str, Any]:
         """从GitHub导入Skill/MCP Server到系统"""
         try:
             details = self.fetch_skill_details(repo_full_name)
@@ -424,10 +426,12 @@ class MCPIntegration:
                 return {"success": False, "error": f"无法获取仓库信息: {repo_full_name}"}
 
             verification = self._verify_resource(details, "skill")
-            if not verification["verified"]:
+
+            if not verification["verified"] and not force:
                 return {
                     "success": False,
-                    "error": "Skill验证未通过",
+                    "needs_confirmation": True,
+                    "error": "Skill安全验证未通过，请确认后使用force=true强制导入",
                     "verification": verification
                 }
 
@@ -469,17 +473,102 @@ class MCPIntegration:
         """验证Skill的安全性和可靠性"""
         return self._verify_resource(skill_data, "skill")
 
+    def _load_trusted_sources(self) -> set:
+        trusted_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "trusted_sources.json")
+        if os.path.exists(trusted_path):
+            try:
+                with open(trusted_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return set(data.get("trusted_repos", []))
+            except Exception:
+                pass
+        return set()
+
+    def _scan_code_safety(self, repo_full_name: str) -> Dict[str, Any]:
+        result = {"scanned": False, "files_scanned": 0, "issues": [], "risk_level": "unknown"}
+        try:
+            parts = repo_full_name.split("/")
+            if len(parts) != 2:
+                return result
+            owner, repo = parts
+            scan_files = ["__init__.py", "main.py", "setup.py", "install.sh", "run.sh",
+                          "agent.py", "skill.py", "index.py", "app.py", "server.py"]
+            dangerous_patterns = [
+                (r'os\.system\s*\(', '直接执行系统命令(os.system)'),
+                (r'subprocess\.(call|run|Popen)\s*\(', '子进程执行(subprocess)'),
+                (r'eval\s*\(', '动态代码执行(eval)'),
+                (r'exec\s*\(', '动态代码执行(exec)'),
+                (r'compile\s*\(', '动态代码编译(compile)'),
+                (r'__import__\s*\(', '动态模块导入(__import__)'),
+                (r'pickle\.loads?\s*\(', '反序列化(pickle, RCE风险)'),
+                (r'marshal\.loads?\s*\(', '反序列化(marshal)'),
+                (r'yaml\.load\s*\(', 'YAML反序列化(需用safe_load)'),
+                (r'shutil\.rmtree\s*\(', '递归删除目录'),
+                (r'os\.remove\s*\(', '删除文件'),
+                (r'open\s*\([^)]*[\'"]w', '文件写入'),
+                (r'requests\.(post|put|delete)\s*\(', '网络请求发送'),
+                (r'urllib\.request\.urlopen', '网络请求(urllib)'),
+                (r'socket\.\w+\s*\(', '网络套接字(socket)'),
+                (r'ctypes\.\w+\s*\(', 'C库调用(ctypes)'),
+                (r'getattr\s*\(\s*__builtins__', '访问内置函数'),
+                (r'globals\s*\(\s*\)', '访问全局变量'),
+                (r'os\.environ', '读取环境变量(可能泄露密钥)'),
+                (r'base64\.b64decode', 'Base64解码(可能隐藏恶意代码)'),
+            ]
+            for fname in scan_files:
+                try:
+                    content = self.github.get_file_content(owner, repo, fname)
+                    if content:
+                        result["files_scanned"] += 1
+                        for pattern, desc in dangerous_patterns:
+                            matches = re.findall(pattern, content)
+                            if matches:
+                                result["issues"].append(f"{fname}: {desc} (x{len(matches)})")
+                except Exception:
+                    continue
+            result["scanned"] = True
+            issue_count = len(result["issues"])
+            if issue_count == 0:
+                result["risk_level"] = "low"
+            elif issue_count <= 3:
+                result["risk_level"] = "medium"
+            else:
+                result["risk_level"] = "high"
+        except Exception as e:
+            result["scan_error"] = str(e)
+        return result
+
     def _verify_resource(self, data: Dict[str, Any], resource_type: str) -> Dict[str, Any]:
-        """验证资源的安全性和可靠性"""
+        """验证资源的安全性和可靠性（含代码扫描和白名单检查）"""
         result = {
             "resource_type": resource_type,
             "name": data.get("name", "unknown"),
             "verified": False,
+            "trusted": False,
             "security_score": 0.0,
             "reliability_score": 0.0,
+            "code_scan": None,
             "issues": [],
             "recommendations": []
         }
+
+        repo_full_name = data.get("source_repo", "") or data.get("repo_full_name", "")
+        trusted_sources = self._load_trusted_sources()
+
+        if repo_full_name and repo_full_name in trusted_sources:
+            result["trusted"] = True
+            result["verified"] = True
+            result["security_score"] = 1.0
+            result["reliability_score"] = 1.0
+            result["code_scan"] = {"scanned": False, "reason": "trusted_source"}
+            result["recommendations"].append("来自可信来源，跳过深度扫描")
+            self.verification_history.append({
+                "resource_type": resource_type,
+                "name": data.get("name"),
+                "timestamp": datetime.now().isoformat(),
+                "result": result
+            })
+            return result
 
         stars = data.get("stars", 0)
         forks = data.get("forks", 0)
@@ -524,6 +613,24 @@ class MCPIntegration:
         if data.get("topics"):
             reliability_score += 0.05
         result["reliability_score"] = min(1.0, reliability_score)
+
+        if repo_full_name:
+            code_scan = self._scan_code_safety(repo_full_name)
+            result["code_scan"] = code_scan
+            if code_scan["scanned"]:
+                if code_scan["risk_level"] == "low":
+                    security_score += 0.1
+                elif code_scan["risk_level"] == "high":
+                    security_score -= 0.3
+                    result["issues"].append(f"代码扫描发现{len(code_scan['issues'])}个安全隐患")
+                    for issue in code_scan["issues"][:5]:
+                        result["issues"].append(f"  ⚠️ {issue}")
+                elif code_scan["risk_level"] == "medium":
+                    security_score -= 0.1
+                    result["issues"].append(f"代码扫描发现{len(code_scan['issues'])}个潜在风险")
+                    for issue in code_scan["issues"][:3]:
+                        result["issues"].append(f"  ⚠️ {issue}")
+                result["security_score"] = max(0.0, min(1.0, security_score))
 
         result["verified"] = result["security_score"] >= 0.6 and result["reliability_score"] >= 0.5
 
