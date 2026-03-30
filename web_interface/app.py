@@ -233,11 +233,14 @@ def agent_management():
 def finance_page():
     return render_template('finance.html')
 
-# SSE实时进度推送
+# SSE实时进度推送（带去重和节流）
 @app.route('/api/progress/stream')
 def progress_stream():
     def generate():
         import json
+        import time
+        last_snapshot = ""
+        last_send_time = 0
         while True:
             all_tasks = manager.get_all_tasks()
             active_tasks = []
@@ -251,11 +254,13 @@ def progress_stream():
                         'assigned_to': task_info.get('assigned_to', ''),
                         'agent': task_info.get('agent', '')
                     })
-            if active_tasks:
-                data = json.dumps({"type": "progress", "tasks": active_tasks})
-                yield f"data: {data}\n\n"
-            import time
-            time.sleep(5)
+            snapshot = json.dumps({"type": "progress", "tasks": active_tasks}, sort_keys=True)
+            now = time.time()
+            if snapshot != last_snapshot and (now - last_send_time) >= 30:
+                yield f"data: {snapshot}\n\n"
+                last_snapshot = snapshot
+                last_send_time = now
+            time.sleep(10)
     return app.response_class(generate(), mimetype='text/event-stream')
 
 # 启动Flask应用（支持 python -m 方式运行）

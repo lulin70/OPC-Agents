@@ -184,11 +184,12 @@ def register_routes(manager):
                     print(f"[人事部评估] 失败: {hr_err}")
             
             # 步骤5: 创建主任务
-            task_id = manager.create_task(
+            main_task_id = f"task-{int(time.time())}"
+            manager.create_task(
+                task_id=main_task_id,
                 task_name=message[:50],
-                description=message,
-                priority="high",
-                assigned_to="executive_office"
+                agent="executive_office",
+                initial_status="in_progress"
             )
             
             # 步骤6: 分发子任务到各部门
@@ -199,14 +200,15 @@ def register_routes(manager):
                     agent = sub.get('agent', '')
                     sub_task_name = sub.get('task', '')
                     if sub_task_name:
-                        sub_task_id = manager.create_task(
+                        sub_task_id = f"task-{int(time.time())}-{len(dispatched)}"
+                        manager.create_task(
+                            task_id=sub_task_id,
                             task_name=sub_task_name,
-                            description=f"父任务: {message[:50]}\n子任务: {sub_task_name}",
-                            priority="medium",
-                            assigned_to=dept
+                            agent=agent or dept,
+                            initial_status="pending"
                         )
                         if agent:
-                            manager.assign_task_to_agent(sub_task_id, agent, dept)
+                            manager.task_manager.assign_task_to_agent(sub_task_id, agent, dept)
                         dispatched.append({
                             "task_id": sub_task_id,
                             "task_name": sub_task_name,
@@ -264,7 +266,7 @@ def register_routes(manager):
                 f"{dispatch_text}"
                 f"4. **执行中**：各部门Agent正在处理\n"
                 f"{hr_text}\n"
-                f"主任务ID: {task_id}"
+                f"主任务ID: {main_task_id}"
             )
             
             response = {
@@ -272,7 +274,7 @@ def register_routes(manager):
                 "type": "executive",
                 "content": ai_response,
                 "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S'),
-                "task_id": task_id,
+                "task_id": main_task_id,
                 "dispatched_tasks": dispatched,
                 "decision": decision,
                 "hr_assessment": hr_assessment,
