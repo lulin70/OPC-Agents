@@ -58,6 +58,7 @@ from web_interface.routes.department_management import register_routes as regist
 from web_interface.routes.personal_assistant import register_routes as register_pa_routes
 from web_interface.routes.model_management import register_routes as register_model_routes
 from web_interface.routes.auto_optimizer import register_routes as register_auto_opt_routes
+from web_interface.routes.agent_management import register_routes as register_agent_routes
 from web_interface.routes.progress_routes import bp as progress_bp
 from web_interface.routes.health_routes import health_bp, init_health_routes
 
@@ -80,6 +81,10 @@ try:
     
     auto_opt_bp = register_auto_opt_routes()
     app.register_blueprint(auto_opt_bp)
+    
+    # 注册代理管理路由
+    agent_bp = register_agent_routes(manager)
+    app.register_blueprint(agent_bp)
     
     # 注册进度反馈路由
     app.register_blueprint(progress_bp)
@@ -141,6 +146,68 @@ def index():
 def monitoring():
     return render_template('monitoring.html')
 
+# 部门详情页面
+@app.route('/department/<department>')
+def department_detail(department):
+    # 获取部门代理
+    official_agents = manager.get_official_agent_by_department(department)
+    custom_agents = manager.get_agent_by_department(department)
+    
+    # 格式化代理数据
+    agents = []
+    for agent in official_agents:
+        agent_info = {
+            'name': agent.get('frontmatter', {}).get('name', agent.get('name')),
+            'description': agent.get('frontmatter', {}).get('description', ''),
+            'expertise': agent.get('frontmatter', {}).get('expertise', '未知'),
+            'skill_level': agent.get('frontmatter', {}).get('skill_level', '中级')
+        }
+        agents.append(agent_info)
+    
+    for agent in custom_agents:
+        agent_info = {
+            'name': agent,
+            'description': '自定义代理',
+            'expertise': '通用',
+            'skill_level': '初级'
+        }
+        agents.append(agent_info)
+    
+    # 获取任务统计
+    all_tasks = manager.get_all_tasks()
+    active_tasks = 0
+    completed_tasks = 0
+    
+    for task_id, task_info in all_tasks.items():
+        if task_info['agent'] == department:
+            if task_info['status'] == 'in_progress':
+                active_tasks += 1
+            elif task_info['status'] == 'completed':
+                completed_tasks += 1
+    
+    # 部门描述
+    department_descriptions = {
+        '总裁办': '负责公司整体战略规划和决策，协调各部门工作',
+        '人事部': '负责人才招聘、培训和管理，优化人力资源配置',
+        '财务部': '负责公司财务管理，包括预算、报表和审计',
+        '市场部': '负责市场调研、品牌推广和营销策略',
+        '产品部': '负责产品规划、设计和开发管理'
+    }
+    
+    department_description = department_descriptions.get(department, f'{department}负责公司相关业务管理')
+    
+    return render_template('department.html', 
+                          department=department, 
+                          agents=agents, 
+                          active_tasks=active_tasks, 
+                          completed_tasks=completed_tasks, 
+                          department_description=department_description)
+
+# 代理管理页面
+@app.route('/agent_management')
+def agent_management():
+    return render_template('agent_management.html')
+
 # 启动Flask应用（支持 python -m 方式运行）
 if __name__ == '__main__' or __name__ == 'web_interface.app':
     # 创建templates目录（使用绝对路径）
@@ -172,10 +239,46 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
             border-right: 1px solid #dee2e6;
             padding-top: 20px;
             overflow-y: auto;
+            z-index: 1000;
         }
         .main-content {
             margin-left: 250px;
             padding: 20px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            .main-content {
+                margin-left: 200px;
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 10px;
+            }
+            .nav-link {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            .nav-link.sub-nav {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
         }
         .nav-link {
             font-size: 16px;
@@ -211,6 +314,38 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
         .section.active {
             display: block;
         }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .alert {
+            margin-top: 10px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -244,7 +379,7 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                         <a class="nav-link sub-nav" href="#" data-section="department-agents">部门列表</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link sub-nav nav-toggle" href="#" data-section="hr">人事部</a>
+                        <a class="nav-link sub-nav" href="/department/人事部">人事部</a>
                         <ul class="nav flex-column ms-3 mt-2">
                             <li class="nav-item">
                                 <a class="nav-link sub-nav" href="#" data-section="department-agents">代理管理</a>
@@ -258,12 +393,21 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link sub-nav nav-toggle" href="#" data-section="finance">财务部</a>
+                        <a class="nav-link sub-nav" href="/department/财务部">财务部</a>
                         <ul class="nav flex-column ms-3 mt-2">
                             <li class="nav-item">
                                 <a class="nav-link sub-nav" href="#" data-section="token-usage">Token使用情况</a>
                             </li>
                         </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link sub-nav" href="/department/总裁办">总裁办</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link sub-nav" href="/department/市场部">市场部</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link sub-nav" href="/department/产品部">产品部</a>
                     </li>
                 </ul>
             </li>
@@ -785,6 +929,29 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 }
             });
             
+            // 显示加载状态
+            function showLoading() {
+                $('body').append('<div class="loading-overlay"><div><div class="loading"></div>处理中...</div></div>');
+            }
+            
+            // 隐藏加载状态
+            function hideLoading() {
+                $('.loading-overlay').remove();
+            }
+            
+            // 显示消息
+            function showMessage(message, type) {
+                var alertType = type === 'error' ? 'alert-danger' : 'alert-success';
+                var html = '<div class="alert ' + alertType + ' alert-dismissible fade show" role="alert">' +
+                    message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                    '</div>';
+                $('#create-task-form').after(html);
+                setTimeout(function() {
+                    $('.alert').alert('close');
+                }, 3000);
+            }
+            
             // 创建任务
             $('#create-task-form').submit(function(e) {
                 e.preventDefault();
@@ -793,14 +960,26 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 var task_status = $('#task-status').val();
                 var task_model = $('#task-model').val();
                 
+                showLoading();
+                
                 $.ajax({
                     url: '/api/tasks',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({task_name: task_name, agent: task_agent, status: task_status, model: task_model}),
                     success: function(data) {
-                        alert('任务创建成功！');
-                        location.reload();
+                        hideLoading();
+                        showMessage('任务创建成功！', 'success');
+                        // 清空表单
+                        $('#create-task-form')[0].reset();
+                        // 刷新任务列表
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    },
+                    error: function(xhr, status, error) {
+                        hideLoading();
+                        showMessage('任务创建失败: ' + error, 'error');
                     }
                 });
             });
@@ -812,14 +991,22 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 var progress = prompt('请输入进度 (0-100):', '50');
                 
                 if (status) {
+                    showLoading();
                     $.ajax({
                         url: '/api/tasks/' + task_id,
                         type: 'PUT',
                         contentType: 'application/json',
                         data: JSON.stringify({status: status, progress: parseInt(progress)}),
                         success: function(data) {
-                            alert('任务更新成功！');
-                            location.reload();
+                            hideLoading();
+                            showMessage('任务更新成功！', 'success');
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
+                        },
+                        error: function(xhr, status, error) {
+                            hideLoading();
+                            showMessage('任务更新失败: ' + error, 'error');
                         }
                     });
                 }
@@ -851,12 +1038,15 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 var voting_method = $('#voting-method').val();
                 var decision_threshold = parseFloat($('#decision-threshold').val());
                 
+                showLoading();
+                
                 $.ajax({
                     url: '/api/consensus',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({issue: issue, agents: agents, voting_method: voting_method, decision_threshold: decision_threshold}),
                     success: function(data) {
+                        hideLoading();
                         var html = '<div class="card">' +
                             '<div class="card-body">' +
                             '<h5 class="card-title">共识结果</h5>' +
@@ -871,6 +1061,10 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                             '</div>' +
                             '</div>';
                         $('#consensus-result').html(html);
+                    },
+                    error: function(xhr, status, error) {
+                        hideLoading();
+                        showMessage('共识过程失败: ' + error, 'error');
                     }
                 });
             });
@@ -881,12 +1075,15 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 var task = $('#decompose-task').val();
                 var time_horizon = $('#time-horizon').val();
                 
+                showLoading();
+                
                 $.ajax({
                     url: '/api/decompose_task',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({task: task, time_horizon: time_horizon}),
                     success: function(data) {
+                        hideLoading();
                         var html = '<div class="table-responsive">' +
                             '<table class="table table-striped">' +
                             '<thead>' +
@@ -914,6 +1111,10 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                             '</table>' +
                             '</div>';
                         $('#decompose-result').html(html);
+                    },
+                    error: function(xhr, status, error) {
+                        hideLoading();
+                        showMessage('任务分解失败: ' + error, 'error');
                     }
                 });
             });
@@ -923,12 +1124,15 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 e.preventDefault();
                 var task_ids = $('#task-ids').val().split(',').map(function(id) { return id.trim(); });
                 
+                showLoading();
+                
                 $.ajax({
                     url: '/api/track_progress',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({tasks: task_ids}),
                     success: function(data) {
+                        hideLoading();
                         var html = '<div class="card">' +
                             '<div class="card-body">' +
                             '<h5 class="card-title">进度跟踪结果</h5>' +
@@ -949,6 +1153,10 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                             '</div>' +
                             '</div>';
                         $('#progress-result').html(html);
+                    },
+                    error: function(xhr, status, error) {
+                        hideLoading();
+                        showMessage('进度跟踪失败: ' + error, 'error');
                     }
                 });
             });
@@ -958,12 +1166,15 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 e.preventDefault();
                 var period = $('#report-period').val();
                 
+                showLoading();
+                
                 $.ajax({
                     url: '/api/generate_report',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({period: period}),
                     success: function(data) {
+                        hideLoading();
                         var html = '<div class="card">' +
                             '<div class="card-body">' +
                             '<h5 class="card-title">' + data.period + ' 报告</h5>' +
@@ -997,6 +1208,10 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                             '</div>' +
                             '</div>';
                         $('#report-result').html(html);
+                    },
+                    error: function(xhr, status, error) {
+                        hideLoading();
+                        showMessage('报告生成失败: ' + error, 'error');
                     }
                 });
             });
@@ -1007,12 +1222,15 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                 var issue = $('#decision-issue').val();
                 var context = $('#decision-context').val();
                 
+                showLoading();
+                
                 $.ajax({
                     url: '/api/three_sages_decision',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({issue: issue, context: context}),
                     success: function(data) {
+                        hideLoading();
                         var html = '<div class="card">' +
                             '<div class="card-body">' +
                             '<h5 class="card-title">三贤者决策结果</h5>' +
@@ -1032,6 +1250,10 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
                             '</div>' +
                             '</div>';
                         $('#three-sages-result').html(html);
+                    },
+                    error: function(xhr, status, error) {
+                        hideLoading();
+                        showMessage('决策过程失败: ' + error, 'error');
                     }
                 });
             });

@@ -142,4 +142,31 @@ def register_routes(manager):
         result = manager.assign_task(task, department, agent, model, context)
         return jsonify({'result': result})
     
+    # 自动分配任务
+    @task_bp.route('/auto_assign', methods=['POST'])
+    def auto_assign_tasks():
+        data = request.json
+        tasks = data.get('tasks')
+        
+        if not tasks or not isinstance(tasks, list):
+            return jsonify({'error': 'Tasks list is required'}), 400
+        
+        assignment_results = manager.auto_assign_tasks(tasks)
+        return jsonify({'assignments': assignment_results})
+    
+    # 查找最佳Agent
+    @task_bp.route('/find_agent', methods=['POST'])
+    def find_best_agent():
+        data = request.json
+        task_name = data.get('task_name')
+        task_type = data.get('task_type')
+        priority = data.get('priority', 'medium')
+        deadline = data.get('deadline')
+        
+        if not task_name:
+            return jsonify({'error': 'Task name is required'}), 400
+        
+        best_agent = manager.find_best_agent_for_task(task_name, task_type, priority, deadline)
+        return jsonify(best_agent)
+    
     return task_bp

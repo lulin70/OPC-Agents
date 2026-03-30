@@ -11,7 +11,7 @@ This project implements a virtual agency with multiple specialized AI agents tha
 - **Multi-department structure** with 35 specialized departments
 - **157+ specialized agents** across different domains (from official Agency-Agents project)
 - **Multi-model support** including GLM, OpenAI, Anthropic, Google, Azure, and local models
-- **Task assignment** system for delegating work to specific agents (now with actual task dispatching, not just simulation)
+- **Intelligent task assignment** system based on comprehensive scoring of skill matching, workload, and historical performance
 - **Project management** for coordinating multiple tasks
 - **Internal communication** system for agent-to-agent messaging
 - **Consensus mechanism** for multi-agent decision making
@@ -27,6 +27,9 @@ This project implements a virtual agency with multiple specialized AI agents tha
 - **Resource optimization** for efficient agent utilization
 - **A2A (Agent-to-Agent Protocol)** integration for standardized agent communication
 - **HR Lifecycle Management** including recruitment, training, and performance evaluation
+- **Skill management system** supporting skill registration, usage tracking, and optimization recommendations
+- **MCP integration** for acquiring and verifying skills from external sources to enhance system capabilities
+- **System monitoring** for real-time monitoring of system resource usage, task status, and LLM service status
 - **HR Department Page** showing department and agent lists
 - **Actual task dispatching** to department agents with real-time status updates
 

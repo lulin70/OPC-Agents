@@ -690,72 +690,192 @@ class TaskManager:
             "department": department
         }
     
-    def find_best_agent_for_task(self, task_name: str, task_type: str = None) -> Dict[str, Any]:
+    def find_best_agent_for_task(self, task_name: str, task_type: str = None, priority: str = "medium", deadline: str = None) -> Dict[str, Any]:
         """为任务找到最合适的Agent
         
         Args:
             task_name: 任务名称
             task_type: 任务类型（可选）
+            priority: 任务优先级 (high, medium, low)
+            deadline: 任务截止日期（可选）
             
         Returns:
             推荐的Agent信息
         """
         import logging
+        import json
+        import os
+        from datetime import datetime
+        
         logger = logging.getLogger("OPC-Agents.TaskManager")
         
         try:
             # 加载Agent配置
-            import json
-            import os
-            
             agents_file = os.path.join(os.path.dirname(__file__), "..", "official_agents", "agents.json")
-            if os.path.exists(agents_file):
-                with open(agents_file, 'r', encoding='utf-8') as f:
-                    agents_config = json.load(f)
+            if not os.path.exists(agents_file):
+                logger.warning(f"Agent配置文件不存在: {agents_file}")
+                return self._get_default_agent()
+            
+            with open(agents_file, 'r', encoding='utf-8') as f:
+                agents_config = json.load(f)
+            
+            # 分析任务关键词
+            task_keywords = set(task_name.lower().split())
+            if task_type:
+                task_keywords.add(task_type.lower())
+            
+            # 获取所有任务，计算Agent工作负载
+            all_tasks = self.get_all_tasks()
+            agent_workload = {}
+            agent_performance = {}
+            
+            for task_id, task_info in all_tasks.items():
+                agent = task_info.get("agent")
+                if agent:
+                    # 计算工作负载
+                    if agent not in agent_workload:
+                        agent_workload[agent] = 0
+                    if task_info.get("status") == "in_progress":
+                        agent_workload[agent] += 1
+                    
+                    # 计算历史表现（简化版）
+                    if agent not in agent_performance:
+                        agent_performance[agent] = {"completed": 0, "total": 0}
+                    agent_performance[agent]["total"] += 1
+                    if task_info.get("status") == "completed":
+                        agent_performance[agent]["completed"] += 1
+            
+            # 计算Agent评分
+            agent_scores = {}
+            
+            for dept_name, dept_info in agents_config.get("departments", {}).items():
+                for agent in dept_info.get("agents", []):
+                    agent_name = agent.get("name")
+                    if not agent_name:
+                        continue
+                    
+                    # 计算技能匹配分数
+                    agent_skills = set(s.lower() for s in agent.get("skills", []))
+                    agent_keywords = set(agent_name.lower().split()) | agent_skills
+                    common_keywords = task_keywords & agent_keywords
+                    skill_score = len(common_keywords)
+                    
+                    # 计算工作负载分数（负载越低分数越高）
+                    workload = agent_workload.get(agent_name, 0)
+                    workload_score = max(0, 5 - workload)  # 最多5分
+                    
+                    # 计算历史表现分数
+                    performance = agent_performance.get(agent_name, {"completed": 0, "total": 1})
+                    performance_score = performance["completed"] / performance["total"] * 5  # 最多5分
+                    
+                    # 计算优先级权重
+                    priority_weight = {
+                        "high": 1.5,
+                        "medium": 1.0,
+                        "low": 0.5
+                    }.get(priority, 1.0)
+                    
+                    # 综合评分
+                    total_score = (skill_score * 0.5 + workload_score * 0.3 + performance_score * 0.2) * priority_weight
+                    
+                    agent_scores[agent_name] = {
+                        "agent_name": agent_name,
+                        "department": dept_name,
+                        "skills": agent.get("skills", []),
+                        "skill_score": skill_score,
+                        "workload_score": workload_score,
+                        "performance_score": performance_score,
+                        "total_score": total_score,
+                        "matched_keywords": list(common_keywords)
+                    }
+            
+            # 找出分数最高的Agent
+            if agent_scores:
+                best_agent = max(agent_scores.values(), key=lambda x: x["total_score"])
+                logger.info(f"为任务 '{task_name}' 找到最佳Agent: {best_agent['agent_name']} (分数: {best_agent['total_score']:.2f})")
+                return best_agent
+            else:
+                logger.warning("未找到合适的Agent")
+                return self._get_default_agent()
                 
-                # 分析任务关键词
-                task_keywords = set(task_name.lower().split())
-                if task_type:
-                    task_keywords.add(task_type.lower())
-                
-                # 匹配Agent
-                best_match = None
-                best_score = 0
-                
-                for dept_name, dept_info in agents_config.get("departments", {}).items():
-                    for agent in dept_info.get("agents", []):
-                        agent_name = agent.get("name", "").lower()
-                        agent_skills = set(s.lower() for s in agent.get("skills", []))
-                        agent_keywords = set(agent_name.split()) | agent_skills
-                        
-                        # 计算匹配分数
-                        common_keywords = task_keywords & agent_keywords
-                        score = len(common_keywords)
-                        
-                        if score > best_score:
-                            best_score = score
-                            best_match = {
-                                "agent_name": agent.get("name"),
-                                "department": dept_name,
-                                "skills": agent.get("skills", []),
-                                "match_score": score,
-                                "matched_keywords": list(common_keywords)
-                            }
-                
-                if best_match:
-                    logger.info(f"为任务 '{task_name}' 找到最佳Agent: {best_match['agent_name']} (分数: {best_score})")
-                    return best_match
         except Exception as e:
             logger.warning(f"查找最佳Agent失败: {e}")
-        
-        # 默认返回
+            return self._get_default_agent()
+    
+    def _get_default_agent(self) -> Dict[str, Any]:
+        """获取默认Agent"""
         return {
             "agent_name": "general_assistant",
             "department": "executive_office",
             "skills": [],
-            "match_score": 0,
+            "skill_score": 0,
+            "workload_score": 5,
+            "performance_score": 3,
+            "total_score": 0,
             "matched_keywords": []
         }
+    
+    def auto_assign_tasks(self, tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """自动分配多个任务
+        
+        Args:
+            tasks: 任务列表，每个任务包含 task_name, task_type, priority, deadline 等信息
+            
+        Returns:
+            分配结果列表
+        """
+        import logging
+        logger = logging.getLogger("OPC-Agents.TaskManager")
+        
+        assignment_results = []
+        
+        for task in tasks:
+            task_name = task.get("task_name")
+            task_type = task.get("task_type")
+            priority = task.get("priority", "medium")
+            deadline = task.get("deadline")
+            
+            if not task_name:
+                logger.warning("任务名称不能为空")
+                continue
+            
+            # 查找最佳Agent
+            best_agent = self.find_best_agent_for_task(
+                task_name=task_name,
+                task_type=task_type,
+                priority=priority,
+                deadline=deadline
+            )
+            
+            # 分配任务
+            task_id = f"task-{int(time.time())}-{len(assignment_results)}"
+            self.create_task(
+                task_id=task_id,
+                task_name=task_name,
+                agent=best_agent["agent_name"]
+            )
+            
+            # 更新任务状态和部门信息
+            self.update_task_status(
+                task_id=task_id,
+                status="assigned",
+                progress=0
+            )
+            
+            # 记录分配结果
+            assignment_results.append({
+                "task_id": task_id,
+                "task_name": task_name,
+                "assigned_agent": best_agent["agent_name"],
+                "department": best_agent["department"],
+                "match_score": best_agent.get("total_score", 0),
+                "priority": priority,
+                "deadline": deadline
+            })
+            
+            logger.info(f"任务 '{task_name}' 已分配给 {best_agent['agent_name']} (部门: {best_agent['department']})")
+        
+        return assignment_results
     
     def get_task_deliverables(self, task_id: str) -> List[Dict[str, Any]]:
         """获取任务的成果物列表

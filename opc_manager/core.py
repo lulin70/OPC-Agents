@@ -15,6 +15,8 @@ from .personal_assistant import PersonalAssistantManager
 from .task_executor import TaskExecutor, TaskExecutorManager, TaskPriority
 from communication_manager import CommunicationManager, ContextManager
 from data_storage.dao import DatabaseManager
+from opc_hr.skill_manager import SkillManager
+from opc_hr.mcp_integration import MCPIntegration
 
 class OPCManager:
     """Manager class for the OPC-Agents system"""
@@ -47,6 +49,13 @@ class OPCManager:
         self.three_sages_manager = ThreeSagesManager()
         self.personal_assistant_manager = PersonalAssistantManager()
         
+        # 初始化技能管理和MCP集成
+        self.skill_manager = SkillManager()
+        self.mcp_integration = MCPIntegration()
+        
+        # 加载默认技能
+        self._load_default_skills()
+        
         # 初始化任务执行器
         self.task_executor = TaskExecutor(
             opc_manager=self,
@@ -58,6 +67,55 @@ class OPCManager:
         self.executor_manager.executors.append(self.task_executor)
         
         self.logger.info(f"OPC Manager initialized in {'debug' if debug_mode else 'normal'} mode")
+    
+    def _load_default_skills(self):
+        """加载默认技能"""
+        try:
+            # 注册默认技能
+            default_skills = [
+                {
+                    'name': '市场分析',
+                    'description': '分析市场趋势和竞争情况',
+                    'category': 'marketing',
+                    'version': '1.0.0',
+                    'author': 'OPC-Agents'
+                },
+                {
+                    'name': '产品规划',
+                    'description': '规划产品功能和路线图',
+                    'category': 'product',
+                    'version': '1.0.0',
+                    'author': 'OPC-Agents'
+                },
+                {
+                    'name': '代码开发',
+                    'description': '编写和维护代码',
+                    'category': 'engineering',
+                    'version': '1.0.0',
+                    'author': 'OPC-Agents'
+                },
+                {
+                    'name': '设计创意',
+                    'description': '提供创意设计方案',
+                    'category': 'design',
+                    'version': '1.0.0',
+                    'author': 'OPC-Agents'
+                },
+                {
+                    'name': '销售策略',
+                    'description': '制定销售策略和计划',
+                    'category': 'sales',
+                    'version': '1.0.0',
+                    'author': 'OPC-Agents'
+                }
+            ]
+            
+            for skill_data in default_skills:
+                self.skill_manager.register_skill(skill_data['name'], skill_data)
+            
+            self.logger.info(f"加载默认技能成功，数量: {len(default_skills)}")
+        except Exception as e:
+            self.logger.error(f"加载默认技能失败: {e}")
     
     # 配置相关方法
     def get_model_config(self, model_name: str = None) -> Dict[str, Any]:
@@ -147,6 +205,14 @@ class OPCManager:
         """获取所有任务的历史记录"""
         return self.task_manager.get_all_task_history()
     
+    def auto_assign_tasks(self, tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """自动分配多个任务"""
+        return self.task_manager.auto_assign_tasks(tasks)
+    
+    def find_best_agent_for_task(self, task_name: str, task_type: str = None, priority: str = "medium", deadline: str = None) -> Dict[str, Any]:
+        """为任务找到最合适的Agent"""
+        return self.task_manager.find_best_agent_for_task(task_name, task_type, priority, deadline)
+    
     # 三贤者决策相关方法
     def start_three_sages_decision(self, issue: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """Start three sages decision process"""
@@ -210,3 +276,70 @@ class OPCManager:
     def get_context(self, key: str) -> Optional[Any]:
         """获取上下文"""
         return self.context_manager.get_context(key)
+    
+    # 技能管理相关方法
+    def register_skill(self, skill_name: str, skill_data: Dict[str, Any]) -> bool:
+        """注册新技能"""
+        return self.skill_manager.register_skill(skill_name, skill_data)
+    
+    def get_skill(self, skill_name: str) -> Optional[Dict[str, Any]]:
+        """获取技能信息"""
+        return self.skill_manager.get_skill(skill_name)
+    
+    def list_skills(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
+        """列出所有技能"""
+        return self.skill_manager.list_skills(category)
+    
+    def update_skill(self, skill_name: str, skill_data: Dict[str, Any]) -> bool:
+        """更新技能信息"""
+        return self.skill_manager.update_skill(skill_name, skill_data)
+    
+    def delete_skill(self, skill_name: str) -> bool:
+        """删除技能"""
+        return self.skill_manager.delete_skill(skill_name)
+    
+    def record_skill_usage(self, skill_name: str, agent_name: str, success: bool, duration: float) -> bool:
+        """记录技能使用情况"""
+        return self.skill_manager.record_skill_usage(skill_name, agent_name, success, duration)
+    
+    def get_skill_usage(self, skill_name: str) -> Optional[Dict[str, Any]]:
+        """获取技能使用情况"""
+        return self.skill_manager.get_skill_usage(skill_name)
+    
+    def get_agent_skill_usage(self, agent_name: str) -> Dict[str, Any]:
+        """获取代理的技能使用情况"""
+        return self.skill_manager.get_agent_skill_usage(agent_name)
+    
+    def generate_skill_recommendations(self, agent_name: str) -> List[Dict[str, Any]]:
+        """生成技能推荐"""
+        return self.skill_manager.generate_skill_recommendations(agent_name)
+    
+    def optimize_skill_usage(self, agent_name: str) -> Dict[str, Any]:
+        """优化技能使用"""
+        return self.skill_manager.optimize_skill_usage(agent_name)
+    
+    # MCP集成相关方法
+    def fetch_skills_from_mcp(self, category: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """从MCP获取技能列表"""
+        return self.mcp_integration.fetch_skills(category, limit)
+    
+    def fetch_skill_details_from_mcp(self, skill_name: str) -> Optional[Dict[str, Any]]:
+        """从MCP获取技能详情"""
+        return self.mcp_integration.fetch_skill_details(skill_name)
+    
+    def import_skill_from_mcp(self, skill_name: str) -> Dict[str, Any]:
+        """从MCP导入技能"""
+        result = self.mcp_integration.import_skill(skill_name)
+        if result.get('success'):
+            # 注册导入的技能
+            skill_data = result.get('skill_data', {})
+            self.skill_manager.register_skill(skill_name, skill_data)
+        return result
+    
+    def search_skills_in_mcp(self, query: str, category: Optional[str] = None) -> List[Dict[str, Any]]:
+        """在MCP中搜索技能"""
+        return self.mcp_integration.search_skills(query, category)
+    
+    def get_skill_categories_from_mcp(self) -> List[str]:
+        """从MCP获取技能类别列表"""
+        return self.mcp_integration.get_skill_categories()
