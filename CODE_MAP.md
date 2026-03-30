@@ -49,17 +49,25 @@ OPC-Agents/
 - **model_evaluator.py**：模型评估器
 
 ### 3. 人事部 (opc_hr/)
+
+**HR核心** — Agent管理、技能匹配、部门管理
 - **hr_enhancement.py**：人事部增强模块（Agent档案/技能匹配/招聘/优化/MCP搜索）
+- **hr_api.py**：HR API接口
 - **skill_manager.py**：技能管理器
+- **department_manager.py**：部门管理器
+
+**MCP集成** — GitHub Agent/Skill搜索、导入、安装
 - **mcp_integration.py**：MCP GitHub集成（搜索/获取/导入Agent和Skill）
-- **a2a_api.py**：A2A API接口（Agent间通信）
+- **installation_manager.py**：安装管理器
+
+**A2A协议** — Agent间通信
+- **a2a_api.py**：A2A API接口
 - **a2a_protocol.py**：A2A协议定义
 - **a2a_integration.py**：A2A集成实现
-- **hr_api.py**：HR API接口
+
+**优化器** — Agent性能优化
 - **agent_optimizer.py**：Agent优化器
 - **auto_optimizer.py**：自动优化器
-- **installation_manager.py**：安装管理器
-- **department_manager.py**：部门管理器
 
 ### 4. 财务部 (opc_finance/)
 - **finance_manager.py**：Token监控/消费成本计算/日周月报告/预算告警
