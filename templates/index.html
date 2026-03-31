@@ -9,19 +9,46 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* 全局样式 */
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --bg-input: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+            --shadow-color: rgba(0,0,0,0.05);
+            --accent: #1890ff;
+            --success: #52c41a;
+            --danger: #ff4d4f;
+        }
+        [data-theme="dark"] {
+            --bg-primary: #141414;
+            --bg-secondary: #1f1f1f;
+            --bg-card: #262626;
+            --bg-sidebar: #1f1f1f;
+            --bg-input: #303030;
+            --text-primary: #e6e6e6;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --shadow-color: rgba(0,0,0,0.3);
+            --accent: #40a9ff;
+            --success: #73d13d;
+            --danger: #ff7875;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f5f5f5;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             margin: 0;
             padding: 0;
         }
         
-        /* 顶部导航栏 */
         .top-nav {
-            background-color: white;
-            border-bottom: 1px solid #e0e0e0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px var(--shadow-color);
             padding: 0 20px;
             height: 60px;
             display: flex;
@@ -74,8 +101,8 @@
         /* 侧边栏 */
         .sidebar {
             height: 100%;
-            background-color: #ffffff;
-            border-right: 1px solid #e0e0e0;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
             padding: 20px 0;
             box-shadow: 0 0 10px rgba(0,0,0,0.05);
             position: relative;
@@ -238,9 +265,9 @@
         
         /* 任务头部 */
         .task-header {
-            background-color: white;
+            background-color: var(--bg-card);
             padding: 20px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--border-color);
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             display: flex;
             justify-content: space-between;
@@ -391,9 +418,9 @@
         
         /* 输入区域 */
         .input-area {
-            background-color: white;
+            background-color: var(--bg-card);
             padding: 20px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid var(--border-color);
             box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
         }
         
@@ -460,7 +487,7 @@
         }
         
         .modal-content {
-            background-color: white;
+            background-color: var(--bg-card);
             margin: 15% auto;
             padding: 20px;
             border-radius: 8px;
@@ -666,6 +693,40 @@
         .import-btn:hover {
             background-color: #F57C00;
         }
+
+        .theme-toggle {
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+        .theme-toggle:hover { opacity: 0.8; }
+
+        .wf-btn {
+            padding: 2px 8px;
+            font-size: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        .wf-btn:hover { opacity: 0.8; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar .nav-text { display: none; }
+            .main-content { margin-left: 60px; }
+            .top-nav { padding: 0 10px; }
+        }
+        @media (max-width: 480px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; }
+        }
     </style>
 </head>
 <body>
@@ -686,6 +747,7 @@
             <div class="top-nav-item" onclick="window.location.href='/agent_management'">代理管理</div>
             <div class="top-nav-item" onclick="window.location.href='/finance'">财务部</div>
             <div class="top-nav-item" onclick="window.location.href='/monitoring'">系统监控</div>
+            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">🌓</button>
         </div>
     </div>
     
@@ -1085,6 +1147,26 @@
                         $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
                     }
                 });
+            };
+
+            window.toggleTheme = function() {
+                const current = document.documentElement.getAttribute('data-theme');
+                const next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('theme', next);
+            };
+            (function() {
+                const saved = localStorage.getItem('theme');
+                if (saved) document.documentElement.setAttribute('data-theme', saved);
+            })();
+
+            window.pauseWorkflow = function(instanceId) {
+                fetch('/api/workflow/' + instanceId + '/pause', {method: 'POST'})
+                    .then(r => r.json()).then(d => { if(d.status === 'paused') refreshTasks(); });
+            };
+            window.resumeWorkflow = function(instanceId) {
+                fetch('/api/workflow/' + instanceId + '/resume', {method: 'POST'})
+                    .then(r => r.json()).then(d => { if(d.status === 'resumed') refreshTasks(); });
             };
 
             window.confirmPlan = function(taskId) {

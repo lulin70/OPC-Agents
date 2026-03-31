@@ -170,6 +170,22 @@ def register_routes(manager):
                 return jsonify(response)
             
             # 任务模式：启动完整处理链
+            main_task_id = f"task-{int(time.time())}"
+
+            # 步骤1.8: 注入历史经验和相关知识（P1-2）
+            injected_context = ""
+            try:
+                from opc_manager.context_manager import TaskContext
+                task_ctx = TaskContext(main_task_id, {"task_name": message})
+                manager.context_synchronizer.sync_global_to_task(
+                    manager.global_context, task_ctx, message
+                )
+                injected_context = task_ctx.injected_context
+                if injected_context:
+                    search_context += f"\n\n[历史经验与相关知识]\n{injected_context}"
+            except Exception as e:
+                print(f"[上下文注入] 跳过: {e}")
+
             # 步骤1.5: 搜索相关信息辅助决策
             search_context = ""
             try:
@@ -230,6 +246,11 @@ def register_routes(manager):
                 "search_context": search_context,
                 "work_dir": work_dir
             }
+
+            try:
+                manager.global_context.update_user_profile(task_type="task")
+            except Exception:
+                pass
 
             # 构建计划展示内容
             steps_text = ""
@@ -351,79 +372,123 @@ def register_routes(manager):
 
         manager.update_task_status(task_id, "in_progress")
 
+        from opc_manager.dag_scheduler import DAGScheduler
+
+        dag = DAGScheduler()
+        for i, step in enumerate(execution_steps):
+            sub_task_id = f"{task_id}-step{i+1}"
+            dag.add_task(sub_task_id, step.get('step', i+1), step.get('depends_on', []))
+
+        if not dag.is_dag():
+            return jsonify({"error": "执行计划存在循环依赖，请修改后重试"}), 400
+
         dispatched = []
         previous_outputs = []
-        for i, step in enumerate(execution_steps):
-            dept = step.get('department', 'engineering')
-            agent = step.get('agent', '')
-            sub_task_name = step.get('task', f"步骤{i+1}")
-            sub_task_id = f"{task_id}-step{i+1}"
 
-            manager.create_task(
-                task_id=sub_task_id,
-                task_name=sub_task_name,
-                agent=agent or dept,
-                initial_status="pending"
-            )
-            if agent:
-                manager.task_manager.assign_task_to_agent(sub_task_id, agent, dept)
+        while True:
+            ready = dag.get_ready_tasks()
+            if not ready:
+                break
+            for sub_task_id in ready:
+                step_index = int(sub_task_id.split('-step')[1]) - 1
+                step = execution_steps[step_index]
+                dept = step.get('department', 'engineering')
+                agent = step.get('agent', '')
+                sub_task_name = step.get('task', f"步骤{step_index+1}")
 
-            enriched_previous = []
-            for po in previous_outputs:
-                entry = {"step": po["step"], "task": po["task"], "agent": po["agent"], "output_path": po["output_path"]}
-                if po.get("output_path") and os.path.exists(po["output_path"]):
+                if not agent:
                     try:
-                        with open(po["output_path"], "r", encoding="utf-8") as f:
-                            content = f.read()
-                        if len(content) > 1000:
-                            content = content[:1000] + "\n...(已截断)"
-                        entry["output_content"] = content
+                        matches = manager.role_matcher.match(
+                            step.get('description', sub_task_name),
+                            step.get('required_skills', []),
+                            top_k=1
+                        )
+                        if matches:
+                            agent = matches[0].agent_name
+                            dept = matches[0].department or dept
                     except Exception:
-                        entry["output_content"] = f"(无法读取: {po['output_path']})"
-                else:
-                    entry["output_content"] = "(无产出物)"
-                enriched_previous.append(entry)
+                        pass
 
-            task_context = {
-                "user_requirement": message,
-                "sages_summary": synthesis.get('summary', ''),
-                "execution_plan": execution_steps,
-                "current_step": step,
-                "previous_outputs": enriched_previous,
-                "work_dir": work_dir,
-                "step_index": i
-            }
-
-            try:
-                manager.task_executor.submit_task(
-                    sub_task_id,
-                    {
-                        "task_name": sub_task_name,
-                        "description": step.get('description', f"步骤{i+1}: {sub_task_name}"),
-                        "department": dept,
-                        "assigned_agent": agent,
-                        "context": task_context
-                    }
+                manager.create_task(
+                    task_id=sub_task_id,
+                    task_name=sub_task_name,
+                    agent=agent or dept,
+                    initial_status="pending"
                 )
-                output_path = f"{work_dir}/{agent}_output.md" if agent and work_dir else ""
-                previous_outputs.append({
-                    "step": i+1,
-                    "task": sub_task_name,
-                    "agent": agent,
-                    "output_path": output_path
-                })
-            except Exception as exec_err:
-                print(f"[任务执行] 提交失败 {sub_task_id}: {exec_err}")
+                if agent:
+                    manager.task_manager.assign_task_to_agent(sub_task_id, agent, dept)
 
-            dispatched.append({
-                "task_id": sub_task_id,
-                "task_name": sub_task_name,
-                "department": dept,
-                "agent": agent
-            })
+                enriched_previous = []
+                for po in previous_outputs:
+                    entry = {"step": po["step"], "task": po["task"], "agent": po["agent"], "output_path": po["output_path"]}
+                    if po.get("output_path") and os.path.exists(po["output_path"]):
+                        try:
+                            with open(po["output_path"], "r", encoding="utf-8") as f:
+                                content = f.read()
+                            if len(content) > 1000:
+                                content = content[:1000] + "\n...(已截断)"
+                            entry["output_content"] = content
+                        except Exception:
+                            entry["output_content"] = f"(无法读取: {po['output_path']})"
+                    else:
+                        entry["output_content"] = "(无产出物)"
+                    enriched_previous.append(entry)
+
+                task_context = {
+                    "user_requirement": message,
+                    "sages_summary": synthesis.get('summary', ''),
+                    "execution_plan": execution_steps,
+                    "current_step": step,
+                    "previous_outputs": enriched_previous,
+                    "work_dir": work_dir,
+                    "step_index": step_index
+                }
+
+                try:
+                    manager.task_executor.submit_task(
+                        sub_task_id,
+                        {
+                            "task_name": sub_task_name,
+                            "description": step.get('description', f"步骤{step_index+1}: {sub_task_name}"),
+                            "department": dept,
+                            "assigned_agent": agent,
+                            "context": task_context,
+                            "acceptance_criteria": step.get('acceptance_criteria', [])
+                        }
+                    )
+                    output_path = f"{work_dir}/{agent}_output.md" if agent and work_dir else ""
+                    previous_outputs.append({
+                        "step": step_index+1,
+                        "task": sub_task_name,
+                        "agent": agent,
+                        "output_path": output_path
+                    })
+                except Exception as exec_err:
+                    print(f"[任务执行] 提交失败 {sub_task_id}: {exec_err}")
+
+                dispatched.append({
+                    "task_id": sub_task_id,
+                    "task_name": sub_task_name,
+                    "department": dept,
+                    "agent": agent
+                })
+
+                dag.on_task_completed(sub_task_id)
 
         if task_id in getattr(manager, '_pending_plans', {}):
             del manager._pending_plans[task_id]
+
+        try:
+            from opc_manager.context_manager import TaskContext
+            task_ctx = TaskContext(task_id, {"task_name": message, "execution_plan": execution_steps})
+            manager.context_synchronizer.sync_task_to_global(
+                manager.global_context, task_ctx, success=True
+            )
+            for d in set(s.get('department', '') for s in execution_steps):
+                if d:
+                    manager.global_context.update_user_profile(department=d)
+        except Exception as e:
+            print(f"[经验沉淀] 跳过: {e}")
 
         dispatch_text = "\n".join([f"- {d['task_name']} → {d['department']}" + (f" ({d['agent']})" if d['agent'] else "") for d in dispatched])
 
