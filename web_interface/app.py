@@ -241,26 +241,57 @@ def progress_stream():
         import time
         last_snapshot = ""
         last_send_time = 0
+        reported_completed = set()
         while True:
-            all_tasks = manager.get_all_tasks()
-            active_tasks = []
-            for task_id, task_info in all_tasks.items():
-                if task_info.get('status') == 'in_progress':
-                    active_tasks.append({
-                        'task_id': task_id,
-                        'task_name': task_info.get('task_name', ''),
-                        'progress': task_info.get('progress', 0),
-                        'status': task_info.get('status', ''),
-                        'assigned_to': task_info.get('assigned_to', ''),
-                        'agent': task_info.get('agent', '')
-                    })
-            snapshot = json.dumps({"type": "progress", "tasks": active_tasks}, sort_keys=True)
-            now = time.time()
-            if snapshot != last_snapshot and (now - last_send_time) >= 30:
-                yield f"data: {snapshot}\n\n"
-                last_snapshot = snapshot
-                last_send_time = now
-            time.sleep(10)
+            try:
+                all_tasks = manager.get_all_tasks()
+                active_tasks = []
+                for task_id, task_info in all_tasks.items():
+                    status = task_info.get('status', '')
+                    if status == 'in_progress':
+                        active_tasks.append({
+                            'task_id': task_id,
+                            'task_name': task_info.get('task_name', ''),
+                            'progress': task_info.get('progress', 0),
+                            'status': status,
+                            'assigned_to': task_info.get('assigned_to', ''),
+                            'agent': task_info.get('agent', '')
+                        })
+                    elif status in ('completed', 'failed') and task_id not in reported_completed:
+                        reported_completed.add(task_id)
+                        event_type = "task_completed" if status == "completed" else "task_failed"
+                        event_data = {
+                            "type": event_type,
+                            "task_id": task_id,
+                            "task_name": task_info.get('task_name', ''),
+                            "agent": task_info.get('agent', ''),
+                            "department": task_info.get('department', ''),
+                            "status": status,
+                            "timestamp": time.time()
+                        }
+                        executor = getattr(manager, 'task_executor', None)
+                        if executor:
+                            result = executor.task_results.get(task_id, {})
+                            if result.get('output_path'):
+                                event_data['output_path'] = result['output_path']
+                            if result.get('log_path'):
+                                event_data['log_path'] = result['log_path']
+                            if result.get('error'):
+                                event_data['error'] = result['error']
+                            if result.get('agent_response'):
+                                resp = result['agent_response']
+                                event_data['summary'] = resp[:200] if len(resp) > 200 else resp
+                        yield f"data: {json.dumps(event_data, ensure_ascii=False)}\n\n"
+
+                snapshot = json.dumps({"type": "progress", "tasks": active_tasks}, sort_keys=True)
+                now = time.time()
+                if snapshot != last_snapshot and (now - last_send_time) >= 30:
+                    yield f"data: {snapshot}\n\n"
+                    last_snapshot = snapshot
+                    last_send_time = now
+            except Exception:
+                pass
+            time.sleep(5)
     return app.response_class(generate(), mimetype='text/event-stream')
 
 # 启动Flask应用（支持 python -m 方式运行）

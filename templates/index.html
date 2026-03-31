@@ -1121,18 +1121,41 @@
                 eventSource.onmessage = function(event) {
                     try {
                         var data = JSON.parse(event.data);
+                        var now = new Date();
+                        var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
                         if (data.type === 'progress' && data.tasks && data.tasks.length > 0) {
                             data.tasks.forEach(function(task) {
-                                var now = new Date();
-                                var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
-                                var html = `
-                                    <div class="message system-message" style="font-size:12px;">
-                                        📊 进度更新: ${task.task_name} - ${task.progress}% (${task.assigned_to})
-                                    </div>
-                                `;
+                                var html = '<div class="message system-message" style="font-size:12px;">' +
+                                    '📊 进度更新: ' + task.task_name + ' - ' + task.progress + '% (' + task.assigned_to + ')' +
+                                    '</div>';
                                 $('#message-area').append(html);
                                 $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
                             });
+                        } else if (data.type === 'task_completed') {
+                            var detailHtml = '';
+                            if (data.output_path) {
+                                detailHtml += '<br>📁 产出物: ' + data.output_path;
+                            }
+                            if (data.summary) {
+                                detailHtml += '<br><span style="color:#666;font-size:11px;">' + data.summary.substring(0, 100) + '...</span>';
+                            }
+                            var html = '<div class="message system-message" style="border-left:3px solid #4CAF50;padding:8px 12px;">' +
+                                '<div style="font-weight:bold;color:#4CAF50;">✅ ' + (data.agent || '') + ' 完成了 ' + (data.task_name || '') + '</div>' +
+                                detailHtml +
+                                '<small class="text-muted" style="font-size:10px;display:block;text-align:right;margin-top:4px;">' + timeString + '</small>' +
+                                '</div>';
+                            $('#message-area').append(html);
+                            $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                            if (typeof refreshTaskList === 'function') refreshTaskList();
+                        } else if (data.type === 'task_failed') {
+                            var html = '<div class="message system-message" style="border-left:3px solid #f44336;padding:8px 12px;">' +
+                                '<div style="font-weight:bold;color:#f44336;">❌ ' + (data.task_name || '') + ' 执行失败</div>' +
+                                (data.error ? '<br><span style="color:#c62828;font-size:11px;">错误: ' + data.error + '</span>' : '') +
+                                '<small class="text-muted" style="font-size:10px;display:block;text-align:right;margin-top:4px;">' + timeString + '</small>' +
+                                '</div>';
+                            $('#message-area').append(html);
+                            $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                            if (typeof refreshTaskList === 'function') refreshTaskList();
                         }
                     } catch(e) {}
                 };
