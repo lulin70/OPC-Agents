@@ -33,12 +33,25 @@ OPC-Agents/
 ### 1. OPC管理器 (opc_manager/)
 - **core.py**：核心管理器，系统初始化和协调中心
   - 集成：CommunicationManager + TaskExecutor + HREnhancement + FinanceManager + MCPIntegration
-  - 提供：任务CRUD、Agent查询、部门管理、三贤者决策、任务分解
+  - 集成：GlobalContext + ContextSynchronizer + CheckpointManager + CompletionChecker + RoleMatcher
+  - 提供：任务CRUD、Agent查询、部门管理、三贤者决策、任务分解、计划生成
 - **communication_manager.py**：代理间通信，消息传递/上下文共享/共识构建
+  - task_execution类型消息直接透传prompt，不做角色包装
 - **task_manager.py**：任务管理器，任务创建/分配/跟踪/历史
 - **task_executor.py**：任务执行器，异步执行任务
+  - 集成：CompletionChecker（完成后校验）+ CheckpointManager（断点保存）
+  - 上下文传递：用户需求+三贤者评估+执行计划+前序Agent产出物
+  - 产出物：{agent_name}_output.md + {agent_name}_YYYYMMDD.log
 - **agent_manager.py**：官方Agent管理器，按部门查询/获取Agent列表
-- **three_sages.py**：三贤者决策系统（战略/执行/创新三视角，调用GLM）
+- **three_sages.py**：三贤者决策系统（战略/执行/创新三视角，结构化JSON输出）
+  - 输出：execution_steps（含depends_on/required_skills/acceptance_criteria）+ monitoring_plan
+- **context_manager.py**：双层上下文管理（参考TraeMultiAgentSkill的DualLayerContextManager）
+  - GlobalContext：知识库+经验库+用户画像（长期记忆，JSON持久化）
+  - TaskContext：任务定义+思考记录+产出物+注入引用（工作记忆）
+  - ContextSynchronizer：双向同步（任务开始注入知识/任务完成沉淀经验）
+- **completion_checker.py**：任务完成自动校验（产出物存在/非空/验收标准/GLM质量评估）
+- **dag_scheduler.py**：DAG任务依赖调度器（depends_on/blocked_by/循环检测/进度追踪）
+- **checkpoint_manager.py**：断点恢复+交接文档（Checkpoint快照+HandoffDocument标准化交接）
 - **personal_assistant.py**：个人助理（待办/天气/出行，调用真实天气API）
 - **architecture.py**：三层架构初始化
 - **config.py**：配置管理器
@@ -52,6 +65,9 @@ OPC-Agents/
 
 **HR核心** — Agent管理、技能匹配、部门管理
 - **hr_enhancement.py**：人事部增强模块（Agent档案/技能匹配/招聘/优化/MCP搜索）
+- **role_matcher.py**：智能角色匹配器（参考TraeMultiAgentSkill的RoleMatcher）
+  - 三层匹配策略：历史表现(30%) + 技能匹配(40%) + 关键词匹配(30%)
+  - 降级机制：AI语义匹配 → 关键词匹配
 - **hr_api.py**：HR API接口
 - **skill_manager.py**：技能管理器
 - **department_manager.py**：部门管理器
@@ -124,37 +140,76 @@ OPC-Agents/
 ```
 用户发消息给总裁办
     ↓
-① GLM判断意图（闲聊 / 任务）
+① GLM判断意图（闲聊 / 搜索 / 任务 / 追问）
     ├── 闲聊 → 总裁办直接友好回复
+    ├── 搜索 → DuckDuckGo搜索 → 回答
+    ├── 追问(clarify) → 主动追问用户补充信息 → 等待回复
     └── 任务 → 启动完整处理链 ↓
 
-② 三贤者决策分析（战略贤者/执行贤者/创新贤者）
+② 双层上下文注入（ContextSynchronizer.sync_global_to_task）
+    ├── 搜索相关知识（最多5条）
+    ├── 查找相似历史经验（最多3条）
+    └── 注入用户偏好和常用部门
     ↓
 
-③ 人事部评估本地Agent资源
-    ├── 有合适Agent → 分配给本地Agent
-    └── 无合适Agent → MCP GitHub搜索外部Agent/Skill
-         ↓ 报告总裁办，建议引入
-
-④ 任务分解（按部门拆分子任务）
+③ 三贤者结构化决策分析（战略/执行/创新三视角）
+    ├── 每个贤者输出：内部资源/外部关系/风险评估/战略建议/行动项
+    ├── JSON解析 + 正则fallback
+    └── 综合建议：execution_steps + monitoring_plan
     ↓
 
-⑤ 创建主任务 + 子任务
+④ GLM动态任务分解（基于三贤者评估）
+    ├── 每步包含：task/department/description/deliverable
+    ├── 依赖关系：depends_on（步骤编号列表）
+    ├── 资源需求：required_skills + acceptance_criteria
+    └── 智能角色匹配（RoleMatcher）：自动匹配最佳Agent
     ↓
 
-⑥ 分发子任务到各部门Agent
+⑤ 生成执行计划 → 写入plan.md
     ↓
 
-⑦ 触发TaskExecutor异步执行
+⑥ 用户确认执行计划（confirm_plan API）
+    ├── 确认 → DAG调度器按依赖顺序分发
+    └── 取消 → 用户可修改意见重新生成
     ↓
 
-⑧ 综合回复用户（决策建议 + 资源评估 + 分派清单）
+⑦ DAG调度器按依赖顺序分发子任务
+    ├── 检查循环依赖（is_dag）
+    ├── get_ready_tasks() → 只提交依赖已满足的任务
+    └── on_task_completed() → 触发后续任务
+    ↓
 
-⑨ 财务部实时记录Token消耗，超预算告警
+⑧ TaskExecutor异步执行（带完整上下文）
+    ├── 上下文：用户需求+三贤者评估+执行计划+前序Agent产出物(实际内容)
+    ├── 产出物：{agent_name}_output.md
+    ├── 操作日志：{agent_name}_YYYYMMDD.log
+    └── 交接文档：HandoffDocument（标准化Agent间交接）
+    ↓
 
-⑩ 任务完成后：
-    ├── 成功 → 人事部评估并优化本地Agent
-    └── 失败 → MCP GitHub搜寻替代资源 → 报告用户确认 → 导入
+⑨ 完成校验（CompletionChecker）
+    ├── 产出物存在性检查
+    ├── 产出物非空检查（>50字符）
+    ├── 验收标准检查
+    └── GLM质量评估（可选）
+    ↓
+
+⑩ 断点保存（CheckpointManager）
+    ├── 保存：已完成步骤+剩余步骤+上下文快照+DAG状态
+    └── 恢复：系统重启后可从断点继续
+    ↓
+
+⑪ SSE推送结果到前端
+    ├── task_completed事件（绿色边框+产出物摘要）
+    └── task_failed事件（红色边框+错误信息）
+    ↓
+
+⑫ 经验沉淀（ContextSynchronizer.sync_task_to_global）
+    ├── 提取经验教训 → 经验库
+    ├── 提取新知识 → 知识库
+    └── 更新用户画像（部门使用频率/偏好）
+    ↓
+
+⑬ 财务部实时记录Token消耗，超预算告警
 ```
 
 ## 依赖关系
@@ -168,8 +223,15 @@ web_interface/app.py
         │     └── data_storage/dao.py
         ├── opc_manager/task_manager.py
         │     └── task_deliverables/
+        ├── opc_manager/task_executor.py
+        │     ├── opc_manager/completion_checker.py
+        │     └── opc_manager/checkpoint_manager.py
+        ├── opc_manager/context_manager.py (GlobalContext + ContextSynchronizer)
+        ├── opc_manager/dag_scheduler.py
         ├── opc_manager/agent_manager.py (官方Agent查询)
+        ├── opc_manager/three_sages.py
         ├── opc_hr/hr_enhancement.py
+        │     ├── opc_hr/role_matcher.py
         │     └── opc_hr/mcp_integration.py (GitHub API)
         ├── opc_hr/skill_manager.py
         └── opc_finance/finance_manager.py
@@ -181,6 +243,7 @@ web_interface/app.py
 |------|------|------|
 | 总裁办 | POST /api/chat/<id>/message | 发送消息（智能任务处理链） |
 | 总裁办 | POST /api/task/<id>/complete | 任务完成处理 |
+| 总裁办 | POST /api/chat/<id>/confirm_plan | 确认执行计划（DAG分发） |
 | 总裁办 | POST /api/hr/import | 引入外部Agent/Skill |
 | 总裁办 | POST /api/three_sages_decision | 三贤者决策 |
 | 任务 | GET/POST /api/tasks | 任务列表/创建 |
