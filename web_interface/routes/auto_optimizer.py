@@ -33,5 +33,12 @@ def register_routes():
         auto_optimizer = AutoOptimizer()
         result = auto_optimizer.run_optimization()
         return jsonify(result)
-    
+
+    @auto_opt_bp.route('/history', methods=['GET'])
+    def optimization_history():
+        from opc_hr.auto_optimizer import AutoOptimizer
+        auto_optimizer = AutoOptimizer()
+        history = auto_optimizer.load_optimization_history()
+        return jsonify({"history": history, "count": len(history)})
+
     return auto_opt_bp

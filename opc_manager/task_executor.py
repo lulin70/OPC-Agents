@@ -247,7 +247,16 @@ class TaskExecutor:
             # 回调
             if self.on_task_complete:
                 self.on_task_complete(task_id, self.task_results[task_id])
-            
+
+            try:
+                agent = task_data.get("assigned_agent", "")
+                dept = task_data.get("department", "")
+                if agent and hasattr(self, '_opc_manager') and self._opc_manager:
+                    self._opc_manager.hr_enhancement.optimize_agent(agent, dept)
+                    self.logger.info(f"[HR联动] 任务成功，已触发Agent优化: {agent}")
+            except Exception as hr_err:
+                self.logger.warning(f"[HR联动] 优化Agent失败: {hr_err}")
+
             self.logger.info(f"Task {task_id} completed successfully")
             
         except Exception as e:
@@ -275,6 +284,18 @@ class TaskExecutor:
                 }
                 if self.on_task_failed:
                     self.on_task_failed(task_id, str(e))
+
+                try:
+                    agent = task_data.get("assigned_agent", "")
+                    dept = task_data.get("department", "")
+                    description = task_data.get("description", "")
+                    if agent and hasattr(self, '_opc_manager') and self._opc_manager:
+                        alternatives = self._opc_manager.hr_enhancement.search_external_agents(description, dept)
+                        if alternatives:
+                            self.task_results[task_id]["suggested_replacements"] = alternatives
+                            self.logger.info(f"[HR联动] 任务失败，已搜寻到{len(alternatives)}个替代Agent")
+                except Exception as hr_err:
+                    self.logger.warning(f"[HR联动] 搜寻替代Agent失败: {hr_err}")
     
     def _analyze_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """分析任务需求

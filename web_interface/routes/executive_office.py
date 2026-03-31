@@ -252,6 +252,14 @@ def register_routes(manager):
             except Exception:
                 pass
 
+            try:
+                if hasattr(manager, 'scheduler_thread'):
+                    trigger_time = manager.scheduler_thread.parse_time_requirement(message)
+                    if trigger_time:
+                        manager.scheduler_thread.schedule_report(main_task_id, trigger_time, message)
+            except Exception:
+                pass
+
             # 构建计划展示内容
             steps_text = ""
             for i, step in enumerate(execution_steps, 1):
@@ -489,6 +497,13 @@ def register_routes(manager):
                     manager.global_context.update_user_profile(department=d)
         except Exception as e:
             print(f"[经验沉淀] 跳过: {e}")
+
+        try:
+            monitoring_plan = pending.get('monitoring_plan', [])
+            if monitoring_plan and hasattr(manager, 'scheduler_thread'):
+                manager.scheduler_thread.schedule_monitoring(task_id, monitoring_plan)
+        except Exception as e:
+            print(f"[监控计划] 跳过: {e}")
 
         dispatch_text = "\n".join([f"- {d['task_name']} → {d['department']}" + (f" ({d['agent']})" if d['agent'] else "") for d in dispatched])
 

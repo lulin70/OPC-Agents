@@ -86,10 +86,13 @@ class OPCManager:
 
         from opc_manager.loop_controller import LoopController
         self.loop_controller = LoopController()
-        
+
+        from opc_manager.consensus_manager import ConsensusManager
+        self.consensus_manager = ConsensusManager(self.communication_manager, getattr(self.communication_manager, 'model_manager', None))
+
         # 加载默认技能
         self._load_default_skills()
-        
+
         # 初始化任务执行器
         self.task_executor = TaskExecutor(
             opc_manager=self,
@@ -99,7 +102,11 @@ class OPCManager:
         )
         self.executor_manager = TaskExecutorManager(self)
         self.executor_manager.executors.append(self.task_executor)
-        
+
+        from opc_manager.scheduler_thread import SchedulerThread
+        self.scheduler_thread = SchedulerThread(self.task_executor)
+        self.scheduler_thread.start()
+
         self.logger.info(f"OPC Manager initialized in {'debug' if debug_mode else 'normal'} mode")
     
     def _load_default_skills(self):
