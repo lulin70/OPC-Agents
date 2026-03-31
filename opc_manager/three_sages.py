@@ -131,7 +131,7 @@ class ThreeSagesManager:
                 f"{{\n"
                 f"  \"summary\": \"一句话总结\",\n"
                 f"  \"execution_steps\": [\n"
-                f"    {{\"step\": 1, \"task\": \"任务名\", \"department\": \"部门名\", \"description\": \"具体描述\", \"deliverable\": \"预期产出物\"}}\n"
+                f"    {{\"step\": 1, \"task\": \"任务名\", \"department\": \"部门名\", \"description\": \"具体描述\", \"deliverable\": \"预期产出物\", \"depends_on\": [依赖的步骤编号], \"required_skills\": [\"技能1\"], \"acceptance_criteria\": [\"验收标准1\"]}}\n"
                 f"  ],\n"
                 f"  \"monitoring_plan\": [\n"
                 f"    {{\"checkpoint\": \"检查点描述\", \"trigger\": \"触发条件\"}}\n"

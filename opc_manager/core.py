@@ -64,6 +64,22 @@ class OPCManager:
         # 初始化人事部增强
         from opc_hr.hr_enhancement import HREnhancement
         self.hr_enhancement = HREnhancement(self)
+
+        from opc_manager.completion_checker import CompletionChecker
+        self.completion_checker = CompletionChecker()
+
+        from opc_manager.dag_scheduler import DAGScheduler
+        self._dag_schedulers: dict = {}
+
+        from opc_manager.checkpoint_manager import CheckpointManager
+        self.checkpoint_manager = CheckpointManager()
+
+        from opc_manager.context_manager import GlobalContext, ContextSynchronizer
+        self.global_context = GlobalContext()
+        self.context_synchronizer = ContextSynchronizer()
+
+        from opc_hr.role_matcher import RoleMatcher
+        self.role_matcher = RoleMatcher(self.hr_enhancement, self.global_context)
         
         # 加载默认技能
         self._load_default_skills()

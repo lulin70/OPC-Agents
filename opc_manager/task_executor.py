@@ -209,6 +209,30 @@ class TaskExecutor:
             
             # 阶段7: 完成
             self._broadcast_progress(task_id, TaskState.COMPLETED, 100, "任务完成")
+
+            # 阶段7.5: 完成校验
+            try:
+                checker = self.opc_manager.completion_checker
+                output_path = execution_result.get("output_path")
+                criteria = task_data.get("acceptance_criteria")
+                if output_path or criteria:
+                    check_result = checker.check_completion(task_id, task_name, output_path, criteria)
+                    if not check_result["passed"]:
+                        self.logger.warning(f"[校验] {task_name} 未通过: {check_result['verdict']}")
+            except Exception as check_err:
+                self.logger.debug(f"[校验] 跳过: {check_err}")
+
+            # 阶段7.6: 保存checkpoint
+            try:
+                cp_mgr = self.opc_manager.checkpoint_manager
+                context = task_data.get("context", {})
+                cp_mgr.save_checkpoint(
+                    task_id=task_id, step_index=context.get("step_index", 0),
+                    completed=[{"task_id": task_id, "task_name": task_name, "output_path": execution_result.get("output_path", "")}],
+                    remaining=[], context=context
+                )
+            except Exception as cp_err:
+                self.logger.debug(f"[checkpoint] 跳过: {cp_err}")
             
             # 记录结果
             self.task_results[task_id] = {
