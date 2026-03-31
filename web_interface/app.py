@@ -233,6 +233,10 @@ def agent_management():
 def finance_page():
     return render_template('finance.html')
 
+@app.route('/settings')
+def settings_page():
+    return render_template('settings.html')
+
 # SSE实时进度推送（带去重和节流）
 @app.route('/api/progress/stream')
 def progress_stream():

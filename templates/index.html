@@ -65,7 +65,7 @@
         .top-nav-logo {
             font-size: 18px;
             font-weight: 600;
-            color: #2196f3;
+            color: var(--accent);
         }
         
         .top-nav-menu {
@@ -128,7 +128,7 @@
         .new-task-btn {
             width: 100%;
             padding: 12px;
-            background-color: #2196f3;
+            background-color: var(--accent);
             color: white;
             border: none;
             border-radius: 8px;
@@ -139,7 +139,7 @@
         }
         
         .new-task-btn:hover {
-            background-color: #1976d2;
+            background-color: var(--accent);
         }
         
         /* 任务历史 */
@@ -175,7 +175,7 @@
         
         .task-item.active {
             background-color: var(--msg-user-bg);
-            border-left-color: #2196f3;
+            border-left-color: var(--accent);
         }
         
         .task-actions-inline {
@@ -213,7 +213,7 @@
         .task-rename-input {
             font-size: 14px;
             font-weight: 500;
-            border: 1px solid #2196f3;
+            border: 1px solid var(--accent);
             border-radius: 4px;
             padding: 2px 6px;
             width: 100%;
@@ -260,7 +260,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            background-color: #f5f5f5;
+            background-color: var(--bg-primary);
         }
         
         /* 任务头部 */
@@ -442,7 +442,7 @@
         
         .send-btn {
             padding: 0 24px;
-            background-color: #2196f3;
+            background-color: var(--accent);
             color: white;
             border: none;
             border-radius: 8px;
@@ -453,7 +453,7 @@
         }
         
         .send-btn:hover {
-            background-color: #1976d2;
+            background-color: var(--accent);
         }
         
         /* 滚动条样式 */
@@ -563,13 +563,13 @@
         }
         
         .btn-primary {
-            background-color: #2196f3;
+            background-color: var(--accent);
             color: white;
-            border-color: #2196f3;
+            border-color: var(--accent);
         }
         
         .btn-primary:hover {
-            background-color: #1976d2;
+            background-color: var(--accent);
         }
         
         .btn-secondary {
@@ -598,7 +598,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #2196f3;
+            background-color: var(--accent);
             animation: loading-bounce 1.4s infinite ease-in-out both;
         }
         
@@ -616,7 +616,7 @@
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #2196f3, #1976d2);
+            background: linear-gradient(135deg, var(--accent), var(--accent));
             color: white;
             text-align: center;
             line-height: 28px;
@@ -682,7 +682,7 @@
         
         .import-btn {
             padding: 3px 10px;
-            background-color: #FF9800;
+            background-color: var(--success);
             color: white;
             border: none;
             border-radius: 4px;
@@ -691,7 +691,7 @@
         }
         
         .import-btn:hover {
-            background-color: #F57C00;
+            background-color: var(--success);
         }
 
         .theme-toggle {
@@ -736,7 +736,7 @@
             <div class="top-nav-logo">OPC-Agents</div>
             <div class="top-nav-menu">
                 <div class="top-nav-item" onclick="window.location.href='/department/总裁办'">总裁办</div>
-                <div class="top-nav-item" onclick="window.location.href='/department/人事部'">人事部</div>
+                <div class="top-nav-item" onclick="showOptimizationHistory()">人事部</div>
                 <div class="top-nav-item" onclick="window.location.href='/department/财务部'">财务部</div>
                 <div class="top-nav-item" onclick="window.location.href='/department/市场部'">市场部</div>
                 <div class="top-nav-item" onclick="window.location.href='/department/产品部'">产品部</div>
@@ -747,6 +747,7 @@
             <div class="top-nav-item" onclick="window.location.href='/agent_management'">代理管理</div>
             <div class="top-nav-item" onclick="window.location.href='/finance'">财务部</div>
             <div class="top-nav-item" onclick="window.location.href='/monitoring'">系统监控</div>
+            <div class="top-nav-item" onclick="window.location.href='/settings'">系统设置</div>
             <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">🌓</button>
         </div>
     </div>
@@ -850,6 +851,18 @@
     </div>
     
     <!-- 新建任务模态框 -->
+    <div class="modal" id="optimization-history-modal">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">
+                <div class="modal-title">📊 优化历史</div>
+                <span class="close" onclick="document.getElementById('optimization-history-modal').style.display='none'">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="optimization-history-list"><p style="color:var(--text-secondary)">加载中...</p></div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="new-task-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1169,6 +1182,27 @@
                     .then(r => r.json()).then(d => { if(d.status === 'resumed') refreshTasks(); });
             };
 
+            window.showOptimizationHistory = function() {
+                document.getElementById('optimization-history-modal').style.display = 'block';
+                $.get('/api/auto_optimizer/history', function(data) {
+                    var list = data.history || [];
+                    if (list.length === 0) {
+                        $('#optimization-history-list').html('<p style="color:var(--text-secondary)">暂无优化记录</p>');
+                        return;
+                    }
+                    var html = '';
+                    list.forEach(function(item) {
+                        html += '<div style="padding:10px 0;border-bottom:1px solid var(--border-color);">';
+                        html += '<div style="font-size:13px;color:var(--text-secondary)">' + (item.datetime || '') + '</div>';
+                        html += '<div style="margin-top:4px;">Agent数量: ' + (item.agents_count || 0) + ' | 迭代: ' + (item.iterations || 0) + '</div>';
+                        html += '</div>';
+                    });
+                    $('#optimization-history-list').html(html);
+                }).fail(function() {
+                    $('#optimization-history-list').html('<p style="color:var(--danger)">加载失败</p>');
+                });
+            };
+
             window.confirmPlan = function(taskId) {
                 $.ajax({
                     url: '/api/chat/' + taskId + '/confirm_plan',
@@ -1281,9 +1315,14 @@
                                     </div>
                                 `;
                             } else if (msg.type === 'executive') {
+                                var wfBtns = '';
+                                if (msg.workflow_id) {
+                                    wfBtns = '<div style="margin-top:8px;"><button class="wf-btn" onclick="pauseWorkflow(\'' + msg.workflow_id + '\')" style="padding:4px 12px;background:var(--btn-success);color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:6px;">⏸ 暂停</button><button class="wf-btn" onclick="resumeWorkflow(\'' + msg.workflow_id + '\')" style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;">▶ 恢复</button></div>';
+                                }
                                 messageHtml = `
                                     <div class="message executive-message">
                                         <p>${msg.content}</p>
+                                        ${wfBtns}
                                         <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
                                     </div>
                                 `;
@@ -1482,9 +1521,14 @@
                                                     </div>
                                                 `;
                                             } else if (msg.type === 'executive') {
+                                                var wfBtns2 = '';
+                                                if (msg.workflow_id) {
+                                                    wfBtns2 = '<div style="margin-top:8px;"><button class="wf-btn" onclick="pauseWorkflow(\'' + msg.workflow_id + '\')" style="padding:4px 12px;background:var(--btn-success);color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:6px;">⏸ 暂停</button><button class="wf-btn" onclick="resumeWorkflow(\'' + msg.workflow_id + '\')" style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;">▶ 恢复</button></div>';
+                                                }
                                                 messageHtml = `
                                                     <div class="message executive-message">
                                                         <p>${msg.content}</p>
+                                                        ${wfBtns2}
                                                         <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
                                                     </div>
                                                 `;
