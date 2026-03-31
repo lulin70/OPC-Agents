@@ -78,12 +78,12 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            color: #333333;
+            color: var(--text-primary);
             transition: all 0.2s ease;
         }
         
         .top-nav-item:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-secondary);
         }
         
         .top-nav-right {
@@ -110,13 +110,13 @@
         
         .sidebar-header {
             padding: 0 20px 20px 20px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .sidebar-header h1 {
             font-size: 20px;
             font-weight: 600;
-            color: #333333;
+            color: var(--text-primary);
             margin: 0;
         }
         
@@ -156,7 +156,7 @@
         .section-title {
             font-size: 12px;
             font-weight: 600;
-            color: #999999;
+            color: var(--text-secondary);
             text-transform: uppercase;
             padding: 0 20px 10px 20px;
         }
@@ -170,11 +170,11 @@
         }
         
         .task-item:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-secondary);
         }
         
         .task-item.active {
-            background-color: #e3f2fd;
+            background-color: var(--msg-user-bg);
             border-left-color: #2196f3;
         }
         
@@ -201,14 +201,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f0f0f0;
+            background: var(--bg-secondary);
             color: #666;
             transition: all 0.15s;
         }
         
-        .task-act-btn:hover { background: #e0e0e0; }
-        .task-act-btn.del:hover { background: #FFEBEE; color: #f44336; }
-        .task-act-btn.dir:hover { background: #E8F5E9; color: #4CAF50; }
+        .task-act-btn:hover { background: var(--bg-secondary); }
+        .task-act-btn.del:hover { background: var(--btn-danger); color: var(--btn-danger); }
+        .task-act-btn.dir:hover { background: var(--btn-success); color: var(--btn-success); }
         
         .task-rename-input {
             font-size: 14px;
@@ -223,13 +223,13 @@
         .task-title {
             font-size: 14px;
             font-weight: 500;
-            color: #333333;
+            color: var(--text-primary);
             margin-bottom: 4px;
         }
         
         .task-preview {
             font-size: 12px;
-            color: #666666;
+            color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -237,7 +237,7 @@
         
         .task-meta {
             font-size: 11px;
-            color: #999999;
+            color: var(--text-secondary);
             margin-top: 4px;
             display: flex;
             justify-content: space-between;
@@ -251,8 +251,8 @@
         }
         
         .task-tag.scheduled {
-            background-color: #E8F5E8;
-            color: #388E3C;
+            background-color: var(--msg-plan-bg);
+            color: var(--btn-success);
         }
         
         /* 主内容区 */
@@ -277,7 +277,7 @@
         .task-header h2 {
             font-size: 18px;
             font-weight: 600;
-            color: #333333;
+            color: var(--text-primary);
             margin: 0;
         }
         
@@ -288,7 +288,7 @@
         
         .action-btn {
             padding: 6px 12px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 12px;
             cursor: pointer;
@@ -296,7 +296,7 @@
         }
         
         .action-btn:hover {
-            background-color: #f8f9fa;
+            background-color: var(--bg-secondary);
         }
         
         /* 消息区域 */
@@ -316,7 +316,7 @@
         
         .user-message {
             align-self: flex-end;
-            background-color: #E3F2FD;
+            background-color: var(--msg-user-bg);
             border-radius: 18px 18px 4px 18px;
             padding: 12px 16px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
@@ -324,7 +324,7 @@
         
         .executive-message {
             align-self: flex-start;
-            background-color: #F5F5F5;
+            background-color: var(--bg-primary);
             border-radius: 18px 18px 18px 4px;
             padding: 12px 16px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
@@ -332,11 +332,11 @@
         
         .system-message {
             align-self: center;
-            background-color: #FFF8E1;
+            background-color: var(--msg-plan-bg);
             border-radius: 8px;
             padding: 8px 12px;
             font-size: 12px;
-            color: #FF8F00;
+            color: var(--success);
             text-align: center;
             margin: 8px 0;
         }
@@ -344,8 +344,8 @@
         /* 任务卡片 */
         .task-card {
             align-self: center;
-            background-color: #F8F9FA;
-            border: 1px solid #E9ECEF;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 16px;
             margin: 12px 0;
@@ -364,7 +364,7 @@
         .task-card-title {
             font-size: 16px;
             font-weight: 600;
-            color: #333333;
+            color: var(--text-primary);
         }
         
         .task-card-status {
@@ -375,18 +375,18 @@
         }
         
         .task-card-status.in-progress {
-            background-color: #E3F2FD;
-            color: #1976D2;
+            background-color: var(--msg-user-bg);
+            color: var(--accent);
         }
         
         .task-card-status.completed {
-            background-color: #E8F5E8;
-            color: #388E3C;
+            background-color: var(--msg-plan-bg);
+            color: var(--btn-success);
         }
         
         .task-card-details {
             font-size: 14px;
-            color: #666666;
+            color: var(--text-secondary);
             margin-bottom: 12px;
         }
         
@@ -397,7 +397,7 @@
         .progress-bar {
             width: 100%;
             height: 6px;
-            background-color: #E9ECEF;
+            background-color: var(--bg-secondary);
             border-radius: 3px;
             overflow: hidden;
             margin-bottom: 8px;
@@ -405,14 +405,14 @@
         
         .progress-fill {
             height: 100%;
-            background-color: #4CAF50;
+            background-color: var(--btn-success);
             border-radius: 3px;
             transition: width 0.3s ease;
         }
         
         .progress-text {
             font-size: 12px;
-            color: #666666;
+            color: var(--text-secondary);
             text-align: right;
         }
         
@@ -432,7 +432,7 @@
         .input-field {
             flex: 1;
             padding: 12px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             font-size: 14px;
             resize: none;
@@ -462,16 +462,16 @@
         }
         
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: var(--bg-secondary);
         }
         
         ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
+            background: var(--border-color);
             border-radius: 3px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
+            background: var(--text-secondary);
         }
         
         /* 模态框 */
@@ -506,13 +506,13 @@
         .modal-title {
             font-size: 18px;
             font-weight: 600;
-            color: #333333;
+            color: var(--text-primary);
         }
         
         .close {
             font-size: 24px;
             cursor: pointer;
-            color: #999999;
+            color: var(--text-secondary);
         }
         
         .modal-body {
@@ -527,14 +527,14 @@
             display: block;
             font-size: 14px;
             font-weight: 500;
-            color: #333333;
+            color: var(--text-primary);
             margin-bottom: 5px;
         }
         
         .form-input {
             width: 100%;
             padding: 10px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 14px;
         }
@@ -542,7 +542,7 @@
         .form-select {
             width: 100%;
             padding: 10px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 14px;
         }
@@ -555,7 +555,7 @@
         
         .btn {
             padding: 8px 16px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-size: 14px;
             cursor: pointer;
@@ -573,12 +573,12 @@
         }
         
         .btn-secondary {
-            background-color: #f8f9fa;
-            color: #333333;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
         }
         
         .btn-secondary:hover {
-            background-color: #e9ecef;
+            background-color: var(--bg-secondary);
         }
         
         /* 加载动画 */
@@ -645,14 +645,14 @@
         }
         
         .executive-message .msg-text strong {
-            color: #1565c0;
+            color: var(--accent);
         }
         
         /* HR推荐卡片 */
         .hr-recommendation {
             align-self: center;
-            background-color: #FFF3E0;
-            border: 1px solid #FFE0B2;
+            background-color: var(--msg-plan-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 12px 16px;
             margin: 8px 0;
@@ -663,7 +663,7 @@
         .hr-recommendation-title {
             font-size: 13px;
             font-weight: 600;
-            color: #E65100;
+            color: var(--success);
             margin-bottom: 8px;
         }
         
@@ -672,7 +672,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 6px 0;
-            border-bottom: 1px solid #FFE0B2;
+            border-bottom: 1px solid var(--border-color);
             font-size: 13px;
         }
         
@@ -1106,22 +1106,22 @@
                             if (v.code_scan && v.code_scan.scanned) {
                                 scanInfo = '<br><b>代码扫描:</b> ' + v.code_scan.risk_level + '风险, 扫描' + v.code_scan.files_scanned + '个文件';
                                 if (v.code_scan.issues.length > 0) {
-                                    scanInfo += '<br><b>发现的问题:</b><ul style="margin:4px 0;padding-left:16px;color:#e65100">';
+                                    scanInfo += '<br><b>发现的问题:</b><ul style="margin:4px 0;padding-left:16px;color:var(--text-secondary)">';
                                     v.code_scan.issues.forEach(function(i) { scanInfo += '<li>' + i + '</li>'; });
                                     scanInfo += '</ul>';
                                 }
                             }
                             var issuesHtml = '';
                             if (v.issues && v.issues.length > 0) {
-                                issuesHtml = '<br><b>问题:</b><ul style="margin:4px 0;padding-left:16px;color:#c62828">';
+                                issuesHtml = '<br><b>问题:</b><ul style="margin:4px 0;padding-left:16px;color:var(--danger)">';
                                 v.issues.forEach(function(i) { issuesHtml += '<li>' + i + '</li>'; });
                                 issuesHtml += '</ul>';
                             }
-                            var html = '<div class="message system-message" style="border-left:3px solid #FF9800;padding:8px 12px;">' +
+                            var html = '<div class="message system-message" style="border-left:3px solid var(--success);padding:8px 12px;">' +
                                 '⚠️ <b>安全验证未通过</b>：' + repo +
                                 '<br>安全评分: <b>' + secScore + '%</b> | 可靠性评分: <b>' + relScore + '%</b>' +
                                 scanInfo + issuesHtml +
-                                '<br><button onclick="forceImport(\'' + repo + '\',\'' + dept + '\')" style="margin-top:6px;padding:4px 12px;background:#FF9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">确认导入（忽略风险）</button>' +
+                                '<br><button onclick="forceImport(\'' + repo + '\',\'' + dept + '\')" style="margin-top:6px;padding:4px 12px;background:var(--success);color:#fff;border:none;border-radius:4px;cursor:pointer;">确认导入（忽略风险）</button>' +
                                 '</div>';
                             $('#message-area').append(html);
                         } else {
@@ -1221,8 +1221,8 @@
                             if (data.summary) {
                                 detailHtml += '<br><span style="color:#666;font-size:11px;">' + data.summary.substring(0, 100) + '...</span>';
                             }
-                            var html = '<div class="message system-message" style="border-left:3px solid #4CAF50;padding:8px 12px;">' +
-                                '<div style="font-weight:bold;color:#4CAF50;">✅ ' + (data.agent || '') + ' 完成了 ' + (data.task_name || '') + '</div>' +
+                            var html = '<div class="message system-message" style="border-left:3px solid var(--btn-success);padding:8px 12px;">' +
+                                '<div style="font-weight:bold;color:var(--btn-success);">✅ ' + (data.agent || '') + ' 完成了 ' + (data.task_name || '') + '</div>' +
                                 detailHtml +
                                 '<small class="text-muted" style="font-size:10px;display:block;text-align:right;margin-top:4px;">' + timeString + '</small>' +
                                 '</div>';
@@ -1230,9 +1230,9 @@
                             $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
                             if (typeof refreshTaskList === 'function') refreshTaskList();
                         } else if (data.type === 'task_failed') {
-                            var html = '<div class="message system-message" style="border-left:3px solid #f44336;padding:8px 12px;">' +
-                                '<div style="font-weight:bold;color:#f44336;">❌ ' + (data.task_name || '') + ' 执行失败</div>' +
-                                (data.error ? '<br><span style="color:#c62828;font-size:11px;">错误: ' + data.error + '</span>' : '') +
+                            var html = '<div class="message system-message" style="border-left:3px solid var(--btn-danger);padding:8px 12px;">' +
+                                '<div style="font-weight:bold;color:var(--btn-danger);">❌ ' + (data.task_name || '') + ' 执行失败</div>' +
+                                (data.error ? '<br><span style="color:var(--danger);font-size:11px;">错误: ' + data.error + '</span>' : '') +
                                 '<small class="text-muted" style="font-size:10px;display:block;text-align:right;margin-top:4px;">' + timeString + '</small>' +
                                 '</div>';
                             $('#message-area').append(html);
@@ -1289,8 +1289,8 @@
                                 `;
                             } else if (msg.type === 'clarify') {
                                 messageHtml = `
-                                    <div class="message system-message" style="border-left: 3px solid #2196F3; padding: 8px 12px;">
-                                        <div style="font-weight:bold; color:#2196F3; margin-bottom:4px;">🔍 总裁办追问</div>
+                                    <div class="message system-message" style="border-left: 3px solid var(--accent); padding: 8px 12px;">
+                                        <div style="font-weight:bold; color:var(--accent); margin-bottom:4px;">🔍 总裁办追问</div>
                                         <p>${msg.content}</p>
                                         <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
                                     </div>
@@ -1298,12 +1298,12 @@
                             } else if (msg.type === 'plan_pending') {
                                 var taskId = msg.task_id || '';
                                 messageHtml = `
-                                    <div class="message system-message" style="border-left: 3px solid #4CAF50; padding: 10px 14px;">
-                                        <div style="font-weight:bold; color:#4CAF50; margin-bottom:6px;">📋 执行计划待确认</div>
+                                    <div class="message system-message" style="border-left: 3px solid var(--btn-success); padding: 10px 14px;">
+                                        <div style="font-weight:bold; color:var(--btn-success); margin-bottom:6px;">📋 执行计划待确认</div>
                                         <div style="white-space:pre-wrap;">${msg.content}</div>
                                         <div style="margin-top:10px;">
-                                            <button onclick="confirmPlan('${taskId}')" style="padding:6px 16px;background:#4CAF50;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;">✅ 确认执行</button>
-                                            <button onclick="rejectPlan('${taskId}')" style="padding:6px 16px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;">❌ 取消</button>
+                                            <button onclick="confirmPlan('${taskId}')" style="padding:6px 16px;background:var(--btn-success);color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;">✅ 确认执行</button>
+                                            <button onclick="rejectPlan('${taskId}')" style="padding:6px 16px;background:var(--btn-danger);color:#fff;border:none;border-radius:4px;cursor:pointer;">❌ 取消</button>
                                         </div>
                                         <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
                                     </div>
@@ -1490,8 +1490,8 @@
                                                 `;
                                             } else if (msg.type === 'clarify') {
                                                 messageHtml = `
-                                                    <div class="message system-message" style="border-left: 3px solid #2196F3; padding: 8px 12px;">
-                                                        <div style="font-weight:bold; color:#2196F3; margin-bottom:4px;">🔍 总裁办追问</div>
+                                                    <div class="message system-message" style="border-left: 3px solid var(--accent); padding: 8px 12px;">
+                                                        <div style="font-weight:bold; color:var(--accent); margin-bottom:4px;">🔍 总裁办追问</div>
                                                         <p>${msg.content}</p>
                                                         <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
                                                     </div>
@@ -1499,12 +1499,12 @@
                                             } else if (msg.type === 'plan_pending') {
                                                 var taskId = msg.task_id || '';
                                                 messageHtml = `
-                                                    <div class="message system-message" style="border-left: 3px solid #4CAF50; padding: 10px 14px;">
-                                                        <div style="font-weight:bold; color:#4CAF50; margin-bottom:6px;">📋 执行计划待确认</div>
+                                                    <div class="message system-message" style="border-left: 3px solid var(--btn-success); padding: 10px 14px;">
+                                                        <div style="font-weight:bold; color:var(--btn-success); margin-bottom:6px;">📋 执行计划待确认</div>
                                                         <div style="white-space:pre-wrap;">${msg.content}</div>
                                                         <div style="margin-top:10px;">
-                                                            <button onclick="confirmPlan('${taskId}')" style="padding:6px 16px;background:#4CAF50;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;">✅ 确认执行</button>
-                                                            <button onclick="rejectPlan('${taskId}')" style="padding:6px 16px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;">❌ 取消</button>
+                                                            <button onclick="confirmPlan('${taskId}')" style="padding:6px 16px;background:var(--btn-success);color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;">✅ 确认执行</button>
+                                                            <button onclick="rejectPlan('${taskId}')" style="padding:6px 16px;background:var(--btn-danger);color:#fff;border:none;border-radius:4px;cursor:pointer;">❌ 取消</button>
                                                         </div>
                                                         <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
                                                     </div>

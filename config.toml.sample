@@ -105,3 +105,26 @@ report_specialist = "report_specialist"
 astra = "astra"  # 战略贤者
 terra = "terra"  # 执行贤者
 nova = "nova"  # 创新贤者
+
+# Server Configuration
+[server]
+host = "0.0.0.0"
+port = 5009
+debug = false
+
+# Finance Configuration
+[finance]
+monthly_budget = 100.0
+alert_threshold = 80.0
+currency = "CNY"
+
+# MCP GitHub Integration
+[mcp_github]
+enabled = true
+max_results = 10
+
+# Auto Optimizer
+[auto_optimizer]
+enabled = false
+schedule_type = "daily"
+optimization_iterations = 3
