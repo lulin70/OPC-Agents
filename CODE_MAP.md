@@ -51,7 +51,16 @@ OPC-Agents/
   - ContextSynchronizer：双向同步（任务开始注入知识/任务完成沉淀经验）
 - **completion_checker.py**：任务完成自动校验（产出物存在/非空/验收标准/GLM质量评估）
 - **dag_scheduler.py**：DAG任务依赖调度器（depends_on/blocked_by/循环检测/进度追踪）
-- **checkpoint_manager.py**：断点恢复+交接文档（Checkpoint快照+HandoffDocument标准化交接）
+- **checkpoint_manager.py**：断点恢复+交接文档（Checkpoint快照+HandoffDocument标准化交接+交接历史）
+- **workflow_engine.py**：工作流引擎（参考TraeMultiAgentSkill的WorkflowEngineV2）
+  - WorkflowDefinition→WorkflowInstance→WorkflowStep状态机
+  - 条件分支（conditions）+ ${variable}模板变量传递
+  - 暂停/恢复（pause_workflow/resume_workflow）
+  - 自动checkpoint（每N步保存）
+- **loop_controller.py**：长程任务循环控制器（参考TraeMultiAgentSkill的AgentLoopControllerV2）
+  - 迭代计数器+最大迭代限制
+  - 退出条件检查（全部完成/达到上限/手动停止）
+  - 进度持久化（JSON）
 - **personal_assistant.py**：个人助理（待办/天气/出行，调用真实天气API）
 - **architecture.py**：三层架构初始化
 - **config.py**：配置管理器
@@ -244,6 +253,10 @@ web_interface/app.py
 | 总裁办 | POST /api/chat/<id>/message | 发送消息（智能任务处理链） |
 | 总裁办 | POST /api/task/<id>/complete | 任务完成处理 |
 | 总裁办 | POST /api/chat/<id>/confirm_plan | 确认执行计划（DAG分发） |
+| 工作流 | POST /api/workflow/<id>/pause | 暂停工作流 |
+| 工作流 | POST /api/workflow/<id>/resume | 恢复工作流 |
+| 工作流 | GET /api/workflow/<id>/progress | 获取工作流进度 |
+| 工作流 | GET /api/workflow/active | 获取活跃工作流列表 |
 | 总裁办 | POST /api/hr/import | 引入外部Agent/Skill |
 | 总裁办 | POST /api/three_sages_decision | 三贤者决策 |
 | 任务 | GET/POST /api/tasks | 任务列表/创建 |

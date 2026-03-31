@@ -80,6 +80,12 @@ class OPCManager:
 
         from opc_hr.role_matcher import RoleMatcher
         self.role_matcher = RoleMatcher(self.hr_enhancement, self.global_context)
+
+        from opc_manager.workflow_engine import WorkflowEngine
+        self.workflow_engine = WorkflowEngine()
+
+        from opc_manager.loop_controller import LoopController
+        self.loop_controller = LoopController()
         
         # 加载默认技能
         self._load_default_skills()

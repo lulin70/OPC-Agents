@@ -251,17 +251,30 @@ class TaskExecutor:
             self.logger.info(f"Task {task_id} completed successfully")
             
         except Exception as e:
-            self.logger.error(f"Task {task_id} failed: {e}")
-            self._broadcast_progress(task_id, TaskState.FAILED, 0, f"任务失败: {str(e)}")
-            
-            self.task_results[task_id] = {
-                "status": "failed",
-                "error": str(e),
-                "execution_time": time.time() - start_time
-            }
-            
-            if self.on_task_failed:
-                self.on_task_failed(task_id, str(e))
+            current_retry = task_data.get("_retry_count", 0)
+            max_retry = task_data.get("_max_retry", 2)
+            if current_retry < max_retry:
+                self.logger.warning(f"[重试] {task_id} 第{current_retry+1}次重试, 错误: {e}")
+                self._broadcast_progress(task_id, TaskState.RUNNING, 50, f"重试中({current_retry+1}/{max_retry})...")
+                task_data["_retry_count"] = current_retry + 1
+                time.sleep(2)
+                prioritized_task = PrioritizedTask(
+                    priority=TaskPriority.MEDIUM.value,
+                    task_id=task_id,
+                    task_data=task_data
+                )
+                self.task_queue.put(prioritized_task)
+            else:
+                self.logger.error(f"Task {task_id} failed after {max_retry} retries: {e}")
+                self._broadcast_progress(task_id, TaskState.FAILED, 0, f"任务失败(已重试{max_retry}次): {str(e)}")
+                self.task_results[task_id] = {
+                    "status": "failed",
+                    "error": str(e),
+                    "retries": max_retry,
+                    "execution_time": time.time() - start_time
+                }
+                if self.on_task_failed:
+                    self.on_task_failed(task_id, str(e))
     
     def _analyze_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """分析任务需求

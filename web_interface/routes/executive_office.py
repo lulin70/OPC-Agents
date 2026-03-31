@@ -437,6 +437,43 @@ def register_routes(manager):
         }
         return jsonify(response)
 
+    @bp.route('/api/workflow/<instance_id>/pause', methods=['POST'])
+    def pause_workflow(instance_id):
+        engine = getattr(manager, 'workflow_engine', None)
+        if not engine:
+            return jsonify({"error": "workflow engine not available"}), 500
+        success = engine.pause_workflow(instance_id)
+        if success:
+            return jsonify({"status": "paused", "instance_id": instance_id})
+        return jsonify({"error": "cannot pause"}), 400
+
+    @bp.route('/api/workflow/<instance_id>/resume', methods=['POST'])
+    def resume_workflow(instance_id):
+        engine = getattr(manager, 'workflow_engine', None)
+        if not engine:
+            return jsonify({"error": "workflow engine not available"}), 500
+        success = engine.resume_workflow(instance_id)
+        if success:
+            return jsonify({"status": "resumed", "instance_id": instance_id})
+        return jsonify({"error": "cannot resume"}), 400
+
+    @bp.route('/api/workflow/<instance_id>/progress', methods=['GET'])
+    def workflow_progress(instance_id):
+        engine = getattr(manager, 'workflow_engine', None)
+        if not engine:
+            return jsonify({"error": "workflow engine not available"}), 500
+        progress = engine.get_progress(instance_id)
+        if not progress:
+            return jsonify({"error": "instance not found"}), 404
+        return jsonify(progress)
+
+    @bp.route('/api/workflow/active', methods=['GET'])
+    def active_workflows():
+        engine = getattr(manager, 'workflow_engine', None)
+        if not engine:
+            return jsonify({"error": "workflow engine not available"}), 500
+        return jsonify({"active_workflows": engine.get_active_instances()})
+
     # 对话中心API - 用户确认引入外部Agent/Skill
     @bp.route('/hr/import', methods=['POST'])
     def hr_import():

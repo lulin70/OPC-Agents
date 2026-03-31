@@ -18,6 +18,7 @@ class Checkpoint:
     remaining_steps: List[Dict[str, Any]] = field(default_factory=list)
     context_snapshot: Dict[str, Any] = field(default_factory=dict)
     dag_state: Dict[str, Any] = field(default_factory=dict)
+    handoff_history: List[Dict[str, str]] = field(default_factory=list)
     created_at: str = ""
 
     def __post_init__(self):
@@ -140,3 +141,19 @@ class CheckpointManager:
                     os.remove(str(path))
                 except Exception:
                     pass
+
+    def append_handoff(self, task_id: str, from_agent: str, to_agent: str, handoff_id: str):
+        path = self.storage_path / f"{task_id}.json"
+        if not path.exists():
+            return
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            history = data.get("handoff_history", [])
+            history.append({"from": from_agent, "to": to_agent, "handoff_id": handoff_id,
+                            "timestamp": datetime.now().isoformat()})
+            data["handoff_history"] = history
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass

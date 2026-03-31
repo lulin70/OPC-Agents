@@ -29,7 +29,10 @@
 - **越用越聪明**：每次任务都积累知识和经验，后续任务自动复用
 
 **任务执行与质量保障**
+- **工作流引擎**：WorkflowDefinition→Instance→Step状态机，支持条件分支、${variable}模板、暂停/恢复
 - **DAG依赖调度**：任务间依赖关系管理，循环检测，按依赖顺序执行
+- **步骤自动重试**：失败自动重试（默认2次），重试耗尽才标记failed
+- **循环控制器**：迭代计数器+最大迭代限制+退出条件+进度持久化
 - **上下文传递**：后续Agent获取前序Agent的实际产出物内容（非路径字符串）
 - **完成自动校验**：产出物存在/非空/验收标准/GLM质量评估，4项检查
 - **断点恢复**：系统崩溃后可从断点继续，不丢失进度
@@ -67,6 +70,8 @@ OPC-Agents/
 │   ├── completion_checker.py  # 任务完成自动校验
 │   ├── dag_scheduler.py       # DAG依赖调度
 │   ├── checkpoint_manager.py  # 断点恢复+交接文档
+│   ├── workflow_engine.py     # 工作流引擎（状态机+条件分支+变量模板）
+│   ├── loop_controller.py     # 长程任务循环控制器
 │   ├── personal_assistant.py  # 个人助理
 │   ├── architecture.py        # 三层架构
 │   └── config.py              # 配置管理
