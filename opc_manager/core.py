@@ -243,9 +243,64 @@ class OPCManager:
         return self.architecture_manager.get_architecture()
     
     # 任务相关方法
-    def decompose_task(self, task: str, time_horizon: str = "medium") -> List[Dict[str, str]]:
-        """Decompose a task into smaller tasks based on time horizon"""
-        return self.task_manager.decompose_task(task, time_horizon)
+    def decompose_task(self, task: str, synthesis: Dict[str, Any] = None, time_horizon: str = "medium") -> Dict[str, Any]:
+        if synthesis and synthesis.get('execution_steps'):
+            return {"execution_steps": synthesis['execution_steps'], "monitoring_plan": synthesis.get('monitoring_plan', [])}
+        try:
+            synthesis_text = ""
+            if synthesis:
+                for sage_data in synthesis.get('sages', []):
+                    opinion = sage_data.get('opinion', {})
+                    if isinstance(opinion, dict):
+                        synthesis_text += f"- {sage_data['title']}: {opinion.get('strategy', '')[:100]}\n"
+                    else:
+                        synthesis_text += f"- {sage_data['title']}: {str(opinion)[:100]}\n"
+            prompt = (
+                f"请将以下任务分解为执行步骤，严格按JSON格式输出：\n"
+                f"任务：{task}\n"
+                f"{synthesis_text}\n"
+                f"{{\n"
+                f"  \"execution_steps\": [\n"
+                f"    {{\"step\": 1, \"task\": \"任务名\", \"department\": \"部门名(engineering/design/marketing等)\", \"description\": \"具体描述\", \"deliverable\": \"预期产出物\"}}\n"
+                f"  ],\n"
+                f"  \"monitoring_plan\": [\n"
+                f"    {{\"checkpoint\": \"检查点描述\", \"trigger\": \"触发条件\"}}\n"
+                f"  ]\n"
+                f"}}\n\n只输出JSON。"
+            )
+            response = self.model_manager.generate_response(prompt, model="glm")
+            import re, json
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                return json.loads(json_match.group())
+        except Exception as e:
+            print(f"[任务分解] GLM分解失败: {e}")
+        return {"execution_steps": [], "monitoring_plan": []}
+
+    def generate_plan_markdown(self, task_name: str, synthesis: Dict, execution_steps: list, monitoring_plan: list, task_id: str) -> str:
+        lines = [f"# 执行计划 - {task_name[:50]}", "", f"## 任务概述", f"{task_name}", ""]
+        lines.append("## 三贤者评估摘要")
+        lines.append(f"- 综合建议：{synthesis.get('summary', '无')}")
+        for sage_data in synthesis.get('sages', []):
+            opinion = sage_data.get('opinion', {})
+            if isinstance(opinion, dict):
+                lines.append(f"- {sage_data['title']}：资源={opinion.get('internal_resources', '')[:50]} | 风险={opinion.get('risk_assessment', '')[:50]}")
+            else:
+                lines.append(f"- {sage_data['title']}：{str(opinion)[:80]}")
+        lines.append("")
+        lines.append("## 执行步骤")
+        lines.append("| # | 任务 | 部门 | 描述 | 预期产出物 |")
+        lines.append("|---|------|------|------|-----------|")
+        for i, step in enumerate(execution_steps, 1):
+            lines.append(f"| {i} | {step.get('task','')} | {step.get('department','')} | {step.get('description','')} | {step.get('deliverable','')} |")
+        if monitoring_plan:
+            lines.append("")
+            lines.append("## 监控计划")
+            for mp in monitoring_plan:
+                lines.append(f"- {mp.get('checkpoint','')} (触发: {mp.get('trigger','')})")
+        lines.append(f"\n任务ID: {task_id}")
+        lines.append(f"生成时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        return "\n".join(lines)
     
     def track_progress(self, tasks: List[str] = None) -> Dict[str, Any]:
         """Track progress of tasks"""

@@ -5,6 +5,7 @@ Executive Office routes for OPC-Agents Web Interface
 
 from flask import Blueprint, jsonify, request
 import time
+import os
 
 # 创建蓝图
 bp = Blueprint('executive_office', __name__, url_prefix='/api')
@@ -116,16 +117,28 @@ def register_routes(manager):
             from model_integration.model_manager import ModelManager
             model_manager = ModelManager()
             
-            # 步骤1: 用GLM判断消息意图（是闲聊还是任务指令）
+            # 步骤1: 用GLM判断消息意图（闲聊/搜索/任务/追问）
             intent_prompt = (
                 f"判断以下用户消息的意图，只回复一个词：\n"
                 f"如果是闲聊、问候、提问，回复「chat」\n"
-                f"如果是需要执行的任务、工作安排、项目需求，回复「task」\n"
-                f"如果需要搜索互联网获取最新信息（如新闻、技术文档、市场数据等），回复「search」\n\n"
+                f"如果需要搜索互联网获取最新信息（如新闻、技术文档、市场数据等），回复「search」\n"
+                f"如果是需要执行的任务、工作安排、项目需求，丏述清晰可执行，回复「task」\n"
+                f"如果意图不明确、信息不足、需要追问用户才能执行，回复「clarify」\n\n"
                 f"用户消息：{message}"
             )
             intent_response = model_manager.generate_response(intent_prompt, model="glm")
-            intent_lower = intent_response.lower()
+            intent_lower = intent_response.lower().strip()
+            
+            if "clarify" in intent_lower and "task" not in intent_lower:
+                clarify_prompt = f"用户消息：「{message}」\n这个消息意图不明确，请用一句话追问用户，获取更多关键信息。只输出追问的问题，不要其他内容。"
+                clarify_question = model_manager.generate_response(clarify_prompt, model="glm")
+                response = {
+                    "id": f"msg_{int(time.time())}",
+                    "type": "clarify",
+                    "content": clarify_question,
+                    "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+                }
+                return jsonify(response)
             
             if "search" in intent_lower and "task" not in intent_lower:
                 search_results = manager.web_search_query(message, max_results=3)
@@ -169,134 +182,89 @@ def register_routes(manager):
             
             # 步骤2: 调用三贤者进行决策分析（含搜索上下文）
             decision = manager.start_three_sages_decision(message + search_context)
-            decision_advice = decision.get('decision_advice', '三贤者建议：需要进一步分析')
-            
-            # 步骤3: 任务分解
-            decomposed = manager.decompose_task(message)
-            
-            # 步骤4: 请求人事部评估本地Agent资源，搜寻合适Agent/Skill
-            hr_assessment = {}
-            hr_recommendations = []
-            for sub in decomposed:
-                dept = sub.get('department', 'development')
-                task_name = sub.get('task', '')
-                try:
-                    job_id = manager.hr_enhancement.create_job_requirement(
-                        title=task_name,
-                        department=dept,
-                        description=f"任务: {task_name}",
-                        required_skills=list(sub.get('skills', []))
-                    )
-                    matching = manager.hr_enhancement.find_matching_agents(job_id)
-                    local_agents = [m for m in matching if m.get('source') != 'github_mcp']
-                    external_agents = [m for m in matching if m.get('source') == 'github_mcp']
-                    
-                    if not local_agents and external_agents:
-                        hr_recommendations.append({
-                            "task": task_name,
-                            "department": dept,
-                            "job_id": job_id,
-                            "local_available": False,
-                            "external_candidates": external_agents[:3]
-                        })
-                    elif local_agents:
-                        sub['agent'] = local_agents[0].get('agent_name', '')
-                        sub['agent_id'] = local_agents[0].get('agent_id', '')
-                    
-                    hr_assessment[task_name] = {
-                        "department": dept,
-                        "local_agents": len(local_agents),
-                        "external_candidates": len(external_agents),
-                        "best_match": local_agents[0] if local_agents else None
-                    }
-                except Exception as hr_err:
-                    print(f"[人事部评估] 失败: {hr_err}")
-            
-            # 步骤5: 创建主任务
+            synthesis = decision.get('synthesis', {})
+            execution_steps = synthesis.get('execution_steps', [])
+            monitoring_plan = synthesis.get('monitoring_plan', [])
+            synthesis_summary = synthesis.get('summary', '三贤者评估完成')
+
+            # 步骤3: 如果三贤者没有生成执行步骤，用GLM动态生成
+            if not execution_steps:
+                decomposed = manager.decompose_task(message, synthesis)
+                execution_steps = decomposed.get('execution_steps', [])
+
+            # 步骤3.5: 生成执行计划并写入工作目录，等待用户确认
             main_task_id = f"task-{int(time.time())}"
             manager.create_task(
                 task_id=main_task_id,
                 task_name=message[:50],
                 agent="executive_office",
-                initial_status="in_progress"
+                initial_status="pending"
             )
-            
-            # 步骤6: 分发子任务到各部门
-            dispatched = []
-            if decomposed:
-                for sub in decomposed:
-                    dept = sub.get('department', 'development')
-                    agent = sub.get('agent', '')
-                    sub_task_name = sub.get('task', '')
-                    if sub_task_name:
-                        sub_task_id = f"task-{int(time.time())}-{len(dispatched)}"
-                        manager.create_task(
-                            task_id=sub_task_id,
-                            task_name=sub_task_name,
-                            agent=agent or dept,
-                            initial_status="pending"
-                        )
-                        if agent:
-                            manager.task_manager.assign_task_to_agent(sub_task_id, agent, dept)
-                        dispatched.append({
-                            "task_id": sub_task_id,
-                            "task_name": sub_task_name,
-                            "department": dept,
-                            "agent": agent
-                        })
-            
-            # 步骤7: 触发任务执行（异步）
-            for d in dispatched:
+
+            plan_content = manager.generate_plan_markdown(
+                task_name=message,
+                synthesis=synthesis,
+                execution_steps=execution_steps,
+                monitoring_plan=monitoring_plan,
+                task_id=main_task_id
+            )
+            work_dir = manager.get_work_dir(main_task_id)
+            plan_path = os.path.join(work_dir, "plan.md") if work_dir else None
+            if plan_path:
                 try:
-                    manager.task_executor.execute_task(
-                        d["task_id"],
-                        {
-                            "task_name": d["task_name"],
-                            "description": f"父任务: {message[:50]}",
-                            "department": d["department"],
-                            "assigned_agent": d["agent"]
-                        }
-                    )
-                except Exception as exec_err:
-                    print(f"[任务执行] 启动失败 {d['task_id']}: {exec_err}")
-            
-            # 步骤8: 构建综合回复
-            dispatch_text = ""
-            if dispatched:
-                dispatch_text = "\n\n**任务已分派：**\n"
-                for d in dispatched:
-                    dispatch_text += f"- {d['task_name']} → {d['department']}"
-                    if d['agent']:
-                        dispatch_text += f" ({d['agent']})"
-                    dispatch_text += "\n"
-            
-            hr_text = ""
-            if hr_recommendations:
-                hr_text = "\n\n**⚠️ 人事部报告 - 需要补充资源：**\n"
-                for rec in hr_recommendations:
-                    hr_text += f"- [{rec['department']}] {rec['task']}：本地无合适Agent"
-                    if rec['external_candidates']:
-                        best = rec['external_candidates'][0]
-                        hr_text += f"，建议从GitHub引入: {best.get('agent_name', '')} ({best.get('stars', 0)}⭐)"
-                    hr_text += "\n"
-                hr_text += "\n任务执行中，如失败将自动为您推荐外部Agent/Skill。"
-            
+                    os.makedirs(os.path.dirname(plan_path), exist_ok=True)
+                    with open(plan_path, 'w', encoding='utf-8') as f:
+                        f.write(plan_content)
+                except Exception as e:
+                    print(f"[计划写入] 失败: {e}")
+
+            # 缓存计划数据供确认时使用
+            if not hasattr(manager, '_pending_plans'):
+                manager._pending_plans = {}
+            manager._pending_plans[main_task_id] = {
+                "message": message,
+                "decision": decision,
+                "synthesis": synthesis,
+                "execution_steps": execution_steps,
+                "monitoring_plan": monitoring_plan,
+                "search_context": search_context,
+                "work_dir": work_dir
+            }
+
+            # 构建计划展示内容
+            steps_text = ""
+            for i, step in enumerate(execution_steps, 1):
+                steps_text += f"| {i} | {step.get('task','')} | {step.get('department','')} | {step.get('deliverable','')} |\n"
+
+            monitor_text = ""
+            for mp in monitoring_plan:
+                monitor_text += f"- {mp.get('checkpoint','')} (触发: {mp.get('trigger','')})\n"
+
             ai_response = (
-                f"**收到您的任务指令，已启动处理流程：**\n\n"
-                f"1. **三贤者决策分析**：\n{decision_advice}\n\n"
-                f"2. **人事部资源评估**：\n"
+                f"**📋 执行计划已生成，请确认：**\n\n"
+                f"**任务概述：** {message}\n\n"
+                f"**三贤者评估摘要：** {synthesis_summary}\n\n"
+                f"**执行步骤：**\n"
+                f"| # | 任务 | 部门 | 预期产出物 |\n"
+                f"|---|------|------|-----------|\n"
+                f"{steps_text}\n"
             )
-            for task_name, assessment in hr_assessment.items():
-                status = f"✅ 本地{assessment['local_agents']}个Agent可用" if assessment['local_agents'] > 0 else f"⚠️ 本地无合适Agent"
-                ai_response += f"   - {task_name}({assessment['department']}): {status}\n"
-            
-            ai_response += (
-                f"\n3. **任务分解与分派**：共 {len(dispatched)} 个子任务\n"
-                f"{dispatch_text}"
-                f"4. **执行中**：各部门Agent正在处理\n"
-                f"{hr_text}\n"
-                f"主任务ID: {main_task_id}"
-            )
+            if monitor_text:
+                ai_response += f"**监控计划：**\n{monitor_text}\n"
+            if work_dir:
+                ai_response += f"\n📁 计划文件：{plan_path}\n"
+            ai_response += f"\n任务ID: {main_task_id}"
+
+            response = {
+                "id": f"msg_{int(time.time())}",
+                "type": "plan_pending",
+                "content": ai_response,
+                "task_id": main_task_id,
+                "plan_path": plan_path,
+                "execution_steps": execution_steps,
+                "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+            }
+            return jsonify(response)
             
             response = {
                 "id": f"msg_{int(time.time())}",
@@ -369,7 +337,84 @@ def register_routes(manager):
                 result["message"] = f"任务失败，外部资源搜寻出错: {e}"
         
         return jsonify(result)
-    
+
+    @bp.route('/chat/<task_id>/confirm_plan', methods=['POST'])
+    def confirm_plan(task_id):
+        pending = getattr(manager, '_pending_plans', {}).get(task_id)
+        if not pending:
+            return jsonify({"error": "未找到待确认的计划"}), 404
+
+        execution_steps = pending['execution_steps']
+        work_dir = pending.get('work_dir', '')
+        message = pending['message']
+        synthesis = pending.get('synthesis', {})
+
+        manager.update_task_status(task_id, "in_progress")
+
+        dispatched = []
+        previous_outputs = []
+        for i, step in enumerate(execution_steps):
+            dept = step.get('department', 'engineering')
+            agent = step.get('agent', '')
+            sub_task_name = step.get('task', f"步骤{i+1}")
+            sub_task_id = f"{task_id}-step{i+1}"
+
+            manager.create_task(
+                task_id=sub_task_id,
+                task_name=sub_task_name,
+                agent=agent or dept,
+                initial_status="pending"
+            )
+            if agent:
+                manager.task_manager.assign_task_to_agent(sub_task_id, agent, dept)
+
+            task_context = {
+                "user_requirement": message,
+                "sages_summary": synthesis.get('summary', ''),
+                "execution_plan": execution_steps,
+                "current_step": step,
+                "previous_outputs": previous_outputs,
+                "work_dir": work_dir,
+                "step_index": i
+            }
+
+            try:
+                manager.task_executor.execute_task(
+                    sub_task_id,
+                    {
+                        "task_name": sub_task_name,
+                        "description": step.get('description', f"步骤{i+1}: {sub_task_name}"),
+                        "department": dept,
+                        "assigned_agent": agent,
+                        "context": task_context
+                    }
+                )
+                previous_outputs.append({"step": i+1, "task": sub_task_name, "agent": agent, "output": f"{work_dir}/{agent}_output.md" if agent and work_dir else ""})
+            except Exception as exec_err:
+                print(f"[任务执行] 启动失败 {sub_task_id}: {exec_err}")
+
+            dispatched.append({
+                "task_id": sub_task_id,
+                "task_name": sub_task_name,
+                "department": dept,
+                "agent": agent
+            })
+
+        if task_id in getattr(manager, '_pending_plans', {}):
+            del manager._pending_plans[task_id]
+
+        dispatch_text = "\n".join([f"- {d['task_name']} → {d['department']}" + (f" ({d['agent']})" if d['agent'] else "") for d in dispatched])
+
+        response = {
+            "id": f"msg_{int(time.time())}",
+            "type": "executive",
+            "content": f"**✅ 计划已确认，开始执行：**\n\n{dispatch_text}\n\n共{len(dispatched)}个子任务已分派，各部门Agent正在处理。\n📁 工作目录：{work_dir}",
+            "task_id": task_id,
+            "dispatched": dispatched,
+            "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+        }
+        return jsonify(response)
+
     # 对话中心API - 用户确认引入外部Agent/Skill
     @bp.route('/hr/import', methods=['POST'])
     def hr_import():

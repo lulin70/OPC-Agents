@@ -269,47 +269,98 @@ class TaskExecutor:
             "required_skills": []
         }
     
-    def _agent_execute(self, task_id: str, task_data: Dict[str, Any], 
+    def _agent_execute(self, task_id: str, task_data: Dict[str, Any],
                        agent_name: str) -> Dict[str, Any]:
-        """Agent执行任务
-        
-        Args:
-            task_id: 任务ID
-            task_data: 任务数据
-            agent_name: Agent名称
-            
-        Returns:
-            执行结果
-        """
         task_name = task_data.get("task_name", "")
         description = task_data.get("description", "")
-        
-        # 更新进度
-        self._broadcast_progress(task_id, TaskState.RUNNING, 50, "Agent正在处理任务")
-        
-        # 通过通信管理器发送任务给Agent
+        context = task_data.get("context", {})
+        work_dir = context.get("work_dir", "")
+
+        self._broadcast_progress(task_id, TaskState.RUNNING, 50, f"{agent_name}正在处理任务")
+
+        user_req = context.get("user_requirement", "")
+        sages_summary = context.get("sages_summary", "")
+        current_step = context.get("current_step", {})
+        previous_outputs = context.get("previous_outputs", [])
+
+        prev_text = ""
+        for po in previous_outputs:
+            prev_text += f"  - 步骤{po.get('step','')}: {po.get('task','')} (Agent: {po.get('agent','')})\n"
+            output_path = po.get("output", "")
+            if output_path:
+                try:
+                    with open(output_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    if len(content) > 500:
+                        content = content[:500] + "\n...(已截断)"
+                    prev_text += f"    成果物摘要: {content}\n"
+                except Exception:
+                    prev_text += f"    成果物: {output_path}\n"
+
+        exec_plan = context.get("execution_plan", [])
+        plan_text = ""
+        for step in exec_plan:
+            plan_text += f"  {step.get('step','')}. {step.get('task','')} → {step.get('department','')}\n"
+
+        full_prompt = (
+            f"你是{agent_name}，请执行以下任务。\n\n"
+            f"## 背景信息\n"
+            f"用户需求：{user_req}\n"
+            f"三贤者评估摘要：{sages_summary}\n\n"
+            f"## 执行计划\n{plan_text}\n"
+            f"## 你的任务\n"
+            f"当前步骤：{current_step.get('description', description)}\n"
+            f"预期产出物：{current_step.get('deliverable', '请产出实际成果物')}\n\n"
+            f"## 前序步骤成果\n{prev_text if prev_text else '（无前序步骤）'}\n\n"
+            f"## 要求\n"
+            f"1. 请实际执行任务，产出{current_step.get('deliverable', '成果物')}\n"
+            f"2. 产出物用markdown格式，代码用代码块\n"
+            f"3. 如需创建文件，直接输出文件内容"
+        )
+
         try:
             result = self.opc_manager.communication_manager.send_message(
                 sender="task_executor",
                 receiver=agent_name,
                 message_type="task_execution",
-                content=f"请执行以下任务:\n任务名称: {task_name}\n描述: {description}",
-                context={"task_id": task_id}
+                content=full_prompt,
+                context={"task_id": task_id, "work_dir": work_dir}
             )
-            
-            # 更新进度
-            self._broadcast_progress(task_id, TaskState.RUNNING, 60, "Agent处理中")
-            
+
+            agent_response = result.get("response", "")
+
+            if work_dir and agent_response:
+                import os
+                from datetime import datetime
+                os.makedirs(work_dir, exist_ok=True)
+                output_path = os.path.join(work_dir, f"{agent_name}_output.md")
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(f"# {agent_name} - {task_name}\n\n")
+                    f.write(agent_response)
+                self.logger.info(f"[产出物] 已写入: {output_path}")
+
+                log_path = os.path.join(work_dir, f"{agent_name}_{datetime.now().strftime('%Y%m%d')}.log")
+                with open(log_path, "w", encoding="utf-8") as f:
+                    f.write(f"[{datetime.now().isoformat()}] 开始执行: {task_name}\n")
+                    f.write(f"[{datetime.now().isoformat()}] Agent: {agent_name}\n")
+                    f.write(f"[{datetime.now().isoformat()}] 状态: 完成\n")
+                    f.write(f"[{datetime.now().isoformat()}] 产出物: {output_path}\n")
+                self.logger.info(f"[操作日志] 已写入: {log_path}")
+
+            self._broadcast_progress(task_id, TaskState.RUNNING, 90, f"{agent_name}任务完成")
+
             return {
-                "agent_response": result.get("response", ""),
-                "success": result.get("success", False)
+                "agent_response": agent_response,
+                "success": result.get("success", False),
+                "output_path": output_path if work_dir else None,
+                "log_path": log_path if work_dir else None
             }
         except Exception as e:
-            self.logger.warning(f"Agent execution failed: {e}, using fallback")
+            self.logger.warning(f"Agent execution failed: {e}")
             return {
-                "agent_response": f"任务 {task_name} 已处理",
-                "success": True,
-                "fallback": True
+                "agent_response": f"任务 {task_name} 执行失败: {e}",
+                "success": False,
+                "error": str(e)
             }
     
     def _broadcast_progress(self, task_id: str, state: TaskState, 

@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPC-Agents 管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* 顶部导航栏 */
+        .top-nav {
+            background-color: white;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .top-nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .top-nav-logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2196f3;
+        }
+        
+        .top-nav-menu {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .top-nav-item {
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333333;
+            transition: all 0.2s ease;
+        }
+        
+        .top-nav-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .top-nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* 主容器 */
+        .container-fluid {
+            height: calc(100vh - 60px);
+            padding: 0;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            height: 100%;
+            background-color: #ffffff;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px 0;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333333;
+            margin: 0;
+        }
+        
+        /* 新建任务按钮 */
+        .new-task {
+            padding: 0 20px 20px 20px;
+        }
+        
+        .new-task-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .new-task-btn:hover {
+            background-color: #1976d2;
+        }
+        
+        /* 任务历史 */
+        .task-history {
+            padding: 0 0 20px 0;
+            height: calc(100% - 160px);
+            overflow-y: auto;
+        }
+        
+        .history-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #999999;
+            text-transform: uppercase;
+            padding: 0 20px 10px 20px;
+        }
+        
+        .task-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .task-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .task-item.active {
+            background-color: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        
+        .task-actions-inline {
+            display: none;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            gap: 4px;
+        }
+        
+        .task-item:hover .task-actions-inline {
+            display: flex;
+        }
+        
+        .task-act-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            color: #666;
+            transition: all 0.15s;
+        }
+        
+        .task-act-btn:hover { background: #e0e0e0; }
+        .task-act-btn.del:hover { background: #FFEBEE; color: #f44336; }
+        .task-act-btn.dir:hover { background: #E8F5E9; color: #4CAF50; }
+        
+        .task-rename-input {
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 2px 6px;
+            width: 100%;
+            outline: none;
+        }
+        
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333333;
+            margin-bottom: 4px;
+        }
+        
+        .task-preview {
+            font-size: 12px;
+            color: #666666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .task-meta {
+            font-size: 11px;
+            color: #999999;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .task-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+        
+        .task-tag.scheduled {
+            background-color: #E8F5E8;
+            color: #388E3C;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f5f5;
+        }
+        
+        /* 任务头部 */
+        .task-header {
+            background-color: white;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .task-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333333;
+            margin: 0;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .action-btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 消息区域 */
+        .message-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 消息样式 */
+        .message {
+            margin-bottom: 16px;
+            max-width: 80%;
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background-color: #E3F2FD;
+            border-radius: 18px 18px 4px 18px;
+            padding: 12px 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .executive-message {
+            align-self: flex-start;
+            background-color: #F5F5F5;
+            border-radius: 18px 18px 18px 4px;
+            padding: 12px 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .system-message {
+            align-self: center;
+            background-color: #FFF8E1;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #FF8F00;
+            text-align: center;
+            margin: 8px 0;
+        }
+        
+        /* 任务卡片 */
+        .task-card {
+            align-self: center;
+            background-color: #F8F9FA;
+            border: 1px solid #E9ECEF;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+        
+        .task-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .task-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333333;
+        }
+        
+        .task-card-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .task-card-status.in-progress {
+            background-color: #E3F2FD;
+            color: #1976D2;
+        }
+        
+        .task-card-status.completed {
+            background-color: #E8F5E8;
+            color: #388E3C;
+        }
+        
+        .task-card-details {
+            font-size: 14px;
+            color: #666666;
+            margin-bottom: 12px;
+        }
+        
+        .task-card-progress {
+            margin-top: 12px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #E9ECEF;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 12px;
+            color: #666666;
+            text-align: right;
+        }
+        
+        /* 输入区域 */
+        .input-area {
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .input-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-field {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: none;
+            min-height: 48px;
+            max-height: 120px;
+        }
+        
+        .send-btn {
+            padding: 0 24px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .send-btn:hover {
+            background-color: #1976d2;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333333;
+        }
+        
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999999;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333333;
+            margin-bottom: 5px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background-color: #2196f3;
+            color: white;
+            border-color: #2196f3;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1976d2;
+        }
+        
+        .btn-secondary {
+            background-color: #f8f9fa;
+            color: #333333;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e9ecef;
+        }
+        
+        /* 加载动画 */
+        .loading-indicator {
+            align-self: flex-start;
+            padding: 12px 16px;
+            display: none;
+        }
+        
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #2196f3;
+            animation: loading-bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes loading-bounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* 总裁办消息头像 */
+        .executive-message .msg-avatar {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+            text-align: center;
+            line-height: 28px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        
+        .executive-message .msg-body {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .executive-message .msg-text {
+            flex: 1;
+        }
+        
+        .executive-message .msg-text p {
+            margin: 0;
+        }
+        
+        .executive-message .msg-text ul, .executive-message .msg-text ol {
+            margin: 4px 0;
+            padding-left: 20px;
+        }
+        
+        .executive-message .msg-text strong {
+            color: #1565c0;
+        }
+        
+        /* HR推荐卡片 */
+        .hr-recommendation {
+            align-self: center;
+            background-color: #FFF3E0;
+            border: 1px solid #FFE0B2;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            width: 90%;
+            max-width: 600px;
+        }
+        
+        .hr-recommendation-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #E65100;
+            margin-bottom: 8px;
+        }
+        
+        .hr-recommendation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #FFE0B2;
+            font-size: 13px;
+        }
+        
+        .hr-recommendation-item:last-child {
+            border-bottom: none;
+        }
+        
+        .import-btn {
+            padding: 3px 10px;
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .import-btn:hover {
+            background-color: #F57C00;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-nav">
+        <div class="top-nav-left">
+            <div class="top-nav-logo">OPC-Agents</div>
+            <div class="top-nav-menu">
+                <div class="top-nav-item" onclick="window.location.href='/department/总裁办'">总裁办</div>
+                <div class="top-nav-item" onclick="window.location.href='/department/人事部'">人事部</div>
+                <div class="top-nav-item" onclick="window.location.href='/department/财务部'">财务部</div>
+                <div class="top-nav-item" onclick="window.location.href='/department/市场部'">市场部</div>
+                <div class="top-nav-item" onclick="window.location.href='/department/产品部'">产品部</div>
+                <div class="top-nav-item" onclick="window.location.href='/agent_management'">代理管理</div>
+            </div>
+        </div>
+        <div class="top-nav-right">
+            <div class="top-nav-item" onclick="window.location.href='/agent_management'">代理管理</div>
+            <div class="top-nav-item" onclick="window.location.href='/finance'">财务部</div>
+            <div class="top-nav-item" onclick="window.location.href='/monitoring'">系统监控</div>
+        </div>
+    </div>
+    
+    <div class="container-fluid">
+        <div class="row h-100">
+            <!-- 侧边栏 - 任务列表 -->
+            <div class="col-md-3 sidebar">
+                <div class="sidebar-header">
+                    <h1>任务管理</h1>
+                </div>
+                
+                <!-- 新建任务按钮 -->
+                <div class="new-task">
+                    <button class="new-task-btn" id="new-task-btn">
+                        ➕ 新建任务
+                    </button>
+                </div>
+                
+                <div class="task-history">
+                    <!-- 最近任务 (按最后更新时间排序) -->
+                    <div class="history-section">
+                        <div class="section-title">最近任务</div>
+                        {% if tasks %}
+                            {% for task in tasks|sort(attribute='updated_at', reverse=true) %}
+                                <div class="task-item {% if loop.first %}active{% endif %}" data-task-id="{{ task.id }}">
+                                    <div class="task-title">{{ task.name }}</div>
+                                    <div class="task-preview">{{ task.name }}</div>
+                                    <div class="task-meta">
+                                        <span>{{ task.updated_at }} · {{ task.status }}</span>
+                                    </div>
+                                    <div class="task-actions-inline">
+                                        <button class="task-act-btn" title="重命名" onclick="event.stopPropagation();renameTask('{{ task.id }}','{{ task.name }}')">✏️</button>
+                                        <button class="task-act-btn dir" title="打开工作目录" onclick="event.stopPropagation();openWorkDir('{{ task.id }}')">📁</button>
+                                        <button class="task-act-btn del" title="删除任务" onclick="event.stopPropagation();deleteTask('{{ task.id }}','{{ task.name }}')">🗑️</button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="task-item">
+                                <div class="task-title">无任务</div>
+                                <div class="task-preview">请创建新任务</div>
+                                <div class="task-meta">
+                                    <span>--</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 定时任务 -->
+                    <div class="history-section">
+                        <div class="section-title">定时任务</div>
+                        <div class="task-item" data-task-id="scheduled-1">
+                            <div class="task-title">每日市场分析</div>
+                            <div class="task-preview">每天早上8点生成市场分析报告</div>
+                            <div class="task-meta">
+                                <span>每天 08:00</span>
+                                <span class="task-tag scheduled">定时</span>
+                            </div>
+                        </div>
+                        <div class="task-item" data-task-id="scheduled-2">
+                            <div class="task-title">每周团队会议</div>
+                            <div class="task-preview">每周一上午10点安排团队会议</div>
+                            <div class="task-meta">
+                                <span>每周一 10:00</span>
+                                <span class="task-tag scheduled">定时</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 主内容区 - 任务详情 -->
+            <div class="col-md-9 main-content">
+                <!-- 任务头部 -->
+                <div class="task-header">
+                    <h2>产品发布计划</h2>
+                    <div class="task-actions">
+                        <button class="action-btn">编辑任务</button>
+                        <button class="action-btn">设置定时</button>
+                        <button class="action-btn">删除任务</button>
+                    </div>
+                </div>
+                
+                <!-- 消息区域 -->
+                <div class="message-area" id="message-area">
+                    <div class="message system-message">
+                        欢迎使用OPC-Agents一人公司管理系统。请在下方输入任务指令，总裁办将为您处理。
+                    </div>
+                </div>
+                
+                <!-- 输入区域 -->
+                <div class="input-area">
+                    <form class="input-form" id="message-form">
+                        <textarea class="input-field" id="message-input" placeholder="输入消息..." rows="1"></textarea>
+                        <button type="submit" class="send-btn">发送</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新建任务模态框 -->
+    <div class="modal" id="new-task-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">新建任务</div>
+                <span class="close" id="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">任务名称</label>
+                    <input type="text" class="form-input" id="task-name" placeholder="请输入任务名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">任务描述</label>
+                    <textarea class="form-input" id="task-description" placeholder="请输入任务描述" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">部门</label>
+                    <select class="form-select" id="task-department">
+                        <option value="">请选择部门</option>
+                        <option value="市场部">市场部</option>
+                        <option value="产品部">产品部</option>
+                        <option value="项目管理部">项目管理部</option>
+                        <option value="营销部">营销部</option>
+                        <option value="资源部">资源部</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">任务类型</label>
+                    <select class="form-select" id="task-type">
+                        <option value="normal">普通任务</option>
+                        <option value="scheduled">定时任务</option>
+                    </select>
+                </div>
+                <div class="form-group" id="schedule-section" style="display: none;">
+                    <label class="form-label">定时设置</label>
+                    <input type="datetime-local" class="form-input" id="task-schedule">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-task">取消</button>
+                <button class="btn btn-primary" id="create-task">创建任务</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 自动调整输入框高度
+        $(document).ready(function() {
+            $('#message-input').on('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // 发送消息
+            $('#message-form').on('submit', function(e) {
+                e.preventDefault();
+                var message = $('#message-input').val().trim();
+                if (message) {
+                    var now = new Date();
+                    var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+                    
+                    var userMessageHtml = `
+                        <div class="message user-message">
+                            <p>${message}</p>
+                            <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${timeString}</small>
+                        </div>
+                    `;
+                    $('#message-area').append(userMessageHtml);
+                    
+                    // 显示加载动画
+                    var loadingHtml = `
+                        <div class="loading-indicator" id="loading-indicator">
+                            <div class="loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <span style="font-size: 12px; color: #999; margin-left: 8px;">总裁办处理中...</span>
+                        </div>
+                    `;
+                    $('#message-area').append(loadingHtml);
+                    $('#loading-indicator').show();
+                    
+                    $('#message-input').val('').height('auto');
+                    $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                    
+                    var activeTaskItem = $('.task-item.active');
+                    if (!activeTaskItem.length) {
+                        activeTaskItem = $('.task-item:first');
+                        activeTaskItem.addClass('active');
+                    }
+                    var activeTaskId = activeTaskItem.data('task-id');
+                    
+                    if (!activeTaskId) {
+                        $('#loading-indicator').remove();
+                        var executiveMessageHtml = `
+                            <div class="message executive-message">
+                                <div class="msg-body">
+                                    <span class="msg-avatar">总</span>
+                                    <div class="msg-text">
+                                        <p>请先创建一个任务，或选择左侧已有任务。</p>
+                                    </div>
+                                </div>
+                                <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${timeString}</small>
+                            </div>
+                        `;
+                        $('#message-area').append(executiveMessageHtml);
+                        $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                        return;
+                    }
+                    
+                    $.ajax({
+                        url: `/api/chat/${activeTaskId}/message`,
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ message: message }),
+                        success: function(response) {
+                            $('#loading-indicator').remove();
+                            
+                            var content = response.content || '处理完成';
+                            var renderedContent = typeof marked !== 'undefined' ? marked.parse(content) : content.replace(/\n/g, '<br>');
+                            
+                            var executiveMessageHtml = `
+                                <div class="message executive-message">
+                                    <div class="msg-body">
+                                        <span class="msg-avatar">总</span>
+                                        <div class="msg-text">${renderedContent}</div>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${timeString}</small>
+                                </div>
+                            `;
+                            $('#message-area').append(executiveMessageHtml);
+                            
+                            // 展示HR推荐
+                            if (response.hr_recommendations && response.hr_recommendations.length > 0) {
+                                var hrHtml = '<div class="hr-recommendation">';
+                                hrHtml += '<div class="hr-recommendation-title">⚠️ 人事部建议 - 需要补充资源</div>';
+                                response.hr_recommendations.forEach(function(rec) {
+                                    if (rec.external_candidates && rec.external_candidates.length > 0) {
+                                        rec.external_candidates.forEach(function(cand) {
+                                            hrHtml += `
+                                                <div class="hr-recommendation-item">
+                                                    <span>${rec.task} → ${cand.agent_name} (${cand.stars}⭐)</span>
+                                                    <button class="import-btn" onclick="importAgent('${cand.repo_full_name}', '${rec.department}')">引入</button>
+                                                </div>
+                                            `;
+                                        });
+                                    }
+                                });
+                                hrHtml += '</div>';
+                                $('#message-area').append(hrHtml);
+                            }
+                            
+                            $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                        },
+                        error: function(xhr, status, error) {
+                            $('#loading-indicator').remove();
+                            var errorMsg = '处理消息时出现错误';
+                            try { errorMsg = JSON.parse(xhr.responseText).error || errorMsg; } catch(e) {}
+                            var executiveMessageHtml = `
+                                <div class="message executive-message">
+                                    <div class="msg-body">
+                                        <span class="msg-avatar">总</span>
+                                        <div class="msg-text"><p>${errorMsg}</p></div>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${timeString}</small>
+                                </div>
+                            `;
+                            $('#message-area').append(executiveMessageHtml);
+                            $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                        }
+                    });
+                }
+            });
+            
+            // 引入Agent的函数
+            window.renameTask = function(taskId, oldName) {
+                var titleEl = $('[data-task-id="' + taskId + '"] .task-title');
+                var currentName = titleEl.text();
+                titleEl.html('<input class="task-rename-input" value="' + currentName + '">');
+                var input = titleEl.find('input');
+                input.focus().select();
+                input.on('blur', function() { saveRename(taskId, input.val()); });
+                input.on('keydown', function(e) {
+                    if (e.key === 'Enter') { e.preventDefault(); saveRename(taskId, input.val()); }
+                    if (e.key === 'Escape') { titleEl.text(currentName); }
+                });
+            };
+            
+            function saveRename(taskId, newName) {
+                newName = newName.trim();
+                if (!newName) return;
+                $.ajax({
+                    url: '/api/tasks/' + taskId + '/rename',
+                    method: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ name: newName }),
+                    success: function() {
+                        $('[data-task-id="' + taskId + '"] .task-title').text(newName);
+                        $('[data-task-id="' + taskId + '"] .task-preview').text(newName);
+                    }
+                });
+            }
+            
+            window.deleteTask = function(taskId, taskName) {
+                if (!confirm('确认删除任务「' + taskName + '」？\n工作目录及所有产出物将一并删除。')) return;
+                $.ajax({
+                    url: '/api/tasks/' + taskId,
+                    method: 'DELETE',
+                    success: function() {
+                        $('[data-task-id="' + taskId + '"]').remove();
+                        if ($('.task-item.active').length === 0) {
+                            $('.task-item:first').addClass('active');
+                        }
+                    }
+                });
+            };
+            
+            window.openWorkDir = function(taskId) {
+                $.ajax({
+                    url: '/api/tasks/' + taskId + '/open_workdir',
+                    method: 'POST',
+                    success: function(r) {},
+                    error: function(xhr) {
+                        var msg = '无法打开工作目录';
+                        try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+                        alert(msg);
+                    }
+                });
+            };
+            
+            window.importAgent = function(repo, dept) {
+                $.ajax({
+                    url: '/api/hr/import',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ type: 'agent', repo_full_name: repo, department: dept }),
+                    success: function(result) {
+                        var now = new Date();
+                        var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+                        if (result.success) {
+                            var msg = '✅ Agent引入成功：' + repo;
+                            if (result.verification && result.verification.trusted) {
+                                msg += ' (可信来源)';
+                            } else if (result.verification && result.verification.code_scan) {
+                                var scan = result.verification.code_scan;
+                                msg += ' | 代码扫描: ' + (scan.risk_level || 'N/A') + '风险, 扫描' + (scan.files_scanned || 0) + '个文件';
+                            }
+                            var html = '<div class="message system-message">' + msg + '</div>';
+                            $('#message-area').append(html);
+                        } else if (result.needs_confirmation) {
+                            var v = result.verification || {};
+                            var secScore = (v.security_score * 100).toFixed(0);
+                            var relScore = (v.reliability_score * 100).toFixed(0);
+                            var scanInfo = '';
+                            if (v.code_scan && v.code_scan.scanned) {
+                                scanInfo = '<br><b>代码扫描:</b> ' + v.code_scan.risk_level + '风险, 扫描' + v.code_scan.files_scanned + '个文件';
+                                if (v.code_scan.issues.length > 0) {
+                                    scanInfo += '<br><b>发现的问题:</b><ul style="margin:4px 0;padding-left:16px;color:#e65100">';
+                                    v.code_scan.issues.forEach(function(i) { scanInfo += '<li>' + i + '</li>'; });
+                                    scanInfo += '</ul>';
+                                }
+                            }
+                            var issuesHtml = '';
+                            if (v.issues && v.issues.length > 0) {
+                                issuesHtml = '<br><b>问题:</b><ul style="margin:4px 0;padding-left:16px;color:#c62828">';
+                                v.issues.forEach(function(i) { issuesHtml += '<li>' + i + '</li>'; });
+                                issuesHtml += '</ul>';
+                            }
+                            var html = '<div class="message system-message" style="border-left:3px solid #FF9800;padding:8px 12px;">' +
+                                '⚠️ <b>安全验证未通过</b>：' + repo +
+                                '<br>安全评分: <b>' + secScore + '%</b> | 可靠性评分: <b>' + relScore + '%</b>' +
+                                scanInfo + issuesHtml +
+                                '<br><button onclick="forceImport(\'' + repo + '\',\'' + dept + '\')" style="margin-top:6px;padding:4px 12px;background:#FF9800;color:#fff;border:none;border-radius:4px;cursor:pointer;">确认导入（忽略风险）</button>' +
+                                '</div>';
+                            $('#message-area').append(html);
+                        } else {
+                            var html = '<div class="message system-message">❌ 引入失败：' + (result.error || '') + '</div>';
+                            $('#message-area').append(html);
+                        }
+                        $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                    }
+                });
+            };
+
+            window.forceImport = function(repo, dept) {
+                $.ajax({
+                    url: '/api/hr/import',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ type: 'agent', repo_full_name: repo, department: dept, force: true }),
+                    success: function(result) {
+                        var html = result.success
+                            ? '<div class="message system-message">✅ Agent强制导入成功：' + repo + '</div>'
+                            : '<div class="message system-message">❌ 导入失败：' + (result.error || '') + '</div>';
+                        $('#message-area').append(html);
+                        $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                    }
+                });
+            };
+
+            window.confirmPlan = function(taskId) {
+                $.ajax({
+                    url: '/api/chat/' + taskId + '/confirm_plan',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({}),
+                    success: function(result) {
+                        var now = new Date();
+                        var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+                        var html = '<div class="message executive-message"><p>' + (result.content || '计划已确认') + '</p>' +
+                            '<small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">' + timeString + '</small></div>';
+                        $('#message-area').append(html);
+                        $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                    },
+                    error: function(xhr) {
+                        var html = '<div class="message system-message">❌ 确认失败：' + (xhr.responseJSON?.error || '未知错误') + '</div>';
+                        $('#message-area').append(html);
+                        $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                    }
+                });
+            };
+
+            window.rejectPlan = function(taskId) {
+                var html = '<div class="message system-message">❌ 计划已取消。您可以输入修改意见，总裁办将重新调整计划。</div>';
+                $('#message-area').append(html);
+                $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+            };
+            
+            // SSE实时进度监听
+            if (typeof(EventSource) !== 'undefined') {
+                var eventSource = new EventSource('/api/progress/stream');
+                eventSource.onmessage = function(event) {
+                    try {
+                        var data = JSON.parse(event.data);
+                        if (data.type === 'progress' && data.tasks && data.tasks.length > 0) {
+                            data.tasks.forEach(function(task) {
+                                var now = new Date();
+                                var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+                                var html = `
+                                    <div class="message system-message" style="font-size:12px;">
+                                        📊 进度更新: ${task.task_name} - ${task.progress}% (${task.assigned_to})
+                                    </div>
+                                `;
+                                $('#message-area').append(html);
+                                $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                            });
+                        }
+                    } catch(e) {}
+                };
+                eventSource.onerror = function() {
+                    eventSource.close();
+                };
+            }
+            
+            // 任务项点击事件
+            $('.task-item').on('click', function() {
+                $('.task-item').removeClass('active');
+                $(this).addClass('active');
+                
+                // 调用后端API获取任务详情
+                var taskId = $(this).data('task-id');
+                console.log('切换到任务:', taskId);
+                
+                // 更新任务标题
+                var taskTitle = $(this).find('.task-title').text();
+                $('.task-header h2').text(taskTitle);
+                
+                // 调用后端API获取任务详情
+                $.ajax({
+                    url: `/api/chat/${taskId}`,
+                    method: 'GET',
+                    success: function(response) {
+                        // 清空消息区域
+                        $('#message-area').empty();
+                        
+                        // 添加消息到消息区域
+                        response.messages.forEach(function(msg) {
+                            var messageHtml = '';
+                            var msgTime = new Date(msg.timestamp);
+                            var msgTimeString = msgTime.getHours() + ':' + (msgTime.getMinutes() < 10 ? '0' : '') + msgTime.getMinutes();
+                            
+                            if (msg.type === 'user') {
+                                messageHtml = `
+                                    <div class="message user-message">
+                                        <p>${msg.content}</p>
+                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                    </div>
+                                `;
+                            } else if (msg.type === 'executive') {
+                                messageHtml = `
+                                    <div class="message executive-message">
+                                        <p>${msg.content}</p>
+                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                    </div>
+                                `;
+                            } else if (msg.type === 'clarify') {
+                                messageHtml = `
+                                    <div class="message system-message" style="border-left: 3px solid #2196F3; padding: 8px 12px;">
+                                        <div style="font-weight:bold; color:#2196F3; margin-bottom:4px;">🔍 总裁办追问</div>
+                                        <p>${msg.content}</p>
+                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                    </div>
+                                `;
+                            } else if (msg.type === 'plan_pending') {
+                                var taskId = msg.task_id || '';
+                                messageHtml = `
+                                    <div class="message system-message" style="border-left: 3px solid #4CAF50; padding: 10px 14px;">
+                                        <div style="font-weight:bold; color:#4CAF50; margin-bottom:6px;">📋 执行计划待确认</div>
+                                        <div style="white-space:pre-wrap;">${msg.content}</div>
+                                        <div style="margin-top:10px;">
+                                            <button onclick="confirmPlan('${taskId}')" style="padding:6px 16px;background:#4CAF50;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;">✅ 确认执行</button>
+                                            <button onclick="rejectPlan('${taskId}')" style="padding:6px 16px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;">❌ 取消</button>
+                                        </div>
+                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                    </div>
+                                `;
+                            } else if (msg.type === 'system') {
+                                messageHtml = `
+                                    <div class="message system-message">
+                                        ${msg.content}
+                                    </div>
+                                `;
+                            } else if (msg.type === 'task') {
+                                messageHtml = `
+                                    <div class="task-card">
+                                        <div class="task-card-header">
+                                            <div class="task-card-title">${msg.content}</div>
+                                            <div class="task-card-status ${msg.status}">${msg.status}</div>
+                                        </div>
+                                        <div class="task-card-details">
+                                            <strong>部门：</strong>${msg.department}<br>
+                                            <strong>代理：</strong>${msg.agent}
+                                        </div>
+                                        <div class="task-card-progress">
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width: ${msg.progress}%;"></div>
+                                            </div>
+                                            <div class="progress-text">${msg.progress}%</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                            
+                            if (messageHtml) {
+                                $('#message-area').append(messageHtml);
+                            }
+                        });
+                        
+                        // 滚动到底部
+                        $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                    },
+                    error: function() {
+                        // 清空消息区域
+                        $('#message-area').empty();
+                        
+                        // 添加默认消息
+                        var defaultMessageHtml = `
+                            <div class="message system-message">
+                                加载任务详情中...
+                            </div>
+                        `;
+                        $('#message-area').append(defaultMessageHtml);
+                    }
+                });
+            });
+            
+            // 新建任务按钮点击事件
+            $('#new-task-btn').on('click', function() {
+                $('#new-task-modal').css('display', 'block');
+            });
+            
+            // 关闭模态框
+            $('#close-modal, #cancel-task').on('click', function() {
+                $('#new-task-modal').css('display', 'none');
+            });
+            
+            // 点击模态框外部关闭
+            $(window).on('click', function(event) {
+                if (event.target.id === 'new-task-modal') {
+                    $('#new-task-modal').css('display', 'none');
+                }
+            });
+            
+            // 任务类型变化
+            $('#task-type').on('change', function() {
+                if ($(this).val() === 'scheduled') {
+                    $('#schedule-section').show();
+                } else {
+                    $('#schedule-section').hide();
+                }
+            });
+            
+            // 创建任务
+            $('#create-task').on('click', function() {
+                var taskName = $('#task-name').val().trim();
+                var taskDescription = $('#task-description').val().trim();
+                var taskDepartment = $('#task-department').val();
+                var taskType = $('#task-type').val();
+                var taskSchedule = $('#task-schedule').val();
+                
+                if (taskName && taskDepartment) {
+                    console.log('创建任务:', {
+                        name: taskName,
+                        description: taskDescription,
+                        department: taskDepartment,
+                        type: taskType,
+                        schedule: taskSchedule
+                    });
+                    
+                    // 调用后端API创建任务
+                    $.ajax({
+                        url: '/api/tasks',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            task_name: taskName,
+                            agent: taskDepartment,
+                            status: 'in_progress'
+                        }),
+                        success: function(response) {
+                            // 关闭模态框
+                            $('#new-task-modal').css('display', 'none');
+                            
+                            // 清空表单
+                            $('#task-name').val('');
+                            $('#task-description').val('');
+                            $('#task-department').val('');
+                            $('#task-type').val('normal');
+                            $('#task-schedule').val('');
+                            $('#schedule-section').hide();
+                            
+                            // 添加新任务到列表
+                            var now = new Date();
+                            var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+                            var formattedDate = now.toISOString().slice(0, 10) + ' ' + timeString;
+                            
+                            var newTaskHtml = `
+                                <div class="task-item" data-task-id="${response.task_id}">
+                                    <div class="task-title">${taskName}</div>
+                                    <div class="task-preview">${taskDescription || '无描述'}</div>
+                                    <div class="task-meta">
+                                        <span>${formattedDate} · in_progress</span>
+                                        ${taskType === 'scheduled' ? '<span class="task-tag scheduled">定时</span>' : ''}
+                                    </div>
+                                    <div class="task-actions-inline">
+                                        <button class="task-act-btn" title="重命名" onclick="event.stopPropagation();renameTask('${response.task_id}','${taskName}')">✏️</button>
+                                        <button class="task-act-btn dir" title="打开工作目录" onclick="event.stopPropagation();openWorkDir('${response.task_id}')">📁</button>
+                                        <button class="task-act-btn del" title="删除任务" onclick="event.stopPropagation();deleteTask('${response.task_id}','${taskName}')">🗑️</button>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // 添加到最近任务列表顶部
+                            $('.history-section:first .section-title').after(newTaskHtml);
+                            
+                            // 绑定新任务的点击事件
+                            $('.task-item').off('click').on('click', function() {
+                                $('.task-item').removeClass('active');
+                                $(this).addClass('active');
+                                
+                                // 调用后端API获取任务详情
+                                var taskId = $(this).data('task-id');
+                                console.log('切换到任务:', taskId);
+                                
+                                // 更新任务标题
+                                var taskTitle = $(this).find('.task-title').text();
+                                $('.task-header h2').text(taskTitle);
+                                
+                                // 调用后端API获取任务详情
+                                $.ajax({
+                                    url: `/api/chat/${taskId}`,
+                                    method: 'GET',
+                                    success: function(response) {
+                                        // 清空消息区域
+                                        $('#message-area').empty();
+                                        
+                                        // 添加消息到消息区域
+                                        response.messages.forEach(function(msg) {
+                                            var messageHtml = '';
+                                            var msgTime = new Date(msg.timestamp);
+                                            var msgTimeString = msgTime.getHours() + ':' + (msgTime.getMinutes() < 10 ? '0' : '') + msgTime.getMinutes();
+                                            
+                                            if (msg.type === 'user') {
+                                                messageHtml = `
+                                                    <div class="message user-message">
+                                                        <p>${msg.content}</p>
+                                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                                    </div>
+                                                `;
+                                            } else if (msg.type === 'executive') {
+                                                messageHtml = `
+                                                    <div class="message executive-message">
+                                                        <p>${msg.content}</p>
+                                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                                    </div>
+                                                `;
+                                            } else if (msg.type === 'clarify') {
+                                                messageHtml = `
+                                                    <div class="message system-message" style="border-left: 3px solid #2196F3; padding: 8px 12px;">
+                                                        <div style="font-weight:bold; color:#2196F3; margin-bottom:4px;">🔍 总裁办追问</div>
+                                                        <p>${msg.content}</p>
+                                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                                    </div>
+                                                `;
+                                            } else if (msg.type === 'plan_pending') {
+                                                var taskId = msg.task_id || '';
+                                                messageHtml = `
+                                                    <div class="message system-message" style="border-left: 3px solid #4CAF50; padding: 10px 14px;">
+                                                        <div style="font-weight:bold; color:#4CAF50; margin-bottom:6px;">📋 执行计划待确认</div>
+                                                        <div style="white-space:pre-wrap;">${msg.content}</div>
+                                                        <div style="margin-top:10px;">
+                                                            <button onclick="confirmPlan('${taskId}')" style="padding:6px 16px;background:#4CAF50;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;">✅ 确认执行</button>
+                                                            <button onclick="rejectPlan('${taskId}')" style="padding:6px 16px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;">❌ 取消</button>
+                                                        </div>
+                                                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${msgTimeString}</small>
+                                                    </div>
+                                                `;
+                                            } else if (msg.type === 'system') {
+                                                messageHtml = `
+                                                    <div class="message system-message">
+                                                        ${msg.content}
+                                                    </div>
+                                                `;
+                                            } else if (msg.type === 'task') {
+                                                messageHtml = `
+                                                    <div class="task-card">
+                                                        <div class="task-card-header">
+                                                            <div class="task-card-title">${msg.content}</div>
+                                                            <div class="task-card-status ${msg.status}">${msg.status}</div>
+                                                        </div>
+                                                        <div class="task-card-details">
+                                                            <strong>部门：</strong>${msg.department}<br>
+                                                            <strong>代理：</strong>${msg.agent}
+                                                        </div>
+                                                        <div class="task-card-progress">
+                                                            <div class="progress-bar">
+                                                                <div class="progress-fill" style="width: ${msg.progress}%;"></div>
+                                                            </div>
+                                                            <div class="progress-text">${msg.progress}%</div>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }
+                                            
+                                            if (messageHtml) {
+                                                $('#message-area').append(messageHtml);
+                                            }
+                                        });
+                                        
+                                        // 滚动到底部
+                                        $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                                    },
+                                    error: function() {
+                                        // 清空消息区域
+                                        $('#message-area').empty();
+                                        
+                                        // 添加默认消息
+                                        var defaultMessageHtml = `
+                                            <div class="message system-message">
+                                                加载任务详情中...
+                                            </div>
+                                        `;
+                                        $('#message-area').append(defaultMessageHtml);
+                                    }
+                                });
+                            });
+                        },
+                        error: function() {
+                            // 关闭模态框
+                            $('#new-task-modal').css('display', 'none');
+                            
+                            // 清空表单
+                            $('#task-name').val('');
+                            $('#task-description').val('');
+                            $('#task-department').val('');
+                            $('#task-type').val('normal');
+                            $('#task-schedule').val('');
+                            $('#schedule-section').hide();
+                            
+                            // 模拟添加新任务到列表
+                            var now = new Date();
+                            var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+                            var formattedDate = now.toISOString().slice(0, 10) + ' ' + timeString;
+                            
+                            var newTaskHtml = `
+                                <div class="task-item" data-task-id="${Math.floor(Math.random() * 1000)}">
+                                    <div class="task-title">${taskName}</div>
+                                    <div class="task-preview">${taskDescription || '无描述'}</div>
+                                    <div class="task-meta">
+                                        <span>${formattedDate} · 进行中</span>
+                                        ${taskType === 'scheduled' ? '<span class="task-tag scheduled">定时</span>' : ''}
+                                    </div>
+                                    <div class="task-actions-inline">
+                                        <button class="task-act-btn" title="重命名" onclick="event.stopPropagation();renameTask(this.closest('.task-item').dataset.taskId,'${taskName}')">✏️</button>
+                                        <button class="task-act-btn dir" title="打开工作目录" onclick="event.stopPropagation();openWorkDir(this.closest('.task-item').dataset.taskId)">📁</button>
+                                        <button class="task-act-btn del" title="删除任务" onclick="event.stopPropagation();deleteTask(this.closest('.task-item').dataset.taskId,'${taskName}')">🗑️</button>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // 添加到最近任务列表顶部
+                            $('.history-section:first .section-title').after(newTaskHtml);
+                            
+                            // 绑定新任务的点击事件
+                            $('.task-item').off('click').on('click', function() {
+                                $('.task-item').removeClass('active');
+                                $(this).addClass('active');
+                                
+                                // 更新任务标题
+                                var taskTitle = $(this).find('.task-title').text();
+                                $('.task-header h2').text(taskTitle);
+                                
+                                // 清空消息区域
+                                $('#message-area').empty();
+                                
+                                // 添加默认消息
+                                var defaultMessageHtml = `
+                                    <div class="message system-message">
+                                        加载任务详情中...
+                                    </div>
+                                `;
+                                $('#message-area').append(defaultMessageHtml);
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // 顶部导航栏点击事件
+            $('.top-nav-item').on('click', function() {
+                console.log('导航到:', $(this).text());
+            });
+            
+            // 初始滚动到底部
+            $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+        });
+    </script>
+</body>
+</html>

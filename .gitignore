@@ -34,7 +34,6 @@ logs
 agents_cache.json
 
 # Generated files
-templates/
 *.pptx
 *.docx
 
