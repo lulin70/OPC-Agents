@@ -368,18 +368,34 @@ def register_routes(manager):
             if agent:
                 manager.task_manager.assign_task_to_agent(sub_task_id, agent, dept)
 
+            enriched_previous = []
+            for po in previous_outputs:
+                entry = {"step": po["step"], "task": po["task"], "agent": po["agent"], "output_path": po["output_path"]}
+                if po.get("output_path") and os.path.exists(po["output_path"]):
+                    try:
+                        with open(po["output_path"], "r", encoding="utf-8") as f:
+                            content = f.read()
+                        if len(content) > 1000:
+                            content = content[:1000] + "\n...(已截断)"
+                        entry["output_content"] = content
+                    except Exception:
+                        entry["output_content"] = f"(无法读取: {po['output_path']})"
+                else:
+                    entry["output_content"] = "(无产出物)"
+                enriched_previous.append(entry)
+
             task_context = {
                 "user_requirement": message,
                 "sages_summary": synthesis.get('summary', ''),
                 "execution_plan": execution_steps,
                 "current_step": step,
-                "previous_outputs": previous_outputs,
+                "previous_outputs": enriched_previous,
                 "work_dir": work_dir,
                 "step_index": i
             }
 
             try:
-                manager.task_executor.execute_task(
+                manager.task_executor.submit_task(
                     sub_task_id,
                     {
                         "task_name": sub_task_name,
@@ -389,9 +405,15 @@ def register_routes(manager):
                         "context": task_context
                     }
                 )
-                previous_outputs.append({"step": i+1, "task": sub_task_name, "agent": agent, "output": f"{work_dir}/{agent}_output.md" if agent and work_dir else ""})
+                output_path = f"{work_dir}/{agent}_output.md" if agent and work_dir else ""
+                previous_outputs.append({
+                    "step": i+1,
+                    "task": sub_task_name,
+                    "agent": agent,
+                    "output_path": output_path
+                })
             except Exception as exec_err:
-                print(f"[任务执行] 启动失败 {sub_task_id}: {exec_err}")
+                print(f"[任务执行] 提交失败 {sub_task_id}: {exec_err}")
 
             dispatched.append({
                 "task_id": sub_task_id,

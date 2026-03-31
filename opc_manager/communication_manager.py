@@ -185,21 +185,22 @@ class CommunicationManager:
         """
         self.logger.info(f"消息从 {message['sender']} 发送到 {receiver}: {message['type']}")
         self.logger.debug(f"内容: {message['content'][:100]}...")
-        
-        # 直接使用配置的大模型进行对话
+
         try:
-            # 构建消息内容
-            prompt = f"你是{receiver}，收到来自{message['sender']}的消息：\n{message['content']}\n请根据你的角色给出响应。"
-            
-            # 调用大模型获取响应
+            msg_type = message.get('type', 'general')
+            context = message.get('context', {})
+
+            if msg_type == 'task_execution':
+                prompt = message['content']
+            else:
+                prompt = f"你是{receiver}，收到来自{message['sender']}的消息：\n{message['content']}\n请根据你的角色给出响应。"
+
             if self.model_manager:
                 response = self.model_manager.generate_response(prompt, model="glm")
             else:
-                # 如果ModelManager未初始化，使用默认响应
                 self.logger.warning("ModelManager未初始化，使用默认响应")
                 response = f"收到来自{message['sender']}的消息，正在处理中..."
-            
-            # 检查响应是否有效
+
             if not response:
                 self.logger.warning("大模型调用失败，使用默认响应")
                 response = f"收到来自{message['sender']}的消息，正在处理中..."
