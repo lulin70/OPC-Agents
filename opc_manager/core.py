@@ -268,7 +268,7 @@ class OPCManager:
                 f"  ]\n"
                 f"}}\n\n只输出JSON。"
             )
-            response = self.model_manager.generate_response(prompt, model="glm")
+            response = self.communication_manager.model_manager.generate_response(prompt, model="glm")
             import re, json
             json_match = re.search(r'\{[\s\S]*\}', response)
             if json_match:

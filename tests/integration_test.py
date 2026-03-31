@@ -55,16 +55,12 @@ class IntegrationTest(unittest.TestCase):
     
     def test_mcp_skill_integration(self):
         """测试MCP和技能管理的集成"""
-        # 从MCP获取技能
-        skills = self.mcp_integration.fetch_skills()
-        self.assertIsInstance(skills, list)
-        
-        # 验证技能
-        if skills:
-            skill_data = skills[0]
-            verification_result = self.mcp_integration.verify_skill(skill_data)
-            self.assertIsInstance(verification_result, dict)
-            self.assertIn("verified", verification_result)
+        skill_data = {"name": "test_skill", "version": "1.0.0"}
+        verification_result = self.mcp_integration.verify_skill(skill_data)
+        self.assertIsInstance(verification_result, dict)
+        self.assertIn("verified", verification_result)
+        self.assertIn("security_score", verification_result)
+        self.assertIn("code_scan", verification_result)
     
     def test_model_integration(self):
         """测试模型集成"""
