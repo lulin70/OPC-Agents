@@ -61,15 +61,12 @@ class OPCManager:
         from opc_finance.finance_manager import FinanceManager
         self.finance_manager = FinanceManager(communication_manager=self.communication_manager)
         
-        # 初始化人事部增强
-        from opc_hr.hr_enhancement import HREnhancement
-        self.hr_enhancement = HREnhancement(self)
-
         from opc_manager.completion_checker import CompletionChecker
         self.completion_checker = CompletionChecker()
 
+        from opc_manager.scheduler import TaskScheduler
         from opc_manager.dag_scheduler import DAGScheduler
-        self._dag_schedulers: dict = {}
+        self._schedulers: Dict[str, TaskScheduler] = {}
 
         from opc_manager.checkpoint_manager import CheckpointManager
         self.checkpoint_manager = CheckpointManager()
@@ -78,8 +75,19 @@ class OPCManager:
         self.global_context = GlobalContext()
         self.context_synchronizer = ContextSynchronizer()
 
+        from opc_manager.event_bus import EventBus
+        self.event_bus = EventBus()
+        
+        # 初始化人事部增强
+        from opc_hr.hr_enhancement import HREnhancement
+        self.hr_enhancement = HREnhancement(self)
+        
         from opc_hr.role_matcher import RoleMatcher
         self.role_matcher = RoleMatcher(self.hr_enhancement, self.global_context)
+        
+        # 订阅事件
+        self.event_bus.subscribe('task_completed', self.hr_enhancement.handle_task_completed)
+        self.event_bus.subscribe('task_failed', self.hr_enhancement.handle_task_failed)
 
         from opc_manager.workflow_engine import WorkflowEngine
         self.workflow_engine = WorkflowEngine()
@@ -96,9 +104,10 @@ class OPCManager:
         # 初始化任务执行器
         self.task_executor = TaskExecutor(
             opc_manager=self,
-            max_workers=5,
+            max_workers=self.config_manager.get('task_executor', 'max_workers', 5),
             progress_streamer=None,
-            db_manager=self.db_manager
+            db_manager=self.db_manager,
+            event_bus=self.event_bus
         )
         self.executor_manager = TaskExecutorManager(self)
         self.executor_manager.executors.append(self.task_executor)

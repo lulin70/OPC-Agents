@@ -9,7 +9,7 @@ import os
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 from opc_manager import OPCManager
 import argparse
 import logging
@@ -137,7 +137,7 @@ except Exception as e:
 
 # 首页 - 对话中心
 @app.route('/')
-def index():
+def index() -> str:
     # 获取所有任务
     all_tasks = manager.get_all_tasks()
     tasks = []
@@ -163,12 +163,12 @@ def index():
 
 # 监控页面
 @app.route('/monitoring')
-def monitoring():
+def monitoring() -> str:
     return render_template('monitoring.html')
 
 # 部门详情页面
 @app.route('/department/<department>')
-def department_detail(department):
+def department_detail(department: str) -> str:
     # 获取部门代理
     official_agents = manager.get_official_agent_by_department(department)
     custom_agents = manager.get_agent_by_department(department)
@@ -225,25 +225,25 @@ def department_detail(department):
 
 # 代理管理页面
 @app.route('/agent_management')
-def agent_management():
+def agent_management() -> str:
     return render_template('agent_management.html')
 
 # 财务部页面
 @app.route('/finance')
-def finance_page():
+def finance_page() -> str:
     return render_template('finance.html')
 
 @app.route('/settings')
-def settings_page():
+def settings_page() -> str:
     return render_template('settings.html')
 
 @app.route('/task/<task_id>')
-def task_detail_page(task_id):
+def task_detail_page(task_id: str) -> str:
     return render_template('task_detail.html')
 
 # SSE实时进度推送（带去重和节流）
 @app.route('/api/progress/stream')
-def progress_stream():
+def progress_stream() -> Response:
     def generate():
         import json
         import time

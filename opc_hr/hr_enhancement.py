@@ -751,6 +751,63 @@ class HREnhancement:
             json.dump(profiles_data, f, ensure_ascii=False, indent=2)
         
         print(f"[HR增强] 导出Agent档案到: {output_file}")
+    
+    def handle_task_completed(self, task_id: str, agent: str, department: str, task_name: str, success: bool):
+        """处理任务完成事件
+        
+        Args:
+            task_id: 任务ID
+            agent: Agent名称
+            department: 部门
+            task_name: 任务名称
+            success: 是否成功
+        """
+        try:
+            if success:
+                self.optimize_agent(agent)
+                print(f"[HR增强] 任务完成，已优化Agent: {agent}")
+        except Exception as e:
+            print(f"[HR增强] 处理任务完成事件失败: {e}")
+    
+    def handle_task_failed(self, task_id: str, agent: str, department: str, task_name: str, description: str, error: str, success: bool):
+        """处理任务失败事件
+        
+        Args:
+            task_id: 任务ID
+            agent: Agent名称
+            department: 部门
+            task_name: 任务名称
+            description: 任务描述
+            error: 错误信息
+            success: 是否成功
+        """
+        try:
+            if not success:
+                alternatives = self.search_external_agents(description, department)
+                if alternatives:
+                    print(f"[HR增强] 任务失败，已搜寻到{len(alternatives)}个替代Agent")
+        except Exception as e:
+            print(f"[HR增强] 处理任务失败事件失败: {e}")
+    
+    def search_external_agents(self, description: str, department: str) -> List[Dict[str, Any]]:
+        """搜索外部Agent
+        
+        Args:
+            description: 任务描述
+            department: 部门
+            
+        Returns:
+            外部Agent列表
+        """
+        try:
+            from opc_hr.mcp_integration import MCPIntegration
+            mcp = MCPIntegration()
+            
+            agent_results = mcp.search_agents(description, department=department, limit=3)
+            return agent_results
+        except Exception as e:
+            print(f"[HR增强] 搜索外部Agent失败: {e}")
+            return []
 
 
 # 使用示例

@@ -1,55 +1,26 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" aria-label="OPC-Agents 管理系统">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="OPC-Agents 一人公司管理系统">
     <title>OPC-Agents 管理系统</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="/static/css/design-system.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
+        /* 自定义样式 */
         :root {
-            --bg-primary: #f5f5f5;
-            --bg-secondary: #ffffff;
-            --bg-card: #ffffff;
-            --bg-sidebar: #ffffff;
-            --bg-input: #ffffff;
-            --text-primary: #333333;
-            --text-secondary: #666666;
-            --border-color: #e0e0e0;
-            --shadow-color: rgba(0,0,0,0.05);
-            --accent: #1890ff;
-            --success: #52c41a;
-            --danger: #ff4d4f;
-        }
-        [data-theme="dark"] {
-            --bg-primary: #141414;
-            --bg-secondary: #1f1f1f;
-            --bg-card: #262626;
-            --bg-sidebar: #1f1f1f;
-            --bg-input: #303030;
-            --text-primary: #e6e6e6;
-            --text-secondary: #a0a0a0;
-            --border-color: #404040;
-            --shadow-color: rgba(0,0,0,0.3);
-            --accent: #40a9ff;
-            --success: #73d13d;
-            --danger: #ff7875;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 0;
+            --msg-user-bg: rgba(24, 144, 255, 0.1);
+            --msg-plan-bg: rgba(82, 196, 26, 0.1);
         }
         
+        /* 顶部导航 */
         .top-nav {
-            background-color: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 2px 4px var(--shadow-color);
-            padding: 0 20px;
+            background-color: var(--color-bg-secondary);
+            border-bottom: 1px solid var(--color-border);
+            box-shadow: var(--shadow-md);
+            padding: 0 var(--spacing-xl);
             height: 60px;
             display: flex;
             align-items: center;
@@ -59,37 +30,37 @@
         .top-nav-left {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: var(--spacing-xl);
         }
         
         .top-nav-logo {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--accent);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-primary);
         }
         
         .top-nav-menu {
             display: flex;
-            gap: 15px;
+            gap: var(--spacing-md);
         }
         
         .top-nav-item {
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-md);
             cursor: pointer;
-            font-size: 14px;
-            color: var(--text-primary);
-            transition: all 0.2s ease;
+            font-size: var(--font-size-md);
+            color: var(--color-text-primary);
+            transition: all var(--transition-normal);
         }
         
         .top-nav-item:hover {
-            background-color: var(--bg-secondary);
+            background-color: var(--color-bg-secondary);
         }
         
         .top-nav-right {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: var(--spacing-md);
         }
         
         /* 主容器 */
@@ -101,90 +72,90 @@
         /* 侧边栏 */
         .sidebar {
             height: 100%;
-            background-color: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
-            padding: 20px 0;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            background-color: var(--color-bg-sidebar);
+            border-right: 1px solid var(--color-border);
+            padding: var(--spacing-xl) 0;
+            box-shadow: var(--shadow-sm);
             position: relative;
         }
         
         .sidebar-header {
-            padding: 0 20px 20px 20px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 0 var(--spacing-xl) var(--spacing-xl) var(--spacing-xl);
+            border-bottom: 1px solid var(--color-border);
         }
         
         .sidebar-header h1 {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-primary);
+            font-size: var(--font-size-xxl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
             margin: 0;
         }
         
         /* 新建任务按钮 */
         .new-task {
-            padding: 0 20px 20px 20px;
+            padding: 0 var(--spacing-xl) var(--spacing-xl) var(--spacing-xl);
         }
         
         .new-task-btn {
             width: 100%;
-            padding: 12px;
-            background-color: var(--accent);
-            color: white;
+            padding: var(--spacing-md);
+            background-color: var(--color-primary);
+            color: var(--color-white);
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-medium);
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            transition: background-color var(--transition-normal);
         }
         
         .new-task-btn:hover {
-            background-color: var(--accent);
+            background-color: var(--color-primary-dark);
         }
         
         /* 任务历史 */
         .task-history {
-            padding: 0 0 20px 0;
+            padding: 0 0 var(--spacing-xl) 0;
             height: calc(100% - 160px);
             overflow-y: auto;
         }
         
         .history-section {
-            margin-bottom: 20px;
+            margin-bottom: var(--spacing-xl);
         }
         
         .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-secondary);
             text-transform: uppercase;
-            padding: 0 20px 10px 20px;
+            padding: 0 var(--spacing-xl) var(--spacing-sm) var(--spacing-xl);
         }
         
         .task-item {
-            padding: 12px 20px;
+            padding: var(--spacing-md) var(--spacing-xl);
             cursor: pointer;
             border-left: 3px solid transparent;
-            transition: all 0.2s ease;
+            transition: all var(--transition-normal);
             position: relative;
         }
         
         .task-item:hover {
-            background-color: var(--bg-secondary);
+            background-color: var(--color-bg-secondary);
         }
         
         .task-item.active {
             background-color: var(--msg-user-bg);
-            border-left-color: var(--accent);
+            border-left-color: var(--color-primary);
         }
         
         .task-actions-inline {
             display: none;
             position: absolute;
-            right: 8px;
+            right: var(--spacing-sm);
             top: 50%;
             transform: translateY(-50%);
-            gap: 4px;
+            gap: var(--spacing-xs);
         }
         
         .task-item:hover .task-actions-inline {
@@ -195,64 +166,68 @@
             width: 24px;
             height: 24px;
             border: none;
-            border-radius: 4px;
+            border-radius: var(--border-radius-md);
             cursor: pointer;
-            font-size: 12px;
+            font-size: var(--font-size-sm);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg-secondary);
-            color: #666;
-            transition: all 0.15s;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-secondary);
+            transition: all var(--transition-fast);
         }
         
-        .task-act-btn:hover { background: var(--bg-secondary); }
-        .task-act-btn.del:hover { background: var(--btn-danger); color: var(--btn-danger); }
-        .task-act-btn.dir:hover { background: var(--btn-success); color: var(--btn-success); }
+        .task-act-btn:hover { background: var(--color-bg-secondary); }
+        .task-act-btn.del:hover { background: var(--color-danger); color: var(--color-white); }
+        .task-act-btn.dir:hover { background: var(--color-success); color: var(--color-white); }
         
         .task-rename-input {
-            font-size: 14px;
-            font-weight: 500;
-            border: 1px solid var(--accent);
-            border-radius: 4px;
-            padding: 2px 6px;
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-medium);
+            border: 1px solid var(--color-primary);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-xs) var(--spacing-sm);
             width: 100%;
             outline: none;
         }
         
         .task-title {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            margin-bottom: 4px;
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-xs);
         }
         
         .task-preview {
-            font-size: 12px;
-            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         
+        .task-progress {
+            margin: var(--spacing-xs) 0;
+        }
+        
         .task-meta {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-top: 4px;
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+            margin-top: var(--spacing-xs);
             display: flex;
             justify-content: space-between;
         }
         
         .task-tag {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 8px;
+            font-size: var(--font-size-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-full);
+            margin-left: var(--spacing-sm);
         }
         
         .task-tag.scheduled {
             background-color: var(--msg-plan-bg);
-            color: var(--btn-success);
+            color: var(--color-success);
         }
         
         /* 主内容区 */
@@ -260,49 +235,49 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            background-color: var(--bg-primary);
+            background-color: var(--color-bg-primary);
         }
         
         /* 任务头部 */
         .task-header {
-            background-color: var(--bg-card);
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background-color: var(--color-bg-card);
+            padding: var(--spacing-xl);
+            border-bottom: 1px solid var(--color-border);
+            box-shadow: var(--shadow-md);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
         .task-header h2 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-primary);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
             margin: 0;
         }
         
         .task-actions {
             display: flex;
-            gap: 10px;
+            gap: var(--spacing-md);
         }
         
         .action-btn {
-            padding: 6px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 12px;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-sm);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all var(--transition-normal);
         }
         
         .action-btn:hover {
-            background-color: var(--bg-secondary);
+            background-color: var(--color-bg-secondary);
         }
         
         /* 消息区域 */
         .message-area {
             flex: 1;
-            padding: 20px;
+            padding: var(--spacing-xl);
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -310,7 +285,7 @@
         
         /* 消息样式 */
         .message {
-            margin-bottom: 16px;
+            margin-bottom: var(--spacing-lg);
             max-width: 80%;
         }
         
@@ -318,38 +293,38 @@
             align-self: flex-end;
             background-color: var(--msg-user-bg);
             border-radius: 18px 18px 4px 18px;
-            padding: 12px 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            padding: var(--spacing-lg) var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
         }
         
         .executive-message {
             align-self: flex-start;
-            background-color: var(--bg-primary);
+            background-color: var(--color-bg-primary);
             border-radius: 18px 18px 18px 4px;
-            padding: 12px 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            padding: var(--spacing-lg) var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
         }
         
         .system-message {
             align-self: center;
             background-color: var(--msg-plan-bg);
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: var(--success);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: var(--font-size-sm);
+            color: var(--color-success);
             text-align: center;
-            margin: 8px 0;
+            margin: var(--spacing-sm) 0;
         }
         
         /* 任务卡片 */
         .task-card {
             align-self: center;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            margin: 12px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin: var(--spacing-md) 0;
+            box-shadow: var(--shadow-sm);
             width: 90%;
             max-width: 600px;
         }
@@ -358,102 +333,102 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: var(--spacing-md);
         }
         
         .task-card-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
         }
         
         .task-card-status {
-            font-size: 12px;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-weight: 500;
+            font-size: var(--font-size-sm);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-full);
+            font-weight: var(--font-weight-medium);
         }
         
         .task-card-status.in-progress {
             background-color: var(--msg-user-bg);
-            color: var(--accent);
+            color: var(--color-primary);
         }
         
         .task-card-status.completed {
             background-color: var(--msg-plan-bg);
-            color: var(--btn-success);
+            color: var(--color-success);
         }
         
         .task-card-details {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
+            font-size: var(--font-size-md);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-md);
         }
         
         .task-card-progress {
-            margin-top: 12px;
+            margin-top: var(--spacing-md);
         }
         
         .progress-bar {
             width: 100%;
             height: 6px;
-            background-color: var(--bg-secondary);
-            border-radius: 3px;
+            background-color: var(--color-bg-secondary);
+            border-radius: var(--border-radius-full);
             overflow: hidden;
-            margin-bottom: 8px;
+            margin-bottom: var(--spacing-sm);
         }
         
         .progress-fill {
             height: 100%;
-            background-color: var(--btn-success);
-            border-radius: 3px;
-            transition: width 0.3s ease;
+            background-color: var(--color-success);
+            border-radius: var(--border-radius-full);
+            transition: width var(--transition-slow);
         }
         
         .progress-text {
-            font-size: 12px;
-            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
             text-align: right;
         }
         
         /* 输入区域 */
         .input-area {
-            background-color: var(--bg-card);
-            padding: 20px;
-            border-top: 1px solid var(--border-color);
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+            background-color: var(--color-bg-card);
+            padding: var(--spacing-xl);
+            border-top: 1px solid var(--color-border);
+            box-shadow: 0 -2px 4px var(--color-shadow-light);
         }
         
         .input-form {
             display: flex;
-            gap: 10px;
+            gap: var(--spacing-md);
         }
         
         .input-field {
             flex: 1;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-md);
             resize: none;
             min-height: 48px;
             max-height: 120px;
         }
         
         .send-btn {
-            padding: 0 24px;
-            background-color: var(--accent);
-            color: white;
+            padding: 0 var(--spacing-xl);
+            background-color: var(--color-primary);
+            color: var(--color-white);
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-medium);
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            transition: background-color var(--transition-normal);
         }
         
         .send-btn:hover {
-            background-color: var(--accent);
+            background-color: var(--color-primary-dark);
         }
         
         /* 滚动条样式 */
@@ -462,23 +437,23 @@
         }
         
         ::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
+            background: var(--color-bg-secondary);
         }
         
         ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
+            background: var(--color-border);
             border-radius: 3px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-secondary);
+            background: var(--color-text-secondary);
         }
         
         /* 模态框 */
         .modal {
             display: none;
             position: fixed;
-            z-index: 1000;
+            z-index: var(--z-index-modal);
             left: 0;
             top: 0;
             width: 100%;
@@ -487,127 +462,70 @@
         }
         
         .modal-content {
-            background-color: var(--bg-card);
+            background-color: var(--color-bg-card);
             margin: 15% auto;
-            padding: 20px;
-            border-radius: 8px;
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
             width: 90%;
             max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-lg);
         }
         
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: var(--spacing-xl);
         }
         
         .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-primary);
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
         }
         
         .close {
             font-size: 24px;
             cursor: pointer;
-            color: var(--text-secondary);
+            color: var(--color-text-secondary);
         }
         
         .modal-body {
-            margin-bottom: 20px;
+            margin-bottom: var(--spacing-xl);
         }
         
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: var(--spacing-md);
         }
         
         .form-label {
             display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            margin-bottom: 5px;
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-xs);
         }
         
         .form-input {
             width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-md);
         }
         
         .form-select {
             width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-md);
         }
         
         .modal-footer {
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-primary {
-            background-color: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--accent);
-        }
-        
-        .btn-secondary {
-            background-color: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-        
-        .btn-secondary:hover {
-            background-color: var(--bg-secondary);
-        }
-        
-        /* 加载动画 */
-        .loading-indicator {
-            align-self: flex-start;
-            padding: 12px 16px;
-            display: none;
-        }
-        
-        .loading-dots {
-            display: inline-flex;
-            gap: 4px;
-            align-items: center;
-        }
-        
-        .loading-dots span {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--accent);
-            animation: loading-bounce 1.4s infinite ease-in-out both;
-        }
-        
-        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
-        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes loading-bounce {
-            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
+            gap: var(--spacing-md);
         }
         
         /* 总裁办消息头像 */
@@ -616,13 +534,13 @@
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--accent));
-            color: white;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            color: var(--color-white);
             text-align: center;
             line-height: 28px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-right: 8px;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            margin-right: var(--spacing-sm);
             flex-shrink: 0;
         }
         
@@ -640,40 +558,40 @@
         }
         
         .executive-message .msg-text ul, .executive-message .msg-text ol {
-            margin: 4px 0;
-            padding-left: 20px;
+            margin: var(--spacing-xs) 0;
+            padding-left: var(--spacing-lg);
         }
         
         .executive-message .msg-text strong {
-            color: var(--accent);
+            color: var(--color-primary);
         }
         
         /* HR推荐卡片 */
         .hr-recommendation {
             align-self: center;
             background-color: var(--msg-plan-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 8px 0;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            margin: var(--spacing-sm) 0;
             width: 90%;
             max-width: 600px;
         }
         
         .hr-recommendation-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--success);
-            margin-bottom: 8px;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-success);
+            margin-bottom: var(--spacing-sm);
         }
         
         .hr-recommendation-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 13px;
+            padding: var(--spacing-xs) 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: var(--font-size-sm);
         }
         
         .hr-recommendation-item:last-child {
@@ -681,39 +599,40 @@
         }
         
         .import-btn {
-            padding: 3px 10px;
-            background-color: var(--success);
-            color: white;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background-color: var(--color-success);
+            color: var(--color-white);
             border: none;
-            border-radius: 4px;
-            font-size: 11px;
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-xs);
             cursor: pointer;
         }
         
         .import-btn:hover {
-            background-color: var(--success);
+            background-color: var(--color-success);
+            opacity: 0.8;
         }
 
         .theme-toggle {
             cursor: pointer;
-            font-size: 18px;
-            padding: 4px 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--bg-input);
-            color: var(--text-primary);
+            font-size: var(--font-size-lg);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            background: var(--color-bg-input);
+            color: var(--color-text-primary);
         }
         .theme-toggle:hover { opacity: 0.8; }
 
         .wf-btn {
-            padding: 2px 8px;
-            font-size: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 3px;
-            background: var(--bg-input);
-            color: var(--text-primary);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: var(--font-size-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-sm);
+            background: var(--color-bg-input);
+            color: var(--color-text-primary);
             cursor: pointer;
-            margin-left: 5px;
+            margin-left: var(--spacing-xs);
         }
         .wf-btn:hover { opacity: 0.8; }
 
@@ -721,7 +640,7 @@
             .sidebar { width: 60px; }
             .sidebar .nav-text { display: none; }
             .main-content { margin-left: 60px; }
-            .top-nav { padding: 0 10px; }
+            .top-nav { padding: 0 var(--spacing-md); }
         }
         @media (max-width: 480px) {
             .sidebar { display: none; }
@@ -731,41 +650,41 @@
 </head>
 <body>
     <!-- 顶部导航栏 -->
-    <div class="top-nav">
+    <nav class="top-nav" aria-label="主导航">
         <div class="top-nav-left">
-            <div class="top-nav-logo">OPC-Agents</div>
-            <div class="top-nav-menu">
-                <div class="top-nav-item" onclick="window.location.href='/department/总裁办'">总裁办</div>
-                <div class="top-nav-item" onclick="showOptimizationHistory()">人事部</div>
-                <div class="top-nav-item" onclick="window.location.href='/department/财务部'">财务部</div>
-                <div class="top-nav-item" onclick="window.location.href='/department/市场部'">市场部</div>
-                <div class="top-nav-item" onclick="window.location.href='/department/产品部'">产品部</div>
-                <div class="top-nav-item" onclick="window.location.href='/agent_management'">代理管理</div>
+            <div class="top-nav-logo" aria-label="OPC-Agents 标志">OPC-Agents</div>
+            <div class="top-nav-menu" role="menu" aria-label="部门导航">
+                <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/department/总裁办'" aria-label="总裁办">总裁办</div>
+                <div class="top-nav-item" role="menuitem" tabindex="0" onclick="showOptimizationHistory()" aria-label="人事部">人事部</div>
+                <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/department/财务部'" aria-label="财务部">财务部</div>
+                <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/department/市场部'" aria-label="市场部">市场部</div>
+                <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/department/产品部'" aria-label="产品部">产品部</div>
+                <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/agent_management'" aria-label="代理管理">代理管理</div>
             </div>
         </div>
-        <div class="top-nav-right">
-            <div class="top-nav-item" onclick="window.location.href='/agent_management'">代理管理</div>
-            <div class="top-nav-item" onclick="window.location.href='/finance'">财务部</div>
-            <div class="top-nav-item" onclick="window.location.href='/monitoring'">系统监控</div>
-            <div class="top-nav-item" onclick="window.location.href='/settings'">系统设置</div>
-            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">🌓</button>
+        <div class="top-nav-right" role="menu" aria-label="系统导航">
+            <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/agent_management'" aria-label="代理管理">代理管理</div>
+            <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/finance'" aria-label="财务部">财务部</div>
+            <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/monitoring'" aria-label="系统监控">系统监控</div>
+            <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/settings'" aria-label="系统设置">系统设置</div>
+            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题" aria-label="切换主题模式" aria-pressed="false">🌓</button>
         </div>
-    </div>
+    </nav>
     
     <div class="container-fluid">
         <div class="row h-100">
             <!-- 侧边栏 - 任务列表 -->
-            <div class="col-md-3 sidebar">
+            <div class="col-md-3 sidebar" aria-label="任务管理侧边栏">
                 <div class="sidebar-header">
-                    <h1>任务管理</h1>
+                    <h1 aria-level="2">任务管理</h1>
                 </div>
                 
                 <!-- 过滤器和排序器 -->
-                <div style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--color-border);" aria-label="任务过滤器和排序器">
                     <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                         <div style="flex: 1; align-items: center;">
-                            <label style="font-size: 13px; color: var(--text-secondary);">状态:</label>
-                            <select id="task-filter-status" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                            <label for="task-filter-status" style="font-size: 13px; color: var(--color-text-secondary);">状态:</label>
+                            <select id="task-filter-status" aria-label="任务状态过滤器" style="padding: 4px 8px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-bg-primary); color: var(--color-text-primary); font-size: 14px;">
                                 <option value="">全部</option>
                                 <option value="pending">待执行</option>
                                 <option value="in_progress">进行中</option>
@@ -774,45 +693,63 @@
                             </select>
                         </div>
                         <div style="flex: 1; align-items: center;">
-                            <label style="font-size: 13px; color: var(--text-secondary);">排序:</label>
-                            <select id="task-sort" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                            <label for="task-sort" style="font-size: 13px; color: var(--color-text-secondary);">排序:</label>
+                            <select id="task-sort" aria-label="任务排序方式" style="padding: 4px 8px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-bg-primary); color: var(--color-text-primary); font-size: 14px;">
                                 <option value="updated_at_desc">最新</option>
                                 <option value="updated_at_asc">最早</option>
                                 <option value="name_asc">名称A-Z</option>
                                 <option value="name_desc">名称Z-A</option>
                             </select>
                         </div>
-                        <button id="refresh-tasks-btn" style="padding: 4px 12px; background: var(--accent); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">🔄 刷新</button>
+                        <button id="refresh-tasks-btn" aria-label="刷新任务列表" style="padding: 4px 12px; background: var(--color-primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">🔄 刷新</button>
                     </div>
                 
                 <!-- 新建任务按钮 -->
                 <div class="new-task">
-                    <button class="new-task-btn" id="new-task-btn">
+                    <button class="new-task-btn" id="new-task-btn" aria-label="新建任务">
                         ➕ 新建任务
                     </button>
                 </div>
                 
-                <div class="task-history">
+                <div class="task-history" aria-label="任务历史列表">
+                    <!-- 批量操作 -->
+                    <div style="padding: 8px 0; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;" aria-label="批量操作">
+                        <div style="display: flex; gap: 8px;">
+                            <button id="select-all-tasks" aria-label="全选任务" style="padding: 4px 12px; background: var(--color-bg-primary); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: 4px; cursor: pointer; font-size: 13px;">全选</button>
+                            <button id="deselect-all-tasks" aria-label="取消全选任务" style="padding: 4px 12px; background: var(--color-bg-primary); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: 4px; cursor: pointer; font-size: 13px;">取消全选</button>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="batch-delete-tasks" aria-label="批量删除任务" style="padding: 4px 12px; background: var(--color-danger); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">批量删除</button>
+                            <button id="batch-export-tasks" aria-label="批量导出任务" style="padding: 4px 12px; background: var(--color-primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">批量导出</button>
+                        </div>
+                    </div>
+                    
                     <!-- 最近任务 (按最后更新时间排序) -->
-                    <div class="history-section">
-                        <div class="section-title">最近任务</div>
+                    <div class="history-section" aria-label="最近任务列表">
+                        <div class="section-title" aria-level="3">最近任务</div>
                         {% if tasks %}
                             {% for task in tasks|sort(attribute='updated_at', reverse=true) %}
-                                <div class="task-item {% if loop.first %}active{% endif %}" data-task-id="{{ task.id }}">
+                                <div class="task-item {% if loop.first %}active{% endif %}" data-task-id="{{ task.id }}" role="listitem" aria-label="任务: {{ task.name }}, 状态: {{ task.status }}, 进度: {{ task.progress|default(0) }}%">
                                     <div class="task-title">{{ task.name }}</div>
                                     <div class="task-preview">{{ task.name }}</div>
+                                    <div class="task-progress" style="margin: 4px 0;" aria-label="任务进度: {{ task.progress|default(0) }}%">
+                                        <div class="progress-bar" style="height: 4px; margin-bottom: 2px;" role="progressbar" aria-valuenow="{{ task.progress|default(0) }}" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-fill" style="width: {{ task.progress|default(0) }}%;"></div>
+                                        </div>
+                                        <div class="progress-text" style="font-size: 10px; text-align: right;">{{ task.progress|default(0) }}%</div>
+                                    </div>
                                     <div class="task-meta">
                                         <span>{{ task.updated_at }} · {{ task.status }}</span>
                                     </div>
-                                    <div class="task-actions-inline">
-                                        <button class="task-act-btn" title="重命名" onclick="event.stopPropagation();renameTask('{{ task.id }}','{{ task.name }}')">✏️</button>
-                                        <button class="task-act-btn dir" title="打开工作目录" onclick="event.stopPropagation();openWorkDir('{{ task.id }}')">📁</button>
-                                        <button class="task-act-btn del" title="删除任务" onclick="event.stopPropagation();deleteTask('{{ task.id }}','{{ task.name }}')">🗑️</button>
+                                    <div class="task-actions-inline" aria-label="任务操作">
+                                        <button class="task-act-btn" title="重命名" aria-label="重命名任务: {{ task.name }}" onclick="event.stopPropagation();renameTask('{{ task.id }}','{{ task.name }}')">✏️</button>
+                                        <button class="task-act-btn dir" title="打开工作目录" aria-label="打开工作目录" onclick="event.stopPropagation();openWorkDir('{{ task.id }}')">📁</button>
+                                        <button class="task-act-btn del" title="删除任务" aria-label="删除任务: {{ task.name }}" onclick="event.stopPropagation();deleteTask('{{ task.id }}','{{ task.name }}')">🗑️</button>
                                     </div>
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <div class="task-item">
+                            <div class="task-item" role="listitem" aria-label="无任务">
                                 <div class="task-title">无任务</div>
                                 <div class="task-preview">请创建新任务</div>
                                 <div class="task-meta">
@@ -823,9 +760,9 @@
                     </div>
                     
                     <!-- 定时任务 -->
-                    <div class="history-section">
-                        <div class="section-title">定时任务</div>
-                        <div class="task-item" data-task-id="scheduled-1">
+                    <div class="history-section" aria-label="定时任务列表">
+                        <div class="section-title" aria-level="3">定时任务</div>
+                        <div class="task-item" data-task-id="scheduled-1" role="listitem" aria-label="定时任务: 每日市场分析, 时间: 每天 08:00">
                             <div class="task-title">每日市场分析</div>
                             <div class="task-preview">每天早上8点生成市场分析报告</div>
                             <div class="task-meta">
@@ -833,7 +770,7 @@
                                 <span class="task-tag scheduled">定时</span>
                             </div>
                         </div>
-                        <div class="task-item" data-task-id="scheduled-2">
+                        <div class="task-item" data-task-id="scheduled-2" role="listitem" aria-label="定时任务: 每周团队会议, 时间: 每周一 10:00">
                             <div class="task-title">每周团队会议</div>
                             <div class="task-preview">每周一上午10点安排团队会议</div>
                             <div class="task-meta">
@@ -846,29 +783,30 @@
             </div>
             
             <!-- 主内容区 - 任务详情 -->
-            <div class="col-md-9 main-content">
+            <div class="col-md-9 main-content" aria-label="任务详情区域">
                 <!-- 任务头部 -->
-                <div class="task-header">
-                    <h2>产品发布计划</h2>
-                    <div class="task-actions">
-                        <button class="action-btn">编辑任务</button>
-                        <button class="action-btn">设置定时</button>
-                        <button class="action-btn">删除任务</button>
+                <div class="task-header" aria-label="任务信息和操作">
+                    <h2 aria-level="2">产品发布计划</h2>
+                    <div class="task-actions" role="group" aria-label="任务操作">
+                        <button class="action-btn" aria-label="编辑任务">编辑任务</button>
+                        <button class="action-btn" aria-label="设置定时">设置定时</button>
+                        <button class="action-btn" aria-label="删除任务">删除任务</button>
                     </div>
                 </div>
                 
                 <!-- 消息区域 -->
-                <div class="message-area" id="message-area">
-                    <div class="message system-message">
+                <div class="message-area" id="message-area" aria-label="消息对话区域" aria-live="polite">
+                    <div class="message system-message" aria-role="status">
                         欢迎使用OPC-Agents一人公司管理系统。请在下方输入任务指令，总裁办将为您处理。
                     </div>
                 </div>
                 
                 <!-- 输入区域 -->
-                <div class="input-area">
-                    <form class="input-form" id="message-form">
-                        <textarea class="input-field" id="message-input" placeholder="输入消息..." rows="1"></textarea>
-                        <button type="submit" class="send-btn">发送</button>
+                <div class="input-area" aria-label="消息输入区域">
+                    <form class="input-form" id="message-form" aria-label="消息发送表单">
+                        <textarea class="input-field" id="message-input" placeholder="输入消息..." rows="1" aria-label="消息输入框" aria-describedby="message-input-hint"></textarea>
+                        <span id="message-input-hint" class="sr-only">请输入您的任务指令</span>
+                        <button type="submit" class="send-btn" aria-label="发送消息">发送</button>
                     </form>
                 </div>
             </div>
@@ -876,36 +814,36 @@
     </div>
     
     <!-- 新建任务模态框 -->
-    <div class="modal" id="optimization-history-modal">
+    <div class="modal" id="optimization-history-modal" role="dialog" aria-modal="true" aria-labelledby="optimization-history-title" aria-hidden="true">
         <div class="modal-content" style="max-width:700px;">
             <div class="modal-header">
-                <div class="modal-title">📊 优化历史</div>
-                <span class="close" onclick="document.getElementById('optimization-history-modal').style.display='none'">&times;</span>
+                <div class="modal-title" id="optimization-history-title">📊 优化历史</div>
+                <span class="close" onclick="document.getElementById('optimization-history-modal').style.display='none'" aria-label="关闭模态框">&times;</span>
             </div>
             <div class="modal-body">
-                <div id="optimization-history-list"><p style="color:var(--text-secondary)">加载中...</p></div>
+                <div id="optimization-history-list"><p style="color:var(--color-text-secondary)">加载中...</p></div>
             </div>
         </div>
     </div>
 
-    <div class="modal" id="new-task-modal">
+    <div class="modal" id="new-task-modal" role="dialog" aria-modal="true" aria-labelledby="new-task-title" aria-hidden="true">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">新建任务</div>
-                <span class="close" id="close-modal">&times;</span>
+                <div class="modal-title" id="new-task-title">新建任务</div>
+                <span class="close" id="close-modal" aria-label="关闭模态框">&times;</span>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">任务名称</label>
-                    <input type="text" class="form-input" id="task-name" placeholder="请输入任务名称">
+                    <label for="task-name" class="form-label">任务名称</label>
+                    <input type="text" class="form-input" id="task-name" placeholder="请输入任务名称" aria-label="任务名称">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">任务描述</label>
-                    <textarea class="form-input" id="task-description" placeholder="请输入任务描述" rows="3"></textarea>
+                    <label for="task-description" class="form-label">任务描述</label>
+                    <textarea class="form-input" id="task-description" placeholder="请输入任务描述" rows="3" aria-label="任务描述"></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">部门</label>
-                    <select class="form-select" id="task-department">
+                    <label for="task-department" class="form-label">部门</label>
+                    <select class="form-select" id="task-department" aria-label="选择部门">
                         <option value="">请选择部门</option>
                         <option value="市场部">市场部</option>
                         <option value="产品部">产品部</option>
@@ -915,20 +853,20 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">任务类型</label>
-                    <select class="form-select" id="task-type">
+                    <label for="task-type" class="form-label">任务类型</label>
+                    <select class="form-select" id="task-type" aria-label="选择任务类型">
                         <option value="normal">普通任务</option>
                         <option value="scheduled">定时任务</option>
                     </select>
                 </div>
                 <div class="form-group" id="schedule-section" style="display: none;">
-                    <label class="form-label">定时设置</label>
-                    <input type="datetime-local" class="form-input" id="task-schedule">
+                    <label for="task-schedule" class="form-label">定时设置</label>
+                    <input type="datetime-local" class="form-input" id="task-schedule" aria-label="选择定时时间">
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancel-task">取消</button>
-                <button class="btn btn-primary" id="create-task">创建任务</button>
+            <div class="modal-footer" role="group" aria-label="模态框按钮">
+                <button class="btn btn-secondary" id="cancel-task" aria-label="取消">取消</button>
+                <button class="btn btn-primary" id="create-task" aria-label="创建任务">创建任务</button>
             </div>
         </div>
     </div>
@@ -945,7 +883,12 @@
             $('#message-form').on('submit', function(e) {
                 e.preventDefault();
                 var message = $('#message-input').val().trim();
+                var sendBtn = $('.send-btn');
                 if (message) {
+                    // 添加loading状态
+                    sendBtn.addClass('loading');
+                    sendBtn.prop('disabled', true);
+                    
                     var now = new Date();
                     var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
                     
@@ -980,6 +923,10 @@
                     var activeTaskId = activeTaskItem.data('task-id');
                     
                     if (!activeTaskId) {
+                        // 移除loading状态
+                        sendBtn.removeClass('loading');
+                        sendBtn.prop('disabled', false);
+                        
                         $('#loading-indicator').remove();
                         var executiveMessageHtml = `
                             <div class="message executive-message">
@@ -1003,6 +950,10 @@
                         contentType: 'application/json',
                         data: JSON.stringify({ message: message }),
                         success: function(response) {
+                            // 移除loading状态
+                            sendBtn.removeClass('loading');
+                            sendBtn.prop('disabled', false);
+                            
                             $('#loading-indicator').remove();
                             
                             var content = response.content || '处理完成';
@@ -1042,6 +993,10 @@
                             $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
                         },
                         error: function(xhr, status, error) {
+                            // 移除loading状态
+                            sendBtn.removeClass('loading');
+                            sendBtn.prop('disabled', false);
+                            
                             $('#loading-indicator').remove();
                             var errorMsg = '处理消息时出现错误';
                             try { errorMsg = JSON.parse(xhr.responseText).error || errorMsg; } catch(e) {}
@@ -1197,6 +1152,117 @@
                 const saved = localStorage.getItem('theme');
                 if (saved) document.documentElement.setAttribute('data-theme', saved);
             })();
+            
+            // 键盘快捷键支持
+            document.addEventListener('keydown', function(e) {
+                // 新建任务: Ctrl/Cmd + N
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    document.getElementById('new-task-btn').click();
+                }
+                
+                // 刷新任务列表: F5 或 Ctrl/Cmd + R
+                if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
+                    e.preventDefault();
+                    document.getElementById('refresh-tasks-btn').click();
+                }
+                
+                // 全选任务: Ctrl/Cmd + A
+                if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                    e.preventDefault();
+                    document.getElementById('select-all-tasks').click();
+                }
+                
+                // 批量删除: Delete
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    document.getElementById('batch-delete-tasks').click();
+                }
+                
+                // 关闭模态框: Escape
+                if (e.key === 'Escape') {
+                    const modals = document.querySelectorAll('.modal');
+                    modals.forEach(modal => {
+                        if (modal.style.display === 'block') {
+                            modal.style.display = 'none';
+                        }
+                    });
+                }
+                
+                // 切换主题: Ctrl/Cmd + T
+                if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+                    e.preventDefault();
+                    window.toggleTheme();
+                }
+            });
+            
+            // 为任务项添加键盘支持
+            document.addEventListener('keydown', function(e) {
+                // 当任务项被选中时，按Enter键打开任务详情
+                if (e.key === 'Enter' && e.target.classList.contains('task-item')) {
+                    e.preventDefault();
+                    // 触发点击事件
+                    e.target.click();
+                }
+            });
+            
+            // 焦点管理
+            document.addEventListener('DOMContentLoaded', function() {
+                // 页面加载时聚焦到第一个任务项或新建任务按钮
+                const firstTask = document.querySelector('.task-item');
+                const newTaskBtn = document.getElementById('new-task-btn');
+                if (firstTask) {
+                    firstTask.setAttribute('tabindex', '0');
+                    firstTask.focus();
+                } else if (newTaskBtn) {
+                    newTaskBtn.focus();
+                }
+                
+                // 为所有任务项添加tabindex
+                const taskItems = document.querySelectorAll('.task-item');
+                taskItems.forEach(item => {
+                    item.setAttribute('tabindex', '0');
+                });
+            });
+            
+            // 模态框焦点陷阱
+            function setupModalFocusTrap(modalId) {
+                const modal = document.getElementById(modalId);
+                if (!modal) return;
+                
+                const focusableElements = modal.querySelectorAll('button, input, textarea, select, [tabindex]:not([tabindex="-1"])');
+                const firstFocusable = focusableElements[0];
+                const lastFocusable = focusableElements[focusableElements.length - 1];
+                
+                modal.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        if (e.shiftKey) {
+                            // Shift + Tab
+                            if (document.activeElement === firstFocusable) {
+                                e.preventDefault();
+                                lastFocusable.focus();
+                            }
+                        } else {
+                            // Tab
+                            if (document.activeElement === lastFocusable) {
+                                e.preventDefault();
+                                firstFocusable.focus();
+                            }
+                        }
+                    }
+                });
+                
+                // 打开模态框时聚焦到第一个可聚焦元素
+                modal.addEventListener('show', function() {
+                    if (firstFocusable) {
+                        firstFocusable.focus();
+                    }
+                });
+            }
+            
+            // 为模态框设置焦点陷阱
+            setupModalFocusTrap('new-task-modal');
+            setupModalFocusTrap('optimization-history-modal');
 
             window.pauseWorkflow = function(instanceId) {
                 fetch('/api/workflow/' + instanceId + '/pause', {method: 'POST'})
@@ -1420,7 +1486,121 @@
                         $('#message-area').append(defaultMessageHtml);
                     }
                 });
+            
+            // 批量操作功能
+            let selectedTasks = new Set();
+            
+            // 为任务项添加复选框
+            $('.task-item').each(function() {
+                if (!$(this).find('input[type="checkbox"]').length) {
+                    $(this).prepend('<input type="checkbox" class="task-checkbox" style="margin-right: 8px; margin-top: 4px;" onchange="toggleTaskSelection(\'' + $(this).data('task-id') + '\', this.checked)">');
+                }
             });
+            
+            // 切换任务选择状态
+            window.toggleTaskSelection = function(taskId, checked) {
+                if (checked) {
+                    selectedTasks.add(taskId);
+                } else {
+                    selectedTasks.delete(taskId);
+                }
+                updateBatchButtons();
+            };
+            
+            // 更新批量操作按钮状态
+            function updateBatchButtons() {
+                const hasSelection = selectedTasks.size > 0;
+                $('#batch-delete-tasks').prop('disabled', !hasSelection);
+                $('#batch-export-tasks').prop('disabled', !hasSelection);
+            }
+            
+            // 全选
+            $('#select-all-tasks').on('click', function() {
+                $(this).addClass('loading');
+                $(this).prop('disabled', true);
+                
+                setTimeout(() => {
+                    $('.task-checkbox').prop('checked', true);
+                    $('.task-item').each(function() {
+                        selectedTasks.add($(this).data('task-id'));
+                    });
+                    updateBatchButtons();
+                    
+                    $(this).removeClass('loading');
+                    $(this).prop('disabled', false);
+                }, 300);
+            });
+            
+            // 取消全选
+            $('#deselect-all-tasks').on('click', function() {
+                $(this).addClass('loading');
+                $(this).prop('disabled', true);
+                
+                setTimeout(() => {
+                    $('.task-checkbox').prop('checked', false);
+                    selectedTasks.clear();
+                    updateBatchButtons();
+                    
+                    $(this).removeClass('loading');
+                    $(this).prop('disabled', false);
+                }, 300);
+            });
+            
+            // 批量删除
+            $('#batch-delete-tasks').on('click', function() {
+                if (selectedTasks.size === 0) return;
+                
+                if (confirm('确认删除选中的 ' + selectedTasks.size + ' 个任务？')) {
+                    $(this).addClass('loading');
+                    $(this).prop('disabled', true);
+                    
+                    $.ajax({
+                        url: '/api/tasks/batch',
+                        method: 'DELETE',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ task_ids: Array.from(selectedTasks) }),
+                        success: function() {
+                            // 从DOM中移除删除的任务
+                            selectedTasks.forEach(taskId => {
+                                $('[data-task-id="' + taskId + '"]').remove();
+                            });
+                            selectedTasks.clear();
+                            updateBatchButtons();
+                            alert('批量删除成功！');
+                            
+                            $('#batch-delete-tasks').removeClass('loading');
+                            $('#batch-delete-tasks').prop('disabled', false);
+                        },
+                        error: function() {
+                            alert('批量删除失败，请重试。');
+                            
+                            $('#batch-delete-tasks').removeClass('loading');
+                            $('#batch-delete-tasks').prop('disabled', false);
+                        }
+                    });
+                }
+            });
+            
+            // 批量导出
+            $('#batch-export-tasks').on('click', function() {
+                if (selectedTasks.size === 0) return;
+                
+                $(this).addClass('loading');
+                $(this).prop('disabled', true);
+                
+                const taskIds = Array.from(selectedTasks).join(',');
+                window.location.href = '/api/tasks/export?task_ids=' + taskIds;
+                
+                // 导出完成后移除loading状态
+                setTimeout(() => {
+                    $(this).removeClass('loading');
+                    $(this).prop('disabled', false);
+                }, 1000);
+            });
+            
+            // 初始化批量操作按钮状态
+            updateBatchButtons();
+        });
             
             // 新建任务按钮点击事件
             $('#new-task-btn').on('click', function() {
@@ -1455,8 +1635,12 @@
                 var taskDepartment = $('#task-department').val();
                 var taskType = $('#task-type').val();
                 var taskSchedule = $('#task-schedule').val();
+                var createBtn = $(this);
                 
                 if (taskName && taskDepartment) {
+                    // 添加loading状态
+                    createBtn.addClass('loading');
+                    createBtn.prop('disabled', true);
                     console.log('创建任务:', {
                         name: taskName,
                         description: taskDescription,
@@ -1476,6 +1660,10 @@
                             status: 'in_progress'
                         }),
                         success: function(response) {
+                            // 移除loading状态
+                            createBtn.removeClass('loading');
+                            createBtn.prop('disabled', false);
+                            
                             // 关闭模态框
                             $('#new-task-modal').css('display', 'none');
                             
@@ -1494,8 +1682,15 @@
                             
                             var newTaskHtml = `
                                 <div class="task-item" data-task-id="${response.task_id}">
+                                    <input type="checkbox" class="task-checkbox" style="margin-right: 8px; margin-top: 4px;" onchange="toggleTaskSelection('${response.task_id}', this.checked)">
                                     <div class="task-title">${taskName}</div>
                                     <div class="task-preview">${taskDescription || '无描述'}</div>
+                                    <div class="task-progress" style="margin: 4px 0;">
+                                        <div class="progress-bar" style="height: 4px; margin-bottom: 2px;">
+                                            <div class="progress-fill" style="width: 0%;"></div>
+                                        </div>
+                                        <div class="progress-text" style="font-size: 10px; text-align: right;">0%</div>
+                                    </div>
                                     <div class="task-meta">
                                         <span>${formattedDate} · in_progress</span>
                                         ${taskType === 'scheduled' ? '<span class="task-tag scheduled">定时</span>' : ''}
@@ -1629,6 +1824,10 @@
                             });
                         },
                         error: function() {
+                            // 移除loading状态
+                            createBtn.removeClass('loading');
+                            createBtn.prop('disabled', false);
+                            
                             // 关闭模态框
                             $('#new-task-modal').css('display', 'none');
                             

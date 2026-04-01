@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Set, Optional, Any
 from dataclasses import dataclass, field
+from .scheduler import TaskScheduler
 
 
 @dataclass
@@ -13,7 +14,7 @@ class DAGTask:
     blocked_by: List[str] = field(default_factory=list)
 
 
-class DAGScheduler:
+class DAGScheduler(TaskScheduler):
 
     def __init__(self):
         self.tasks: Dict[str, DAGTask] = {}
@@ -132,3 +133,60 @@ class DAGScheduler:
             "failed": list(self.failed),
             "blocked": list(self.blocked)
         }
+    
+    def schedule(self, task_id: str, task_data: Dict[str, Any]) -> bool:
+        """调度任务
+        
+        Args:
+            task_id: 任务ID
+            task_data: 任务数据
+            
+        Returns:
+            是否成功调度
+        """
+        step = task_data.get('step', len(self.tasks) + 1)
+        depends_on_steps = task_data.get('depends_on', [])
+        self.add_task(task_id, step, depends_on_steps)
+        return True
+    
+    def cancel(self, task_id: str) -> bool:
+        """取消任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            是否成功取消
+        """
+        if task_id in self.tasks:
+            self.tasks[task_id].status = "cancelled"
+            return True
+        return False
+    
+    def pause(self, task_id: str) -> bool:
+        """暂停任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            是否成功暂停
+        """
+        if task_id in self.tasks:
+            self.tasks[task_id].status = "paused"
+            return True
+        return False
+    
+    def resume(self, task_id: str) -> bool:
+        """恢复任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            是否成功恢复
+        """
+        if task_id in self.tasks:
+            self.tasks[task_id].status = "pending"
+            return True
+        return False

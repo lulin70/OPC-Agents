@@ -145,6 +145,76 @@ def delete_task(task_id):
         }), 500
 
 
+@health_bp.route('/tasks/batch', methods=['DELETE'])
+def batch_delete_tasks():
+    """批量删除任务"""
+    try:
+        opc = get_opc_manager()
+        
+        if not opc.task_manager:
+            return jsonify({"error": "TaskManager not initialized"}), 500
+        
+        data = request.get_json()
+        task_ids = data.get('task_ids', [])
+        
+        if not task_ids:
+            return jsonify({"error": "Task IDs are required"}), 400
+        
+        deleted_count = 0
+        for task_id in task_ids:
+            success = opc.task_manager.delete_task(task_id)
+            if success:
+                deleted_count += 1
+        
+        return jsonify({
+            "success": True,
+            "message": f"Deleted {deleted_count} out of {len(task_ids)} tasks",
+            "deleted_count": deleted_count,
+            "total_count": len(task_ids)
+        })
+    except Exception as e:
+        logger.error(f"Batch delete tasks failed: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+
+@health_bp.route('/tasks/export', methods=['GET'])
+def export_tasks():
+    """批量导出任务"""
+    try:
+        opc = get_opc_manager()
+        
+        if not opc.task_manager:
+            return jsonify({"error": "TaskManager not initialized"}), 500
+        
+        task_ids_str = request.args.get('task_ids', '')
+        task_ids = [id.strip() for id in task_ids_str.split(',') if id.strip()]
+        
+        if not task_ids:
+            return jsonify({"error": "Task IDs are required"}), 400
+        
+        tasks = {}
+        for task_id in task_ids:
+            task = opc.task_manager.get_task_status(task_id)
+            if task:
+                tasks[task_id] = task
+        
+        return jsonify({
+            "success": True,
+            "tasks": tasks,
+            "exported_count": len(tasks),
+            "requested_count": len(task_ids)
+        })
+    except Exception as e:
+        logger.error(f"Export tasks failed: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+
 
 
 @health_bp.route('/database', methods=['GET'])

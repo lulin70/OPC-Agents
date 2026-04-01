@@ -48,8 +48,8 @@ class TaskExecutor:
     负责从任务队列获取任务，分配给Agent执行，跟踪进度，生成成果物。
     """
     
-    def __init__(self, opc_manager, max_workers: int = 5, 
-                 progress_streamer=None, db_manager=None):
+    def __init__(self, opc_manager, max_workers: int = None, 
+                 progress_streamer=None, db_manager=None, event_bus=None):
         """初始化任务执行器
         
         Args:
@@ -57,11 +57,22 @@ class TaskExecutor:
             max_workers: 最大并行任务数
             progress_streamer: 进度流式传输器
             db_manager: 数据库管理器
+            event_bus: 事件总线
         """
         self.opc_manager = opc_manager
-        self.max_workers = max_workers
+        self.config = opc_manager.config
+        
+        # 从配置中获取参数
+        task_executor_config = self.config.get('task_executor', {})
+        self.max_workers = max_workers or task_executor_config.get('max_workers', 5)
+        self.task_timeout = task_executor_config.get('task_timeout', 300)
+        self.max_retry = task_executor_config.get('max_retry', 2)
+        self.queue_timeout = task_executor_config.get('queue_timeout', 1)
+        self.thread_join_timeout = task_executor_config.get('thread_join_timeout', 5)
+        
         self.progress_streamer = progress_streamer
         self.db_manager = db_manager
+        self.event_bus = event_bus
         
         self.logger = logging.getLogger("OPC-Agents.TaskExecutor")
         
@@ -74,15 +85,12 @@ class TaskExecutor:
         self.is_running = False
         self.executor_thread = None
         
-        # 任务超时设置（秒）
-        self.task_timeout = 300  # 5分钟
-        
         # 回调函数
         self.on_task_complete: Optional[Callable] = None
         self.on_task_failed: Optional[Callable] = None
         self.on_progress_update: Optional[Callable] = None
         
-        self.logger.info(f"TaskExecutor initialized with {max_workers} workers")
+        self.logger.info(f"TaskExecutor initialized with {self.max_workers} workers")
     
     def start(self):
         """启动任务执行器"""
@@ -138,7 +146,7 @@ class TaskExecutor:
                 
                 # 尝试获取任务
                 try:
-                    prioritized_task = self.task_queue.get(timeout=1)
+                    prioritized_task = self.task_queue.get(timeout=self.queue_timeout)
                 except:
                     continue
                 
@@ -251,9 +259,22 @@ class TaskExecutor:
             try:
                 agent = task_data.get("assigned_agent", "")
                 dept = task_data.get("department", "")
-                if agent and hasattr(self, '_opc_manager') and self._opc_manager:
-                    self._opc_manager.hr_enhancement.optimize_agent(agent, dept)
-                    self.logger.info(f"[HR联动] 任务成功，已触发Agent优化: {agent}")
+                if agent:
+                    if self.event_bus:
+                        # 发布任务完成事件
+                        self.event_bus.publish('task_completed', 
+                            task_id=task_id, 
+                            agent=agent, 
+                            department=dept, 
+                            task_name=task_name, 
+                            success=True
+                        )
+                        self.logger.info(f"[EventBus] 已发布任务完成事件: {task_id}")
+                    else:
+                        # 兼容模式：直接调用HR模块
+                        if hasattr(self, '_opc_manager') and self._opc_manager:
+                            self._opc_manager.hr_enhancement.optimize_agent(agent, dept)
+                            self.logger.info(f"[HR联动] 任务成功，已触发Agent优化: {agent}")
             except Exception as hr_err:
                 self.logger.warning(f"[HR联动] 优化Agent失败: {hr_err}")
 
@@ -261,7 +282,7 @@ class TaskExecutor:
             
         except Exception as e:
             current_retry = task_data.get("_retry_count", 0)
-            max_retry = task_data.get("_max_retry", 2)
+            max_retry = task_data.get("_max_retry", self.max_retry)
             if current_retry < max_retry:
                 self.logger.warning(f"[重试] {task_id} 第{current_retry+1}次重试, 错误: {e}")
                 self._broadcast_progress(task_id, TaskState.RUNNING, 50, f"重试中({current_retry+1}/{max_retry})...")
@@ -289,11 +310,26 @@ class TaskExecutor:
                     agent = task_data.get("assigned_agent", "")
                     dept = task_data.get("department", "")
                     description = task_data.get("description", "")
-                    if agent and hasattr(self, '_opc_manager') and self._opc_manager:
-                        alternatives = self._opc_manager.hr_enhancement.search_external_agents(description, dept)
-                        if alternatives:
-                            self.task_results[task_id]["suggested_replacements"] = alternatives
-                            self.logger.info(f"[HR联动] 任务失败，已搜寻到{len(alternatives)}个替代Agent")
+                    if agent:
+                        if self.event_bus:
+                            # 发布任务失败事件
+                            self.event_bus.publish('task_failed', 
+                                task_id=task_id, 
+                                agent=agent, 
+                                department=dept, 
+                                task_name=task_name, 
+                                description=description,
+                                error=str(e),
+                                success=False
+                            )
+                            self.logger.info(f"[EventBus] 已发布任务失败事件: {task_id}")
+                        else:
+                            # 兼容模式：直接调用HR模块
+                            if hasattr(self, '_opc_manager') and self._opc_manager:
+                                alternatives = self._opc_manager.hr_enhancement.search_external_agents(description, dept)
+                                if alternatives:
+                                    self.task_results[task_id]["suggested_replacements"] = alternatives
+                                    self.logger.info(f"[HR联动] 任务失败，已搜寻到{len(alternatives)}个替代Agent")
                 except Exception as hr_err:
                     self.logger.warning(f"[HR联动] 搜寻替代Agent失败: {hr_err}")
     

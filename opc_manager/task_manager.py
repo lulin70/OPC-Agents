@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class TaskManager:
     """Task manager for OPC-Agents system"""
     
-    def __init__(self, communication_manager, db_manager: 'DatabaseManager' = None):
+    def __init__(self, communication_manager: Any, db_manager: Optional['DatabaseManager'] = None):
         """Initialize the Task Manager
         
         Args:
@@ -458,7 +458,15 @@ class TaskManager:
         
         return report
     
-    def create_task(self, task_id: str, task_name: str, agent: str, initial_status: str = "pending"):
+    def create_task(self, task_id: str, task_name: str, agent: str, initial_status: str = "pending") -> None:
+        """创建新任务
+        
+        Args:
+            task_id: 任务ID
+            task_name: 任务名称
+            agent: 分配的代理
+            initial_status: 初始状态
+        """
         self.communication_manager.create_task(task_id, task_name, agent, initial_status)
         work_dir = self._create_work_dir(task_id, task_name)
         if work_dir:

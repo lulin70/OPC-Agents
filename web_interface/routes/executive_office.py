@@ -382,19 +382,22 @@ def register_routes(manager):
 
         from opc_manager.dag_scheduler import DAGScheduler
 
-        dag = DAGScheduler()
+        scheduler = DAGScheduler()
         for i, step in enumerate(execution_steps):
             sub_task_id = f"{task_id}-step{i+1}"
-            dag.add_task(sub_task_id, step.get('step', i+1), step.get('depends_on', []))
+            scheduler.schedule(sub_task_id, {
+                'step': step.get('step', i+1),
+                'depends_on': step.get('depends_on', [])
+            })
 
-        if not dag.is_dag():
+        if not hasattr(scheduler, 'is_dag') or not scheduler.is_dag():
             return jsonify({"error": "执行计划存在循环依赖，请修改后重试"}), 400
 
         dispatched = []
         previous_outputs = []
 
         while True:
-            ready = dag.get_ready_tasks()
+            ready = scheduler.get_ready_tasks()
             if not ready:
                 break
             for sub_task_id in ready:
@@ -481,7 +484,7 @@ def register_routes(manager):
                     "agent": agent
                 })
 
-                dag.on_task_completed(sub_task_id)
+                scheduler.on_task_completed(sub_task_id)
 
         if task_id in getattr(manager, '_pending_plans', {}):
             del manager._pending_plans[task_id]
