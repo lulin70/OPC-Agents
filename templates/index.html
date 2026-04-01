@@ -760,6 +760,31 @@
                     <h1>任务管理</h1>
                 </div>
                 
+                <!-- 过滤器和排序器 -->
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                        <div style="flex: 1; align-items: center;">
+                            <label style="font-size: 13px; color: var(--text-secondary);">状态:</label>
+                            <select id="task-filter-status" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                                <option value="">全部</option>
+                                <option value="pending">待执行</option>
+                                <option value="in_progress">进行中</option>
+                                <option value="completed">已完成</option>
+                                <option value="failed">失败</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; align-items: center;">
+                            <label style="font-size: 13px; color: var(--text-secondary);">排序:</label>
+                            <select id="task-sort" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px;">
+                                <option value="updated_at_desc">最新</option>
+                                <option value="updated_at_asc">最早</option>
+                                <option value="name_asc">名称A-Z</option>
+                                <option value="name_desc">名称Z-A</option>
+                            </select>
+                        </div>
+                        <button id="refresh-tasks-btn" style="padding: 4px 12px; background: var(--accent); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">🔄 刷新</button>
+                    </div>
+                
                 <!-- 新建任务按钮 -->
                 <div class="new-task">
                     <button class="new-task-btn" id="new-task-btn">
@@ -1667,6 +1692,68 @@
             // 顶部导航栏点击事件
             $('.top-nav-item').on('click', function() {
                 console.log('导航到:', $(this).text());
+            });
+            
+            // 过滤器和排序器
+            function loadTasks() {
+                var status = $('#task-filter-status').val() || '';
+                var sort = $('#task-sort').val() || 'updated_at_desc';
+                
+                $.get('/api/tasks?status=' + encodeURIComponent(status) + '&sort=' + encodeURIComponent(sort), function(data) {
+                    var tasks = data.tasks || [];
+                    
+                    var tasksHtml = '';
+                    if (tasks.length > 0) {
+                        tasks.forEach(function(task) {
+                            var statusClass = '';
+                            var statusText = '';
+                            if (task.status === 'pending') {
+                                statusClass = 'status-pending';
+                                statusText = '待执行';
+                            } else if (task.status === 'in_progress') {
+                                statusClass = 'status-in-progress';
+                                statusText = '进行中';
+                            } else if (task.status === 'completed') {
+                                statusClass = 'status-completed';
+                                statusText = '已完成';
+                            } else {
+                                statusClass = 'status-failed';
+                                statusText = '失败';
+                            }
+                            
+                            tasksHtml += '<div class="task-item" data-task-id="' + task.id + '">';
+                            tasksHtml += '<div class="task-title">' + task.name + '</div>';
+                            tasksHtml += '<div class="task-preview">' + (task.description || '无描述') + '</div>';
+                            tasksHtml += '<div class="task-meta">';
+                            tasksHtml += '<span>' + (task.updated_at || '--') + ' · ' + statusText + '</span>';
+                            tasksHtml += '</div>';
+                            tasksHtml += '<div class="task-actions-inline">';
+                            tasksHtml += '<button class="task-act-btn" title="重命名" onclick="event.stopPropagation();renameTask(\'' + task.id + '\',\'' + task.name + '\')">✏️</button>';
+                            tasksHtml += '<button class="task-act-btn dir" title="打开工作目录" onclick="event.stopPropagation();openWorkDir(\'' + task.id + '\')">📁</button>';
+                            tasksHtml += '<button class="task-act-btn del" title="删除任务" onclick="event.stopPropagation();deleteTask(\'' + task.id + '\',\'' + task.name + '\')">🗑️</button>';
+                            tasksHtml += '</div>';
+                            tasksHtml += '</div>';
+                        });
+                    } else {
+                        tasksHtml = '<div class="task-item">无任务</div>';
+                    }
+                    
+                    $('.history-section:first .section-title').after(tasksHtml);
+                });
+            }
+            
+            $('#task-filter-status').on('change', function() {
+                var status = $(this).val();
+                loadTasks();
+            });
+            
+            $('#task-sort').on('change', function() {
+                var sort = $(this).val();
+                loadTasks();
+            });
+            
+            $('#refresh-tasks-btn').on('click', function() {
+                loadTasks();
             });
             
             // 初始滚动到底部

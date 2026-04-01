@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务详情 - OPC Agency</title>
+    <style>
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+            --accent: #1890ff;
+            --success: #52c41a;
+            --danger: #ff4d4f;
+            --btn-success: #4CAF50;
+            --btn-danger: #f44336;
+        }
+        [data-theme="dark"] {
+            --bg-primary: #141414;
+            --bg-secondary: #1f1f1f;
+            --bg-card: #262626;
+            --text-primary: #e6e6e6;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --accent: #40a9ff;
+            --success: #73d13d;
+            --danger: #ff7875;
+            --btn-success: #52c41a;
+            --btn-danger: #ff7875;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .top-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .top-bar h1 { font-size: 18px; font-weight: 600; }
+        .back-btn {
+            padding: 6px 16px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .container { max-width: 900px; margin: 24px auto; padding: 0 20px; }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; }
+        .info-label { color: var(--text-secondary); font-size: 14px; }
+        .info-value { font-weight: 500; }
+        .section-title { font-size: 15px; font-weight: 600; margin-top: 16px; margin-bottom: 8px; color: var(--accent); }
+        .subtask-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .subtask-item:last-child { border-bottom: none; }
+        .subtask-status { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .status-pending { background: #fff3cd; color: #666; }
+        .status-in-progress { background: #1890ff; color: #fff; }
+        .status-completed { background: var(--success); color: #fff; }
+        .status-failed { background: var(--danger); color: #fff; }
+        .log-entry { padding: 8px; border-left: 3px solid var(--border-color); font-size: 13px; }
+        .log-time { color: var(--text-secondary); font-size: 12px; }
+        .btn { padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .action-bar { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+        .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <h1>📋 任务详情</h1>
+        <a href="/" class="back-btn">← 返回首页</a>
+    </div>
+    <div class="container">
+        <div class="card">
+            <h2>任务信息</h2>
+            <div class="info-row">
+                <span class="info-label">任务ID</span>
+                <span class="info-value" id="task-id">加载中...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">任务名称</span>
+                <span class="info-value" id="task-name">加载中...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">描述</span>
+                <span class="info-value" id="task-description">加载中...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">部门</span>
+                <span class="info-value" id="task-department">加载中...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">优先级</span>
+                <span class="info-value" id="task-priority">加载中...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">状态</span>
+                <span class="info-value" id="task-status">加载中...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">创建时间</span>
+                <span class="info-value" id="task-created">加载中...</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">完成时间</span>
+                <span class="info-value" id="task-completed">加载中...</span>
+            </div>
+        </div>
+        <div class="card">
+            <h2>子任务列表</h2>
+            <div id="subtasks-container" class="loading">加载中...</div>
+        </div>
+        <div class="card">
+            <h2>执行日志</h2>
+            <div id="logs-container" class="loading">加载中...</div>
+        </div>
+        <div class="card">
+            <h2>产出物</h2>
+            <div id="artifacts-container" class="loading">加载中...</div>
+        </div>
+        <div class="card action-bar">
+            <button class="btn btn-primary" onclick="renameTask()">重命名</button>
+            <button class="btn btn-success" onclick="rerunTask()">重新执行</button>
+            <button class="btn btn-danger" onclick="deleteTask()">删除任务</button>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var taskId = new URLSearchParams(window.location.search).get('id');
+            if (!taskId) {
+                window.location.href = '/';
+                return;
+            }
+            
+            $.get('/api/tasks/' + taskId, function(data) {
+                if (!data || !data.task) {
+                    $('#task-id').text('任务不存在');
+                    $('#task-name').text('任务不存在');
+                    $('#task-description').text('任务不存在');
+                    $('#task-department').text('任务不存在');
+                    $('#task-priority').text('任务不存在');
+                    $('#task-status').text('任务不存在');
+                    $('#task-created').text('任务不存在');
+                    $('#task-completed').text('任务不存在');
+                    $('#subtasks-container').html('<div class="empty-state">任务不存在</div>');
+                    $('#logs-container').html('<div class="empty-state">任务不存在</div>');
+                    $('#artifacts-container').html('<div class="empty-state">任务不存在</div>');
+                    $('.action-bar button').prop('disabled', true);
+                    return;
+                }
+                
+                var task = data.task;
+                $('#task-id').text(task.id);
+                $('#task-name').text(task.name);
+                $('#task-description').text(task.description || '无描述');
+                $('#task-department').text(task.department || '未分配');
+                $('#task-priority').text(task.priority || '未设置');
+                $('#task-status').text(task.status || '未知');
+                $('#task-created').text(task.created_at || '未知');
+                $('#task-completed').text(task.completed_at || '未完成');
+                
+                var subtasksHtml = '';
+                if (task.subtasks && task.subtasks.length > 0) {
+                    task.subtasks.forEach(function(subtask, index) {
+                        var statusClass = '';
+                        var statusText = '';
+                        if (subtask.status === 'pending') {
+                            statusClass = 'status-pending';
+                            statusText = '待执行';
+                        } else if (subtask.status === 'in_progress') {
+                            statusClass = 'status-in-progress';
+                            statusText = '执行中';
+                        } else if (subtask.status === 'completed') {
+                            statusClass = 'status-completed';
+                            statusText = '已完成';
+                        } else {
+                            statusClass = 'status-failed';
+                            statusText = '失败';
+                        }
+                        subtasksHtml += '<div class="subtask-item">';
+                        subtasksHtml += '<div class="subtask-status ' + statusClass + '">' + statusText + '</div>';
+                        subtasksHtml += '<div style="flex:1;">' + subtask.name + '</div>';
+                        subtasksHtml += '<div style="flex:1;">' + subtask.description + '</div>';
+                        subtasksHtml += '<div style="flex:1;">' + subtask.assigned_agent + '</div>';
+                        subtasksHtml += '</div>';
+                    });
+                } else {
+                    subtasksHtml = '<div class="empty-state">暂无子任务</div>';
+                }
+                $('#subtasks-container').html(subtasksHtml);
+                
+                $.get('/api/tasks/' + taskId + '/logs', function(data) {
+                    var logs = data.logs || [];
+                    if (logs.length > 0) {
+                        var logsHtml = '';
+                        logs.forEach(function(log) {
+                            var time = new Date(log.timestamp).toLocaleString('zh-CN');
+                            logsHtml += '<div class="log-entry">';
+                            logsHtml += '<span class="log-time">' + time + '</span>';
+                            logsHtml += '<span>' + log.message + '</span>';
+                            logsHtml += '</div>';
+                        });
+                        $('#logs-container').html(logsHtml);
+                    } else {
+                        $('#logs-container').html('<div class="empty-state">暂无日志</div>');
+                    }
+                });
+                
+                $.get('/api/tasks/' + taskId + '/artifacts', function(data) {
+                    var artifacts = data.artifacts || [];
+                    if (artifacts.length > 0) {
+                        var artifactsHtml = '';
+                        artifacts.forEach(function(artifact) {
+                            artifactsHtml += '<div style="padding:8px 0;"><a href="' + artifact.path + '" style="color:var(--accent);">' + artifact.name + '</a></div>';
+                        });
+                        $('#artifacts-container').html(artifactsHtml);
+                    } else {
+                        $('#artifacts-container').html('<div class="empty-state">暂无产出物</div>');
+                    }
+                });
+                
+                $('.action-bar button').prop('disabled', false);
+            });
+            
+            function renameTask() {
+                var newName = prompt('请输入新的任务名称：');
+                if (newName && newName !== task.name) {
+                    $.ajax({
+                        url: '/api/tasks/' + taskId,
+                        method: 'PUT',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ name: newName }),
+                        success: function() {
+                            alert('任务重命名成功');
+                            window.location.reload();
+                        },
+                        error: function(xhr) {
+                            alert('重命名失败：' + (xhr.responseJSON?.error || '未知错误'));
+                        }
+                    });
+                }
+            }
+            
+            function rerunTask() {
+                if (confirm('确定要重新执行此任务吗？')) {
+                    $.ajax({
+                        url: '/api/tasks/' + taskId + '/rerun',
+                        method: 'POST',
+                        success: function() {
+                            alert('任务已重新执行');
+                            window.location.reload();
+                        },
+                        error: function(xhr) {
+                            alert('重新执行失败：' + (xhr.responseJSON?.error || '未知错误'));
+                        }
+                    });
+                }
+            }
+            
+            function deleteTask() {
+                if (confirm('确定要删除此任务吗？此操作不可撤销！')) {
+                    $.ajax({
+                        url: '/api/tasks/' + taskId,
+                        method: 'DELETE',
+                        success: function() {
+                            alert('任务已删除');
+                            window.location.href = '/';
+                        },
+                        error: function(xhr) {
+                            alert('删除失败：' + (xhr.responseJSON?.error || '未知错误'));
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

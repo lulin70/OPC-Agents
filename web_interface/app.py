@@ -237,6 +237,10 @@ def finance_page():
 def settings_page():
     return render_template('settings.html')
 
+@app.route('/task/<task_id>')
+def task_detail_page(task_id):
+    return render_template('task_detail.html')
+
 # SSE实时进度推送（带去重和节流）
 @app.route('/api/progress/stream')
 def progress_stream():

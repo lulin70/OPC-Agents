@@ -959,3 +959,60 @@ class TaskManager:
             import logging
             logging.getLogger("OPC-Agents.TaskManager").warning(f"获取成果物失败: {e}")
             return []
+    
+    def get_task_logs(self, task_id: str) -> List[Dict[str, Any]]:
+        """获取任务的执行日志
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            执行日志列表
+        """
+        if not self.communication_manager:
+            return []
+        
+        try:
+            logs = self.communication_manager.get_task_history(task_id)
+            return logs
+        except Exception as e:
+            import logging
+            logging.getLogger("OPC-Agents.TaskManager").warning(f"获取任务日志失败: {e}")
+            return []
+    
+    def rerun_task(self, task_id: str) -> bool:
+        """重新执行任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            是否成功重新执行
+        """
+        if not self.communication_manager:
+            print("[TaskManager] CommunicationManager not initialized")
+            return False
+        
+        try:
+            task = self.communication_manager.task_status.get(task_id, {})
+            
+            if not task:
+                print(f"[TaskManager] Task {task_id} not found")
+                return False
+            
+            current_status = task.get("status", "unknown")
+            
+            if current_status not in ["completed", "failed"]:
+                print(f"[TaskManager] Task {task_id} status is {current_status}, cannot rerun")
+                return False
+            
+            new_status = "pending"
+            self.update_task_status(task_id, new_status)
+            
+            print(f"[TaskManager] Task {task_id} rerun initiated, status changed from {current_status} to {new_status}")
+            return True
+        except Exception as e:
+            import logging
+            logging.getLogger("OPC-Agents.TaskManager").error(f"重新执行任务失败: {e}")
+            return False
+

@@ -45,6 +45,107 @@ def health_overview():
             "error": str(e)
         }), 500
 
+@health_bp.route('/task/<task_id>', methods=['GET'])
+def get_task_detail(task_id):
+    """获取任务详情"""
+    try:
+        opc = get_opc_manager()
+        
+        if not opc.task_manager:
+            return jsonify({"error": "TaskManager not initialized"}), 500
+        
+        task = opc.task_manager.get_task_status(task_id)
+        
+        if not task:
+            return jsonify({"error": "Task not found"}), 404
+        
+        return jsonify({
+            "task": task,
+            "subtasks": opc.task_manager.get_task_history(task_id) if task else [],
+            "logs": opc.task_manager.get_task_logs(task_id) if task else [],
+            "artifacts": opc.task_manager.get_task_deliverables(task_id) if task else []
+        })
+    except Exception as e:
+        logger.error(f"Get task detail failed: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+@health_bp.route('/tasks/<task_id>/rerun', methods=['POST'])
+def rerun_task(task_id):
+    """重新执行任务"""
+    try:
+        opc = get_opc_manager()
+        
+        if not opc.task_manager:
+            return jsonify({"error": "TaskManager not initialized"}), 500
+        
+        success = opc.task_manager.rerun_task(task_id)
+        
+        return jsonify({
+            "success": success,
+            "message": "Task rerun initiated" if success else "Task rerun failed"
+        })
+    except Exception as e:
+        logger.error(f"Rerun task failed: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+@health_bp.route('/tasks/<task_id>/rename', methods=['PUT'])
+def rename_task(task_id):
+    """重命名任务"""
+    try:
+        opc = get_opc_manager()
+        
+        if not opc.task_manager:
+            return jsonify({"error": "TaskManager not initialized"}), 500
+        
+        data = request.get_json()
+        new_name = data.get('name')
+        
+        if not new_name:
+            return jsonify({"error": "Name is required"}), 400
+        
+        success = opc.task_manager.rename_task(task_id, new_name)
+        
+        return jsonify({
+            "success": success,
+            "message": "Task renamed successfully" if success else "Failed to rename task"
+        })
+    except Exception as e:
+        logger.error(f"Rename task failed: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+@health_bp.route('/tasks/<task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    """删除任务"""
+    try:
+        opc = get_opc_manager()
+        
+        if not opc.task_manager:
+            return jsonify({"error": "TaskManager not initialized"}), 500
+        
+        success = opc.task_manager.delete_task(task_id)
+        
+        return jsonify({
+            "success": success,
+            "message": "Task deleted successfully" if success else "Failed to delete task"
+        })
+    except Exception as e:
+        logger.error(f"Delete task failed: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+
+
 
 @health_bp.route('/database', methods=['GET'])
 def health_database():
@@ -120,10 +221,55 @@ def health_tasks():
                 status = task.get("status", "unknown")
                 status_counts[status] = status_counts.get(status, 0) + 1
             task_stats["status_counts"] = status_counts
-        
-        return jsonify(task_stats)
+            
+            return jsonify({
+                "status": "healthy",
+                "tasks": all_tasks,
+                "statistics": task_stats["statistics"]
+            })
     except Exception as e:
         logger.error(f"Tasks health check failed: {e}")
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+@health_bp.route('/tasks', methods=['GET'])
+def get_tasks():
+    """获取任务列表（支持过滤和排序）"""
+    try:
+        opc = get_opc_manager()
+        
+        if not opc.task_manager:
+            return jsonify({"error": "TaskManager not initialized"}), 500
+        
+        status = request.args.get('status', '')
+        sort = request.args.get('sort', 'updated_at_desc')
+        
+        tasks = opc.task_manager.get_all_tasks()
+        
+        filtered_tasks = {}
+        if status:
+            for task_id, task in tasks.items():
+                if task.get('status') == status:
+                    filtered_tasks[task_id] = task
+        else:
+            filtered_tasks = tasks
+        
+        if sort == 'updated_at_desc':
+            sorted_tasks = dict(sorted(filtered_tasks.items(), key=lambda x: x[1].get('updated_at', ''), reverse=True))
+        elif sort == 'updated_at_asc':
+            sorted_tasks = dict(sorted(filtered_tasks.items(), key=lambda x: x[1].get('updated_at', ''), reverse=False))
+        elif sort == 'name_asc':
+            sorted_tasks = dict(sorted(filtered_tasks.items(), key=lambda x: x[1].get('name', ''), reverse=False))
+        elif sort == 'name_desc':
+            sorted_tasks = dict(sorted(filtered_tasks.items(), key=lambda x: x[1].get('name', ''), reverse=True))
+        else:
+            sorted_tasks = filtered_tasks
+        
+        return jsonify(sorted_tasks)
+    except Exception as e:
+        logger.error(f"Get tasks failed: {e}")
         return jsonify({
             "status": "error",
             "error": str(e)
