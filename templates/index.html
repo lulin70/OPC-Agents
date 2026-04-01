@@ -431,6 +431,136 @@
             background-color: var(--color-primary-dark);
         }
         
+        /* Loading状态 */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid var(--color-white);
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 提示信息 */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: var(--border-radius-md);
+            color: var(--color-white);
+            font-size: var(--font-size-sm);
+            z-index: var(--z-index-modal);
+            animation: slideIn 0.3s ease-out;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .toast.success {
+            background-color: var(--color-success);
+        }
+        
+        .toast.error {
+            background-color: var(--color-danger);
+        }
+        
+        .toast.info {
+            background-color: var(--color-primary);
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* 任务执行进度条 */
+        .task-progress-bar {
+            margin: var(--spacing-lg) 0;
+            padding: var(--spacing-lg);
+            background-color: var(--color-bg-secondary);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .progress-title {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+        }
+        
+        .progress-percentage {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-primary);
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: var(--color-bg-primary);
+            border-radius: var(--border-radius-full);
+            overflow: hidden;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--color-primary);
+            border-radius: var(--border-radius-full);
+            transition: width var(--transition-slow);
+        }
+        
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        
+        .progress-step.active {
+            color: var(--color-primary);
+            font-weight: var(--font-weight-medium);
+        }
+        
+        .progress-step.completed {
+            color: var(--color-success);
+        }
+        
         /* 滚动条样式 */
         ::-webkit-scrollbar {
             width: 6px;
@@ -729,7 +859,7 @@
                         <div class="section-title" aria-level="3">最近任务</div>
                         {% if tasks %}
                             {% for task in tasks|sort(attribute='updated_at', reverse=true) %}
-                                <div class="task-item {% if loop.first %}active{% endif %}" data-task-id="{{ task.id }}" role="listitem" aria-label="任务: {{ task.name }}, 状态: {{ task.status }}, 进度: {{ task.progress|default(0) }}%">
+                                <div class="task-item {% if loop.first %}active{% endif %}" data-task-id="{{ task.id }}" role="listitem" aria-label="任务: {{ task.name }}, 状态: {{ task.status }}, 进度: {{ task.progress|default(0) }}%" onclick="window.location.href='/task/{{ task.id }}'">
                                     <div class="task-title">{{ task.name }}</div>
                                     <div class="task-preview">{{ task.name }}</div>
                                     <div class="task-progress" style="margin: 4px 0;" aria-label="任务进度: {{ task.progress|default(0) }}%">
@@ -879,6 +1009,92 @@
                 this.style.height = (this.scrollHeight) + 'px';
             });
             
+            // Toast提示函数
+            function showToast(message, type = 'info') {
+                var toast = $('<div class="toast ' + type + '">' + message + '</div>');
+                $('body').append(toast);
+                setTimeout(function() {
+                    toast.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }, 3000);
+            }
+            
+            // 进度条管理
+            var currentProgressBar = null;
+            
+            function createProgressBar(taskId) {
+                // 移除旧的进度条
+                if (currentProgressBar) {
+                    currentProgressBar.remove();
+                }
+                
+                // 创建新的进度条
+                var progressHtml = `
+                    <div class="task-progress-bar" id="progress-bar-${taskId}">
+                        <div class="progress-header">
+                            <div class="progress-title">任务执行中</div>
+                            <div class="progress-percentage">0%</div>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-steps">
+                            <div class="progress-step active">接收任务</div>
+                            <div class="progress-step">三贤者决策</div>
+                            <div class="progress-step">任务分解</div>
+                            <div class="progress-step">执行任务</div>
+                            <div class="progress-step">结果校验</div>
+                        </div>
+                    </div>
+                `;
+                
+                $('#message-area').append(progressHtml);
+                currentProgressBar = $('#progress-bar-' + taskId);
+                $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+            }
+            
+            function updateProgress(taskId, percentage, step) {
+                if (!currentProgressBar) return;
+                
+                // 更新进度条
+                currentProgressBar.find('.progress-percentage').text(percentage + '%');
+                currentProgressBar.find('.progress-bar-fill').css('width', percentage + '%');
+                
+                // 更新步骤状态
+                var steps = currentProgressBar.find('.progress-step');
+                steps.removeClass('active completed');
+                
+                for (var i = 0; i < steps.length; i++) {
+                    if (i < step) {
+                        $(steps[i]).addClass('completed');
+                    } else if (i === step) {
+                        $(steps[i]).addClass('active');
+                    }
+                }
+                
+                $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+            }
+            
+            function removeProgressBar() {
+                if (currentProgressBar) {
+                    currentProgressBar.remove();
+                    currentProgressBar = null;
+                }
+            }
+            
+            // 为按钮添加loading状态
+            function addButtonLoading(btn) {
+                btn.addClass('btn-loading');
+                btn.prop('disabled', true);
+            }
+            
+            // 移除按钮loading状态
+            function removeButtonLoading(btn) {
+                btn.removeClass('btn-loading');
+                btn.prop('disabled', false);
+            }
+            
             // 发送消息
             $('#message-form').on('submit', function(e) {
                 e.preventDefault();
@@ -886,8 +1102,7 @@
                 var sendBtn = $('.send-btn');
                 if (message) {
                     // 添加loading状态
-                    sendBtn.addClass('loading');
-                    sendBtn.prop('disabled', true);
+                    addButtonLoading(sendBtn);
                     
                     var now = new Date();
                     var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
@@ -900,17 +1115,28 @@
                     `;
                     $('#message-area').append(userMessageHtml);
                     
-                    // 显示加载动画
-                    var loadingHtml = `
-                        <div class="loading-indicator" id="loading-indicator">
-                            <div class="loading-dots">
-                                <span></span><span></span><span></span>
-                            </div>
-                            <span style="font-size: 12px; color: #999; margin-left: 8px;">总裁办处理中...</span>
-                        </div>
-                    `;
-                    $('#message-area').append(loadingHtml);
-                    $('#loading-indicator').show();
+                    // 创建进度条
+                            createProgressBar(activeTaskId);
+                            
+                            // 模拟进度更新
+                            var progress = 0;
+                            var step = 0;
+                            var progressInterval = setInterval(function() {
+                                progress += 5;
+                                if (progress > 100) progress = 100;
+                                
+                                // 更新步骤
+                                if (progress >= 20 && step === 0) step = 1;
+                                if (progress >= 40 && step === 1) step = 2;
+                                if (progress >= 60 && step === 2) step = 3;
+                                if (progress >= 80 && step === 3) step = 4;
+                                
+                                updateProgress(activeTaskId, progress, step);
+                                
+                                if (progress >= 100) {
+                                    clearInterval(progressInterval);
+                                }
+                            }, 200);
                     
                     $('#message-input').val('').height('auto');
                     $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
@@ -951,10 +1177,10 @@
                         data: JSON.stringify({ message: message }),
                         success: function(response) {
                             // 移除loading状态
-                            sendBtn.removeClass('loading');
-                            sendBtn.prop('disabled', false);
+                            removeButtonLoading(sendBtn);
                             
-                            $('#loading-indicator').remove();
+                            // 移除进度条
+                            removeProgressBar();
                             
                             var content = response.content || '处理完成';
                             var renderedContent = typeof marked !== 'undefined' ? marked.parse(content) : content.replace(/\n/g, '<br>');
@@ -991,13 +1217,15 @@
                             }
                             
                             $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                            showToast('消息处理成功', 'success');
                         },
                         error: function(xhr, status, error) {
                             // 移除loading状态
-                            sendBtn.removeClass('loading');
-                            sendBtn.prop('disabled', false);
+                            removeButtonLoading(sendBtn);
                             
-                            $('#loading-indicator').remove();
+                            // 移除进度条
+                            removeProgressBar();
+                            
                             var errorMsg = '处理消息时出现错误';
                             try { errorMsg = JSON.parse(xhr.responseText).error || errorMsg; } catch(e) {}
                             var executiveMessageHtml = `
@@ -1011,6 +1239,7 @@
                             `;
                             $('#message-area').append(executiveMessageHtml);
                             $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+                            showToast('消息处理失败: ' + errorMsg, 'error');
                         }
                     });
                 }
@@ -1194,6 +1423,213 @@
                     e.preventDefault();
                     window.toggleTheme();
                 }
+            });
+            
+            // 过滤和排序逻辑
+            var tasksData = [];
+            
+            // 加载任务数据
+            function loadTasks() {
+                $.ajax({
+                    url: '/api/tasks',
+                    method: 'GET',
+                    success: function(tasks) {
+                        tasksData = tasks;
+                        applyFiltersAndSort();
+                    },
+                    error: function() {
+                        showToast('加载任务失败', 'error');
+                    }
+                });
+            }
+            
+            // 应用过滤和排序
+            function applyFiltersAndSort() {
+                var statusFilter = $('#task-filter-status').val();
+                var sortBy = $('#task-sort').val();
+                
+                // 过滤任务
+                var filteredTasks = tasksData;
+                if (statusFilter) {
+                    filteredTasks = filteredTasks.filter(function(task) {
+                        return task.status === statusFilter;
+                    });
+                }
+                
+                // 排序任务
+                filteredTasks.sort(function(a, b) {
+                    switch (sortBy) {
+                        case 'updated_at_desc':
+                            return new Date(b.updated_at) - new Date(a.updated_at);
+                        case 'updated_at_asc':
+                            return new Date(a.updated_at) - new Date(b.updated_at);
+                        case 'name_asc':
+                            return a.name.localeCompare(b.name);
+                        case 'name_desc':
+                            return b.name.localeCompare(a.name);
+                        default:
+                            return 0;
+                    }
+                });
+                
+                // 更新任务列表
+                updateTaskList(filteredTasks);
+            }
+            
+            // 更新任务列表
+            function updateTaskList(tasks) {
+                var taskList = $('.task-history .history-section:first .task-item');
+                taskList.remove();
+                
+                var taskHistory = $('.task-history .history-section:first');
+                
+                if (tasks.length === 0) {
+                    taskHistory.append(`
+                        <div class="task-item" role="listitem" aria-label="无任务">
+                            <div class="task-title">无任务</div>
+                            <div class="task-preview">请创建新任务</div>
+                            <div class="task-meta">
+                                <span>--</span>
+                            </div>
+                        </div>
+                    `);
+                    return;
+                }
+                
+                tasks.forEach(function(task, index) {
+                    var activeClass = index === 0 ? 'active' : '';
+                    taskHistory.append(`
+                        <div class="task-item ${activeClass}" data-task-id="${task.id}" role="listitem" aria-label="任务: ${task.name}, 状态: ${task.status}, 进度: ${task.progress || 0}%">
+                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                <input type="checkbox" class="task-checkbox" data-task-id="${task.id}" style="margin-top: 4px; cursor: pointer;" onchange="event.stopPropagation();">
+                                <div style="flex: 1;" onclick="window.location.href='/task/${task.id}'">
+                                    <div class="task-title">${task.name}</div>
+                                    <div class="task-preview">${task.name}</div>
+                                    <div class="task-progress" style="margin: 4px 0;" aria-label="任务进度: ${task.progress || 0}%">
+                                        <div class="progress-bar" style="height: 4px; margin-bottom: 2px;" role="progressbar" aria-valuenow="${task.progress || 0}" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-fill" style="width: ${task.progress || 0}%;"></div>
+                                        </div>
+                                        <div class="progress-text" style="font-size: 10px; text-align: right;">${task.progress || 0}%</div>
+                                    </div>
+                                    <div class="task-meta">
+                                        <span>${task.updated_at} · ${task.status}</span>
+                                    </div>
+                                </div>
+                                <div class="task-actions-inline" aria-label="任务操作">
+                                    <button class="task-act-btn" title="重命名" aria-label="重命名任务: ${task.name}" onclick="event.stopPropagation();renameTask('${task.id}','${task.name}')">✏️</button>
+                                    <button class="task-act-btn dir" title="打开工作目录" aria-label="打开工作目录" onclick="event.stopPropagation();openWorkDir('${task.id}')">📁</button>
+                                    <button class="task-act-btn del" title="删除任务" aria-label="删除任务: ${task.name}" onclick="event.stopPropagation();deleteTask('${task.id}','${task.name}')">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+            }
+            
+            // 批量操作按钮事件
+            $('#select-all-tasks').click(function() {
+                var btn = $(this);
+                addButtonLoading(btn);
+                setTimeout(function() {
+                    $('.task-checkbox').prop('checked', true);
+                    removeButtonLoading(btn);
+                    showToast('已全选任务', 'success');
+                }, 500);
+            });
+            
+            $('#deselect-all-tasks').click(function() {
+                var btn = $(this);
+                addButtonLoading(btn);
+                setTimeout(function() {
+                    $('.task-checkbox').prop('checked', false);
+                    removeButtonLoading(btn);
+                    showToast('已取消全选', 'success');
+                }, 500);
+            });
+            
+            $('#batch-delete-tasks').click(function() {
+                var btn = $(this);
+                var selectedTasks = $('.task-checkbox:checked');
+                
+                if (selectedTasks.length === 0) {
+                    showToast('请先选择要删除的任务', 'error');
+                    return;
+                }
+                
+                if (!confirm('确认批量删除选中的 ' + selectedTasks.length + ' 个任务？')) return;
+                
+                addButtonLoading(btn);
+                
+                var taskIds = selectedTasks.map(function() {
+                    return $(this).data('task-id');
+                }).get();
+                
+                $.ajax({
+                    url: '/api/tasks/batch/delete',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ task_ids: taskIds }),
+                    success: function() {
+                        removeButtonLoading(btn);
+                        showToast('批量删除成功', 'success');
+                        loadTasks(); // 重新加载任务列表
+                    },
+                    error: function(xhr) {
+                        removeButtonLoading(btn);
+                        var errorMsg = '批量删除失败';
+                        try { errorMsg = JSON.parse(xhr.responseText).error || errorMsg; } catch(e) {}
+                        showToast('批量删除失败: ' + errorMsg, 'error');
+                    }
+                });
+            });
+            
+            $('#batch-export-tasks').click(function() {
+                var btn = $(this);
+                var selectedTasks = $('.task-checkbox:checked');
+                
+                if (selectedTasks.length === 0) {
+                    showToast('请先选择要导出的任务', 'error');
+                    return;
+                }
+                
+                addButtonLoading(btn);
+                
+                var taskIds = selectedTasks.map(function() {
+                    return $(this).data('task-id');
+                }).get();
+                
+                // 创建导出链接
+                var exportUrl = '/api/tasks/batch/export?task_ids=' + taskIds.join(',');
+                window.open(exportUrl, '_blank');
+                
+                setTimeout(function() {
+                    removeButtonLoading(btn);
+                    showToast('批量导出成功', 'success');
+                }, 1000);
+            });
+            
+            $('#refresh-tasks-btn').click(function() {
+                var btn = $(this);
+                addButtonLoading(btn);
+                loadTasks();
+                setTimeout(function() {
+                    removeButtonLoading(btn);
+                    showToast('任务列表已刷新', 'success');
+                }, 1000);
+            });
+            
+            // 过滤和排序事件
+            $('#task-filter-status').change(function() {
+                applyFiltersAndSort();
+            });
+            
+            $('#task-sort').change(function() {
+                applyFiltersAndSort();
+            });
+            
+            // 页面加载时加载任务
+            $(document).ready(function() {
+                loadTasks();
             });
             
             // 为任务项添加键盘支持

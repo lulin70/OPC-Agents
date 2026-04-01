@@ -46,3 +46,13 @@ temp-use/
 
 # Task workspaces (user data)
 task_workspaces/
+
+# Trae IDE
+.trae/
+
+# Auto optimizer
+auto_optimizer_config.json
+optimization_history.json
+
+# Data directory
+data/
