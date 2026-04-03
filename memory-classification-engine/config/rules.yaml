@@ -1,0 +1,81 @@
+# Memory Classification Rules
+
+rules:
+  # 用户偏好规则
+  - pattern: "记住(这个|这点|这条)"
+    memory_type: user_preference
+    tier: 2
+    action: extract_following_content
+    description: 提取用户明确要求记住的内容
+
+  - pattern: "(不要|别|以后不)(用|写|做|说)"
+    memory_type: user_preference
+    tier: 2
+    action: extract_following_content
+    description: 提取用户明确禁止的内容
+
+  - pattern: "我(喜欢|偏好|希望|想要)"
+    memory_type: user_preference
+    tier: 2
+    action: extract_following_content
+    description: 提取用户表达的偏好
+
+  # 纠正信号规则
+  - pattern: "(不对|错了|不是|你搞错了|我说的是)"
+    memory_type: correction
+    tier: 3
+    action: extract_surrounding_context
+    description: 提取用户纠正的内容
+
+  - pattern: "应该是|其实是|实际上是"
+    memory_type: correction
+    tier: 3
+    action: extract_following_content
+    description: 提取用户更正的内容
+
+  # 事实声明规则
+  - pattern: "(我们|我)(公司|团队|部门)(有|是|在做|不做)"
+    memory_type: fact_declaration
+    tier: 4
+    action: extract_entity_and_relation
+    description: 提取关于公司/团队的事实
+
+  - pattern: "(我|我们)是(.*)"
+    memory_type: fact_declaration
+    tier: 4
+    action: extract_following_content
+    description: 提取关于身份的事实
+
+  # 决策记录规则
+  - pattern: "(好|行|就这|决定了|确认|定了)"
+    memory_type: decision
+    tier: 3
+    action: extract_preceding_proposal
+    description: 提取决策内容
+
+  - pattern: "(选择|采用|使用)(.*)"
+    memory_type: decision
+    tier: 3
+    action: extract_following_content
+    description: 提取选择的内容
+
+  # 关系信息规则
+  - pattern: "(负责|管理|属于|汇报给)"
+    memory_type: relationship
+    tier: 4
+    action: extract_entity_and_relation
+    description: 提取关系信息
+
+  # 任务模式规则
+  - pattern: "(再次|又|还)需要"
+    memory_type: task_pattern
+    tier: 3
+    action: extract_following_content
+    description: 提取重复任务
+
+  # 情感标记规则
+  - pattern: "(讨厌|不喜欢|反感|喜欢|爱|推荐)"
+    memory_type: sentiment_marker
+    tier: 3
+    action: extract_following_content
+    description: 提取情感倾向

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记忆分类引擎</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        form {
+            margin-top: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            flex: 1;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>记忆分类引擎</h1>
+        
+        <div class="card">
+            <h2>系统统计</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <h3>工作记忆</h3>
+                    <p>{{ stats.working_memory_size }}</p>
+                </div>
+                <div class="stat-item">
+                    <h3>总记忆数</h3>
+                    <p>{{ stats.total_memories }}</p>
+                </div>
+                <div class="stat-item">
+                    <h3>程序性记忆</h3>
+                    <p>{{ stats.tier2.total_memories }}</p>
+                </div>
+                <div class="stat-item">
+                    <h3>情节记忆</h3>
+                    <p>{{ stats.tier3.total_memories }}</p>
+                </div>
+                <div class="stat-item">
+                    <h3>语义记忆</h3>
+                    <p>{{ stats.tier4.total_relationships }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>处理新消息</h2>
+            <form action="/process" method="post">
+                <input type="text" name="message" placeholder="输入消息..." required>
+                <button type="submit">处理</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>操作</h2>
+            <a href="/memories"><button>查看所有记忆</button></a>
+        </div>
+    </div>
+</body>
+</html>

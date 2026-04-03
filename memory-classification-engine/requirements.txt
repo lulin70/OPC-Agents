@@ -1,0 +1,11 @@
+# Memory Classification Engine - Dependencies
+
+# Core dependencies
+PyYAML
+
+# Optional dependencies
+Flask  # For REST API
+requests  # For LLM API calls
+pytest  # For testing
+pytest-benchmark  # For performance testing
+memory-profiler  # For memory usage analysis

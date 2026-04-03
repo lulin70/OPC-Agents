@@ -1,0 +1,41 @@
+# OPC-Agents 核心依赖
+flask>=2.3.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# 数据库
+sqlite3
+
+# 配置管理
+toml>=0.10.0
+
+# 日志
+loguru>=0.7.0
+
+# 数据处理
+pandas>=2.0.0
+
+# HTTP 客户端
+aiohttp>=3.8.0
+
+# 测试
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# 技能相关依赖（新增）
+# 网页搜索
+# beautifulsoup4 已在上面
+
+# 文档处理
+pdfplumber>=0.9.0  # PDF 解析
+python-docx>=0.8.11  # Word 处理
+openpyxl>=3.1.0  # Excel 处理
+pandas>=2.0.0  # 数据处理
+
+# 内容摘要
+# nltk>=3.8.0
+# sumy>=0.11.0
+
+# 安全扫描
+# semgrep>=1.40.0

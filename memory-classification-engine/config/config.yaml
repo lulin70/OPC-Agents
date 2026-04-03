@@ -1,0 +1,54 @@
+# Memory Classification Engine - Configuration
+
+# General settings
+general:
+  name: "Memory Classification Engine"
+  version: "0.1.0"
+  debug: false
+
+# Storage settings
+storage:
+  data_path: "./data"
+  tier2_path: "./data/tier2"
+  tier3_path: "./data/tier3"
+  tier4_path: "./data/tier4"
+  max_work_memory_size: 100  # Maximum number of items in working memory
+
+# Rules settings
+rules:
+  config_path: "./config/rules.yaml"
+  reload_interval: 3600  # In seconds
+
+# LLM settings (optional)
+llm:
+  enabled: false
+  api_key: ""
+  model: "glm-4-plus"
+  temperature: 0.3
+  max_tokens: 500
+  timeout: 30  # In seconds
+
+# API settings (optional)
+api:
+  enabled: false
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+
+# Memory settings
+memory:
+  # Forgetting mechanism
+  forgetting:
+    enabled: true
+    decay_factor: 0.9  # Exponential decay factor
+    min_weight: 0.1  # Minimum weight before memory is archived
+    archive_interval: 86400  # In seconds (daily)
+    
+  # Deduplication
+  deduplication:
+    enabled: true
+    similarity_threshold: 0.8
+    
+  # Conflict resolution
+  conflict_resolution:
+    strategy: "latest"  # Options: "latest", "highest_confidence", "user_preference"

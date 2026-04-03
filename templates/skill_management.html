@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技能管理 - OPC-Agents</title>
+    <link href="/static/css/design-system.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .skill-mgmt-container {
+            padding: var(--spacing-xl);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .mgmt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .mgmt-title {
+            font-size: var(--font-size-xxl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+        }
+
+        .mgmt-actions {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-md);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: var(--color-white);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-hover);
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stat-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: var(--font-size-xxl);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .stat-label {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+
+        /* 技能列表 */
+        .skills-table-container {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+        }
+
+        .skills-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+        }
+
+        .skills-table-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .skills-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .skills-table th,
+        .skills-table td {
+            padding: var(--spacing-md) var(--spacing-lg);
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .skills-table th {
+            background: var(--color-bg-secondary);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+
+        .skills-table tr:hover {
+            background: var(--color-bg-hover);
+        }
+
+        .skill-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .skill-icon-small {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            border-radius: var(--border-radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-lg);
+            color: var(--color-white);
+        }
+
+        .skill-name-cell {
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+        }
+
+        .skill-version {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+            background: var(--color-bg-secondary);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-full);
+            display: inline-block;
+            margin-top: var(--spacing-xs);
+        }
+
+        .status-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .status-badge.enabled {
+            background: var(--color-success-bg);
+            color: var(--color-success);
+        }
+
+        .status-badge.disabled {
+            background: var(--color-danger-bg);
+            color: var(--color-danger);
+        }
+
+        .security-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .security-bar {
+            width: 80px;
+            height: 6px;
+            background: var(--color-bg-secondary);
+            border-radius: var(--border-radius-full);
+            overflow: hidden;
+        }
+
+        .security-fill {
+            height: 100%;
+            border-radius: var(--border-radius-full);
+            transition: width var(--transition-normal);
+        }
+
+        .security-fill.high { background: var(--color-success); }
+        .security-fill.medium { background: var(--color-warning); }
+        .security-fill.low { background: var(--color-danger); }
+
+        .action-btns {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .action-btn {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+        }
+
+        .action-btn:hover {
+            background: var(--color-bg-hover);
+        }
+
+        .action-btn.danger:hover {
+            background: var(--color-danger);
+            color: var(--color-white);
+            border-color: var(--color-danger);
+        }
+
+        /* 开关 */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--color-bg-secondary);
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            transition: background var(--transition-normal);
+        }
+
+        .toggle-switch.enabled {
+            background: var(--color-success);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: var(--color-white);
+            border-radius: 50%;
+            transition: transform var(--transition-normal);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .toggle-switch.enabled::after {
+            transform: translateX(20px);
+        }
+
+        /* 详情面板 */
+        .detail-panel {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-xl);
+            margin-top: var(--spacing-xl);
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .detail-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .detail-content {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-lg);
+        }
+
+        .detail-section {
+            background: var(--color-bg-secondary);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-lg);
+        }
+
+        .detail-section-title {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-md);
+            color: var(--color-text-primary);
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+        }
+
+        .detail-value {
+            color: var(--color-text-primary);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+        }
+
+        /* 权限列表 */
+        .permission-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+        }
+
+        .permission-tag {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--color-warning-bg);
+            color: var(--color-warning);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-xs);
+        }
+
+        .permission-tag.high {
+            background: var(--color-danger-bg);
+            color: var(--color-danger);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .skills-table-container {
+                overflow-x: auto;
+            }
+
+            .detail-content {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="skill-mgmt-container">
+        <div class="mgmt-header">
+            <div>
+                <div class="mgmt-title">🔧 技能管理</div>
+            </div>
+            <div class="mgmt-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='/skill_market'">
+                    🛒 技能市场
+                </button>
+                <button class="btn btn-primary" onclick="window.location.href='/'">
+                    ← 返回首页
+                </button>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-skills">6</div>
+                <div class="stat-label">已安装技能</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="enabled-skills">6</div>
+                <div class="stat-label">已启用</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="update-available">1</div>
+                <div class="stat-label">可更新</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-security">92%</div>
+                <div class="stat-label">平均安全评分</div>
+            </div>
+        </div>
+
+        <!-- 技能列表 -->
+        <div class="skills-table-container">
+            <div class="skills-table-header">
+                <div class="skills-table-title">已安装技能</div>
+                <button class="btn btn-secondary" onclick="checkAllUpdates()">检查更新</button>
+            </div>
+            <table class="skills-table">
+                <thead>
+                    <tr>
+                        <th>技能</th>
+                        <th>状态</th>
+                        <th>版本</th>
+                        <th>安全评分</th>
+                        <th>使用次数</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="skills-tbody">
+                    <!-- 动态生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 技能详情面板 -->
+        <div class="detail-panel" id="detail-panel" style="display: none;">
+            <div class="detail-header">
+                <div class="detail-title" id="detail-title">技能详情</div>
+                <button class="btn btn-secondary" onclick="closeDetail()">关闭</button>
+            </div>
+            <div class="detail-content" id="detail-content">
+                <!-- 动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 示例技能数据
+        const installedSkills = [
+            {
+                id: 'web_search_pro',
+                name: '高级网页搜索',
+                description: '支持多引擎搜索、高级搜索语法、智能去重等功能',
+                category: 'network',
+                version: '1.2.0',
+                latestVersion: '1.2.0',
+                author: 'OPC Team',
+                enabled: true,
+                usageCount: 158,
+                securityScore: 95,
+                installDate: '2026-03-15',
+                permissions: ['network_access', 'read_file'],
+                hasUpdate: false
+            },
+            {
+                id: 'document_processor',
+                name: '文档处理器',
+                description: '支持 PDF、Word、Excel 等多种格式的文档读写',
+                category: 'document',
+                version: '2.0.0',
+                latestVersion: '2.1.0',
+                author: 'OPC Team',
+                enabled: true,
+                usageCount: 89,
+                securityScore: 92,
+                installDate: '2026-03-10',
+                permissions: ['read_file', 'write_file'],
+                hasUpdate: true
+            },
+            {
+                id: 'content_summary',
+                name: '智能内容摘要',
+                description: '基于 AI 的文本摘要、大纲生成、关键词提取',
+                category: 'ai',
+                version: '1.5.0',
+                latestVersion: '1.5.0',
+                author: 'AI Lab',
+                enabled: true,
+                usageCount: 234,
+                securityScore: 88,
+                installDate: '2026-03-20',
+                permissions: ['read_file', 'execute_command'],
+                hasUpdate: false
+            },
+            {
+                id: 'security_scanner',
+                name: '安全扫描器',
+                description: '代码安全扫描、权限分析、来源信誉评估',
+                category: 'security',
+                version: '1.0.0',
+                latestVersion: '1.0.0',
+                author: 'Security Team',
+                enabled: true,
+                usageCount: 67,
+                securityScore: 98,
+                installDate: '2026-04-01',
+                permissions: ['read_file', 'execute_command'],
+                hasUpdate: false
+            },
+            {
+                id: 'clawhub_integration',
+                name: 'ClawHub 集成',
+                description: '技能包搜索、下载、安装、更新和卸载管理',
+                category: 'system',
+                version: '1.0.0',
+                latestVersion: '1.0.0',
+                author: 'OPC Team',
+                enabled: true,
+                usageCount: 45,
+                securityScore: 94,
+                installDate: '2026-04-03',
+                permissions: ['network_access', 'write_file', 'execute_command'],
+                hasUpdate: false
+            },
+            {
+                id: 'skill_registry',
+                name: '技能注册中心',
+                description: '技能注册、搜索、分类、标签管理',
+                category: 'system',
+                version: '1.0.0',
+                latestVersion: '1.0.0',
+                author: 'OPC Team',
+                enabled: true,
+                usageCount: 312,
+                securityScore: 96,
+                installDate: '2026-03-25',
+                permissions: ['read_file', 'write_file'],
+                hasUpdate: false
+            }
+        ];
+
+        let selectedSkill = null;
+
+        // 渲染技能列表
+        function renderSkillsList() {
+            const tbody = document.getElementById('skills-tbody');
+            tbody.innerHTML = installedSkills.map(skill => `
+                <tr onclick="showSkillDetail('${skill.id}')">
+                    <td>
+                        <div class="skill-info">
+                            <div class="skill-icon-small">${getCategoryIcon(skill.category)}</div>
+                            <div>
+                                <div class="skill-name-cell">${skill.name}</div>
+                                <span class="skill-version">v${skill.version}</span>
+                                ${skill.hasUpdate ? '<span class="skill-version" style="background: var(--color-warning-bg); color: var(--color-warning);">有新版本</span>' : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="toggle-switch ${skill.enabled ? 'enabled' : ''}" 
+                             onclick="event.stopPropagation(); toggleSkill('${skill.id}')">
+                        </div>
+                    </td>
+                    <td>${skill.version}</td>
+                    <td>
+                        <div class="security-indicator">
+                            <div class="security-bar">
+                                <div class="security-fill ${getSecurityLevel(skill.securityScore)}" 
+                                     style="width: ${skill.securityScore}%"></div>
+                            </div>
+                            <span>${skill.securityScore}%</span>
+                        </div>
+                    </td>
+                    <td>${skill.usageCount}</td>
+                    <td>
+                        <div class="action-btns">
+                            ${skill.hasUpdate ? `<button class="action-btn" onclick="event.stopPropagation(); updateSkill('${skill.id}')">更新</button>` : ''}
+                            <button class="action-btn" onclick="event.stopPropagation(); configureSkill('${skill.id}')">配置</button>
+                            <button class="action-btn danger" onclick="event.stopPropagation(); uninstallSkill('${skill.id}')">卸载</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            updateStats();
+        }
+
+        // 获取分类图标
+        function getCategoryIcon(category) {
+            const icons = {
+                network: '🌐',
+                document: '📄',
+                data: '📊',
+                security: '🔒',
+                system: '⚙️',
+                ai: '🤖'
+            };
+            return icons[category] || '📦';
+        }
+
+        // 获取安全等级
+        function getSecurityLevel(score) {
+            if (score >= 90) return 'high';
+            if (score >= 70) return 'medium';
+            return 'low';
+        }
+
+        // 更新统计
+        function updateStats() {
+            document.getElementById('total-skills').textContent = installedSkills.length;
+            document.getElementById('enabled-skills').textContent = installedSkills.filter(s => s.enabled).length;
+            document.getElementById('update-available').textContent = installedSkills.filter(s => s.hasUpdate).length;
+            
+            const avgSecurity = Math.round(installedSkills.reduce((sum, s) => sum + s.securityScore, 0) / installedSkills.length);
+            document.getElementById('avg-security').textContent = avgSecurity + '%';
+        }
+
+        // 显示技能详情
+        function showSkillDetail(skillId) {
+            const skill = installedSkills.find(s => s.id === skillId);
+            if (!skill) return;
+
+            selectedSkill = skill;
+            document.getElementById('detail-title').textContent = skill.name + ' - 详情';
+            
+            const highRiskPerms = ['execute_command', 'delete_file', 'write_environment'];
+            
+            document.getElementById('detail-content').innerHTML = `
+                <div class="detail-section">
+                    <div class="detail-section-title">基本信息</div>
+                    <div class="detail-item">
+                        <span class="detail-label">名称</span>
+                        <span class="detail-value">${skill.name}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">描述</span>
+                        <span class="detail-value">${skill.description}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">分类</span>
+                        <span class="detail-value">${skill.category}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">作者</span>
+                        <span class="detail-value">${skill.author}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">安装日期</span>
+                        <span class="detail-value">${skill.installDate}</span>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">版本信息</div>
+                    <div class="detail-item">
+                        <span class="detail-label">当前版本</span>
+                        <span class="detail-value">${skill.version}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">最新版本</span>
+                        <span class="detail-value">${skill.latestVersion}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">使用次数</span>
+                        <span class="detail-value">${skill.usageCount}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">安全评分</span>
+                        <span class="detail-value">${skill.securityScore}%</span>
+                    </div>
+                </div>
+                <div class="detail-section" style="grid-column: 1 / -1;">
+                    <div class="detail-section-title">权限要求</div>
+                    <div class="permission-list">
+                        ${skill.permissions.map(perm => `
+                            <span class="permission-tag ${highRiskPerms.includes(perm) ? 'high' : ''}">${perm}</span>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detail-panel').style.display = 'block';
+        }
+
+        // 关闭详情
+        function closeDetail() {
+            document.getElementById('detail-panel').style.display = 'none';
+            selectedSkill = null;
+        }
+
+        // 切换技能启用状态
+        function toggleSkill(skillId) {
+            const skill = installedSkills.find(s => s.id === skillId);
+            if (skill) {
+                skill.enabled = !skill.enabled;
+                renderSkillsList();
+            }
+        }
+
+        // 更新技能
+        function updateSkill(skillId) {
+            const skill = installedSkills.find(s => s.id === skillId);
+            if (skill && confirm(`确定要更新 ${skill.name} 到版本 ${skill.latestVersion} 吗？`)) {
+                skill.version = skill.latestVersion;
+                skill.hasUpdate = false;
+                renderSkillsList();
+                alert('更新成功！');
+            }
+        }
+
+        // 配置技能
+        function configureSkill(skillId) {
+            alert('配置功能开发中...');
+        }
+
+        // 卸载技能
+        function uninstallSkill(skillId) {
+            const skill = installedSkills.find(s => s.id === skillId);
+            if (skill && confirm(`确定要卸载 ${skill.name} 吗？`)) {
+                const index = installedSkills.findIndex(s => s.id === skillId);
+                if (index > -1) {
+                    installedSkills.splice(index, 1);
+                    renderSkillsList();
+                    closeDetail();
+                    alert('卸载成功！');
+                }
+            }
+        }
+
+        // 检查所有更新
+        function checkAllUpdates() {
+            alert('正在检查更新...');
+            setTimeout(() => {
+                const updates = installedSkills.filter(s => s.hasUpdate);
+                if (updates.length > 0) {
+                    alert(`发现 ${updates.length} 个技能可更新`);
+                } else {
+                    alert('所有技能已是最新版本');
+                }
+            }, 1000);
+        }
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSkillsList();
+        });
+    </script>
+</body>
+</html>

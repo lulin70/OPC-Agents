@@ -1,0 +1,2 @@
+[console_scripts]
+memory-engine = memory_classification_engine.cli:main

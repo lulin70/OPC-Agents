@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技能市场 - OPC-Agents</title>
+    <link href="/static/css/design-system.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        :root {
+            --skill-card-bg: var(--color-bg-card);
+            --skill-card-border: var(--color-border);
+            --skill-card-shadow: var(--shadow-sm);
+            --skill-card-hover-shadow: var(--shadow-md);
+        }
+
+        .skill-market-container {
+            padding: var(--spacing-xl);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .market-title {
+            font-size: var(--font-size-xxl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+        }
+
+        .market-subtitle {
+            font-size: var(--font-size-md);
+            color: var(--color-text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            font-size: var(--font-size-md);
+            background: var(--color-bg-input);
+            color: var(--color-text-primary);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .filter-btn {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            cursor: pointer;
+            font-size: var(--font-size-md);
+            color: var(--color-text-primary);
+            transition: all var(--transition-normal);
+        }
+
+        .filter-btn:hover {
+            background: var(--color-bg-hover);
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+            overflow-x: auto;
+            padding-bottom: var(--spacing-sm);
+        }
+
+        .category-tab {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            transition: all var(--transition-normal);
+        }
+
+        .category-tab:hover {
+            background: var(--color-bg-hover);
+            color: var(--color-text-primary);
+        }
+
+        .category-tab.active {
+            background: var(--color-primary);
+            color: var(--color-white);
+            border-color: var(--color-primary);
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .skill-card {
+            background: var(--skill-card-bg);
+            border: 1px solid var(--skill-card-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--skill-card-shadow);
+            transition: all var(--transition-normal);
+            cursor: pointer;
+        }
+
+        .skill-card:hover {
+            box-shadow: var(--skill-card-hover-shadow);
+            transform: translateY(-2px);
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .skill-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            border-radius: var(--border-radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-xl);
+            color: var(--color-white);
+        }
+
+        .skill-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .skill-badge.installed {
+            background: var(--color-success-bg);
+            color: var(--color-success);
+        }
+
+        .skill-badge.update {
+            background: var(--color-warning-bg);
+            color: var(--color-warning);
+        }
+
+        .skill-name {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .skill-description {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-md);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .skill-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .skill-stats {
+            display: flex;
+            gap: var(--spacing-md);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+
+        .skill-stat {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .skill-rating {
+            color: var(--color-warning);
+        }
+
+        .skill-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .skill-btn {
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            font-size: var(--font-size-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            border: none;
+        }
+
+        .skill-btn.primary {
+            background: var(--color-primary);
+            color: var(--color-white);
+        }
+
+        .skill-btn.primary:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .skill-btn.secondary {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .skill-btn.secondary:hover {
+            background: var(--color-bg-hover);
+        }
+
+        .skill-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 安全评分指示器 */
+        .security-score {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: var(--font-size-xs);
+            margin-top: var(--spacing-sm);
+        }
+
+        .security-score-bar {
+            width: 60px;
+            height: 4px;
+            background: var(--color-bg-secondary);
+            border-radius: var(--border-radius-full);
+            overflow: hidden;
+        }
+
+        .security-score-fill {
+            height: 100%;
+            border-radius: var(--border-radius-full);
+            transition: width var(--transition-normal);
+        }
+
+        .security-score-fill.high {
+            background: var(--color-success);
+        }
+
+        .security-score-fill.medium {
+            background: var(--color-warning);
+        }
+
+        .security-score-fill.low {
+            background: var(--color-danger);
+        }
+
+        /* 加载状态 */
+        .loading-skeleton {
+            background: linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg-hover) 50%, var(--color-bg-secondary) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: var(--border-radius-md);
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xxl);
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .empty-state-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        /* 安装进度 */
+        .install-progress {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-lg);
+            min-width: 300px;
+            z-index: 1000;
+        }
+
+        .install-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .install-progress-title {
+            font-weight: var(--font-weight-medium);
+        }
+
+        .install-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--color-bg-secondary);
+            border-radius: var(--border-radius-full);
+            overflow: hidden;
+        }
+
+        .install-progress-fill {
+            height: 100%;
+            background: var(--color-primary);
+            border-radius: var(--border-radius-full);
+            transition: width var(--transition-normal);
+        }
+    </style>
+</head>
+<body>
+    <div class="skill-market-container">
+        <div class="market-header">
+            <div>
+                <div class="market-title">🛒 技能市场</div>
+                <div class="market-subtitle">发现和安装新技能，扩展您的 OPC-Agents 能力</div>
+            </div>
+            <button class="skill-btn secondary" onclick="window.location.href='/'">
+                ← 返回首页
+            </button>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" class="search-input" id="skill-search" placeholder="搜索技能...">
+            <button class="filter-btn" onclick="toggleFilters()">筛选 ⚙️</button>
+        </div>
+
+        <div class="category-tabs">
+            <div class="category-tab active" data-category="all">全部</div>
+            <div class="category-tab" data-category="network">网络</div>
+            <div class="category-tab" data-category="document">文档</div>
+            <div class="category-tab" data-category="data">数据处理</div>
+            <div class="category-tab" data-category="security">安全</div>
+            <div class="category-tab" data-category="system">系统</div>
+            <div class="category-tab" data-category="ai">AI/ML</div>
+        </div>
+
+        <div class="skills-grid" id="skills-grid">
+            <!-- 技能卡片将通过 JavaScript 动态加载 -->
+        </div>
+    </div>
+
+    <!-- 安装进度提示 -->
+    <div class="install-progress" id="install-progress" style="display: none;">
+        <div class="install-progress-header">
+            <span class="install-progress-title">正在安装...</span>
+            <span id="install-percent">0%</span>
+        </div>
+        <div class="install-progress-bar">
+            <div class="install-progress-fill" id="install-progress-fill" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <script>
+        // 示例技能数据
+        const mockSkills = [
+            {
+                id: 'web_search_pro',
+                name: '高级网页搜索',
+                description: '支持多引擎搜索、高级搜索语法、智能去重等功能的专业搜索技能',
+                category: 'network',
+                version: '1.2.0',
+                author: 'OPC Team',
+                downloads: 12580,
+                rating: 4.8,
+                installed: true,
+                hasUpdate: false,
+                securityScore: 95
+            },
+            {
+                id: 'document_processor',
+                name: '文档处理器',
+                description: '支持 PDF、Word、Excel 等多种格式的文档读写和内容提取',
+                category: 'document',
+                version: '2.1.0',
+                author: 'OPC Team',
+                downloads: 8920,
+                rating: 4.6,
+                installed: true,
+                hasUpdate: true,
+                securityScore: 92
+            },
+            {
+                id: 'content_summary',
+                name: '智能内容摘要',
+                description: '基于 AI 的文本摘要、大纲生成、关键词提取和内容分析',
+                category: 'ai',
+                version: '1.5.0',
+                author: 'AI Lab',
+                downloads: 15670,
+                rating: 4.9,
+                installed: true,
+                hasUpdate: false,
+                securityScore: 88
+            },
+            {
+                id: 'security_scanner',
+                name: '安全扫描器',
+                description: '代码安全扫描、权限分析、来源信誉评估和综合安全评分',
+                category: 'security',
+                version: '1.0.0',
+                author: 'Security Team',
+                downloads: 6230,
+                rating: 4.7,
+                installed: true,
+                hasUpdate: false,
+                securityScore: 98
+            },
+            {
+                id: 'data_analyzer',
+                name: '数据分析器',
+                description: '数据清洗、统计分析、可视化图表生成和数据洞察',
+                category: 'data',
+                version: '1.3.0',
+                author: 'Data Team',
+                downloads: 7890,
+                rating: 4.5,
+                installed: false,
+                hasUpdate: false,
+                securityScore: 90
+            },
+            {
+                id: 'image_recognition',
+                name: '图像识别',
+                description: '基于深度学习的图像识别、OCR 文字识别和图像处理',
+                category: 'ai',
+                version: '2.0.0',
+                author: 'Vision Lab',
+                downloads: 11230,
+                rating: 4.8,
+                installed: false,
+                hasUpdate: false,
+                securityScore: 85
+            },
+            {
+                id: 'email_manager',
+                name: '邮件管理器',
+                description: '邮件发送、接收、模板管理和邮件自动化处理',
+                category: 'system',
+                version: '1.1.0',
+                author: 'System Team',
+                downloads: 4560,
+                rating: 4.3,
+                installed: false,
+                hasUpdate: false,
+                securityScore: 93
+            },
+            {
+                id: 'calendar_sync',
+                name: '日历同步',
+                description: '多平台日历同步、会议安排、提醒和日程管理',
+                category: 'system',
+                version: '1.4.0',
+                author: 'Productivity Team',
+                downloads: 6780,
+                rating: 4.4,
+                installed: false,
+                hasUpdate: false,
+                securityScore: 91
+            }
+        ];
+
+        let currentCategory = 'all';
+        let searchQuery = '';
+
+        // 渲染技能卡片
+        function renderSkills(skills) {
+            const grid = document.getElementById('skills-grid');
+            
+            if (skills.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">🔍</div>
+                        <div class="empty-state-title">未找到技能</div>
+                        <p>尝试使用其他关键词或分类搜索</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = skills.map(skill => `
+                <div class="skill-card" data-skill-id="${skill.id}">
+                    <div class="skill-header">
+                        <div class="skill-icon">${getCategoryIcon(skill.category)}</div>
+                        ${getSkillBadge(skill)}
+                    </div>
+                    <div class="skill-name">${skill.name}</div>
+                    <div class="skill-description">${skill.description}</div>
+                    <div class="security-score">
+                        <span>安全评分:</span>
+                        <div class="security-score-bar">
+                            <div class="security-score-fill ${getSecurityLevel(skill.securityScore)}" 
+                                 style="width: ${skill.securityScore}%"></div>
+                        </div>
+                        <span>${skill.securityScore}%</span>
+                    </div>
+                    <div class="skill-meta">
+                        <div class="skill-stats">
+                            <div class="skill-stat">
+                                <span>⬇️</span>
+                                <span>${formatNumber(skill.downloads)}</span>
+                            </div>
+                            <div class="skill-stat">
+                                <span class="skill-rating">⭐</span>
+                                <span>${skill.rating}</span>
+                            </div>
+                            <div class="skill-stat">
+                                <span>👤</span>
+                                <span>${skill.author}</span>
+                            </div>
+                        </div>
+                        <div class="skill-actions">
+                            ${getSkillButton(skill)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 获取分类图标
+        function getCategoryIcon(category) {
+            const icons = {
+                network: '🌐',
+                document: '📄',
+                data: '📊',
+                security: '🔒',
+                system: '⚙️',
+                ai: '🤖'
+            };
+            return icons[category] || '📦';
+        }
+
+        // 获取技能徽章
+        function getSkillBadge(skill) {
+            if (skill.installed && skill.hasUpdate) {
+                return '<span class="skill-badge update">可更新</span>';
+            } else if (skill.installed) {
+                return '<span class="skill-badge installed">已安装</span>';
+            }
+            return '';
+        }
+
+        // 获取技能按钮
+        function getSkillButton(skill) {
+            if (skill.installed && skill.hasUpdate) {
+                return `<button class="skill-btn primary" onclick="updateSkill('${skill.id}')">更新</button>`;
+            } else if (skill.installed) {
+                return `<button class="skill-btn secondary" onclick="uninstallSkill('${skill.id}')">卸载</button>`;
+            } else {
+                return `<button class="skill-btn primary" onclick="installSkill('${skill.id}')">安装</button>`;
+            }
+        }
+
+        // 获取安全等级
+        function getSecurityLevel(score) {
+            if (score >= 90) return 'high';
+            if (score >= 70) return 'medium';
+            return 'low';
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            if (num >= 10000) {
+                return (num / 10000).toFixed(1) + 'w';
+            }
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'k';
+            }
+            return num.toString();
+        }
+
+        // 安装技能
+        function installSkill(skillId) {
+            showInstallProgress(skillId);
+            
+            // 模拟安装过程
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                updateInstallProgress(progress);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        hideInstallProgress();
+                        alert('技能安装成功！');
+                        // 刷新列表
+                        const skill = mockSkills.find(s => s.id === skillId);
+                        if (skill) {
+                            skill.installed = true;
+                            filterAndRenderSkills();
+                        }
+                    }, 500);
+                }
+            }, 200);
+        }
+
+        // 更新技能
+        function updateSkill(skillId) {
+            showInstallProgress(skillId);
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 15;
+                updateInstallProgress(progress);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        hideInstallProgress();
+                        alert('技能更新成功！');
+                        const skill = mockSkills.find(s => s.id === skillId);
+                        if (skill) {
+                            skill.hasUpdate = false;
+                            filterAndRenderSkills();
+                        }
+                    }, 500);
+                }
+            }, 150);
+        }
+
+        // 卸载技能
+        function uninstallSkill(skillId) {
+            if (!confirm('确定要卸载这个技能吗？')) return;
+            
+            const skill = mockSkills.find(s => s.id === skillId);
+            if (skill) {
+                skill.installed = false;
+                skill.hasUpdate = false;
+                filterAndRenderSkills();
+                alert('技能已卸载');
+            }
+        }
+
+        // 显示安装进度
+        function showInstallProgress(skillId) {
+            document.getElementById('install-progress').style.display = 'block';
+            updateInstallProgress(0);
+        }
+
+        // 更新安装进度
+        function updateInstallProgress(percent) {
+            document.getElementById('install-percent').textContent = percent + '%';
+            document.getElementById('install-progress-fill').style.width = percent + '%';
+        }
+
+        // 隐藏安装进度
+        function hideInstallProgress() {
+            document.getElementById('install-progress').style.display = 'none';
+        }
+
+        // 过滤和渲染技能
+        function filterAndRenderSkills() {
+            let filtered = mockSkills;
+            
+            // 按分类过滤
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(s => s.category === currentCategory);
+            }
+            
+            // 按搜索词过滤
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filtered = filtered.filter(s => 
+                    s.name.toLowerCase().includes(query) ||
+                    s.description.toLowerCase().includes(query) ||
+                    s.author.toLowerCase().includes(query)
+                );
+            }
+            
+            renderSkills(filtered);
+        }
+
+        // 切换筛选器
+        function toggleFilters() {
+            alert('筛选功能开发中...');
+        }
+
+        // 事件监听
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始渲染
+            renderSkills(mockSkills);
+            
+            // 分类标签点击
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentCategory = tab.dataset.category;
+                    filterAndRenderSkills();
+                });
+            });
+            
+            // 搜索输入
+            document.getElementById('skill-search').addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                filterAndRenderSkills();
+            });
+        });
+    </script>
+</body>
+</html>

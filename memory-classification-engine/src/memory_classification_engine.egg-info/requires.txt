@@ -1,0 +1,14 @@
+PyYAML
+
+[api]
+Flask
+
+[llm]
+requests
+
+[profiling]
+memory-profiler
+
+[testing]
+pytest
+pytest-benchmark
