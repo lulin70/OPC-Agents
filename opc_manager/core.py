@@ -85,9 +85,17 @@ class OPCManager:
         from opc_hr.role_matcher import RoleMatcher
         self.role_matcher = RoleMatcher(self.hr_enhancement, self.global_context)
         
+        # 初始化能力发现器
+        from opc_hr.capability_discovery import CapabilityDiscovery
+        self.capability_discovery = CapabilityDiscovery(
+            skill_registry=self.skill_manager,
+            clawhub=self.mcp_integration
+        )
+        
         # 订阅事件
         self.event_bus.subscribe('task_completed', self.hr_enhancement.handle_task_completed)
         self.event_bus.subscribe('task_failed', self.hr_enhancement.handle_task_failed)
+        self.event_bus.subscribe('capability_gap_detected', self._handle_capability_gap)
 
         from opc_manager.workflow_engine import WorkflowEngine
         self.workflow_engine = WorkflowEngine()
@@ -579,3 +587,94 @@ class OPCManager:
     def web_search_summarize(self, query: str, max_results: int = 3) -> str:
         """搜索并生成摘要文本"""
         return self.web_search.search_and_summarize(query, max_results=max_results)
+    
+    def _handle_capability_gap(self, event_data: Dict[str, Any]):
+        """处理能力缺口事件（由事件总线触发）"""
+        self.logger.info(f"检测到能力缺口：{event_data.get('skill_name', 'Unknown')}")
+        # 这里可以添加自动处理逻辑，比如自动搜索和推荐
+        # 目前通过事件系统通知前端
+    
+    def detect_capability_gaps(self, user_request: str, context: str = "") -> Dict[str, Any]:
+        """检测能力缺口并生成推荐
+        
+        Args:
+            user_request: 用户需求文本
+            context: 任务上下文
+            
+        Returns:
+            {
+                'gaps': List[CapabilityGap],
+                'recommendations': List[Dict],
+                'action_required': bool
+            }
+        """
+        # 分析需求，提取关键词
+        keywords = self.capability_discovery.analyze_user_request(user_request)
+        
+        # 检测能力缺口
+        gaps = self.capability_discovery.detect_capability_gap(keywords, context)
+        
+        if not gaps:
+            return {
+                'gaps': [],
+                'recommendations': [],
+                'action_required': False
+            }
+        
+        # 为每个缺口搜索和评估候选
+        recommendations = []
+        for gap in gaps:
+            candidates = self.capability_discovery.search_alternatives(gap)
+            if candidates:
+                best = self.capability_discovery.evaluate_and_test(candidates, gap)
+                if best:
+                    rec = self.capability_discovery.recommend_to_user(
+                        best, gap, {'name': '用户'}
+                    )
+                    if rec['success']:
+                        recommendations.append(rec['recommendation'])
+        
+        return {
+            'gaps': gaps,
+            'recommendations': recommendations,
+            'action_required': len(recommendations) > 0
+        }
+    
+    def install_recommended_skill(self, recommendation: Dict[str, Any]) -> Dict[str, Any]:
+        """安装推荐的技能
+        
+        Args:
+            recommendation: 推荐信息（来自 detect_capability_gaps）
+            
+        Returns:
+            {
+                'success': bool,
+                'message': str,
+                'skill_installed': Optional[str]
+            }
+        """
+        skill_info = recommendation.get('skill', {})
+        skill_name = skill_info.get('name', '')
+        repo_full_name = skill_info.get('repo_full_name', '')
+        
+        if repo_full_name:
+            # 从 MCP 导入
+            result = self.import_skill_from_mcp(repo_full_name)
+            if result.get('success'):
+                return {
+                    'success': True,
+                    'message': f"技能 {skill_name} 安装成功",
+                    'skill_installed': skill_name
+                }
+            else:
+                return {
+                    'success': False,
+                    'message': f"技能安装失败：{result.get('error', 'Unknown error')}",
+                    'skill_installed': None
+                }
+        else:
+            return {
+                'success': False,
+                'message': "无法安装：缺少仓库信息",
+                'skill_installed': None
+            }
