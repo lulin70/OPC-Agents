@@ -146,7 +146,7 @@ class CapabilityDiscovery:
     
     def search_alternatives(self, gap: CapabilityGap) -> List[Dict]:
         """
-        搜索替代技能
+        搜索替代技能（支持 ClawHub 和 MCP GitHub）
         
         Args:
             gap: 能力缺口
@@ -154,23 +154,36 @@ class CapabilityDiscovery:
         Returns:
             候选技能列表
         """
-        try:
-            # 从 ClawHub 搜索
-            search_result = self.clawhub.execute(
-                'search_packages',
-                query=gap.skill_name,
-                limit=10
-            )
-            
-            if search_result.get('success'):
-                candidates = search_result.get('packages', [])
-                self.logger.info(f"找到 {len(candidates)} 个候选技能")
-                return candidates
-            
-        except Exception as e:
-            self.logger.error(f"搜索技能失败：{e}")
+        all_candidates = []
         
-        return []
+        # 1. 尝试从 ClawHub 搜索
+        if hasattr(self.clawhub, 'execute'):
+            try:
+                search_result = self.clawhub.execute(
+                    'search_packages',
+                    query=gap.skill_name,
+                    limit=10
+                )
+                
+                if search_result.get('success'):
+                    candidates = search_result.get('packages', [])
+                    self.logger.info(f"ClawHub 找到 {len(candidates)} 个候选技能")
+                    all_candidates.extend(candidates)
+            except Exception as e:
+                self.logger.warning(f"ClawHub 搜索失败：{e}")
+        
+        # 2. 尝试从 MCP GitHub 搜索（新增）
+        if hasattr(self.clawhub, 'search_skills'):
+            try:
+                mcp_skills = self.clawhub.search_skills(gap.skill_name, limit=10)
+                if mcp_skills:
+                    self.logger.info(f"MCP GitHub 找到 {len(mcp_skills)} 个候选技能")
+                    all_candidates.extend(mcp_skills)
+            except Exception as e:
+                self.logger.warning(f"MCP GitHub 搜索失败：{e}")
+        
+        self.logger.info(f"总共找到 {len(all_candidates)} 个候选技能")
+        return all_candidates
     
     def evaluate_and_test(self, candidates: List[Dict], 
                          gap: CapabilityGap) -> Optional[Dict]:

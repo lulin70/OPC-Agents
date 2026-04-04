@@ -137,16 +137,64 @@ OPC-Agents/
 
 ## 安装
 
-1. **克隆仓库**
-2. **安装依赖**：
-   ```bash
-   pip3 install requests toml flask ddgs
-   ```
-3. **配置 API 密钥**：
-   ```bash
-   cp config.toml.sample config.toml
-   # 编辑 config.toml，填入 GLM API 密钥（必需）
-   ```
+### 方法 1：一键安装（推荐）
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/your-org/OPC-Agents.git
+cd OPC-Agents
+
+# 2. 运行一键安装脚本
+chmod +x install.sh
+./install.sh
+
+# 3. 配置 API 密钥
+vim config.toml
+
+# 4. 启动服务
+./OPCstart.sh
+```
+
+**详细安装指南**: [INSTALL.md](INSTALL.md)
+
+---
+
+### 方法 2：手动安装
+
+```bash
+# 1. 安装依赖
+pip3 install requests toml flask ddgs
+
+# 2. 创建配置文件
+cp config.toml.sample config.toml
+
+# 3. 配置 API 密钥（必填）
+vim config.toml
+
+# 4. 启动服务
+python3 web_interface/app.py
+```
+
+---
+
+### 配置 API 密钥（必填）
+
+**至少配置一个模型**，推荐智谱 AI GLM（国内可用）：
+
+```toml
+[models.glm]
+api_key = "sk.xxxxxxxxxxxxxxxxxxxxxxxx"  # ← 替换为你的密钥
+model = "glm-4.7"
+```
+
+**获取 GLM API Key**:
+1. 访问 https://open.bigmodel.cn/
+2. 注册/登录账号
+3. 进入控制台 → API 密钥管理
+4. 创建 API 密钥
+5. 复制密钥到配置文件
+
+**更多配置选项**: [INSTALL.md](INSTALL.md#配置说明)
 
 ## 使用
 
