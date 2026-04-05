@@ -320,7 +320,7 @@ class OPCManager:
             if json_match:
                 return json.loads(json_match.group())
         except Exception as e:
-            print(f"[任务分解] GLM分解失败: {e}")
+            print(f"[任务分解] 分解失败：{e}")
         return {"execution_steps": [], "monitoring_plan": []}
 
     def generate_plan_markdown(self, task_name: str, synthesis: Dict, execution_steps: list, monitoring_plan: list, task_id: str) -> str:

@@ -167,11 +167,11 @@ OPC-Agents/
     └── 综合建议：execution_steps + monitoring_plan
     ↓
 
-④ GLM动态任务分解（基于三贤者评估）
+④ 动态任务分解（基于三贤者评估）
     ├── 每步包含：task/department/description/deliverable
     ├── 依赖关系：depends_on（步骤编号列表）
     ├── 资源需求：required_skills + acceptance_criteria
-    └── 智能角色匹配（RoleMatcher）：自动匹配最佳Agent
+    └── 智能角色匹配（RoleMatcher）：自动匹配最佳 Agent
     ↓
 
 ⑤ 生成执行计划 → 写入plan.md

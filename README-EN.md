@@ -7,7 +7,7 @@ An AI multi-agent operating system for One Person Company (OPC). You don't call 
 ## How It Works
 
 ```
-You → Executive Office (Intent Detection) → Dual-Layer Context Injection → Three Sages Decision → GLM Task Decomposition
+You → Executive Office (Intent Detection) → Dual-Layer Context Injection → Three Sages Decision → Dynamic Task Decomposition
 → Intelligent Role Matching → User Confirms Plan → DAG Dependency Scheduling → Agent Collaborative Execution
 → Completion Validation → Experience Accumulation → Results Reported
 ```
