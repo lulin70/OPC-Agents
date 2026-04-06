@@ -22,11 +22,15 @@ You → Executive Office (Intent Detection) → Dual-Layer Context Injection →
 - **Dynamic Task Decomposition**: Generate execution steps with dependencies/skill requirements/acceptance criteria
 - **Intelligent Role Matching**: Three-layer matching (historical performance 30% + skill match 40% + keywords 30%)
 
-**Dual-Layer Context Management**
-- **Global Context (Long-term Memory)**: Knowledge base + Experience base + User profile, persistent across tasks
+**Dual-Layer Context Management** (Reference: TraeMultiAgentSkill + Memory Classification Engine)
+- **Global Context (Long-term Memory)**: Knowledge base + Experience base (6 types) + User profile, persistent across tasks
 - **Task Context (Working Memory)**: Task definition + Thinking records + Deliverables + Injected references
 - **Bidirectional Synchronization**: Inject knowledge at task start (sync_global_to_task), accumulate experience at task completion (sync_task_to_global)
-- **Self-Improving**: Every task accumulates knowledge and experience for future reuse
+- **Experience Classification**: 6 types (user_preference/correction/decision/task_pattern/agent_optimization/skill_usage)
+- **Weight Calculation**: 4 dimensions (confidence 40% + timeliness 30% + usage frequency 20% + source reliability 10%)
+- **Conflict Detection**: Auto-identify contradictory experiences, intelligent handling (weight comparison/mark outdated/pending user confirmation)
+- **Forgetting Mechanism**: Time decay + usage frequency, low-weight experiences auto-evicted
+- **Self-Improving**: Every task accumulates knowledge and experience, future tasks reuse high-value experiences
 
 **Task Execution & Quality Assurance**
 - **Workflow Engine**: WorkflowDefinition→Instance→Step state machine with conditional branching, ${variable} templates, pause/resume support

@@ -8,11 +8,11 @@
 
 | 原则 | 说明 | 来源 |
 |------|------|------|
-| 经验沉淀 | 系统越用越聪明，每次任务都积累知识和经验 | TraeMultiAgentSkill DualLayerContext |
-| 依赖感知 | 任务之间有依赖关系，按DAG顺序执行 | TraeMultiAgentSkill TaskListManager |
-| 质量保障 | Agent产出物必须通过校验才能标记完成 | TraeMultiAgentSkill TaskCompletionChecker |
+| 经验沉淀 | 系统越用越聪明，每次任务都积累知识和经验（6 种类型/权重计算/冲突检测/遗忘机制） | TraeMultiAgentSkill DualLayerContext + Memory Classification Engine |
+| 依赖感知 | 任务之间有依赖关系，按 DAG 顺序执行 | TraeMultiAgentSkill TaskListManager |
+| 质量保障 | Agent 产出物必须通过校验才能标记完成 | TraeMultiAgentSkill TaskCompletionChecker |
 | 断点恢复 | 系统崩溃后可以从断点继续，不丢失进度 | TraeMultiAgentSkill CheckpointManager |
-| 智能匹配 | 自动为任务找到最合适的Agent | TraeMultiAgentSkill RoleMatcher |
+| 智能匹配 | 自动为任务找到最合适的 Agent | TraeMultiAgentSkill RoleMatcher |
 
 ### 1.2 架构风格
 
@@ -64,13 +64,26 @@
 | 组件 | 说明 | 存储位置 |
 |------|------|---------|
 | KnowledgeItem | 领域知识（架构/测试/需求/设计） | data/context/global_context.json |
-| ExperienceItem | 历史经验（成功/失败/最佳实践） | 同上 |
+| ExperienceItem | 历史经验（6 种类型/权重评分/冲突检测） | 同上 |
 | UserProfile | 用户画像（偏好/常用部门/任务历史） | 同上 |
 
+**经验类型（6 种）：**
+- `user_preference` - 用户偏好（配置/沟通风格/交付要求）
+- `correction` - 纠正信号（用户纠正 Agent 判断）
+- `decision` - 决策记录（任务中的关键决策）
+- `task_pattern` - 任务模式（反复出现的任务类型）
+- `agent_optimization` - Agent 优化（成功/失败经验）
+- `skill_usage` - 技能使用（哪些技能有效/无效）
+
+**权重计算（4 维度）：**
+```
+权重 = 置信度 40% + 时效性 30% + 使用频率 20% + 来源可靠性 10%
+```
+
 **容量控制：**
-- 知识库上限1000条，LRU淘汰（按access_count）
-- 经验库上限500条，按时间淘汰
-- 任务历史上限100条
+- 知识库上限 1000 条，LRU 淘汰（按 access_count）
+- 经验库上限 500 条，按权重淘汰（低权重优先）
+- 任务历史上限 100 条
 
 ### 2.3 任务上下文层（工作记忆）
 
