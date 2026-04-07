@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时监控仪表板 - OPC-Agents</title>
+    <link href="/static/css/design-system.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --status-running: #1890ff;
+            --status-success: #52c41a;
+            --status-warning: #faad14;
+            --status-error: #f5222d;
+            --status-pending: #d9d9d9;
+        }
+        
+        body {
+            background-color: var(--color-bg-secondary);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+            color: white;
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .dashboard-header h1 {
+            margin: 0 0 var(--spacing-sm) 0;
+            font-size: 28px;
+        }
+        
+        .dashboard-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .stat-card {
+            background: white;
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-normal);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .stat-card-title {
+            font-size: var(--font-size-md);
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+        
+        .stat-card-icon {
+            font-size: 32px;
+        }
+        
+        .stat-card-value {
+            font-size: 36px;
+            font-weight: var(--font-weight-bold);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .stat-card-subtitle {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        /* 资源监控 */
+        .resources-section {
+            background: white;
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+            margin: 0 0 var(--spacing-lg) 0;
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--color-border);
+        }
+        
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+        }
+        
+        .resource-item {
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+        }
+        
+        .resource-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .resource-name {
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+        }
+        
+        .resource-value {
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-primary);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--color-bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: var(--spacing-xs);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+            transition: width var(--transition-normal);
+        }
+        
+        .progress-fill.warning {
+            background: linear-gradient(90deg, var(--color-warning), var(--color-warning-hover));
+        }
+        
+        .progress-fill.danger {
+            background: linear-gradient(90deg, var(--color-error), var(--color-error-hover));
+        }
+        
+        /* 任务状态 */
+        .tasks-section {
+            background: white;
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            margin-bottom: var(--spacing-sm);
+            transition: all var(--transition-normal);
+        }
+        
+        .task-item:hover {
+            background-color: var(--color-bg-secondary);
+            transform: translateX(4px);
+        }
+        
+        .task-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: var(--spacing-md);
+            flex-shrink: 0;
+        }
+        
+        .task-status.running { background-color: var(--status-running); }
+        .task-status.completed { background-color: var(--status-success); }
+        .task-status.pending { background-color: var(--status-pending); }
+        .task-status.failed { background-color: var(--status-error); }
+        
+        .task-info {
+            flex: 1;
+        }
+        
+        .task-name {
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .task-meta {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        .task-progress {
+            width: 200px;
+            text-align: right;
+        }
+        
+        /* Agent 状态 */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+        }
+        
+        .agent-card {
+            padding: var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            text-align: center;
+            transition: all var(--transition-normal);
+        }
+        
+        .agent-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .agent-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto var(--spacing-sm) auto;
+        }
+        
+        .agent-name {
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .agent-status {
+            font-size: var(--font-size-sm);
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+        
+        .agent-status.idle {
+            background-color: var(--status-pending);
+            color: white;
+        }
+        
+        .agent-status.busy {
+            background-color: var(--status-running);
+            color: white;
+        }
+        
+        .agent-status.paused {
+            background-color: var(--status-warning);
+            color: white;
+        }
+        
+        /* 实时日志 */
+        .logs-section {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: var(--spacing-xl);
+            border-radius: var(--border-radius-lg);
+            font-family: 'Courier New', monospace;
+            font-size: var(--font-size-sm);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: var(--spacing-xs);
+            padding: var(--spacing-xs);
+            border-left: 3px solid var(--color-primary);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-timestamp {
+            color: #569cd6;
+            margin-right: var(--spacing-sm);
+        }
+        
+        .log-level {
+            font-weight: var(--font-weight-semibold);
+            margin-right: var(--spacing-sm);
+        }
+        
+        .log-level.INFO { color: #4ec9b0; }
+        .log-level.WARNING { color: #dcdcaa; }
+        .log-level.ERROR { color: #f48771; }
+        
+        /* 刷新按钮 */
+        .refresh-btn {
+            position: fixed;
+            bottom: var(--spacing-xl);
+            right: var(--spacing-xl);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all var(--transition-normal);
+            z-index: 1000;
+        }
+        
+        .refresh-btn:hover {
+            transform: rotate(90deg);
+            background: var(--color-primary-hover);
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: var(--spacing-md);
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- 头部 -->
+        <div class="dashboard-header">
+            <h1>🎯 实时监控仪表板</h1>
+            <p>实时追踪系统状态、任务进度和资源使用情况</p>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h3 class="stat-card-title">运行中任务</h3>
+                    <div class="stat-card-icon">🚀</div>
+                </div>
+                <div class="stat-card-value" id="running-tasks">0</div>
+                <div class="stat-card-subtitle">当前活跃任务</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h3 class="stat-card-title">今日完成</h3>
+                    <div class="stat-card-icon">✅</div>
+                </div>
+                <div class="stat-card-value" id="completed-today">0</div>
+                <div class="stat-card-subtitle">已完成任务数</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h3 class="stat-card-title">Agent 在线</h3>
+                    <div class="stat-card-icon">🤖</div>
+                </div>
+                <div class="stat-card-value" id="active-agents">0</div>
+                <div class="stat-card-subtitle">可用 Agent 数</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h3 class="stat-card-title">系统健康</h3>
+                    <div class="stat-card-icon">💚</div>
+                </div>
+                <div class="stat-card-value" id="health-score">100</div>
+                <div class="stat-card-subtitle">健康度评分</div>
+            </div>
+        </div>
+        
+        <!-- 资源监控 -->
+        <div class="resources-section">
+            <h2 class="section-title">📊 资源使用情况</h2>
+            <div class="resource-grid">
+                <div class="resource-item">
+                    <div class="resource-header">
+                        <span class="resource-name">CPU 使用率</span>
+                        <span class="resource-value" id="cpu-value">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cpu-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="resource-item">
+                    <div class="resource-header">
+                        <span class="resource-name">内存使用</span>
+                        <span class="resource-value" id="memory-value">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="memory-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="resource-item">
+                    <div class="resource-header">
+                        <span class="resource-name">磁盘使用</span>
+                        <span class="resource-value" id="disk-value">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="disk-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 任务状态 -->
+        <div class="tasks-section">
+            <h2 class="section-title">📋 任务列表</h2>
+            <ul class="task-list" id="task-list">
+                <!-- 动态加载 -->
+            </ul>
+        </div>
+        
+        <!-- Agent 状态 -->
+        <div class="tasks-section">
+            <h2 class="section-title">🤖 Agent 状态</h2>
+            <div class="agents-grid" id="agents-grid">
+                <!-- 动态加载 -->
+            </div>
+        </div>
+        
+        <!-- 实时日志 -->
+        <div class="logs-section">
+            <h2 class="section-title" style="color: white;">📝 实时日志</h2>
+            <div id="logs-container">
+                <!-- 动态加载 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 刷新按钮 -->
+    <button class="refresh-btn" onclick="refreshDashboard()" title="刷新数据">🔄</button>
+    
+    <script>
+        // 刷新仪表板
+        function refreshDashboard() {
+            loadStats();
+            loadResources();
+            loadTasks();
+            loadAgents();
+            loadLogs();
+        }
+        
+        // 加载统计数据
+        function loadStats() {
+            $.get('/api/stats', function(data) {
+                $('#running-tasks').text(data.running_tasks || 0);
+                $('#completed-today').text(data.completed_today || 0);
+                $('#active-agents').text(data.active_agents || 0);
+                $('#health-score').text(data.health_score || 100);
+            });
+        }
+        
+        // 加载资源使用
+        function loadResources() {
+            $.get('/api/monitoring/resources', function(data) {
+                updateResource('cpu', data.cpu_usage || 0);
+                updateResource('memory', data.memory_usage || 0);
+                updateResource('disk', data.disk_usage || 0);
+            });
+        }
+        
+        function updateResource(type, value) {
+            const percentage = Math.min(value, 100);
+            $(`#${type}-value`).text(`${percentage.toFixed(1)}%`);
+            $(`#${type}-bar`).css('width', `${percentage}%`);
+            
+            // 更新进度条颜色
+            const bar = $(`#${type}-bar`);
+            bar.removeClass('warning danger');
+            if (percentage > 90) {
+                bar.addClass('danger');
+            } else if (percentage > 75) {
+                bar.addClass('warning');
+            }
+        }
+        
+        // 加载任务列表
+        function loadTasks() {
+            $.get('/api/tasks', function(data) {
+                const taskList = $('#task-list');
+                taskList.empty();
+                
+                const tasks = data.tasks || [];
+                tasks.forEach(task => {
+                    const statusClass = getTaskStatusClass(task.status);
+                    const progressText = task.progress ? `${task.progress}%` : '';
+                    
+                    const taskHtml = `
+                        <li class="task-item">
+                            <div class="task-status ${statusClass}"></div>
+                            <div class="task-info">
+                                <div class="task-name">${task.name}</div>
+                                <div class="task-meta">
+                                    ${task.department || ''} · 
+                                    ${task.agent_name || ''} · 
+                                    ${formatTime(task.created_at)}
+                                </div>
+                            </div>
+                            <div class="task-progress">${progressText}</div>
+                        </li>
+                    `;
+                    taskList.append(taskHtml);
+                });
+            });
+        }
+        
+        function getTaskStatusClass(status) {
+            const statusMap = {
+                'running': 'running',
+                'completed': 'completed',
+                'pending': 'pending',
+                'failed': 'failed'
+            };
+            return statusMap[status] || 'pending';
+        }
+        
+        // 加载 Agent 状态
+        function loadAgents() {
+            $.get('/api/agents/status', function(data) {
+                const agentsGrid = $('#agents-grid');
+                agentsGrid.empty();
+                
+                const agents = data.agents || [];
+                agents.forEach(agent => {
+                    const statusClass = agent.status || 'idle';
+                    const avatar = agent.name ? agent.name.charAt(0).toUpperCase() : 'A';
+                    
+                    const agentHtml = `
+                        <div class="agent-card">
+                            <div class="agent-avatar">${avatar}</div>
+                            <div class="agent-name">${agent.name}</div>
+                            <div class="agent-status ${statusClass}">${agent.status}</div>
+                        </div>
+                    `;
+                    agentsGrid.append(agentHtml);
+                });
+            });
+        }
+        
+        // 加载日志
+        function loadLogs() {
+            $.get('/api/logs/recent', function(data) {
+                const logsContainer = $('#logs-container');
+                logsContainer.empty();
+                
+                const logs = data.logs || [];
+                logs.forEach(log => {
+                    const logHtml = `
+                        <div class="log-entry">
+                            <span class="log-timestamp">${log.timestamp}</span>
+                            <span class="log-level ${log.level}">${log.level}</span>
+                            <span class="log-message">${log.message}</span>
+                        </div>
+                    `;
+                    logsContainer.append(logHtml);
+                });
+                
+                // 滚动到底部
+                logsContainer.scrollTop(logsContainer[0].scrollHeight);
+            });
+        }
+        
+        // 格式化时间
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleString('zh-CN');
+        }
+        
+        // 页面加载时刷新
+        $(document).ready(function() {
+            refreshDashboard();
+            
+            // 每 5 秒自动刷新
+            setInterval(refreshDashboard, 5000);
+        });
+    </script>
+</body>
+</html>

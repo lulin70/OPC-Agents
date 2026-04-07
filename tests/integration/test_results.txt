@@ -1,0 +1,129 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0 -- /Applications/Xcode.app/Contents/Developer/usr/bin/python3
+cachedir: .pytest_cache
+benchmark: 5.2.3 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /Users/lin/Documents/trae_projects/OPC-Agents
+plugins: anyio-4.12.1, benchmark-5.2.3, cov-7.1.0
+collecting ... collected 12 items
+
+tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_task_decomposition_and_execution ERROR [  8%]
+tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_context_injection_and_retrieval ERROR [ 16%]
+tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_multi_agent_collaboration ERROR [ 25%]
+tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_task_completion_validation ERROR [ 33%]
+tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_accumulation ERROR [ 41%]
+tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_weight_calculation ERROR [ 50%]
+tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_retrieval_priority ERROR [ 58%]
+tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_conflict_detection ERROR [ 66%]
+tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_forgetting_mechanism ERROR [ 75%]
+tests/integration/scenarios/test_scenario_3_4_5.py::TestMultiTaskConcurrentManagement::test_task_priority_scheduling ERROR [ 83%]
+tests/integration/scenarios/test_scenario_3_4_5.py::TestErrorHandlingRecovery::test_auto_retry_mechanism ERROR [ 91%]
+tests/integration/scenarios/test_scenario_3_4_5.py::TestBreakpointRecovery::test_checkpoint_save_load PASSED [100%]
+
+==================================== ERRORS ====================================
+_ ERROR at setup of TestCompleteTaskFlow.test_task_decomposition_and_execution _
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py, line 32
+      def test_task_decomposition_and_execution(self, opc_manager, clean_context):
+E       fixture 'opc_manager' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py:32
+_ ERROR at setup of TestCompleteTaskFlow.test_context_injection_and_retrieval __
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py, line 93
+      def test_context_injection_and_retrieval(self, clean_context):
+E       fixture 'clean_context' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py:93
+____ ERROR at setup of TestCompleteTaskFlow.test_multi_agent_collaboration _____
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py, line 119
+      def test_multi_agent_collaboration(self, opc_manager, clean_context):
+E       fixture 'opc_manager' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py:119
+____ ERROR at setup of TestCompleteTaskFlow.test_task_completion_validation ____
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py, line 142
+      def test_task_completion_validation(self, opc_manager, tmp_path):
+E       fixture 'opc_manager' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_1_complete_flow.py:142
+_ ERROR at setup of TestExperienceLibraryLearning.test_experience_accumulation _
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py, line 27
+      def test_experience_accumulation(self, clean_context):
+E       fixture 'clean_context' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py:27
+_ ERROR at setup of TestExperienceLibraryLearning.test_experience_weight_calculation _
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py, line 63
+      def test_experience_weight_calculation(self, clean_context):
+E       fixture 'clean_context' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py:63
+_ ERROR at setup of TestExperienceLibraryLearning.test_experience_retrieval_priority _
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py, line 93
+      def test_experience_retrieval_priority(self, clean_context):
+E       fixture 'clean_context' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py:93
+_ ERROR at setup of TestExperienceLibraryLearning.test_experience_conflict_detection _
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py, line 124
+      def test_experience_conflict_detection(self, clean_context):
+E       fixture 'clean_context' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py:124
+_ ERROR at setup of TestExperienceLibraryLearning.test_experience_forgetting_mechanism _
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py, line 156
+      def test_experience_forgetting_mechanism(self, clean_context):
+E       fixture 'clean_context' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_2_experience_learning.py:156
+_ ERROR at setup of TestMultiTaskConcurrentManagement.test_task_priority_scheduling _
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_3_4_5.py, line 18
+      def test_task_priority_scheduling(self, clean_context):
+E       fixture 'clean_context' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_3_4_5.py:18
+____ ERROR at setup of TestErrorHandlingRecovery.test_auto_retry_mechanism _____
+file /Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_3_4_5.py, line 33
+      def test_auto_retry_mechanism(self, opc_manager):
+E       fixture 'opc_manager' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, benchmark, benchmark_weave, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/lin/Documents/trae_projects/OPC-Agents/tests/integration/scenarios/test_scenario_3_4_5.py:33
+=============================== warnings summary ===============================
+../../../Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35
+  /Users/lin/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_task_decomposition_and_execution
+ERROR tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_context_injection_and_retrieval
+ERROR tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_multi_agent_collaboration
+ERROR tests/integration/scenarios/test_scenario_1_complete_flow.py::TestCompleteTaskFlow::test_task_completion_validation
+ERROR tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_accumulation
+ERROR tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_weight_calculation
+ERROR tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_retrieval_priority
+ERROR tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_conflict_detection
+ERROR tests/integration/scenarios/test_scenario_2_experience_learning.py::TestExperienceLibraryLearning::test_experience_forgetting_mechanism
+ERROR tests/integration/scenarios/test_scenario_3_4_5.py::TestMultiTaskConcurrentManagement::test_task_priority_scheduling
+ERROR tests/integration/scenarios/test_scenario_3_4_5.py::TestErrorHandlingRecovery::test_auto_retry_mechanism
+=================== 1 passed, 1 warning, 11 errors in 0.24s ====================
