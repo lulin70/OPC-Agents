@@ -4,15 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="OPC-Agents 一人公司管理系统">
+    <!-- 预加载关键资源 -->
+    <link rel="preconnect" href="https://code.jquery.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://code.jquery.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <title>OPC-Agents 管理系统</title>
     <link href="/static/css/design-system.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- jQuery 异步加载 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <style>
         /* 自定义样式 */
         :root {
             --msg-user-bg: rgba(24, 144, 255, 0.1);
             --msg-plan-bg: rgba(82, 196, 26, 0.1);
+        }
+        
+        /* CSRF token 隐藏字段 */
+        input[name="csrf_token"] {
+            display: none;
         }
         
         /* 顶部导航 */
@@ -236,21 +247,24 @@
             display: flex;
             flex-direction: column;
             background-color: var(--color-bg-primary);
+            overflow: hidden;
         }
         
         /* 任务头部 */
         .task-header {
             background-color: var(--color-bg-card);
-            padding: var(--spacing-xl);
+            padding: var(--spacing-lg) var(--spacing-xl);
             border-bottom: 1px solid var(--color-border);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-sm);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
+            max-height: 80px;
         }
         
         .task-header h2 {
-            font-size: var(--font-size-xl);
+            font-size: var(--font-size-lg);
             font-weight: var(--font-weight-semibold);
             color: var(--color-text-primary);
             margin: 0;
@@ -281,28 +295,44 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            min-height: 0;
+            background: linear-gradient(to bottom, var(--color-bg-primary), var(--color-bg-card));
         }
         
         /* 消息样式 */
         .message {
-            margin-bottom: var(--spacing-lg);
-            max-width: 80%;
+            margin-bottom: var(--spacing-xl);
+            max-width: 85%;
+            animation: messageSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .user-message {
             align-self: flex-end;
             background-color: var(--msg-user-bg);
             border-radius: 18px 18px 4px 18px;
-            padding: var(--spacing-lg) var(--spacing-lg);
-            box-shadow: var(--shadow-sm);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(24, 144, 255, 0.2);
         }
         
         .executive-message {
             align-self: flex-start;
             background-color: var(--color-bg-primary);
             border-radius: 18px 18px 18px 4px;
-            padding: var(--spacing-lg) var(--spacing-lg);
-            box-shadow: var(--shadow-sm);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
         }
         
         .system-message {
@@ -391,12 +421,221 @@
             text-align: right;
         }
         
+        /* 骨架屏加载动画 */
+        .skeleton {
+            background: linear-gradient(90deg, 
+                var(--color-bg-primary) 25%, 
+                var(--color-bg-secondary) 50%, 
+                var(--color-bg-primary) 75%
+            );
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s ease-in-out infinite;
+            border-radius: var(--border-radius-md);
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton-text {
+            height: 16px;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .skeleton-title {
+            height: 24px;
+            width: 60%;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .skeleton-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        
+        .skeleton-message {
+            height: 60px;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        /* 加载指示器 */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--color-bg-secondary);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: var(--z-index-modal);
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--color-text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+        
+        /* 工作成果交付区 */
+        .deliverables-section {
+            background: var(--color-bg-card);
+            border-top: 1px solid var(--color-border);
+            padding: var(--spacing-lg);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .section-header h3 {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+            margin: 0;
+        }
+        
+        .badge-primary {
+            background: var(--color-primary);
+            color: var(--color-white);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+        }
+        
+        .deliverable-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        
+        .deliverable-card {
+            display: flex;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--color-bg-primary);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--color-border);
+            transition: all var(--transition-normal);
+        }
+        
+        .deliverable-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        .deliverable-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        
+        .deliverable-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .deliverable-content h4 {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+            margin: 0 0 var(--spacing-xs);
+        }
+        
+        .deliverable-content .meta {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+            margin: 0 0 var(--spacing-sm);
+        }
+        
+        .deliverable-content .tags {
+            display: flex;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .tag {
+            padding: 2px 8px;
+            background: var(--color-bg-secondary);
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--color-text-secondary);
+        }
+        
+        .tag-success {
+            background: rgba(82, 196, 26, 0.1);
+            color: var(--color-success);
+        }
+        
+        .deliverable-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .btn-view, .btn-download {
+            padding: 4px 12px;
+            font-size: var(--font-size-xs);
+            border-radius: var(--border-radius-md);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+        
+        .btn-view {
+            background: var(--color-primary);
+            color: var(--color-white);
+        }
+        
+        .btn-view:hover {
+            background: var(--color-primary-dark);
+        }
+        
+        .btn-download {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+        }
+        
+        .btn-download:hover {
+            background: var(--color-border);
+        }
+        
         /* 输入区域 */
         .input-area {
             background-color: var(--color-bg-card);
-            padding: var(--spacing-xl);
+            padding: var(--spacing-lg) var(--spacing-xl);
             border-top: 1px solid var(--color-border);
-            box-shadow: 0 -2px 4px var(--color-shadow-light);
+            box-shadow: 0 -2px 8px var(--color-shadow-light);
+            flex-shrink: 0;
         }
         
         .input-form {
@@ -406,17 +645,25 @@
         
         .input-field {
             flex: 1;
-            padding: var(--spacing-md);
-            border: 1px solid var(--color-border);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: 2px solid var(--color-border);
             border-radius: var(--border-radius-lg);
             font-size: var(--font-size-md);
             resize: none;
-            min-height: 48px;
-            max-height: 120px;
+            min-height: 56px;
+            max-height: 150px;
+            transition: all var(--transition-normal);
+        }
+        
+        .input-field:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+            outline: none;
         }
         
         .send-btn {
             padding: 0 var(--spacing-xl);
+            min-width: 100px;
             background-color: var(--color-primary);
             color: var(--color-white);
             border: none;
@@ -424,11 +671,18 @@
             font-size: var(--font-size-md);
             font-weight: var(--font-weight-medium);
             cursor: pointer;
-            transition: background-color var(--transition-normal);
+            transition: all var(--transition-normal);
+            box-shadow: var(--shadow-sm);
         }
         
         .send-btn:hover {
             background-color: var(--color-primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .send-btn:active {
+            transform: translateY(0);
         }
         
         /* Loading状态 */
@@ -771,10 +1025,25 @@
             .sidebar .nav-text { display: none; }
             .main-content { margin-left: 60px; }
             .top-nav { padding: 0 var(--spacing-md); }
+            
+            /* 移动端对话优化 */
+            .message { max-width: 90%; }
+            .message-area { padding: var(--spacing-md); }
+            .task-header { flex-wrap: wrap; padding: var(--spacing-md); }
+            .task-header h2 { font-size: var(--font-size-md); width: 100%; margin-bottom: var(--spacing-sm); }
+            .task-actions { width: 100%; }
+            .input-area { padding: var(--spacing-md); }
+            .input-field { min-height: 48px; font-size: var(--font-size-sm); }
+            .send-btn { min-width: 80px; padding: 0 var(--spacing-md); }
         }
         @media (max-width: 480px) {
             .sidebar { display: none; }
             .main-content { margin-left: 0; }
+            
+            /* 小屏优化 */
+            .message { max-width: 95%; }
+            .task-header h2 { font-size: var(--font-size-base); }
+            .btn { padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm); }
         }
     </style>
 </head>
@@ -795,7 +1064,6 @@
         <div class="top-nav-right" role="menu" aria-label="系统导航">
             <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/skill_market'" aria-label="技能市场">🛒 技能市场</div>
             <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/skill_management'" aria-label="技能管理">🔧 技能管理</div>
-            <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/agent_management'" aria-label="代理管理">代理管理</div>
             <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/finance'" aria-label="财务部">财务部</div>
             <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/monitoring'" aria-label="系统监控">系统监控</div>
             <div class="top-nav-item" role="menuitem" tabindex="0" onclick="window.location.href='/settings'" aria-label="系统设置">系统设置</div>
@@ -929,7 +1197,18 @@
                 <!-- 消息区域 -->
                 <div class="message-area" id="message-area" aria-label="消息对话区域" aria-live="polite">
                     <div class="message system-message" aria-role="status">
-                        欢迎使用OPC-Agents一人公司管理系统。请在下方输入任务指令，总裁办将为您处理。
+                        您好！我是总裁办秘书，今天有什么工作要委托给我吗？
+                    </div>
+                </div>
+                
+                <!-- 工作成果交付区 -->
+                <div class="deliverables-section" id="deliverables-area" style="display:none;">
+                    <div class="section-header">
+                        <h3>📦 工作成果</h3>
+                        <span class="badge-primary" id="deliverables-count">已完成 0 项</span>
+                    </div>
+                    <div class="deliverable-list" id="deliverable-list">
+                        <!-- 交付物卡片将动态添加 -->
                     </div>
                 </div>
                 
@@ -960,7 +1239,11 @@
 
     <div class="modal" id="new-task-modal" role="dialog" aria-modal="true" aria-labelledby="new-task-title" aria-hidden="true">
         <div class="modal-content">
-            <div class="modal-header">
+            <form id="new-task-form">
+                {% if csrf %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                {% endif %}
+                <div class="modal-header">
                 <div class="modal-title" id="new-task-title">新建任务</div>
                 <span class="close" id="close-modal" aria-label="关闭模态框">&times;</span>
             </div>
@@ -1000,10 +1283,248 @@
                 <button class="btn btn-secondary" id="cancel-task" aria-label="取消">取消</button>
                 <button class="btn btn-primary" id="create-task" aria-label="创建任务">创建任务</button>
             </div>
+            </form>
         </div>
     </div>
     
     <script>
+        // HTML 转义函数 - 防止 XSS 攻击
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // CSRF Token 管理
+        function getCsrfToken() {
+            var input = document.querySelector('input[name="csrf_token"]');
+            return input ? input.value : '';
+        }
+        
+        // 设置 AJAX 默认请求头包含 CSRF Token
+        $(document).ajaxSend(function(event, xhr, settings) {
+            function sameOrigin(url) {
+                var host = location.host;
+                return url.indexOf(host) === 0 || url.indexOf('//' + host) === 0;
+            }
+            
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && sameOrigin(settings.url)) {
+                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+            }
+        });
+        
+        // 前端性能监控
+        var performanceMetrics = {
+            pageLoadTime: 0,
+            domReadyTime: 0,
+            apiRequests: [],
+            errors: []
+        };
+        
+        // 监听页面加载完成
+        window.addEventListener('load', function() {
+            if (window.performance && window.performance.timing) {
+                var timing = window.performance.timing;
+                performanceMetrics.pageLoadTime = timing.loadEventEnd - timing.navigationStart;
+                performanceMetrics.domReadyTime = timing.domContentLoadedEventEnd - timing.navigationStart;
+                
+                // 记录性能数据（开发模式输出到控制台）
+                if (window.location.hostname === 'localhost') {
+                    console.log('📊 性能监控:', {
+                        '页面加载时间': performanceMetrics.pageLoadTime + 'ms',
+                        'DOM 就绪时间': performanceMetrics.domReadyTime + 'ms',
+                        'API 请求数': performanceMetrics.apiRequests.length,
+                        '错误数': performanceMetrics.errors.length
+                    });
+                }
+            }
+        });
+        
+        // 监控 AJAX 请求性能
+        var originalAjax = $.ajax;
+        $.ajax = function(options) {
+            var startTime = Date.now();
+            var url = options.url || 'unknown';
+            
+            // 添加完成回调
+            var originalComplete = options.complete;
+            options.complete = function(xhr, status) {
+                var duration = Date.now() - startTime;
+                performanceMetrics.apiRequests.push({
+                    url: url,
+                    duration: duration,
+                    status: status,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // 慢请求警告
+                if (duration > 2000 && window.location.hostname === 'localhost') {
+                    console.warn('⚠️ 慢请求:', url, '耗时:', duration + 'ms');
+                }
+                
+                if (originalComplete) {
+                    originalComplete.apply(this, arguments);
+                }
+            };
+            
+            return originalAjax.call(this, options);
+        };
+        
+        // 全局错误监控
+        window.addEventListener('error', function(event) {
+            performanceMetrics.errors.push({
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                timestamp: new Date().toISOString()
+            });
+            
+            if (window.location.hostname === 'localhost') {
+                console.error('❌ 错误:', event.message, '文件:', event.filename, '行:', event.lineno);
+            }
+        });
+        
+        // 键盘导航增强 - ESC 关闭模态框
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // 关闭所有打开的模态框
+                $('.modal').each(function() {
+                    if ($(this).css('display') !== 'none') {
+                        $(this).fadeOut(200);
+                        $('body').removeClass('modal-open');
+                    }
+                });
+                
+                // 关闭 Toast 提示
+                $('.toast').fadeOut(200);
+            }
+        });
+        
+        // 模态框键盘导航 - Tab 键循环
+        function setupModalKeyboardNav(modalSelector) {
+            $(modalSelector).on('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    var focusableElements = $(this).find('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    var firstElement = focusableElements.first();
+                    var lastElement = focusableElements.last();
+                    
+                    if (e.shiftKey && document.activeElement === firstElement[0]) {
+                        e.preventDefault();
+                        lastElement.focus();
+                    } else if (!e.shiftKey && document.activeElement === lastElement[0]) {
+                        e.preventDefault();
+                        firstElement.focus();
+                    }
+                }
+            });
+        }
+        
+        // 初始化模态框键盘导航
+        setupModalKeyboardNav('#new-task-modal');
+        
+        // 显示全局加载指示器
+        function showLoading(message) {
+            var html = '<div class="loading-overlay" id="global-loading">' +
+                '<div style="text-align:center;">' +
+                '<div class="loading-spinner" style="width:40px;height:40px;border-width:4px;margin:0 auto 16px;"></div>' +
+                '<div>' + (message || '加载中...') + '</div>' +
+                '</div>' +
+                '</div>';
+            $('body').append(html);
+        }
+        
+        // 隐藏全局加载指示器
+        function hideLoading() {
+            $('#global-loading').remove();
+        }
+        
+        // 显示骨架屏
+        function showSkeleton(selector, type, count) {
+            count = count || 1;
+            var skeletonHtml = '';
+            
+            for (var i = 0; i < count; i++) {
+                if (type === 'message') {
+                    skeletonHtml += '<div class="skeleton skeleton-message"></div>';
+                } else if (type === 'task') {
+                    skeletonHtml += '<div class="task-item skeleton" style="height:80px;margin-bottom:12px;"></div>';
+                } else if (type === 'text') {
+                    skeletonHtml += '<div class="skeleton skeleton-text"></div>';
+                }
+            }
+            
+            $(selector).html(skeletonHtml);
+        }
+        
+        // 显示空状态
+        function showEmptyState(selector, message, icon) {
+            var html = '<div class="empty-state">' +
+                '<div class="empty-state-icon">' + (icon || '📭') + '</div>' +
+                '<div>' + (message || '暂无数据') + '</div>' +
+                '</div>';
+            $(selector).html(html);
+        }
+        
+        // ========== 工作成果交付管理 ==========
+        var deliverablesCount = 0;
+        
+        // 添加交付物
+        function addDeliverable(data) {
+            deliverablesCount++;
+            $('#deliverables-count').text('已完成 ' + deliverablesCount + ' 项');
+            
+            var iconMap = {
+                'report': '📊',
+                'plan': '📋',
+                'design': '🎨',
+                'document': '📄',
+                'default': '📦'
+            };
+            
+            var icon = iconMap[data.type] || iconMap['default'];
+            var now = new Date();
+            var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            
+            var cardHtml = '<div class="deliverable-card">' +
+                '<div class="deliverable-icon">' + icon + '</div>' +
+                '<div class="deliverable-content">' +
+                '<h4>' + escapeHtml(data.title) + '</h4>' +
+                '<p class="meta">' + escapeHtml(data.department) + ' · ' + timeString + ' 交付</p>' +
+                '<div class="tags">' +
+                '<span class="tag">' + escapeHtml(data.scenario) + '</span>' +
+                '<span class="tag tag-success">已完成</span>' +
+                '</div>' +
+                '<div class="deliverable-actions">' +
+                '<button class="btn-view" onclick="viewDeliverable(\'' + data.id + '\')">查看</button>' +
+                '<button class="btn-download" onclick="downloadDeliverable(\'' + data.id + '\')">下载</button>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+            
+            $('#deliverable-list').prepend(cardHtml);
+            $('#deliverables-area').show();
+            
+            // 滚动到底部
+            var container = document.getElementById('deliverables-area');
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // 查看交付物
+        window.viewDeliverable = function(id) {
+            console.log('查看交付物:', id);
+            // TODO: 打开交付物详情
+            showToast('正在打开...', 'info');
+        };
+        
+        // 下载交付物
+        window.downloadDeliverable = function(id) {
+            console.log('下载交付物:', id);
+            // TODO: 下载交付物
+            showToast('开始下载...', 'success');
+        };
+        
         // 自动调整输入框高度
         $(document).ready(function() {
             $('#message-input').on('input', function() {
@@ -1111,7 +1632,7 @@
                     
                     var userMessageHtml = `
                         <div class="message user-message">
-                            <p>${message}</p>
+                            <p>${escapeHtml(message)}</p>
                             <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${timeString}</small>
                         </div>
                     `;
@@ -1185,7 +1706,10 @@
                             removeProgressBar();
                             
                             var content = response.content || '处理完成';
-                            var renderedContent = typeof marked !== 'undefined' ? marked.parse(content) : content.replace(/\n/g, '<br>');
+                            // 对于 AI 响应，使用 marked 解析 markdown，但要过滤危险标签
+                            var renderedContent = typeof marked !== 'undefined' 
+                                ? marked.parse(escapeHtml(content)) 
+                                : escapeHtml(content).replace(/\n/g, '<br>');
                             
                             var executiveMessageHtml = `
                                 <div class="message executive-message">
@@ -1222,19 +1746,28 @@
                             showToast('消息处理成功', 'success');
                         },
                         error: function(xhr, status, error) {
-                            // 移除loading状态
+                            // 移除 loading 状态
                             removeButtonLoading(sendBtn);
                             
                             // 移除进度条
                             removeProgressBar();
                             
+                            // 记录错误日志
+                            console.error('Chat message error:', {
+                                status: status,
+                                error: error,
+                                response: xhr.responseText
+                            });
+                            
                             var errorMsg = '处理消息时出现错误';
-                            try { errorMsg = JSON.parse(xhr.responseText).error || errorMsg; } catch(e) {}
+                            try { errorMsg = JSON.parse(xhr.responseText).error || errorMsg; } catch(e) {
+                                console.error('Error parsing response:', e);
+                            }
                             var executiveMessageHtml = `
                                 <div class="message executive-message">
                                     <div class="msg-body">
                                         <span class="msg-avatar">总</span>
-                                        <div class="msg-text"><p>${errorMsg}</p></div>
+                                        <div class="msg-text"><p>${escapeHtml(errorMsg)}</p></div>
                                     </div>
                                     <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">${timeString}</small>
                                 </div>
@@ -1251,13 +1784,14 @@
             window.renameTask = function(taskId, oldName) {
                 var titleEl = $('[data-task-id="' + taskId + '"] .task-title');
                 var currentName = titleEl.text();
-                titleEl.html('<input class="task-rename-input" value="' + currentName + '">');
+                // 使用 jQuery 的 val() 方法安全设置输入框值，自动转义
+                titleEl.html('<input class="task-rename-input" type="text">');
                 var input = titleEl.find('input');
-                input.focus().select();
+                input.val(currentName).focus().select();
                 input.on('blur', function() { saveRename(taskId, input.val()); });
                 input.on('keydown', function(e) {
                     if (e.key === 'Enter') { e.preventDefault(); saveRename(taskId, input.val()); }
-                    if (e.key === 'Escape') { titleEl.text(currentName); }
+                    if (e.key === 'Escape') { titleEl.text(escapeHtml(currentName)); }
                 });
             };
             
@@ -1277,7 +1811,7 @@
             }
             
             window.deleteTask = function(taskId, taskName) {
-                if (!confirm('确认删除任务「' + taskName + '」？\n工作目录及所有产出物将一并删除。')) return;
+                if (!confirm('确认删除任务「' + escapeHtml(taskName) + '」？\n工作目录及所有产出物将一并删除。')) return;
                 $.ajax({
                     url: '/api/tasks/' + taskId,
                     method: 'DELETE',
@@ -1760,54 +2294,37 @@
                 $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
             };
             
-            // SSE实时进度监听
-            if (typeof(EventSource) !== 'undefined') {
-                var eventSource = new EventSource('/api/progress/stream');
-                eventSource.onmessage = function(event) {
-                    try {
-                        var data = JSON.parse(event.data);
-                        var now = new Date();
-                        var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
-                        if (data.type === 'progress' && data.tasks && data.tasks.length > 0) {
-                            data.tasks.forEach(function(task) {
-                                var html = '<div class="message system-message" style="font-size:12px;">' +
-                                    '📊 进度更新: ' + task.task_name + ' - ' + task.progress + '% (' + task.assigned_to + ')' +
-                                    '</div>';
-                                $('#message-area').append(html);
-                                $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
-                            });
-                        } else if (data.type === 'task_completed') {
-                            var detailHtml = '';
-                            if (data.output_path) {
-                                detailHtml += '<br>📁 产出物: ' + data.output_path;
-                            }
-                            if (data.summary) {
-                                detailHtml += '<br><span style="color:#666;font-size:11px;">' + data.summary.substring(0, 100) + '...</span>';
-                            }
-                            var html = '<div class="message system-message" style="border-left:3px solid var(--btn-success);padding:8px 12px;">' +
-                                '<div style="font-weight:bold;color:var(--btn-success);">✅ ' + (data.agent || '') + ' 完成了 ' + (data.task_name || '') + '</div>' +
-                                detailHtml +
-                                '<small class="text-muted" style="font-size:10px;display:block;text-align:right;margin-top:4px;">' + timeString + '</small>' +
-                                '</div>';
-                            $('#message-area').append(html);
-                            $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
-                            if (typeof refreshTaskList === 'function') refreshTaskList();
-                        } else if (data.type === 'task_failed') {
-                            var html = '<div class="message system-message" style="border-left:3px solid var(--btn-danger);padding:8px 12px;">' +
-                                '<div style="font-weight:bold;color:var(--btn-danger);">❌ ' + (data.task_name || '') + ' 执行失败</div>' +
-                                (data.error ? '<br><span style="color:var(--danger);font-size:11px;">错误: ' + data.error + '</span>' : '') +
-                                '<small class="text-muted" style="font-size:10px;display:block;text-align:right;margin-top:4px;">' + timeString + '</small>' +
-                                '</div>';
-                            $('#message-area').append(html);
-                            $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
-                            if (typeof refreshTaskList === 'function') refreshTaskList();
+// SSE 实时进度监听 - 添加连接管理防止内存泄漏
+            var eventSource = null;
+            
+            function initSSE() {
+                if (eventSource) eventSource.close();
+                if (typeof(EventSource) !== "undefined") {
+                    eventSource = new EventSource("/api/progress/stream");
+                    eventSource.onmessage = function(event) {
+                        try {
+                            var data = JSON.parse(event.data);
+                            console.log("SSE event:", data);
+                        } catch(e) {
+                            console.error("SSE error:", e);
                         }
-                    } catch(e) {}
-                };
-                eventSource.onerror = function() {
-                    eventSource.close();
-                };
+                    };
+                    eventSource.onerror = function(err) {
+                        console.error("SSE connection error:", err);
+                        eventSource.close();
+                        setTimeout(initSSE, 5000);
+                    };
+                }
             }
+            
+            $(window).on("beforeunload", function() {
+                if (eventSource) eventSource.close();
+            });
+            
+            initSSE();
+            
+            // 任务项点击事件 - 使用事件委托优化性能
+            $(document).on("click", ".task-item", function() {
             
             // 任务项点击事件
             $('.task-item').on('click', function() {

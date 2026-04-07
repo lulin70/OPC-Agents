@@ -1,0 +1,308 @@
+/* Notification Center Styles */
+
+/* Notification Bell */
+.notification-bell {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.notification-bell-icon {
+  font-size: 24px;
+  color: var(--text-color);
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.notification-bell:hover .notification-bell-icon {
+  color: var(--primary-color);
+}
+
+.unread-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.unread-badge:empty {
+  display: none;
+}
+
+/* Notification Dropdown Panel */
+.notification-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 400px;
+  max-height: 600px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+}
+
+.notification-dropdown.show {
+  display: flex;
+}
+
+.notification-dropdown-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-dropdown-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.mark-all-read {
+  color: var(--primary-color);
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 5px 10px;
+  transition: color 0.2s ease;
+}
+
+.mark-all-read:hover {
+  color: var(--primary-color-dark);
+  text-decoration: underline;
+}
+
+/* Notification List */
+.notification-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.notification-item {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.notification-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.notification-item.unread {
+  background-color: var(--primary-light);
+}
+
+.notification-item.unread::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--primary-color);
+}
+
+.notification-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.notification-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  flex: 1;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-left: 10px;
+}
+
+.notification-content {
+  font-size: 14px;
+  color: var(--text-color);
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notification-type {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.notification-type.task {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.notification-type.confirmation {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.notification-type.system {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.notification-type.finance {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.notification-type.hr {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.notification-priority {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.notification-priority.urgent {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.notification-priority.important {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.notification-priority.normal {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.notification-priority.info {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Empty State */
+.notification-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.notification-empty-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  opacity: 0.5;
+}
+
+.notification-empty-text {
+  font-size: 14px;
+}
+
+/* Notification Footer */
+.notification-footer {
+  padding: 15px 20px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.view-all-link {
+  color: var(--primary-color);
+  font-size: 14px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.view-all-link:hover {
+  color: var(--primary-color-dark);
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .notification-dropdown {
+    width: calc(100vw - 40px);
+    right: -10px;
+    max-height: 80vh;
+  }
+  
+  .notification-list {
+    max-height: 70vh;
+  }
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-item {
+  animation: slideIn 0.3s ease;
+}
+
+/* Priority Icons */
+.priority-icon {
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.priority-icon.urgent::before {
+  content: '🔴';
+}
+
+.priority-icon.important::before {
+  content: '🟡';
+}
+
+.priority-icon.normal::before {
+  content: '🟢';
+}
+
+.priority-icon.info::before {
+  content: '🔵';
+}

@@ -23,33 +23,86 @@ args = parser.parse_args()
 # 可选：ZeroClaw作为外部服务
 print("[Web界面] ZeroClaw已作为独立系统运行，可通过配置文件连接")
 
-# 初始化OPC Manager
+# 初始化 OPC Manager
 manager = OPCManager(debug_mode=args.debug)
 
-# 创建测试任务
-print("[Web界面] 创建测试任务...")
-tasks = manager.get_all_tasks()
-if not tasks:
-    # 创建一些测试任务
-    manager.create_task("task-1", "产品发布计划", "产品经理", "in_progress")
-    manager.update_task_status("task-1", "in_progress", 75)
-    
-    manager.create_task("task-2", "市场分析报告", "市场研究员", "completed")
-    manager.update_task_status("task-2", "completed", 100)
-    
-    manager.create_task("task-3", "团队建设方案", "人力资源专员", "completed")
-    manager.update_task_status("task-3", "completed", 100)
-    
-    manager.create_task("task-4", "季度总结", "财务经理", "completed")
-    manager.update_task_status("task-4", "completed", 100)
-    
-    print("[Web界面] 测试任务创建完成")
+# 确保数据库连接健康
+def ensure_db_connection():
+    """确保数据库连接健康"""
+    try:
+        if manager.db_manager:
+            # 测试连接
+            conn = manager.db_manager.get_connection()
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                return True
+    except Exception as e:
+        print(f"[Web 界面] 数据库连接检查警告：{e}")
+    return False
 
-# 创建Flask应用，显式指定模板和静态文件目录
+# 创建测试任务
+print("[Web 界面] 创建测试任务...")
+try:
+    tasks = manager.get_all_tasks()
+    if not tasks:
+        # 创建一些测试任务
+        manager.create_task("task-1", "产品发布计划", "产品经理", "in_progress")
+        manager.update_task_status("task-1", "in_progress", 75)
+        
+        manager.create_task("task-2", "市场分析报告", "市场研究员", "completed")
+        manager.update_task_status("task-2", "completed", 100)
+        
+        manager.create_task("task-3", "团队建设方案", "人力资源专员", "completed")
+        manager.update_task_status("task-3", "completed", 100)
+        
+        manager.create_task("task-4", "季度总结", "财务经理", "completed")
+        manager.update_task_status("task-4", "completed", 100)
+        
+        print("[Web 界面] 测试任务创建完成")
+except Exception as e:
+    print(f"[Web 界面] 创建测试任务警告：{e}")
+
+# 创建 Flask 应用，显式指定模板和静态文件目录
 import os
 template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'templates')
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+
+# 添加 CSRF 保护
+app.config['SECRET_KEY'] = 'opc-agents-secret-key-change-in-production-' + str(uuid.uuid4())
+try:
+    from flask_wtf.csrf import CSRFProtect
+    csrf = CSRFProtect(app)
+    print("[Web 界面] CSRF 保护已启用")
+except ImportError:
+    print("[Web 界面] 警告：flask_wtf 未安装，CSRF 保护未启用。请运行：pip install flask-wtf")
+    csrf = None
+
+# 添加内容安全策略 (CSP) 头
+@app.after_request
+def add_csp_headers(response):
+    """添加 Content-Security-Policy 头，增强安全性"""
+    # 只允许加载同源资源，防止 XSS 攻击
+    csp_policy = {
+        'default-src': "'self'",
+        'script-src': "'self' 'unsafe-inline' 'unsafe-eval' cdnjs.cloudflare.com unpkg.com",
+        'style-src': "'self' 'unsafe-inline' cdnjs.cloudflare.com fonts.googleapis.com",
+        'font-src': "'self' fonts.gstatic.com cdnjs.cloudflare.com",
+        'img-src': "'self' data: blob:",
+        'connect-src': "'self' ws: wss:",
+        'frame-src': "'none'",
+        'object-src': "'none'"
+    }
+    
+    csp_string = '; '.join(f"{key} {value}" for key, value in csp_policy.items())
+    response.headers['Content-Security-Policy'] = csp_string
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    return response
 
 # 设置debug模式
 log_level = logging.DEBUG if args.debug else logging.INFO
@@ -134,6 +187,10 @@ try:
     print("[Web界面] HR API已加载")
 except Exception as e:
     print(f"[Web界面] HR API加载失败: {e}")
+
+# 注：微信集成已延后，相关路由已移除
+# from web_interface.routes.wechat_pairing_routes import router as wechat_pairing_router
+# app.register_blueprint(wechat_pairing_router)
 
 # 首页 - 对话中心
 @app.route('/')
@@ -1466,6 +1523,18 @@ if __name__ == '__main__' or __name__ == 'web_interface.app':
         with open(index_html_path, 'w') as f:
             f.write(index_html)
     
+
+    # 注：微信集成已延后，WebSocket 协议处理器暂不启用
+    # import asyncio
+    # from opc_manager._deprecated_openclaw_protocol.websocket_server import websocket_server
+    # async def init_openclaw_protocol():
+    #     await websocket_server.handler.start()
+    #     print("[Web 界面] OpenClaw 协议处理器已启动")
+    # try:
+    #     asyncio.run(init_openclaw_protocol())
+    # except Exception as e:
+    #     print(f"[Web 界面] OpenClaw 协议处理器初始化警告：{e}")
+
     # 启动Flask服务
     print(f"[Web界面] 启动Flask服务在端口 5009...")
     print(f"[Web界面] 模板目录: {template_dir}")

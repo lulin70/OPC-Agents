@@ -1,0 +1,269 @@
+<!-- Notification Bell Component -->
+<div class="notification-bell" id="notificationBell" title="通知中心">
+  <div class="notification-bell-icon">
+    🔔
+    <span class="unread-badge" id="unreadBadge"></span>
+  </div>
+  
+  <!-- Notification Dropdown Panel -->
+  <div class="notification-dropdown" id="notificationDropdown">
+    <div class="notification-dropdown-header">
+      <h3>通知</h3>
+      <button class="mark-all-read" id="markAllReadBtn" title="全部标记已读">
+        全部已读
+      </button>
+    </div>
+    
+    <!-- Notification List -->
+    <div class="notification-list" id="notificationList">
+      <!-- Notifications will be loaded here dynamically -->
+      <div class="notification-empty">
+        <div class="notification-empty-icon">📭</div>
+        <div class="notification-empty-text">暂无通知</div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="notification-footer">
+      <a href="/notifications" class="view-all-link">查看全部通知 →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Notification Bell Controller
+class NotificationBellController {
+  constructor() {
+    this.bell = document.getElementById('notificationBell');
+    this.dropdown = document.getElementById('notificationDropdown');
+    this.badge = document.getElementById('unreadBadge');
+    this.list = document.getElementById('notificationList');
+    this.markAllBtn = document.getElementById('markAllReadBtn');
+    this.unreadCount = 0;
+    this.notifications = [];
+    
+    this.init();
+  }
+  
+  init() {
+    // Toggle dropdown on bell click
+    this.bell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleDropdown();
+      if (this.dropdown.classList.contains('show')) {
+        this.loadNotifications();
+      }
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (this.dropdown.classList.contains('show') && 
+          !this.dropdown.contains(e.target)) {
+        this.hideDropdown();
+      }
+    });
+    
+    // Mark all as read
+    this.markAllBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.markAllAsRead();
+    });
+    
+    // Initial load of unread count
+    this.loadUnreadCount();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(() => this.loadUnreadCount(), 30000);
+  }
+  
+  toggleDropdown() {
+    this.dropdown.classList.toggle('show');
+  }
+  
+  showDropdown() {
+    this.dropdown.classList.add('show');
+  }
+  
+  hideDropdown() {
+    this.dropdown.classList.remove('show');
+  }
+  
+  async loadUnreadCount() {
+    try {
+      const response = await fetch('/api/v2/notifications/unread-count');
+      const data = await response.json();
+      
+      if (data.success) {
+        this.unreadCount = data.data.unread_count;
+        this.updateBadge();
+      }
+    } catch (error) {
+      console.error('Failed to load unread count:', error);
+    }
+  }
+  
+  updateBadge() {
+    if (this.unreadCount > 0) {
+      this.badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
+    } else {
+      this.badge.textContent = '';
+    }
+  }
+  
+  async loadNotifications() {
+    try {
+      const response = await fetch('/api/v2/notifications?unread_only=false&page=1&limit=10');
+      const data = await response.json();
+      
+      if (data.success) {
+        this.notifications = data.data.items;
+        this.renderList();
+      }
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+      this.renderEmpty('加载通知失败');
+    }
+  }
+  
+  renderList() {
+    if (this.notifications.length === 0) {
+      this.renderEmpty('暂无通知');
+      return;
+    }
+    
+    this.list.innerHTML = this.notifications.map(notif => `
+      <div class="notification-item ${!notif.is_read ? 'unread' : ''}" 
+           data-id="${notif.id}"
+           onclick="notificationBellController.openNotification('${notif.id}')">
+        <div class="notification-item-header">
+          <h4 class="notification-title">
+            <span class="priority-icon ${notif.priority}"></span>
+            ${this.escapeHtml(notif.title)}
+          </h4>
+          <span class="notification-time">${this.formatTime(notif.created_at)}</span>
+        </div>
+        ${notif.content ? `<p class="notification-content">${this.escapeHtml(notif.content)}</p>` : ''}
+        <div class="notification-meta">
+          <span class="notification-type ${notif.type}">${this.getTypeLabel(notif.type)}</span>
+          <span class="notification-priority ${notif.priority}">${this.getPriorityLabel(notif.priority)}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  renderEmpty(message) {
+    this.list.innerHTML = `
+      <div class="notification-empty">
+        <div class="notification-empty-icon">📭</div>
+        <div class="notification-empty-text">${message}</div>
+      </div>
+    `;
+  }
+  
+  async markAllAsRead() {
+    try {
+      const response = await fetch('/api/v2/notifications/read-all', {
+        method: 'PUT'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        this.unreadCount = 0;
+        this.updateBadge();
+        this.loadNotifications();
+      }
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+      alert('标记失败，请重试');
+    }
+  }
+  
+  async openNotification(id) {
+    try {
+      // Mark as read
+      await fetch(`/api/v2/notifications/${id}/read`, {
+        method: 'PUT'
+      });
+      
+      // Find notification and navigate if it has related object
+      const notif = this.notifications.find(n => n.id === id);
+      if (notif && notif.related_object_type && notif.related_object_id) {
+        // Navigate to related object (task/agent/plan)
+        this.navigateToRelatedObject(notif.related_object_type, notif.related_object_id);
+      }
+      
+      // Refresh list
+      this.loadNotifications();
+      this.loadUnreadCount();
+    } catch (error) {
+      console.error('Failed to open notification:', error);
+    }
+  }
+  
+  navigateToRelatedObject(type, id) {
+    switch (type) {
+      case 'task':
+        window.location.href = `/tasks/${id}`;
+        break;
+      case 'agent':
+        window.location.href = `/agents/${id}`;
+        break;
+      case 'plan':
+        window.location.href = `/plans/${id}`;
+        break;
+      default:
+        console.warn('Unknown related object type:', type);
+    }
+  }
+  
+  getTypeLabel(type) {
+    const labels = {
+      'task': '任务',
+      'confirmation': '确认',
+      'system': '系统',
+      'finance': '财务',
+      'hr': '人事'
+    };
+    return labels[type] || type;
+  }
+  
+  getPriorityLabel(priority) {
+    const labels = {
+      'urgent': '紧急',
+      'important': '重要',
+      'normal': '普通',
+      'info': '信息'
+    };
+    return labels[priority] || priority;
+  }
+  
+  formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) {
+      return `${days}天前`;
+    } else if (hours > 0) {
+      return `${hours}小时前`;
+    } else if (minutes > 0) {
+      return `${minutes}分钟前`;
+    } else {
+      return '刚刚';
+    }
+  }
+  
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+}
+
+// Initialize notification bell
+const notificationBellController = new NotificationBellController();
+</script>
