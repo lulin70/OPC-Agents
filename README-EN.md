@@ -1,5 +1,7 @@
 # OPC-Agents
 
+**Version**: 0.0.1
+
 > **You give one instruction to the Executive Office, it mobilizes all 18 specialized departments and 180+ AI employees to collaborate and get it done.**
 
 An AI multi-agent operating system for One Person Company (OPC). You don't call AI tools one by one — just tell the Executive Office what you want like a CEO giving orders. The system automatically breaks down tasks, dispatches the right AI departments, coordinates execution, and reports results back to you.

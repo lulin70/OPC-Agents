@@ -1,0 +1,60 @@
+name: Auto Label PR
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/github-script@v7
+      with:
+        script: |
+          const pr = context.payload.pull_request;
+          const title = pr.title.toLowerCase();
+          
+          const labels = new Set();
+          
+          // Add labels based on PR title
+          if (title.startsWith('feat')) {
+            labels.add('enhancement');
+          } else if (title.startsWith('fix')) {
+            labels.add('bug');
+          } else if (title.startsWith('docs')) {
+            labels.add('documentation');
+          } else if (title.startsWith('test')) {
+            labels.add('testing');
+          } else if (title.startsWith('refactor')) {
+            labels.add('refactoring');
+          } else if (title.startsWith('chore')) {
+            labels.add('chore');
+          }
+          
+          // Add labels based on changed files
+          const files = await github.rest.pulls.listFiles({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: pr.number
+          });
+          
+          for (const file of files.data) {
+            if (file.filename.endsWith('.md')) {
+              labels.add('documentation');
+            } else if (file.filename.endsWith('.py') && file.filename.includes('test')) {
+              labels.add('testing');
+            } else if (file.filename.endsWith('.yml') || file.filename.endsWith('.yaml')) {
+              labels.add('ci/cd');
+            } else if (file.filename.endsWith('.toml') || file.filename.endsWith('.txt')) {
+              labels.add('dependencies');
+            }
+          }
+          
+          if (labels.size > 0) {
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: Array.from(labels)
+            });
+          }

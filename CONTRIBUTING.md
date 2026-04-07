@@ -1,209 +1,321 @@
 # 贡献指南
 
-感谢你对 OPC-Agents 项目的关注！本指南将帮助你了解如何参与项目贡献。
+感谢你为 OPC-Agents 项目做出贡献！本文档将指导你如何参与项目的开发。
 
-## 项目愿景
+## 📋 目录
 
-OPC-Agents 致力于为一人公司（One Person Company）提供企业级的 AI 代理协作能力。我们相信，通过开源社区的共同努力，可以让更多个人和小团队获得原本只有大型企业才能拥有的智能代理系统。
-
-## 如何贡献
-
-### 1. 报告问题
-
-如果你发现了 bug 或有功能建议，请通过 GitHub Issues 提交：
-
-- 使用清晰的标题描述问题
-- 提供复现步骤（如果是 bug）
-- 说明你的使用场景和期望行为
-- 标注相关标签：`bug`、`feature`、`documentation`、`question`
-
-### 2. 提交代码
-
-#### 准备工作
-
-1. **Fork 仓库**到你的 GitHub 账号
-2. **克隆你的 Fork**：
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/OPC-Agents.git
-   cd OPC-Agents
-   ```
-3. **添加上游仓库**：
-   ```bash
-   git remote add upstream https://github.com/original-owner/OPC-Agents.git
-   ```
-4. **创建分支**：
-   ```bash
-   git checkout -b feature/your-feature-name
-   # 或
-   git checkout -b fix/issue-description
-   ```
-
-#### 开发规范
-
-- **Python 代码风格**：遵循 PEP 8
-- **文档字符串**：为函数和类添加 docstring
-- **类型提示**：鼓励使用类型注解
-- **注释**：复杂逻辑需要注释说明
-
-#### 提交前检查
-
-```bash
-# 运行测试
-python -m pytest tests/
-
-# 检查代码风格
-flake8 *.py
-
-# 确保没有语法错误
-python -m py_compile *.py
-```
-
-#### 提交信息规范
-
-使用清晰的提交信息格式：
-
-```
-类型: 简短描述（50字以内）
-
-详细说明（可选，72字换行）
-
-关联 Issue: #123
-```
-
-类型包括：
-- `feat`: 新功能
-- `fix`: 修复 bug
-- `docs`: 文档更新
-- `style`: 代码格式调整（不影响功能）
-- `refactor`: 代码重构
-- `test`: 测试相关
-- `chore`: 构建/工具相关
-
-### 3. Pull Request 流程
-
-1. **推送分支**：
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-2. **创建 PR**：
-   - 标题清晰描述变更内容
-   - 填写 PR 模板中的各项信息
-   - 关联相关 Issue
-
-3. **代码审查**：
-   - 维护者会在 48 小时内进行初步审查
-   - 根据反馈进行修改
-   - 确保 CI 检查通过
-
-4. **合并**：
-   - 通过审查后，维护者会合并你的 PR
-   - 感谢你的贡献！
-
-## 开发环境搭建
-
-### 基本要求
-
-- Python 3.8+
-- pip
-
-### 安装依赖
-
-```bash
-pip install -r requirements.txt
-# 或
-pip install requests toml flask
-```
-
-### 配置文件
-
-```bash
-cp config.toml.sample config.toml
-# 编辑 config.toml，填入你的 API 密钥
-```
-
-### 启动开发服务器
-
-```bash
-# 方式一：使用启动脚本
-chmod +x OPCstart.sh
-./OPCstart.sh
-
-# 方式二：手动启动
-python web_interface.py
-```
-
-访问 `http://localhost:5007` 查看 Web 界面。
-
-## 贡献领域
-
-我们特别欢迎以下方面的贡献：
-
-### 高优先级
-
-- **A2A 协议完善**：增强与其他 Agent 系统的互操作性
-- **性能优化**：降低 Token 消耗，提高响应速度
-- **测试覆盖**：为核心模块添加单元测试和集成测试
-- **文档完善**：API 文档、使用教程、最佳实践
-
-### 中等优先级
-
-- **新代理类型**：针对特定行业的专业代理
-- **Web 界面改进**：UI/UX 优化、移动端适配
-- **更多模型支持**：集成新的 LLM 提供商
-- **HR 功能增强**：更完善的代理生命周期管理
-
-### 探索性
-
-- **多语言支持**：国际化和本地化
-- **插件系统**：允许第三方扩展
-- **可视化工具**：代理协作流程可视化
-- **数据分析**：代理性能和使用模式分析
-
-## 代码结构
-
-```
-OPC-Agents/
-├── opc_manager.py          # 核心管理器
-├── communication_manager.py # 通信管理
-├── web_interface.py        # Web 界面
-├── auto_optimizer.py       # 自动优化
-├── a2a_protocol.py         # A2A 协议实现
-├── a2a_integration.py      # A2A 集成
-├── hr_enhancement.py       # HR 生命周期
-├── opc_skill.py            # 技能
-└── official_agents/        # 官方代理定义
-```
-
-## 社区规范
-
-### 行为准则
-
-- 保持尊重和建设性的沟通
-- 欢迎新手，耐心解答问题
-- 接受不同的观点和技术选择
-- 专注于技术讨论，避免无关话题
-
-### 决策流程
-
-- 日常维护由核心维护者决定
-- 重大变更通过 GitHub Discussions 讨论
-- 社区反馈是决策的重要参考
-
-## 许可证说明
-
-通过向本项目提交贡献，你同意你的贡献将在 Apache License 2.0 下发布。详见 [LICENSE](./LICENSE) 文件。
-
-## 联系方式
-
-- **GitHub Issues**: 技术问题和功能建议
-- **GitHub Discussions**: 一般性讨论和想法分享
-- **Email**: [待添加]
-
-## 致谢
-
-感谢所有为 OPC-Agents 做出贡献的开发者！
+- [行为准则](#行为准则)
+- [开发环境设置](#开发环境设置)
+- [开发流程](#开发流程)
+- [代码风格](#代码风格)
+- [提交规范](#提交规范)
+- [测试要求](#测试要求)
+- [文档要求](#文档要求)
 
 ---
 
-**新手友好标签**：如果你是第一次参与开源项目，可以查找带有 `good first issue` 标签的 Issue，这些任务相对简单，适合入门。
+## 行为准则
+
+本项目采用 Contributor Covenant 行为准则。我们期望所有贡献者都能保持专业和尊重的态度。
+
+## 开发环境设置
+
+### 1. Fork 项目
+
+在 GitHub 上 Fork 本项目到你的账户。
+
+### 2. 克隆项目
+
+```bash
+git clone https://github.com/YOUR_USERNAME/OPC-Agents.git
+cd OPC-Agents
+```
+
+### 3. 创建虚拟环境
+
+```bash
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+### 4. 安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+### 5. 安装开发依赖（如果有）
+
+```bash
+pip install pytest pytest-cov black flake8 mypy
+```
+
+## 开发流程
+
+### 1. 创建 Issue
+
+在开始开发之前，请先创建一个 Issue 描述你要解决的问题或提出的新功能。
+
+- 🐛 [Bug 报告模板](.github/ISSUE_TEMPLATE/bug_report.md)
+- ✨ [功能请求模板](.github/ISSUE_TEMPLATE/feature_request.md)
+- 📝 [文档改进模板](.github/ISSUE_TEMPLATE/docs_improvement.md)
+
+### 2. 创建分支
+
+从 `main` 分支创建你的功能分支：
+
+```bash
+git checkout -b feature/your-feature-name
+# 或者修复 bug
+git checkout -b fix/bug-fix-name
+```
+
+**分支命名规范：**
+
+- `feature/xxx` - 新功能
+- `fix/xxx` - Bug 修复
+- `docs/xxx` - 文档更新
+- `test/xxx` - 测试相关
+- `refactor/xxx` - 代码重构
+- `chore/xxx` - 构建/工具相关
+
+### 3. 进行开发
+
+按照代码风格要求编写代码，并确保：
+
+- 代码有适当的注释
+- 遵循项目的架构设计
+- 不破坏现有功能
+
+### 4. 运行测试
+
+```bash
+# 运行所有测试
+pytest
+
+# 运行特定测试
+pytest tests/your_test.py
+
+# 查看测试覆盖率
+pytest --cov=opc_manager --cov-report=html
+```
+
+### 5. 提交变更
+
+```bash
+git add .
+git commit -m "type: description"
+```
+
+### 6. 推送到远程
+
+```bash
+git push origin feature/your-feature-name
+```
+
+### 7. 创建 Pull Request
+
+在 GitHub 上创建 Pull Request，并填写 [PR 模板](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md)。
+
+## 代码风格
+
+### Python 代码规范
+
+- 遵循 [PEP 8](https://pep8.org/) 规范
+- 使用 4 个空格缩进
+- 最大行宽 100 字符
+- 使用有意义的变量名和函数名
+
+### 代码格式化
+
+我们使用 Black 进行代码格式化：
+
+```bash
+# 安装 Black
+pip install black
+
+# 格式化代码
+black opc_manager/
+black tests/
+
+# 检查格式
+black --check opc_manager/
+```
+
+### 代码检查
+
+使用 Flake8 进行代码检查：
+
+```bash
+# 安装 Flake8
+pip install flake8
+
+# 运行检查
+flake8 opc_manager/
+flake8 tests/
+```
+
+### 类型检查（可选）
+
+使用 MyPy 进行类型检查：
+
+```bash
+# 安装 MyPy
+pip install mypy
+
+# 运行类型检查
+mypy opc_manager/
+```
+
+## 提交规范
+
+我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范。
+
+### 提交格式
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+### 提交类型
+
+- `feat` - 新功能
+- `fix` - Bug 修复
+- `docs` - 文档更新
+- `style` - 代码风格（不影响代码功能）
+- `refactor` - 代码重构
+- `test` - 测试相关
+- `chore` - 构建/工具相关
+
+### 提交示例
+
+```
+feat(context_manager): 增加经验库权重计算功能
+
+- 实现 4 维度权重计算公式
+- 添加时间衰减机制
+- 增加使用频率统计
+
+Closes #123
+```
+
+```
+fix(task_executor): 修复任务上下文传递错误
+
+修复了后续 Agent 无法获取前序 Agent 产出物内容的问题。
+
+Fixes #456
+```
+
+## 测试要求
+
+### 单元测试
+
+- 每个新功能都应该有对应的单元测试
+- 测试覆盖率应该保持在 80% 以上
+- 测试应该独立且可重复
+
+### 测试命名
+
+```python
+def test_<function>_<scenario>_<expected_result>():
+    # 示例
+    def test_calculate_weight_high_confidence_returns_high_weight():
+        pass
+```
+
+### 集成测试
+
+对于涉及多个模块的功能，应该编写集成测试。
+
+## 文档要求
+
+### 代码注释
+
+- 公共函数和类必须有文档字符串
+- 复杂逻辑必须有注释说明
+- 使用中文注释（与项目保持一致）
+
+### 文档更新
+
+如果你的 PR 包含以下变更，请更新相应文档：
+
+- 新功能 → 更新 README 和相关文档
+- API 变更 → 更新 API 文档
+- 配置变更 → 更新配置说明
+- 架构变更 → 更新架构文档
+
+### 文档格式
+
+- 使用 Markdown 格式
+- 遵循现有文档的结构和风格
+- 添加适当的代码示例
+
+## Pull Request 流程
+
+1. **填写 PR 模板**：完整填写 [PR 模板](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md)
+2. **代码审查**：项目维护者会审查代码
+3. **持续集成**：确保所有 CI 检查通过
+4. **解决反馈**：根据审查反馈进行修改
+5. **合并**：审查通过后合并到 main 分支
+
+## 发布流程
+
+### 版本号规范
+
+我们遵循 [Semantic Versioning](https://semver.org/)：
+
+- **MAJOR.MINOR.PATCH** (例如：0.0.1)
+- MAJOR - 破坏性变更
+- MINOR - 向后兼容的功能增加
+- PATCH - 向后兼容的问题修复
+
+### 发布清单
+
+发布新版本前，请确保：
+
+- [ ] 更新 [VERSION](VERSION) 文件
+- [ ] 更新 README 中的版本号
+- [ ] 更新 CHANGELOG.md
+- [ ] 所有测试通过
+- [ ] 文档已更新
+- [ ] 代码已格式化
+- [ ] 创建 Git Tag
+
+## 常见问题
+
+### Q: 我如何开始贡献？
+
+A: 从简单的 Issue 开始，例如文档改进或小的 bug 修复。熟悉项目后再处理更复杂的任务。
+
+### Q: 我的 PR 多久会被审查？
+
+A: 我们会尽力在 48 小时内审查 PR。如果超过这个时间，请在 Issue 中 @ 维护者。
+
+### Q: 我可以添加新功能吗？
+
+A: 当然！请先创建 Issue 讨论你的想法，确认后再开始开发。
+
+### Q: 如何运行测试？
+
+A: 运行 `pytest` 即可运行所有测试。详细信息请参考 [测试要求](#测试要求)。
+
+## 联系方式
+
+- **GitHub Issues**: [提交 Issue](https://github.com/lulin70/OPC-Agents/issues)
+- **Email**: [项目维护者邮箱]
+
+## 贡献者名单
+
+感谢所有为 OPC-Agents 做出贡献的开发者！
+
+🎉 **再次感谢你的贡献！**
