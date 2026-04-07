@@ -72,6 +72,8 @@ docs/phase2_*.md
 docs/wechat_*.md
 docs/*_report.md
 docs/*_plan.md
+# 排除 Git 策略文档
+!docs/GIT_*.md
 docs/*_summary.md
 docs/documentation_update_summary.md
 docs/progress_report_*.md
