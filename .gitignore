@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.pyo
 
 # IDE
 .vscode/
@@ -10,10 +11,13 @@ __pycache__/
 *.swp
 *.swo
 *~
+.trae/
 
 # OS
 .DS_Store
 Thumbs.db
+.AppleDouble
+.LSOverride
 
 # Environment
 .env
@@ -21,12 +25,18 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+venv/
+env/
+.venv/
 
-# Configuration
+# Configuration (keep templates, ignore actual configs)
 config.toml
+*.local.toml
+auto_optimizer_config.json
+optimization_history.json
 
 # Logs
-logs
+logs/
 *.log
 
 # Cache
@@ -36,23 +46,51 @@ agents_cache.json
 # Generated files
 *.pptx
 *.docx
+*.pdf
 
-# Dependencies
-venv/
-env/
-
-# Temporary files and development artifacts
-temp-use/
+# Database files (user data)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 
 # Task workspaces (user data)
 task_workspaces/
+temp-use/
 
-# Trae IDE
-.trae/
+# Reports and test results (generated)
+reports/
+test_results.xml
+coverage/
+.htmlcov/
+.pytest_cache/
 
-# Auto optimizer
-auto_optimizer_config.json
-optimization_history.json
+# Process documentation (development artifacts)
+docs/phase1_*.md
+docs/phase2_*.md
+docs/wechat_*.md
+docs/*_report.md
+docs/*_plan.md
+docs/*_summary.md
+docs/documentation_update_summary.md
+docs/progress_report_*.md
 
-# Data directory
-data/
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Node modules (if any frontend build)
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Secrets and keys
+*.pem
+*.key
+secrets/
