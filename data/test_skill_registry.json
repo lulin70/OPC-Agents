@@ -1,0 +1,77 @@
+{
+  "skills": {
+    "web_search": {
+      "name": "web_search",
+      "version": "1.0.0",
+      "description": "多引擎网页搜索技能，支持百度/谷歌/必应",
+      "author": "OPC-Agents Team",
+      "category": "information_retrieval",
+      "tags": [
+        "搜索",
+        "网页",
+        "信息检索",
+        "中文"
+      ],
+      "permissions": [
+        "network_access"
+      ],
+      "class_name": "WebSearchSkill",
+      "module": "opc_skills.web_search",
+      "file_path": "opc_skills/web_search.py",
+      "registered_at": "2026-04-03T17:43:56.145198",
+      "updated_at": "2026-04-03T17:43:56.146104",
+      "enabled": true,
+      "usage_count": 2,
+      "rating": 3.62
+    },
+    "document_processor": {
+      "name": "document_processor",
+      "version": "1.0.0",
+      "description": "多功能文档处理技能，支持 PDF/Word/Excel",
+      "author": "OPC-Agents Team",
+      "category": "document_processing",
+      "tags": [
+        "PDF",
+        "Word",
+        "Excel",
+        "文档",
+        "办公"
+      ],
+      "permissions": [
+        "read_file",
+        "write_file"
+      ],
+      "class_name": "DocumentProcessorSkill",
+      "module": "opc_skills.document_processor",
+      "file_path": "opc_skills/document_processor.py",
+      "registered_at": "2026-04-03T17:43:56.145407",
+      "updated_at": "2026-04-03T17:43:56.145409",
+      "enabled": true,
+      "usage_count": 0,
+      "rating": 0.0
+    },
+    "content_summary": {
+      "name": "content_summary",
+      "version": "1.0.0",
+      "description": "智能内容摘要技能，支持文本摘要/大纲生成/关键词提取",
+      "author": "OPC-Agents Team",
+      "category": "content_processing",
+      "tags": [
+        "摘要",
+        "大纲",
+        "关键词",
+        "内容处理"
+      ],
+      "permissions": [],
+      "class_name": "ContentSummarySkill",
+      "module": "opc_skills.content_summary",
+      "file_path": "opc_skills/content_summary.py",
+      "registered_at": "2026-04-03T17:43:56.145646",
+      "updated_at": "2026-04-03T17:43:56.145647",
+      "enabled": true,
+      "usage_count": 0,
+      "rating": 0.0
+    }
+  },
+  "updated_at": "2026-04-03T17:43:56.146384"
+}

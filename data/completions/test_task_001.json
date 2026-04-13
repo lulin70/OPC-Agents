@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "score": 0.75,
+  "checks": [
+    {
+      "name": "deliverable_exists",
+      "passed": true,
+      "detail": "/private/var/folders/ql/drfrfdjn2_z3507_5dth3j1w0000gn/T/pytest-of-lin/pytest-8/test_task_completion_validatio0/test_deliverable.md"
+    },
+    {
+      "name": "deliverable_nonempty",
+      "passed": true,
+      "detail": "103 chars"
+    },
+    {
+      "name": "acceptance_criteria",
+      "passed": true,
+      "detail": "3 criteria"
+    },
+    {
+      "name": "glm_quality",
+      "passed": false,
+      "detail": "GLM evaluation"
+    }
+  ],
+  "verdict": "pass",
+  "task_id": "test_task_001",
+  "task_name": "测试任务",
+  "timestamp": "2026-04-07T12:18:44.596877"
+}

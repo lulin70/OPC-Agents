@@ -596,6 +596,398 @@
             background: rgba(82, 196, 26, 0.1);
             color: var(--color-success);
         }
+
+        /* Workflow Todo List - 可视化任务清单 */
+        .workflow-todo-container {
+            margin: var(--spacing-lg) 0;
+            background: var(--color-bg-card);
+            border-radius: var(--border-radius-lg);
+            border: 2px solid var(--color-primary);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .workflow-todo-header {
+            background: linear-gradient(135deg, var(--color-primary), #6366f1);
+            color: white;
+            padding: var(--spacing-md) var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workflow-todo-header h3 {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .workflow-todo-stats {
+            display: flex;
+            gap: var(--spacing-lg);
+            font-size: var(--font-size-sm);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .workflow-todo-body {
+            padding: var(--spacing-lg);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .step-card {
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            transition: all var(--transition-normal);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateX(4px);
+        }
+
+        .step-card.completed {
+            border-left: 4px solid var(--color-success);
+            background: rgba(82, 196, 26, 0.05);
+        }
+
+        .step-card.in-progress {
+            border-left: 4px solid var(--color-primary);
+            background: rgba(24, 144, 255, 0.05);
+            animation: pulse 2s infinite;
+        }
+
+        .step-card.pending {
+            border-left: 4px solid #d9d9d9;
+            opacity: 0.7;
+        }
+
+        .step-card.failed {
+            border-left: 4px solid #ff4d4f;
+            background: rgba(255, 77, 79, 0.05);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            flex-shrink: 0;
+        }
+
+        .step-card.completed .step-number {
+            background: var(--color-success);
+            color: white;
+        }
+
+        .step-card.in-progress .step-number {
+            background: var(--color-primary);
+            color: white;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .step-title {
+            flex: 1;
+            margin: 0 var(--spacing-md);
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+        }
+
+        .step-status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .status-completed {
+            background: rgba(82, 196, 26, 0.1);
+            color: var(--color-success);
+        }
+
+        .status-in-progress {
+            background: rgba(24, 144, 255, 0.1);
+            color: var(--color-primary);
+        }
+
+        .status-pending {
+            background: rgba(217, 217, 217, 0.3);
+            color: #999;
+        }
+
+        .status-failed {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+
+        .step-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--color-bg-secondary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: var(--spacing-sm) 0;
+        }
+
+        .step-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-primary), #52c41a);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .step-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+
+        .step-agent {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .step-duration {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .step-output {
+            margin-top: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: var(--color-bg-secondary);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+            display: none;
+        }
+
+        .step-card.completed .step-output,
+        .step-card.in-progress .step-output {
+            display: block;
+        }
+
+        .overall-progress {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--color-bg-primary);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .overall-progress-bar {
+            width: 100%;
+            height: 10px;
+            background: var(--color-bg-secondary);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .overall-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1890ff, #52c41a);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .overall-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+        }
+
+        /* Modal - 步骤详情弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--color-bg-card);
+            border-radius: var(--border-radius-lg);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--color-primary), #6366f1);
+            color: white;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: var(--spacing-lg);
+        }
+
+        .detail-section {
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .detail-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .detail-section label {
+            display: block;
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+        }
+
+        .detail-section span {
+            color: var(--color-text-primary);
+            font-size: var(--font-size-md);
+        }
+
+        .modal-footer {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-sm);
+        }
+
+        .btn-secondary {
+            padding: 8px 20px;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-border);
+        }
         
         .deliverable-actions {
             display: flex;
@@ -2275,16 +2667,330 @@
                     success: function(result) {
                         var now = new Date();
                         var timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
-                        var html = '<div class="message executive-message"><p>' + (result.content || '计划已确认') + '</p>' +
+
+                        // 渲染确认消息
+                        var html = '<div class="message executive-message"><p>✅ 计划已确认！正在为您分解任务并开始执行...</p>' +
                             '<small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 4px;">' + timeString + '</small></div>';
                         $('#message-area').append(html);
                         $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+
+                        // 如果有结构化的工作流数据，渲染可视化 Todo List
+                        if (result.workflow_steps && result.workflow_steps.length > 0) {
+                            renderWorkflowTodoList(result, taskId);
+                        } else if (result.dispatched && result.dispatched.length > 0) {
+                            // 兼容旧格式：从 dispatched 数据构建工作流视图
+                            renderLegacyWorkflowTodoList(result, taskId);
+                        }
                     },
                     error: function(xhr) {
                         var html = '<div class="message system-message">❌ 确认失败：' + (xhr.responseJSON?.error || '未知错误') + '</div>';
                         $('#message-area').append(html);
                         $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
                     }
+                });
+            };
+
+            // 渲染可视化工作流 Todo List（新版本）
+            function renderWorkflowTodoList(data, taskId) {
+                var steps = data.workflow_steps;
+                var totalSteps = steps.length;
+                var completedSteps = steps.filter(s => s.status === 'completed').length;
+                var overallProgress = Math.round((completedSteps / totalSteps) * 100);
+
+                var todoHtml = `
+                    <div class="workflow-todo-container" id="workflow-todo-${taskId}">
+                        <div class="workflow-todo-header">
+                            <h3>
+                                📋 任务执行清单
+                                ${data.task_name ? `<span style="font-size: 14px; opacity: 0.9;">- ${data.task_name}</span>` : ''}
+                            </h3>
+                            <div class="workflow-todo-stats">
+                                <div class="stat-item">📊 总计: ${totalSteps} 步</div>
+                                <div class="stat-item">✅ 已完成: ${completedSteps}</div>
+                                <div class="stat-item">⏱️ 预计: ${data.total_duration || '进行中'}</div>
+                            </div>
+                        </div>
+                        <div class="workflow-todo-body" id="todo-steps-${taskId}">
+                            ${steps.map((step, index) => renderStepCard(step, index)).join('')}
+                        </div>
+                        <div class="overall-progress">
+                            <div class="overall-progress-bar">
+                                <div class="overall-progress-fill" id="overall-progress-${taskId}" style="width: ${overallProgress}%"></div>
+                            </div>
+                            <div class="progress-info">
+                                <span>总体进度</span>
+                                <span id="overall-percent-${taskId}">${overallProgress}% (${completedSteps}/${totalSteps})</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                $('#message-area').append(todoHtml);
+                $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+
+                // 启动实时进度监听
+                startWorkflowProgressMonitoring(taskId, steps);
+            }
+
+            // 渲染单个步骤卡片
+            function renderStepCard(step, index) {
+                var statusClass = step.status || 'pending';
+                var statusText = getStatusText(statusClass);
+                var progress = step.progress || 0;
+                var statusIcon = getStatusIcon(statusClass);
+
+                return `
+                    <div class="step-card ${statusClass}" id="step-${step.step_id || index}" onclick="showStepDetail(${index}, '${step.task_id}')">
+                        <div class="step-header">
+                            <div class="step-number">${statusIcon}</div>
+                            <div class="step-title">${step.name || `步骤 ${index + 1}`}</div>
+                            <span class="step-status-badge status-${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="step-description">${step.description || ''}</div>
+                        <div class="step-progress-bar">
+                            <div class="step-progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="step-meta">
+                            <div class="step-agent">
+                                👤 ${step.agent || step.department || '待分配'}
+                            </div>
+                            <div class="step-duration">
+                                ⏱️ ${step.duration || step.estimated_duration || ''}
+                            </div>
+                        </div>
+                        ${step.output ? `
+                            <div class="step-output">
+                                📦 输出物: ${step.output.name || '已完成'} 
+                                ${step.output.format ? `(${step.output.format})` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // 获取状态文本
+            function getStatusText(status) {
+                const statusMap = {
+                    'pending': '⏳ 待执行',
+                    'in_progress': '🔄 进行中',
+                    'completed': '✅ 已完成',
+                    'failed': '❌ 失败'
+                };
+                return statusMap[status] || status;
+            }
+
+            // 获取状态图标
+            function getStatusIcon(status) {
+                const iconMap = {
+                    'pending': index + 1,
+                    'in_progress': '⟳',
+                    'completed': '✓',
+                    'failed': '✗'
+                };
+                return iconMap[status] || index + 1;
+            }
+
+            // 兼容旧格式的渲染函数
+            function renderLegacyWorkflowTodoList(data, taskId) {
+                var dispatched = data.dispatched || [];
+                var steps = dispatched.map((item, index) => ({
+                    step_id: item.task_id,
+                    name: item.task_name,
+                    department: item.department,
+                    agent: item.agent,
+                    status: 'pending',
+                    progress: 0
+                }));
+
+                var mockData = {
+                    task_name: data.content?.split('\n')[0] || '任务执行',
+                    workflow_steps: steps,
+                    total_duration: '进行中',
+                    dispatched: dispatched
+                };
+
+                renderWorkflowTodoList(mockData, taskId);
+            }
+
+            // 实时进度监控
+            function startWorkflowProgressMonitoring(taskId, initialSteps) {
+                // 使用 SSE 监听任务进度
+                if (typeof(EventSource) !== "undefined") {
+                    var eventSourceUrl = `/api/workflow/${taskId}/progress`;
+                    
+                    // 检查是否已有该任务的 EventSource
+                    if (!window._workflowEventSources) {
+                        window._workflowEventSources = {};
+                    }
+                    
+                    if (window._workflowEventSources[taskId]) {
+                        window._workflowEventSources[taskId].close();
+                    }
+
+                    var es = new EventSource(eventSourceUrl);
+                    window._workflowEventSources[taskId] = es;
+
+                    es.onmessage = function(event) {
+                        try {
+                            var update = JSON.parse(event.data);
+                            
+                            if (update.type === 'step_update' || update.step !== undefined) {
+                                updateStepStatus(taskId, update);
+                            } else if (update.type === 'workflow_complete') {
+                                completeWorkflow(taskId, update);
+                            }
+                        } catch(e) {
+                            console.error('解析进度数据失败:', e);
+                        }
+                    };
+
+                    es.onerror = function(err) {
+                        console.warn('SSE 连接中断，5秒后重试...', err);
+                        setTimeout(function() {
+                            startWorkflowProgressMonitoring(taskId, initialSteps);
+                        }, 5000);
+                    };
+                }
+            }
+
+            // 更新单个步骤状态
+            function updateStepStatus(taskId, update) {
+                var stepIndex = update.step_index !== undefined ? update.step_index : update.step - 1;
+                var stepElement = $(`#todo-steps-${taskId} .step-card`).eq(stepIndex);
+
+                if (!stepElement.length) return;
+
+                // 更新状态类
+                stepElement.removeClass('pending in-progress completed failed');
+                stepElement.addClass(update.status || 'in-progress');
+
+                // 更新进度条
+                stepElement.find('.step-progress-fill').css('width', (update.progress || 0) + '%');
+
+                // 更新状态徽章
+                stepElement.find('.step-status-badge')
+                    .removeClass('status-pending status-in-progress status-completed status-failed')
+                    .addClass(`status-${update.status}`)
+                    .text(getStatusText(update.status));
+
+                // 更新数字图标
+                var icon = getStatusIcon(update.status);
+                stepElement.find('.step-number').html(icon);
+
+                // 更新输出物信息
+                if (update.output) {
+                    var outputHtml = `
+                        <div class="step-output">
+                            📦 输出物: ${update.output.name || '已完成'} 
+                            ${update.output.format ? `(${update.output.format})` : ''}
+                        </div>
+                    `;
+                    stepElement.find('.step-output').remove();
+                    stepElement.append(outputHtml);
+                }
+
+                // 更新总体进度
+                updateOverallProgress(taskId);
+            }
+
+            // 更新总体进度
+            function updateOverallProgress(taskId) {
+                var container = $(`#workflow-todo-${taskId}`);
+                if (!container.length) return;
+
+                var allSteps = container.find('.step-card');
+                var totalSteps = allSteps.length;
+                var completedSteps = container.find('.step-card.completed').length;
+                var overallProgress = Math.round((completedSteps / totalSteps) * 100);
+
+                $(`#overall-progress-${taskId}`).css('width', overallProgress + '%');
+                $(`#overall-percent-${taskId}`).text(`${overallProgress}% (${completedSteps}/${totalSteps})`);
+
+                // 更新头部统计
+                container.find('.stat-item').eq(1).html(`✅ 已完成: ${completedSteps}`);
+            }
+
+            // 工作流完成处理
+            function completeWorkflow(taskId, result) {
+                var container = $(`#workflow-todo-${taskId}`);
+                
+                // 关闭 SSE
+                if (window._workflowEventSources && window._workflowEventSources[taskId]) {
+                    window._workflowEventSources[taskId].close();
+                    delete window._workflowEventSources[taskId];
+                }
+
+                // 显示完成消息
+                var completionHtml = `
+                    <div class="message executive-message" style="margin-top: 16px;">
+                        <p>🎉 <strong>所有任务已完成！</strong></p>
+                        <p>${result.message || '总裁办已为您完成全部工作。'}</p>
+                        ${result.deliverables ? `<p>📦 交付成果已准备就绪。</p>` : ''}
+                        <small class="text-muted" style="font-size: 10px; display: block; text-align: right; margin-top: 8px;">
+                            ${new Date().toLocaleTimeString()}
+                        </small>
+                    </div>
+                `;
+                container.after(completionHtml);
+                $('#message-area').scrollTop($('#message-area')[0].scrollHeight);
+            }
+
+            // 显示步骤详情弹窗
+            window.showStepDetail = function(stepIndex, stepId) {
+                var stepCard = $('.step-card').eq(stepIndex);
+                if (!stepCard.length) return;
+
+                var modalHtml = `
+                    <div class="modal-overlay" id="step-detail-modal" onclick="closeStepDetail()">
+                        <div class="modal-content" onclick="event.stopPropagation()">
+                            <div class="modal-header">
+                                <h3>📋 步骤详情 - ${stepCard.find('.step-title').text()}</h3>
+                                <button class="modal-close" onclick="closeStepDetail()">×</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="detail-section">
+                                    <label>状态:</label>
+                                    <span>${stepCard.find('.step-status-badge').text()}</span>
+                                </div>
+                                <div class="detail-section">
+                                    <label>描述:</label>
+                                    <span>${stepCard.find('.step-description').text()}</span>
+                                </div>
+                                <div class="detail-section">
+                                    <label>负责人:</label>
+                                    <span>${stepCard.find('.step-agent').text().trim()}</span>
+                                </div>
+                                <div class="detail-section">
+                                    <label>预计时长:</label>
+                                    <span>${stepCard.find('.step-duration').text().trim()}</span>
+                                </div>
+                                <div class="detail-section">
+                                    <label>当前进度:</label>
+                                    <div class="progress-bar" style="margin-top: 4px;">
+                                        <div class="progress-fill" style="width: ${stepCard.find('.step-progress-fill').css('width')}"></div>
+                                    </div>
+                                </div>
+                                ${stepCard.find('.step-output').length ? `
+                                    <div class="detail-section">
+                                        <label>输出物:</label>
+                                        <span>${stepCard.find('.step-output').text().trim()}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn-secondary" onclick="closeStepDetail()">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                $('body').append(modalHtml);
+                $('#step-detail-modal').fadeIn(200);
+            };
+
+            window.closeStepDetail = function() {
+                $('#step-detail-modal').fadeOut(200, function() {
+                    $(this).remove();
                 });
             };
 
