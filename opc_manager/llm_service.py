@@ -1,0 +1,339 @@
+"""LLM 服务层 - 多后端抽象与统一入口"""
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
+from enum import Enum
+import asyncio
+import time
+import random
+import json
+import logging
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+
+class LLMProvider(Enum):
+    OPENAI = "openai"
+    OLLAMA = "ollama"
+    MOCK = "mock"
+
+
+@dataclass
+class LLMResponse:
+    content: str
+    provider: LLMProvider
+    model: str
+    usage: Dict[str, int]
+    latency_ms: float
+    raw_response: Any = None
+
+
+@dataclass
+class LLMConfig:
+    provider: LLMProvider = LLMProvider.MOCK
+    model: str = "gpt-4o-mini"
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+    max_tokens: int = 500
+    temperature: float = 0.3
+    timeout_seconds: float = 10.0
+    max_retries: int = 2
+    cost_budget_daily: float = 5.0
+
+
+class LLMBackend(ABC):
+    """LLM 后端抽象接口"""
+
+    @abstractmethod
+    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+        pass
+
+    @abstractmethod
+    def validate_config(self) -> bool:
+        pass
+
+    @abstractmethod
+    def estimate_cost(self, prompt: str) -> float:
+        pass
+
+
+class MockLLMBackend(LLMBackend):
+    """Mock 后端，用于开发和测试"""
+
+    MOCK_RESPONSES = {
+        "detect_type": '{"business_type":"content_creator","confidence":0.85,"reasoning":"检测到内容创作相关关键词"}',
+        "content_creator": '{"business_type":"content_creator","confidence":0.90,"reasoning":"检测到写文章/拍视频等关键词"}',
+        "digital_product": '{"business_type":"digital_product","confidence":0.88,"reasoning":"检测到课程/电子书等关键词"}',
+        "ai_tool_builder": '{"business_type":"ai_tool_builder","confidence":0.87,"reasoning":"检测到SaaS/API/工具开发等关键词"}',
+        "consultant": '{"business_type":"consultant","confidence":0.86,"reasoning":"检测到咨询/培训/方案等关键词"}',
+        "ecommerce": '{"business_type":"ecommerce","confidence":0.89,"reasoning":"检测到电商/销售/商品等关键词"}',
+        "creative_work": '{"business_type":"creative_work","confidence":0.84,"reasoning":"检测到设计/摄影/翻译等创意类关键词"}',
+    }
+
+    def __init__(self, config: LLMConfig):
+        self.config = config
+
+    @property
+    def platform_type(self) -> str:
+        return "mock"
+
+    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+        start = time.time()
+        simulated_latency = random.uniform(50, 200)
+        await asyncio.sleep(simulated_latency / 1000)
+
+        for key, response in self.MOCK_RESPONSES.items():
+            if key in prompt.lower() or any(kw in prompt.lower() for kw in key.split("_")):
+                return LLMResponse(
+                    content=response,
+                    provider=LLMProvider.MOCK,
+                    model="mock-model",
+                    usage={"prompt_tokens": len(prompt) // 4, "completion_tokens": len(response) // 4, "total_tokens": (len(prompt) + len(response)) // 4},
+                    latency_ms=simulated_latency,
+                )
+
+        default = "这是一个模拟的LLM响应，用于开发和测试。基于输入内容，我理解您的需求并给出相应回复。"
+        return LLMResponse(
+            content=default,
+            provider=LLMProvider.MOCK,
+            model="mock-model",
+            usage={"prompt_tokens": len(prompt) // 4, "completion_tokens": 20, "total_tokens": (len(prompt) // 4) + 20},
+            latency_ms=simulated_latency,
+        )
+
+    def validate_config(self) -> bool:
+        return True
+
+    def estimate_cost(self, prompt: str) -> float:
+        return 0.0
+
+
+class OpenAIBackend(LLMBackend):
+    """OpenAI API 后端实现"""
+
+    def __init__(self, config: LLMConfig):
+        self.config = config
+        self.client = None
+
+    async def _get_client(self):
+        if self.client is None:
+            try:
+                import openai
+                self.client = openai.AsyncOpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
+            except ImportError:
+                raise RuntimeError("openai package not installed. Run: pip install openai")
+        return self.client
+
+    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+        start = time.time()
+        client = await self._get_client()
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        try:
+            response = await client.chat.completions.create(
+                model=self.config.model,
+                messages=messages,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                timeout=self.config.timeout_seconds,
+            )
+            latency_ms = (time.time() - start) * 1000
+            return LLMResponse(
+                content=response.choices[0].message.content,
+                provider=LLMProvider.OPENAI,
+                model=self.config.model,
+                usage={
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                    "total_tokens": response.usage.total_tokens,
+                },
+                latency_ms=latency_ms,
+                raw_response=response,
+            )
+        except Exception as e:
+            logger.error(f"OpenAI API call failed: {e}")
+            raise
+
+    def validate_config(self) -> bool:
+        return bool(self.config.api_key and len(self.config.api_key) > 10)
+
+    def estimate_cost(self, prompt: str) -> float:
+        estimated_tokens = len(prompt) / 4
+        if "gpt-4" in self.config.model:
+            return estimated_tokens * 0.00003 / 1000
+        elif "gpt-3.5" in self.config.model:
+            return estimated_tokens * 0.0000015 / 1000
+        return estimated_tokens * 0.000002 / 1000
+
+
+class OllamaBackend(LLMBackend):
+    """本地 Ollama 后端实现"""
+
+    def __init__(self, config: LLMConfig):
+        self.config = config
+        self.base_url = config.base_url or "http://localhost:11434"
+
+    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+        start = time.time()
+        import httpx
+
+        payload = {
+            "model": self.config.model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": self.config.temperature,
+                "num_predict": self.config.max_tokens,
+            }
+        }
+        if system_prompt:
+            payload["system"] = system_prompt
+
+        async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+            resp = await client.post(f"{self.base_url}/api/generate", json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+
+        latency_ms = (time.time() - start) * 1000
+        return LLMResponse(
+            content=data.get("response", ""),
+            provider=LLMProvider.OLLAMA,
+            model=self.config.model,
+            usage={
+                "prompt_tokens": data.get("prompt_eval_count", 0),
+                "completion_tokens": data.get("eval_count", 0),
+                "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+            },
+            latency_ms=latency_ms if "total_duration" not in data else data.get("total_duration", 0) / 1_000_000,
+        )
+
+    def validate_config(self) -> bool:
+        import httpx
+        try:
+            resp = httpx.get(f"{self.base_url}/api/tags", timeout=3)
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    def estimate_cost(self, prompt: str) -> float:
+        return 0.0
+
+
+class UsageTracker:
+    """Token 用量追踪器"""
+
+    def __init__(self, daily_budget: float):
+        self.daily_budget = daily_budget
+        self.daily_usage: Dict[str, Dict] = {}
+
+    def record(self, user_id: str, usage: dict, cost_usd: float = 0.0):
+        today = datetime.now().strftime("%Y-%m-%d")
+        if today not in self.daily_usage:
+            self.daily_usage[today] = {"tokens": 0, "cost": 0.0, "calls": 0}
+
+        self.daily_usage[today]["tokens"] += usage.get("total_tokens", 0)
+        self.daily_usage[today]["calls"] += 1
+        self.daily_usage[today]["cost"] += cost_usd
+
+    def is_budget_exceeded(self) -> bool:
+        today = datetime.now().strftime("%Y-%m-%d")
+        return self.daily_usage.get(today, {}).get("cost", 0.0) >= self.daily_budget
+
+    def get_report(self, user_id: Optional[str] = None) -> dict:
+        return {"daily": dict(self.daily_usage), "budget": self.daily_budget}
+
+
+class LLMService:
+    """LLM 服务统一入口"""
+
+    BACKEND_MAP = {
+        LLMProvider.OPENAI: OpenAIBackend,
+        LLMProvider.OLLAMA: OllamaBackend,
+        LLMProvider.MOCK: MockLLMBackend,
+    }
+
+    DETECT_SYSTEM_PROMPT = """你是一个业务类型分类专家。根据用户的输入，判断其属于以下哪种一人公司类型：
+
+选项：
+- content_creator: 内容创作者（写文章、做视频、自媒体）
+- digital_product: 数字产品开发者（卖课程、电子书、模板、SaaS）
+- ai_tool_builder: AI工具开发者（做API、插件、自动化工具）
+- consultant: 专业咨询顾问（企业培训、1v1咨询、方案设计）
+- ecommerce: 电商运营者（卖实物商品、闲鱼、抖音小店）
+- creative_work: 创意工作者（设计师、摄影师、翻译、插画）
+
+只返回JSON格式：{"business_type": "类型", "confidence": 0.95, "reasoning": "原因"}
+不要返回其他任何内容。"""
+
+    PERSONA_SYSTEM_TEMPLATE = """你是{display_name}。
+语气：{tone}
+专业领域：{expertise}
+回复要求：简洁、有温度、带适当emoji。每条回复不超过200字。"""
+
+    def __init__(self, config: LLMConfig = None):
+        self.config = config or LLMConfig()
+        self.backend = self._create_backend(self.config.provider)
+        self.usage_tracker = UsageTracker(config.cost_budget_daily if config else 5.0)
+
+    def _create_backend(self, provider: LLMProvider) -> LLMBackend:
+        backend_cls = self.BACKEND_MAP.get(provider)
+        if backend_cls is None:
+            logger.warning(f"Unknown LLM provider: {provider}, falling back to MOCK")
+            backend_cls = MockLLMBackend
+        return backend_cls(self.config)
+
+    async def detect_business_type_by_llm(self, user_input: str, history: list = None) -> dict:
+        """使用 LLM 进行业务类型检测"""
+        try:
+            response = await self.backend.complete(user_input, self.DETECT_SYSTEM_PROMPT)
+            self.usage_tracker.record("detect", response.usage, 0)
+            
+            parsed = json.loads(response.content)
+            return {
+                "business_type": parsed.get("business_type", "unknown"),
+                "confidence": parsed.get("confidence", 0.0),
+                "reasoning": parsed.get("reasoning", ""),
+                "provider": response.provider.value,
+                "model": response.model,
+            }
+        except json.JSONDecodeError:
+            return {"business_type": "unknown", "confidence": 0.0, "reasoning": "LLM返回格式异常"}
+        except Exception as e:
+            logger.warning(f"LLM detection failed: {e}")
+            return {"business_type": "unknown", "confidence": 0.0, "reasoning": f"错误: {str(e)}"}
+
+    async def generate_persona_response(self, user_input: str, persona_config: dict, context: dict = None) -> str:
+        """基于人格配置生成风格化回复"""
+        tone = persona_config.get("style_overrides", {}).get("tone", "专业温暖")
+        expertise_list = persona_config.get("expertise_tags", [])
+        display_name = persona_config.get("display_name", "智能助理")
+        expertise = ", ".join(expertise_list[:3]) if expertise_list else "通用领域"
+
+        system_prompt = self.PERSONA_SYSTEM_TEMPLATE.format(
+            display_name=display_name,
+            tone=tone,
+            expertise=expertise,
+        )
+
+        try:
+            response = await self.backend.complete(user_input, system_prompt)
+            self.usage_tracker.record("persona", response.usage, 0)
+            return response.content
+        except Exception as e:
+            logger.warning(f"Persona generation failed: {e}")
+            return f"抱歉，暂时无法生成风格化回复。（{type(e).__name__}）"
+
+    def switch_provider(self, new_provider: LLMProvider, **overrides):
+        """动态切换 LLM 后端"""
+        new_config = LLMConfig(**{**self.config.__dict__, "provider": new_provider, **overrides})
+        self.backend = self._create_backend(new_provider)
+        self.config = new_config
+
+    def get_usage_report(self) -> dict:
+        """获取用量报告"""
+        return self.usage_tracker.get_report()
