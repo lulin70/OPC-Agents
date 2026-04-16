@@ -1,19 +1,22 @@
-"""Streamlit 前端 - OPC-Agents v3.0 (用户中心版 - 稳定版)
+"""Streamlit 前端 - OPC-Agents v3.2 (成果物交付版)
 
-设计原则：
-1. 首屏即对话 — 不强制选择类型，后台自动识别
-2. 场景快捷入口 — "我能帮你做什么"而非"请选类型"
-3. 后台静默检测 — 业务类型对用户透明
-4. 仪表盘真实联动 — 基于实际对话数据
-5. 设置极简化 — 只保留用户关心的选项
-6. 零崩溃保证 — 任何异常都有优雅降级
+核心改变：从"屏幕上显示文字"变为"交付可下载的文件"
+- 每次任务执行都会生成真实的文件（保存在 deliverables/ 目录）
+- 提供下载按钮，客户可以直接下载成果物
+- 支持历史交付物查看和管理
+- 不是聊天记录，是真正的文件资产
 """
 import streamlit as st
 import sys
 import os
 import traceback
+import time
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+DELIVERABLES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "deliverables")
+os.makedirs(DELIVERABLES_DIR, exist_ok=True)
 
 st.set_page_config(
     page_title="一人公司助手",
@@ -25,6 +28,7 @@ st.set_page_config(
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
     st.session_state.messages = []
+    st.session_state.deliverables = []
     st.session_state.scenario_count = 0
     st.session_state.detected_type = None
     st.session_state.detected_name = None
@@ -76,7 +80,6 @@ SCENARIOS = [
 
 
 def safe_detect(prompt_text):
-    """安全检测业务类型，任何异常都返回默认值"""
     try:
         from opc_manager.business_type_detector_v2 import BusinessTypeDetectorV2
         detector = BusinessTypeDetectorV2()
@@ -90,7 +93,6 @@ def safe_detect(prompt_text):
 
 
 def safe_get_persona(type_value):
-    """安全获取人格配置"""
     try:
         from opc_manager.persona_manager import PersonaManager
         pm = PersonaManager()
@@ -105,7 +107,6 @@ def safe_get_persona(type_value):
 
 
 def safe_track_flywheel(type_value):
-    """安全记录飞轮数据"""
     try:
         from opc_manager.flywheel_tracker import FlywheelTracker
         from opc_manager.business_types import BusinessType
@@ -135,55 +136,123 @@ def safe_track_flywheel(type_value):
         return False
 
 
-def build_response(prompt, type_value, persona_name, is_first_chat):
-    """构建回复内容"""
-    type_display = TYPE_DISPLAY.get(type_value, "创业者")
+def generate_filename(prompt: str, task_type: str) -> str:
+    safe_name = prompt[:30].replace(" ", "_").replace("/", "-").replace("\\", "-")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{timestamp}_{task_type}_{safe_name}.md"
 
-    greeting = ""
-    if is_first_chat:
-        greeting = f"\n\n🎉 **已为你激活专属助手：{persona_name}**\n"
 
-    scenario_hints = [s for s in SCENARIOS if s.get("type") == type_value][:2]
-    hint_text = ""
-    if scenario_hints:
-        hints = "、".join([f"「{s['title']}」" for s in scenario_hints])
-        hint_text = f"\n\n💡 **推荐场景**：{hints}"
+def save_deliverable(content: str, prompt: str, task_type: str, meta: dict = None) -> str:
+    filename = generate_filename(prompt, task_type)
+    filepath = os.path.join(DELIVERABLES_DIR, filename)
 
-    return (
-        f"{greeting}"
-        f"你好！我是**{persona_name}**，专注于**{type_display}**领域。\n\n"
-        f"关于「{prompt[:50]}{'...' if len(prompt) > 50 else ''}」，"
-        f"我来帮你分析：\n\n"
-        f"📌 **核心建议**\n"
-        f"1. 明确当前阶段的目标和优先级\n"
-        f"2. 制定可执行的行动清单（3-5项）\n"
-        f"3. 设定可衡量的验收标准\n"
-        f"{hint_text}\n\n"
-        f"你可以继续告诉我更多细节，我会给出更具体的方案！"
-    )
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+    deliverable_record = {
+        "filename": filename,
+        "filepath": filepath,
+        "prompt": prompt[:50],
+        "task_type": task_type,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "size_kb": round(len(content.encode('utf-8')) / 1024, 1),
+        "meta": meta or {},
+    }
+    st.session_state.deliverables.insert(0, deliverable_record)
+
+    print(f"[frontend] 成果物已保存: {filepath} ({deliverable_record['size_kb']}KB)")
+    return filepath
+
+
+def execute_task_and_deliver(prompt):
+    """执行任务并生成交付物文件"""
+    try:
+        print(f"[frontend] 开始执行任务: {prompt[:50]}")
+        from opc_manager.task_engine_v3 import TaskEngineV3, TaskType
+        engine = TaskEngineV3()
+        print(f"[frontend] TaskEngineV3 初始化完成")
+        result = engine.execute(prompt)
+        print(f"[frontend] 任务执行完成: success={result.success}, content_len={len(result.content) if result.content else 0}")
+
+        if not result.success:
+            print(f"[frontend] 任务标记为失败: {result.error}")
+            return None, False, None, None
+
+        if not result.content:
+            print(f"[frontend] 内容为空!")
+            return None, False, None, None
+
+        meta_lines = []
+        if result.execution_time_ms:
+            meta_lines.append(f"⏱️ 执行耗时: {result.execution_time_ms:.0f}ms")
+        type_labels = {
+            TaskType.INFO_COLLECTION: "🔍 信息收集",
+            TaskType.CONTENT_GENERATION: "✍️ 内容生成",
+            TaskType.DATA_ANALYSIS: "📊 数据分析",
+            TaskType.TASK_EXECUTION: "📋 任务执行",
+            TaskType.SCENARIO_BASED: "🎯 场景工作流",
+            TaskType.GENERAL_CHAT: "💬 智能对话",
+        }
+        task_type_label = type_labels.get(result.task_type, "通用")
+        meta_lines.append(f"📌 任务类型: {task_type_label}")
+        if result.sources:
+            meta_lines.append(f"🔗 信息来源: {len(result.sources)} 条")
+        if result.deliverable_format:
+            meta_lines.append(f"📦 格式: {result.deliverable_format}")
+
+        meta_str = "\n".join(meta_lines)
+
+        content_with_meta = f"{result.content}\n\n---\n*{meta_str}*"
+
+        print(f"[frontend] 准备保存文件...")
+        filepath = save_deliverable(
+            content=content_with_meta,
+            prompt=prompt,
+            task_type=result.task_type.value,
+            meta={
+                "sources_count": len(result.sources) if result.sources else 0,
+                "format": result.deliverable_format,
+                "execution_time_ms": result.execution_time_ms,
+                "success": result.success,
+            }
+        )
+        print(f"[frontend] 文件已保存: {filepath}")
+
+        return content_with_meta, result.success, filepath, result.task_type.value
+
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[frontend] execute_task_and_deliver error: {e}\n{tb}")
+        return None, False, None, None
 
 
 with st.sidebar:
     st.markdown("### 🚀 一人公司助手")
-    page = st.radio("", ["💬 对话", "📊 成长", "⚙️ 设置"], label_visibility="collapsed")
+    page = st.radio("", ["💬 对话", "📁 成果物", "📊 成长", "⚙️ 设置"], label_visibility="collapsed")
 
     if st.session_state.detected_type:
         pinfo = PERSONA_MAP.get(st.session_state.detected_type, ("助手", ""))
         st.divider()
         st.markdown(f"**当前人格**\n{pinfo[0]}")
         st.caption(f"风格：{pinfo[1]}")
+
+    if st.session_state.deliverables:
+        st.divider()
+        st.markdown(f"**📦 已生成 {len(st.session_state.deliverables)} 个成果物**")
+
     st.divider()
-    st.caption("OPC-Agents v3.0")
+    st.caption("OPC-Agents v3.2")
 
 
 if page == "💬 对话":
     if len(st.session_state.messages) == 0:
         st.markdown("## 👋 你好，一人公司创业者！")
         st.markdown(
-            "我是你的**智能工作助手**，可以帮你规划内容、分析数据、撰写方案、优化运营。"
-            "直接告诉我你在做什么，或者从下方选择一个场景开始 👇"
+            "我是你的**任务执行与成果交付助手**。"
+            "**告诉我你要什么结果，我直接做完并交付文件给你** — 可下载、可保存、可复用。"
         )
-        st.markdown("### 🎯 我能帮你做什么？")
+        st.markdown("### 🎯 我能直接帮你完成并交付：")
         cols = st.columns(3)
         for i, sc in enumerate(SCENARIOS):
             with cols[i % 3]:
@@ -194,19 +263,35 @@ if page == "💬 对话":
 
         st.divider()
         st.markdown("<div style='text-align:center; color:#888;'>"
-                    "💡 直接输入问题也行，我会自动识别你的业务类型</div>", unsafe_allow_html=True)
+                    "💡 输入需求 → 执行任务 → 生成文件 → 立即下载</div>", unsafe_allow_html=True)
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
+            if msg.get("deliverable_path") and os.path.exists(msg["deliverable_path"]):
+                col_dl, col_info = st.columns([1, 3])
+                with col_dl:
+                    with open(msg["deliverable_path"], 'r', encoding='utf-8') as f:
+                        file_content = f.read()
+                    st.download_button(
+                        label="📥 下载文件",
+                        data=file_content,
+                        file_name=os.path.basename(msg["deliverable_path"]),
+                        mime="text/markdown",
+                        key=f"dl_{msg.get('deliverable_id', id(msg))}",
+                        use_container_width=True,
+                    )
+                with col_info:
+                    size_kb = round(len(file_content.encode('utf-8')) / 1024, 1)
+                    st.caption(f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)")
 
-    if prompt := st.chat_input("告诉我你在做什么，或者需要什么帮助..."):
+    if prompt := st.chat_input("告诉我你需要什么结果，我直接做完并交付文件..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("思考中..."):
+            with st.spinner("⚡ 正在执行任务并生成交付物..."):
                 try:
                     type_val, conf, method = safe_detect(prompt)
                     is_first = not st.session_state.detected_type
@@ -215,29 +300,88 @@ if page == "💬 对话":
                         pinfo = PERSONA_MAP.get(type_val, ("智能助手", ""))
                         st.session_state.detected_name = pinfo[0]
 
-                    persona_name, tone = safe_get_persona(type_val)
                     safe_track_flywheel(type_val)
 
-                    response = build_response(prompt, type_val, persona_name, is_first)
-                    st.markdown(response)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    response, success, filepath, task_type_val = execute_task_and_deliver(prompt)
+
+                    if response and filepath:
+                        st.markdown(response)
+
+                        col_dl, col_info = st.columns([1, 3])
+                        with col_dl:
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                file_content = f.read()
+                            st.download_button(
+                                label="📥 下载成果物",
+                                data=file_content,
+                                file_name=os.path.basename(filepath),
+                                mime="text/markdown",
+                                key=f"dl_main_{int(time.time()*1000)}",
+                                use_container_width=True,
+                                type="primary",
+                            )
+                        with col_info:
+                            size_kb = round(len(file_content.encode('utf-8')) / 1024, 1)
+                            st.success(f"✅ 已生成: {os.path.basename(filepath)} ({size_kb}KB)")
+
+                        st.session_state.messages.append({
+                            "role": "assistant",
+                            "content": response,
+                            "deliverable_path": filepath,
+                            "deliverable_id": f"{int(time.time()*1000)}",
+                        })
+                    else:
+                        raise RuntimeError("任务执行未返回结果")
 
                 except Exception as e:
                     tb = traceback.format_exc()
                     print(f"[frontend] FATAL: {tb}")
 
                     fallback = (
-                        f"你好！我是你的一人公司智能助手 🚀\n\n"
-                        f"关于「**{prompt[:40]}{'...' if len(prompt) > 40 else ''}**」，"
-                        f"让我来帮你梳理一下思路：\n\n"
-                        f"📌 **建议下一步**\n"
-                        f"1. 先明确你的核心目标是什么\n"
-                        f"2. 列出你目前已有的资源和条件\n"
-                        f"3. 找出最大的瓶颈或障碍\n\n"
-                        f"你可以把这些信息告诉我，我会给出更精准的建议！"
+                        f"⚠️ 任务执行遇到问题\n\n"
+                        f"关于「**{prompt[:40]}{'...' if len(prompt) > 40 else ''}**」\n\n"
+                        f"*错误信息*: `{str(e)}`\n\n"
+                        f"**技术详情**:\n```\n{tb[:1000]}\n```\n\n"
+                        f"请稍后重试或换个方式描述需求。"
                     )
                     st.markdown(fallback)
                     st.session_state.messages.append({"role": "assistant", "content": fallback})
+
+
+elif page == "📁 成果物":
+    st.markdown("## 📁 我的成果物")
+
+    if not st.session_state.deliverables:
+        st.info("💡 还没有生成任何成果物。去「对话」页面执行一个任务吧！")
+    else:
+        for i, d in enumerate(st.session_state.deliverables):
+            with st.expander(f"📄 {d['filename']}", expanded=(i == 0)):
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.markdown(f"**任务**: `{d['prompt']}`")
+                    st.markdown(f"**类型**: {d['task_type']}")
+                    st.markdown(f"**时间**: {d['created_at']}")
+                with col2:
+                    st.metric("大小", f"{d['size_kb']} KB")
+                with col3:
+                    if os.path.exists(d['filepath']):
+                        with open(d['filepath'], 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        st.download_button(
+                            "📥 下载",
+                            data=content,
+                            file_name=d['filename'],
+                            mime="text/markdown",
+                            key=f"dl_lib_{i}",
+                            use_container_width=True,
+                        )
+
+                with st.container():
+                    st.markdown("**预览（前500字）**:")
+                    if os.path.exists(d['filepath']):
+                        with open(d['filepath'], 'r', encoding='utf-8') as f:
+                            preview = f.read()[:500]
+                        st.code(preview, language="markdown")
 
 
 elif page == "📊 成长":
@@ -295,6 +439,9 @@ elif page == "⚙️ 设置":
     st.markdown("## ⚙️ 设置")
     st.markdown("### 🤖 AI 助手")
     st.selectbox("回复风格", ["自动识别", "轻松活泼", "专业严谨", "简洁高效"], index=0)
+    st.markdown("### 📦 成果物设置")
+    st.text_input("成果物保存路径", value=DELIVERABLES_DIR, disabled=True)
+    st.caption("所有生成的文件都保存在此目录下")
     st.markdown("### 🔔 通知")
     st.checkbox("显示场景推荐提示", value=True)
     st.checkbox("对话中显示成长进度", value=True)
@@ -304,6 +451,7 @@ elif page == "⚙️ 设置":
             if key != "initialized":
                 del st.session_state[key]
         st.session_state.messages = []
+        st.session_state.deliverables = []
         st.session_state.scenario_count = 0
         st.session_state.detected_type = None
         st.session_state.detected_name = None
@@ -315,5 +463,15 @@ elif page == "⚙️ 设置":
 
     with st.expander("🔧 高级设置（开发者）"):
         st.selectbox("LLM 后端", ["mock（无需API Key）", "openai", "ollama"], index=0)
+
     st.divider()
-    st.caption("OPC-Agents v3.0 | 一人公司智能助手")
+
+    existing_files = [f for f in os.listdir(DELIVERABLES_DIR) if f.endswith('.md')] if os.path.exists(DELIVERABLES_DIR) else []
+    if existing_files:
+        st.markdown(f"### 📂 成果物目录中的文件 ({len(existing_files)} 个)")
+        for f in sorted(existing_files)[-5:]:
+            fp = os.path.join(DELIVERABLES_DIR, f)
+            size = round(os.path.getsize(fp) / 1024, 1)
+            st.caption(f"📄 {f} ({size}KB)")
+
+    st.caption("OPC-Agents v3.2 | 成果物交付版")

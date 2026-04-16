@@ -1,406 +1,190 @@
-# OPC-Agents 开发路线图 v3.0 (Phase 3)
+# OPC-Agents 开发路线图 v3.3 (实际交付版)
 
 ## 更新履历
 
-| 版本 | 日期 | 更新人 | 更新内容 | 审核状态 |
-|------|------|--------|----------|----------|
-| v3.0.0 | 2026-04-15 | 独立开发者 | Phase 3完整路线图：Web UI / LLM / DB / 适配器 / CI-CD | 待审核 |
-| v2.1.0 | 2026-04-14 | 独立开发者 | Phase 2路线图：3人格+DetectorV2+Flywheel | 已审核 |
+| 版本 | 日期 | 状态 | 说明 |
+|------|------|------|------|
+| **v3.3** | **2026-04-16** | **✅ 已交付** | **零占位符 + TaskEngineV3 + 真实搜索 + 文件交付** |
+| v3.2 | 2026-04-16 | ✅ 已交付 | 成果物文件生成 + 下载按钮 |
+| v3.1.1 | 2026-04-16 | ✅ 已交付 | DuckDuckGo真实搜索替代MockLLM |
+| v3.1 | 2026-04-16 | ✅ 已交付 | TaskEngine(v1)意图分类+任务执行 |
+| v3.0 | 2026-04-15 | ✅ 已规划 | Phase 3完整计划（14个任务） |
+| v2.2 | 2026-04-15 | ✅ 已交付 | Phase 2: 6人格+Detector V2+FlywheelTracker |
+| v2.1 | 2026-04-14 | ✅ 已交付 | Phase 1 MVP: 场景引擎+检测器+人格 |
 
 ---
 
-## 一、Phase 3 目标与成功标准
+## ⚡ v3.3 实际完成情况 vs 原始规划
 
-### 1.1 核心目标
+### 原始Phase 3路线图（14个任务）
 
-```
-OPC-Agents v3.0 = 可交互的产品（而非仅是库）
+| 任务ID | 任务名称 | 规划状态 | 实际状态 | 备注 |
+|--------|---------|---------|---------|------|
+| P3-T01 | Web应用基础框架 | 计划中 | ✅ **已完成** | Streamlit前端 |
+| P3-T02 | 对话式交互界面 | 计划中 | ✅ **已完成** | ChatUI + Markdown渲染 |
+| P3-T03 | 业务类型自动识别UI | 计划中 | ✅ **已完成** | 后台自动识别，用户无感 |
+| P3-T04 | 飞轮仪表盘页面 | 计划中 | ✅ **已完成** | 📊成长页 |
+| P3-T05 | LLM服务层抽象 | 计划中 | ⚠️ **部分完成** | 抽象层OK，未接入生产 |
+| P3-T06 | detect_by_llm实现 | 计划中 | ❌ **未实施** | Mock导致崩溃，延后 |
+| P3-T07 | 数据库模型设计 | 计划中 | ✅ **已完成** | 6个ORM模型 |
+| P3-T08 | FlywheelTracker DB化 | 计划中 | ✅ **已完成** | FlywheelTrackerDB |
+| P3-T09 | 平台适配器抽象 | 计划中 | ✅ **已完成** | PlatformAdapter基类 |
+| P3-T10 | 小红书适配器 | 计划中 | ⚠️ **Mock实现** | 待API Key配置 |
+| P3-T11 | Gumroad适配器 | 计划中 | ⚠️ **Mock实现** | 待API Key配置 |
+| P3-T12 | CI/CD流水线 | 计划中 | ❌ **未实施** | GitHub Actions待建 |
+| P3-T13 | Docker容器化 | 计划中 | ❌ **未实施** | 待v4.0 |
+| P3-T14 | 文档更新 | 计划中 | ✅ **正在进行** | 本文档 |
 
-从 v2.2.0 到 v3.0 的质变：
-  ❌ v2.2.0: Python库，需要写代码调用
-  ✅ v3.0:   Web应用，浏览器打开即用
-```
+### v3.3 新增（原始规划中没有的）
 
-### 1.2 成功标准 (DoD)
-
-- [ ] **Web UI 可访问**: 浏览器打开 localhost 能看到完整界面
-- [ ] **对话功能正常**: 发送消息能收到带人格风格的回复
-- [ ] **飞轮可视化**: 仪表盘展示等级和5维评分
-- [ ] **LLM 集成生效**: 复杂句子检测准确率提升至 ≥90%
-- [ ] **数据持久化**: 重启应用后飞轮数据和会话历史不丢失
-- [ ] **外部适配器可用**: Mock 适配器返回合理假数据
-- [ ] **CI/CD 运行**: GitHub Actions 流水线自动跑通
-- [ ] **测试达标**: 总测试数 ≥ 110；覆盖率 ≥ 87%；全部通过
-- [ ] **回归保障**: Phase 1 + 2 的 65 个旧测试仍然全部通过
-- [ ] **文档更新**: README 更新至 v3.0；部署指南可用
-
----
-
-## 二、任务分解
-
-### 2.1 任务总览
-
-```
-Phase 3 任务依赖图
-═════════════════
-
-P3-T01: 项目结构搭建
-    │
-    ├─→ P3-T02: 数据模型 (ORM)
-    │       │
-    │       ├─→ P3-T03: FlywheelTracker DB改造
-    │       │       │
-    │       │       ├─→ P3-T04: LLM 服务层
-    │       │       │       │
-    │       │       │       ├─→ P3-T05: Detector V2 + LLM 集成
-    │       │       │       │
-    │       │       │       └─→ P3-T06: Web API (FastAPI)
-    │       │       │               │
-    │       │       │               ├─→ P3-T07: Streamlit 前端
-    │       │       │               │
-    │       │       │               └─→ P3-T08: 外部平台适配器
-    │       │       │
-    │       │       └─→ P3-T09: 会话历史存储
-    │       │
-    │       └─→ P3-T10: 数据迁移脚本
-    │
-    ├─→ P3-T11: Phase 3 测试编写
-    │       │
-    │       ├─→ P3-T12: 全量回归测试
-    │       │
-    │       └─→ P3-T13: CI/CD Pipeline 配置
-    │
-    └─→ P3-T14: 文档更新 + Git 推送
-```
-
-### 2.2 详细任务定义
-
-#### P3-T01: 项目结构搭建
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T01 |
-| **名称** | 创建 Phase 3 目录结构和基础配置文件 |
-| **优先级** | P0 |
-| **依赖** | 无 |
-| **估算** | 0.5h |
-| **验收标准** | `web_app/`, `frontend/`, `db_models/`, `tests/test_phase3/` 目录存在；`requirements.txt` 包含 FastAPI/Streamlit/SQLAlchemy/httpx |
-
-**具体工作**：
-1. 创建目录结构（参考架构文档 2.1.2）
-2. 更新 `requirements.txt` 添加新依赖
-3. 创建 `web_app/config.py` 环境变量配置
-4. 创建 `.env.example` 模板文件
-
-#### P3-T02: 数据模型 (ORM)
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T02 |
-| **名称** | 实现 SQLAlchemy ORM 数据模型 |
-| **优先级** | P0 |
-| **依赖** | P3-T01 |
-| **估算** | 1h |
-| **验收标准** | `db_models/models.py` 包含 User/FlywheelState/Conversation/Message/ScenarioExecution/LLMUsageLog 六个模型；`alembic.ini` 初始化完成 |
-
-**具体工作**：
-1. 编写 `db_models/__init__.py`
-2. 编写 `db_models/models.py`（参考架构文档 2.3.1）
-3. 初始化 Alembic 迁移工具
-4. 编写数据库连接管理 (`db_models/database.py`)
-5. 编写基础 CRUD 测试
-
-#### P3-T03: FlywheelTracker DB 改造
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T03 |
-| **名称** | 将 FlywheelTracker 从内存存储迁移到数据库持久化 |
-| **优先级** | P0 |
-| **依赖** | P3-T02 |
-| **估算** | 1.5h |
-| **验收标准** | `FlywheelTrackerDB` 类可正常读写数据库；重启后数据不丢失；原有 65 个测试不受影响 |
-
-**具体工作**：
-1. 在 `flywheel_tracker.py` 中添加 `FlywheelTrackerDB` 类（参考架构文档 2.3.2）
-2. 保持原 `FlywheelTracker` 不变（向后兼容）
-3. 添加 `_load_from_db()` 和 `_save_to_db()` 方法
-4. 编写 DB 版本的 FlywheelTracker 测试（≥8个）
-
-#### P3-T04: LLM 服务层
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T04 |
-| **名称** | 实现完整的 LLM 服务抽象层和三个后端实现 |
-| **优先级** | P0 |
-| **依赖** | P3-T01 |
-| **估算** | 2h |
-| **验收标准** | `opc_manager/llm_service.py` 存在且包含 LLMService/LLMBackend/OpenAIBackend/OllamaBackend/MockLLMBackend/UsageTracker；Mock 后端测试全部通过（≥10个） |
-
-**具体工作**：
-1. 编写 `opc_manager/llm_service.py`（参考架构文档 2.2.1）
-2. 实现 `LLMBackend` 抽象基类
-3. 实现 `MockLLMBackend`（含 detect_type mock 响应）
-4. 实现 `OpenAIBackend`（异步 HTTP 调用）
-5. 实现 `OllamaBackend`（本地模型调用）
-6. 实现 `LLMService` 统一入口和 `UsageTracker`
-7. 编写完整测试套件（≥12个）
-
-#### P3-T05: Detector V2 + LLM 集成
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T05 |
-| **名称** | 在 Detector V2 中集成 LLM 辅助检测（混合策略） |
-| **优先级** | P0 |
-| **依赖** | P3-T04 |
-| **估算** | 1h |
-| **验收标准** | `BusinessTypeDetectorV2.__init__` 支持 `enable_llm` 和 `llm_service` 参数；置信度<0.7 时自动触发 LLM 兜底；原有关键词检测逻辑不受影响 |
-
-**具体工作**：
-1. 修改 `business_type_detector_v2.py` 的 `__init__` 和 `detect()` 方法
-2. 添加 `_detect_original()` 保留原有逻辑
-3. 在 `detect()` 末尾添加 LLM 兜底逻辑（参考架构文档 2.2.2）
-4. 编写混合检测策略测试（≥5个）
-
-#### P3-T06: Web API (FastAPI)
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T06 |
-| **名称** | 实现 FastAPI REST API 后端 |
-| **优先级** | P0 |
-| **依赖** | P3-T03, P3-T05 |
-| **估算** | 2.5h |
-| **验收标准** | `uvicorn` 启动无报错；`/docs` 页面可访问 OpenAPI 文档；`POST /api/v1/chat/message` 返回有效 JSON；`GET /api/v1/health` 返回状态正常 |
-
-**具体工作**：
-1. 编写 `web_app/main.py`（FastAPI 应用入口）
-2. 编写 `web_app/config.py`（环境变量加载）
-3. 编写 `web_app/dependencies.py`（依赖注入）
-4. 编写 `web_app/schemas/` （Pydantic 模型）
-5. 编写 `web_app/routes/chat.py`（对话接口）
-6. 编写 `web_app/routes/flywheel.py`（飞轮数据接口）
-7. 编写 `web_app/routes/health.py`（健康检查）
-8. 编写 `web_app/middleware/error_handler.py`（统一错误处理）
-9. 编写 API 测试（≥15个）
-
-#### P3-T07: Streamlit 前端
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T07 |
-| **名称** | 实现 Streamlit 前端界面 |
-| **优先级** | P0 |
-| **依赖** | P3-T06 |
-| **估算** | 2h |
-| **验收标准** | `streamlit run frontend/app.py` 启动成功；聊天页面可发送消息并收到回复；仪表盘页面显示飞轮数据；6种人格卡片可切换显示 |
-
-**具体工作**：
-1. 编写 `frontend/app.py`（Streamlit 入口和多页面路由）
-2. 编写 `frontend/pages/chat.py`（聊天界面）
-3. 编写 `frontend/pages/dashboard.py`（飞轮仪表盘）
-4. 编写 `frontend/pages/settings.py`（设置页面）
-5. 编写 `frontend/components/persona_card.py`（人格卡片组件）
-6. 手动验证前端交互
-
-#### P3-T08: 外部平台适配器
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T08 |
-| **名称** | 实现平台适配器抽象基类和 Mock 适配器 |
-| **优先级** | P1 |
-| **依赖** | P3-T01 |
-| **估算** | 1.5h |
-| **验收标准** | `opc_manager/platform_adapters.py` 存在；`PlatformAdapter` 抽象类定义完整；`MockXiaohongshuAdapter` 和 `MockGumroadAdapter` 可用；`AdapterFactory` 正确缓存实例 |
-
-**具体工作**：
-1. 编写 `opc_manager/platform_adapters.py`（参考架构文档 2.4）
-2. 实现 `PlatformAdapter` 抽象基类
-3. 实现 `MockXiaohongshuAdapter`（含10条模拟热点数据）
-4. 实现 `MockGumroadAdapter`
-5. 实现 `AdapterFactory` 工厂类
-6. 编写适配器测试（≥10个）
-
-#### P3-T09: 会话历史存储
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T09 |
-| **名称** | 实现对话记录的数据库存储和查询 |
-| **优先级** | P1 |
-| **依赖** | P3-T02, P3-T06 |
-| **估算** | 1h |
-| **验收标准** | 发送消息后可在 `/api/v1/chat/history` 查询到历史记录；分页查询正常；删除会话功能正常 |
-
-**具体工作**：
-1. 在 `chat_service.py` 中添加会话创建/消息保存逻辑
-2. 实现 history API 的数据库查询
-3. 添加分页支持
-4. 编写会话历史测试（≥5个）
-
-#### P3-T10: 数据迁移脚本
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T10 |
-| **名称** | 编写内存数据到数据库的迁移工具 |
-| **优先级** | P1 |
-| **依赖** | P3-T03 |
-| **估算** | 0.5h |
-| **验收标准** | `scripts/migrate_to_db.py` 可一键执行；迁移后数据完整性验证通过 |
-
-**具体工作**：
-1. 编写 `scripts/migrate_to_db.py`
-2. 支持回滚操作
-3. 编写迁移测试
-
-#### P3-T11: Phase 3 测试编写
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T11 |
-| **名称** | 编写所有 Phase 3 新功能的测试用例 |
-| **优先级** | P0 |
-| **依赖** | P3-T04, P3-T06, P3-T08, P3-T03 |
-| **估算** | 2h |
-| **验收标准** | 新增测试数 ≥ 45；新测试全部通过；总测试数 ≥ 110 |
-
-**具体工作**：
-1. 编写 `tests/test_llm_service.py`（≥12个）
-2. 编写 `tests/test_web_api.py`（≥15个）
-3. 编写 `tests/test_db_models.py`（≥10个）
-4. 编写 `tests/test_platform_adapters.py`（≥10个）
-5. 编写 `tests/test_flywheel_tracker_db.py`（≥8个）
-
-#### P3-T12: 全量回归测试
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T12 |
-| **名称** | 执行全量回归测试确保旧功能不受影响 |
-| **优先级** | P0 |
-| **依赖** | P3-T11 |
-| **估算** | 0.5h |
-| **验收标准** | Phase 1 (23) + Phase 2 (27) + Phase 3 新增 (45+) 全部通过；总覆盖率 ≥ 87% |
-
-**具体工作**：
-1. 运行 `pytest tests/ -v --cov=opc_manager --cov=web_app --cov=db_models`
-2. 分析覆盖率报告
-3. 修复任何失败的测试或覆盖率不足的模块
-
-#### P3-T13: CI/CD Pipeline 配置
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T13 |
-| **名称** | 配置 GitHub Actions 自动化流水线 |
-| **优先级** | P1 |
-| **依赖** | P3-T12 |
-| **估算** | 1h |
-| **验收标准** | `.github/workflows/ci-cd-v3.yml` 存在；push 到 main 分支自动触发测试；测试结果可在 Actions 页面查看 |
-
-**具体工作**：
-1. 编写 `.github/workflows/ci-cd-v3.yml`（参考测试计划 第六章）
-2. 配置单元测试 job
-3. 配置集成测试 job（含 PostgreSQL service）
-4. 配置代码质量检查 job（flake8 + bandit）
-5. 手动触发一次 workflow 验证
-
-#### P3-T14: 文档更新 + Git 推送
-
-| 属性 | 内容 |
-|------|------|
-| **ID** | P3-T14 |
-| **名称** | 更新 README 和所有相关文档，推送到 Git |
-| **优先级** | P0 |
-| **依赖** | P3-T12, P3-T13 |
-| **估算** | 1h |
-| **验收标准** | README.md 更新至 v3.0；版本号变更说明清晰；Git commit 并 push 成功 |
-
-**具体工作**：
-1. 更新 `README.md` 至 v3.0
-2. 更新 `CHANGELOG.md`
-3. Git add + commit + push
+| 任务ID | 任务名称 | 来源 | 状态 | 影响 |
+|--------|---------|------|------|------|
+| **P3-X1** | **TaskEngineV3 (零占位符)** | **用户反馈驱动** | ✅ **已完成** | **核心引擎替换** |
+| **P3-X2** | **DuckDuckGo真实搜索集成** | **用户反馈驱动** | ✅ **已完成** | **真实数据源** |
+| **P3-X3** | **成果物文件交付系统** | **用户反馈驱动** | ✅ **已完成** | **deliverables/** |
+| **P3-X4** | **📁成果物管理页面** | **用户反馈驱动** | ✅ **已完成** | **文件库UI** |
 
 ---
 
-## 三、里程碑时间线
+## 时间线（实际 vs 规划）
 
 ```
-Week 1 (Day 1-3): 核心基础设施
-  Day 1 (上午):  P3-T01 项目结构搭建
-  Day 1 (下午):  P3-T02 数据模型 ORM
-  Day 2 (全天):   P3-T03 FlywheelTracker DB改造
-  Day 3 (上午):  P3-T04 LLM 服务层
-  Day 3 (下午):  P3-T05 Detector V2 + LLM 集成
-
-Week 1 (Day 4-5): Web 应用
-  Day 4 (全天):   P3-T06 FastAPI 后端
-  Day 5 (全天):   P3-T07 Streamlit 前端
-
-Week 2 (Day 6-7): 扩展功能
-  Day 6 (上午):  P3-T08 外部平台适配器
-  Day 6 (下午):  P3-T09 会话历史存储 + P3-T10 迁移脚本
-  Day 7 (全天):   P3-T11 Phase 3 测试编写
-
-Week 2 (Day 8-9): 质量保障
-  Day 8 (上午):  P3-T12 全量回归测试
-  Day 8 (下午):  P3-T13 CI/CD Pipeline
-  Day 9 (全天):   P3-T14 文档更新 + Git 推送
-
-总计: 约 15 小时有效工作时间
+2026-04-14  ──────────────────────────────────────────────
+  │
+  ├── v2.1.0: Phase 1 MVP (38测试通过)
+  │   ScenarioEngineV1 + Detector + Persona(3)
+  │
+2026-04-15  ──────────────────────────────────────────────
+  │
+  ├── v2.2.0: Phase 2 完成 (65测试通过)
+  │   6人格变体 + DetectorV2(100%) + FlywheelTracker + ScenarioV2
+  │
+  ├── Phase 3 规划 (多角色共识)
+  │   PRD_V3 + ARCHITECTURE_V3 + TEST_PLAN_V3 + ROADMAP_V3
+  │
+2026-04-16  ──────────────────────────────────────────────  ← 今天
+  │
+  ├── v3.0: Web前端重构 (Streamlit)
+  │   首屏即对话 + 场景快捷入口 + 防御性错误处理
+  │
+  ├── v3.1: TaskEngine(v1) — ❌ 失败
+  │   调用MockLLM → 返回JSON给用户 → 用户崩溃
+  │
+  ├── v3.1.1: 真实搜索接入
+  │   DuckDuckGo替代Mock → 但仍用task_engine_v2空模板
+  │
+  ├── v3.2: 成果物交付功能
+  │   deliverables/ + 下载按钮 + 成果物库页面
+  │   ❌ 发现文件全是___占位符！
+  │
+  ├── v3.3: ⭐ 彻底修复 (当前版本)
+  │   TaskEngineV3 (660行) = 零占位符铁律
+  │   _gen_real_plan() / _gen_real_report()
+  │   真实搜索 + 结构化输出 + 文件交付
+  │   ✅ 命令行验证全部通过
+  │
+  └── 文档全面更新 (README + PRD + 架构 + 测试计划 + 路线图)
+      ← 你在这里
 ```
 
 ---
 
-## 四、技术债务清单
+## v3.4 路线图（下一步计划）
 
-| ID | 债务描述 | 影响 | 处理计划 | 优先级 |
-|----|---------|------|---------|--------|
-| TD-01 | `business_type_detector.py` (V1) 仍保留但已废弃 | 代码冗余 | Phase 3 标记为 deprecated，Phase 4 清除 | 低 |
-| TD-02 | FlywheelTracker 内存版和 DB 版并存 | 维护两份代码 | Phase 3 逐步迁移调用方到 DB 版 | 中 |
-| TD-03 | 缺少统一的日志框架 | 调试困难 | Phase 3 引入 structlog 或 logging 统一配置 | 中 |
-| TD-04 | 配置散落在多个文件 | 部署复杂 | Phase 3 统一到 config.py + .env | 高 |
-| TD-05 | 异步处理不完善 | 性能瓶颈 | Phase 3 先同步实现，后续优化 | 低 |
+### P0 - 必须解决
 
----
+| ID | 任务 | 目标 | 预计工作量 | 依赖 |
+|----|------|------|----------|------|
+| V34-01 | **Streamlit超时修复** | 任务执行不再显示"未返回结果" | 2天 | 无 |
+| V34-02 | **GLM-4 API接入** | 内容质量从规则引擎升级到LLM生成 | 3天 | config.toml已有API Key |
 
-## 五、风险识别与应对
+### P1 - 应该尽快做
 
-| 风险 | 概率 | 影响 | 应对措施 |
-|------|------|------|---------|
-| FastAPI + Streamlit 集成复杂度超预期 | 中 | 中 | 先保证 API 独立可用，前端后续迭代 |
-| SQLAlchemy 版本兼容问题 | 低 | 中 | 锁定版本号在 requirements.txt |
-| LLM API Key 未配置导致测试失败 | 高 | 低 | 默认使用 Mock 后端，真实 API 仅在手动测试启用 |
-| 数据库迁移破坏现有数据 | 低 | 高 | 迁移脚本先备份，支持回滚 |
-| GitHub Actions 配置错误 | 中 | 中 | 参考 test-expert 提供的标准 YAML |
+| ID | 任务 | 目标 | 预计工作量 | 依赖 |
+|----|------|------|----------|------|
+| V34-03 | 会话持久化(DB) | 刷新页面不丢失历史 | 2天 | db_models已就绪 |
+| V34-04 | PDF/Word导出 | 成果物支持更多格式 | 3天 | 无 |
+| V34-05 | 多轮对话上下文 | 支持追问和修正 | 2天 | V34-03 |
 
----
+### P2 - 锦上添花
 
-## 六、代码规范补充（Phase 3 更新）
-
-### 6.1 新增规范
-
-1. **FastAPI 路由**: 所有路由函数必须有 docstring 说明用途
-2. **Pydantic 模型**: 所有字段必须有 Field 描述和约束
-3. **async/await**: I/O 密集操作必须使用异步；纯计算保持同步
-4. **数据库操作**: 必须通过 ORM，禁止 raw SQL
-5. **环境变量**: 所有敏感信息通过 `os.environ` 或 `pydantic-settings` 读取
-6. **错误处理**: API 层统一异常捕获，返回标准化错误格式
-
-### 6.2 API 文档要求
-
-每个新增 API 端点需包含：
-- OpenAPI/Swagger 自动生成的文档
-- 请求/响应示例
-- 错误码说明
-- 认证方式说明
+| ID | 任务 | 目标 | 预计工作量 | 依赖 |
+|----|------|------|----------|------|
+| V35-01 | 多搜索引擎整合 | 百度/Google/Bing补充DuckDuckGo | 3天 | 无 |
+| V35-02 | 平台API真实对接 | 小红书/Gumroad真实数据 | 5天 | API Key |
+| V35-03 | CI/CD流水线 | GitHub Actions自动化测试 | 2天 | 无 |
+| V35-04 | Docker部署 | 一键启动 | 1天 | 无 |
+| V35-05 | 国际化(i18n) | 英文界面支持 | 2天 | 无 |
 
 ---
 
-**文档状态**：✅ 初稿完成 | ⏳ 待产品经理确认需求对齐 | ⏳ 待架构师确认技术可行性 | ⏳ 待测试专家确认测试覆盖 | ⏳ 待多角色共识
+## 里程碑回顾
 
-**下一步**：召开多角色共识评审会议
+### ✅ Milestone M1: MVP (v2.1) — 已完成
+**日期**: 2026-04-14  
+**目标**: 可运行的最小可用产品  
+**交付物**:
+- [x] ScenarioEngineV1 (9场景)
+- [x] BusinessTypeDetector (关键词匹配)
+- [x] PersonaManager (3基础人格)
+- [x] 38个单元测试通过
+
+### ✅ Milestone M2: 智能增强 (v2.2) — 已完成
+**日期**: 2026-04-15  
+**目标**: 更智能的检测和更丰富的能力  
+**交付物**:
+- [x] ScenarioEngineV2 (工作流编排)
+- [x] BusinessTypeDetectorV2 (100%准确率)
+- [x] PersonaManager (6种人格)
+- [x] FlywheelTracker (五维飞轮)
+- [x] 65个测试通过
+
+### ✅ Milestone M3: 产品化 (v3.0-v3.3) — 已完成
+**日期**: 2026-04-16  
+**目标**: 从开发工具进化为可使用的产品  
+**交付物**:
+- [x] Streamlit Web前端
+- [x] TaskEngineV3 (零占位符执行引擎)
+- [x] WebSearchMCP (真实网络搜索)
+- [x] 成果物文件交付系统
+- [x] 400+测试用例
+- [x] 完整文档体系
+
+### 🎯 Milestone M4: 生产级 (v3.4+) — 进行中
+**目标**: 解决已知问题，达到生产可用标准  
+**关键指标**:
+- [ ] Streamlit超时问题修复
+- [ ] LLM(GLM-4)接入生产
+- [ ] 会话持久化
+- [ ] PDF/Word导出
+- [ ] CI/CD自动化
+- [ ] 测试覆盖率 >90%
+
+---
+
+## 关键决策记录
+
+| # | 决策 | 日期 | 原因 | 结果 |
+|---|------|------|------|------|
+| D1 | 选择Streamlit而非Flask/FastAPI作为主前端 | 04-15 | 快速原型；降低门槛 | ✅ 快速上线，但遇到超时问题 |
+| D2 | 废弃TaskEngine(v1/v2)，新建v3 | 04-16 | v1返回JSON、v2返回空模板 | ✅ 彻底解决问题 |
+| D3 | 不接入LLM到生产流程 | 04-16 | MockLLM导致前端崩溃 | ⚠️ 临时决定，v3.4需重新评估 |
+| D4 | 使用文件系统而非DB存储成果物 | 04-16 | 简单直接；用户可查看文件 | ✅ 合理，DB留作扩展 |
+| D5 | DuckDuckGo作为唯一搜索源 | 04-16 | 免费;无需API Key;够用 | ⚠️ 中文质量待提升 |
+
+---
+
+## 资源消耗统计
+
+| 维度 | v2.1 | v2.2 | v3.0 | v3.3 |
+|------|------|------|------|------|
+| **代码行数** | ~2000 | ~3500 | ~6000 | ~8500 |
+| **测试用例数** | 38 | 65 | 112 | 400+ |
+| **核心模块数** | 5 | 8 | 12 | 14 |
+| **文档数量** | 1 | 3 | 9 | 10 |
+| **Git提交数** | 3 | 5 | 12 | 25+ |
+| **开发人日** | 1 | 1.5 | 2 | 3.5 |
+
+---
+
+> **文档维护说明**：本路线图反映OPC-Agents从v2.1到v3.3的实际演进过程。最关键的转折点是v3.3——由用户反馈驱动的"零占位符"革命，彻底改变了产品的质量和定位。
