@@ -3,6 +3,7 @@
 确保VERSION文件、requirements.txt和代码中的版本号保持一致。
 支持预发布版本格式（如0.1.0-beta）。
 """
+
 import re
 import os
 import pytest
@@ -12,21 +13,22 @@ from pathlib import Path
 def test_version_module_exists():
     """测试version模块是否存在"""
     from opc_manager import version
-    assert hasattr(version, '__version__')
-    assert hasattr(version, '__version_info__')
-    assert hasattr(version, 'get_version')
-    assert hasattr(version, 'get_version_info')
+
+    assert hasattr(version, "__version__")
+    assert hasattr(version, "__version_info__")
+    assert hasattr(version, "get_version")
+    assert hasattr(version, "get_version_info")
 
 
 def test_version_format():
     """测试版本号格式是否正确（支持预发布标识）"""
     from opc_manager.version import __version__, __version_info__
 
-    pattern = r'^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$'
+    pattern = r"^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$"
     assert re.match(pattern, __version__), f"版本号格式错误: {__version__}"
 
-    base_version = __version__.split('-')[0]
-    parts = base_version.split('.')
+    base_version = __version__.split("-")[0]
+    parts = base_version.split(".")
     assert len(parts) == 3, f"版本号格式错误: {__version__}"
     for part in parts:
         assert part.isdigit(), f"版本号包含非数字: {part}"
@@ -46,8 +48,9 @@ def test_version_consistency_with_file():
     with open(version_file) as f:
         file_version = f.read().strip()
 
-    assert file_version == __version__, \
-        f"VERSION文件({file_version}) 与代码版本({__version__})不一致"
+    assert (
+        file_version == __version__
+    ), f"VERSION文件({file_version}) 与代码版本({__version__})不一致"
 
 
 def test_version_in_requirements():
@@ -60,9 +63,8 @@ def test_version_in_requirements():
     with open(req_file) as f:
         content = f.read()
 
-    base_version = __version__.split('-')[0]
-    assert base_version in content, \
-        f"requirements.txt 中未找到版本号 {base_version}"
+    base_version = __version__.split("-")[0]
+    assert base_version in content, f"requirements.txt 中未找到版本号 {base_version}"
 
 
 def test_get_version_function():
@@ -104,8 +106,9 @@ def test_version_info_matches_version_base():
     """测试version_info与version基础部分匹配"""
     from opc_manager.version import __version__, __version_info__
 
-    base_version = __version__.split('-')[0]
+    base_version = __version__.split("-")[0]
     reconstructed = f"{__version_info__[0]}.{__version_info__[1]}.{__version_info__[2]}"
 
-    assert reconstructed == base_version, \
-        f"version_info({__version_info__}) 与 version基础部分({base_version}) 不匹配"
+    assert (
+        reconstructed == base_version
+    ), f"version_info({__version_info__}) 与 version基础部分({base_version}) 不匹配"

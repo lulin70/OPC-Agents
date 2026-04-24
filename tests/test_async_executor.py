@@ -11,6 +11,7 @@
 - get_status() 轮询状态流转: pending→running→completed/cancelled
 - cancel() 成功率 >= 95%
 """
+
 import unittest
 import time
 import threading
@@ -29,16 +30,16 @@ class TestSubmitReturnsTaskID(unittest.TestCase):
         task_id = self.executor.submit("测试任务")
 
         self.assertIsNotNone(task_id)
-        self.assertTrue(task_id.startswith('task-'))
+        self.assertTrue(task_id.startswith("task-"))
         self.assertEqual(len(task_id), 17)
 
     def test_submit_is_non_blocking(self):
         """submit()应在10ms内返回（不阻塞）"""
         start = time.time()
-        
+
         def slow_task(prompt, cancel_event, **kwargs):
             time.sleep(2)
-            return {'content': '慢任务完成', 'success': True}
+            return {"content": "慢任务完成", "success": True}
 
         task_id = self.executor.submit("慢任务", execute_func=slow_task)
         elapsed_ms = (time.time() - start) * 1000
@@ -62,7 +63,7 @@ class TestSubmitReturnsTaskID(unittest.TestCase):
         task_id = self.executor.submit(prompt)
 
         status = self.executor.get_status(task_id)
-        self.assertTrue(status['exists'])
+        self.assertTrue(status["exists"])
 
 
 class TestStatusPolling(unittest.TestCase):
@@ -77,17 +78,17 @@ class TestStatusPolling(unittest.TestCase):
 
         def tracking_task(prompt, cancel_event, **kwargs):
             time.sleep(0.1)
-            return {'content': '完成', 'success': True}
+            return {"content": "完成", "success": True}
 
         task_id = self.executor.submit("跟踪任务", execute_func=tracking_task)
 
         status1 = self.executor.get_status(task_id)
-        self.assertIn(status1['status'], ['pending', 'running'])
+        self.assertIn(status1["status"], ["pending", "running"])
 
         time.sleep(0.2)
 
         status2 = self.executor.get_status(task_id)
-        self.assertEqual(status2['status'], 'done')
+        self.assertEqual(status2["status"], "done")
 
     def test_done_status_contains_result(self):
         """done状态应包含完整的结果数据"""
@@ -97,23 +98,24 @@ class TestStatusPolling(unittest.TestCase):
         def mock_execute(prompt, cancel_event, **kwargs):
             time.sleep(0.05)
             return {
-                'content': expected_content,
-                'success': True,
-                'filepath': expected_filepath,
-                'task_type': 'content_generation',
+                "content": expected_content,
+                "success": True,
+                "filepath": expected_filepath,
+                "task_type": "content_generation",
             }
 
         task_id = self.executor.submit("mock任务", execute_func=mock_execute)
         time.sleep(0.2)
 
         status = self.executor.get_status(task_id)
-        self.assertEqual(status['status'], 'done')
-        self.assertEqual(status['result_content'], expected_content)
-        self.assertEqual(status['result_filepath'], expected_filepath)
-        self.assertEqual(status['result_success'], True)
+        self.assertEqual(status["status"], "done")
+        self.assertEqual(status["result_content"], expected_content)
+        self.assertEqual(status["result_filepath"], expected_filepath)
+        self.assertEqual(status["result_success"], True)
 
     def test_failed_status_contains_error(self):
         """failed状态应包含错误信息"""
+
         def failing_task(prompt, cancel_event, **kwargs):
             raise ValueError("模拟执行失败")
 
@@ -121,24 +123,25 @@ class TestStatusPolling(unittest.TestCase):
         time.sleep(0.2)
 
         status = self.executor.get_status(task_id)
-        self.assertEqual(status['status'], 'failed')
-        self.assertIsNotNone(status['error_message'])
-        self.assertIn('模拟执行失败', status['error_message'])
+        self.assertEqual(status["status"], "failed")
+        self.assertIsNotNone(status["error_message"])
+        self.assertIn("模拟执行失败", status["error_message"])
 
     def test_elapsed_time_increases(self):
         """elapsed字段应随时间增长"""
+
         def slow_task(prompt, cancel_event, **kwargs):
             time.sleep(0.15)
-            return {'content': 'ok', 'success': True}
+            return {"content": "ok", "success": True}
 
         task_id = self.executor.submit("计时任务", execute_func=slow_task)
 
         status1 = self.executor.get_status(task_id)
-        elapsed1 = status1['elapsed']
+        elapsed1 = status1["elapsed"]
         time.sleep(0.1)
 
         status2 = self.executor.get_status(task_id)
-        elapsed2 = status2['elapsed']
+        elapsed2 = status2["elapsed"]
 
         self.assertGreater(elapsed2, elapsed1)
 
@@ -151,12 +154,13 @@ class TestCancelOperation(unittest.TestCase):
 
     def test_cancel_pending_task(self):
         """取消pending状态的任务应成功"""
+
         def long_running_task(prompt, cancel_event, **kwargs):
             for i in range(20):
                 if cancel_event.is_set():
                     raise InterruptedError("任务被取消")
                 time.sleep(0.05)
-            return {'content': '不应到达这里', 'success': True}
+            return {"content": "不应到达这里", "success": True}
 
         task_id = self.executor.submit("长任务", execute_func=long_running_task)
         time.sleep(0.05)
@@ -166,7 +170,7 @@ class TestCancelOperation(unittest.TestCase):
 
         time.sleep(0.1)
         status = self.executor.get_status(task_id)
-        self.assertEqual(status['status'], 'cancelled')
+        self.assertEqual(status["status"], "cancelled")
 
     def test_cancel_nonexistent_task(self):
         """取消不存在的任务应返回False"""
@@ -175,8 +179,9 @@ class TestCancelOperation(unittest.TestCase):
 
     def test_cancel_completed_task(self):
         """取消已完成的任务应返回False"""
+
         def quick_task(prompt, cancel_event, **kwargs):
-            return {'content': '快速完成', 'success': True}
+            return {"content": "快速完成", "success": True}
 
         task_id = self.executor.submit("快任务", execute_func=quick_task)
         time.sleep(0.15)
@@ -194,7 +199,7 @@ class TestCancelOperation(unittest.TestCase):
                 cancellation_detected[0] = True
                 return None
             time.sleep(0.2)
-            return {'content': '正常结果', 'success': True}
+            return {"content": "正常结果", "success": True}
 
         task_id = self.executor.submit("可取消任务", execute_func=cancellable_task)
         time.sleep(0.02)
@@ -202,7 +207,7 @@ class TestCancelOperation(unittest.TestCase):
         time.sleep(0.15)
 
         status = self.executor.get_status(task_id)
-        self.assertEqual(status['status'], 'cancelled')
+        self.assertEqual(status["status"], "cancelled")
 
 
 class TestTimeoutAutoCleanup(unittest.TestCase):
@@ -222,7 +227,7 @@ class TestTimeoutAutoCleanup(unittest.TestCase):
         def blocking_task(prompt, cancel_event, **kwargs):
             started_tasks.append(prompt)
             cancel_event.wait(timeout=2)
-            return {'content': '阻塞结束', 'success': True}
+            return {"content": "阻塞结束", "success": True}
 
         task_ids = []
         for i in range(6):
@@ -240,13 +245,14 @@ class TestTimeoutAutoCleanup(unittest.TestCase):
     def test_get_status_not_found(self):
         """查询不存在的任务应返回exists=False"""
         status = self.executor.get_status("task-fake000000")
-        self.assertFalse(status['exists'])
-        self.assertEqual(status['status'], 'not_found')
+        self.assertFalse(status["exists"])
+        self.assertEqual(status["status"], "not_found")
 
     def test_list_active_tasks(self):
         """list_active_tasks应只返回pending/running任务"""
+
         def quick_task(prompt, cancel_event, **kwargs):
-            return {'content': '快', 'success': True}
+            return {"content": "快", "success": True}
 
         tid1 = self.executor.submit("活跃任务1", execute_func=quick_task)
         tid2 = self.executor.submit("活跃任务2", execute_func=quick_task)
@@ -260,20 +266,21 @@ class TestTimeoutAutoCleanup(unittest.TestCase):
 
     def test_manual_cleanup(self):
         """手动cleanup应删除已完成任务"""
+
         def quick_task(prompt, cancel_event, **kwargs):
-            return {'content': '待清理', 'success': True}
+            return {"content": "待清理", "success": True}
 
         task_id = self.executor.submit("清理目标", execute_func=quick_task)
         time.sleep(0.15)
 
         status_before = self.executor.get_status(task_id)
-        self.assertTrue(status_before['exists'])
+        self.assertTrue(status_before["exists"])
 
         cleaned = self.executor.cleanup(task_id)
         self.assertTrue(cleaned)
 
         status_after = self.executor.get_status(task_id)
-        self.assertFalse(status_after['exists'])
+        self.assertFalse(status_after["exists"])
 
 
 class TestGateASYNC01(unittest.TestCase):
@@ -290,12 +297,17 @@ class TestGateASYNC01(unittest.TestCase):
         start = time.time()
 
         for i in range(10):
-            task_id = self.executor.submit(f"性能测试{i}", execute_func=lambda p, ce: {'content': '', 'success': True})
+            task_id = self.executor.submit(
+                f"性能测试{i}",
+                execute_func=lambda p, ce: {"content": "", "success": True},
+            )
 
         elapsed_ms = (time.time() - start) * 1000
 
         avg_per_submit = elapsed_ms / 10
-        self.assertLess(avg_per_submit, 100, f"平均submit耗时{avg_per_submit:.1f}ms超过100ms")
+        self.assertLess(
+            avg_per_submit, 100, f"平均submit耗时{avg_per_submit:.1f}ms超过100ms"
+        )
 
     def test_full_lifecycle_no_crash(self):
         """门禁：完整生命周期(pending→running→done)无崩溃"""
@@ -304,10 +316,10 @@ class TestGateASYNC01(unittest.TestCase):
         def robust_task(prompt, cancel_event, **kwargs):
             time.sleep(0.08)
             return {
-                'content': f'处理完成: {prompt}',
-                'success': True,
-                'filepath': '/tmp/test_gate_async.txt',
-                'task_type': 'test',
+                "content": f"处理完成: {prompt}",
+                "success": True,
+                "filepath": "/tmp/test_gate_async.txt",
+                "task_type": "test",
             }
 
         task_id = self.executor.submit("门禁测试", execute_func=robust_task)
@@ -317,17 +329,17 @@ class TestGateASYNC01(unittest.TestCase):
         final_status = None
         for _ in range(max_wait):
             status = self.executor.get_status(task_id)
-            final_status = status['status']
-            if final_status in ['done', 'failed', 'cancelled']:
+            final_status = status["status"]
+            if final_status in ["done", "failed", "cancelled"]:
                 break
             time.sleep(0.01)
 
-        self.assertEqual(final_status, 'done', f"最终状态异常: {final_status}")
+        self.assertEqual(final_status, "done", f"最终状态异常: {final_status}")
 
         result = self.executor.get_status(task_id)
-        self.assertTrue(result['result_success'])
-        self.assertIsNotNone(result['result_content'])
-        self.assertGreater(len(result['result_content']), 0)
+        self.assertTrue(result["result_success"])
+        self.assertIsNotNone(result["result_content"])
+        self.assertGreater(len(result["result_content"]), 0)
 
     def test_cancellation_reliability(self):
         """门禁：cancel()成功率 >= 95%（抽样10次）"""
@@ -335,13 +347,14 @@ class TestGateASYNC01(unittest.TestCase):
         total_tests = 10
 
         for i in range(total_tests):
+
             def cancellable(prompt, cancel_event, **kwargs):
                 try:
                     for _ in range(50):
                         if cancel_event.is_set():
                             raise InterruptedError()
                         time.sleep(0.02)
-                    return {'content': '未取消', 'success': True}
+                    return {"content": "未取消", "success": True}
                 except InterruptedError:
                     return None
 
@@ -353,8 +366,10 @@ class TestGateASYNC01(unittest.TestCase):
             time.sleep(0.1)
 
         success_rate = success_count / total_tests * 100
-        self.assertGreaterEqual(success_rate, 95, f"cancel成功率{success_rate:.0f}%低于95%")
+        self.assertGreaterEqual(
+            success_rate, 95, f"cancel成功率{success_rate:.0f}%低于95%"
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

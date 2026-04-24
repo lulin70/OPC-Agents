@@ -18,6 +18,7 @@ from opc_manager.business_types import BusinessType
 
 class FlywheelLevel(Enum):
     """飞轮等级"""
+
     LEVEL_1 = 1  # 单一业务类型
     LEVEL_2 = 2  # 双类型组合
     LEVEL_3 = 3  # 全生态系统（3+类型）
@@ -26,11 +27,12 @@ class FlywheelLevel(Enum):
 @dataclass
 class DimensionScore:
     """维度得分"""
-    content_quality: float = 0.0      # 内容质量 (0-100)
-    audience_growth: float = 0.0     # 受众增长 (0-100)
-    monetization: float = 0.0        # 变现能力 (0-100)
-    cross_promotion: float = 0.0      # 跨域推广 (0-100)
-    ecosystem_synergy: float = 0.0   # 生态协同 (0-100)
+
+    content_quality: float = 0.0  # 内容质量 (0-100)
+    audience_growth: float = 0.0  # 受众增长 (0-100)
+    monetization: float = 0.0  # 变现能力 (0-100)
+    cross_promotion: float = 0.0  # 跨域推广 (0-100)
+    ecosystem_synergy: float = 0.0  # 生态协同 (0-100)
 
     def overall_score(self) -> float:
         """计算综合得分"""
@@ -40,7 +42,7 @@ class DimensionScore:
             self.audience_growth,
             self.monetization,
             self.cross_promotion,
-            self.ecosystem_synergy
+            self.ecosystem_synergy,
         ]
         return sum(w * s for w, s in zip(weights, scores))
 
@@ -51,13 +53,14 @@ class DimensionScore:
             "monetization": self.monetization,
             "cross_promotion": self.cross_promotion,
             "ecosystem_synergy": self.ecosystem_synergy,
-            "overall": self.overall_score()
+            "overall": self.overall_score(),
         }
 
 
 @dataclass
 class UserFlywheelState:
     """用户飞轮状态"""
+
     user_id: str
     current_level: FlywheelLevel = FlywheelLevel.LEVEL_1
     active_types: List[BusinessType] = field(default_factory=list)
@@ -79,7 +82,7 @@ class UserFlywheelState:
             "dimension_scores": self.dimension_scores.to_dict(),
             "total_scenarios_completed": self.total_scenarios_completed,
             "active_days": self.active_days,
-            "last_activity_date": self.last_activity_date
+            "last_activity_date": self.last_activity_date,
         }
 
 
@@ -101,7 +104,7 @@ class FlywheelTracker:
         self._level_thresholds = {
             FlywheelLevel.LEVEL_1: 1,
             FlywheelLevel.LEVEL_2: 2,
-            FlywheelLevel.LEVEL_3: 3
+            FlywheelLevel.LEVEL_3: 3,
         }
 
     def get_or_create_state(self, user_id: str) -> UserFlywheelState:
@@ -111,10 +114,7 @@ class FlywheelTracker:
         return self.user_states[user_id]
 
     def record_scenario_completion(
-        self,
-        user_id: str,
-        scenario_id: str,
-        business_type: BusinessType
+        self, user_id: str, scenario_id: str, business_type: BusinessType
     ) -> UserFlywheelState:
         """
         记录场景完成事件
@@ -177,8 +177,7 @@ class FlywheelTracker:
         ds.content_quality = min(content_scenarios * 15 + 20, 100)
 
         ds.audience_growth = min(
-            (state.active_days * 5) + (state.total_scenarios_completed * 3),
-            100
+            (state.active_days * 5) + (state.total_scenarios_completed * 3), 100
         )
 
         monetization_scenarios = sum(
@@ -219,14 +218,10 @@ class FlywheelTracker:
                 "suggested_actions": [
                     f"你已擅长{state.active_types[0].display_name if state.active_types else '当前领域'}",
                     "建议尝试：内容+电商（用内容引流，电商变现）",
-                    "或尝试：咨询+产品（将方法论转化为数字产品）"
+                    "或尝试：咨询+产品（将方法论转化为数字产品）",
                 ],
-                "benefits": [
-                    "收入来源多元化",
-                    "风险分散化",
-                    "技能复用率提升"
-                ],
-                "estimated_improvement": "+30% 综合效率"
+                "benefits": ["收入来源多元化", "风险分散化", "技能复用率提升"],
+                "estimated_improvement": "+30% 综合效率",
             },
             FlywheelLevel.LEVEL_2: {
                 "target_level": 3,
@@ -235,15 +230,15 @@ class FlywheelTracker:
                 "suggested_actions": [
                     f"当前组合: {', '.join([bt.display_name for bt in state.active_types])}",
                     "建议添加第三种能力以形成闭环",
-                    "例如：内容→产品→服务 的完整价值链"
+                    "例如：内容→产品→服务 的完整价值链",
                 ],
                 "benefits": [
                     "构建竞争壁垒",
                     "客户终身价值最大化",
-                    "品牌影响力指数级增长"
+                    "品牌影响力指数级增长",
                 ],
-                "estimated_improvement": "+80% 商业价值"
-            }
+                "estimated_improvement": "+80% 商业价值",
+            },
         }
 
         level_key = state.current_level
@@ -253,7 +248,7 @@ class FlywheelTracker:
             suggestion["current_state"] = {
                 "level": state.current_level.value,
                 "active_types": [bt.value for bt in state.active_types],
-                "health_score": state.dimension_scores.overall_score()
+                "health_score": state.dimension_scores.overall_score(),
             }
 
         return suggestion
@@ -271,39 +266,32 @@ class FlywheelTracker:
             "report_generated_at": datetime.now().isoformat(),
             "user_id": user_id,
             "current_status": state.to_dict(),
-
             "level_progression": {
                 "current_level": state.current_level.value,
                 "level_name": self._get_level_name(state.current_level),
                 "next_level": min(state.current_level.value + 1, 3),
                 "progress_to_next": self._calculate_level_progress(state),
-
                 "level_descriptions": {
                     1: "单一业务类型 - 专注深耕一个领域",
                     2: "双类型组合 - 开始探索协同效应",
-                    3: "全生态系统 - 多元化商业闭环"
-                }
+                    3: "全生态系统 - 多元化商业闭环",
+                },
             },
-
             "dimension_analysis": {
                 "scores": state.dimension_scores.to_dict(),
                 "strengths": self._identify_strengths(state),
                 "weaknesses": self._identify_weaknesses(state),
-                "recommendations": self._generate_recommendations(state)
+                "recommendations": self._generate_recommendations(state),
             },
-
             "activity_summary": {
                 "total_scenarios": state.total_scenarios_completed,
                 "active_days": state.active_days,
                 "scenarios_by_type": self._get_scenarios_by_type(state),
-                "most_used_scenario": self._get_most_used_scenario(state)
+                "most_used_scenario": self._get_most_used_scenario(state),
             },
-
             "upgrade_path": self.get_upgrade_suggestion(user_id),
-
             "achievements": self._check_achievements(state),
-
-            "tips": self._generate_tips(state)
+            "tips": self._generate_tips(state),
         }
 
         return report
@@ -312,7 +300,7 @@ class FlywheelTracker:
         names = {
             FlywheelLevel.LEVEL_1: "探索者",
             FlywheelLevel.LEVEL_2: "连接者",
-            FlywheelLevel.LEVEL_3: "生态构建者"
+            FlywheelLevel.LEVEL_3: "生态构建者",
         }
         return names.get(level, "未知")
 
@@ -387,14 +375,12 @@ class FlywheelTracker:
 
         if state.total_scenarios_completed < 5:
             recommendations.append(
-                "建议增加使用频率：每周至少完成3个场景任务\n"
-                "   以快速积累经验和数据"
+                "建议增加使用频率：每周至少完成3个场景任务\n" "   以快速积累经验和数据"
             )
 
         if state.active_days < 7:
             recommendations.append(
-                "保持连续活跃：连续7天使用可解锁'坚持者'成就\n"
-                "   并获得维度得分加成"
+                "保持连续活跃：连续7天使用可解锁'坚持者'成就\n" "   并获得维度得分加成"
             )
 
         return recommendations[:3]
@@ -409,14 +395,11 @@ class FlywheelTracker:
             BusinessType.AI_TOOL_BUILDER: ["feedback_analysis"],
             BusinessType.CONSULTANT: ["consulting_proposal"],
             BusinessType.ECOMMERCE: ["ecommerce_ops"],
-            BusinessType.CREATIVE_WORK: ["project_deliverable"]
+            BusinessType.CREATIVE_WORK: ["project_deliverable"],
         }
 
         for btype, scenarios in type_scenario_map.items():
-            count = sum(
-                state.scenario_completion_count.get(s, 0)
-                for s in scenarios
-            )
+            count = sum(state.scenario_completion_count.get(s, 0) for s in scenarios)
             if count > 0:
                 result[btype.value] = count
 
@@ -427,62 +410,71 @@ class FlywheelTracker:
         if not state.scenario_completion_count:
             return None
 
-        return max(
-            state.scenario_completion_count.items(),
-            key=lambda x: x[1]
-        )[0]
+        return max(state.scenario_completion_count.items(), key=lambda x: x[1])[0]
 
     def _check_achievements(self, state: UserFlywheelState) -> List[Dict[str, Any]]:
         """检查成就解锁情况"""
         achievements = []
 
         if state.total_scenarios_completed >= 1:
-            achievements.append({
-                "id": "first_step",
-                "name": "第一步",
-                "description": "完成第一个场景任务",
-                "unlocked_at": state.created_at
-            })
+            achievements.append(
+                {
+                    "id": "first_step",
+                    "name": "第一步",
+                    "description": "完成第一个场景任务",
+                    "unlocked_at": state.created_at,
+                }
+            )
 
         if state.total_scenarios_completed >= 10:
-            achievements.append({
-                "id": "active_user",
-                "name": "活跃用户",
-                "description": "累计完成10个场景任务",
-                "unlocked_at": state.updated_at
-            })
+            achievements.append(
+                {
+                    "id": "active_user",
+                    "name": "活跃用户",
+                    "description": "累计完成10个场景任务",
+                    "unlocked_at": state.updated_at,
+                }
+            )
 
         if len(state.active_types) >= 2:
-            achievements.append({
-                "id": "cross_discipline",
-                "name": "跨界探索者",
-                "description": "激活2种以上业务类型",
-                "unlocked_at": state.updated_at
-            })
+            achievements.append(
+                {
+                    "id": "cross_discipline",
+                    "name": "跨界探索者",
+                    "description": "激活2种以上业务类型",
+                    "unlocked_at": state.updated_at,
+                }
+            )
 
         if len(state.active_types) >= 3:
-            achievements.append({
-                "id": "ecosystem_builder",
-                "name": "生态构建者",
-                "description": "激活3种以上业务类型",
-                "unlocked_at": state.updated_at
-            })
+            achievements.append(
+                {
+                    "id": "ecosystem_builder",
+                    "name": "生态构建者",
+                    "description": "激活3种以上业务类型",
+                    "unlocked_at": state.updated_at,
+                }
+            )
 
         if state.active_days >= 7:
-            achievements.append({
-                "id": "weekly_streak",
-                "name": "周常用户",
-                "description": "连续7天保持活跃",
-                "unlocked_at": state.updated_at
-            })
+            achievements.append(
+                {
+                    "id": "weekly_streak",
+                    "name": "周常用户",
+                    "description": "连续7天保持活跃",
+                    "unlocked_at": state.updated_at,
+                }
+            )
 
         if state.dimension_scores.overall_score() >= 80:
-            achievements.append({
-                "id": "high_performer",
-                "name": "高绩效者",
-                "description": "飞轮健康度达到80分以上",
-                "unlocked_at": state.updated_at
-            })
+            achievements.append(
+                {
+                    "id": "high_performer",
+                    "name": "高绩效者",
+                    "description": "飞轮健康度达到80分以上",
+                    "unlocked_at": state.updated_at,
+                }
+            )
 
         return achievements
 
@@ -491,20 +483,16 @@ class FlywheelTracker:
         tips = []
 
         tips.append(
-            "💡 飞轮效应：每增加一种业务类型，\n"
-            "   你的综合效率会呈指数级增长！"
+            "💡 飞轮效应：每增加一种业务类型，\n" "   你的综合效率会呈指数级增长！"
         )
 
         if state.current_level.value < 3:
             tips.append(
-                "🎯 下一步目标：激活第{}种业务类型".format(
-                    len(state.active_types) + 1
-                )
+                "🎯 下一步目标：激活第{}种业务类型".format(len(state.active_types) + 1)
             )
 
         tips.append(
-            "📈 数据驱动：定期查看你的飞轮报告，\n"
-            "   了解哪些维度需要重点投入"
+            "📈 数据驱动：定期查看你的飞轮报告，\n" "   了解哪些维度需要重点投入"
         )
 
         return tips
@@ -514,10 +502,7 @@ class FlywheelTracker:
         total_users = len(self.user_states)
 
         if total_users == 0:
-            return {
-                "total_users": 0,
-                "message": "暂无用户数据"
-            }
+            return {"total_users": 0, "message": "暂无用户数据"}
 
         level_distribution = {1: 0, 2: 0, 3: 0}
         avg_health = 0.0
@@ -536,7 +521,7 @@ class FlywheelTracker:
             "average_health_score": avg_health,
             "total_scenarios_completed": total_scenarios,
             "most_common_level": max(level_distribution.items(), key=lambda x: x[1])[0],
-            "generated_at": datetime.now().isoformat()
+            "generated_at": datetime.now().isoformat(),
         }
 
 
@@ -568,7 +553,9 @@ if __name__ == "__main__":
 
         print(f"[{i}] {desc}")
         print(f"    场景: {scenario} | 类型: {btype.value}")
-        print(f"    等级: Lv.{state.current_level.value} ({level_name}) | 健康: {health}分")
+        print(
+            f"    等级: Lv.{state.current_level.value} ({level_name}) | 健康: {health}分"
+        )
         print(f"    已激活类型: {[bt.display_name for bt in state.active_types]}")
         print()
 
@@ -579,13 +566,14 @@ if __name__ == "__main__":
     report = tracker.generate_flywheel_report(test_user)
 
     import json
+
     print(json.dumps(report, indent=2, ensure_ascii=False, default=str))
 
 
 class FlywheelTrackerDB(FlywheelTracker):
     """
     支持数据库持久化的飞轮追踪器 (Phase 3)
-    
+
     继承原有 FlywheelTracker 的所有功能，同时将数据持久化到数据库。
     向后兼容：无 db_session 时退化为内存模式。
     """
@@ -601,15 +589,18 @@ class FlywheelTrackerDB(FlywheelTracker):
             return None
 
         from db_models.models import FlywheelState as DBFlywheelState
-        db_state = self.db_session.query(DBFlywheelState).filter(
-            DBFlywheelState.user_id == user_id
-        ).first()
+
+        db_state = (
+            self.db_session.query(DBFlywheelState)
+            .filter(DBFlywheelState.user_id == user_id)
+            .first()
+        )
         return db_state
 
     def _db_state_to_user_flywheel(self, db_state) -> UserFlywheelState:
         """将数据库记录转换为 UserFlywheelState 对象"""
         active_types = []
-        for t in (db_state.active_types or []):
+        for t in db_state.active_types or []:
             try:
                 active_types.append(BusinessType(t))
             except ValueError:
@@ -643,9 +634,11 @@ class FlywheelTrackerDB(FlywheelTracker):
 
         from db_models.models import FlywheelState as DBFlywheelState
 
-        db_state = self.db_session.query(DBFlywheelState).filter(
-            DBFlywheelState.user_id == state.user_id
-        ).first()
+        db_state = (
+            self.db_session.query(DBFlywheelState)
+            .filter(DBFlywheelState.user_id == state.user_id)
+            .first()
+        )
 
         if not db_state:
             db_state = DBFlywheelState(user_id=state.user_id)
@@ -682,10 +675,7 @@ class FlywheelTrackerDB(FlywheelTracker):
         return super().get_or_create_state(user_id)
 
     def record_scenario_completion(
-        self,
-        user_id: str,
-        scenario_id: str,
-        business_type: BusinessType
+        self, user_id: str, scenario_id: str, business_type: BusinessType
     ) -> UserFlywheelState:
         """记录场景完成事件（自动持久化到数据库）"""
         state = super().record_scenario_completion(user_id, scenario_id, business_type)

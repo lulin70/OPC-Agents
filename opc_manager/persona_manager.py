@@ -17,6 +17,7 @@ from opc_manager.business_types import BusinessType
 @dataclass
 class PersonaConfig:
     """人格配置数据类"""
+
     variant_id: str
     display_name: str
     emoji: str
@@ -59,7 +60,7 @@ class PersonaConfig:
             "vocabulary": self.vocabulary,
             "dialogue_templates": self.dialogue_templates,
             "proactive_rules": self.proactive_rules,
-            "response_patterns": self.response_patterns
+            "response_patterns": self.response_patterns,
         }
 
 
@@ -85,7 +86,7 @@ class PersonaManager:
             config_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
                 "config",
-                "persona_variants.yaml"
+                "persona_variants.yaml",
             )
 
         self.config_path = config_path
@@ -103,24 +104,26 @@ class PersonaManager:
             return
 
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
-            self.base_persona = config.get('base_persona', {})
-            variants_raw = config.get('variants', {})
+            self.base_persona = config.get("base_persona", {})
+            variants_raw = config.get("variants", {})
 
             for variant_id, variant_config in variants_raw.items():
                 self.variants[variant_id] = PersonaConfig(
                     variant_id=variant_id,
-                    display_name=variant_config.get('display_name', variant_id),
-                    emoji=variant_config.get('emoji', '🤖'),
-                    target_business_type=variant_config.get('target_business_type', ''),
-                    style_overrides=variant_config.get('style_overrides', {}),
-                    expertise_tags=variant_config.get('expertise_tags', []),
-                    vocabulary=variant_config.get('vocabulary', {'domain_specific': [], 'forbidden': []}),
-                    dialogue_templates=variant_config.get('dialogue_templates', {}),
-                    proactive_rules=variant_config.get('proactive_rules', []),
-                    response_patterns=variant_config.get('response_patterns', {})
+                    display_name=variant_config.get("display_name", variant_id),
+                    emoji=variant_config.get("emoji", "🤖"),
+                    target_business_type=variant_config.get("target_business_type", ""),
+                    style_overrides=variant_config.get("style_overrides", {}),
+                    expertise_tags=variant_config.get("expertise_tags", []),
+                    vocabulary=variant_config.get(
+                        "vocabulary", {"domain_specific": [], "forbidden": []}
+                    ),
+                    dialogue_templates=variant_config.get("dialogue_templates", {}),
+                    proactive_rules=variant_config.get("proactive_rules", []),
+                    response_patterns=variant_config.get("response_patterns", {}),
                 )
 
             print(f"[PersonaManager] 成功加载 {len(self.variants)} 个人格变体")
@@ -137,7 +140,7 @@ class PersonaManager:
         self.base_persona = {
             "name": "总裁办秘书",
             "version": "2.1.0",
-            "core_principles": ["凡事有交代", "主动不被动", "结果导向"]
+            "core_principles": ["凡事有交代", "主动不被动", "结果导向"],
         }
 
         self.variants["content_creator"] = PersonaConfig(
@@ -151,17 +154,17 @@ class PersonaManager:
             dialogue_templates={
                 "greeting": "嗨！今天有什么想法？💡",
                 "accept_task": "收到！我来帮你处理！",
-                "complete": "搞定啦！✨"
+                "complete": "搞定啦！✨",
             },
             proactive_rules=[],
-            response_patterns={}
+            response_patterns={},
         )
 
     def get_persona(
         self,
         user_id: str = None,
         business_type: BusinessType = None,
-        context: Dict[str, Any] = None
+        context: Dict[str, Any] = None,
     ) -> Optional[PersonaConfig]:
         """
         获取用户应使用的人格配置
@@ -204,7 +207,7 @@ class PersonaManager:
         self,
         user_id: str,
         new_business_type: BusinessType,
-        reason: str = "user_request"
+        reason: str = "user_request",
     ) -> bool:
         """
         切换用户的人格
@@ -217,10 +220,7 @@ class PersonaManager:
         Returns:
             bool: 是否切换成功
         """
-        new_persona = self.get_persona(
-            user_id=user_id,
-            business_type=new_business_type
-        )
+        new_persona = self.get_persona(user_id=user_id, business_type=new_business_type)
 
         if new_persona:
             old_persona = self._cache.get(user_id)
@@ -234,14 +234,13 @@ class PersonaManager:
 
             return True
         else:
-            print(f"[PersonaManager] 用户{user_id}人格切换失败：找不到{new_business_type.value}对应配置")
+            print(
+                f"[PersonaManager] 用户{user_id}人格切换失败：找不到{new_business_type.value}对应配置"
+            )
             return False
 
     def format_response(
-        self,
-        persona: PersonaConfig,
-        template_name: str,
-        **kwargs
+        self, persona: PersonaConfig, template_name: str, **kwargs
     ) -> str:
         """
         使用指定人格格式化响应
@@ -260,16 +259,21 @@ class PersonaManager:
         base_response = persona.get_template(template_name, **kwargs)
 
         style = persona.style_overrides
-        emoji_density = style.get('emoji_density', 'medium')
+        emoji_density = style.get("emoji_density", "medium")
 
-        if emoji_density == "high" and not any(c in base_response for c in ['💡', '🔥', '✨', '📊']):
-            emojis = ['✨', '💡', '🎯', '⚡', '🚀']
+        if emoji_density == "high" and not any(
+            c in base_response for c in ["💡", "🔥", "✨", "📊"]
+        ):
+            emojis = ["✨", "💡", "🎯", "⚡", "🚀"]
             import random
+
             base_response += f" {random.choice(emojis)}"
 
         return base_response
 
-    def get_greeting(self, user_id: str = None, business_type: BusinessType = None) -> str:
+    def get_greeting(
+        self, user_id: str = None, business_type: BusinessType = None
+    ) -> str:
         """获取问候语"""
         persona = self.get_persona(user_id=user_id, business_type=business_type)
         if persona:
@@ -280,7 +284,7 @@ class PersonaManager:
         self,
         user_id: str = None,
         business_type: BusinessType = None,
-        task_description: str = ""
+        task_description: str = "",
     ) -> str:
         """获取任务接受响应"""
         persona = self.get_persona(user_id=user_id, business_type=business_type)
@@ -292,7 +296,7 @@ class PersonaManager:
         self,
         user_id: str = None,
         business_type: BusinessType = None,
-        deliverable: str = "成果"
+        deliverable: str = "成果",
     ) -> str:
         """获取任务完成消息"""
         persona = self.get_persona(user_id=user_id, business_type=business_type)
@@ -304,14 +308,16 @@ class PersonaManager:
         """列出所有可用的人格变体"""
         result = []
         for variant_id, persona in self.variants.items():
-            result.append({
-                "id": variant_id,
-                "display_name": persona.display_name,
-                "emoji": persona.emoji,
-                "business_type": persona.target_business_type,
-                "expertise_tags_count": len(persona.expertise_tags),
-                "templates_count": len(persona.dialogue_templates)
-            })
+            result.append(
+                {
+                    "id": variant_id,
+                    "display_name": persona.display_name,
+                    "emoji": persona.emoji,
+                    "business_type": persona.target_business_type,
+                    "expertise_tags_count": len(persona.expertise_tags),
+                    "templates_count": len(persona.dialogue_templates),
+                }
+            )
         return result
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -322,7 +328,7 @@ class PersonaManager:
             "available_types": list(self.variants.keys()),
             "base_persona_name": self.base_persona.get("name", "Unknown"),
             "config_version": self.base_persona.get("version", "Unknown"),
-            "config_path": self.config_path
+            "config_path": self.config_path,
         }
 
     def clear_cache(self, user_id: str = None):
@@ -380,13 +386,19 @@ if __name__ == "__main__":
             greeting = manager.get_greeting(user_id=user_id, business_type=btype)
             print(f"问候语: {greeting}")
 
-            accept_msg = manager.get_task_acceptance(user_id=user_id, business_type=btype, task_description="测试任务")
+            accept_msg = manager.get_task_acceptance(
+                user_id=user_id, business_type=btype, task_description="测试任务"
+            )
             print(f"接受任务: {accept_msg}")
 
-            complete_msg = manager.get_completion_message(user_id=user_id, business_type=btype, deliverable="周内容日历")
+            complete_msg = manager.get_completion_message(
+                user_id=user_id, business_type=btype, deliverable="周内容日历"
+            )
             print(f"完成任务: {complete_msg}")
 
-            suggestion = manager.format_response(persona, "suggestion", suggestion="在周二发布效果更好")
+            suggestion = manager.format_response(
+                persona, "suggestion", suggestion="在周二发布效果更好"
+            )
             print(f"建议: {suggestion}")
         else:
             print("❌ 加载失败")
@@ -397,9 +409,13 @@ if __name__ == "__main__":
 
     test_user = "test_switch_user"
     manager.get_persona(user_id=test_user, business_type=BusinessType.CONTENT_CREATOR)
-    print(f"\n初始状态: {manager._cache.get(test_user).display_name if test_user in manager._cache else 'None'}")
+    print(
+        f"\n初始状态: {manager._cache.get(test_user).display_name if test_user in manager._cache else 'None'}"
+    )
 
-    success = manager.switch_persona(test_user, BusinessType.ECOMMERCE, reason="测试切换")
+    success = manager.switch_persona(
+        test_user, BusinessType.ECOMMERCE, reason="测试切换"
+    )
     print(f"切换结果: {'成功 ✅' if success else '失败 ❌'}")
 
     current = manager._cache.get(test_user)

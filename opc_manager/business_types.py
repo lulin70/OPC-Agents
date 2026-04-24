@@ -11,12 +11,12 @@ from enum import Enum
 class BusinessType(Enum):
     """6大业务类型枚举 - 对应一人公司六大类型"""
 
-    CONTENT_CREATOR = "content_creator"       # ① 内容创作
-    DIGITAL_PRODUCT = "digital_product"       # ② 数字产品
-    AI_TOOL_BUILDER = "ai_tool_builder"       # ③ AI工具
-    CONSULTANT = "consultant"                 # ④ 专业咨询
-    ECOMMERCE = "ecommerce"                   # ⑤ 电商运营
-    CREATIVE_WORK = "creative_work"           # ⑥ 创意生产
+    CONTENT_CREATOR = "content_creator"  # ① 内容创作
+    DIGITAL_PRODUCT = "digital_product"  # ② 数字产品
+    AI_TOOL_BUILDER = "ai_tool_builder"  # ③ AI工具
+    CONSULTANT = "consultant"  # ④ 专业咨询
+    ECOMMERCE = "ecommerce"  # ⑤ 电商运营
+    CREATIVE_WORK = "creative_work"  # ⑥ 创意生产
 
     @classmethod
     def get_all_types(cls) -> list:
@@ -40,7 +40,7 @@ class BusinessType(Enum):
             self.AI_TOOL_BUILDER: "AI工具开发者",
             self.CONSULTANT: "专业咨询师",
             self.ECOMMERCE: "电商运营者",
-            self.CREATIVE_WORK: "创意工作者"
+            self.CREATIVE_WORK: "创意工作者",
         }
         return names.get(self, self.value)
 
@@ -53,6 +53,6 @@ class BusinessType(Enum):
             self.AI_TOOL_BUILDER: "🤖",
             self.CONSULTANT: "💼",
             self.ECOMMERCE: "🛒",
-            self.CREATIVE_WORK: "🎨"
+            self.CREATIVE_WORK: "🎨",
         }
         return emojis.get(self, "📌")

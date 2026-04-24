@@ -1,4 +1,5 @@
 """LLM 服务层 - 多后端抽象与统一入口"""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
@@ -47,7 +48,9 @@ class LLMBackend(ABC):
     """LLM 后端抽象接口"""
 
     @abstractmethod
-    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+    async def complete(
+        self, prompt: str, system_prompt: Optional[str] = None
+    ) -> LLMResponse:
         pass
 
     @abstractmethod
@@ -70,12 +73,19 @@ class OpenAIBackend(LLMBackend):
         if self.client is None:
             try:
                 import openai
-                self.client = openai.AsyncOpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
+
+                self.client = openai.AsyncOpenAI(
+                    api_key=self.config.api_key, base_url=self.config.base_url
+                )
             except ImportError:
-                raise RuntimeError("openai package not installed. Run: pip install openai")
+                raise RuntimeError(
+                    "openai package not installed. Run: pip install openai"
+                )
         return self.client
 
-    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+    async def complete(
+        self, prompt: str, system_prompt: Optional[str] = None
+    ) -> LLMResponse:
         start = time.time()
         client = await self._get_client()
 
@@ -128,7 +138,9 @@ class OllamaBackend(LLMBackend):
         self.config = config
         self.base_url = config.base_url or "http://localhost:11434"
 
-    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
+    async def complete(
+        self, prompt: str, system_prompt: Optional[str] = None
+    ) -> LLMResponse:
         start = time.time()
         import httpx
 
@@ -139,7 +151,7 @@ class OllamaBackend(LLMBackend):
             "options": {
                 "temperature": self.config.temperature,
                 "num_predict": self.config.max_tokens,
-            }
+            },
         }
         if system_prompt:
             payload["system"] = system_prompt
@@ -157,13 +169,19 @@ class OllamaBackend(LLMBackend):
             usage={
                 "prompt_tokens": data.get("prompt_eval_count", 0),
                 "completion_tokens": data.get("eval_count", 0),
-                "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+                "total_tokens": data.get("prompt_eval_count", 0)
+                + data.get("eval_count", 0),
             },
-            latency_ms=latency_ms if "total_duration" not in data else data.get("total_duration", 0) / 1_000_000,
+            latency_ms=(
+                latency_ms
+                if "total_duration" not in data
+                else data.get("total_duration", 0) / 1_000_000
+            ),
         )
 
     def validate_config(self) -> bool:
         import httpx
+
         try:
             resp = httpx.get(f"{self.base_url}/api/tags", timeout=3)
             return resp.status_code == 200
@@ -239,22 +257,26 @@ class LLMService:
             backend_cls = OpenAIBackend
         return backend_cls(self.config)
 
-    async def detect_business_type_by_llm(self, user_input: str, history: list = None, max_retries: int = 2) -> dict:
+    async def detect_business_type_by_llm(
+        self, user_input: str, history: list = None, max_retries: int = 2
+    ) -> dict:
         """使用 LLM 进行业务类型检测
-        
+
         Args:
             user_input: 用户输入文本
             history: 对话历史（可选）
             max_retries: 最大重试次数
-            
+
         Returns:
             包含business_type, confidence, reasoning的字典
         """
         for attempt in range(max_retries + 1):
             try:
-                response = await self.backend.complete(user_input, self.DETECT_SYSTEM_PROMPT)
+                response = await self.backend.complete(
+                    user_input, self.DETECT_SYSTEM_PROMPT
+                )
                 self.usage_tracker.record("detect", response.usage, 0)
-                
+
                 # 清理响应内容（移除可能的markdown标记）
                 content = response.content.strip()
                 if content.startswith("```json"):
@@ -264,14 +286,14 @@ class LLMService:
                 if content.endswith("```"):
                     content = content[:-3]
                 content = content.strip()
-                
+
                 # 尝试解析JSON
                 parsed = json.loads(content)
-                
+
                 # 验证必需字段
                 if "business_type" not in parsed:
                     raise ValueError("Missing business_type field")
-                
+
                 return {
                     "business_type": parsed.get("business_type", "unknown"),
                     "confidence": float(parsed.get("confidence", 0.0)),
@@ -280,33 +302,41 @@ class LLMService:
                     "model": response.model,
                     "attempt": attempt + 1,
                 }
-                
+
             except json.JSONDecodeError as e:
-                logger.warning(f"JSON decode failed (attempt {attempt + 1}/{max_retries + 1}): {e}")
+                logger.warning(
+                    f"JSON decode failed (attempt {attempt + 1}/{max_retries + 1}): {e}"
+                )
                 if attempt == max_retries:
                     return {
                         "business_type": "unknown",
                         "confidence": 0.0,
                         "reasoning": f"LLM返回格式异常: {str(e)}",
-                        "raw_response": response.content if 'response' in locals() else None
+                        "raw_response": (
+                            response.content if "response" in locals() else None
+                        ),
                     }
                 # 重试前等待一小会儿
                 await asyncio.sleep(0.5)
-                
+
             except Exception as e:
-                logger.warning(f"LLM detection failed (attempt {attempt + 1}/{max_retries + 1}): {e}")
+                logger.warning(
+                    f"LLM detection failed (attempt {attempt + 1}/{max_retries + 1}): {e}"
+                )
                 if attempt == max_retries:
                     return {
                         "business_type": "unknown",
                         "confidence": 0.0,
-                        "reasoning": f"错误: {str(e)}"
+                        "reasoning": f"错误: {str(e)}",
                     }
                 await asyncio.sleep(0.5)
-        
+
         # 不应该到达这里
         return {"business_type": "unknown", "confidence": 0.0, "reasoning": "未知错误"}
 
-    async def generate_persona_response(self, user_input: str, persona_config: dict, context: dict = None) -> str:
+    async def generate_persona_response(
+        self, user_input: str, persona_config: dict, context: dict = None
+    ) -> str:
         """基于人格配置生成风格化回复"""
         tone = persona_config.get("style_overrides", {}).get("tone", "专业温暖")
         expertise_list = persona_config.get("expertise_tags", [])
@@ -329,7 +359,9 @@ class LLMService:
 
     def switch_provider(self, new_provider: LLMProvider, **overrides):
         """动态切换 LLM 后端"""
-        new_config = LLMConfig(**{**self.config.__dict__, "provider": new_provider, **overrides})
+        new_config = LLMConfig(
+            **{**self.config.__dict__, "provider": new_provider, **overrides}
+        )
         self.backend = self._create_backend(new_provider)
         self.config = new_config
 

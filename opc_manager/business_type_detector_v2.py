@@ -21,6 +21,7 @@ from opc_manager.business_types import BusinessType
 @dataclass
 class DetectionResult:
     """检测结果"""
+
     business_type: BusinessType
     confidence: float
     method: str  # "pattern_match", "keyword_match", "profile_inference", "history_analysis", "llm_assisted", "default"
@@ -65,10 +66,7 @@ class BusinessTypeDetectorV2:
         self.confidence_threshold = 0.12  # 降低阈值以捕获更多信号
         self.enable_llm = enable_llm
         self.llm_service = llm_service  # Phase 3: 外部注入的LLM服务
-        self._stats = {
-            "total_detections": 0,
-            "method_distribution": {}
-        }
+        self._stats = {"total_detections": 0, "method_distribution": {}}
 
     def _init_keyword_database_v2(self) -> Dict[BusinessType, Dict[str, Any]]:
         """
@@ -86,219 +84,532 @@ class BusinessTypeDetectorV2:
                 "emoji": "✍️",
                 "weight": 1.6,
                 "primary_keywords": [
-                    "内容", "创作", "写作", "文章", "博客", "公众号",
-                    "小红书", "抖音", "视频", "直播", "UP主", "博主",
-                    "粉丝", "涨粉", "爆款", "选题", "日历", "排期",
-                    "种草", "完播率", "互动率", "阅读量", "10万+",
-                    "流量", "变现", "广告", "品牌合作", "MCN",
-                    "笔记", "图文", "短视频", "中视频", "长视频",
-                    "投流", "达人", "KOL", "KOC", "矩阵"
+                    "内容",
+                    "创作",
+                    "写作",
+                    "文章",
+                    "博客",
+                    "公众号",
+                    "小红书",
+                    "抖音",
+                    "视频",
+                    "直播",
+                    "UP主",
+                    "博主",
+                    "粉丝",
+                    "涨粉",
+                    "爆款",
+                    "选题",
+                    "日历",
+                    "排期",
+                    "种草",
+                    "完播率",
+                    "互动率",
+                    "阅读量",
+                    "10万+",
+                    "流量",
+                    "变现",
+                    "广告",
+                    "品牌合作",
+                    "MCN",
+                    "笔记",
+                    "图文",
+                    "短视频",
+                    "中视频",
+                    "长视频",
+                    "投流",
+                    "达人",
+                    "KOL",
+                    "KOC",
+                    "矩阵",
                 ],
                 "secondary_keywords": [
-                    "发布", "更新", "推送", "素材", "文案",
-                    "标题", "封面", "脚本", "拍摄", "剪辑",
-                    "平台", "算法", "推荐", "热搜", "话题",
-                    "点赞", "评论", "转发", "收藏", "分享",
-                    "粉丝画像", "用户画像", "账号运营"
+                    "发布",
+                    "更新",
+                    "推送",
+                    "素材",
+                    "文案",
+                    "标题",
+                    "封面",
+                    "脚本",
+                    "拍摄",
+                    "剪辑",
+                    "平台",
+                    "算法",
+                    "推荐",
+                    "热搜",
+                    "话题",
+                    "点赞",
+                    "评论",
+                    "转发",
+                    "收藏",
+                    "分享",
+                    "粉丝画像",
+                    "用户画像",
+                    "账号运营",
                 ],
                 "context_phrases": [
-                    "帮我写一篇", "下周发什么", "内容规划",
-                    "粉丝画像", "多平台", "矩阵运营",
-                    "我的小红书", "我的抖音", "涨粉技巧"
+                    "帮我写一篇",
+                    "下周发什么",
+                    "内容规划",
+                    "粉丝画像",
+                    "多平台",
+                    "矩阵运营",
+                    "我的小红书",
+                    "我的抖音",
+                    "涨粉技巧",
                 ],
                 "synonyms": {
                     "内容创作": ["自媒体", "新媒体", "内容生产"],
                     "爆款": ["爆文", "热门", " viral"],
-                    "粉丝": ["关注者", "订阅者", "读者"]
+                    "粉丝": ["关注者", "订阅者", "读者"],
                 },
                 "domain_phrases": [
-                    "选题库", "热点追踪", "内容分发", "流量池",
-                    "私域流量", "公域流量", "账号权重", "垂直度"
-                ]
+                    "选题库",
+                    "热点追踪",
+                    "内容分发",
+                    "流量池",
+                    "私域流量",
+                    "公域流量",
+                    "账号权重",
+                    "垂直度",
+                ],
             },
-
             BusinessType.DIGITAL_PRODUCT: {
                 "name": "数字产品开发者",
                 "emoji": "💰",
                 "weight": 1.4,
                 "primary_keywords": [
-                    "数字产品", "知识付费", "课程", "电子书", "模板",
-                    "小报童", "Gumroad", "Teachable", "产品上架",
-                    "定价", "销售页", "landing page", "漏斗",
-                    "付费用户", "订阅", "会员", "社群", "知识星球",
-                    "专栏", "训练营", "SaaS", "工具", "插件",
-                    "Notion模板", "Excel模板", "PPT模板",
-                    "付费阅读", "付费社群", "会员制"
+                    "数字产品",
+                    "知识付费",
+                    "课程",
+                    "电子书",
+                    "模板",
+                    "小报童",
+                    "Gumroad",
+                    "Teachable",
+                    "产品上架",
+                    "定价",
+                    "销售页",
+                    "landing page",
+                    "漏斗",
+                    "付费用户",
+                    "订阅",
+                    "会员",
+                    "社群",
+                    "知识星球",
+                    "专栏",
+                    "训练营",
+                    "SaaS",
+                    "工具",
+                    "插件",
+                    "Notion模板",
+                    "Excel模板",
+                    "PPT模板",
+                    "付费阅读",
+                    "付费社群",
+                    "会员制",
                 ],
                 "secondary_keywords": [
-                    "售卖", "收入", "营收", "转化率", "客单价",
-                    "复购", "续费", "退款", "评价", "评分",
-                    "产品包装", "USP", "卖点", "价值主张",
-                    "预售", "早鸟价", "限时优惠", "满减"
+                    "售卖",
+                    "收入",
+                    "营收",
+                    "转化率",
+                    "客单价",
+                    "复购",
+                    "续费",
+                    "退款",
+                    "评价",
+                    "评分",
+                    "产品包装",
+                    "USP",
+                    "卖点",
+                    "价值主张",
+                    "预售",
+                    "早鸟价",
+                    "限时优惠",
+                    "满减",
                 ],
                 "context_phrases": [
-                    "我要卖", "如何定价", "写销售页",
-                    "产品发布", "上线", "推广课程",
-                    "在Gumroad上", "在Teachable上", "知识变现"
+                    "我要卖",
+                    "如何定价",
+                    "写销售页",
+                    "产品发布",
+                    "上线",
+                    "推广课程",
+                    "在Gumroad上",
+                    "在Teachable上",
+                    "知识变现",
                 ],
                 "synonyms": {
                     "数字产品": ["虚拟产品", "信息产品", "在线课程"],
                     "知识付费": ["知识变现", "付费内容", "付费社群"],
-                    "销售页": ["落地页", "Landing Page", "详情页"]
+                    "销售页": ["落地页", "Landing Page", "详情页"],
                 },
                 "domain_phrases": [
-                    "价值阶梯", "后端销售", "Upsell", "Cross-sell",
-                    "客户终身价值", "LTV", "CAC", "MRR", "ARR"
-                ]
+                    "价值阶梯",
+                    "后端销售",
+                    "Upsell",
+                    "Cross-sell",
+                    "客户终身价值",
+                    "LTV",
+                    "CAC",
+                    "MRR",
+                    "ARR",
+                ],
             },
-
             BusinessType.AI_TOOL_BUILDER: {
                 "name": "AI工具开发者",
                 "emoji": "🤖",
                 "weight": 1.5,
                 "primary_keywords": [
-                    "AI工具", "人工智能", "API", "GPT", "LLM",
-                    "ChatGPT", "Claude", "模型", "训练", "微调",
-                    "应用", "插件", "扩展", "Agent", "智能助手",
-                    "自动化", "代码", "开源", "GitHub", "部署",
-                    "用户反馈", "评论", "Issues", "PR", "版本",
-                    "功能", "迭代", "路线图", "roadmap",
-                    "SDK", "Latency", "Throughput", "Scalability",
-                    "Tech Debt", "Refactor", "Deploy", "CI/CD"
+                    "AI工具",
+                    "人工智能",
+                    "API",
+                    "GPT",
+                    "LLM",
+                    "ChatGPT",
+                    "Claude",
+                    "模型",
+                    "训练",
+                    "微调",
+                    "应用",
+                    "插件",
+                    "扩展",
+                    "Agent",
+                    "智能助手",
+                    "自动化",
+                    "代码",
+                    "开源",
+                    "GitHub",
+                    "部署",
+                    "用户反馈",
+                    "评论",
+                    "Issues",
+                    "PR",
+                    "版本",
+                    "功能",
+                    "迭代",
+                    "路线图",
+                    "roadmap",
+                    "SDK",
+                    "Latency",
+                    "Throughput",
+                    "Scalability",
+                    "Tech Debt",
+                    "Refactor",
+                    "Deploy",
+                    "CI/CD",
                 ],
                 "secondary_keywords": [
-                    "技术文档", "SDK", "集成", "接口", "Token",
-                    "调用", "延迟", "性能", "优化", "Bug",
-                    "Feature Request", "Changelog", "Release",
-                    "Docker", "Kubernetes", "Microservice", "RESTful",
-                    "GraphQL", "Webhook", "Rate Limiting", "Caching"
+                    "技术文档",
+                    "SDK",
+                    "集成",
+                    "接口",
+                    "Token",
+                    "调用",
+                    "延迟",
+                    "性能",
+                    "优化",
+                    "Bug",
+                    "Feature Request",
+                    "Changelog",
+                    "Release",
+                    "Docker",
+                    "Kubernetes",
+                    "Microservice",
+                    "RESTful",
+                    "GraphQL",
+                    "Webhook",
+                    "Rate Limiting",
+                    "Caching",
                 ],
                 "context_phrases": [
-                    "我的工具", "用户说", "App Store评论",
-                    "GitHub Issues", "新功能", "版本更新",
-                    "我的API", "我的应用", "我的产品"
+                    "我的工具",
+                    "用户说",
+                    "App Store评论",
+                    "GitHub Issues",
+                    "新功能",
+                    "版本更新",
+                    "我的API",
+                    "我的应用",
+                    "我的产品",
                 ],
                 "synonyms": {
                     "AI工具": ["人工智能应用", "智能软件", "AI产品"],
                     "API": ["接口", "SDK", "开发包"],
-                    "部署": ["上线", "发布", "发布到生产环境"]
+                    "部署": ["上线", "发布", "发布到生产环境"],
                 },
                 "domain_phrases": [
-                    "RICE评分", "MoSCoW法则", "Kano模型", "OKR",
-                    "Agile", "Scrum", "Code Review", "TDD",
-                    "单元测试", "集成测试", "端到端测试"
-                ]
+                    "RICE评分",
+                    "MoSCoW法则",
+                    "Kano模型",
+                    "OKR",
+                    "Agile",
+                    "Scrum",
+                    "Code Review",
+                    "TDD",
+                    "单元测试",
+                    "集成测试",
+                    "端到端测试",
+                ],
             },
-
             BusinessType.CONSULTANT: {
                 "name": "专业咨询师",
                 "emoji": "💼",
                 "weight": 1.3,
                 "primary_keywords": [
-                    "咨询", "顾问", "提案", "建议书", "方案",
-                    "客户", "项目", "服务", "专业", "专家",
-                    "战略", "规划", "分析", "研究", "报告",
-                    "演示", "汇报", "PPT", "交付物", "合同",
-                    "报价", "费用", "时薪", "按项目", "retainer",
-                    "方法论", "框架", "SWOT", "PESTEL",
-                    "商业模式画布", "价值链分析"
+                    "咨询",
+                    "顾问",
+                    "提案",
+                    "建议书",
+                    "方案",
+                    "客户",
+                    "项目",
+                    "服务",
+                    "专业",
+                    "专家",
+                    "战略",
+                    "规划",
+                    "分析",
+                    "研究",
+                    "报告",
+                    "演示",
+                    "汇报",
+                    "PPT",
+                    "交付物",
+                    "合同",
+                    "报价",
+                    "费用",
+                    "时薪",
+                    "按项目",
+                    "retainer",
+                    "方法论",
+                    "框架",
+                    "SWOT",
+                    "PESTEL",
+                    "商业模式画布",
+                    "价值链分析",
                 ],
                 "secondary_keywords": [
-                    "行业", "市场", "竞争", "痛点", "需求",
-                    "解决方案", "最佳实践", "案例", "经验", "洞察",
-                    "利益相关者", "Stakeholder", "里程碑", "KPI",
-                    "ROI", "投资回报", "验收标准"
+                    "行业",
+                    "市场",
+                    "竞争",
+                    "痛点",
+                    "需求",
+                    "解决方案",
+                    "最佳实践",
+                    "案例",
+                    "经验",
+                    "洞察",
+                    "利益相关者",
+                    "Stakeholder",
+                    "里程碑",
+                    "KPI",
+                    "ROI",
+                    "投资回报",
+                    "验收标准",
                 ],
                 "context_phrases": [
-                    "我的客户", "给客户写", "咨询项目",
-                    "服务报价", "专业建议",
-                    "客户要做", "帮客户", "为甲方"
+                    "我的客户",
+                    "给客户写",
+                    "咨询项目",
+                    "服务报价",
+                    "专业建议",
+                    "客户要做",
+                    "帮客户",
+                    "为甲方",
                 ],
                 "synonyms": {
                     "咨询": ["顾问服务", "专业服务", "咨询服务"],
                     "提案": ["建议书", "方案书", "Project Proposal"],
-                    "报价": ["费用估算", "价格方案", "Quotation"]
+                    "报价": ["费用估算", "价格方案", "Quotation"],
                 },
                 "domain_phrases": [
-                    "SMART原则", "RACI矩阵", "PDCA循环",
-                    "五力模型", "BCG矩阵", "安索夫矩阵",
-                    "价值主张设计", "精益画布"
-                ]
+                    "SMART原则",
+                    "RACI矩阵",
+                    "PDCA循环",
+                    "五力模型",
+                    "BCG矩阵",
+                    "安索夫矩阵",
+                    "价值主张设计",
+                    "精益画布",
+                ],
             },
-
             BusinessType.ECOMMERCE: {
                 "name": "电商运营者",
                 "emoji": "🛒",
                 "weight": 1.4,
                 "primary_keywords": [
-                    "电商", "淘宝", "天猫", "京东", "拼多多",
-                    "店铺", "商品", "SKU", "库存", "订单",
-                    "发货", "物流", "快递", "GMV", "销售额",
-                    "转化率", "客单价", "访客", "UV", "PV",
-                    "直通车", "钻展", "促销", "活动", "双十一",
-                    "618", "直播带货", "供应链", "选品",
-                    "DSR", "动销率", "复购率", "退货率",
-                    "问大家", "好评率", "发货时效"
+                    "电商",
+                    "淘宝",
+                    "天猫",
+                    "京东",
+                    "拼多多",
+                    "店铺",
+                    "商品",
+                    "SKU",
+                    "库存",
+                    "订单",
+                    "发货",
+                    "物流",
+                    "快递",
+                    "GMV",
+                    "销售额",
+                    "转化率",
+                    "客单价",
+                    "访客",
+                    "UV",
+                    "PV",
+                    "直通车",
+                    "钻展",
+                    "促销",
+                    "活动",
+                    "双十一",
+                    "618",
+                    "直播带货",
+                    "供应链",
+                    "选品",
+                    "DSR",
+                    "动销率",
+                    "复购率",
+                    "退货率",
+                    "问大家",
+                    "好评率",
+                    "发货时效",
                 ],
                 "secondary_keywords": [
-                    "详情页", "主图", "标题优化", "SEO",
-                    "评价", "退款", "售后", "客服", "旺信",
-                    "聚划算", "秒杀", "满减", "优惠券", "红包",
-                    "达人带货", "直播间", "品销宝", "超级推荐"
+                    "详情页",
+                    "主图",
+                    "标题优化",
+                    "SEO",
+                    "评价",
+                    "退款",
+                    "售后",
+                    "客服",
+                    "旺信",
+                    "聚划算",
+                    "秒杀",
+                    "满减",
+                    "优惠券",
+                    "红包",
+                    "达人带货",
+                    "直播间",
+                    "品销宝",
+                    "超级推荐",
                 ],
                 "context_phrases": [
-                    "我的店铺", "商品上架", "活动报名",
-                    "库存预警", "订单处理",
-                    "我的淘宝店", "我的京东店", "在拼多多上"
+                    "我的店铺",
+                    "商品上架",
+                    "活动报名",
+                    "库存预警",
+                    "订单处理",
+                    "我的淘宝店",
+                    "我的京东店",
+                    "在拼多多上",
                 ],
                 "synonyms": {
                     "电商": ["网店", "线上店铺", "电子商务"],
                     "店铺": ["旗舰店", "专营店", "专卖店"],
-                    "选品": ["商品开发", "产品开发", "Product Sourcing"]
+                    "选品": ["商品开发", "产品开发", "Product Sourcing"],
                 },
                 "domain_phrases": [
-                    "引力魔方", "生意参谋", "数据银行",
-                    "人群画像", "投放ROI", "点击率(CTR)",
-                    "收藏加购率", "转化漏斗"
-                ]
+                    "引力魔方",
+                    "生意参谋",
+                    "数据银行",
+                    "人群画像",
+                    "投放ROI",
+                    "点击率(CTR)",
+                    "收藏加购率",
+                    "转化漏斗",
+                ],
             },
-
             BusinessType.CREATIVE_WORK: {
                 "name": "创意工作者",
                 "emoji": "🎨",
                 "weight": 1.3,
                 "primary_keywords": [
-                    "设计", "创意", "作品", "交付", "客户",
-                    "UI", "UX", "平面", "品牌", "logo",
-                    "插画", "摄影", "视频制作", "剪辑",
-                    "作品集", "portfolio", "提案", "样机",
-                    "Figma", "Sketch", "Photoshop", "AI绘画",
-                    "Midjourney", "Stable Diffusion", "DALL-E",
-                    "排版", "配色", "字体", "图标", "视觉",
-                    "品牌VI", "包装设计", "海报", "H5页面"
+                    "设计",
+                    "创意",
+                    "作品",
+                    "交付",
+                    "客户",
+                    "UI",
+                    "UX",
+                    "平面",
+                    "品牌",
+                    "logo",
+                    "插画",
+                    "摄影",
+                    "视频制作",
+                    "剪辑",
+                    "作品集",
+                    "portfolio",
+                    "提案",
+                    "样机",
+                    "Figma",
+                    "Sketch",
+                    "Photoshop",
+                    "AI绘画",
+                    "Midjourney",
+                    "Stable Diffusion",
+                    "DALL-E",
+                    "排版",
+                    "配色",
+                    "字体",
+                    "图标",
+                    "视觉",
+                    "品牌VI",
+                    "包装设计",
+                    "海报",
+                    "H5页面",
                 ],
                 "secondary_keywords": [
-                    "视觉", "配色", "排版", "字体", "图标",
-                    "原型", "交互", "动效", "渲染",
-                    "素材", "版权", "商用", "授权",
-                    "样机", "Mockup", "Design System", "Style Guide"
+                    "视觉",
+                    "配色",
+                    "排版",
+                    "字体",
+                    "图标",
+                    "原型",
+                    "交互",
+                    "动效",
+                    "渲染",
+                    "素材",
+                    "版权",
+                    "商用",
+                    "授权",
+                    "样机",
+                    "Mockup",
+                    "Design System",
+                    "Style Guide",
                 ],
                 "context_phrases": [
-                    "设计稿", "效果图", "客户反馈",
-                    "作品集整理", "创意方案",
-                    "我的设计", "帮做个logo", "设计个海报"
+                    "设计稿",
+                    "效果图",
+                    "客户反馈",
+                    "作品集整理",
+                    "创意方案",
+                    "我的设计",
+                    "帮做个logo",
+                    "设计个海报",
                 ],
                 "synonyms": {
                     "设计": ["Design", "视觉设计", "平面设计"],
                     "作品集": ["Portfolio", "案例集", "作品展示"],
-                    "交付": ["交付物", "Final Delivery", "终稿"]
+                    "交付": ["交付物", "Final Delivery", "终稿"],
                 },
                 "domain_phrases": [
-                    "极简主义", "孟菲斯风格", "赛博朋克",
-                    "日式禅意", "北欧风", "波普艺术",
-                    "扁平化", "新拟态", "玻璃拟态"
-                ]
-            }
+                    "极简主义",
+                    "孟菲斯风格",
+                    "赛博朋克",
+                    "日式禅意",
+                    "北欧风",
+                    "波普艺术",
+                    "扁平化",
+                    "新拟态",
+                    "玻璃拟态",
+                ],
+            },
         }
 
     def _init_pattern_database(self) -> Dict[BusinessType, List[str]]:
@@ -315,48 +626,43 @@ class BusinessTypeDetectorV2:
                 r".*?(涨粉|增粉|吸粉).*?",
                 r".*?(爆款|爆文|10万\+).*?",
                 r".*?(选题|内容日历|排期).*?",
-                r"我的.*(账号|博主|UP主)"
+                r"我的.*(账号|博主|UP主)",
             ],
-
             BusinessType.DIGITAL_PRODUCT: [
                 r"(售卖|出售|上架).*(课程|电子书|模板|产品)",
                 r"(Gumroad|Teachable|小报童|知识星球).*(发布|上架|开设)",
                 r".*?(定价|价格|收费).*?(课程|产品|内容)",
                 r".*?(销售页|Landing Page|详情页).*?(撰写|优化|设计)",
-                r".*?(知识付费|付费内容|付费社群).*?"
+                r".*?(知识付费|付费内容|付费社群).*?",
             ],
-
             BusinessType.AI_TOOL_BUILDER: [
                 r"(我的|开发|构建).*(工具|应用|API|产品).*(AI|人工智能|GPT|LLM)",
                 r".*?(App Store|GitHub|Product Hunt).*(评论|反馈|Issues)",
                 r".*?(版本|迭代|更新|发布).*(日志|说明|Notes)",
                 r".*?(性能|优化|延迟|Latency|速度).*?(提升|改进|优化)",
-                r".*?(用户反馈|User Feedback|评论).*?(分析|处理|回复)"
+                r".*?(用户反馈|User Feedback|评论).*?(分析|处理|回复)",
             ],
-
             BusinessType.CONSULTANT: [
                 r"(给|为|帮).*(客户|甲方).*(写|做|起草).*?(方案|报告|提案|建议书)",
                 r".*?(咨询|顾问|专家).*?(服务|项目|报价)",
                 r".*?(SWOT|PESTEL|商业模式|战略).*?(分析|规划|制定)",
                 r".*?(报价|费用|时薪|预算).*?(方案|明细|清单)",
-                r".*?(方法论|框架|模型).*?(应用|使用|实施)"
+                r".*?(方法论|框架|模型).*?(应用|使用|实施)",
             ],
-
             BusinessType.ECOMMERCE: [
                 r"(我的|帮).*(店铺|淘宝|京东|拼多多).*(运营|管理|优化)",
                 r".*?(商品|产品|SKU).*(上架|发布|编辑|优化)",
                 r".*?(促销|活动|大促|双十一|618).*(策划|方案|准备)",
                 r".*?(库存|补货|供应链).*(预警|管理|优化)",
-                r".*?(GMV|销售额|转化率|ROI).*(提升|分析|优化)"
+                r".*?(GMV|销售额|转化率|ROI).*(提升|分析|优化)",
             ],
-
             BusinessType.CREATIVE_WORK: [
                 r"(帮我|给我).*(设计|做|画|创.*?作).*(logo|海报|UI|界面|插画|图片)",
                 r".*?(Figma|Sketch|Photoshop|AI绘画|Midjourny).*?(文件|源件|设计稿)",
                 r".*?(作品集|Portfolio|案例).*?(整理|更新、优化)",
                 r".*?(设计稿|效果图|样机).*(交付|提交|发送)",
-                r".*?(品牌|VI|视觉).*(设计|升级、规范)"
-            ]
+                r".*?(品牌|VI|视觉).*(设计|升级、规范)",
+            ],
         }
 
     def detect(
@@ -364,7 +670,7 @@ class BusinessTypeDetectorV2:
         input_text: str,
         user_profile: Optional[Dict] = None,
         history: Optional[List[Dict]] = None,
-        min_confidence: float = None
+        min_confidence: float = None,
     ) -> DetectionResult:
         """
         检测用户的业务类型 (V2 增强版)
@@ -392,7 +698,7 @@ class BusinessTypeDetectorV2:
                 pattern_result.confidence,
                 "pattern_match",
                 input_text,
-                detected_patterns=pattern_result.detected_patterns
+                detected_patterns=pattern_result.detected_patterns,
             )
 
         # Step 2: 关键词匹配（主策略）
@@ -434,7 +740,10 @@ class BusinessTypeDetectorV2:
                 profile_type = self._infer_from_profile(user_profile)
                 if profile_type:
                     keyword_result = self._build_result(
-                        profile_type, min_confidence + 0.1, "profile_fallback", input_text
+                        profile_type,
+                        min_confidence + 0.1,
+                        "profile_fallback",
+                        input_text,
                     )
                 else:
                     keyword_result = self._build_result(
@@ -472,7 +781,7 @@ class BusinessTypeDetectorV2:
                 matched_keywords=[],
                 alternative_types=[],
                 detected_patterns=detected_patterns[:3],
-                reasoning=f"匹配到{len(detected_patterns)}个模式"
+                reasoning=f"匹配到{len(detected_patterns)}个模式",
             )
 
         return None
@@ -492,13 +801,11 @@ class BusinessTypeDetectorV2:
         best_type, best_score = sorted_types[0]
 
         matched_keywords = self._extract_matched_keywords_enhanced(
-            text_lower,
-            self.type_keywords[best_type]
+            text_lower, self.type_keywords[best_type]
         )
 
         alternative_types = [
-            (bt, score) for bt, score in sorted_types[1:4]
-            if score > 0.08
+            (bt, score) for bt, score in sorted_types[1:4] if score > 0.08
         ]
 
         return DetectionResult(
@@ -508,7 +815,7 @@ class BusinessTypeDetectorV2:
             matched_keywords=matched_keywords,
             alternative_types=alternative_types,
             detected_patterns=[],
-            reasoning=f"关键词得分: {best_score:.3f}, 命中{len(matched_keywords)}个关键词"
+            reasoning=f"关键词得分: {best_score:.3f}, 命中{len(matched_keywords)}个关键词",
         )
 
     def _calculate_enhanced_score(self, text_lower: str, config: Dict) -> float:
@@ -524,22 +831,22 @@ class BusinessTypeDetectorV2:
         - 完整短语匹配奖励: +0.15
         """
         primary_matches = sum(
-            1 for kw in config.get("primary_keywords", [])
-            if kw.lower() in text_lower
+            1 for kw in config.get("primary_keywords", []) if kw.lower() in text_lower
         )
 
         secondary_matches = sum(
-            1 for kw in config.get("secondary_keywords", [])
-            if kw.lower() in text_lower
+            1 for kw in config.get("secondary_keywords", []) if kw.lower() in text_lower
         )
 
         context_matches = sum(
-            1 for phrase in config.get("context_phrases", [])
+            1
+            for phrase in config.get("context_phrases", [])
             if phrase.lower() in text_lower
         )
 
         domain_matches = sum(
-            1 for phrase in config.get("domain_phrases", [])
+            1
+            for phrase in config.get("domain_phrases", [])
             if phrase.lower() in text_lower
         )
 
@@ -555,16 +862,16 @@ class BusinessTypeDetectorV2:
                         break
 
         raw_score = (
-            primary_matches * 2.5 +
-            secondary_matches * 1.5 +
-            context_matches * 4.0 +
-            domain_matches * 3.0 +
-            synonym_matches * 1.8
+            primary_matches * 2.5
+            + secondary_matches * 1.5
+            + context_matches * 4.0
+            + domain_matches * 3.0
+            + synonym_matches * 1.8
         )
 
         max_possible = (
-            len(config.get("primary_keywords", [])) * 2.5 +
-            len(config.get("context_phrases", [])) * 4.0
+            len(config.get("primary_keywords", [])) * 2.5
+            + len(config.get("context_phrases", [])) * 4.0
         ) * 0.25
 
         normalized_score = min(raw_score / max(max_possible, 1), 1.0)
@@ -589,7 +896,7 @@ class BusinessTypeDetectorV2:
             config.get("primary_keywords", []),
             config.get("secondary_keywords", []),
             config.get("context_phrases", []),
-            config.get("domain_phrases", [])
+            config.get("domain_phrases", []),
         ]
 
         for source in all_keyword_sources:
@@ -631,7 +938,7 @@ class BusinessTypeDetectorV2:
             matched_keywords=result.matched_keywords,
             alternative_types=result.alternative_types,
             detected_patterns=result.detected_patterns,
-            reasoning=f"{result.reasoning} (含否定词，降权{negation_penalty})"
+            reasoning=f"{result.reasoning} (含否定词，降权{negation_penalty})",
         )
 
     def _analyze_context(self, history: List[Dict]) -> Dict[BusinessType, float]:
@@ -640,9 +947,7 @@ class BusinessTypeDetectorV2:
 
         for item in history[-8:]:
             user_message = (
-                item.get("user", "") or
-                item.get("input", "") or
-                item.get("message", "")
+                item.get("user", "") or item.get("input", "") or item.get("message", "")
             )
             if user_message:
                 temp_result = self._detect_by_keywords(user_message)
@@ -676,7 +981,7 @@ class BusinessTypeDetectorV2:
                 matched_keywords=result.matched_keywords,
                 alternative_types=result.alternative_types,
                 detected_patterns=result.detected_patterns,
-                reasoning=f"{result.reasoning} (上下文增强+{boost:.2f})"
+                reasoning=f"{result.reasoning} (上下文增强+{boost:.2f})",
             )
 
         return result
@@ -698,6 +1003,7 @@ class BusinessTypeDetectorV2:
 
         try:
             import asyncio
+
             loop = asyncio.new_event_loop()
             result = loop.run_until_complete(
                 self.llm_service.detect_business_type_by_llm(input_text, history)
@@ -750,7 +1056,7 @@ class BusinessTypeDetectorV2:
         input_text: str,
         matched_keywords: List[str] = None,
         detected_patterns: List[str] = None,
-        reasoning: str = ""
+        reasoning: str = "",
     ) -> DetectionResult:
         """构建标准化检测结果"""
         if matched_keywords is None:
@@ -780,7 +1086,7 @@ class BusinessTypeDetectorV2:
             matched_keywords=matched_keywords,
             alternative_types=alternative_types,
             detected_patterns=detected_patterns,
-            reasoning=reasoning or f"方法: {method}"
+            reasoning=reasoning or f"方法: {method}",
         )
 
     def _record_method(self, method: str):
@@ -798,7 +1104,7 @@ class BusinessTypeDetectorV2:
                 "emoji": config["emoji"],
                 "primary_count": len(config.get("primary_keywords", [])),
                 "secondary_count": len(config.get("secondary_keywords", [])),
-                "patterns_count": len(self.patterns.get(bt, []))
+                "patterns_count": len(self.patterns.get(bt, [])),
             }
 
         return {
@@ -813,8 +1119,8 @@ class BusinessTypeDetectorV2:
                 "Negation detection",
                 "Context awareness",
                 "Synonym expansion",
-                "LLM assistance (optional)"
-            ]
+                "LLM assistance (optional)",
+            ],
         }
 
 
@@ -857,10 +1163,12 @@ if __name__ == "__main__":
             "ai_tool_builder": "AI工具开发者",
             "consultant": "专业咨询师",
             "ecommerce": "电商运营者",
-            "creative_work": "创意工作者"
+            "creative_work": "创意工作者",
         }
 
-        detected_name = type_name_map.get(result.business_type.value, result.business_type.value)
+        detected_name = type_name_map.get(
+            result.business_type.value, result.business_type.value
+        )
         is_correct = detected_name in expected_type
         if is_correct:
             correct_count += 1
@@ -868,11 +1176,13 @@ if __name__ == "__main__":
         else:
             status = "❌"
 
-        print(f"\n{status} [{i}] \"{input_text[:45]}...\"")
+        print(f'\n{status} [{i}] "{input_text[:45]}..."')
         print(f"   预期: {expected_type}")
         print(f"   检测: {result.business_type.value} ({detected_name})")
         print(f"   置信度: {result.confidence:.3f} | 方法: {result.method}")
-        print(f"   关键词({len(result.matched_keywords)}): {', '.join(result.matched_keywords[:4])}")
+        print(
+            f"   关键词({len(result.matched_keywords)}): {', '.join(result.matched_keywords[:4])}"
+        )
         if result.detected_patterns:
             print(f"   模式: {len(result.detected_patterns)}个")
 

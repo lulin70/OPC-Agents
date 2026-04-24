@@ -9,6 +9,7 @@
 - 无"基准值待测""待填写""此处插入"等占位符
 - LLM不可用时优雅降级到模板模式，不崩溃
 """
+
 import unittest
 import time
 from unittest.mock import patch, MagicMock
@@ -39,13 +40,14 @@ class TestRAGModeGeneration(unittest.TestCase):
     def test_generate_with_search_results(self):
         """有搜索结果时应构建上下文并传递给生成流程"""
         search_results = [
-            {'title': 'SaaS增长策略', 'snippet': '从5000到10000用户的关键步骤...'},
-            {'title': 'Q2营销计划', 'snippet': '第二季度市场推广预算分配...'},
+            {"title": "SaaS增长策略", "snippet": "从5000到10000用户的关键步骤..."},
+            {"title": "Q2营销计划", "snippet": "第二季度市场推广预算分配..."},
         ]
 
         result = self.generator.generate(
             user_input="AI写作助手增长方案",
-            template="# 增长方案\n\n## 背景\n{search_context}\n\n## 详细内容\n" + "这是详细内容段落。" * 20,
+            template="# 增长方案\n\n## 背景\n{search_context}\n\n## 详细内容\n"
+            + "这是详细内容段落。" * 20,
             search_results=search_results,
         )
 
@@ -59,7 +61,7 @@ class TestRAGModeGeneration(unittest.TestCase):
             template="# 测试\n{business_context}\n",
         )
 
-        self.assertIn(result.generation_mode, ['llm_rag', 'template_v34', 'llm_failed'])
+        self.assertIn(result.generation_mode, ["llm_rag", "template_v34", "llm_failed"])
 
     def test_llm_latency_recorded(self):
         """result.llm_latency_ms应记录生成耗时"""
@@ -82,27 +84,27 @@ class TestBusinessInfoInjection(unittest.TestCase):
 
     def test_extract_product_name(self):
         """应从输入中提取产品名称（如"AI写作助手"）"""
-        info = self.generator._extract_business_info("我的产品是AI写作助手，想制定增长方案")
+        info = self.generator._extract_business_info(
+            "我的产品是AI写作助手，想制定增长方案"
+        )
 
-        self.assertIn('AI写作助手', info['product_name'])
+        self.assertIn("AI写作助手", info["product_name"])
 
     def test_extract_numbers(self):
         """应从输入中提取关键数字（如"5000""10000"）"""
-        info = self.generator._extract_business_info(
-            "月活5000，想提升到10000"
-        )
+        info = self.generator._extract_business_info("月活5000，想提升到10000")
 
-        has_numbers = any('5000' in n or '10000' in n for n in info['numbers'])
+        has_numbers = any("5000" in n or "10000" in n for n in info["numbers"])
         self.assertTrue(has_numbers, f"未找到数字: {info['numbers']}")
 
     def test_extract_target_metrics(self):
         """应提取目标指标描述（如"提升到10000"）"""
         info = self.generator._extract_business_info("希望月活提升到10000人")
 
-        targets_text = ' '.join(info['targets'])
+        targets_text = " ".join(info["targets"])
         self.assertTrue(
-            any(kw in targets_text for kw in ['提升', '10000']),
-            f"未找到目标: {info['targets']}"
+            any(kw in targets_text for kw in ["提升", "10000"]),
+            f"未找到目标: {info['targets']}",
         )
 
     def test_business_info_appears_in_output(self):
@@ -113,11 +115,14 @@ class TestBusinessInfoInjection(unittest.TestCase):
         )
 
         combined_lower = result.content.lower()
-        business_terms = ['ai', '写作', '助手', '5000', '10000']
+        business_terms = ["ai", "写作", "助手", "5000", "10000"]
         found_count = sum(1 for term in business_terms if term in combined_lower)
 
-        self.assertGreaterEqual(found_count, 2,
-                                f"输出中仅找到{found_count}/5个业务关键词:\n{result.content[:300]}")
+        self.assertGreaterEqual(
+            found_count,
+            2,
+            f"输出中仅找到{found_count}/5个业务关键词:\n{result.content[:300]}",
+        )
 
 
 class TestPlaceholderElimination(unittest.TestCase):
@@ -134,8 +139,9 @@ class TestPlaceholderElimination(unittest.TestCase):
         )
 
         for pattern in FORBIDDEN_PATTERNS:
-            self.assertNotIn(pattern, result.content,
-                              f"发现禁止占位符 '{pattern}' 在输出中")
+            self.assertNotIn(
+                pattern, result.content, f"发现禁止占位符 '{pattern}' 在输出中"
+            )
 
     def test_placeholder_count_is_zero(self):
         """result.placeholder_count应为0"""
@@ -144,24 +150,25 @@ class TestPlaceholderElimination(unittest.TestCase):
             template="# 文档\n{business_context}\n",
         )
 
-        self.assertEqual(result.placeholder_count, 0,
-                         f"仍有{result.placeholder_count}个占位符")
+        self.assertEqual(
+            result.placeholder_count, 0, f"仍有{result.placeholder_count}个占位符"
+        )
 
     def test_clean_placeholders_removes_underscores(self):
         """_clean_placeholders()应移除连续下划线"""
         text_with_underscore = "这是___待填写的内容___"
         cleaned = self.generator._clean_placeholders(text_with_underscore)
 
-        self.assertNotIn('___', cleaned)
+        self.assertNotIn("___", cleaned)
 
     def test_clean_placeholders_removes_tbd(self):
         """_clean_placeholders()应移除TBD"""
         text = "计划时间 TBD，后续补充 TODO 项目 FIXME"
         cleaned = self.generator._clean_placeholders(text)
 
-        self.assertNotIn('TBD', cleaned)
-        self.assertNotIn('TODO', cleaned)
-        self.assertNotIn('FIXME', cleaned)
+        self.assertNotIn("TBD", cleaned)
+        self.assertNotIn("TODO", cleaned)
+        self.assertNotIn("FIXME", cleaned)
 
 
 class TestLLMFallback(unittest.TestCase):
@@ -172,8 +179,8 @@ class TestLLMFallback(unittest.TestCase):
 
     def test_fallback_when_no_api_key(self):
         """无API Key时应自动使用降级模式"""
-        with patch.dict('os.environ', {}, clear=True):
-            with patch.object(self.generator, '_get_llm_api_key', return_value=None):
+        with patch.dict("os.environ", {}, clear=True):
+            with patch.object(self.generator, "_get_llm_api_key", return_value=None):
                 result = self.generator.generate(
                     user_input="降级测试",
                     template="# 测试\n{business_context}\n",
@@ -206,7 +213,8 @@ class TestLLMFallback(unittest.TestCase):
         """降级后的内容长度应 >= min_fallback_length(800)"""
         result = self.generator.generate(
             user_input="最小长度测试",
-            template="# 文档\n\n{business_context}\n\n## 详细内容\n这是一段较长的测试内容。" * 20,
+            template="# 文档\n\n{business_context}\n\n## 详细内容\n这是一段较长的测试内容。"
+            * 20,
         )
 
         if result.success:
@@ -214,8 +222,10 @@ class TestLLMFallback(unittest.TestCase):
 
     def test_network_timeout_fallback(self):
         """LF-001: 网络超时触发降级"""
+
         def timeout_api(prompt):
             import requests
+
             raise requests.Timeout("请求超时")
 
         original_call = self.generator._call_llm_api
@@ -227,15 +237,19 @@ class TestLLMFallback(unittest.TestCase):
                 template="# 超时\n{business_context}\n",
             )
 
-            self.assertFalse(result.fallback_used == False and not result.success,
-                            "超时应成功降级或标记fallback")
+            self.assertFalse(
+                result.fallback_used == False and not result.success,
+                "超时应成功降级或标记fallback",
+            )
         finally:
             self.generator._call_llm_api = original_call
 
     def test_invalid_api_key_fallback(self):
         """LF-002: API Key无效触发降级"""
+
         def auth_error_api(prompt):
             import requests
+
             raise requests.exceptions.HTTPError("401 Unauthorized")
 
         original_call = self.generator._call_llm_api
@@ -281,7 +295,9 @@ class TestQualityScoring(unittest.TestCase):
             template=long_template,
         )
 
-        self.assertGreaterEqual(long_result.quality_score, short_result.quality_score - 10)
+        self.assertGreaterEqual(
+            long_result.quality_score, short_result.quality_score - 10
+        )
 
 
 class TestTemplateSkeletonIntegrity(unittest.TestCase):
@@ -297,7 +313,7 @@ class TestTemplateSkeletonIntegrity(unittest.TestCase):
 
         enforced = self.generator._enforce_structure(content, template)
 
-        self.assertIn('# Q2营销方案', enforced)
+        self.assertIn("# Q2营销方案", enforced)
 
     def test_no_structure_change_if_already_present(self):
         """如果内容已有正确结构，不应被修改"""
@@ -330,27 +346,30 @@ class TestGateCONTENT01(unittest.TestCase):
             ),
         )
 
-        forbidden_patterns = ['基准值待测', '___', '待填写', '此处插入']
+        forbidden_patterns = ["基准值待测", "___", "待填写", "此处插入"]
         for pattern in forbidden_patterns:
-            self.assertNotIn(pattern, result.content,
-                              f"发现禁止占位符 '{pattern}'!")
+            self.assertNotIn(pattern, result.content, f"发现禁止占位符 '{pattern}'!")
 
-        required_business_info = ['AI写作助手', '5000', '10000']
+        required_business_info = ["AI写作助手", "5000", "10000"]
         info_found = sum(1 for info in required_business_info if info in result.content)
-        self.assertGreaterEqual(info_found, 2,
-                                 f"业务信息注入不足({info_found}/3):\n{result.content[:400]}")
+        self.assertGreaterEqual(
+            info_found, 2, f"业务信息注入不足({info_found}/3):\n{result.content[:400]}"
+        )
 
     def test_output_sufficient_length(self):
         """门禁：输出内容必须有足够长度（>200字符表示有实质内容）"""
         result = self.generator.generate(
             user_input="生成一份详细的商业计划书",
-            template="# 商业计划书\n\n{business_context}\n\n" +
-                     "## 第一章\n内容...\n" * 10,
+            template="# 商业计划书\n\n{business_context}\n\n"
+            + "## 第一章\n内容...\n" * 10,
         )
 
-        self.assertGreater(len(result.content), 200,
-                           f"输出过短({len(result.content)}字)，可能无实质内容")
+        self.assertGreater(
+            len(result.content),
+            200,
+            f"输出过短({len(result.content)}字)，可能无实质内容",
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

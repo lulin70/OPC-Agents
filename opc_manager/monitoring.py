@@ -5,6 +5,7 @@ Beta阶段核心功能：
 2. Sentry错误追踪（可选）
 3. 事件追踪（任务完成/失败/取消）
 """
+
 import os
 import logging
 
@@ -20,7 +21,8 @@ def init_monitoring():
     """
     try:
         from loguru import logger
-        log_dir = os.environ.get('LOG_DIR', 'logs')
+
+        log_dir = os.environ.get("LOG_DIR", "logs")
         os.makedirs(log_dir, exist_ok=True)
 
         logger.add(
@@ -28,17 +30,18 @@ def init_monitoring():
             rotation="1 day",
             retention="30 days",
             level="INFO",
-            format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
         )
         logger.info("日志系统已启用")
     except ImportError:
         _logger.info("loguru未安装，使用标准日志")
 
-    sentry_dsn = os.getenv('SENTRY_DSN')
+    sentry_dsn = os.getenv("SENTRY_DSN")
     if sentry_dsn:
         try:
             import sentry_sdk
             from opc_manager.version import get_version
+
             sentry_sdk.init(
                 dsn=sentry_dsn,
                 traces_sample_rate=0.1,
@@ -64,7 +67,8 @@ def track_event(event_name: str, properties: dict = None):
 
     try:
         import sentry_sdk
-        if os.getenv('SENTRY_DSN'):
+
+        if os.getenv("SENTRY_DSN"):
             with sentry_sdk.push_scope() as scope:
                 if properties:
                     for k, v in properties.items():
@@ -85,7 +89,8 @@ def track_error(error: Exception, context: dict = None):
 
     try:
         import sentry_sdk
-        if os.getenv('SENTRY_DSN'):
+
+        if os.getenv("SENTRY_DSN"):
             with sentry_sdk.push_scope() as scope:
                 if context:
                     for k, v in context.items():

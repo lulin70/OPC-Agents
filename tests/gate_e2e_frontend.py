@@ -16,6 +16,7 @@
 运行方式：
     PYTHONPATH=/Users/lin/trae_projects/OPC-Agents python3 -m pytest tests/gate_e2e_frontend.py -v
 """
+
 import pytest
 import sys
 import os
@@ -39,11 +40,11 @@ class TestAsyncFlowGate:
         def quick_task(prompt, cancel_event):
             time.sleep(0.3)
             return {
-                'content': f'# {prompt}\n\n完成！',
-                'success': True,
-                'filepath': '/tmp/gate_test.md',
-                'task_type': 'CONTENT_GENERATION',
-                'error': None,
+                "content": f"# {prompt}\n\n完成！",
+                "success": True,
+                "filepath": "/tmp/gate_test.md",
+                "task_type": "CONTENT_GENERATION",
+                "error": None,
             }
 
         task_id = executor.submit("门禁测试", execute_func=quick_task)
@@ -51,9 +52,9 @@ class TestAsyncFlowGate:
 
         for _ in range(20):
             status = executor.get_status(task_id)
-            if status['status'] == 'done':
-                assert status['result_content'] is not None
-                assert '门禁测试' in status['result_content']
+            if status["status"] == "done":
+                assert status["result_content"] is not None
+                assert "门禁测试" in status["result_content"]
                 return
             time.sleep(0.2)
 
@@ -70,8 +71,8 @@ class TestAsyncFlowGate:
 
         for _ in range(15):
             status = executor.get_status(task_id)
-            if status['status'] == 'failed':
-                assert status['error_message'] is not None
+            if status["status"] == "failed":
+                assert status["error_message"] is not None
                 return
             time.sleep(0.2)
 
@@ -83,7 +84,13 @@ class TestAsyncFlowGate:
 
         def slow_task(prompt, cancel_event):
             time.sleep(60)
-            return {'content': '', 'success': False, 'filepath': None, 'task_type': None, 'error': None}
+            return {
+                "content": "",
+                "success": False,
+                "filepath": None,
+                "task_type": None,
+                "error": None,
+            }
 
         task_id = executor.submit("可取消任务", execute_func=slow_task)
         time.sleep(0.05)
@@ -92,7 +99,7 @@ class TestAsyncFlowGate:
 
         time.sleep(0.1)
         status = executor.get_status(task_id)
-        assert status['status'] == 'cancelled'
+        assert status["status"] == "cancelled"
 
     def test_concurrent_limit_enforcement(self):
         """并发限制执行"""
@@ -122,7 +129,7 @@ class TestAsyncFlowGate:
         """查询不存在的任务"""
         executor = AsyncTaskExecutor()
         status = executor.get_status("task-nonexistent")
-        assert status['exists'] is False
+        assert status["exists"] is False
 
 
 class TestMOKAAPIAdapterGate:
@@ -130,55 +137,55 @@ class TestMOKAAPIAdapterGate:
 
     def test_moka_config_priority(self):
         """MOKA配置优先级最高"""
-        os.environ['MOKA_API_KEY'] = 'test-moka-key'
-        os.environ['MOKA_API_BASE'] = 'https://api.moka-ai.com/v1'
-        os.environ['MOKA_MODEL'] = 'moka/claude-sonnet-4-6'
+        os.environ["MOKA_API_KEY"] = "test-moka-key"
+        os.environ["MOKA_API_BASE"] = "https://api.moka-ai.com/v1"
+        os.environ["MOKA_MODEL"] = "moka/claude-sonnet-4-6"
 
         try:
             gen = LLMEnhancedContentGenerator()
             key, base, model = gen._get_llm_config()
-            assert key == 'test-moka-key'
-            assert base == 'https://api.moka-ai.com/v1'
-            assert model == 'moka/claude-sonnet-4-6'
+            assert key == "test-moka-key"
+            assert base == "https://api.moka-ai.com/v1"
+            assert model == "moka/claude-sonnet-4-6"
         finally:
-            del os.environ['MOKA_API_KEY']
-            del os.environ['MOKA_API_BASE']
-            del os.environ['MOKA_MODEL']
+            del os.environ["MOKA_API_KEY"]
+            del os.environ["MOKA_API_BASE"]
+            del os.environ["MOKA_MODEL"]
 
     def test_glm_fallback_without_moka(self):
         """无MOKA时回退到GLM"""
-        for k in ['MOKA_API_KEY', 'GLM_API_KEY', 'OPENAI_API_KEY']:
+        for k in ["MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY"]:
             os.environ.pop(k, None)
 
-        os.environ['GLM_API_KEY'] = 'test-glm-key'
+        os.environ["GLM_API_KEY"] = "test-glm-key"
 
         try:
             gen = LLMEnhancedContentGenerator()
             key, base, model = gen._get_llm_config()
-            assert key == 'test-glm-key'
-            assert 'bigmodel' in base
-            assert model == 'glm-4'
+            assert key == "test-glm-key"
+            assert "bigmodel" in base
+            assert model == "glm-4"
         finally:
-            del os.environ['GLM_API_KEY']
+            del os.environ["GLM_API_KEY"]
 
     def test_openai_fallback_without_others(self):
         """无MOKA/GLM时回退到OpenAI"""
-        for k in ['MOKA_API_KEY', 'GLM_API_KEY', 'OPENAI_API_KEY']:
+        for k in ["MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY"]:
             os.environ.pop(k, None)
 
-        os.environ['OPENAI_API_KEY'] = 'test-openai-key'
+        os.environ["OPENAI_API_KEY"] = "test-openai-key"
 
         try:
             gen = LLMEnhancedContentGenerator()
             key, base, model = gen._get_llm_config()
-            assert key == 'test-openai-key'
-            assert model == 'gpt-4'
+            assert key == "test-openai-key"
+            assert model == "gpt-4"
         finally:
-            del os.environ['OPENAI_API_KEY']
+            del os.environ["OPENAI_API_KEY"]
 
     def test_no_key_returns_none(self):
         """无任何Key时返回None"""
-        for k in ['MOKA_API_KEY', 'GLM_API_KEY', 'OPENAI_API_KEY']:
+        for k in ["MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY"]:
             os.environ.pop(k, None)
 
         gen = LLMEnhancedContentGenerator()
@@ -187,18 +194,18 @@ class TestMOKAAPIAdapterGate:
 
     def test_backward_compatible_get_api_key(self):
         """_get_llm_api_key()向后兼容"""
-        os.environ['MOKA_API_KEY'] = 'compat-test-key'
-        os.environ['MOKA_API_BASE'] = 'https://api.moka-ai.com/v1'
-        os.environ['MOKA_MODEL'] = 'moka/claude-sonnet-4-6'
+        os.environ["MOKA_API_KEY"] = "compat-test-key"
+        os.environ["MOKA_API_BASE"] = "https://api.moka-ai.com/v1"
+        os.environ["MOKA_MODEL"] = "moka/claude-sonnet-4-6"
 
         try:
             gen = LLMEnhancedContentGenerator()
             key = gen._get_llm_api_key()
-            assert key == 'compat-test-key'
+            assert key == "compat-test-key"
         finally:
-            del os.environ['MOKA_API_KEY']
-            del os.environ['MOKA_API_BASE']
-            del os.environ['MOKA_MODEL']
+            del os.environ["MOKA_API_KEY"]
+            del os.environ["MOKA_API_BASE"]
+            del os.environ["MOKA_MODEL"]
 
 
 class TestKnowledgeBaseGate:
@@ -215,7 +222,7 @@ class TestKnowledgeBaseGate:
 
     def test_new_categories_exist(self):
         """新增分类应存在"""
-        required = ['产品发布', '数据分析', '项目管理']
+        required = ["产品发布", "数据分析", "项目管理"]
         for cat in required:
             assert cat in KNOWLEDGE_BASE, f"缺少分类: {cat}"
 
@@ -224,25 +231,27 @@ class TestKnowledgeBaseGate:
         processor = SearchResultProcessor()
 
         test_queries = {
-            '产品发布': '帮我制定产品发布计划',
-            '数据分析': '分析用户行为数据',
-            '项目管理': '项目管理方法论',
+            "产品发布": "帮我制定产品发布计划",
+            "数据分析": "分析用户行为数据",
+            "项目管理": "项目管理方法论",
         }
 
         for category, query in test_queries.items():
             result = processor.process(query, [])
             assert result.fallback_used is True, f"查询'{query}'应触发知识库兜底"
-            kb_cats = [r.get('_kb_category', '') for r in result.results]
-            assert any(category in c for c in kb_cats), f"应命中分类'{category}'，实际: {kb_cats}"
+            kb_cats = [r.get("_kb_category", "") for r in result.results]
+            assert any(
+                category in c for c in kb_cats
+            ), f"应命中分类'{category}'，实际: {kb_cats}"
 
     def test_original_categories_still_work(self):
         """原有分类仍能正常兜底"""
         processor = SearchResultProcessor()
 
         original_queries = {
-            '营销方案': 'Q2营销方案',
-            '税收政策': '小微企业税收优惠',
-            'AI Agent': 'AI Agent架构设计',
+            "营销方案": "Q2营销方案",
+            "税收政策": "小微企业税收优惠",
+            "AI Agent": "AI Agent架构设计",
         }
 
         for category, query in original_queries.items():

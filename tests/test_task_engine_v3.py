@@ -56,8 +56,8 @@ class TestInputValidator(unittest.TestCase):
     def test_control_chars_stripped(self):
         text, err = InputValidator.sanitize("正常\x00文本\x1f内容")
         self.assertIsNone(err)
-        self.assertNotIn('\x00', text)
-        self.assertNotIn('\x1f', text)
+        self.assertNotIn("\x00", text)
+        self.assertNotIn("\x1f", text)
         self.assertIn("正常", text)
 
     def test_leading_trailing_whitespace_trimmed(self):
@@ -72,8 +72,8 @@ class TestInputValidator(unittest.TestCase):
     def test_html_tags_stripped(self):
         text, err = InputValidator.sanitize("<script>alert('xss')</script>正常内容")
         self.assertIsNone(err)
-        self.assertNotIn('<script>', text)
-        self.assertNotIn('</script>', text)
+        self.assertNotIn("<script>", text)
+        self.assertNotIn("</script>", text)
         self.assertIn("正常内容", text)
 
     def test_html_tags_only_removed(self):
@@ -83,8 +83,8 @@ class TestInputValidator(unittest.TestCase):
     def test_mixed_special_chars_and_html(self):
         text, err = InputValidator.sanitize("\x00<script>\x1ftest</script>")
         self.assertIsNone(err)
-        self.assertNotIn('<', text)
-        self.assertNotIn('>', text)
+        self.assertNotIn("<", text)
+        self.assertNotIn(">", text)
 
 
 class TestSearchCache(unittest.TestCase):
@@ -255,7 +255,7 @@ class TestTaskEngineV3Execute(unittest.TestCase):
         content = result.content.lower()
         self.assertTrue(
             any(kw in content for kw in ["swot", "优势", "劣势", "机会", "威胁"]),
-            f"分析结果应包含SWOT相关内容，实际: {content[:100]}"
+            f"分析结果应包含SWOT相关内容，实际: {content[:100]}",
         )
 
     def test_execute_general_chat_hello(self):
@@ -302,14 +302,14 @@ class TestZeroPlaceholderGate(unittest.TestCase):
     """
 
     FORBIDDEN_PATTERNS = [
-        '___',
-        '待填写',
-        '此处插入',
-        '此处应由',
-        '请根据实际情况',
-        '需根据实际情况',
-        '⬜',
-        '在实际执行中',
+        "___",
+        "待填写",
+        "此处插入",
+        "此处应由",
+        "请根据实际情况",
+        "需根据实际情况",
+        "⬜",
+        "在实际执行中",
     ]
 
     def setUp(self):
@@ -319,7 +319,7 @@ class TestZeroPlaceholderGate(unittest.TestCase):
         for pattern in self.FORBIDDEN_PATTERNS:
             if pattern in (content or ""):
                 idx = content.index(pattern)
-                context = content[max(0, idx-50):idx+80]
+                context = content[max(0, idx - 50) : idx + 80]
                 self.fail(
                     f"[{label}] 发现禁止的占位符 '{pattern}'！\n"
                     f"上下文: ...{context}..."
@@ -347,10 +347,13 @@ class TestZeroPlaceholderGate(unittest.TestCase):
 
     def test_source_code_itself_clean(self):
         import tokenize, io
-        filepath = os.path.join(os.path.dirname(__file__), '..', 'opc_manager', 'task_engine_v3.py')
-        with open(filepath, 'r') as f:
+
+        filepath = os.path.join(
+            os.path.dirname(__file__), "..", "opc_manager", "task_engine_v3.py"
+        )
+        with open(filepath, "r") as f:
             source_lines = f.readlines()
-        source_text = ''.join(source_lines)
+        source_text = "".join(source_lines)
 
         try:
             tokens = list(tokenize.generate_tokens(io.StringIO(source_text).readline))
@@ -367,8 +370,7 @@ class TestZeroPlaceholderGate(unittest.TestCase):
             line = source_lines[i - 1]
             for pattern in self.FORBIDDEN_PATTERNS:
                 self.assertNotIn(
-                    pattern, line,
-                    f"源码 L{i} 发现禁止模式 '{pattern}': {line[:100]}"
+                    pattern, line, f"源码 L{i} 发现禁止模式 '{pattern}': {line[:100]}"
                 )
 
 
@@ -386,8 +388,8 @@ class TestTaskEngineEdgeCases(unittest.TestCase):
     def test_special_chars_in_input(self):
         result = self.engine.execute("帮我写<script>alert('xss')</script>方案")
         self.assertTrue(result.success)
-        self.assertNotIn('<script>', result.content or "")
-        self.assertNotIn('</script>', result.content or "")
+        self.assertNotIn("<script>", result.content or "")
+        self.assertNotIn("</script>", result.content or "")
 
     def test_multiple_executions_independent(self):
         r1 = self.engine.execute("写方案A")
@@ -403,5 +405,5 @@ class TestTaskEngineEdgeCases(unittest.TestCase):
         self.assertGreaterEqual(stats_after["hits"], stats_before["hits"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

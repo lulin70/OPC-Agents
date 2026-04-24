@@ -15,6 +15,7 @@
 - 降级模式正常工作（不比v3.4更差）
 - 多轮对话上下文正确传递
 """
+
 import unittest
 import time
 from unittest.mock import patch
@@ -38,13 +39,16 @@ class TestIntegrationSearchProcessor(unittest.TestCase):
         self.assertIsInstance(results, list)
         if results:
             for r in results[:3]:
-                title = r.get('title', '')
-                snippet = r.get('snippet', '') or r.get('body', '')
+                title = r.get("title", "")
+                snippet = r.get("snippet", "") or r.get("body", "")
                 combined = f"{title} {snippet}".lower()
-                has_relevant = any(kw in combined for kw in ['营销', 'q2', '方案', '增长'])
-                if not r.get('_kb_fallback'):
-                    self.assertTrue(has_relevant or len(results) == 0,
-                                    f"搜索结果应相关: {title}")
+                has_relevant = any(
+                    kw in combined for kw in ["营销", "q2", "方案", "增长"]
+                )
+                if not r.get("_kb_fallback"):
+                    self.assertTrue(
+                        has_relevant or len(results) == 0, f"搜索结果应相关: {title}"
+                    )
 
     def test_engine_search_degradation_safe(self):
         """SearchResultProcessor失败时TaskEngineV3仍返回原始结果"""
@@ -86,7 +90,7 @@ class TestIntegrationLLMContent(unittest.TestCase):
             template="# 报告\n{business_context}\n{user_query}\n",
         )
 
-        forbidden = ['___', '待填写', '基准值待测']
+        forbidden = ["___", "待填写", "基准值待测"]
         for pattern in forbidden:
             self.assertNotIn(pattern, result.content)
 
@@ -103,29 +107,30 @@ class TestIntegrationAsyncExecutor(unittest.TestCase):
         task_id = self.executor.submit(
             prompt="你好",
             execute_func=lambda prompt, **kw: {
-                'content': f'回复: {prompt}',
-                'success': True,
+                "content": f"回复: {prompt}",
+                "success": True,
             },
         )
         self.assertIsNotNone(task_id)
 
         time.sleep(0.15)
         status = self.executor.get_status(task_id)
-        self.assertEqual(status['status'], 'done')
-        self.assertIn('回复:', status.get('result_content', ''))
+        self.assertEqual(status["status"], "done")
+        self.assertIn("回复:", status.get("result_content", ""))
 
     def test_executor_handles_engine_timeout(self):
         """AsyncTaskExecutor应优雅处理长时间运行的任务"""
+
         def slow_task(prompt, **kwargs):
             time.sleep(0.1)
-            return {'content': '慢任务完成', 'success': True}
+            return {"content": "慢任务完成", "success": True}
 
         task_id = self.executor.submit("慢任务", execute_func=slow_task)
         self.assertIsNotNone(task_id)
 
         time.sleep(0.2)
         status = self.executor.get_status(task_id)
-        self.assertIn(status['status'], ['done', 'running'])
+        self.assertIn(status["status"], ["done", "running"])
 
 
 class TestIntegrationSessionContext(unittest.TestCase):
@@ -153,7 +158,7 @@ class TestIntegrationSessionContext(unittest.TestCase):
         self.engine.execute("第一轮输入", session_ctx=self.session)
 
         context_before_2nd = self.session.get_context_for_llm()
-        self.assertIn('第一轮输入', context_before_2nd)
+        self.assertIn("第一轮输入", context_before_2nd)
 
         result2 = self.engine.execute(
             "基于上次修改第三阶段",
@@ -165,7 +170,7 @@ class TestIntegrationSessionContext(unittest.TestCase):
 
         last_result = self.session.get_last_result()
         self.assertIsNotNone(last_result)
-        self.assertIn('response', last_result)
+        self.assertIn("response", last_result)
 
 
 class TestE2ESearchToDelivery(unittest.TestCase):
@@ -187,8 +192,8 @@ class TestE2ESearchToDelivery(unittest.TestCase):
         generator = LLMEnhancedContentGenerator()
 
         raw_results = [
-            {'title': '市场分析方法论', 'snippet': 'SWOT分析、PESTEL模型...'},
-            {'title': '2026年市场趋势', 'snippet': '数字化转型加速...'},
+            {"title": "市场分析方法论", "snippet": "SWOT分析、PESTEL模型..."},
+            {"title": "2026年市场趋势", "snippet": "数字化转型加速..."},
         ]
 
         processed = processor.process("市场分析", raw_results)
@@ -196,7 +201,8 @@ class TestE2ESearchToDelivery(unittest.TestCase):
 
         content_result = generator.generate(
             user_input="帮我做市场分析",
-            template="# 分析报告\n{search_context}\n{business_context}\n" + "详细内容。\n" * 30,
+            template="# 分析报告\n{search_context}\n{business_context}\n"
+            + "详细内容。\n" * 30,
             search_results=processed.results,
         )
 
@@ -225,7 +231,7 @@ class TestE2EMultiTurnIteration(unittest.TestCase):
         self.assertEqual(session.get_turn_count(), 3)
 
         summary = session.get_history_summary()
-        self.assertIn('共3轮', summary)
+        self.assertIn("共3轮", summary)
 
 
 class TestCacheAndProcessorInteraction(unittest.TestCase):
@@ -255,9 +261,9 @@ class TestInputValidationAndSession(unittest.TestCase):
 
         history = session.get_full_history()
         if history:
-            user_entries = [h for h in history if h['role'] == 'user']
+            user_entries = [h for h in history if h["role"] == "user"]
             for entry in user_entries:
-                self.assertNotIn('<script>', entry['content'])
+                self.assertNotIn("<script>", entry["content"])
 
 
 class TestExecutorTimeoutHandling(unittest.TestCase):
@@ -269,7 +275,7 @@ class TestExecutorTimeoutHandling(unittest.TestCase):
 
         def long_task(prompt, **kwargs):
             time.sleep(5)
-            return {'content': '不该到达这里', 'success': True}
+            return {"content": "不该到达这里", "success": True}
 
         task_id = executor.submit("长任务", execute_func=long_task)
         time.sleep(0.05)
@@ -279,7 +285,7 @@ class TestExecutorTimeoutHandling(unittest.TestCase):
 
         time.sleep(0.1)
         status = executor.get_status(task_id)
-        self.assertEqual(status['status'], 'cancelled')
+        self.assertEqual(status["status"], "cancelled")
 
 
 class TestLLMFallbackToEngine(unittest.TestCase):
@@ -289,14 +295,14 @@ class TestLLMFallbackToEngine(unittest.TestCase):
         """降级后的内容仍应是有效的Markdown"""
         generator = LLMEnhancedContentGenerator()
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch.dict("os.environ", {}, clear=True):
             result = generator.generate(
                 user_input="降级测试",
                 template="# 文档\n\n## 内容\n这是详细内容。" * 30,
             )
 
         self.assertTrue(result.success or result.fallback_used)
-        self.assertIn('#', result.content)
+        self.assertIn("#", result.content)
 
 
 class TestConcurrentTaskIsolation(unittest.TestCase):
@@ -306,8 +312,20 @@ class TestConcurrentTaskIsolation(unittest.TestCase):
         """同时提交2个任务应互不干扰"""
         executor = AsyncTaskExecutor(max_concurrent=5)
 
-        tid1 = executor.submit("任务A", execute_func=lambda prompt, **kw: {'content': f'结果{prompt}', 'success': True})
-        tid2 = executor.submit("任务B", execute_func=lambda prompt, **kw: {'content': f'结果{prompt}', 'success': True})
+        tid1 = executor.submit(
+            "任务A",
+            execute_func=lambda prompt, **kw: {
+                "content": f"结果{prompt}",
+                "success": True,
+            },
+        )
+        tid2 = executor.submit(
+            "任务B",
+            execute_func=lambda prompt, **kw: {
+                "content": f"结果{prompt}",
+                "success": True,
+            },
+        )
 
         self.assertIsNotNone(tid1)
         self.assertIsNotNone(tid2)
@@ -318,10 +336,10 @@ class TestConcurrentTaskIsolation(unittest.TestCase):
         s1 = executor.get_status(tid1)
         s2 = executor.get_status(tid2)
 
-        self.assertEqual(s1['status'], 'done')
-        self.assertEqual(s2['status'], 'done')
-        self.assertIn('任务A', s1.get('result_content', ''))
-        self.assertIn('任务B', s2.get('result_content', ''))
+        self.assertEqual(s1["status"], "done")
+        self.assertEqual(s2["status"], "done")
+        self.assertIn("任务A", s1.get("result_content", ""))
+        self.assertIn("任务B", s2.get("result_content", ""))
 
 
 class TestFilenameWithTurnInfo(unittest.TestCase):
@@ -336,9 +354,9 @@ class TestFilenameWithTurnInfo(unittest.TestCase):
         engine.execute("第2轮", session_ctx=session)
 
         history = session.get_full_history()
-        turn_ids = set(h['turn_id'] for h in history)
+        turn_ids = set(h["turn_id"] for h in history)
         self.assertEqual(turn_ids, {1, 2})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

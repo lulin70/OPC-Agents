@@ -12,6 +12,7 @@
 - get_context_for_llm()返回格式化的对话历史
 - 轮次上限20轮强制生效
 """
+
 import unittest
 import time
 from opc_manager.session_context import (
@@ -43,22 +44,22 @@ class TestSingleTurnStorage(unittest.TestCase):
         self.session.add_turn(
             user_input="帮我写方案",
             assistant_response="已生成方案...",
-            task_type='plan',
-            filepath='/tmp/plan.md',
-            sources=[{'title': '资料1', 'url': 'http://1'}],
+            task_type="plan",
+            filepath="/tmp/plan.md",
+            sources=[{"title": "资料1", "url": "http://1"}],
         )
 
         history = self.session.get_full_history()
         self.assertEqual(len(history), 2)
 
-        user_entry = [h for h in history if h['role'] == 'user'][0]
-        asst_entry = [h for h in history if h['role'] == 'assistant'][0]
+        user_entry = [h for h in history if h["role"] == "user"][0]
+        asst_entry = [h for h in history if h["role"] == "assistant"][0]
 
-        self.assertEqual(user_entry['content'], "帮我写方案")
-        self.assertEqual(asst_entry['content'], "已生成方案...")
-        self.assertEqual(asst_entry['task_type'], 'plan')
-        self.assertEqual(asst_entry['filepath'], '/tmp/plan.md')
-        self.assertEqual(asst_entry['sources_count'], 1)
+        self.assertEqual(user_entry["content"], "帮我写方案")
+        self.assertEqual(asst_entry["content"], "已生成方案...")
+        self.assertEqual(asst_entry["task_type"], "plan")
+        self.assertEqual(asst_entry["filepath"], "/tmp/plan.md")
+        self.assertEqual(asst_entry["sources_count"], 1)
 
     def test_turn_id_increments(self):
         """每轮的turn_id应该递增"""
@@ -91,13 +92,13 @@ class TestMultiTurnAccumulation(unittest.TestCase):
             self.session.add_turn(
                 user_input=f"用户输入{i}",
                 assistant_response=f"助手回复{i}",
-                task_type=f'type_{i}',
+                task_type=f"type_{i}",
             )
 
         history = self.session.get_full_history()
         self.assertEqual(len(history), 10)
 
-        turns_set = set(h['turn_id'] for h in history)
+        turns_set = set(h["turn_id"] for h in history)
         self.assertEqual(turns_set, {1, 2, 3, 4, 5})
 
     def test_history_chronological_order(self):
@@ -110,19 +111,22 @@ class TestMultiTurnAccumulation(unittest.TestCase):
 
         history = self.session.get_full_history()
 
-        timestamps = [h['timestamp'] for h in history]
+        timestamps = [h["timestamp"] for h in history]
         self.assertTrue(timestamps[-1] > timestamps[0], "历史应按时间递增")
 
     def test_sources_preserved_per_turn(self):
         """每轮的sources应独立保存"""
-        sources_1 = [{'title': 'A', 'url': 'http://a'}]
-        sources_2 = [{'title': 'B', 'url': 'http://b'}, {'title': 'C', 'url': 'http://c'}]
+        sources_1 = [{"title": "A", "url": "http://a"}]
+        sources_2 = [
+            {"title": "B", "url": "http://b"},
+            {"title": "C", "url": "http://c"},
+        ]
 
         self.session.add_turn("Q1", "A1", sources=sources_1)
         self.session.add_turn("Q2", "A2", sources=sources_2)
 
         last_result = self.session.get_last_result()
-        self.assertEqual(len(last_result['sources']), 2)
+        self.assertEqual(len(last_result["sources"]), 2)
 
 
 class TestLLMContextFormatting(unittest.TestCase):
@@ -136,14 +140,14 @@ class TestLLMContextFormatting(unittest.TestCase):
         self.session.add_turn(
             user_input="写一份报告",
             assistant_response="已生成报告，共3章...",
-            task_type='report',
+            task_type="report",
         )
 
         context = self.session.get_context_for_llm(max_turns=5)
 
-        self.assertIn('对话历史', context)
-        self.assertIn('写一份报告', context)
-        self.assertIn('已生成报告', context)
+        self.assertIn("对话历史", context)
+        self.assertIn("写一份报告", context)
+        self.assertIn("已生成报告", context)
 
     def test_context_for_llm_format_structure(self):
         """上下文格式应包含轮次编号和角色标识"""
@@ -154,9 +158,9 @@ class TestLLMContextFormatting(unittest.TestCase):
 
         context = self.session.get_context_for_llm()
 
-        self.assertIn('=== 第1轮', context)
-        self.assertIn('👤 用户:', context)
-        self.assertIn('🤖 助手:', context)
+        self.assertIn("=== 第1轮", context)
+        self.assertIn("👤 用户:", context)
+        self.assertIn("🤖 助手:", context)
 
     def test_max_turns_parameter_works(self):
         """max_turns参数应限制返回的轮数"""
@@ -187,7 +191,7 @@ class TestTurnLimitEnforcement(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             session.add_turn("超额输入", "超额回复")
 
-        self.assertIn('最大轮次限制', str(ctx.exception))
+        self.assertIn("最大轮次限制", str(ctx.exception))
 
     def test_default_limit_is_20(self):
         """默认max_turns应为20"""
@@ -224,8 +228,8 @@ class TestLastResultQuickAccess(unittest.TestCase):
         last = self.session.get_last_result()
 
         self.assertIsNotNone(last)
-        self.assertEqual(last['response'], "新回复")
-        self.assertEqual(last['turn_id'], 2)
+        self.assertEqual(last["response"], "新回复")
+        self.assertEqual(last["turn_id"], 2)
 
     def test_get_last_result_none_when_empty(self):
         """空会话时get_last_result()应返回None"""
@@ -237,38 +241,38 @@ class TestLastResultQuickAccess(unittest.TestCase):
         self.session.add_turn(
             user_input="元数据测试",
             assistant_response="带元数据的回复",
-            task_type='analysis',
-            filepath='/tmp/meta.md',
-            sources=[{'title': 'M1', 'url': 'http://m1'}],
+            task_type="analysis",
+            filepath="/tmp/meta.md",
+            sources=[{"title": "M1", "url": "http://m1"}],
         )
 
         last = self.session.get_last_result()
 
-        self.assertEqual(last['task_type'], 'analysis')
-        self.assertEqual(last['filepath'], '/tmp/meta.md')
-        self.assertEqual(len(last['sources']), 1)
-        self.assertIsInstance(last['timestamp'], float)
+        self.assertEqual(last["task_type"], "analysis")
+        self.assertEqual(last["filepath"], "/tmp/meta.md")
+        self.assertEqual(len(last["sources"]), 1)
+        self.assertIsInstance(last["timestamp"], float)
 
     def test_get_last_result_after_iteration(self):
         """迭代场景：第2轮应能看到第1轮的结果"""
         self.session.add_turn(
             user_input="写Q2方案",
             assistant_response="已生成Q2营销方案，第三阶段为4周...",
-            task_type='plan',
+            task_type="plan",
         )
         self.session.add_turn(
             user_input="第三阶段太长，缩短到2周",
             assistant_response="已调整为2周敏捷迭代...",
-            task_type='modification',
+            task_type="modification",
         )
 
         last = self.session.get_last_result()
-        self.assertIn('2周', last['response'])
-        self.assertEqual(last['turn_id'], 2)
+        self.assertIn("2周", last["response"])
+        self.assertEqual(last["turn_id"], 2)
 
         context = self.session.get_context_for_llm()
-        self.assertIn('写Q2方案', context)
-        self.assertIn('Q2营销方案', context)
+        self.assertIn("写Q2方案", context)
+        self.assertIn("Q2营销方案", context)
 
 
 class TestGateITERATE01(unittest.TestCase):
@@ -293,12 +297,12 @@ class TestGateITERATE01(unittest.TestCase):
                 "## 第三阶段 (第9-12周)\n"
                 "- 全面推广与优化\n"
             ),
-            task_type='plan',
+            task_type="plan",
         )
 
         context_before_iter = self.session.get_context_for_llm()
-        self.assertIn('Q2增长方案', context_before_iter)
-        self.assertIn('第一阶段', context_before_iter)
+        self.assertIn("Q2增长方案", context_before_iter)
+        self.assertIn("第一阶段", context_before_iter)
 
         self.session.add_turn(
             user_input="第三阶段时间太长，能缩短到2周吗？",
@@ -311,17 +315,17 @@ class TestGateITERATE01(unittest.TestCase):
                 "## 第三阶段 (第9-10周) ← 已缩短为2周\n"
                 "- 快速推广与数据验证\n"
             ),
-            task_type='modification',
+            task_type="modification",
         )
 
         last = self.session.get_last_result()
         self.assertIsNotNone(last)
-        self.assertIn('2周', last['response'])
-        self.assertEqual(last['turn_id'], 2)
+        self.assertIn("2周", last["response"])
+        self.assertEqual(last["turn_id"], 2)
 
         full_context = self.session.get_context_for_llm()
-        self.assertIn('Q2增长方案', full_context)
-        self.assertIn('缩短到2周吗？', full_context)
+        self.assertIn("Q2增长方案", full_context)
+        self.assertIn("缩短到2周吗？", full_context)
 
     def test_context_format_is_readable(self):
         """门禁：上下文格式应该是人类可读的结构化文本"""
@@ -332,14 +336,14 @@ class TestGateITERATE01(unittest.TestCase):
 
         context = self.session.get_context_for_llm()
 
-        self.assertIn('[对话历史', context)
-        self.assertIn('=== 第', context)
-        self.assertIn('👤 用户:', context)
-        self.assertIn('🤖 助手:', context)
+        self.assertIn("[对话历史", context)
+        self.assertIn("=== 第", context)
+        self.assertIn("👤 用户:", context)
+        self.assertIn("🤖 助手:", context)
 
-        lines = [l for l in context.split('\n') if l.strip()]
+        lines = [l for l in context.split("\n") if l.strip()]
         self.assertGreaterEqual(len(lines), 4, "上下文格式应足够详细")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

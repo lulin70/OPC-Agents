@@ -36,6 +36,7 @@ python tests/gate_llm_real_e2e.py [--layer L1] [--quick] [--report]
   --quick: 快速模式(仅Layer 1, 5条查询)
   --report: 生成详细HTML报告
 """
+
 import os
 import sys
 import time
@@ -48,17 +49,20 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent
-RESULTS_DIR = PROJECT_ROOT / 'tests' / 'e2e_results'
+RESULTS_DIR = PROJECT_ROOT / "tests" / "e2e_results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass
 class QueryTestCase:
     """单条测试查询用例"""
+
     id: str
     category: str
     user_input: str
@@ -71,6 +75,7 @@ class QueryTestCase:
 @dataclass
 class QualityScore:
     """质量评分结果"""
+
     query_id: str
     scores: Dict[str, int]
     total: int
@@ -81,6 +86,7 @@ class QualityScore:
 @dataclass
 class E2EResult:
     """E2E测试结果"""
+
     query_id: str
     category: str
     user_input: str
@@ -180,13 +186,18 @@ QUERIES_LAYER2_QUALITY = [
         forbidden_patterns=["___", "根据实际情况"],
         min_length=600,
     ),
-
     # 场景B: 内容生成类
     QueryTestCase(
         id="L2-006",
         category="内容生成-技术博客",
         user_input="写一篇关于'React Server Components vs Next.js App Router'的技术对比博客文章，面向中级前端开发者，1500字左右",
-        expected_keywords=["React", "Server Components", "Next.js", "App Router", "前端"],
+        expected_keywords=[
+            "React",
+            "Server Components",
+            "Next.js",
+            "App Router",
+            "前端",
+        ],
         forbidden_patterns=["___", "待补充代码示例"],
         min_length=1200,
     ),
@@ -222,7 +233,6 @@ QUERIES_LAYER2_QUALITY = [
         forbidden_patterns=["___", "其他常规工作"],
         min_length=350,
     ),
-
     # 场景C: 数据分析类
     QueryTestCase(
         id="L2-011",
@@ -264,7 +274,6 @@ QUERIES_LAYER2_QUALITY = [
         forbidden_patterns=["___", "需要持续优化"],
         min_length=700,
     ),
-
     # 场景D: 信息收集类
     QueryTestCase(
         id="L2-016",
@@ -294,7 +303,16 @@ QUERIES_LAYER2_QUALITY = [
         id="L2-019",
         category="信息收集-人才招聘",
         user_input="撰写一个'全栈工程师(远程)'的职位JD，要求3年经验，熟悉React+Node.js或Vue+Python，有SaaS产品经验者优先，薪资范围25-40K",
-        expected_keywords=["全栈", "远程", "3年", "React", "Node.js", "Vue", "Python", "25-40K"],
+        expected_keywords=[
+            "全栈",
+            "远程",
+            "3年",
+            "React",
+            "Node.js",
+            "Vue",
+            "Python",
+            "25-40K",
+        ],
         forbidden_patterns=["___", "任职资格"],
         min_length=400,
     ),
@@ -482,23 +500,28 @@ QUERIES_LAYER5_PERFORMANCE = [
         min_length=400,
         max_latency_sec=20.0,
     ),
-    *([QueryTestCase(
-        id=f"L5-{i+6:03d}",
-        category=f"性能-批量{i}",
-        user_input=f"生成第{i}份周报模板，包含本周进展、下周计划和风险提示",
-        expected_keywords=[f"第{i}份", "周报"],
-        forbidden_patterns=["___"],
-        min_length=200,
-        max_latency_sec=15.0,
-    ) for i in range(1, 6)]),
+    *(
+        [
+            QueryTestCase(
+                id=f"L5-{i+6:03d}",
+                category=f"性能-批量{i}",
+                user_input=f"生成第{i}份周报模板，包含本周进展、下周计划和风险提示",
+                expected_keywords=[f"第{i}份", "周报"],
+                forbidden_patterns=["___"],
+                min_length=200,
+                max_latency_sec=15.0,
+            )
+            for i in range(1, 6)
+        ]
+    ),
 ]
 
 ALL_QUERIES = (
-    QUERIES_LAYER1_CONNECTIVITY +
-    QUERIES_LAYER2_QUALITY +
-    QUERIES_LAYER3_BOUNDARY +
-    QUERIES_LAYER4_FALLBACK +
-    QUERIES_LAYER5_PERFORMANCE
+    QUERIES_LAYER1_CONNECTIVITY
+    + QUERIES_LAYER2_QUALITY
+    + QUERIES_LAYER3_BOUNDARY
+    + QUERIES_LAYER4_FALLBACK
+    + QUERIES_LAYER5_PERFORMANCE
 )
 
 
@@ -509,32 +532,35 @@ class LLME2EValidator:
         self.api_key = self._get_api_key()
         self.results: List[E2EResult] = []
         self.stats = {
-            'total': 0,
-            'success': 0,
-            'llm_mode': 0,
-            'fallback_mode': 0,
-            'error': 0,
-            'quality_passed': 0,
-            'quality_failed': 0,
-            'avg_latency_ms': 0,
-            'avg_quality_score': 0,
-            'total_tokens': 0,
+            "total": 0,
+            "success": 0,
+            "llm_mode": 0,
+            "fallback_mode": 0,
+            "error": 0,
+            "quality_passed": 0,
+            "quality_failed": 0,
+            "avg_latency_ms": 0,
+            "avg_quality_score": 0,
+            "total_tokens": 0,
         }
 
     def _get_api_key(self) -> Optional[str]:
-        key = os.environ.get('MOKA_API_KEY')
+        key = os.environ.get("MOKA_API_KEY")
         if key:
             return key
-        key = os.environ.get('GLM_API_KEY')
+        key = os.environ.get("GLM_API_KEY")
         if key:
             return key
-        key = os.environ.get('OPENAI_API_KEY')
+        key = os.environ.get("OPENAI_API_KEY")
         if key:
             return key
         try:
             from opc_manager.config import get_config
+
             config = get_config()
-            return getattr(config, 'glm_api_key', None) or getattr(config, 'llm_api_key', None)
+            return getattr(config, "glm_api_key", None) or getattr(
+                config, "llm_api_key", None
+            )
         except Exception:
             pass
         return None
@@ -555,9 +581,9 @@ class LLME2EValidator:
             qs = self._score_quality(tc, result)
             result.quality_score = qs
             if qs.passed:
-                self.stats['quality_passed'] += 1
+                self.stats["quality_passed"] += 1
             else:
-                self.stats['quality_failed'] += 1
+                self.stats["quality_failed"] += 1
 
         self.results.append(result)
         self._update_stats(result)
@@ -566,10 +592,13 @@ class LLME2EValidator:
     def _run_real_api(self, tc: QueryTestCase) -> E2EResult:
         try:
             from opc_manager.llm_content import LLMEnhancedContentGenerator
+
             generator = LLMEnhancedContentGenerator(llm_timeout=tc.max_latency_sec)
 
             template = f"# {tc.category}报告\n\n## 内容\n{{business_context}}\n## 详细信息\n{{user_query}}\n"
-            search_results = [{'title': f'{tc.category}参考资料', 'snippet': '相关背景信息'}]
+            search_results = [
+                {"title": f"{tc.category}参考资料", "snippet": "相关背景信息"}
+            ]
 
             gen_result = generator.generate(
                 user_input=tc.user_input,
@@ -577,13 +606,14 @@ class LLME2EValidator:
                 search_results=search_results,
             )
 
-            if gen_result.success and gen_result.generation_mode == 'llm_rag':
+            if gen_result.success and gen_result.generation_mode == "llm_rag":
                 return E2EResult(
                     query_id=tc.id,
                     category=tc.category,
-                    user_input=tc.user_input[:50] + ('...' if len(tc.user_input) > 50 else ''),
+                    user_input=tc.user_input[:50]
+                    + ("..." if len(tc.user_input) > 50 else ""),
                     success=True,
-                    mode='llm_rag',
+                    mode="llm_rag",
                     content=gen_result.content,
                     latency_ms=0,
                     tokens_used=len(gen_result.content) // 2,
@@ -594,7 +624,7 @@ class LLME2EValidator:
                     category=tc.category,
                     user_input=tc.user_input[:50],
                     success=True,
-                    mode='template_fallback',
+                    mode="template_fallback",
                     content=gen_result.content,
                     latency_ms=0,
                     tokens_used=0,
@@ -605,11 +635,11 @@ class LLME2EValidator:
                     category=tc.category,
                     user_input=tc.user_input[:50],
                     success=False,
-                    mode='llm_failed',
-                    content=gen_result.content or '',
+                    mode="llm_failed",
+                    content=gen_result.content or "",
                     latency_ms=0,
                     tokens_used=0,
-                    error_message='LLM generation returned empty or failed',
+                    error_message="LLM generation returned empty or failed",
                 )
 
         except Exception as e:
@@ -618,8 +648,8 @@ class LLME2EValidator:
                 category=tc.category,
                 user_input=tc.user_input[:50],
                 success=False,
-                mode='error',
-                content='',
+                mode="error",
+                content="",
                 latency_ms=0,
                 tokens_used=0,
                 error_message=str(e),
@@ -627,6 +657,7 @@ class LLME2EValidator:
 
     def _run_fallback(self, tc: QueryTestCase) -> E2EResult:
         from opc_manager.llm_content import LLMEnhancedContentGenerator
+
         generator = LLMEnhancedContentGenerator()
 
         template = f"# {tc.category}\n\n{tc.user_input}\n\n" + "详细内容。" * 20
@@ -637,7 +668,7 @@ class LLME2EValidator:
             category=tc.category,
             user_input=tc.user_input[:50],
             success=True,
-            mode='template_forced',
+            mode="template_forced",
             content=gen_result.content,
             latency_ms=0,
             tokens_used=0,
@@ -649,32 +680,46 @@ class LLME2EValidator:
         details = {}
 
         s1 = sum(1 for kw in tc.expected_keywords if kw.lower() in content)
-        scores['S1_业务注入'] = min(s1, 2)
-        details['S1'] = f"业务关键词命中{s1}/{len(tc.expected_keywords)}"
+        scores["S1_业务注入"] = min(s1, 2)
+        details["S1"] = f"业务关键词命中{s1}/{len(tc.expected_keywords)}"
 
-        number_pattern = r'\d+[\.]?\d*\s*(?:万|千|%|元|人|天|周|月|年|次|个|条|GB|MB|$|k)'
+        number_pattern = (
+            r"\d+[\.]?\d*\s*(?:万|千|%|元|人|天|周|月|年|次|个|条|GB|MB|$|k)"
+        )
         numbers_found = len(re.findall(number_pattern, content))
-        date_pattern = r'\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?|\d{1,2}[/月]\d{1,2}[日]?'
+        date_pattern = r"\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?|\d{1,2}[/月]\d{1,2}[日]?"
         dates_found = len(re.findall(date_pattern, content))
-        action_pattern = r'(?:实施|执行|部署|发布|提交|创建|发送|联系|召开|启动|完成|优化|改进|调整|增加|减少|提升|降低)[^。，]*?(?:方案|计划|报告|文档|代码|功能|页面|邮件|会议)'
+        action_pattern = r"(?:实施|执行|部署|发布|提交|创建|发送|联系|召开|启动|完成|优化|改进|调整|增加|减少|提升|降低)[^。，]*?(?:方案|计划|报告|文档|代码|功能|页面|邮件|会议)"
         actions_found = len(re.findall(action_pattern, content))
         specificity_score = min((numbers_found + dates_found + actions_found), 3)
-        scores['S2_具体性'] = specificity_score
-        details['S2'] = f"具体元素: 数字={numbers_found}, 日期={dates_found}, 行动={actions_found}"
+        scores["S2_具体性"] = specificity_score
+        details["S2"] = (
+            f"具体元素: 数字={numbers_found}, 日期={dates_found}, 行动={actions_found}"
+        )
 
-        headers = re.findall(r'^#+\s+.+', content, re.MULTILINE)
-        scores['S3_结构'] = min(len(headers), 2)
-        details['S3'] = f"Markdown标题数={len(headers)}"
+        headers = re.findall(r"^#+\s+.+", content, re.MULTILINE)
+        scores["S3_结构"] = min(len(headers), 2)
+        details["S3"] = f"Markdown标题数={len(headers)}"
 
         forbidden_count = sum(1 for p in tc.forbidden_patterns if p in content)
-        generic_phrases = ['适时', '加强关注', '密切关注', '视情况而定', '根据实际情况', '清晰定义', '明确边界']
+        generic_phrases = [
+            "适时",
+            "加强关注",
+            "密切关注",
+            "视情况而定",
+            "根据实际情况",
+            "清晰定义",
+            "明确边界",
+        ]
         generic_count = sum(1 for phrase in generic_phrases if phrase in content)
-        scores['S4_无禁止内容'] = max(0, 2 - forbidden_count - generic_count // 2)
-        details['S4'] = f"禁止模式:{forbidden_count}, 泛化短语:{generic_count}"
+        scores["S4_无禁止内容"] = max(0, 2 - forbidden_count - generic_count // 2)
+        details["S4"] = f"禁止模式:{forbidden_count}, 泛化短语:{generic_count}"
 
-        has_reference = any(kw in content for kw in ['资料', '参考', '来源', '据[显示]', 'search'])
-        scores['S5_搜索引用'] = 1 if has_reference else 0
-        details['S5'] = f"搜索引用={'有' if has_reference else '无'}"
+        has_reference = any(
+            kw in content for kw in ["资料", "参考", "来源", "据[显示]", "search"]
+        )
+        scores["S5_搜索引用"] = 1 if has_reference else 0
+        details["S5"] = f"搜索引用={'有' if has_reference else '无'}"
 
         total = sum(scores.values())
         passed = total >= 6
@@ -688,34 +733,36 @@ class LLME2EValidator:
         )
 
     def _update_stats(self, result: E2EResult):
-        self.stats['total'] += 1
+        self.stats["total"] += 1
         if result.success:
-            self.stats['success'] += 1
-            if result.mode == 'llm_rag':
-                self.stats['llm_mode'] += 1
-            elif 'fallback' in result.mode:
-                self.stats['fallback_mode'] += 1
+            self.stats["success"] += 1
+            if result.mode == "llm_rag":
+                self.stats["llm_mode"] += 1
+            elif "fallback" in result.mode:
+                self.stats["fallback_mode"] += 1
         else:
-            self.stats['error'] += 1
+            self.stats["error"] += 1
 
-        if self.stats['success'] > 0:
-            self.stats['avg_latency_ms'] = (
-                (self.stats['avg_latency_ms'] * (self.stats['success'] - 1) + result.latency_ms)
-                / self.stats['success']
-            )
+        if self.stats["success"] > 0:
+            self.stats["avg_latency_ms"] = (
+                self.stats["avg_latency_ms"] * (self.stats["success"] - 1)
+                + result.latency_ms
+            ) / self.stats["success"]
         if result.tokens_used > 0:
-            self.stats['total_tokens'] += result.tokens_used
+            self.stats["total_tokens"] += result.tokens_used
 
     def generate_report(self) -> str:
         """生成测试报告"""
         lines = []
         lines.append("# G-LLM-REAL-01 真实LLM API E2E验证报告")
         lines.append(f"\n**测试时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        lines.append(f"**API状态**: {'✅ 已配置' if self.api_key else '❌ 未配置(使用降级模式)'}")
+        lines.append(
+            f"**API状态**: {'✅ 已配置' if self.api_key else '❌ 未配置(使用降级模式)'}"
+        )
         if self.api_key:
             lines.append(f"**API Key**: {self.api_key[:8]}...{self.api_key[-4:]}")
         else:
-            lines.append('**API Key**: 无')
+            lines.append("**API Key**: 无")
         lines.append("")
 
         stats = self.stats
@@ -723,18 +770,30 @@ class LLME2EValidator:
         lines.append(f"| 指标 | 数值 | 占比 |")
         lines.append(f"|------|------|------|")
         lines.append(f"| 总查询数 | {stats['total']} | 100% |")
-        lines.append(f"| ✅ 成功 | {stats['success']} | {stats['success']/max(stats['total'],1)*100:.0f}% |")
-        lines.append(f"| 🤖 LLM RAG模式 | {stats['llm_mode']} | {stats['llm_mode']/max(stats['total'],1)*100:.0f}% |")
-        lines.append(f"| 📋 降级模式 | {stats['fallback_mode']} | {stats['fallback_mode']/max(stats['total'],1)*100:.0f}% |")
-        lines.append(f"| ❌ 失败 | {stats['error']} | {stats['error']/max(stats['total'],1)*100:.0f}% |")
-        lines.append(f"| 🎯 质量合格 | {stats['quality_passed']}/{stats['quality_passed']+stats['quality_failed']} | {stats['quality_passed']/max(stats['quality_passed']+stats['quality_failed'],1)*100:.0f}% |")
+        lines.append(
+            f"| ✅ 成功 | {stats['success']} | {stats['success']/max(stats['total'],1)*100:.0f}% |"
+        )
+        lines.append(
+            f"| 🤖 LLM RAG模式 | {stats['llm_mode']} | {stats['llm_mode']/max(stats['total'],1)*100:.0f}% |"
+        )
+        lines.append(
+            f"| 📋 降级模式 | {stats['fallback_mode']} | {stats['fallback_mode']/max(stats['total'],1)*100:.0f}% |"
+        )
+        lines.append(
+            f"| ❌ 失败 | {stats['error']} | {stats['error']/max(stats['total'],1)*100:.0f}% |"
+        )
+        lines.append(
+            f"| 🎯 质量合格 | {stats['quality_passed']}/{stats['quality_passed']+stats['quality_failed']} | {stats['quality_passed']/max(stats['quality_passed']+stats['quality_failed'],1)*100:.0f}% |"
+        )
         lines.append(f"| ⏱️ 平均延迟 | {stats['avg_latency_ms']:.0f}ms | — |")
         lines.append(f"| 🔤 Token消耗 | {stats['total_tokens']} | — |")
         lines.append("")
 
         lines.append("## 门禁判定")
-        llm_rate = stats['llm_mode'] / max(stats['total'], 1)
-        quality_rate = stats['quality_passed'] / max(stats['quality_passed'] + stats['quality_failed'], 1)
+        llm_rate = stats["llm_mode"] / max(stats["total"], 1)
+        quality_rate = stats["quality_passed"] / max(
+            stats["quality_passed"] + stats["quality_failed"], 1
+        )
 
         gate_llm_pass = llm_rate >= 0.10
         gate_quality_pass = quality_rate >= 0.70
@@ -742,9 +801,15 @@ class LLME2EValidator:
 
         lines.append(f"| 门禁 | 标准 | 实际 | 通过? |")
         lines.append(f"|------|------|------|------|")
-        lines.append(f"| G-LLM-REAL-01a: 真实API占比 | ≥10% | {llm_rate*100:.1f}% | {'✅' if gate_llm_pass else '❌'} |")
-        lines.append(f"| G-LLM-REAL-01b: 质量合格率 | ≥70% | {quality_rate*100:.1f}% | {'✅' if gate_quality_pass else '❌'} |")
-        lines.append(f"| **综合** | **两项都过** | **—** | {'✅ **PASS**' if gate_overall else '❌ **FAIL**'} |")
+        lines.append(
+            f"| G-LLM-REAL-01a: 真实API占比 | ≥10% | {llm_rate*100:.1f}% | {'✅' if gate_llm_pass else '❌'} |"
+        )
+        lines.append(
+            f"| G-LLM-REAL-01b: 质量合格率 | ≥70% | {quality_rate*100:.1f}% | {'✅' if gate_quality_pass else '❌'} |"
+        )
+        lines.append(
+            f"| **综合** | **两项都过** | **—** | {'✅ **PASS**' if gate_overall else '❌ **FAIL**'} |"
+        )
 
         if not gate_overall:
             lines.append("\n### ⚠️ 门禁未通过 — 阻塞性问题:")
@@ -757,11 +822,11 @@ class LLME2EValidator:
 
         lines.append("\n## 详细结果")
         for r in self.results:
-            status_icon = '✅' if r.success else '❌'
+            status_icon = "✅" if r.success else "❌"
             mode_tag = f"`{r.mode}`"
             score_str = ""
             if r.quality_score:
-                score_color = '🟢' if r.quality_score.passed else '🔴'
+                score_color = "🟢" if r.quality_score.passed else "🔴"
                 score_str = f"{score_color} {r.quality_score.total}/10"
 
             lines.append(f"\n#### {status_icon} [{r.query_id}] ({r.category})")
@@ -775,30 +840,35 @@ class LLME2EValidator:
             if r.success and len(r.content) < 200:
                 lines.append(f"- **内容预览**: {r.content[:150]}...")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description='G-LLM-REAL-01 真实LLM API E2E验证')
-    parser.add_argument('--layer', choices=['L1', 'L2', 'L3', 'L4', 'L5'], help='仅执行指定层')
-    parser.add_argument('--quick', action='store_true', help='快速模式(L1 only)')
-    parser.add_argument('--force-fallback', action='store_true', help='强制使用降级模式(无API时)')
-    parser.add_argument('--report', action='store_true', help='生成报告文件')
+
+    parser = argparse.ArgumentParser(description="G-LLM-REAL-01 真实LLM API E2E验证")
+    parser.add_argument(
+        "--layer", choices=["L1", "L2", "L3", "L4", "L5"], help="仅执行指定层"
+    )
+    parser.add_argument("--quick", action="store_true", help="快速模式(L1 only)")
+    parser.add_argument(
+        "--force-fallback", action="store_true", help="强制使用降级模式(无API时)"
+    )
+    parser.add_argument("--report", action="store_true", help="生成报告文件")
     args = parser.parse_args()
 
     validator = LLME2EValidator()
 
-    if args.quick or args.layer == 'L1':
+    if args.quick or args.layer == "L1":
         queries_to_run = QUERIES_LAYER1_CONNECTIVITY
         logger.info(f"🚀 快速模式: 仅执行Layer 1 ({len(queries_to_run)} 条)")
-    elif args.layer == 'L2':
+    elif args.layer == "L2":
         queries_to_run = QUERIES_LAYER2_QUALITY
-    elif args.layer == 'L3':
+    elif args.layer == "L3":
         queries_to_run = QUERIES_LAYER3_BOUNDARY
-    elif args.layer == 'L4':
+    elif args.layer == "L4":
         queries_to_run = QUERIES_LAYER4_FALLBACK
-    elif args.layer == 'L5':
+    elif args.layer == "L5":
         queries_to_run = QUERIES_LAYER5_PERFORMANCE
     else:
         queries_to_run = ALL_QUERIES
@@ -806,7 +876,9 @@ def main():
 
     logger.info("=" * 60)
     logger.info("G-LLM-REAL-01: 真实LLM API E2E验证开始")
-    logger.info(f"API Key: {'✅ 已配置' if validator.api_key else '❌ 未配置(降级模式)'}")
+    logger.info(
+        f"API Key: {'✅ 已配置' if validator.api_key else '❌ 未配置(降级模式)'}"
+    )
     logger.info(f"查询数量: {len(queries_to_run)}")
     logger.info("=" * 60)
 
@@ -814,24 +886,31 @@ def main():
         logger.info(f"[{i}/{len(queries_to_run)}] 执行 {tc.id} ({tc.category})...")
         result = validator.run_query(tc, force_fallback=args.force_fallback)
 
-        status = '✅' if result.success else '❌'
-        mode_short = result.mode.replace('template_', '').replace('llm_', '')
-        score_info = f", 质量={result.quality_score.total}/10" if result.quality_score else ""
-        logger.info(f"  {status} [{result.query_id}] mode={mode_short}{score_info} {result.latency_ms:.0f}ms")
+        status = "✅" if result.success else "❌"
+        mode_short = result.mode.replace("template_", "").replace("llm_", "")
+        score_info = (
+            f", 质量={result.quality_score.total}/10" if result.quality_score else ""
+        )
+        logger.info(
+            f"  {status} [{result.query_id}] mode={mode_short}{score_info} {result.latency_ms:.0f}ms"
+        )
 
     report = validator.generate_report()
     print("\n" + "=" * 60)
     print(report)
 
     if args.report:
-        report_path = RESULTS_DIR / f"e2e_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
-        report_path.write_text(report, encoding='utf-8')
+        report_path = (
+            RESULTS_DIR / f"e2e_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        )
+        report_path.write_text(report, encoding="utf-8")
         logger.info(f"📄 报告已保存: {report_path}")
 
     stats = validator.stats
-    overall_pass = (
-        (stats['llm_mode'] / max(stats['total'], 1) >= 0.10) and
-        (stats['quality_passed'] / max(stats['quality_passed'] + stats['quality_failed'], 1) >= 0.70)
+    overall_pass = (stats["llm_mode"] / max(stats["total"], 1) >= 0.10) and (
+        stats["quality_passed"]
+        / max(stats["quality_passed"] + stats["quality_failed"], 1)
+        >= 0.70
     )
 
     if overall_pass:
@@ -842,5 +921,5 @@ def main():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     exit(main())

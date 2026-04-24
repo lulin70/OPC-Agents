@@ -9,6 +9,7 @@
 运行方式：
     PYTHONPATH=/Users/lin/trae_projects/OPC-Agents python3 -m pytest tests/test_async_frontend_integration.py -v
 """
+
 import pytest
 import sys
 import os
@@ -51,14 +52,16 @@ class TestAsyncExecutorIntegration:
         time.sleep(0.2)
 
         status = self.executor.get_status(task_id)
-        assert status['exists'] is True, "任务应存在"
-        assert status['status'] in [TaskStatus.PENDING.value, TaskStatus.RUNNING.value], \
-            f"初始状态异常: {status['status']}"
+        assert status["exists"] is True, "任务应存在"
+        assert status["status"] in [
+            TaskStatus.PENDING.value,
+            TaskStatus.RUNNING.value,
+        ], f"初始状态异常: {status['status']}"
 
     def test_get_status_nonexistent_task(self):
         """测试查询不存在的task_id"""
         status = self.executor.get_status("task-nonexistent")
-        assert status['exists'] is False
+        assert status["exists"] is False
 
     def test_cancel_pending_task(self):
         """测试取消pending状态的任务"""
@@ -71,8 +74,9 @@ class TestAsyncExecutorIntegration:
 
         time.sleep(0.1)
         status = self.executor.get_status(task_id)
-        assert status['status'] == TaskStatus.CANCELLED.value, \
-            f"取消后状态应为cancelled，实际: {status['status']}"
+        assert (
+            status["status"] == TaskStatus.CANCELLED.value
+        ), f"取消后状态应为cancelled，实际: {status['status']}"
 
     def test_concurrent_limit(self):
         """测试并发数达到上限后应拒绝新任务"""
@@ -97,25 +101,25 @@ class TestAsyncExecuteWrapper:
 
     def test_wrapper_returns_dict_on_success(self):
         """测试成功执行时返回正确的字典结构"""
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'frontend'))
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "frontend"))
 
         from importlib import import_module
         import importlib.util
 
         spec = importlib.util.spec_from_file_location(
             "frontend_app",
-            os.path.join(os.path.dirname(__file__), '..', 'frontend', 'app.py')
+            os.path.join(os.path.dirname(__file__), "..", "frontend", "app.py"),
         )
 
         executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
 
         def mock_execute(prompt, cancel_event):
             return {
-                'content': '# 测试内容\n\n这是测试生成的文档。',
-                'success': True,
-                'filepath': '/tmp/test_deliverable.md',
-                'task_type': 'CONTENT_GENERATION',
-                'error': None,
+                "content": "# 测试内容\n\n这是测试生成的文档。",
+                "success": True,
+                "filepath": "/tmp/test_deliverable.md",
+                "task_type": "CONTENT_GENERATION",
+                "error": None,
             }
 
         task_id = executor.submit("wrapper测试", execute_func=mock_execute)
@@ -124,15 +128,17 @@ class TestAsyncExecuteWrapper:
         start = time.time()
         while time.time() - start < max_wait:
             status = executor.get_status(task_id)
-            if status['status'] in ['done', 'failed', 'cancelled']:
+            if status["status"] in ["done", "failed", "cancelled"]:
                 break
             time.sleep(0.1)
 
         final_status = executor.get_status(task_id)
-        assert final_status['status'] == 'done', f"任务应完成，实际: {final_status['status']}"
-        assert final_status['result_success'] is True
-        assert final_status['result_content'] is not None
-        assert '测试内容' in final_status['result_content']
+        assert (
+            final_status["status"] == "done"
+        ), f"任务应完成，实际: {final_status['status']}"
+        assert final_status["result_success"] is True
+        assert final_status["result_content"] is not None
+        assert "测试内容" in final_status["result_content"]
         print(f"✅ 包装函数测试通过: content长度={len(final_status['result_content'])}")
 
     def test_wrapper_handles_exception(self):
@@ -148,13 +154,15 @@ class TestAsyncExecuteWrapper:
         start = time.time()
         while time.time() - start < max_wait:
             status = executor.get_status(task_id)
-            if status['status'] in ['done', 'failed', 'cancelled']:
+            if status["status"] in ["done", "failed", "cancelled"]:
                 break
             time.sleep(0.1)
 
         final_status = executor.get_status(task_id)
-        assert final_status['status'] == 'failed', f"应为failed状态，实际: {final_status['status']}"
-        assert final_status['error_message'] is not None
+        assert (
+            final_status["status"] == "failed"
+        ), f"应为failed状态，实际: {final_status['status']}"
+        assert final_status["error_message"] is not None
         print(f"✅ 异常处理测试通过: error={final_status['error_message']}")
 
 
@@ -168,11 +176,11 @@ class TestEndToEndFlow:
         def quick_task(prompt, cancel_event):
             time.sleep(0.2)
             return {
-                'content': f'# {prompt}\n\n任务执行完成！',
-                'success': True,
-                'filepath': '/tmp/e2e_test.md',
-                'task_type': 'GENERAL_CHAT',
-                'error': None,
+                "content": f"# {prompt}\n\n任务执行完成！",
+                "success": True,
+                "filepath": "/tmp/e2e_test.md",
+                "task_type": "GENERAL_CHAT",
+                "error": None,
             }
 
         task_id = executor.submit("E2E完整测试", execute_func=quick_task)
@@ -182,16 +190,18 @@ class TestEndToEndFlow:
         max_polls = 20
         for i in range(max_polls):
             status = executor.get_status(task_id)
-            states_seen.append(status['status'])
+            states_seen.append(status["status"])
 
-            if status['status'] == 'done':
-                assert status['result_content'] is not None
-                assert 'E2E完整测试' in status['result_content']
-                assert status['result_filepath'] == '/tmp/e2e_test.md'
-                print(f"✅ E2E流程完成: 经历{len(states_seen)}次轮询, 最终状态={status['status']}")
+            if status["status"] == "done":
+                assert status["result_content"] is not None
+                assert "E2E完整测试" in status["result_content"]
+                assert status["result_filepath"] == "/tmp/e2e_test.md"
+                print(
+                    f"✅ E2E流程完成: 经历{len(states_seen)}次轮询, 最终状态={status['status']}"
+                )
                 return
 
-            elif status['status'] == 'failed':
+            elif status["status"] == "failed":
                 pytest.fail(f"任务意外失败: {status['error_message']}")
 
             time.sleep(0.1)
@@ -204,20 +214,26 @@ class TestEndToEndFlow:
 
         def slow_task(prompt, cancel_event):
             time.sleep(30)
-            return {'content': '', 'success': False, 'filepath': None, 'task_type': None, 'error': 'timeout'}
+            return {
+                "content": "",
+                "success": False,
+                "filepath": None,
+                "task_type": None,
+                "error": "timeout",
+            }
 
         task_id = executor.submit("可取消任务", execute_func=slow_task)
         time.sleep(0.1)
 
         initial_status = executor.get_status(task_id)
-        assert initial_status['status'] in ['pending', 'running']
+        assert initial_status["status"] in ["pending", "running"]
 
         cancelled = executor.cancel(task_id)
         assert cancelled is True
 
         time.sleep(0.2)
         final_status = executor.get_status(task_id)
-        assert final_status['status'] == 'cancelled'
+        assert final_status["status"] == "cancelled"
         print(f"✅ 取消流程完成: task_id={task_id}")
 
     def test_multiple_concurrent_tasks(self):
@@ -225,14 +241,14 @@ class TestEndToEndFlow:
         executor = AsyncTaskExecutor(max_concurrent=3, default_timeout=10)
 
         def timed_task(prompt, cancel_event):
-            duration = float(prompt.split('_')[-1])
+            duration = float(prompt.split("_")[-1])
             time.sleep(duration)
             return {
-                'content': f'任务{prompt}完成',
-                'success': True,
-                'filepath': None,
-                'task_type': None,
-                'error': None,
+                "content": f"任务{prompt}完成",
+                "success": True,
+                "filepath": None,
+                "task_type": None,
+                "error": None,
             }
 
         task_ids = []
@@ -249,7 +265,7 @@ class TestEndToEndFlow:
             for tid in task_ids:
                 if tid not in completed_ids:
                     status = executor.get_status(tid)
-                    if status['status'] == 'done':
+                    if status["status"] == "done":
                         completed += 1
                         completed_ids.add(tid)
             time.sleep(0.1)
