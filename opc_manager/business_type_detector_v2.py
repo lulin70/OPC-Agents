@@ -1027,7 +1027,9 @@ class BusinessTypeDetectorV2:
                     pass
             return None
         except Exception as e:
-            logger.warning(f"[DetectorV2] LLM detection failed: {e}")
+            import logging
+
+            logging.warning(f"[DetectorV2] LLM detection failed: {e}")
             return None
 
     def _infer_from_profile(self, user_profile: Dict) -> Optional[BusinessType]:
