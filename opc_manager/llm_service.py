@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class LLMProvider(Enum):
+    MOKA = "moka"
     OPENAI = "openai"
+    GLM = "glm"
     OLLAMA = "ollama"
-    MOCK = "mock"
 
 
 @dataclass
@@ -31,13 +32,13 @@ class LLMResponse:
 
 @dataclass
 class LLMConfig:
-    provider: LLMProvider = LLMProvider.MOCK
-    model: str = "gpt-4o-mini"
+    provider: LLMProvider = LLMProvider.MOKA
+    model: str = "moka/claude-sonnet-4-6"
     api_key: Optional[str] = None
-    base_url: Optional[str] = None
+    base_url: Optional[str] = "https://api.moka-ai.com/v1"
     max_tokens: int = 500
     temperature: float = 0.3
-    timeout_seconds: float = 10.0
+    timeout_seconds: float = 60.0
     max_retries: int = 2
     cost_budget_daily: float = 5.0
 
@@ -56,57 +57,6 @@ class LLMBackend(ABC):
     @abstractmethod
     def estimate_cost(self, prompt: str) -> float:
         pass
-
-
-class MockLLMBackend(LLMBackend):
-    """Mock 后端，用于开发和测试"""
-
-    MOCK_RESPONSES = {
-        "detect_type": '{"business_type":"content_creator","confidence":0.85,"reasoning":"检测到内容创作相关关键词"}',
-        "content_creator": '{"business_type":"content_creator","confidence":0.90,"reasoning":"检测到写文章/拍视频等关键词"}',
-        "digital_product": '{"business_type":"digital_product","confidence":0.88,"reasoning":"检测到课程/电子书等关键词"}',
-        "ai_tool_builder": '{"business_type":"ai_tool_builder","confidence":0.87,"reasoning":"检测到SaaS/API/工具开发等关键词"}',
-        "consultant": '{"business_type":"consultant","confidence":0.86,"reasoning":"检测到咨询/培训/方案等关键词"}',
-        "ecommerce": '{"business_type":"ecommerce","confidence":0.89,"reasoning":"检测到电商/销售/商品等关键词"}',
-        "creative_work": '{"business_type":"creative_work","confidence":0.84,"reasoning":"检测到设计/摄影/翻译等创意类关键词"}',
-    }
-
-    def __init__(self, config: LLMConfig):
-        self.config = config
-
-    @property
-    def platform_type(self) -> str:
-        return "mock"
-
-    async def complete(self, prompt: str, system_prompt: Optional[str] = None) -> LLMResponse:
-        start = time.time()
-        simulated_latency = random.uniform(50, 200)
-        await asyncio.sleep(simulated_latency / 1000)
-
-        for key, response in self.MOCK_RESPONSES.items():
-            if key in prompt.lower() or any(kw in prompt.lower() for kw in key.split("_")):
-                return LLMResponse(
-                    content=response,
-                    provider=LLMProvider.MOCK,
-                    model="mock-model",
-                    usage={"prompt_tokens": len(prompt) // 4, "completion_tokens": len(response) // 4, "total_tokens": (len(prompt) + len(response)) // 4},
-                    latency_ms=simulated_latency,
-                )
-
-        default = "这是一个模拟的LLM响应，用于开发和测试。基于输入内容，我理解您的需求并给出相应回复。"
-        return LLMResponse(
-            content=default,
-            provider=LLMProvider.MOCK,
-            model="mock-model",
-            usage={"prompt_tokens": len(prompt) // 4, "completion_tokens": 20, "total_tokens": (len(prompt) // 4) + 20},
-            latency_ms=simulated_latency,
-        )
-
-    def validate_config(self) -> bool:
-        return True
-
-    def estimate_cost(self, prompt: str) -> float:
-        return 0.0
 
 
 class OpenAIBackend(LLMBackend):
@@ -252,9 +202,10 @@ class LLMService:
     """LLM 服务统一入口"""
 
     BACKEND_MAP = {
+        LLMProvider.MOKA: OpenAIBackend,
         LLMProvider.OPENAI: OpenAIBackend,
+        LLMProvider.GLM: OpenAIBackend,
         LLMProvider.OLLAMA: OllamaBackend,
-        LLMProvider.MOCK: MockLLMBackend,
     }
 
     DETECT_SYSTEM_PROMPT = """你是一个业务类型分类专家。根据用户的输入，判断其属于以下哪种一人公司类型：
@@ -283,8 +234,8 @@ class LLMService:
     def _create_backend(self, provider: LLMProvider) -> LLMBackend:
         backend_cls = self.BACKEND_MAP.get(provider)
         if backend_cls is None:
-            logger.warning(f"Unknown LLM provider: {provider}, falling back to MOCK")
-            backend_cls = MockLLMBackend
+            logger.warning(f"Unknown LLM provider: {provider}, falling back to MOKA")
+            backend_cls = OpenAIBackend
         return backend_cls(self.config)
 
     async def detect_business_type_by_llm(self, user_input: str, history: list = None) -> dict:

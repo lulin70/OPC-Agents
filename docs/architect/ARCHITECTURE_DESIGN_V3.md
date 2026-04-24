@@ -1,11 +1,12 @@
-# OPC-Agents 架构设计文档 v3.3 (实际交付版)
+# OPC-Agents 架构设计文档 v3.5 (四角色共识提升版)
 
 ## 更新履历
 
 | 版本 | 日期 | 更新人 | 更新内容 |
 |------|------|--------|----------|
-| **v3.3.0** | **2026-04-16** | **架构师** | **TaskEngineV3核心架构、零占位符设计、真实搜索集成、文件交付链路** |
-| v3.0.0 | 2026-04-15 | 架构师 | Phase 3完整架构：Web/LLM/DB/Platform/CI-CD |
+| **v3.5.0** | **2026-04-16** | **架构师+四方共识** | **SearchResultProcessor / LLMEnhancedContentGenerator / AsyncTaskExecutor / SessionContextManager** |
+| v3.4.0 | 2026-04-16 | 架构师 | v3.4审计重构: InputValidator/SearchCache/注释完善 |
+| v3.3.0 | 2026-04-16 | 架构师 | TaskEngineV3核心架构、零占位符设计、真实搜索集成、文件交付链路 |
 
 ---
 
@@ -288,4 +289,106 @@ frontend/app.py
 
 ---
 
-> **文档维护说明**：本架构文档反映v3.3实际交付的系统架构。核心变化是TaskEngineV3取代了v1/v2成为主引擎，WebSearchMCP成为唯一外部数据源，deliverables/目录成为成果物的持久化存储。
+## ⚡ v3.5 架构变更（四角色共识）
+
+> **决策文档**: [v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)
+
+### ADR-008: SearchResultProcessor — 后处理层替代引擎替换
+
+**决策**: 保持DuckDuckGo数据源，新增SearchResultProcessor后处理层  
+**理由**: 换引擎需API Key+2周集成，Processor纯规则1天交付  
+**风险**: 处理能力有限，极端情况仍可能返回低质量结果
+
+### ADR-009: RAG混合模式 — 模板骨架 + LLM填充
+
+**决策**: _gen_real_*()生成结构骨架 → LLM基于搜索上下文填充具体内容  
+**理由**: 纯LLM不可控(幻觉)、纯模板无针对性 → RAG兼顾结构与智能  
+**降级**: LLM异常时自动回退到v3.4模板模式
+
+### ADR-010: Streamlit异步轮询 — 保持框架不变
+
+**决策**: 不换FastAPI/Vue，改为AsyncTaskExecutor后台线程+前端2s轮询  
+**理由**: 迁移成本2周+ vs 异步改造0.5天，降低风险优先  
+**局限**: 轮询有2s延迟感，不适用高并发场景
+
+### v3.5 新增组件架构图
+
+```
+TaskEngineV3.execute(user_input, session_ctx)
+    │
+    ├── [P0-4] SessionContextManager.get_context_for_llm()  ← 新增
+    │       └── 构建含历史的enriched_input
+    │
+    ├── InputValidator.sanitize()  ← 已有 (v3.4)
+    ├── IntentClassifier.classify()  ← 已有 (v3.4)
+    │
+    ├── [P0-3] AsyncTaskExecutor.submit(enriched_input)  ← 新增
+    │       └── 立即返回 task_id (不阻塞!)
+    │
+    └── [后台线程] 
+            ├── _search(query) → SearchCache  ← 已有
+            │   └── WebSearchMCP.search()
+            │       └── [P0-1] SearchResultProcessor.process(raw)  ← 新增
+            │           ├── _filter_irrelevant()  关键词过滤
+            │           ├── _score_relevance()     TF-IDF评分
+            │           └── _fallback_knowledge_base() 兜底
+            │
+            ├── [P0-2] LLMEnhancedContentGenerator.generate()  ← 新增
+            │   或 └── _gen_real_plan/_gen_real_report()  ← 已有(Fallback)
+            │
+            ├── save_deliverable()  ← 已有
+            └── [P0-4] SessionContextManager.add_turn()  ← 新增
+```
+
+### 新模块接口规格
+
+**SearchResultProcessor** (`opc_manager/search_processor.py`, ~200行):
+```python
+class SearchResultProcessor:
+    def process(self, query, raw_results) -> ProcessedResult:
+        """过滤→评分→排序→截断"""
+    def _extract_keywords(self, query) -> List[str]
+    def _filter_irrelevant(self, keywords, results) -> List[Dict]
+    def _score_relevance(self, query, results) -> List[Dict]
+```
+
+**LLMEnhancedContentGenerator** (`opc_manager/llm_content.py`, ~300行):
+```python
+class LLMEnhancedContentGenerator:
+    def generate_plan(self, query, search_results) -> str      # RAG方案
+    def generate_report(self, query, search_results) -> str    # RAG报告
+    def _build_prompt(self, query, skeleton, context) -> str
+    def _call_llm(self, prompt) -> str                           # 可插拔backend
+```
+
+**AsyncTaskExecutor** (`opc_manager/async_executor.py`, ~150行):
+```python
+class AsyncTaskExecutor:
+    TASK_PENDING / TASK_RUNNING / TASK_DONE / TASK_FAILED
+    def submit(self, prompt) -> str        # → task_id
+    def get_status(self, task_id) -> dict  # → {status,result,filepath,error}
+    def cancel(self, task_id) -> bool
+```
+
+**SessionContextManager** (`opc_manager/session_context.py`, ~150行):
+```python
+class SessionContextManager:
+    def add_turn(self, user_msg, asst_msg, task_type, filepath)
+    def get_context_for_llm(self, max_turns=5) -> str
+    def get_last_result(self) -> Optional[dict]
+    def get_history_summary(self) -> str
+```
+
+### 数据流对比
+
+| | v3.4 (当前) | v3.5 (目标) |
+|--|-----------|-----------|
+| **输入→响应** | 同步阻塞(~8s) | 异步非阻塞(<1s提交+轮询) |
+| **搜索结果** | 原样返回 | Processor过滤/评分/排序 |
+| **内容生成** | 纯模板填充 | RAG混合(LLM或模板Fallback) |
+| **状态管理** | 无状态 | SessionContextManager(20轮上限) |
+| **前端体验** | st.spinner超时崩溃 | st.status+轮询+取消按钮 |
+
+---
+
+> **文档维护说明**：本架构文档反映v3.5四角色共识提升后的系统架构。核心变化是4个新组件(SearchResultProcessor/LLMEnhancedContentGenerator/AsyncTaskExecutor/SessionContextManager)的引入，以及从同步阻塞到异步轮询的执行模型变更。详见[v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)。

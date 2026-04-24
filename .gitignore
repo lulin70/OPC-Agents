@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.pyo
 
 # IDE
 .vscode/
@@ -16,15 +15,10 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
-.AppleDouble
-.LSOverride
 
 # Environment
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
 venv/
 env/
 .venv/
@@ -32,21 +26,10 @@ env/
 # Configuration (keep templates, ignore actual configs)
 config.toml
 *.local.toml
-auto_optimizer_config.json
-optimization_history.json
 
 # Logs
 logs/
 *.log
-
-# Cache
-*.cache
-agents_cache.json
-
-# Generated files
-*.pptx
-*.docx
-*.pdf
 
 # Database files (user data)
 *.db
@@ -55,39 +38,21 @@ agents_cache.json
 *.sqlite
 *.sqlite3
 
-# Task workspaces (user data)
-task_workspaces/
-temp-use/
-
-# Reports and test results (generated)
+# Runtime data
+data/schedules/
+data/completions/
+data/context/
+deliverables/
+output/
 reports/
+task_workspaces/
+
+# Test artifacts
 test_results.xml
 coverage/
 .htmlcov/
 .pytest_cache/
-
-# Process documentation (development artifacts)
-docs/phase1_*.md
-docs/phase2_*.md
-docs/wechat_*.md
-docs/*_report.md
-docs/*_plan.md
-docs/*_summary.md
-docs/documentation_update_summary.md
-docs/progress_report_*.md
-
-# 例外：允许重要的策略文档（必须在通用排除规则之后）
-!docs/GIT_*.md
-!docs/WORKFLOW_*.md
-
-# Temporary files
-*.tmp
-*.bak
-*.swp
-*~
-
-# Node modules (if any frontend build)
-node_modules/
+tests/e2e_results/
 
 # Build outputs
 dist/
