@@ -15,6 +15,7 @@
 
 import unittest
 import time
+from unittest.mock import patch
 from opc_manager.search_processor import SearchResultProcessor, ProcessedResult
 
 
@@ -130,8 +131,10 @@ class TestTFIDFScoring(unittest.TestCase):
     def setUp(self):
         self.processor = SearchResultProcessor()
 
-    def test_title_matches_ranked_higher(self):
+    @patch.object(SearchResultProcessor, "_extract_keywords")
+    def test_title_matches_ranked_higher(self, mock_extract):
         """标题匹配的结果排在摘要匹配前面"""
+        mock_extract.return_value = ["q2", "营销", "策略"]
         query = "Q2营销策略"
         raw_results = [
             {
@@ -152,8 +155,10 @@ class TestTFIDFScoring(unittest.TestCase):
         )
         self.assertIn("Q2", processed.results[0].get("title", ""))
 
-    def test_score_descending_order(self):
+    @patch.object(SearchResultProcessor, "_extract_keywords")
+    def test_score_descending_order(self, mock_extract):
         """结果按评分降序排列"""
+        mock_extract.return_value = ["python", "数据", "分析"]
         query = "Python数据分析"
         raw_results = [
             {"title": "Python基础教程", "snippet": "从入门到精通"},
@@ -167,8 +172,10 @@ class TestTFIDFScoring(unittest.TestCase):
         for i in range(len(scores) - 1):
             self.assertGreaterEqual(scores[i], scores[i + 1])
 
-    def test_multiple_keyword_matches_score_higher(self):
+    @patch.object(SearchResultProcessor, "_extract_keywords")
+    def test_multiple_keyword_matches_score_higher(self, mock_extract):
         """命中多个关键词的结果评分更高"""
+        mock_extract.return_value = ["saas", "产品", "增长"]
         query = "SaaS产品增长"
         raw_results = [
             {"title": "SaaS产品运营", "snippet": "用户增长的秘诀"},
