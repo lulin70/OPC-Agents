@@ -45,6 +45,10 @@ import traceback
 import time
 from datetime import datetime
 
+from opc_manager.monitoring import init_monitoring, track_event, track_error
+
+init_monitoring()
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 DELIVERABLES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "deliverables")
@@ -629,6 +633,8 @@ if page == "💬 对话":
                 elif current_status == 'done':
                     status_container.update(label="✅ 任务完成", state="complete")
 
+                    track_event("task_completed", {"mode": "async", "latency_ms": round(task_status.get('elapsed', 0) * 1000)})
+
                     result_content = task_status.get('result_content')
                     result_filepath = task_status.get('result_filepath')
 
@@ -664,6 +670,8 @@ if page == "💬 对话":
                 elif current_status == 'failed':
                     error_msg = task_status.get('error_message', '未知错误')
                     status_container.update(label="❌ 任务执行失败", state="error")
+
+                    track_error(Exception(error_msg), {"mode": "async", "prompt": prompt[:50]})
 
                     FRIENDLY_ERRORS = {
                         'timeout': ('⏰ AI助手思考时间过长', '网络或AI服务响应较慢，请稍后重试。简短的需求通常更快完成。'),

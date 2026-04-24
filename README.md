@@ -1,6 +1,22 @@
 # 🚀 OPC-Agents — 一人公司智能任务执行系统
 
-> **版本**: v0.1.0 | **状态**: 生产就绪 | **许可**: MIT | **测试覆盖**: 100% | **评分**: 8.8/10 ⭐⭐⭐⭐
+> **版本**: v0.1.0-beta | **状态**: Beta测试中 | **许可**: MIT
+
+---
+
+## 🎉 Beta 测试招募中！
+
+OPC-Agents v0.1.0-beta 现已发布，诚邀你参与测试！
+
+**Beta 用户福利：**
+- ✅ 免费使用所有功能
+- ✅ 优先获得新功能
+- ✅ 直接影响产品方向
+
+**如何参与：**
+1. 克隆仓库并安装：`git clone https://github.com/lulin70/OPC-Agents.git && cd OPC-Agents && pip install -r requirements.txt`
+2. 在 [Issue #1](https://github.com/lulin70/OPC-Agents/issues/1) 分享你的反馈
+3. 发现Bug？创建Issue并标记为`bug`
 
 ---
 
