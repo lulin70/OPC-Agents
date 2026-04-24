@@ -218,8 +218,9 @@ class LLMService:
 - ecommerce: 电商运营者（卖实物商品、闲鱼、抖音小店）
 - creative_work: 创意工作者（设计师、摄影师、翻译、插画）
 
-只返回JSON格式：{"business_type": "类型", "confidence": 0.95, "reasoning": "原因"}
-不要返回其他任何内容。"""
+【重要】必须严格返回JSON格式，不要添加任何markdown标记、代码块或其他文字。
+格式：{"business_type": "类型", "confidence": 0.95, "reasoning": "原因"}
+示例：{"business_type": "digital_product", "confidence": 0.92, "reasoning": "用户提到在线课程平台和编程课程销售"}"""
 
     PERSONA_SYSTEM_TEMPLATE = """你是{display_name}。
 语气：{tone}
@@ -238,25 +239,72 @@ class LLMService:
             backend_cls = OpenAIBackend
         return backend_cls(self.config)
 
-    async def detect_business_type_by_llm(self, user_input: str, history: list = None) -> dict:
-        """使用 LLM 进行业务类型检测"""
-        try:
-            response = await self.backend.complete(user_input, self.DETECT_SYSTEM_PROMPT)
-            self.usage_tracker.record("detect", response.usage, 0)
+    async def detect_business_type_by_llm(self, user_input: str, history: list = None, max_retries: int = 2) -> dict:
+        """使用 LLM 进行业务类型检测
+        
+        Args:
+            user_input: 用户输入文本
+            history: 对话历史（可选）
+            max_retries: 最大重试次数
             
-            parsed = json.loads(response.content)
-            return {
-                "business_type": parsed.get("business_type", "unknown"),
-                "confidence": parsed.get("confidence", 0.0),
-                "reasoning": parsed.get("reasoning", ""),
-                "provider": response.provider.value,
-                "model": response.model,
-            }
-        except json.JSONDecodeError:
-            return {"business_type": "unknown", "confidence": 0.0, "reasoning": "LLM返回格式异常"}
-        except Exception as e:
-            logger.warning(f"LLM detection failed: {e}")
-            return {"business_type": "unknown", "confidence": 0.0, "reasoning": f"错误: {str(e)}"}
+        Returns:
+            包含business_type, confidence, reasoning的字典
+        """
+        for attempt in range(max_retries + 1):
+            try:
+                response = await self.backend.complete(user_input, self.DETECT_SYSTEM_PROMPT)
+                self.usage_tracker.record("detect", response.usage, 0)
+                
+                # 清理响应内容（移除可能的markdown标记）
+                content = response.content.strip()
+                if content.startswith("```json"):
+                    content = content[7:]
+                if content.startswith("```"):
+                    content = content[3:]
+                if content.endswith("```"):
+                    content = content[:-3]
+                content = content.strip()
+                
+                # 尝试解析JSON
+                parsed = json.loads(content)
+                
+                # 验证必需字段
+                if "business_type" not in parsed:
+                    raise ValueError("Missing business_type field")
+                
+                return {
+                    "business_type": parsed.get("business_type", "unknown"),
+                    "confidence": float(parsed.get("confidence", 0.0)),
+                    "reasoning": parsed.get("reasoning", ""),
+                    "provider": response.provider.value,
+                    "model": response.model,
+                    "attempt": attempt + 1,
+                }
+                
+            except json.JSONDecodeError as e:
+                logger.warning(f"JSON decode failed (attempt {attempt + 1}/{max_retries + 1}): {e}")
+                if attempt == max_retries:
+                    return {
+                        "business_type": "unknown",
+                        "confidence": 0.0,
+                        "reasoning": f"LLM返回格式异常: {str(e)}",
+                        "raw_response": response.content if 'response' in locals() else None
+                    }
+                # 重试前等待一小会儿
+                await asyncio.sleep(0.5)
+                
+            except Exception as e:
+                logger.warning(f"LLM detection failed (attempt {attempt + 1}/{max_retries + 1}): {e}")
+                if attempt == max_retries:
+                    return {
+                        "business_type": "unknown",
+                        "confidence": 0.0,
+                        "reasoning": f"错误: {str(e)}"
+                    }
+                await asyncio.sleep(0.5)
+        
+        # 不应该到达这里
+        return {"business_type": "unknown", "confidence": 0.0, "reasoning": "未知错误"}
 
     async def generate_persona_response(self, user_input: str, persona_config: dict, context: dict = None) -> str:
         """基于人格配置生成风格化回复"""

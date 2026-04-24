@@ -46,8 +46,9 @@ class TestAsyncExecutorIntegration:
 
     def test_get_status_pending_state(self):
         """测试提交后初始状态应为pending或running"""
-        task_id = self.executor.submit("测试状态查询")
-        time.sleep(0.1)
+        slow_func = lambda prompt, **kw: time.sleep(5)
+        task_id = self.executor.submit("测试状态查询", execute_func=slow_func)
+        time.sleep(0.2)
 
         status = self.executor.get_status(task_id)
         assert status['exists'] is True, "任务应存在"

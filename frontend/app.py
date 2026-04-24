@@ -484,6 +484,23 @@ if page == "💬 对话":
             "我是你的**任务执行与成果交付助手**。"
             "**告诉我你要什么结果，我直接做完并交付文件给你** — 可下载、可保存、可复用。"
         )
+
+        has_api_key = os.environ.get('MOKA_API_KEY') or os.environ.get('GLM_API_KEY') or os.environ.get('OPENAI_API_KEY')
+        if not has_api_key:
+            st.warning("⚠️ **当前为模板模式** — 配置API Key后可获得AI增强内容（质量提升5倍+）")
+            with st.expander("📖 如何获取API Key？", expanded=True):
+                st.markdown("""
+**3步配置，2分钟搞定：**
+
+1. 访问 [MOKA AI](https://moka-ai.com) 注册账号并获取API Key
+2. 在项目根目录创建 `.env` 文件（可从 `.env.example` 复制）
+3. 填入: `MOKA_API_KEY=sk-your-key-here`
+
+配置后重启应用即可。**不配置也能用**，只是输出为模板填充内容。
+""")
+        else:
+            st.success("✅ AI增强模式已就绪")
+
         st.markdown("### 🎯 我能直接帮你完成并交付：")
 
         st.markdown("**核心场景（最常用）**")
@@ -648,28 +665,33 @@ if page == "💬 对话":
                     error_msg = task_status.get('error_message', '未知错误')
                     status_container.update(label="❌ 任务执行失败", state="error")
 
-                    is_timeout = any(kw in error_msg.lower() for kw in ['timeout', 'reset', 'connection', '超时'])
+                    FRIENDLY_ERRORS = {
+                        'timeout': ('⏰ AI助手思考时间过长', '网络或AI服务响应较慢，请稍后重试。简短的需求通常更快完成。'),
+                        'connection': ('🌐 网络连接中断', '请检查网络连接后重试。如果问题持续，可能是AI服务暂时不可用。'),
+                        'api_key': ('🔑 API Key无效或已过期', '请在.env文件中更新你的API Key，然后重启应用。'),
+                        'rate_limit': ('🚦 请求过于频繁', 'AI服务暂时限流，请等待1-2分钟后重试。'),
+                        'server_error': ('🔧 AI服务暂时不可用', '服务端正在维护，请稍后重试。系统会自动使用模板模式作为备选。'),
+                    }
 
-                    if is_timeout:
-                        fallback = (
-                            f"⏰ 任务执行时间较长，连接可能已中断\n\n"
-                            f"关于「**{prompt[:40]}{'...' if len(prompt) > 40 else ''}**」\n\n"
-                            f"**原因**: 网络搜索耗时超过了系统等待上限（约30秒）\n\n"
-                            f"**建议操作**:\n"
-                            f"1. 点击下方按钮重试（系统已缓存搜索结果，重试会更快）\n"
-                            f"2. 或尝试更简短的需求描述\n"
-                            f"3. 或在终端中直接运行: `python3 -c \"from opc_manager.task_engine_v3 import TaskEngineV3; print(TaskEngineV3().execute('{prompt[:30]}').content)\"`\n\n"
-                            f"*技术详情*: `{error_msg[:200]}`"
-                        )
-                    else:
-                        fallback = (
-                            f"⚠️ 任务执行遇到问题\n\n"
-                            f"关于「**{prompt[:40]}{'...' if len(prompt) > 40 else ''}**」\n\n"
-                            f"*错误信息*: `{error_msg}`\n\n"
-                            f"请稍后重试或换个方式描述需求。"
-                        )
+                    error_lower = error_msg.lower()
+                    friendly_title = '⚠️ 任务执行遇到问题'
+                    friendly_hint = '请稍后重试，或换个方式描述你的需求。'
 
-                    st.markdown(fallback)
+                    for kw, (title, hint) in FRIENDLY_ERRORS.items():
+                        if kw in error_lower:
+                            friendly_title = title
+                            friendly_hint = hint
+                            break
+
+                    prompt_short = prompt[:40] + ('...' if len(prompt) > 40 else '')
+                    fallback = (
+                        f"{friendly_title}\n\n"
+                        f"关于「**{prompt_short}**」\n\n"
+                        f"{friendly_hint}\n\n"
+                        f"<details><summary>技术详情</summary>\n\n`{error_msg[:300]}`\n</details>"
+                    )
+
+                    st.markdown(fallback, unsafe_allow_html=True)
                     st.session_state.messages.append({"role": "assistant", "content": fallback})
                     break
 

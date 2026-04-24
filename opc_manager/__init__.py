@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-OPC Manager package initialization
-"""
+from .version import __version__, get_version, get_version_info, get_version_string
 
-from .core import OPCManager
-from .log_config import LogConfig
-
-__all__ = ['OPCManager', 'LogConfig']
+__all__ = ['__version__', 'get_version', 'get_version_info', 'get_version_string']
