@@ -127,6 +127,7 @@ class AsyncTaskExecutor:
         max_concurrent: int = 5,
         default_timeout: int = 120,
         max_history: int = 50,
+        save_callback=None,
     ):
         """初始化异步执行器
 
@@ -134,10 +135,12 @@ class AsyncTaskExecutor:
             max_concurrent: 最大同时运行任务数（防止资源耗尽）
             default_timeout: 默认超时时间（秒），超过此时间自动标记失败
             max_history: 最大保留历史任务数（超出后清理最旧记录）
+            save_callback: 成果物保存回调函数，签名为 (content, prompt, task_type) -> filepath
         """
         self.max_concurrent = max_concurrent
         self.default_timeout = default_timeout
         self.max_history = max_history
+        self._save_callback = save_callback
 
         self._tasks: Dict[str, AsyncTask] = {}
         self._lock = threading.RLock()
@@ -396,18 +399,21 @@ class AsyncTaskExecutor:
 
             if isinstance(result, dict):
                 with self._lock:
-                    task.status = TaskStatus.DONE
+                    is_success = result.get("success", True)
+                    task.status = TaskStatus.DONE if is_success else TaskStatus.FAILED
                     task.completed_at = time.time()
                     task.result_content = result.get("content")
-                    task.result_success = result.get("success", False)
+                    task.result_success = is_success
                     task.result_filepath = result.get("filepath")
                     task.result_task_type = result.get("task_type")
+                    task.error_message = result.get("error", "")
             elif isinstance(result, tuple) and len(result) >= 2:
                 with self._lock:
-                    task.status = TaskStatus.DONE
+                    is_success = result[1]
+                    task.status = TaskStatus.DONE if is_success else TaskStatus.FAILED
                     task.completed_at = time.time()
                     task.result_content = result[0]
-                    task.result_success = result[1]
+                    task.result_success = is_success
                     if len(result) >= 3:
                         task.result_filepath = result[2]
                     if len(result) >= 4:
@@ -458,14 +464,20 @@ class AsyncTaskExecutor:
             结果字典：{content, success, filepath, task_type}
         """
         from opc_manager.task_engine_v3 import TaskEngineV3
-        from frontend.app import save_deliverable
 
         engine = TaskEngineV3()
         result = engine.execute(prompt)
 
         filepath = None
-        if result.success and result.content:
-            filepath = save_deliverable(result.content, result.task_type, prompt)
+        if result.success and result.content and self._save_callback:
+            try:
+                filepath = self._save_callback(
+                    result.content,
+                    prompt,
+                    result.task_type.value if result.task_type else "general",
+                )
+            except Exception as e:
+                logger.warning(f"[AsyncTaskExecutor] save_callback failed: {e}")
 
         return {
             "content": result.content,

@@ -47,8 +47,9 @@ import time
 from datetime import datetime
 
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from opc_manager.monitoring import init_monitoring, track_event, track_error
 
@@ -92,7 +93,7 @@ if "initialized" not in st.session_state:
     from opc_manager.async_executor import AsyncTaskExecutor
 
     st.session_state.async_executor = AsyncTaskExecutor(
-        max_concurrent=3, default_timeout=120
+        max_concurrent=3, default_timeout=120, save_callback=save_deliverable
     )
     print("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
 
@@ -440,7 +441,6 @@ def execute_task_and_deliver(prompt):
             TaskType.INFO_COLLECTION: "🔍 信息收集",
             TaskType.CONTENT_GENERATION: "✍️ 内容生成",
             TaskType.DATA_ANALYSIS: "📊 数据分析",
-            TaskType.TASK_EXECUTION: "📋 任务执行",
             TaskType.SCENARIO_BASED: "🎯 场景工作流",
             TaskType.GENERAL_CHAT: "💬 智能对话",
         }
@@ -618,11 +618,8 @@ if page == "💬 对话":
                     key=f"core_{sc['id']}",
                     use_container_width=True,
                 ):
-                    st.session_state.messages.append(
-                        {
-                            "role": "user",
-                            "content": f"帮我执行「{sc['title']}」相关任务",
-                        }
+                    st.session_state.pending_prompt = (
+                        f"帮我执行「{sc['title']}」相关任务"
                     )
                     st.rerun()
 
@@ -636,11 +633,8 @@ if page == "💬 对话":
                         key=f"more_{sc['id']}",
                         use_container_width=True,
                     ):
-                        st.session_state.messages.append(
-                            {
-                                "role": "user",
-                                "content": f"帮我执行「{sc['title']}」场景",
-                            }
+                        st.session_state.pending_prompt = (
+                            f"帮我执行「{sc['title']}」场景"
                         )
                         st.rerun()
 
@@ -673,10 +667,20 @@ if page == "💬 对话":
                         f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
                     )
 
-    if prompt := st.chat_input("告诉我你需要什么结果，我直接做完并交付文件..."):
+    pending = st.session_state.pop("pending_prompt", None)
+    if pending:
+        prompt = pending
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
+    elif prompt := st.chat_input("告诉我你需要什么结果，我直接做完并交付文件..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+    else:
+        prompt = None
+
+    if prompt:
 
         executor = st.session_state.async_executor
 
@@ -1069,9 +1073,6 @@ elif page == "⚙️ 设置":
     st.markdown("### 📊 数据")
     st.caption("⚠️ 重置仅清空当前会话数据，已保存的成果物文件不会被删除")
     if st.button("重置所有数据"):
-        for key in list(st.session_state.keys()):
-            if key != "initialized":
-                del st.session_state[key]
         st.session_state.messages = []
         st.session_state.deliverables = []
         st.session_state.scenario_count = 0

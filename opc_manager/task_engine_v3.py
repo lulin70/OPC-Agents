@@ -179,7 +179,7 @@ class SearchCache:
         self._ttl = ttl
         self._hits = 0
         self._misses = 0
-        self._lock = __import__("threading").Lock()
+        self._lock = __import__("threading").RLock()
 
     def _make_key(self, query: str, max_results: int) -> str:
         raw = f"{query}:{max_results}"

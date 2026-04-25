@@ -47,8 +47,7 @@ jobs:
     - name: Security scan with Bandit
       run: |
         pip install bandit
-        bandit -r opc_manager/ -ll -ii -f json -o bandit-report.json || true
-        bandit -r opc_manager/ -ll -ii -f txt || true
+        bandit -r opc_manager/ -ll -ii
 
     - name: Run tests with coverage
       run: |

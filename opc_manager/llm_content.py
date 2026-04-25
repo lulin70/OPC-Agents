@@ -386,10 +386,12 @@ class LLMEnhancedContentGenerator:
             else "(未检测到具体业务信息)"
         )
 
+        safe_input = user_input.replace("<", "&lt;").replace(">", "&gt;")
+
         prompt = f"""你是一个专业的商业顾问和内容创作专家。
 
 <user_request>
-{user_input}
+{safe_input}
 </user_request>
 
 ## 用户业务背景信息
@@ -517,18 +519,6 @@ class LLMEnhancedContentGenerator:
         if openai_key:
             api_base = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1")
             return openai_key, api_base, "gpt-4"
-
-        try:
-            from opc_manager.config import get_config
-
-            config = get_config()
-            cfg_key = getattr(config, "llm_api_key", None) or getattr(
-                config, "glm_api_key", None
-            )
-            if cfg_key:
-                return cfg_key, "https://open.bigmodel.cn/api/paas/v4", "glm-4"
-        except Exception:
-            pass
 
         return None, "", ""
 
