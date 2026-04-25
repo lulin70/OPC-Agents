@@ -93,7 +93,9 @@ if "initialized" not in st.session_state:
     from opc_manager.async_executor import AsyncTaskExecutor
 
     st.session_state.async_executor = AsyncTaskExecutor(
-        max_concurrent=3, default_timeout=120, save_callback=save_deliverable
+        max_concurrent=3,
+        default_timeout=120,
+        save_callback=lambda *a, **kw: save_deliverable(*a, **kw),
     )
     print("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
 
@@ -684,6 +686,12 @@ if page == "💬 对话":
 
         executor = st.session_state.async_executor
 
+        detected_type, confidence, method = safe_detect(prompt)
+        st.session_state.detected_type = detected_type
+        persona_name, persona_tone = safe_get_persona(detected_type)
+        st.session_state.detected_name = persona_name
+        safe_track_flywheel(detected_type)
+
         task_id = executor.submit(prompt, execute_func=_async_execute_task)
 
         if not task_id:
@@ -949,13 +957,11 @@ elif page == "📁 成果物":
                             use_container_width=True,
                         )
 
-                with st.container():
-                    st.markdown("**预览（前500字）**:")
-                    if os.path.exists(d["filepath"]):
-                        with open(d["filepath"], "r", encoding="utf-8") as f:
-                            preview = f.read()[:500]
-                        with st.expander("📄 预览", expanded=False):
-                            st.markdown(preview)
+                st.markdown("**预览（前500字）**:")
+                if os.path.exists(d["filepath"]):
+                    with open(d["filepath"], "r", encoding="utf-8") as f:
+                        preview = f.read()[:500]
+                    st.markdown(preview)
 
 
 elif page == "📊 成长":
