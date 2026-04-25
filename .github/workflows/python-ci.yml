@@ -44,6 +44,12 @@ jobs:
         flake8 opc_manager/ frontend/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 opc_manager/ frontend/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
 
+    - name: Security scan with Bandit
+      run: |
+        pip install bandit
+        bandit -r opc_manager/ -ll -ii -f json -o bandit-report.json || true
+        bandit -r opc_manager/ -ll -ii -f txt || true
+
     - name: Run tests with coverage
       run: |
         PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing
