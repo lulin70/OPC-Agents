@@ -760,7 +760,7 @@ class LLME2EValidator:
             f"**API状态**: {'✅ 已配置' if self.api_key else '❌ 未配置(使用降级模式)'}"
         )
         if self.api_key:
-            lines.append(f"**API Key**: {self.api_key[:8]}...{self.api_key[-4:]}")
+            lines.append(f"**API Key**: {'*' * 4}{self.api_key[-4:]}")
         else:
             lines.append("**API Key**: 无")
         lines.append("")

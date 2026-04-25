@@ -46,6 +46,10 @@ import traceback
 import time
 from datetime import datetime
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from opc_manager.monitoring import init_monitoring, track_event, track_error
 
 init_monitoring()
@@ -568,6 +572,10 @@ if page == "💬 对话":
       ④ 成功: 显示结果 + 下载按钮 + 追加到消息历史
       ⑤ 失败: 区分超时/其他错误，给出不同提示
     """
+    if len(st.session_state.messages) > 0:
+        st.caption(
+            "💡 刷新页面会丢失对话历史 · 成果物文件已保存在磁盘可在「成果物」标签页查看"
+        )
     if len(st.session_state.messages) == 0:
         st.markdown("## 👋 你好，一人公司创业者！")
         st.markdown(
@@ -1006,14 +1014,31 @@ elif page == "⚙️ 设置":
     """
     st.markdown("## ⚙️ 设置")
     st.markdown("### 🤖 AI 助手")
-    st.selectbox("回复风格", ["自动识别", "轻松活泼", "专业严谨", "简洁高效"], index=0)
+    st.selectbox(
+        "回复风格",
+        ["自动识别", "轻松活泼", "专业严谨", "简洁高效"],
+        index=0,
+        disabled=True,
+        help="即将支持 — 当前固定为自动识别模式",
+    )
     st.markdown("### 📦 成果物设置")
     st.text_input("成果物保存路径", value=DELIVERABLES_DIR, disabled=True)
     st.caption("所有生成的文件都保存在此目录下")
     st.markdown("### 🔔 通知")
-    st.checkbox("显示场景推荐提示", value=True)
-    st.checkbox("对话中显示成长进度", value=True)
+    st.checkbox(
+        "显示场景推荐提示",
+        value=True,
+        disabled=True,
+        help="即将支持",
+    )
+    st.checkbox(
+        "对话中显示成长进度",
+        value=True,
+        disabled=True,
+        help="即将支持",
+    )
     st.markdown("### 📊 数据")
+    st.caption("⚠️ 重置仅清空当前会话数据，已保存的成果物文件不会被删除")
     if st.button("重置所有数据"):
         for key in list(st.session_state.keys()):
             if key != "initialized":
@@ -1028,12 +1053,16 @@ elif page == "⚙️ 设置":
         }
         st.session_state.flywheel_level = 1
         st.session_state.achievements = []
-        st.success("✅ 已重置")
+        st.success("✅ 已重置会话数据（成果物文件保留）")
         st.rerun()
 
     with st.expander("🔧 高级设置（开发者）"):
         llm_backend = st.selectbox(
-            "LLM 后端", ["moka（推荐）", "glm", "openai", "ollama"], index=0
+            "LLM 后端",
+            ["moka（推荐）", "glm", "openai", "ollama"],
+            index=0,
+            disabled=True,
+            help="即将支持 — 当前通过 .env 文件配置",
         )
         if (
             not os.environ.get("MOKA_API_KEY")

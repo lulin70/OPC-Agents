@@ -433,10 +433,10 @@ class TaskEngineV3:
             logger.error(f"[TaskEngineV3] 执行失败: {e}", exc_info=True)
             return TaskResult(
                 success=False,
-                content=f"⚠️ 执行遇到问题：{str(e)}",
+                content="⚠️ 任务执行遇到问题，请稍后重试或调整需求描述",
                 task_type=TaskType.GENERAL_CHAT,
                 execution_time_ms=(time.time() - start_time) * 1000,
-                error=str(e),
+                error="internal_error",
             )
 
     def _search(
