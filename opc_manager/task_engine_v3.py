@@ -67,6 +67,7 @@ from typing import Dict, List, Optional, Any, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import OrderedDict
+from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from opc_manager.session_context import SessionContextManager
@@ -138,6 +139,18 @@ class InputValidator:
             logger.info("[InputValidator] 已移除HTML/XML标签")
         return text, None
 
+    @staticmethod
+    def sanitize_url(url: str) -> str:
+        """验证URL安全性，阻止javascript:等危险协议"""
+        if not url:
+            return ""
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https", ""):
+            return ""
+        if url.lower().startswith("javascript:"):
+            return ""
+        return url
+
 
 class SearchCache:
     """LRU搜索结果缓存 — 减少重复网络请求的关键性能组件
@@ -153,9 +166,9 @@ class SearchCache:
     - TTL：300秒（5分钟，平衡新鲜度和命中率）
     - Key：query+max_results的MD5哈希（相同查询不同结果数分别缓存）
 
-    线程安全说明：
-    - 当前为单线程模型（Streamlit每次回调一个请求），无需锁
-    - 如果未来改为异步多请求，需要加threading.RLock
+    线程安全：
+    - AsyncTaskExecutor在后台线程中调用TaskEngineV3.execute()
+    - 使用threading.Lock保护所有缓存读写操作
     """
 
     def __init__(
@@ -166,6 +179,7 @@ class SearchCache:
         self._ttl = ttl
         self._hits = 0
         self._misses = 0
+        self._lock = __import__("threading").Lock()
 
     def _make_key(self, query: str, max_results: int) -> str:
         raw = f"{query}:{max_results}"
@@ -173,30 +187,37 @@ class SearchCache:
 
     def get(self, query: str, max_results: int) -> Optional[List[Dict]]:
         key = self._make_key(query, max_results)
-        if key in self._cache:
-            timestamp, results = self._cache[key]
-            if time.time() - timestamp < self._ttl:
-                self._cache.move_to_end(key)
-                self._hits += 1
-                logger.info(f"[SearchCache] 命中: {query[:30]}...")
-                return results
-            else:
-                del self._cache[key]
-        self._misses += 1
-        return None
+        with self._lock:
+            if key in self._cache:
+                timestamp, results = self._cache[key]
+                if time.time() - timestamp < self._ttl:
+                    self._cache.move_to_end(key)
+                    self._hits += 1
+                    logger.info(f"[SearchCache] 命中: {query[:30]}...")
+                    return results
+                else:
+                    del self._cache[key]
+            self._misses += 1
+            return None
 
     def set(self, query: str, max_results: int, results: List[Dict]):
         key = self._make_key(query, max_results)
-        while len(self._cache) >= self._max_size:
-            self._cache.popitem(last=False)
-        self._cache[key] = (time.time(), results)
-        logger.info(
-            f"[SearchCache] 写入: {query[:30]}... (缓存大小:{len(self._cache)})"
-        )
+        with self._lock:
+            while len(self._cache) >= self._max_size:
+                self._cache.popitem(last=False)
+            self._cache[key] = (time.time(), results)
+            logger.info(
+                f"[SearchCache] 写入: {query[:30]}... (缓存大小:{len(self._cache)})"
+            )
 
     @property
     def stats(self) -> Dict[str, int]:
-        return {"hits": self._hits, "misses": self._misses, "size": len(self._cache)}
+        with self._lock:
+            return {
+                "hits": self._hits,
+                "misses": self._misses,
+                "size": len(self._cache),
+            }
 
 
 class IntentClassifier:
@@ -378,6 +399,19 @@ class TaskEngineV3:
                 task_type=TaskType.GENERAL_CHAT,
                 execution_time_ms=(time.time() - start_time) * 1000,
                 error=validation_error,
+            )
+
+        try:
+            from opc_manager.validators import TaskRequest
+
+            TaskRequest(user_input=sanitized)
+        except Exception as e:
+            return TaskResult(
+                success=False,
+                content="⚠️ 输入包含不安全内容，请修改后重试",
+                task_type=TaskType.GENERAL_CHAT,
+                execution_time_ms=(time.time() - start_time) * 1000,
+                error="unsafe_input",
             )
 
         self._ensure_initialized()
@@ -580,7 +614,7 @@ class TaskEngineV3:
         for i, r in enumerate(results[:8], 1):
             title = r.get("title", "无标题")
             body = r.get("body", "无摘要")
-            href = r.get("href", "")
+            href = InputValidator.sanitize_url(r.get("href", ""))
             lines.append(f"### {i}. {title}\n")
             lines.append(f"{body[:400]}{'...' if len(body) > 400 else ''}\n")
             if href:
@@ -715,9 +749,10 @@ class TaskEngineV3:
                 lines.append(
                     f"根据最新信息显示：\n\n{body[:500]}{'...' if len(body) > 500 else ''}\n\n"
                 )
-                if first_result.get("href"):
+                first_href = InputValidator.sanitize_url(first_result.get("href", ""))
+                if first_href:
                     lines.append(
-                        f"信息来源: [{first_result.get('title', '来源')}]({first_result['href']})\n\n"
+                        f"信息来源: [{first_result.get('title', '来源')}]({first_href})\n\n"
                     )
             else:
                 lines.append(
@@ -761,9 +796,10 @@ class TaskEngineV3:
                 lines.append(
                     f"此外，以下信息值得关注：\n\n{s_body[:300]}{'...' if len(s_body) > 300 else ''}\n\n"
                 )
-                if second.get("href"):
+                second_href = InputValidator.sanitize_url(second.get("href", ""))
+                if second_href:
                     lines.append(
-                        f"来源: [{second.get('title', '')}]({second['href']})\n\n"
+                        f"来源: [{second.get('title', '')}]({second_href})\n\n"
                     )
 
         lines.append(f"## 四、结论与建议\n\n")
@@ -959,7 +995,7 @@ class TaskEngineV3:
             for i, r in enumerate(search_results[:5], 1):
                 title = r.get("title", "")
                 body = r.get("body", "")
-                href = r.get("href", "")
+                href = InputValidator.sanitize_url(r.get("href", ""))
                 lines.append(f"### {i}. {title}\n\n")
                 lines.append(f"{body[:600]}{'...' if len(body) > 600 else ''}\n\n")
                 if href:

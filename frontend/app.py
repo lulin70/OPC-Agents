@@ -758,7 +758,7 @@ if page == "💬 对话":
                     )
                     st.progress(
                         progress_pct / 100.0,
-                        text=f"{phase_hint} — 已耗时 {elapsed:.0f}s",
+                        text=f"预估进度 {progress_pct}% — {phase_hint} — 已耗时 {elapsed:.0f}s",
                     )
                     time.sleep(poll_interval)
                     continue
@@ -833,13 +833,41 @@ if page == "💬 对话":
                             "🔑 API Key无效或已过期",
                             "请在.env文件中更新你的API Key，然后重启应用。",
                         ),
+                        "incorrect api key": (
+                            "🔑 API Key无效或已过期",
+                            "请在.env文件中更新你的API Key，然后重启应用。",
+                        ),
+                        "authentication": (
+                            "🔑 认证失败",
+                            "API Key可能无效或已过期，请检查配置后重试。",
+                        ),
                         "rate_limit": (
+                            "🚦 请求过于频繁",
+                            "AI服务暂时限流，请等待1-2分钟后重试。",
+                        ),
+                        "rate limit": (
+                            "🚦 请求过于频繁",
+                            "AI服务暂时限流，请等待1-2分钟后重试。",
+                        ),
+                        "429": (
                             "🚦 请求过于频繁",
                             "AI服务暂时限流，请等待1-2分钟后重试。",
                         ),
                         "server_error": (
                             "🔧 AI服务暂时不可用",
                             "服务端正在维护，请稍后重试。系统会自动使用模板模式作为备选。",
+                        ),
+                        "500": (
+                            "🔧 AI服务暂时不可用",
+                            "服务端正在维护，请稍后重试。",
+                        ),
+                        "502": (
+                            "🔧 AI服务暂时不可用",
+                            "服务端正在维护，请稍后重试。",
+                        ),
+                        "503": (
+                            "🔧 AI服务暂时不可用",
+                            "服务端正在维护，请稍后重试。",
                         ),
                     }
 
@@ -922,7 +950,8 @@ elif page == "📁 成果物":
                     if os.path.exists(d["filepath"]):
                         with open(d["filepath"], "r", encoding="utf-8") as f:
                             preview = f.read()[:500]
-                        st.code(preview, language="markdown")
+                        with st.expander("📄 预览", expanded=False):
+                            st.markdown(preview)
 
 
 elif page == "📊 成长":
