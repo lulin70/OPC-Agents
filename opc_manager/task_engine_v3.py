@@ -183,7 +183,7 @@ class SearchCache:
 
     def _make_key(self, query: str, max_results: int) -> str:
         raw = f"{query}:{max_results}"
-        return hashlib.md5(raw.encode("utf-8")).hexdigest()
+        return hashlib.md5(raw.encode("utf-8"), usedforsecurity=False).hexdigest()
 
     def get(self, query: str, max_results: int) -> Optional[List[Dict]]:
         key = self._make_key(query, max_results)

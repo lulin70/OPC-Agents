@@ -731,8 +731,8 @@ class BusinessTypeDetectorV2:
                 if llm_result and llm_result.confidence > keyword_result.confidence:
                     keyword_result = llm_result
                     self._record_method("llm_assisted")
-            except Exception as e:
-                pass  # LLM失败不影响主流程
+            except Exception:
+                pass  # nosec B110 - LLM failure should not break main flow
 
         # 确保满足最小阈值
         if keyword_result.confidence < min_confidence:
