@@ -1,193 +1,163 @@
 #!/usr/bin/env python3
 """
 Configuration management for OPC Manager
+
+Reads configuration from environment variables (.env file).
+Legacy config.toml support has been removed in v0.1.0.
 """
 
 import os
-import toml
 import threading
-import time
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Optional
 
 
 class ConfigManager:
-    """Configuration manager for OPC-Agents system"""
+    """Environment-based configuration manager for OPC-Agents system
 
-    def __init__(self, config_path: str = "config.toml"):
-        """Initialize the Config Manager"""
-        self.config_path = config_path
-        self.config = self._load_config()
-        self.last_modified_time = (
-            os.path.getmtime(self.config_path)
-            if os.path.exists(self.config_path)
-            else 0
-        )
-        self._watch_thread = None
-        self._stop_watching = False
-        self._callbacks = []
+    Reads configuration from environment variables (loaded via .env by python-dotenv).
+    Supports change callbacks for runtime reconfiguration.
+    """
+
+    _ENV_MAP = {
+        "moka": {
+            "api_key": "MOKA_API_KEY",
+            "base_url": "MOKA_API_BASE",
+            "model": "MOKA_MODEL",
+        },
+        "glm": {
+            "api_key": "GLM_API_KEY",
+            "base_url": "GLM_API_BASE",
+            "model": "GLM_MODEL",
+        },
+        "openai": {
+            "api_key": "OPENAI_API_KEY",
+            "base_url": "OPENAI_API_BASE",
+            "model": "OPENAI_MODEL",
+        },
+        "ollama": {
+            "base_url": "OLLAMA_BASE_URL",
+            "model": "OLLAMA_MODEL",
+        },
+    }
+
+    _DEFAULTS = {
+        "MOKA_API_BASE": "https://api.moka-ai.com/v1",
+        "MOKA_MODEL": "moka/claude-sonnet-4-6",
+        "GLM_API_BASE": "https://open.bigmodel.cn/api/paas/v4",
+        "GLM_MODEL": "glm-4",
+        "OPENAI_API_BASE": "https://api.openai.com/v1",
+        "OPENAI_MODEL": "gpt-4o",
+        "OLLAMA_BASE_URL": "http://localhost:11434",
+        "OLLAMA_MODEL": "llama3",
+        "LLM_MAX_TOKENS": "4000",
+        "LLM_TEMPERATURE": "0.7",
+        "LLM_TIMEOUT_SECONDS": "60.0",
+        "LOG_DIR": "logs",
+    }
+
+    def __init__(self, config_path: str = None):
         self._lock = threading.RLock()
-
-        # 启动配置文件监控
-        self.start_watching()
+        self._callbacks = []
+        self._config_path = config_path
 
     def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from TOML file"""
-        try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
-                return toml.load(f)
-        except Exception as e:
-            print(f"Error loading config: {e}")
-            return {}
+        models = {}
+        for model_name, env_vars in self._ENV_MAP.items():
+            model_config = {}
+            for key, env_key in env_vars.items():
+                val = os.environ.get(env_key, self._DEFAULTS.get(env_key, ""))
+                if val:
+                    model_config[key] = val
+            if model_config:
+                models[model_name] = model_config
+
+        default_model = "moka"
+        for candidate in ["moka", "glm", "openai"]:
+            if models.get(candidate, {}).get("api_key"):
+                default_model = candidate
+                break
+
+        return {
+            "models": {"default": default_model, **models},
+            "llm": {
+                "max_tokens": int(
+                    os.environ.get("LLM_MAX_TOKENS", self._DEFAULTS["LLM_MAX_TOKENS"])
+                ),
+                "temperature": float(
+                    os.environ.get("LLM_TEMPERATURE", self._DEFAULTS["LLM_TEMPERATURE"])
+                ),
+                "timeout_seconds": float(
+                    os.environ.get(
+                        "LLM_TIMEOUT_SECONDS", self._DEFAULTS["LLM_TIMEOUT_SECONDS"]
+                    )
+                ),
+            },
+            "log_dir": os.environ.get("LOG_DIR", self._DEFAULTS["LOG_DIR"]),
+        }
+
+    @property
+    def config(self) -> Dict[str, Any]:
+        with self._lock:
+            return self._load_config()
 
     def reload_config(self) -> bool:
-        """Reload configuration from file
-
-        Returns:
-            Whether the config was successfully reloaded
-        """
         try:
             with self._lock:
-                new_config = self._load_config()
-                if new_config:
-                    self.config = new_config
-                    self.last_modified_time = (
-                        os.path.getmtime(self.config_path)
-                        if os.path.exists(self.config_path)
-                        else 0
-                    )
-                    print(
-                        f"[ConfigManager] Configuration reloaded from {self.config_path}"
-                    )
-                    # 触发回调
-                    for callback in self._callbacks:
-                        try:
-                            callback()
-                        except Exception as e:
-                            print(f"[ConfigManager] Error in callback: {e}")
-                    return True
-        except Exception as e:
-            print(f"[ConfigManager] Error reloading config: {e}")
-        return False
-
-    def start_watching(self) -> None:
-        """Start watching the config file for changes"""
-        if self._watch_thread is None or not self._watch_thread.is_alive():
-            self._stop_watching = False
-            self._watch_thread = threading.Thread(
-                target=self._watch_config_file, daemon=True
-            )
-            self._watch_thread.start()
-            print(f"[ConfigManager] Started watching config file: {self.config_path}")
-
-    def stop_watching(self) -> None:
-        """Stop watching the config file"""
-        self._stop_watching = True
-        if self._watch_thread:
-            self._watch_thread.join(timeout=2)
-            print(f"[ConfigManager] Stopped watching config file: {self.config_path}")
-
-    def _watch_config_file(self) -> None:
-        """Watch the config file for changes"""
-        while not self._stop_watching:
-            try:
-                if os.path.exists(self.config_path):
-                    current_modified_time = os.path.getmtime(self.config_path)
-                    if current_modified_time > self.last_modified_time:
-                        self.reload_config()
-            except Exception as e:
-                print(f"[ConfigManager] Error watching config file: {e}")
-            time.sleep(5)  # 每5秒检查一次
+                for callback in self._callbacks:
+                    try:
+                        callback()
+                    except Exception:
+                        pass
+                return True
+        except Exception:
+            return False
 
     def register_callback(self, callback: Callable) -> None:
-        """Register a callback to be called when config changes
-
-        Args:
-            callback: Callback function to call when config changes
-        """
         with self._lock:
             if callback not in self._callbacks:
                 self._callbacks.append(callback)
 
     def unregister_callback(self, callback: Callable) -> None:
-        """Unregister a callback
-
-        Args:
-            callback: Callback function to unregister
-        """
         with self._lock:
             if callback in self._callbacks:
                 self._callbacks.remove(callback)
 
     def get_model_config(self, model_name: str = None) -> Dict[str, Any]:
-        """Get model configuration
-
-        Args:
-            model_name: Model name, default to None (use default model)
-
-        Returns:
-            Model configuration
-        """
         with self._lock:
+            cfg = self._load_config()
             if not model_name:
-                model_name = self.config.get("models", {}).get("default", "glm")
-
-            return self.config.get("models", {}).get(model_name, {})
+                model_name = cfg.get("models", {}).get("default", "moka")
+            return cfg.get("models", {}).get(model_name, {})
 
     def get_available_models(self) -> list:
-        """Get list of available models
-
-        Returns:
-            List of available model names
-        """
         with self._lock:
-            models = self.config.get("models", {})
+            cfg = self._load_config()
+            models = cfg.get("models", {})
             return [key for key in models if key != "default"]
 
     def get(self, section: str, key: str = None, default: Any = None) -> Any:
-        """Get a configuration value
-
-        Args:
-            section: Configuration section
-            key: Configuration key
-            default: Default value if not found
-
-        Returns:
-            Configuration value or default
-        """
         with self._lock:
-            if section in self.config:
+            cfg = self._load_config()
+            if section in cfg:
                 if key:
-                    return self.config[section].get(key, default)
-                return self.config[section]
+                    return cfg[section].get(key, default)
+                return cfg[section]
             return default
 
     def set(self, section: str, key: str, value: Any) -> bool:
-        """Set a configuration value
-
-        Args:
-            section: Configuration section
-            key: Configuration key
-            value: Configuration value
-
-        Returns:
-            Whether the value was set successfully
-        """
         try:
             with self._lock:
-                if section not in self.config:
-                    self.config[section] = {}
-                self.config[section][key] = value
-                # 保存到文件
-                with open(self.config_path, "w", encoding="utf-8") as f:
-                    toml.dump(self.config, f)
-                self.last_modified_time = os.path.getmtime(self.config_path)
-                # 触发回调
+                env_key = f"{section.upper()}_{key.upper()}"
+                os.environ[env_key] = str(value)
                 for callback in self._callbacks:
                     try:
                         callback()
-                    except Exception as e:
-                        print(f"[ConfigManager] Error in callback: {e}")
+                    except Exception:
+                        pass
                 return True
-        except Exception as e:
-            print(f"[ConfigManager] Error setting config: {e}")
+        except Exception:
             return False
+
+
+def get_config() -> ConfigManager:
+    return ConfigManager()

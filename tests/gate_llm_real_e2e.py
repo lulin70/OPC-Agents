@@ -558,9 +558,8 @@ class LLME2EValidator:
             from opc_manager.config import get_config
 
             config = get_config()
-            return getattr(config, "glm_api_key", None) or getattr(
-                config, "llm_api_key", None
-            )
+            model_config = config.get_model_config()
+            return model_config.get("api_key")
         except Exception:
             pass
         return None
