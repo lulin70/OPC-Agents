@@ -267,7 +267,9 @@ class PersonaManager:
             emojis = ["✨", "💡", "🎯", "⚡", "🚀"]
             import random
 
-            base_response += f" {random.choice(emojis)}"  # nosec B311 - non-crypto emoji selection
+            base_response += (
+                f" {random.choice(emojis)}"  # nosec B311 - non-crypto emoji selection
+            )
 
         return base_response
 
