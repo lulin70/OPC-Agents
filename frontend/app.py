@@ -469,7 +469,11 @@ def execute_task_and_deliver(prompt):
 
             st.session_state.session_ctx = SessionContextManager()
 
-        result = engine.execute(prompt, session_ctx=st.session_state.session_ctx)
+        result = engine.execute(
+            prompt,
+            session_ctx=st.session_state.session_ctx,
+            business_type=getattr(st.session_state, "detected_type", None),
+        )
         print(
             f"[frontend] 任务执行完成: success={result.success}, content_len={len(result.content) if result.content else 0}"
         )
@@ -505,7 +509,16 @@ def execute_task_and_deliver(prompt):
 
         meta_str = "\n".join(meta_lines)
 
-        content_with_meta = f"{result.content}\n\n---\n*{meta_str}*"
+        has_api_key = bool(
+            os.environ.get("MOKA_API_KEY")
+            or os.environ.get("GLM_API_KEY")
+            or os.environ.get("OPENAI_API_KEY")
+        )
+        mode_tag = ""
+        if not has_api_key:
+            mode_tag = "\n\n> ⚠️ **当前为模板模式输出** — 配置API Key后可获得AI增强内容（质量提升5倍+）"
+
+        content_with_meta = f"{result.content}{mode_tag}\n\n---\n*{meta_str}*"
 
         print(f"[frontend] 准备保存文件...")
         filepath = save_deliverable(
@@ -626,13 +639,16 @@ if page == "💬 对话":
     """
     if len(st.session_state.messages) > 0:
         st.caption(
-            "💡 刷新页面会丢失对话历史 · 成果物文件已保存在磁盘可在「成果物」标签页查看"
+            "💡 对话历史已自动保存 · 成果物文件可在「📁 成果物」标签页查看和下载"
         )
     if len(st.session_state.messages) == 0:
         st.markdown("## 👋 你好，一人公司创业者！")
         st.markdown(
             "我是你的**任务执行与成果交付助手**。"
             "**告诉我你要什么结果，我直接做完并交付文件给你** — 可下载、可保存、可复用。"
+        )
+        st.markdown(
+            "**使用步骤**：① 在下方输入需求或点击场景按钮 → ② 等待AI执行 → ③ 下载成果物文件"
         )
 
         has_api_key = (
@@ -956,6 +972,9 @@ if page == "💬 对话":
                     )
 
                     st.markdown(fallback, unsafe_allow_html=True)
+                    if st.button("🔄 重新执行", key=f"retry_{task_id}"):
+                        st.session_state.pending_prompt = prompt
+                        st.rerun()
                     st.session_state.messages.append(
                         {"role": "assistant", "content": fallback}
                     )
@@ -1011,6 +1030,14 @@ elif page == "📁 成果物":
                             key=f"dl_lib_{i}",
                             use_container_width=True,
                         )
+                    if st.button("🗑️ 删除", key=f"del_lib_{i}"):
+                        try:
+                            if os.path.exists(d["filepath"]):
+                                os.remove(d["filepath"])
+                        except OSError:
+                            pass
+                        st.session_state.deliverables.pop(i)
+                        st.rerun()
 
                 st.markdown("**预览（前500字）**:")
                 if os.path.exists(d["filepath"]):
@@ -1099,70 +1126,81 @@ elif page == "⚙️ 设置":
     """设置页面 — 用户偏好和系统配置
 
     功能分区：
-    1. AI助手: 回复风格选择（预留接口，当前仅影响展示）
-    2. 成果物设置: 显示保存路径（只读）
-    3. 通知: 场景推荐/成长进度开关
-    4. 数据: 重置所有session_state数据（清空会话）
-    5. 高级设置: LLM后端选择（开发者选项）
-    6. 目录浏览: 展示deliverables/目录中的最近5个文件
+    1. AI模式: 显示当前模式（模板/AI增强）
+    2. 成果物设置: 显示保存路径 + 删除功能
+    3. 数据: 重置所有数据（含磁盘文件选项）
+    4. 开发者: API Key 状态检查
     """
     st.markdown("## ⚙️ 设置")
-    st.markdown("### 🤖 AI 助手")
-    st.selectbox(
-        "回复风格",
-        ["自动识别", "轻松活泼", "专业严谨", "简洁高效"],
-        index=0,
-        disabled=True,
-        help="即将支持 — 当前固定为自动识别模式",
+
+    has_api_key = bool(
+        os.environ.get("MOKA_API_KEY")
+        or os.environ.get("GLM_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
     )
+    mode_label = "🤖 AI增强模式" if has_api_key else "📝 模板模式"
+    mode_desc = (
+        "已检测到API Key，LLM将生成高质量专业内容"
+        if has_api_key
+        else "未检测到API Key，输出为模板填充。配置MOKA_API_KEY可提升5倍+质量"
+    )
+    st.markdown(f"### {mode_label}")
+    st.caption(mode_desc)
+    if not has_api_key:
+        st.info(
+            "💡 **快速配置**：在项目根目录的 `.env` 文件中添加 `MOKA_API_KEY=sk-xxx`，重启即可"
+        )
+
     st.markdown("### 📦 成果物设置")
     st.text_input("成果物保存路径", value=DELIVERABLES_DIR, disabled=True)
     st.caption("所有生成的文件都保存在此目录下")
-    st.markdown("### 🔔 通知")
-    st.checkbox(
-        "显示场景推荐提示",
-        value=True,
-        disabled=True,
-        help="即将支持",
-    )
-    st.checkbox(
-        "对话中显示成长进度",
-        value=True,
-        disabled=True,
-        help="即将支持",
-    )
-    st.markdown("### 📊 数据")
-    st.caption("⚠️ 重置仅清空当前会话数据，已保存的成果物文件不会被删除")
-    if st.button("重置所有数据"):
-        st.session_state.messages = []
-        st.session_state.deliverables = []
-        st.session_state.scenario_count = 0
-        st.session_state.detected_type = None
-        st.session_state.detected_name = None
-        st.session_state.flywheel_scores = {
-            d: 0 for d in ["内容质量", "受众增长", "变现能力", "跨域推广", "生态协同"]
-        }
-        st.session_state.flywheel_level = 1
-        st.session_state.achievements = []
-        st.success("✅ 已重置会话数据（成果物文件保留）")
-        st.rerun()
 
-    with st.expander("🔧 高级设置（开发者）"):
-        llm_backend = st.selectbox(
-            "LLM 后端",
-            ["moka（推荐）", "glm", "openai", "ollama"],
-            index=0,
-            disabled=True,
-            help="即将支持 — 当前通过 .env 文件配置",
-        )
-        if (
-            not os.environ.get("MOKA_API_KEY")
-            and not os.environ.get("GLM_API_KEY")
-            and not os.environ.get("OPENAI_API_KEY")
-        ):
-            st.warning(
-                "⚠️ 未检测到API Key，当前为模板模式。配置MOKA_API_KEY可获得AI增强内容。"
-            )
+    st.markdown("### 📊 数据管理")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 重置会话数据"):
+            st.session_state.messages = []
+            st.session_state.deliverables = []
+            st.session_state.scenario_count = 0
+            st.session_state.detected_type = None
+            st.session_state.detected_name = None
+            st.session_state.flywheel_scores = {
+                d: 0
+                for d in ["内容质量", "受众增长", "变现能力", "跨域推广", "生态协同"]
+            }
+            st.session_state.flywheel_level = 1
+            st.session_state.achievements = []
+            _save_chat_history()
+            st.success("✅ 已重置会话数据")
+            st.rerun()
+    with col2:
+        if st.button("🗑️ 清空成果物文件"):
+            deleted = 0
+            if os.path.exists(DELIVERABLES_DIR):
+                for f in os.listdir(DELIVERABLES_DIR):
+                    if f.endswith(".md"):
+                        try:
+                            os.remove(os.path.join(DELIVERABLES_DIR, f))
+                            deleted += 1
+                        except OSError:
+                            pass
+            st.session_state.deliverables = []
+            st.success(f"✅ 已删除 {deleted} 个成果物文件")
+            st.rerun()
+
+    with st.expander("🔧 开发者选项"):
+        st.markdown("**API Key 状态**")
+        for key_name, env_var in [
+            ("MOKA", "MOKA_API_KEY"),
+            ("GLM", "GLM_API_KEY"),
+            ("OpenAI", "OPENAI_API_KEY"),
+        ]:
+            val = os.environ.get(env_var, "")
+            if val:
+                st.markdown(f"- {key_name}: ✅ 已配置 (`{val[:4]}...{val[-4:]}`)")
+            else:
+                st.markdown(f"- {key_name}: ❌ 未配置")
+        st.caption("通过 `.env` 文件配置 API Key，修改后需重启应用")
 
     st.divider()
 

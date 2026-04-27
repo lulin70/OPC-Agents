@@ -371,7 +371,10 @@ class TaskEngineV3:
         self._initialized = True
 
     def execute(
-        self, user_input: str, session_ctx: "SessionContextManager" = None
+        self,
+        user_input: str,
+        session_ctx: "SessionContextManager" = None,
+        business_type: str = None,
     ) -> TaskResult:
         """主入口 — 处理用户输入并返回完整任务结果 (v3.5增强版)
 
@@ -404,6 +407,7 @@ class TaskEngineV3:
             >>> result2 = engine.execute("第三阶段时间太长，能缩短吗？", session_ctx=session)
         """
         start_time = time.time()
+        self._current_business_type = business_type
 
         sanitized, validation_error = InputValidator.sanitize(user_input)
         if validation_error:
@@ -712,7 +716,11 @@ class TaskEngineV3:
         )
 
     def _try_llm_generate(
-        self, query: str, search_results: List[Dict], doc_type: str = "report"
+        self,
+        query: str,
+        search_results: List[Dict],
+        doc_type: str = "report",
+        business_type: str = None,
     ) -> Optional[str]:
         """尝试使用LLM增强内容生成，失败返回None"""
         if not self.llm_content_gen:
@@ -729,6 +737,7 @@ class TaskEngineV3:
                 user_input=query,
                 template=template,
                 search_results=search_results,
+                business_type=business_type,
             )
             if result.success and result.content and len(result.content) > 200:
                 mode_tag = "AI增强" if not result.fallback_used else "模板"
@@ -756,7 +765,12 @@ class TaskEngineV3:
         - 行动项都有责任人和截止时间（非"待填写"）
         - 数据指标有明确基准和衡量方式（非"待测量"）
         """
-        llm_content = self._try_llm_generate(query, search_results, "report")
+        llm_content = self._try_llm_generate(
+            query,
+            search_results,
+            "report",
+            getattr(self, "_current_business_type", None),
+        )
         if llm_content:
             return llm_content
 
@@ -894,7 +908,9 @@ class TaskEngineV3:
         - 风险应对写明具体措施（如"设立CCB"）而非泛泛而谈
         - SMART指标给出示例值（提升30%/≥95%）供参考调整
         """
-        llm_content = self._try_llm_generate(query, search_results, "plan")
+        llm_content = self._try_llm_generate(
+            query, search_results, "plan", getattr(self, "_current_business_type", None)
+        )
         if llm_content:
             return llm_content
 
@@ -1031,7 +1047,12 @@ class TaskEngineV3:
         策略：以搜索结果为主体，按条目列出，附原文链接。
         这是最安全的fallback——至少保证信息真实且有出处。
         """
-        llm_content = self._try_llm_generate(query, search_results, "content")
+        llm_content = self._try_llm_generate(
+            query,
+            search_results,
+            "content",
+            getattr(self, "_current_business_type", None),
+        )
         if llm_content:
             return llm_content
 
@@ -1081,7 +1102,9 @@ class TaskEngineV3:
         )
 
         lines = []
-        llm_content = self._try_llm_generate(query, results, "analysis")
+        llm_content = self._try_llm_generate(
+            query, results, "analysis", getattr(self, "_current_business_type", None)
+        )
         if llm_content:
             lines.append(llm_content)
             return TaskResult(

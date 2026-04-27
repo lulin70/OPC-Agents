@@ -140,6 +140,7 @@ class LLMEnhancedContentGenerator:
         user_input: str,
         template: str,
         search_results: List[Dict] = None,
+        business_type: str = None,
         **kwargs,
     ) -> GenerationResult:
         """主入口：RAG混合模式生成内容
@@ -155,6 +156,7 @@ class LLMEnhancedContentGenerator:
             user_input: 用户原始输入（包含业务背景信息）
             template: 文档模板骨架（Markdown格式，可含{变量}占位符）
             search_results: 搜索结果列表（每个元素含title/snippet/href）
+            business_type: 检测到的业务类型（影响角色定位和输出风格）
             **kwargs: 额外参数（传递给_fill_template或_call_llm_api）
 
         Returns:
@@ -172,6 +174,7 @@ class LLMEnhancedContentGenerator:
                 business_info=business_info,
                 context=context,
                 search_results=search_results or [],
+                business_type=business_type,
             )
 
             if result.success:
@@ -311,6 +314,7 @@ class LLMEnhancedContentGenerator:
         business_info: Dict[str, List[str]],
         context: str,
         search_results: List[Dict],
+        business_type: str = None,
     ) -> GenerationResult:
         """尝试LLM生成（核心RAG流程）
 
@@ -322,6 +326,7 @@ class LLMEnhancedContentGenerator:
             business_info: 提取的业务信息
             context: 搜索结果上下文
             search_results: 原始搜索结果
+            business_type: 检测到的业务类型
 
         Returns:
             GenerationResult: LLM生成结果或失败的空结果
@@ -331,6 +336,7 @@ class LLMEnhancedContentGenerator:
             template=template,
             business_info=business_info,
             context=context,
+            business_type=business_type,
         )
 
         content = self._call_llm_api(prompt)
@@ -344,17 +350,51 @@ class LLMEnhancedContentGenerator:
 
         return GenerationResult(content="", success=False, generation_mode="llm_failed")
 
+    BUSINESS_TYPE_PERSONAS = {
+        "content_creator": {
+            "role": "资深内容策略师和创作顾问",
+            "focus": "选题策划、内容矩阵、分发渠道、互动率优化",
+            "style": "语言生动有感染力，善用数据佐证内容价值",
+        },
+        "digital_product": {
+            "role": "数字产品经理和增长顾问",
+            "focus": "MVP验证、PMF、定价策略、转化漏斗、LTV",
+            "style": "数据驱动，注重ROI和可执行性",
+        },
+        "ai_tool_builder": {
+            "role": "AI架构师和技术产品顾问",
+            "focus": "Prompt工程、API集成、RAG架构、工作流自动化",
+            "style": "技术精准，关注可行性和创新性",
+        },
+        "consultant": {
+            "role": "高级管理咨询顾问",
+            "focus": "方法论、最佳实践、标杆分析、价值主张",
+            "style": "逻辑严谨，论据充分，结构化表达",
+        },
+        "ecommerce": {
+            "role": "电商运营和增长专家",
+            "focus": "GMV提升、转化率优化、选品策略、供应链",
+            "style": "结果导向，关注关键指标和执行细节",
+        },
+        "creative_work": {
+            "role": "创意总监和品牌顾问",
+            "focus": "视觉语言、品牌调性、创意表达、作品集",
+            "style": "感性表达，追求独特性和美感",
+        },
+    }
+
     def _build_prompt(
         self,
         user_input: str,
         template: str,
         business_info: Dict[str, List[str]],
         context: str,
+        business_type: str = None,
     ) -> str:
         """组装给LLM的完整Prompt
 
         Prompt设计原则：
-        1. 明确角色定位（专业顾问）
+        1. 明确角色定位（根据业务类型差异化）
         2. 提供充分的上下文（搜索资料+业务信息）
         3. 给出严格的质量约束（禁止占位符）
         4. 提供文档结构骨架作为格式参考
@@ -364,6 +404,7 @@ class LLMEnhancedContentGenerator:
             template: 模板骨架
             business_info: 提取的业务信息
             context: 搜索结果上下文
+            business_type: 检测到的业务类型
 
         Returns:
             完整的Prompt文本
@@ -388,7 +429,13 @@ class LLMEnhancedContentGenerator:
 
         safe_input = user_input.replace("<", "&lt;").replace(">", "&gt;")
 
-        prompt = f"""你是一个专业的商业顾问和内容创作专家。
+        persona = self.BUSINESS_TYPE_PERSONAS.get(
+            business_type, self.BUSINESS_TYPE_PERSONAS.get("content_creator")
+        )
+        if persona is None:
+            persona = self.BUSINESS_TYPE_PERSONAS["content_creator"]
+
+        prompt = f"""你是一个{persona['role']}。
 
 <user_request>
 {safe_input}
@@ -396,6 +443,12 @@ class LLMEnhancedContentGenerator:
 
 ## 用户业务背景信息
 {business_str}
+
+## 专业侧重点
+{persona['focus']}
+
+## 表达风格
+{persona['style']}
 
 ## 参考资料（来自网络搜索）
 {context}
