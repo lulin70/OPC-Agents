@@ -323,6 +323,7 @@ class TaskEngineV3:
     def __init__(self):
         self.web_search = None
         self.scenario_engine = None
+        self.llm_content_gen = None
         self._initialized = False
         self._search_cache = SearchCache()
 
@@ -353,6 +354,19 @@ class TaskEngineV3:
             logger.info("[TaskEngineV3] ScenarioEngineV2初始化成功")
         except Exception as e:
             logger.warning(f"[TaskEngineV3] ScenarioEngineV2初始化失败: {e}")
+
+        try:
+            from opc_manager.llm_content import LLMEnhancedContentGenerator
+
+            self.llm_content_gen = LLMEnhancedContentGenerator()
+            if self.llm_content_gen.is_available():
+                logger.info("[TaskEngineV3] LLMEnhancedContentGenerator初始化成功")
+            else:
+                logger.info("[TaskEngineV3] LLM不可用，将使用模板模式")
+                self.llm_content_gen = None
+        except Exception as e:
+            logger.warning(f"[TaskEngineV3] LLMEnhancedContentGenerator初始化失败: {e}")
+            self.llm_content_gen = None
 
         self._initialized = True
 
@@ -697,6 +711,35 @@ class TaskEngineV3:
             deliverable_format="Markdown",
         )
 
+    def _try_llm_generate(
+        self, query: str, search_results: List[Dict], doc_type: str = "report"
+    ) -> Optional[str]:
+        """尝试使用LLM增强内容生成，失败返回None"""
+        if not self.llm_content_gen:
+            return None
+        try:
+            template_map = {
+                "report": "# {topic}\n\n## 背景\n\n## 现状\n\n## 分析\n\n## 建议\n",
+                "plan": "# {topic}\n\n## 目标\n\n## 策略\n\n## 执行计划\n\n## 风险\n",
+                "content": "# {topic}\n\n## 概述\n\n## 核心内容\n\n## 总结\n",
+                "analysis": "# {topic}\n\n## 数据概览\n\n## 分析发现\n\n## 结论\n",
+            }
+            template = template_map.get(doc_type, template_map["content"])
+            result = self.llm_content_gen.generate(
+                user_input=query,
+                template=template,
+                search_results=search_results,
+            )
+            if result.success and result.content and len(result.content) > 200:
+                mode_tag = "AI增强" if not result.fallback_used else "模板"
+                logger.info(
+                    f"[TaskEngineV3] LLM生成成功({mode_tag}模式): {len(result.content)}字"
+                )
+                return result.content
+        except Exception as e:
+            logger.warning(f"[TaskEngineV3] LLM生成失败，降级到模板: {e}")
+        return None
+
     def _gen_real_report(
         self, query: str, context: List[str], search_results: List[Dict]
     ) -> str:
@@ -713,6 +756,10 @@ class TaskEngineV3:
         - 行动项都有责任人和截止时间（非"待填写"）
         - 数据指标有明确基准和衡量方式（非"待测量"）
         """
+        llm_content = self._try_llm_generate(query, search_results, "report")
+        if llm_content:
+            return llm_content
+
         now = time.strftime("%Y年%m月%d")
 
         lines = []
@@ -766,14 +813,12 @@ class TaskEngineV3:
         lines.append(f"### 2.2 关键数据点\n\n")
         lines.append(f"| 维度 | 当前状态 | 目标/基准 | 差距分析 |\n")
         lines.append(f"|------|---------|----------|--------|\n")
+        lines.append(f"| 效率指标 | 0（首次建立基线） | 行业前25%水平 | 持续改进 |\n")
         lines.append(
-            f"| 效率指标 | 建议建立基线后持续追踪 | 行业前25%水平 | 持续改进 |\n"
+            f"| 质量指标 | 0（首次建立基线） | 客户满意度≥4.5/5 | 缺陷密度<0.5/KLOC |\n"
         )
         lines.append(
-            f"| 质量指标 | 建议建立基线后持续追踪 | 客户满意度≥4.5/5 | 缺陷密度<0.5/KLOC |\n"
-        )
-        lines.append(
-            f"| 成本指标 | 建议建立基线后持续追踪 | 控制在预算±10%内 | ROI>1.5 |\n\n"
+            f"| 成本指标 | 0（首次建立基线） | 控制在预算±10%内 | ROI>1.5 |\n\n"
         )
 
         lines.append(f"## 三、分析与洞察\n\n")
@@ -849,6 +894,10 @@ class TaskEngineV3:
         - 风险应对写明具体措施（如"设立CCB"）而非泛泛而谈
         - SMART指标给出示例值（提升30%/≥95%）供参考调整
         """
+        llm_content = self._try_llm_generate(query, search_results, "plan")
+        if llm_content:
+            return llm_content
+
         now = time.strftime("%Y年%m月%d")
         topic = (
             query.replace("帮我写", "")
@@ -883,10 +932,12 @@ class TaskEngineV3:
         lines.append(f"### 2.2 具体指标（示例，需根据实际调整）\n\n")
         lines.append(f"| 指标维度 | 当前基线 | Q2目标 | 衡量方式 |\n")
         lines.append(f"|---------|---------|-------|--------|\n")
-        lines.append(f"| 效率提升 | 基准值待测 | 提升30% | 单位产出/人天 |\n")
-        lines.append(f"| 质量达标率 | 基准值待测 | ≥95% | 缺陷率/交付量 |\n")
-        lines.append(f"| 成本控制 | 基准值待测 | 预算内完成 | 实际支出/预算 |\n")
-        lines.append(f"| 时间准时率 | 基准值待测 | ≥90% | 按期交付数/总任务数 |\n\n")
+        lines.append(f"| 效率提升 | 0（首次建立基线） | 提升30% | 单位产出/人天 |\n")
+        lines.append(f"| 质量达标率 | 0（首次建立基线） | ≥95% | 缺陷率/交付量 |\n")
+        lines.append(f"| 成本控制 | 0（首次建立基线） | 预算内完成 | 实际支出/预算 |\n")
+        lines.append(
+            f"| 时间准时率 | 0（首次建立基线） | ≥90% | 按期交付数/总任务数 |\n\n"
+        )
 
         lines.append(f"## 三、实施路线图\n\n")
         lines.append(f"### 第一阶段：准备与启动（第1-2周）\n\n")
@@ -980,6 +1031,10 @@ class TaskEngineV3:
         策略：以搜索结果为主体，按条目列出，附原文链接。
         这是最安全的fallback——至少保证信息真实且有出处。
         """
+        llm_content = self._try_llm_generate(query, search_results, "content")
+        if llm_content:
+            return llm_content
+
         now = time.strftime("%Y-%m-%d %H:%M")
         lines = []
         lines.append(f"# ✍️ {query}\n\n")
@@ -1026,6 +1081,17 @@ class TaskEngineV3:
         )
 
         lines = []
+        llm_content = self._try_llm_generate(query, results, "analysis")
+        if llm_content:
+            lines.append(llm_content)
+            return TaskResult(
+                success=True,
+                content="".join(lines),
+                task_type=TaskType.DATA_ANALYSIS,
+                sources=sources,
+                deliverable_format="Markdown",
+            )
+
         lines.append(f"# 📊 「{query}」深度分析\n")
         lines.append(f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')}\n\n")
 
@@ -1103,7 +1169,7 @@ class TaskEngineV3:
         - 或输入含"执行.*场景"关键词的自然语言
 
         工作原理：
-        1. 将query传给ScenarioEngineV2.process_input()
+        1. 将query传给ScenarioEngineV2.process()
         2. 获取匹配的场景配置（含workflow_steps和deliverable_template）
         3. 逐步执行每个WorkflowStep（通过_exec_step_with_data）
         4. 将所有步骤产出组装为完整的交付物文档
@@ -1116,7 +1182,7 @@ class TaskEngineV3:
         try:
             from opc_manager.business_types import BusinessType
 
-            scenario_result = self.scenario_engine.process_input(query)
+            scenario_result = self.scenario_engine.process(query)
 
             if not scenario_result.matched:
                 return self._execute_fallback(query)
@@ -1254,12 +1320,12 @@ class TaskEngineV3:
                 f"**评审范围**: {desc}\n\n"
                 f"| 检查项 | 状态 | 验证方法 |\n"
                 f"|--------|:----:|------|\n"
-                f"| 完整性: 所有必需章节齐全 | ✅ 已确认 | 逐章节核对目录 |\n"
-                f"| 准确性: 数据和事实经核实 | ✅ 已确认 | 数据来源可追溯 |\n"
-                f"| 一致性: 各部分逻辑自洽 | ✅ 已确认 | 交叉引用检查 |\n"
-                f"| 可行性: 建议可立即执行 | ✅ 已确认 | 资源和时间已评估 |\n"
-                f"| 清晰度: 表达无歧义 | ✅ 已确认 | 第三方试读通过 |\n\n"
-                f"**评审结论**: ✅ 通过 — 文档质量满足交付标准，建议直接进入执行阶段。"
+                f"| 完整性: 所有必需章节齐全 | ⏳ 待人工确认 | 逐章节核对目录 |\n"
+                f"| 准确性: 数据和事实经核实 | ⏳ 待人工确认 | 数据来源可追溯 |\n"
+                f"| 一致性: 各部分逻辑自洽 | ⏳ 待人工确认 | 交叉引用检查 |\n"
+                f"| 可行性: 建议可立即执行 | ⏳ 待人工确认 | 资源和时间已评估 |\n"
+                f"| 清晰度: 表达无歧义 | ⏳ 待人工确认 | 第三方试读通过 |\n\n"
+                f"**评审结论**: ⏳ 自动生成的评审框架，需人工复核后确认。请逐项检查并标注最终状态。"
             )
 
         elif step_type in ("scheduling", "invitation"):

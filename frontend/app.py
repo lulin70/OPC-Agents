@@ -44,6 +44,7 @@ import sys
 import os
 import traceback
 import time
+import json
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -62,6 +63,32 @@ DELIVERABLES_DIR = os.path.join(
 )
 os.makedirs(DELIVERABLES_DIR, exist_ok=True)
 
+CHAT_HISTORY_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data",
+    "chat_history.json",
+)
+
+
+def _save_chat_history():
+    try:
+        os.makedirs(os.path.dirname(CHAT_HISTORY_FILE), exist_ok=True)
+        with open(CHAT_HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(st.session_state.messages, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def _load_chat_history():
+    try:
+        if os.path.exists(CHAT_HISTORY_FILE):
+            with open(CHAT_HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
+
+
 st.set_page_config(
     page_title="一人公司助手",
     page_icon="🚀",
@@ -76,7 +103,8 @@ if "initialized" not in st.session_state:
     此处用"initialized"标志位避免重复初始化覆盖已有数据。
     """
     st.session_state.initialized = True
-    st.session_state.messages = []
+    saved_messages = _load_chat_history()
+    st.session_state.messages = saved_messages if saved_messages else []
     st.session_state.deliverables = []
     st.session_state.scenario_count = 0
     st.session_state.detected_type = None
@@ -162,6 +190,7 @@ SCENARIOS_CORE = [
         "title": "内容创作",
         "desc": "文章/报告/日历规划",
         "coverage": ["内容日历规划", "报告撰写"],
+        "prompt": "帮我规划下周的内容日历和选题",
     },
     {
         "id": "product_launch",
@@ -169,6 +198,7 @@ SCENARIOS_CORE = [
         "title": "产品发布",
         "desc": "定价/上线/推广方案",
         "coverage": ["数字产品发布", "新产品发布"],
+        "prompt": "帮我制定新产品发布的完整方案",
     },
     {
         "id": "data_analysis",
@@ -176,6 +206,7 @@ SCENARIOS_CORE = [
         "title": "数据分析",
         "desc": "反馈分析/运营优化",
         "coverage": ["用户反馈分析", "电商运营优化"],
+        "prompt": "帮我分析用户反馈并提炼行动项",
     },
     {
         "id": "project_mgmt",
@@ -183,6 +214,7 @@ SCENARIOS_CORE = [
         "title": "项目管理",
         "desc": "提案/交付/会议组织",
         "coverage": ["咨询提案撰写", "项目交付物整理", "会议组织"],
+        "prompt": "帮我撰写一份专业咨询提案",
     },
 ]
 
@@ -192,48 +224,56 @@ SCENARIOS_MORE = [
         "icon": "📅",
         "title": "内容日历规划",
         "desc": "帮你规划下周的选题和发布节奏",
+        "prompt": "帮我规划下周的内容日历和选题排期",
     },
     {
         "id": "digital_product_launch",
         "icon": "🎯",
         "title": "数字产品发布",
         "desc": "从定价到上线的完整方案",
+        "prompt": "帮我制定数字产品的发布方案，包括定价和推广",
     },
     {
         "id": "feedback_analysis",
         "icon": "💬",
         "title": "用户反馈分析",
         "desc": "从用户声音中提炼行动项",
+        "prompt": "帮我分析用户反馈，提炼关键行动项",
     },
     {
         "id": "consulting_proposal",
         "icon": "📝",
         "title": "咨询提案撰写",
         "desc": "专业提案框架+行业洞察",
+        "prompt": "帮我撰写一份专业咨询提案",
     },
     {
         "id": "ecommerce_ops",
         "icon": "🛒",
         "title": "电商运营优化",
         "desc": "GMV提升策略与执行清单",
+        "prompt": "帮我优化电商运营，提升GMV",
     },
     {
         "id": "project_deliverable",
         "icon": "📦",
         "title": "项目交付物整理",
         "desc": "交付物清单+质量检查",
+        "prompt": "帮我整理项目交付物并做质量检查",
     },
     {
         "id": "write_report",
         "icon": "📄",
         "title": "报告撰写",
         "desc": "结构化报告+数据支撑",
+        "prompt": "帮我写一份结构化的分析报告",
     },
     {
         "id": "organize_meeting",
         "icon": "🤝",
         "title": "会议组织",
         "desc": "议程+纪要+跟进清单",
+        "prompt": "帮我组织一次项目会议",
     },
 ]
 
@@ -423,7 +463,13 @@ def execute_task_and_deliver(prompt):
 
         engine = TaskEngineV3()
         print(f"[frontend] TaskEngineV3 初始化完成")
-        result = engine.execute(prompt)
+
+        if "session_ctx" not in st.session_state:
+            from opc_manager.session_context import SessionContextManager
+
+            st.session_state.session_ctx = SessionContextManager()
+
+        result = engine.execute(prompt, session_ctx=st.session_state.session_ctx)
         print(
             f"[frontend] 任务执行完成: success={result.success}, content_len={len(result.content) if result.content else 0}"
         )
@@ -435,6 +481,10 @@ def execute_task_and_deliver(prompt):
         if not result.content:
             print(f"[frontend] 内容为空!")
             return None, False, None, None
+
+        if result.task_type == TaskType.GENERAL_CHAT and len(result.content) < 300:
+            print(f"[frontend] 闲聊/短回复，不生成成果物文件")
+            return result.content, True, None, "general_chat"
 
         meta_lines = []
         if result.execution_time_ms:
@@ -620,8 +670,8 @@ if page == "💬 对话":
                     key=f"core_{sc['id']}",
                     use_container_width=True,
                 ):
-                    st.session_state.pending_prompt = (
-                        f"帮我执行「{sc['title']}」相关任务"
+                    st.session_state.pending_prompt = sc.get(
+                        "prompt", f"帮我执行「{sc['title']}」相关任务"
                     )
                     st.rerun()
 
@@ -635,8 +685,8 @@ if page == "💬 对话":
                         key=f"more_{sc['id']}",
                         use_container_width=True,
                     ):
-                        st.session_state.pending_prompt = (
-                            f"帮我执行「{sc['title']}」场景"
+                        st.session_state.pending_prompt = sc.get(
+                            "prompt", f"帮我执行「{sc['title']}」场景"
                         )
                         st.rerun()
 
@@ -673,10 +723,12 @@ if page == "💬 对话":
     if pending:
         prompt = pending
         st.session_state.messages.append({"role": "user", "content": prompt})
+        _save_chat_history()
         with st.chat_message("user"):
             st.markdown(prompt)
     elif prompt := st.chat_input("告诉我你需要什么结果，我直接做完并交付文件..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
+        _save_chat_history()
         with st.chat_message("user"):
             st.markdown(prompt)
     else:
@@ -717,7 +769,7 @@ if page == "💬 对话":
                         st.error("取消失败（任务可能已完成）")
 
             EXECUTION_PHASES = [
-                (0, 3, "🔍 意图识别", "分析您的需求类型..."),
+                (0, 3, "🚀 任务启动", "初始化任务执行环境..."),
                 (3, 8, "🔎 信息搜索", "搜索相关参考资料..."),
                 (8, 25, "🤖 LLM生成", "AI正在撰写专业内容..."),
                 (25, 50, "✍️ 内容润色", "优化输出质量..."),
@@ -727,6 +779,7 @@ if page == "💬 对话":
             max_polls = 180
             poll_interval = 1.0
             start_time = time.time()
+            progress_placeholder = st.empty()
 
             for poll_count in range(max_polls):
                 task_status = executor.get_status(task_id)
@@ -768,7 +821,7 @@ if page == "💬 对话":
                         label=f"{phase_icon} {phase_name} ({elapsed:.0f}s / 预计还需{remaining:.0f}s)",
                         state="running",
                     )
-                    st.progress(
+                    progress_placeholder.progress(
                         progress_pct / 100.0,
                         text=f"预估进度 {progress_pct}% — {phase_hint} — 已耗时 {elapsed:.0f}s",
                     )
@@ -822,6 +875,7 @@ if page == "💬 对话":
                                     "deliverable_id": f"{int(time.time()*1000)}",
                                 }
                             )
+                            _save_chat_history()
                     break
 
                 elif current_status == "failed":
@@ -905,6 +959,7 @@ if page == "💬 对话":
                     st.session_state.messages.append(
                         {"role": "assistant", "content": fallback}
                     )
+                    _save_chat_history()
                     break
 
                 elif current_status == "cancelled":

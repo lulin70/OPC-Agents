@@ -45,6 +45,7 @@ logs/
 data/schedules/
 data/completions/
 data/context/
+data/chat_history.json
 deliverables/
 output/
 reports/
