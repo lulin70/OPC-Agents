@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司智能任务执行系统
 
-> **版本**: v0.1.1-beta | **状态**: ✅ Beta测试就绪 | **许可**: MIT
+> **版本**: v0.1.2 | **状态**: ✅ Beta测试就绪 | **许可**: MIT
 
 [![Beta Status](https://img.shields.io/badge/status-beta%20ready-brightgreen)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -170,6 +170,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| 0.1.2 | 2026-04-27 | 安全加固+性能优化：XSS修复、Prompt注入防护、单例模式、线程安全 |
 | 0.1.1-beta | 2026-04-27 | Bug修复：LLM初始化/搜索依赖/场景路径/上下文污染/占位符替换 |
 | 0.1.0-beta | 2026-04-24 | Beta发布：安装流程修复、安全加固、CI通过 |
 | 0.1.0 | 2026-04-23 | "可信可用"：版本统一、Mock删除、MOKA API接入、异步执行 |
