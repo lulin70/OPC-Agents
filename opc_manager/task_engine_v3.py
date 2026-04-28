@@ -61,6 +61,7 @@
 import asyncio
 import re
 import time
+import threading
 import logging
 import hashlib
 from typing import Dict, List, Optional, Any, Tuple, TYPE_CHECKING
@@ -328,6 +329,8 @@ class TaskEngineV3:
         self._initialized = False
         self._search_cache = SearchCache()
 
+    _init_lock = threading.Lock()
+
     def _ensure_initialized(self):
         """懒初始化外部依赖 — 只在首次execute时加载
 
@@ -336,40 +339,47 @@ class TaskEngineV3:
         - ScenarioEngineV2需要加载9个场景配置
         - 分开try/except确保一个失败不影响另一个
         - 初始化一次后设置标志位，后续不再重复
+        - 使用类级别Lock保证线程安全
         """
         if self._initialized:
             return
 
-        try:
-            from opc_hr.web_search import WebSearchMCP
+        with self._init_lock:
+            if self._initialized:
+                return
 
-            self.web_search = WebSearchMCP()
-            logger.info("[TaskEngineV3] WebSearch初始化成功")
-        except Exception as e:
-            logger.warning(f"[TaskEngineV3] WebSearch初始化失败: {e}")
+            try:
+                from opc_hr.web_search import WebSearchMCP
 
-        try:
-            from opc_manager.scenario_engine_v2 import ScenarioEngineV2
+                self.web_search = WebSearchMCP()
+                logger.info("[TaskEngineV3] WebSearch初始化成功")
+            except Exception as e:
+                logger.warning(f"[TaskEngineV3] WebSearch初始化失败: {e}")
 
-            self.scenario_engine = ScenarioEngineV2()
-            logger.info("[TaskEngineV3] ScenarioEngineV2初始化成功")
-        except Exception as e:
-            logger.warning(f"[TaskEngineV3] ScenarioEngineV2初始化失败: {e}")
+            try:
+                from opc_manager.scenario_engine_v2 import ScenarioEngineV2
 
-        try:
-            from opc_manager.llm_content import LLMEnhancedContentGenerator
+                self.scenario_engine = ScenarioEngineV2()
+                logger.info("[TaskEngineV3] ScenarioEngineV2初始化成功")
+            except Exception as e:
+                logger.warning(f"[TaskEngineV3] ScenarioEngineV2初始化失败: {e}")
 
-            self.llm_content_gen = LLMEnhancedContentGenerator()
-            if self.llm_content_gen.is_available():
-                logger.info("[TaskEngineV3] LLMEnhancedContentGenerator初始化成功")
-            else:
-                logger.info("[TaskEngineV3] LLM不可用，将使用模板模式")
+            try:
+                from opc_manager.llm_content import LLMEnhancedContentGenerator
+
+                self.llm_content_gen = LLMEnhancedContentGenerator()
+                if self.llm_content_gen.is_available():
+                    logger.info("[TaskEngineV3] LLMEnhancedContentGenerator初始化成功")
+                else:
+                    logger.info("[TaskEngineV3] LLM不可用，将使用模板模式")
+                    self.llm_content_gen = None
+            except Exception as e:
+                logger.warning(
+                    f"[TaskEngineV3] LLMEnhancedContentGenerator初始化失败: {e}"
+                )
                 self.llm_content_gen = None
-        except Exception as e:
-            logger.warning(f"[TaskEngineV3] LLMEnhancedContentGenerator初始化失败: {e}")
-            self.llm_content_gen = None
 
-        self._initialized = True
+            self._initialized = True
 
     def execute(
         self,

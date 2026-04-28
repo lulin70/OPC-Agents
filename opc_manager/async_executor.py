@@ -463,10 +463,9 @@ class AsyncTaskExecutor:
         Returns:
             结果字典：{content, success, filepath, task_type}
         """
-        from opc_manager.task_engine_v3 import TaskEngineV3
+        from opc_manager.task_engine_v3 import task_engine_v3
 
-        engine = TaskEngineV3()
-        result = engine.execute(prompt)
+        result = task_engine_v3.execute(prompt)
 
         filepath = None
         if result.success and result.content and self._save_callback:

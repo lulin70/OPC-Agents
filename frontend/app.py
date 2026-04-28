@@ -42,6 +42,8 @@ v3.4: 代码走读注释完善
 import streamlit as st
 import sys
 import os
+import re
+import html
 import traceback
 import time
 import json
@@ -486,9 +488,9 @@ def execute_task_and_deliver(prompt):
     """
     try:
         print(f"[frontend] 开始执行任务: {prompt[:50]}")
-        from opc_manager.task_engine_v3 import TaskEngineV3, TaskType
+        from opc_manager.task_engine_v3 import task_engine_v3, TaskType
 
-        engine = TaskEngineV3()
+        engine = task_engine_v3
         print(f"[frontend] TaskEngineV3 初始化完成")
 
         if "session_ctx" not in st.session_state:
@@ -983,11 +985,12 @@ if page == "💬 对话":
                             break
 
                     prompt_short = prompt[:40] + ("..." if len(prompt) > 40 else "")
+                    safe_error = html.escape(error_msg[:300])
                     fallback = (
                         f"{friendly_title}\n\n"
                         f"关于「**{prompt_short}**」\n\n"
                         f"{friendly_hint}\n\n"
-                        f"<details><summary>技术详情</summary>\n\n`{error_msg[:300]}`\n</details>"
+                        f"<details><summary>技术详情</summary>\n\n`{safe_error}`\n</details>"
                     )
 
                     st.markdown(fallback, unsafe_allow_html=True)
@@ -1070,7 +1073,7 @@ elif page == "📁 成果物":
                 if os.path.exists(d["filepath"]):
                     with open(d["filepath"], "r", encoding="utf-8") as f:
                         preview = f.read()[:500]
-                    st.markdown(preview)
+                    st.code(preview, language="markdown")
 
 
 elif page == "📊 成长":
@@ -1221,8 +1224,8 @@ elif page == "⚙️ 设置":
             ("OpenAI", "OPENAI_API_KEY"),
         ]:
             val = os.environ.get(env_var, "")
-            if val:
-                st.markdown(f"- {key_name}: ✅ 已配置 (`{val[:4]}...{val[-4:]}`)")
+            if val and val.strip():
+                st.markdown(f"- {key_name}: ✅ 已配置")
             else:
                 st.markdown(f"- {key_name}: ❌ 未配置")
         st.caption("通过 `.env` 文件配置 API Key，修改后需重启应用")
