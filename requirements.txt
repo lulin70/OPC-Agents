@@ -1,13 +1,13 @@
 # OPC-Agents 核心依赖
-# 版本: 0.1.0-beta
-# 最后更新: 2026-04-24
+# 版本: 0.1.1-beta
+# 最后更新: 2026-04-27
 
 # Web框架
 streamlit>=1.28.0
 
 # HTTP & 搜索
 requests>=2.31.0
-duckduckgo-search>=3.9.0
+ddgs>=5.0.0
 httpx>=0.24.0
 
 # HTML解析

@@ -107,6 +107,7 @@ class TaskResult:
     execution_time_ms: float = 0
     error: str = None
     deliverable_format: str = ""
+    search_results: List[Dict] = field(default_factory=list)
 
 
 class InputValidator:
@@ -407,7 +408,6 @@ class TaskEngineV3:
             >>> result2 = engine.execute("第三阶段时间太长，能缩短吗？", session_ctx=session)
         """
         start_time = time.time()
-        self._current_business_type = business_type
 
         sanitized, validation_error = InputValidator.sanitize(user_input)
         if validation_error:
@@ -450,15 +450,23 @@ class TaskEngineV3:
             )
 
             if task_type == TaskType.SCENARIO_BASED and self.scenario_engine:
-                result = self._execute_scenario_based(enriched_input)
+                result = self._execute_scenario_based(
+                    sanitized, enriched_input, business_type
+                )
             elif task_type == TaskType.INFO_COLLECTION:
-                result = self._execute_info_collection(enriched_input)
+                result = self._execute_info_collection(
+                    sanitized, enriched_input, business_type
+                )
             elif task_type == TaskType.CONTENT_GENERATION:
-                result = self._execute_content_generation(enriched_input)
+                result = self._execute_content_generation(
+                    sanitized, enriched_input, business_type
+                )
             elif task_type == TaskType.DATA_ANALYSIS:
-                result = self._execute_data_analysis(enriched_input)
+                result = self._execute_data_analysis(
+                    sanitized, enriched_input, business_type
+                )
             else:
-                result = self._execute_general_chat(enriched_input)
+                result = self._execute_general_chat(sanitized, enriched_input)
 
             result.execution_time_ms = (time.time() - start_time) * 1000
 
@@ -584,7 +592,9 @@ class TaskEngineV3:
         )
         return clean.strip() or user_input
 
-    def _execute_info_collection(self, query: str) -> TaskResult:
+    def _execute_info_collection(
+        self, search_query: str, llm_query: str = None, business_type: str = None
+    ) -> TaskResult:
         """路径A: 信息收集 — 真实网络搜索 + 结构化研究报告
 
         典型用户输入："收集2024年AI Agent框架最新信息"
@@ -599,21 +609,24 @@ class TaskEngineV3:
         搜索无结果时，输出"未找到足够信息"页面，
         包含可能原因分析和替代方案建议（而非空白页）。
         """
-        search_query = self._extract_search_query(query)
-        results, sources = self._search(search_query, max_results=8)
+        if llm_query is None:
+            llm_query = search_query
+        results, sources = self._search(
+            self._extract_search_query(search_query), max_results=8
+        )
 
         if not results:
             content = (
-                f"# 🔍 「{query}」— 未找到足够信息\n\n"
+                f"# 🔍 「{search_query}」— 未找到足够信息\n\n"
                 f"> 搜索时间: {time.strftime('%Y-%m-%d %H:%M')}\n\n"
                 f"## 说明\n\n"
-                f"针对「**{query}**」的搜索未返回足够的相关结果。\n\n"
+                f"针对「**{search_query}**」的搜索未返回足够的相关结果。\n\n"
                 f"**可能的原因：**\n"
                 f"1. 关键词过于具体或小众，建议拆分为多个更通用的查询\n"
                 f"2. 该主题在公开网络上信息较少，可能需要专业数据库或行业报告\n"
                 f"3. 搜索引擎对该领域的中文索引不够完善\n\n"
                 f"**建议下一步：**\n"
-                f'- 尝试用英文关键词重新搜索（如 "{search_query}" 的英文翻译）\n'
+                f'- 尝试用英文关键词重新搜索（如 "{self._extract_search_query(search_query)}" 的英文翻译）\n'
                 f"- 告诉我更多背景信息，我可以从其他角度帮你查找\n"
                 f"- 如果这是特定行业的专业问题，建议查阅该行业的权威报告或咨询专业人士\n"
             )
@@ -622,7 +635,7 @@ class TaskEngineV3:
             )
 
         lines = []
-        lines.append(f"# 🔍 「{query}」研究报告\n")
+        lines.append(f"# 🔍 「{search_query}」研究报告\n")
         lines.append(
             f"> 生成时间: {time.strftime('%Y-%m-%d %H:%M')} | 信息来源: {len(results)} 条\n"
         )
@@ -631,7 +644,7 @@ class TaskEngineV3:
         lines.append("## 搜索结果摘要\n")
         for i, r in enumerate(results[:8], 1):
             title = r.get("title", "无标题")
-            body = r.get("body", "无摘要")
+            body = r.get("body", "无摘要") or r.get("snippet", "无摘要")
             href = InputValidator.sanitize_url(r.get("href", ""))
             lines.append(f"### {i}. {title}\n")
             lines.append(f"{body[:400]}{'...' if len(body) > 400 else ''}\n")
@@ -652,7 +665,7 @@ class TaskEngineV3:
 
         lines.append("## 下一步行动建议\n")
         lines.append(
-            f"根据以上关于「{query}」的信息，建议：\n\n"
+            f"根据以上关于「{search_query}」的信息，建议：\n\n"
             f"1. **深入阅读**: 点击上方来源链接，获取完整信息和数据支撑\n"
             f"2. **交叉验证**: 对比多个来源的信息，识别共识和分歧点\n"
             f"3. **结合实际**: 将这些信息与你当前的具体情况对照，找出可操作的切入点\n"
@@ -668,7 +681,9 @@ class TaskEngineV3:
             deliverable_format="Markdown",
         )
 
-    def _execute_content_generation(self, query: str) -> TaskResult:
+    def _execute_content_generation(
+        self, search_query: str, llm_query: str = None, business_type: str = None
+    ) -> TaskResult:
         """路径B: 内容生成 — 先搜索参考资料，再生成具体文档
 
         典型用户输入："帮我写一份Q2营销方案"
@@ -682,9 +697,11 @@ class TaskEngineV3:
         在原查询基础上追加" 方案 案例 最佳实践 模板"等关键词，
         提高搜索结果与"生成文档"这一目标的匹配度。
         """
-        search_query = self._extract_search_query(query)
+        if llm_query is None:
+            llm_query = search_query
         results, sources = self._search(
-            search_query + " 方案 案例 最佳实践 模板", max_results=5
+            self._extract_search_query(search_query) + " 方案 案例 最佳实践 模板",
+            max_results=5,
         )
 
         context_lines = []
@@ -696,16 +713,22 @@ class TaskEngineV3:
                 )
             context_lines.append("\n---\n\n")
 
-        is_report = any(kw in query for kw in ["报告", "report", "总结", "分析"])
-        is_plan = any(kw in query for kw in ["方案", "plan", "策划", "策略"])
-        is_proposal = any(kw in query for kw in ["提案", "proposal", "建议书"])
+        is_report = any(kw in search_query for kw in ["报告", "report", "总结", "分析"])
+        is_plan = any(kw in search_query for kw in ["方案", "plan", "策划", "策略"])
+        is_proposal = any(kw in search_query for kw in ["提案", "proposal", "建议书"])
 
         if is_report:
-            content = self._gen_real_report(query, context_lines, results)
+            content = self._gen_real_report(
+                search_query, context_lines, results, business_type
+            )
         elif is_plan or is_proposal:
-            content = self._gen_real_plan(query, context_lines, results)
+            content = self._gen_real_plan(
+                search_query, context_lines, results, business_type
+            )
         else:
-            content = self._gen_real_content(query, context_lines, results)
+            content = self._gen_real_content(
+                search_query, context_lines, results, business_type
+            )
 
         return TaskResult(
             success=True,
@@ -733,24 +756,37 @@ class TaskEngineV3:
                 "analysis": "# {topic}\n\n## 数据概览\n\n## 分析发现\n\n## 结论\n",
             }
             template = template_map.get(doc_type, template_map["content"])
+            template = template.replace("{topic}", query)
             result = self.llm_content_gen.generate(
                 user_input=query,
                 template=template,
                 search_results=search_results,
                 business_type=business_type,
             )
-            if result.success and result.content and len(result.content) > 200:
-                mode_tag = "AI增强" if not result.fallback_used else "模板"
+            if (
+                result.success
+                and result.content
+                and len(result.content) > 200
+                and not result.fallback_used
+            ):
                 logger.info(
-                    f"[TaskEngineV3] LLM生成成功({mode_tag}模式): {len(result.content)}字"
+                    f"[TaskEngineV3] LLM生成成功(AI增强模式): {len(result.content)}字"
                 )
                 return result.content
+            if result.fallback_used:
+                logger.info(
+                    "[TaskEngineV3] LLM降级到模板，使用本地模板（含搜索数据）替代"
+                )
         except Exception as e:
             logger.warning(f"[TaskEngineV3] LLM生成失败，降级到模板: {e}")
         return None
 
     def _gen_real_report(
-        self, query: str, context: List[str], search_results: List[Dict]
+        self,
+        query: str,
+        context: List[str],
+        search_results: List[Dict],
+        business_type: str = None,
     ) -> str:
         """生成报告类文档 — 结构化、有数据支撑、可操作
 
@@ -769,7 +805,7 @@ class TaskEngineV3:
             query,
             search_results,
             "report",
-            getattr(self, "_current_business_type", None),
+            business_type,
         )
         if llm_content:
             return llm_content
@@ -805,7 +841,7 @@ class TaskEngineV3:
         lines.append(f"### 2.1 当前情况概述\n\n")
         if search_results and len(search_results) > 0:
             first_result = search_results[0]
-            body = first_result.get("body", "")
+            body = first_result.get("body", "") or first_result.get("snippet", "")
             if body and len(body) > 50:
                 lines.append(
                     f"根据最新信息显示：\n\n{body[:500]}{'...' if len(body) > 500 else ''}\n\n"
@@ -849,7 +885,7 @@ class TaskEngineV3:
 
         if search_results and len(search_results) >= 2:
             second = search_results[1]
-            s_body = second.get("body", "")
+            s_body = second.get("body", "") or second.get("snippet", "")
             if s_body:
                 lines.append(f"### 3.2 补充信息\n\n")
                 lines.append(
@@ -889,7 +925,11 @@ class TaskEngineV3:
         return "".join(lines)
 
     def _gen_real_plan(
-        self, query: str, context: List[str], search_results: List[Dict]
+        self,
+        query: str,
+        context: List[str],
+        search_results: List[Dict],
+        business_type: str = None,
     ) -> str:
         """生成方案/计划类文档 — 含SMART目标、三阶段路线图、资源、风险、验收标准
 
@@ -909,7 +949,7 @@ class TaskEngineV3:
         - SMART指标给出示例值（提升30%/≥95%）供参考调整
         """
         llm_content = self._try_llm_generate(
-            query, search_results, "plan", getattr(self, "_current_business_type", None)
+            query, search_results, "plan", business_type
         )
         if llm_content:
             return llm_content
@@ -1036,7 +1076,11 @@ class TaskEngineV3:
         return "".join(lines)
 
     def _gen_real_content(
-        self, query: str, context: List[str], search_results: List[Dict]
+        self,
+        query: str,
+        context: List[str],
+        search_results: List[Dict],
+        business_type: str = None,
     ) -> str:
         """通用内容生成 — 当无法判断是报告还是方案时的 fallback 模板
 
@@ -1051,7 +1095,7 @@ class TaskEngineV3:
             query,
             search_results,
             "content",
-            getattr(self, "_current_business_type", None),
+            business_type,
         )
         if llm_content:
             return llm_content
@@ -1070,7 +1114,7 @@ class TaskEngineV3:
             )
             for i, r in enumerate(search_results[:5], 1):
                 title = r.get("title", "")
-                body = r.get("body", "")
+                body = r.get("body", "") or r.get("snippet", "")
                 href = InputValidator.sanitize_url(r.get("href", ""))
                 lines.append(f"### {i}. {title}\n\n")
                 lines.append(f"{body[:600]}{'...' if len(body) > 600 else ''}\n\n")
@@ -1085,7 +1129,9 @@ class TaskEngineV3:
         lines.append(f"\n---\n*由 OPC-Agents 自动生成*\n")
         return "".join(lines)
 
-    def _execute_data_analysis(self, query: str) -> TaskResult:
+    def _execute_data_analysis(
+        self, search_query: str, llm_query: str = None, business_type: str = None
+    ) -> TaskResult:
         """路径C:数据分析 — SWOT框架 + 搜索数据 + 行动建议
 
         典型用户输入："分析一下我的业务现状"
@@ -1096,14 +1142,16 @@ class TaskEngineV3:
         - 结论部分给出总体策略方向
         - 行动清单按P0-P3分级，含预期收益和时间投入估算
         """
-        search_query = self._extract_search_query(query)
+        if llm_query is None:
+            llm_query = search_query
         results, sources = self._search(
-            search_query + " 数据 报告 趋势 对比", max_results=5
+            self._extract_search_query(search_query) + " 数据 报告 趋势 对比",
+            max_results=5,
         )
 
         lines = []
         llm_content = self._try_llm_generate(
-            query, results, "analysis", getattr(self, "_current_business_type", None)
+            llm_query, results, "analysis", business_type
         )
         if llm_content:
             lines.append(llm_content)
@@ -1115,7 +1163,7 @@ class TaskEngineV3:
                 deliverable_format="Markdown",
             )
 
-        lines.append(f"# 📊 「{query}」深度分析\n")
+        lines.append(f"# 📊 「{search_query}」深度分析\n")
         lines.append(f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')}\n\n")
 
         if results:
@@ -1125,7 +1173,7 @@ class TaskEngineV3:
             lines.append("\n---\n\n")
 
         topic = (
-            query.replace("帮我分析", "")
+            search_query.replace("帮我分析", "")
             .replace("分析一下", "")
             .replace("看看", "")
             .replace("怎么样", "")
@@ -1145,7 +1193,7 @@ class TaskEngineV3:
 
         lines.append(f"### 🎯 机会 (Opportunities)\n\n")
         if results:
-            first_body = results[0].get("body", "")
+            first_body = results[0].get("body", "") or results[0].get("snippet", "")
             if first_body:
                 lines.append(f"根据市场信息显示：{first_body[:200]}\n\n")
             lines.append(f"建议抓住以下机会窗口：\n")
@@ -1184,7 +1232,9 @@ class TaskEngineV3:
             deliverable_format="Markdown",
         )
 
-    def _execute_scenario_based(self, query: str) -> TaskResult:
+    def _execute_scenario_based(
+        self, search_query: str, llm_query: str = None, business_type: str = None
+    ) -> TaskResult:
         """路径D: 场景执行 — 基于ScenarioEngineV2的多步骤工作流
 
         典型触发方式：
@@ -1202,13 +1252,15 @@ class TaskEngineV3:
         - 场景未匹配 → 回退到信息收集路径
         - 步骤执行异常 → 记录日志并继续下一步（不中断整个流程）
         """
+        if llm_query is None:
+            llm_query = search_query
         try:
             from opc_manager.business_types import BusinessType
 
-            scenario_result = self.scenario_engine.process(query)
+            scenario_result = self.scenario_engine.process(search_query)
 
             if not scenario_result.matched:
-                return self._execute_fallback(query)
+                return self._execute_fallback(search_query)
 
             config = scenario_result.scenario_config
             workflow_steps = config.workflow_steps
@@ -1223,8 +1275,8 @@ class TaskEngineV3:
             lines.append("---\n\n")
 
             for step in workflow_steps:
-                step_content = self._exec_step_with_data(step, query)
-                lines.append(f"## Step {step.id}: {step.name} ({step.type})\n")
+                step_content = self._exec_step_with_data(step, search_query)
+                lines.append(f"## Step {step.step_id}: {step.name} ({step.type})\n")
                 lines.append(f"*{step.description}*\n\n")
                 lines.append(f"{step_content}\n")
                 if step.output_spec:
@@ -1251,7 +1303,7 @@ class TaskEngineV3:
 
         except Exception as e:
             logger.error(f"[TaskEngineV3] 场景执行失败: {e}")
-            return self._execute_fallback(query)
+            return self._execute_fallback(search_query)
 
     def _exec_step_with_data(self, step, query: str) -> str:
         """执行单个工作流步骤 — 根据 step.type 分发到不同的生成策略
@@ -1279,7 +1331,7 @@ class TaskEngineV3:
                 items = []
                 for r in results[:5]:
                     title = r.get("title", "")
-                    body = r.get("body", "")
+                    body = r.get("body", "") or r.get("snippet", "")
                     href = r.get("href", "")
                     item = f"- **{title}**\n  {body[:200]}{'...' if len(body) > 200 else ''}"
                     if href:
@@ -1391,7 +1443,7 @@ class TaskEngineV3:
         if results:
             ref_parts = []
             for r in results[:2]:
-                body = r.get("body", "")
+                body = r.get("body", "") or r.get("snippet", "")
                 if body:
                     ref_parts.append(body[:200])
             if ref_parts:
@@ -1440,7 +1492,9 @@ class TaskEngineV3:
             f"---\n*由 OPC-Agents 任务引擎自动生成 ({now})*"
         )
 
-    def _execute_general_chat(self, query: str) -> TaskResult:
+    def _execute_general_chat(
+        self, search_query: str, llm_query: str = None
+    ) -> TaskResult:
         """路径E: 闲聊/问候/帮助 — 兜底路径
 
         处理不属于上述4种类型的输入，主要是：
@@ -1452,6 +1506,9 @@ class TaskEngineV3:
         即使是兜底路径也要提供有用信息——告知用户系统能力，
         引导其使用正确的功能入口，而非简单回复"我不理解"。
         """
+        if llm_query is None:
+            llm_query = search_query
+        query = search_query
         responses = {
             "你好": (
                 "👋 你好！我是OPC-Agents一人公司助手。\n\n"

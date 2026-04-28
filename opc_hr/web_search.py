@@ -21,13 +21,18 @@ class WebSearchMCP:
     def __init__(self):
         self._dds = None
         try:
-            from duckduckgo_search import DDGS
+            # 优先使用新包名 ddgs
+            try:
+                from ddgs import DDGS
+            except ImportError:
+                # 兼容旧包名 duckduckgo_search
+                from duckduckgo_search import DDGS
 
             self._dds = DDGS()
             logger.info("[WebSearchMCP] DuckDuckGo search initialized")
         except ImportError:
             logger.warning(
-                "[WebSearchMCP] duckduckgo-search not installed, search unavailable. "
+                "[WebSearchMCP] ddgs/duckduckgo-search not installed, search unavailable. "
                 "Install with: pip install duckduckgo-search"
             )
         except Exception as e:

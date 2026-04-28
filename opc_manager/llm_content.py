@@ -135,6 +135,19 @@ class LLMEnhancedContentGenerator:
         self.max_content_length = max_content_length
         self.min_fallback_length = min_fallback_length
 
+    def is_available(self) -> bool:
+        """检查LLM服务是否可用
+
+        Returns:
+            bool: True表示至少有一个LLM后端可用（配置了API Key）
+        """
+        try:
+            api_key = self._get_llm_api_key()
+            return api_key is not None and len(api_key) > 0
+        except Exception as e:
+            logger.warning(f"[LLMContentGen] 检查可用性失败: {e}")
+            return False
+
     def generate(
         self,
         user_input: str,
@@ -164,6 +177,7 @@ class LLMEnhancedContentGenerator:
         """
         start_time = time.time()
 
+        template = template.replace("{topic}", user_input)
         business_info = self._extract_business_info(user_input)
         context = self._build_context(search_results or [])
 
@@ -558,18 +572,18 @@ class LLMEnhancedContentGenerator:
         import os
 
         moka_key = os.environ.get("MOKA_API_KEY")
-        if moka_key:
+        if moka_key and moka_key.strip():
             api_base = os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1")
             model = os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
             logger.info(f"[LLMContentGen] 使用MOKA API: base={api_base}, model={model}")
             return moka_key, api_base, model
 
         glm_key = os.environ.get("GLM_API_KEY")
-        if glm_key:
+        if glm_key and glm_key.strip():
             return glm_key, "https://open.bigmodel.cn/api/paas/v4", "glm-4"
 
         openai_key = os.environ.get("OPENAI_API_KEY")
-        if openai_key:
+        if openai_key and openai_key.strip():
             api_base = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1")
             return openai_key, api_base, "gpt-4"
 
@@ -616,6 +630,7 @@ class LLMEnhancedContentGenerator:
         content = content.replace(
             "{goals}", ", ".join(business_info["targets"]) or "基于用户需求设定"
         )
+        content = content.replace("{topic}", user_input)
 
         if search_results:
             refs_section = "\n\n## 参考资料\n"
@@ -731,18 +746,9 @@ class LLMEnhancedContentGenerator:
         score -= min(result.placeholder_count * 5, 25)
 
         injection_rate = 0
-        total_expected = (
-            len(result.business_info_injected)
-            + sum(
-                len(v)
-                for v in [
-                    getattr(self, "_last_business_info", {}).get(k, [])
-                    for k in ["product_name", "numbers", "targets"]
-                ]
-            )
-        ) / 4
-        if total_expected > 0:
-            injection_rate = len(result.business_info_injected) / max(total_expected, 1)
+        total_info_items = len(result.business_info_injected)
+        if total_info_items > 0:
+            injection_rate = min(total_info_items / 4.0, 1.0)
         score += injection_rate * 25
 
         if result.fallback_used:

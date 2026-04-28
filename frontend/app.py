@@ -89,6 +89,15 @@ def _load_chat_history():
     return None
 
 
+def _has_api_key():
+    """检查是否配置了有效的API Key（排除空格-only值）"""
+    return bool(
+        (os.environ.get("MOKA_API_KEY") or "").strip()
+        or (os.environ.get("GLM_API_KEY") or "").strip()
+        or (os.environ.get("OPENAI_API_KEY") or "").strip()
+    )
+
+
 st.set_page_config(
     page_title="一人公司助手",
     page_icon="🚀",
@@ -134,17 +143,31 @@ if "initialized" not in st.session_state:
             if f not in existing_names:
                 fp = os.path.join(DELIVERABLES_DIR, f)
                 size_kb = round(os.path.getsize(fp) / 1024, 1)
-                parts = f.replace(".md", "").split("_", 2)
+                parts = f.replace(".md", "").split("_", 3)
                 st.session_state.deliverables.append(
                     {
                         "filename": f,
                         "filepath": fp,
-                        "prompt": parts[2] if len(parts) > 2 else "历史任务",
-                        "task_type": parts[1] if len(parts) > 1 else "unknown",
+                        "prompt": (
+                            parts[3]
+                            if len(parts) > 3
+                            else (parts[2] if len(parts) > 2 else "历史任务")
+                        ),
+                        "task_type": (
+                            parts[2]
+                            if len(parts) > 3
+                            else (parts[1] if len(parts) > 1 else "unknown")
+                        ),
                         "created_at": (
-                            f"{parts[0][:4]}-{parts[0][4:6]}-{parts[0][6:8]}"
-                            if len(parts) > 0 and len(parts[0]) >= 8
-                            else ""
+                            f"{parts[0][:4]}-{parts[0][4:6]}-{parts[0][6:8]} {parts[1][:2]}:{parts[1][2:4]}:{parts[1][4:6]}"
+                            if len(parts) > 3
+                            and len(parts[0]) >= 8
+                            and len(parts[1]) >= 6
+                            else (
+                                f"{parts[0][:4]}-{parts[0][4:6]}-{parts[0][6:8]}"
+                                if len(parts) > 0 and len(parts[0]) >= 8
+                                else ""
+                            )
                         ),
                         "size_kb": size_kb,
                     }
@@ -385,10 +408,14 @@ def generate_filename(prompt: str, task_type: str) -> str:
 
     安全措施：
     - prompt截取前30字符防止文件名过长
-    - 替换空格/斜杠/反斜杠为下划线/横杠防止路径穿越
+    - 替换所有文件系统非法字符为安全字符
     - 使用时间戳保证唯一性（同一秒内多次请求仍可区分）
     """
-    safe_name = prompt[:30].replace(" ", "_").replace("/", "-").replace("\\", "-")
+    safe_name = (
+        re.sub(r'[\\/*?:"<>|\n\r\t]', "", prompt[:30])
+        .replace(" ", "_")
+        .replace("/", "-")
+    )
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{timestamp}_{task_type}_{safe_name}.md"
 
@@ -509,11 +536,7 @@ def execute_task_and_deliver(prompt):
 
         meta_str = "\n".join(meta_lines)
 
-        has_api_key = bool(
-            os.environ.get("MOKA_API_KEY")
-            or os.environ.get("GLM_API_KEY")
-            or os.environ.get("OPENAI_API_KEY")
-        )
+        has_api_key = _has_api_key()
         mode_tag = ""
         if not has_api_key:
             mode_tag = "\n\n> ⚠️ **当前为模板模式输出** — 配置API Key后可获得AI增强内容（质量提升5倍+）"
@@ -651,11 +674,7 @@ if page == "💬 对话":
             "**使用步骤**：① 在下方输入需求或点击场景按钮 → ② 等待AI执行 → ③ 下载成果物文件"
         )
 
-        has_api_key = (
-            os.environ.get("MOKA_API_KEY")
-            or os.environ.get("GLM_API_KEY")
-            or os.environ.get("OPENAI_API_KEY")
-        )
+        has_api_key = _has_api_key()
         if not has_api_key:
             st.warning(
                 "⚠️ **当前为模板模式** — 配置API Key后可获得AI增强内容（质量提升5倍+）"
@@ -883,15 +902,15 @@ if page == "💬 对话":
                                     f"✅ 已生成: {os.path.basename(result_filepath)} ({size_kb}KB)"
                                 )
 
-                            st.session_state.messages.append(
-                                {
-                                    "role": "assistant",
-                                    "content": result_content,
-                                    "deliverable_path": result_filepath,
-                                    "deliverable_id": f"{int(time.time()*1000)}",
-                                }
-                            )
-                            _save_chat_history()
+                        msg_record = {
+                            "role": "assistant",
+                            "content": result_content,
+                            "deliverable_id": f"{int(time.time()*1000)}",
+                        }
+                        if result_filepath and os.path.exists(result_filepath):
+                            msg_record["deliverable_path"] = result_filepath
+                        st.session_state.messages.append(msg_record)
+                        _save_chat_history()
                     break
 
                 elif current_status == "failed":
@@ -972,13 +991,11 @@ if page == "💬 对话":
                     )
 
                     st.markdown(fallback, unsafe_allow_html=True)
-                    if st.button("🔄 重新执行", key=f"retry_{task_id}"):
-                        st.session_state.pending_prompt = prompt
-                        st.rerun()
                     st.session_state.messages.append(
                         {"role": "assistant", "content": fallback}
                     )
                     _save_chat_history()
+                    st.session_state.last_failed_prompt = prompt
                     break
 
                 elif current_status == "cancelled":
@@ -993,6 +1010,12 @@ if page == "💬 对话":
             else:
                 status_container.update(label="⏰ 任务执行超时", state="error")
                 st.warning("任务执行时间过长，请查看历史记录或重新提交")
+
+        failed_prompt = st.session_state.pop("last_failed_prompt", None)
+        if failed_prompt:
+            if st.button("🔄 重新执行", key=f"retry_{int(time.time()*1000)}"):
+                st.session_state.pending_prompt = failed_prompt
+                st.rerun()
 
 
 elif page == "📁 成果物":
@@ -1030,13 +1053,17 @@ elif page == "📁 成果物":
                             key=f"dl_lib_{i}",
                             use_container_width=True,
                         )
-                    if st.button("🗑️ 删除", key=f"del_lib_{i}"):
+                    if st.button("🗑️ 删除", key=f"del_lib_{d['filename']}"):
                         try:
                             if os.path.exists(d["filepath"]):
                                 os.remove(d["filepath"])
                         except OSError:
                             pass
-                        st.session_state.deliverables.pop(i)
+                        st.session_state.deliverables = [
+                            item
+                            for item in st.session_state.deliverables
+                            if item.get("filename") != d["filename"]
+                        ]
                         st.rerun()
 
                 st.markdown("**预览（前500字）**:")
@@ -1133,11 +1160,7 @@ elif page == "⚙️ 设置":
     """
     st.markdown("## ⚙️ 设置")
 
-    has_api_key = bool(
-        os.environ.get("MOKA_API_KEY")
-        or os.environ.get("GLM_API_KEY")
-        or os.environ.get("OPENAI_API_KEY")
-    )
+    has_api_key = _has_api_key()
     mode_label = "🤖 AI增强模式" if has_api_key else "📝 模板模式"
     mode_desc = (
         "已检测到API Key，LLM将生成高质量专业内容"
@@ -1170,6 +1193,8 @@ elif page == "⚙️ 设置":
             }
             st.session_state.flywheel_level = 1
             st.session_state.achievements = []
+            if "session_ctx" in st.session_state:
+                st.session_state.session_ctx.clear()
             _save_chat_history()
             st.success("✅ 已重置会话数据")
             st.rerun()

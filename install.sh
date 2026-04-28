@@ -68,7 +68,7 @@ if [ ! -f ".env" ]; then
     else
         cat > .env << 'EOF'
 # OPC-Agents 配置文件
-# 版本: 0.1.0-beta
+# 版本: 0.1.1-beta
 
 # === LLM API 配置（至少配置一个）===
 # 推荐：MOKA AI（支持 Claude Sonnet 4）
@@ -93,6 +93,13 @@ echo ""
 
 echo "📁 创建数据目录..."
 mkdir -p deliverables
+mkdir -p data
+mkdir -p data/schedules
+mkdir -p data/completions
+mkdir -p data/context
+mkdir -p data/checkpoints
+mkdir -p data/loop_progress
+mkdir -p data/workflows
 mkdir -p logs
 echo -e "${GREEN}✓ 数据目录创建完成${NC}"
 echo ""

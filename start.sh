@@ -25,7 +25,7 @@ echo ""
 echo "🔐 检查 API 配置..."
 has_key=false
 if [ -f ".env" ]; then
-    if grep -q "^MOKA_API_KEY=sk-" .env 2>/dev/null; then
+    if grep -q "^MOKA_API_KEY=." .env 2>/dev/null && ! grep -q "^MOKA_API_KEY=$" .env 2>/dev/null; then
         echo -e "${GREEN}✓ 检测到 MOKA_API_KEY${NC}"
         has_key=true
     fi
@@ -33,7 +33,7 @@ if [ -f ".env" ]; then
         echo -e "${GREEN}✓ 检测到 GLM_API_KEY${NC}"
         has_key=true
     fi
-    if grep -q "^OPENAI_API_KEY=sk-" .env 2>/dev/null; then
+    if grep -q "^OPENAI_API_KEY=." .env 2>/dev/null && ! grep -q "^OPENAI_API_KEY=$" .env 2>/dev/null; then
         echo -e "${GREEN}✓ 检测到 OPENAI_API_KEY${NC}"
         has_key=true
     fi

@@ -45,6 +45,9 @@ logs/
 data/schedules/
 data/completions/
 data/context/
+data/checkpoints/
+data/loop_progress/
+data/workflows/
 data/chat_history.json
 deliverables/
 output/
@@ -56,6 +59,7 @@ test_results.xml
 coverage/
 .htmlcov/
 .pytest_cache/
+.benchmarks
 tests/e2e_results/
 
 # Build outputs

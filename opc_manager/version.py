@@ -4,8 +4,8 @@
 所有其他地方的版本号都应该从这里导入。
 """
 
-__version__ = "0.1.0-beta"
-__version_info__ = (0, 1, 0)
+__version__ = "0.1.1-beta"
+__version_info__ = (0, 1, 1)
 
 
 def get_version() -> str:

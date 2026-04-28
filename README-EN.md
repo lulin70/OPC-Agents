@@ -1,12 +1,12 @@
 # 🚀 OPC-Agents — Intelligent Task Execution for One-Person Companies
 
-> **Version**: v0.1.0-beta | **Status**: Beta Testing | **License**: MIT
+> **Version**: v0.1.1-beta | **Status**: Beta Testing | **License**: MIT
 
 ---
 
 ## 🎉 Beta Testing Open!
 
-OPC-Agents v0.1.0-beta is now available for testing!
+OPC-Agents v0.1.1-beta is now available for testing!
 
 **How to participate:**
 1. One-click install: `git clone https://github.com/lulin70/OPC-Agents.git && cd OPC-Agents && ./install.sh`
@@ -34,7 +34,7 @@ Not a chatbot. Not a suggestion engine. It's an **executor that gets things done
 
 ### Key Features
 
-- ✅ **LLM-Enhanced Content Generation** — Powered by Claude Sonnet 4, 91.2% Chinese capability
+- ✅ **LLM-Enhanced Content Generation** — Powered by Claude Sonnet 4, high-quality Chinese output
 - ✅ **Real Web Search** — DuckDuckGo live search, no fabricated data
 - ✅ **Zero Placeholder Guarantee** — Every output has specific, actionable content
 - ✅ **Async Execution** — Submit and return immediately, background processing with progress indication
@@ -113,6 +113,10 @@ OPC-Agents/
 │   ├── monitoring.py                 # Monitoring & logging
 │   ├── config.py                     # Configuration management
 │   └── version.py         # Version management (SSOT)
+├── opc_hr/                # Search & knowledge base
+│   └── web_search.py      # DuckDuckGo web search
+├── config/                # Configuration files
+│   └── persona_variants.yaml  # 6 business type persona configs
 ├── tests/                 # Test suite (229 tests, 100% pass)
 ├── docs/                  # Project documentation
 ├── requirements.txt       # Core dependencies
@@ -146,6 +150,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| 0.1.1-beta | 2026-04-27 | Bug fixes: LLM init/search deps/scenario path/context pollution/placeholder replacement |
 | 0.1.0-beta | 2026-04-25 | Beta release: critical bug fixes, security hardening, CI passing |
 | 0.1.0 | 2026-04-23 | "Trustworthy & Usable": version unification, mock removal, MOKA API, async execution |
 
