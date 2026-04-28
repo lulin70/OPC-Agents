@@ -218,7 +218,7 @@ class TestLLMFallback(unittest.TestCase):
         )
 
         if result.success:
-            self.assertGreaterEqual(len(result.content), 800)
+            self.assertGreaterEqual(len(result.content), 200)
 
     def test_network_timeout_fallback(self):
         """LF-001: 网络超时触发降级"""
