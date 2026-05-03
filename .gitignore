@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.tmp
+*.bak
+*.orig
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.trae/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+venv/
+env/
+.venv/
+
+# Configuration (keep templates, ignore actual configs)
+config.toml
+*.local.toml
+
+# Logs
+logs/
+*.log
+
+# Database files (user data)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Runtime data
+data/schedules/
+data/completions/
+data/context/
+data/checkpoints/
+data/loop_progress/
+data/workflows/
+data/chat_history.json
+deliverables/
+output/
+reports/
+task_workspaces/
+
+# Test artifacts
+test_results.xml
+coverage/
+.htmlcov/
+.pytest_cache/
+.benchmarks
+tests/e2e_results/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Secrets and keys
+*.pem
+*.key
+secrets/

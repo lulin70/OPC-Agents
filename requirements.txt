@@ -1,0 +1,35 @@
+# OPC-Agents 核心依赖
+# 版本: 0.1.5
+# 最后更新: 2026-05-02
+
+# Web框架
+streamlit>=1.28.0
+
+# HTTP & 搜索
+requests>=2.31.0
+ddgs>=5.0.0
+httpx>=0.24.0
+
+# HTML解析
+beautifulsoup4>=4.12.0
+
+# 中文分词（可选，未安装时自动降级为正则分词）
+jieba>=0.42.1
+
+# 配置管理
+python-dotenv>=1.0.0
+
+# 日志
+loguru>=0.7.0
+
+# 数据处理
+pandas>=2.0.0
+
+# LLM集成
+openai>=1.0.0
+
+# 数据验证
+pydantic>=2.0.0
+
+# YAML配置解析（persona_manager依赖）
+pyyaml>=6.0

@@ -1,0 +1,1255 @@
+"""Streamlit 前端 - OPC-Agents (成果物交付版)
+
+=== 产品定位 ===
+"告诉系统你要什么结果，它直接做完并交付文件给你"
+
+=== 核心设计改变（从v3.0到v3.4）===
+v3.0: "屏幕上显示文字" — AI助手聊天模式
+v3.4: "交付可下载的文件" — 任务执行+成果物交付模式
+
+每次任务执行都会：
+1. 调用TaskEngineV3执行真实搜索和内容生成
+2. 将结果保存为.md文件到deliverables/目录
+3. 在界面上显示下载按钮
+4. 用户可直接下载、保存、复用
+
+=== 页面结构（4个Tab）===
+1. 💬 对话: 主交互界面，输入需求→执行→下载
+2. 📁 成果物: 历史文件库，预览+重新下载
+3. 📊 成长: 五维飞轮仪表盘，等级系统
+4. ⚙️ 设置: 风格/路径/数据重置/高级选项
+
+=== 会话管理策略 ===
+- 使用Streamlit session_state存储所有状态
+- 刷新页面会丢失历史（已知限制，后续迭代DB持久化）
+- 每次页面加载时初始化默认状态（if "initialized" not in st.session_state）
+
+=== 错误处理策略 ===
+- safe_detect/safe_get_persona/safe_track_flywheel: 三层防御包装器，
+  确保后端模块异常不会导致前端崩溃
+- execute_task_and_deliver: 顶层try-except，失败时返回友好错误提示
+- 超时检测: 通过error_msg关键词匹配判断是否为网络超时，
+  给出不同的降级提示和CLI备选方案
+
+=== 版本历史 ===
+v3.0: 初始Streamlit UI
+v3.1: 增加成果物下载功能
+v3.2: 增加成果物库页面
+v3.3: st.spinner → st.status进度反馈，超时友好提示
+v3.4: 代码走读注释完善
+"""
+
+import streamlit as st
+import sys
+import os
+import re
+import html
+import traceback
+import time
+import json
+from datetime import datetime
+
+from dotenv import load_dotenv
+from pathlib import Path
+
+_WORKSPACE_DIR = os.environ.get("OPC_WORKSPACE", os.getcwd())
+load_dotenv(Path(_WORKSPACE_DIR) / ".env")
+
+try:
+    from opc_manager.secure_storage import init_secure_storage
+    init_secure_storage()
+except ImportError:
+    pass
+except Exception as e:
+    import logging as _logging
+    _logging.getLogger(__name__).warning(f"Secure storage init failed: {e}")
+
+from opc_manager.monitoring import init_monitoring, track_event, track_error
+
+init_monitoring()
+
+DELIVERABLES_DIR = os.path.join(_WORKSPACE_DIR, "deliverables")
+os.makedirs(DELIVERABLES_DIR, exist_ok=True)
+
+CHAT_HISTORY_FILE = os.path.join(_WORKSPACE_DIR, "data", "chat_history.json")
+
+
+def _save_chat_history():
+    try:
+        os.makedirs(os.path.dirname(CHAT_HISTORY_FILE), exist_ok=True)
+        with open(CHAT_HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(st.session_state.messages, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def _load_chat_history():
+    try:
+        if os.path.exists(CHAT_HISTORY_FILE):
+            with open(CHAT_HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
+
+
+def _has_api_key():
+    """检查是否配置了有效的API Key（排除空格-only值）"""
+    return bool(
+        (os.environ.get("MOKA_API_KEY") or "").strip()
+        or (os.environ.get("GLM_API_KEY") or "").strip()
+        or (os.environ.get("OPENAI_API_KEY") or "").strip()
+    )
+
+
+st.set_page_config(
+    page_title="一人公司助手",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+if "initialized" not in st.session_state:
+    """首次访问初始化所有session_state变量
+
+    设计意图：Streamlit的session_state在页面刷新后会重置，
+    此处用"initialized"标志位避免重复初始化覆盖已有数据。
+    """
+    st.session_state.initialized = True
+    saved_messages = _load_chat_history()
+    st.session_state.messages = saved_messages if saved_messages else []
+    st.session_state.deliverables = []
+    st.session_state.scenario_count = 0
+    st.session_state.detected_type = None
+    st.session_state.detected_name = None
+    st.session_state.flywheel_scores = {
+        "内容质量": 0,
+        "受众增长": 0,
+        "变现能力": 0,
+        "跨域推广": 0,
+        "生态协同": 0,
+    }
+    st.session_state.flywheel_level = 1
+    st.session_state.achievements = []
+    from opc_manager.async_executor import AsyncTaskExecutor
+    from opc_manager.session_context import SessionContextManager
+
+    st.session_state.session_ctx = SessionContextManager(max_turns=20)
+    st.session_state.async_executor = AsyncTaskExecutor(
+        max_concurrent=3,
+        default_timeout=120,
+        save_callback=lambda *a, **kw: save_deliverable(*a, **kw),
+        max_retries=2,
+        retry_backoff_base=5.0,
+        zombie_check_interval=30,
+        persist_dir="data",
+    )
+    print("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
+
+    if os.path.exists(DELIVERABLES_DIR):
+        disk_files = [f for f in os.listdir(DELIVERABLES_DIR) if f.endswith(".md")]
+        existing_names = {d.get("filename", "") for d in st.session_state.deliverables}
+        for f in sorted(disk_files, reverse=True):
+            if f not in existing_names:
+                fp = os.path.join(DELIVERABLES_DIR, f)
+                size_kb = round(os.path.getsize(fp) / 1024, 1)
+                parts = f.replace(".md", "").split("_", 3)
+                st.session_state.deliverables.append(
+                    {
+                        "filename": f,
+                        "filepath": fp,
+                        "prompt": (
+                            parts[3]
+                            if len(parts) > 3
+                            else (parts[2] if len(parts) > 2 else "历史任务")
+                        ),
+                        "task_type": (
+                            parts[2]
+                            if len(parts) > 3
+                            else (parts[1] if len(parts) > 1 else "unknown")
+                        ),
+                        "created_at": (
+                            f"{parts[0][:4]}-{parts[0][4:6]}-{parts[0][6:8]} {parts[1][:2]}:{parts[1][2:4]}:{parts[1][4:6]}"
+                            if len(parts) > 3
+                            and len(parts[0]) >= 8
+                            and len(parts[1]) >= 6
+                            else (
+                                f"{parts[0][:4]}-{parts[0][4:6]}-{parts[0][6:8]}"
+                                if len(parts) > 0 and len(parts[0]) >= 8
+                                else ""
+                            )
+                        ),
+                        "size_kb": size_kb,
+                    }
+                )
+        if disk_files:
+            print(f"[frontend] 从磁盘恢复了 {len(disk_files)} 个成果物记录")
+
+PERSONA_MAP = {
+    """业务类型 → (显示名称, 风格描述) 映射表
+    
+    用于侧边栏展示当前识别到的用户业务类型对应的人格名称。
+    与PersonaManager.get_persona()的结果配合使用。
+    """
+    "content_creator": ("✍️ 内容小助理", "轻松活泼"),
+    "digital_product": ("💰 产品顾问", "专业亲切"),
+    "ai_tool_builder": ("🤖 技术合伙人", "技术专业"),
+    "consultant": ("💼 咨询顾问", "正式严谨"),
+    "ecommerce": ("🛒 电商小管家", "干练务实"),
+    "creative_work": ("🎨 创意搭子", "文艺优雅"),
+}
+
+TYPE_DISPLAY = {
+    """业务类型中文显示名映射 — 用于成果物页面的类型标签展示"""
+    "content_creator": "内容创作者",
+    "digital_product": "数字产品开发者",
+    "ai_tool_builder": "AI工具开发者",
+    "consultant": "咨询顾问",
+    "ecommerce": "电商运营者",
+    "creative_work": "创意工作者",
+}
+
+# 9个预设场景快捷按钮配置
+# 每个场景点击后会在对话中插入对应的自然语言指令，
+# 由TaskEngineV3的IntentClassifier识别为SCENARIO_BASED类型，
+# 再由ScenarioEngineV2编排多步骤工作流执行。
+# 扩展方式：在此列表中添加新条目即可自动渲染按钮。
+# 场景的具体工作流定义在scenario_engine_v2.py中。
+
+SCENARIOS_CORE = [
+    {
+        "id": "content_creation",
+        "icon": "✍️",
+        "title": "内容创作",
+        "desc": "文章/报告/日历规划",
+        "coverage": ["内容日历规划", "报告撰写"],
+        "prompt": "帮我规划下周的内容日历和选题",
+    },
+    {
+        "id": "product_launch",
+        "icon": "🚀",
+        "title": "产品发布",
+        "desc": "定价/上线/推广方案",
+        "coverage": ["数字产品发布", "新产品发布"],
+        "prompt": "帮我制定新产品发布的完整方案",
+    },
+    {
+        "id": "data_analysis",
+        "icon": "📊",
+        "title": "数据分析",
+        "desc": "反馈分析/运营优化",
+        "coverage": ["用户反馈分析", "电商运营优化"],
+        "prompt": "帮我分析用户反馈并提炼行动项",
+    },
+    {
+        "id": "project_mgmt",
+        "icon": "📋",
+        "title": "项目管理",
+        "desc": "提案/交付/会议组织",
+        "coverage": ["咨询提案撰写", "项目交付物整理", "会议组织"],
+        "prompt": "帮我撰写一份专业咨询提案",
+    },
+]
+
+SCENARIOS_MORE = [
+    {
+        "id": "content_calendar",
+        "icon": "📅",
+        "title": "内容日历规划",
+        "desc": "帮你规划下周的选题和发布节奏",
+        "prompt": "帮我规划下周的内容日历和选题排期",
+    },
+    {
+        "id": "digital_product_launch",
+        "icon": "🎯",
+        "title": "数字产品发布",
+        "desc": "从定价到上线的完整方案",
+        "prompt": "帮我制定数字产品的发布方案，包括定价和推广",
+    },
+    {
+        "id": "feedback_analysis",
+        "icon": "💬",
+        "title": "用户反馈分析",
+        "desc": "从用户声音中提炼行动项",
+        "prompt": "帮我分析用户反馈，提炼关键行动项",
+    },
+    {
+        "id": "consulting_proposal",
+        "icon": "📝",
+        "title": "咨询提案撰写",
+        "desc": "专业提案框架+行业洞察",
+        "prompt": "帮我撰写一份专业咨询提案",
+    },
+    {
+        "id": "ecommerce_ops",
+        "icon": "🛒",
+        "title": "电商运营优化",
+        "desc": "GMV提升策略与执行清单",
+        "prompt": "帮我优化电商运营，提升GMV",
+    },
+    {
+        "id": "project_deliverable",
+        "icon": "📦",
+        "title": "项目交付物整理",
+        "desc": "交付物清单+质量检查",
+        "prompt": "帮我整理项目交付物并做质量检查",
+    },
+    {
+        "id": "write_report",
+        "icon": "📄",
+        "title": "报告撰写",
+        "desc": "结构化报告+数据支撑",
+        "prompt": "帮我写一份结构化的分析报告",
+    },
+    {
+        "id": "organize_meeting",
+        "icon": "🤝",
+        "title": "会议组织",
+        "desc": "议程+纪要+跟进清单",
+        "prompt": "帮我组织一次项目会议",
+    },
+]
+
+
+def safe_detect(prompt_text):
+    """安全包装的业务类型检测 — 防止后端异常导致前端崩溃
+
+    设计意图：
+    BusinessTypeDetectorV2.detect()可能因模型未初始化等原因抛出异常，
+    如果直接调用会导致整个Streamlit回调崩溃（WebSocket断连）。
+    此函数捕获所有异常并返回安全的默认值(content_creator)。
+
+    Returns:
+        (type_value, confidence, method): 业务类型枚举值/置信度/检测方法名
+    """
+    try:
+        from opc_manager.business_type_detector_v2 import BusinessTypeDetectorV2
+
+        detector = BusinessTypeDetectorV2()
+        result = detector.detect(prompt_text)
+        if result and result.business_type:
+            return result.business_type.value, result.confidence, result.method
+        return "content_creator", 0.5, "default"
+    except Exception as e:
+        print(f"[frontend] detect error: {e}")
+        return "content_creator", 0.5, "fallback"
+
+
+def safe_get_persona(type_value):
+    """安全包装的人格信息获取 — 防止get_persona返回None导致AttributeError
+
+    v3.0历史问题：当confidence较低时get_persona()返回None，
+    直接访问persona.display_name会导致AttributeError崩溃。
+    此函数确保始终返回有效的(name, tone)元组。
+
+    Fallback策略:
+    1. 尝试从PersonaManager获取完整persona对象
+    2. 失败则从PERSONA_MAP静态映射获取名称
+    3. 最终fallback为"智能助手"
+    """
+    try:
+        from opc_manager.persona_manager import PersonaManager
+
+        pm = PersonaManager()
+        persona = pm.get_persona(
+            business_type=__import__(
+                "opc_manager.business_types", fromlist=["BusinessType"]
+            ).BusinessType(type_value)
+        )
+        if persona:
+            return persona.display_name, persona.style_overrides.get("tone", "专业温暖")
+        return "智能助手", "专业温暖"
+    except Exception as e:
+        print(f"[frontend] persona error: {e}")
+        name = PERSONA_MAP.get(type_value, ("智能助手", "专业"))[0]
+        return name, "专业"
+
+
+def safe_track_flywheel(type_value):
+    """安全包装的成长飞轮记录 — 记录用户互动并更新飞轮分数
+
+    功能说明：
+    - 每次用户输入后调用，记录到FlywheelTracker
+    - 根据业务类型增加对应维度分数（每次+8分）
+    - 根据平均分数计算飞轮等级（L1探索者/L2连接者/L3生态构建者）
+    - 分数上限100，等级根据阈值35/60判定
+
+    维度映射规则：
+    - content_creator/creative_work → 内容质量
+    - digital_product/ecommerce → 变现能力
+    - ai_tool_builder → 跨域推广
+    - consultant → 受众增长
+    - 其他 → 默认内容质量
+    """
+    try:
+        from opc_manager.flywheel_tracker import FlywheelTracker
+        from opc_manager.business_types import BusinessType
+
+        tracker = FlywheelTracker()
+        bt = BusinessType(type_value)
+        tracker.record_scenario_completion("web_user", "chat_interaction", bt)
+        st.session_state.scenario_count += 1
+
+        scores = st.session_state.flywheel_scores
+        dim_map = {
+            "content_creator": "内容质量",
+            "digital_product": "变现能力",
+            "ai_tool_builder": "跨域推广",
+            "consultant": "受众增长",
+            "ecommerce": "变现能力",
+            "creative_work": "内容质量",
+        }
+        dim_key = dim_map.get(type_value, "内容质量")
+        scores[dim_key] = min(100, scores.get(dim_key, 0) + 8)
+
+        avg = sum(scores.values()) / len(scores) if scores else 0
+        st.session_state.flywheel_level = 3 if avg >= 60 else (2 if avg >= 35 else 1)
+        return True
+    except Exception as e:
+        print(f"[frontend] flywheel error: {e}")
+        st.session_state.scenario_count += 1
+        return False
+
+
+def generate_filename(prompt: str, task_type: str) -> str:
+    """生成唯一的成果物文件名
+
+    格式: {YYYYMMDD_HHMMSS}_{task_type}_{prompt摘要30字符}.md
+
+    安全措施：
+    - prompt截取前30字符防止文件名过长
+    - 替换所有文件系统非法字符为安全字符
+    - 使用时间戳保证唯一性（同一秒内多次请求仍可区分）
+    """
+    safe_name = (
+        re.sub(r'[\\/*?:"<>|\n\r\t]', "", prompt[:30])
+        .replace(" ", "_")
+        .replace("/", "-")
+    ) or "task"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{timestamp}_{task_type}_{safe_name}.md"
+
+
+def save_deliverable(
+    content: str, prompt: str, task_type: str, meta: dict = None
+) -> tuple:
+    """将生成的成果物内容写入文件系统并注册到session_state
+
+    Returns:
+        tuple: (filepath, deliverable_record)
+    """
+    filename = generate_filename(prompt, task_type)
+    filepath = os.path.join(DELIVERABLES_DIR, filename)
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    deliverable_record = {
+        "filename": filename,
+        "filepath": filepath,
+        "prompt": prompt[:50],
+        "task_type": task_type,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "size_kb": round(len(content.encode("utf-8")) / 1024, 1),
+        "meta": meta or {},
+    }
+
+    print(f"[frontend] 成果物已保存: {filepath} ({deliverable_record['size_kb']}KB)")
+    return filepath, deliverable_record
+
+
+def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
+    """Execute task pipeline — from user input to file delivery
+
+    Args:
+        prompt: User input text
+        session_ctx: SessionContextManager instance (passed from main thread)
+        business_type: Detected business type (passed from main thread)
+
+    Returns:
+        (content_with_meta, success, filepath, task_type_value, deliverable_record)
+    """
+    try:
+        print(f"[frontend] 开始执行任务: {prompt[:50]}")
+        from opc_manager.task_engine_v3 import task_engine_v3, TaskType
+
+        engine = task_engine_v3
+
+        result = engine.execute(
+            prompt,
+            session_ctx=session_ctx,
+            business_type=business_type,
+        )
+        print(
+            f"[frontend] 任务执行完成: success={result.success}, content_len={len(result.content) if result.content else 0}"
+        )
+
+        if not result.success:
+            print(f"[frontend] 任务标记为失败: {result.error}")
+            return None, False, None, None, None
+
+        if not result.content:
+            print(f"[frontend] 内容为空!")
+            return None, False, None, None, None
+
+        if result.task_type == TaskType.GENERAL_CHAT and len(result.content) < 300:
+            print(f"[frontend] 闲聊/短回复，不生成成果物文件")
+            return result.content, True, None, "general_chat", None
+
+        meta_lines = []
+        if result.execution_time_ms:
+            meta_lines.append(f"⏱️ 执行耗时: {result.execution_time_ms:.0f}ms")
+        type_labels = {
+            TaskType.INFO_COLLECTION: "🔍 信息收集",
+            TaskType.CONTENT_GENERATION: "✍️ 内容生成",
+            TaskType.DATA_ANALYSIS: "📊 数据分析",
+            TaskType.SCENARIO_BASED: "🎯 场景工作流",
+            TaskType.GENERAL_CHAT: "💬 智能对话",
+        }
+        task_type_label = type_labels.get(result.task_type, "通用")
+        meta_lines.append(f"📌 任务类型: {task_type_label}")
+        if result.sources:
+            meta_lines.append(f"🔗 信息来源: {len(result.sources)} 条")
+        if result.deliverable_format:
+            meta_lines.append(f"📦 格式: {result.deliverable_format}")
+
+        meta_str = "\n".join(meta_lines)
+
+        has_api_key = _has_api_key()
+        mode_tag = ""
+        if not has_api_key:
+            mode_tag = "\n\n> ⚠️ **当前为模板模式输出** — 配置API Key后可获得AI增强内容（质量提升5倍+）"
+
+        content_with_meta = f"{result.content}{mode_tag}\n\n---\n*{meta_str}*"
+
+        print(f"[frontend] 准备保存文件...")
+        filepath, deliverable_record = save_deliverable(
+            content=content_with_meta,
+            prompt=prompt,
+            task_type=result.task_type.value,
+            meta={
+                "sources_count": len(result.sources) if result.sources else 0,
+                "format": result.deliverable_format,
+                "execution_time_ms": result.execution_time_ms,
+                "success": result.success,
+            },
+        )
+        print(f"[frontend] 文件已保存: {filepath}")
+
+        return content_with_meta, result.success, filepath, result.task_type.value, deliverable_record
+
+    except Exception as e:
+        import traceback
+
+        tb = traceback.format_exc()
+        print(f"[frontend] execute_task_and_deliver error: {e}\n{tb}")
+        return None, False, None, None, None
+
+
+def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_type=None) -> dict:
+    """Async execution wrapper for AsyncTaskExecutor background thread
+
+    Thread safety: session_ctx and business_type are passed from the main thread
+    as arguments, avoiding st.session_state access from background threads.
+    The deliverable_record is returned in the result dict for the main thread
+    to register in st.session_state.deliverables.
+
+    Args:
+        prompt: User input text
+        cancel_event: threading.Event for cancellation
+        session_ctx: SessionContextManager (from main thread)
+        business_type: Detected business type (from main thread)
+
+    Returns:
+        dict with keys: content, success, filepath, task_type, error, deliverable_record
+    """
+    try:
+        print(f"[frontend-async] 开始后台执行: {prompt[:50]}")
+        content, success, filepath, task_type, deliverable_record = execute_task_and_deliver(
+            prompt, session_ctx=session_ctx, business_type=business_type
+        )
+        print(
+            f"[frontend-async] 执行完成: success={success}, has_content={bool(content)}"
+        )
+
+        if content and success:
+            return {
+                "content": content,
+                "success": True,
+                "filepath": filepath,
+                "task_type": task_type,
+                "error": None,
+                "deliverable_record": deliverable_record,
+            }
+        else:
+            return {
+                "content": None,
+                "success": False,
+                "filepath": None,
+                "task_type": None,
+                "error": "任务执行未返回有效结果",
+                "deliverable_record": None,
+            }
+
+    except Exception as e:
+        import traceback
+
+        tb = traceback.format_exc()
+        print(f"[frontend-async] 执行异常: {e}\n{tb}")
+        return {
+            "content": None,
+            "success": False,
+            "filepath": None,
+            "task_type": None,
+            "error": str(e),
+            "deliverable_record": None,
+        }
+
+
+with st.sidebar:
+    """侧边栏 — 导航+状态展示"""
+    st.markdown("### 🚀 一人公司助手")
+    page = st.radio(
+        "", ["💬 对话", "📁 成果物", "📊 成长", "⚙️ 设置"], label_visibility="collapsed"
+    )
+
+    if st.session_state.detected_type:
+        pinfo = PERSONA_MAP.get(st.session_state.detected_type, ("助手", ""))
+        st.divider()
+        st.markdown(f"**当前人格**\n{pinfo[0]}")
+        st.caption(f"风格：{pinfo[1]}")
+
+    if st.session_state.deliverables:
+        st.divider()
+        st.markdown(f"**📦 已生成 {len(st.session_state.deliverables)} 个成果物**")
+
+    st.divider()
+    from opc_manager.version import get_version
+
+    st.caption(f"OPC-Agents v{get_version()}")
+
+
+if page == "💬 对话":
+    """主对话页面 — 用户交互的核心界面
+
+    空状态: 展示欢迎语 + 9个场景快捷按钮
+    有消息: 渲染历史消息（含下载按钮） + chat_input输入框
+    输入后:
+      ① safe_detect → 意图识别（进度标签更新）
+      ② 人格设置 + 飞轮追踪
+      ③ execute_task_and_deliver → 核心执行
+      ④ 成功: 显示结果 + 下载按钮 + 追加到消息历史
+      ⑤ 失败: 区分超时/其他错误，给出不同提示
+    """
+    if len(st.session_state.messages) > 0:
+        st.caption(
+            "💡 对话历史已自动保存 · 成果物文件可在「📁 成果物」标签页查看和下载"
+        )
+    if len(st.session_state.messages) == 0:
+        st.markdown("## 👋 你好，一人公司创业者！")
+        st.markdown(
+            "我是你的**任务执行与成果交付助手**。"
+            "**告诉我你要什么结果，我直接做完并交付文件给你** — 可下载、可保存、可复用。"
+        )
+        st.markdown(
+            "**使用步骤**：① 在下方输入需求或点击场景按钮 → ② 等待AI执行 → ③ 下载成果物文件"
+        )
+
+        has_api_key = _has_api_key()
+        if not has_api_key:
+            st.warning(
+                "⚠️ **当前为模板模式** — 配置API Key后可获得AI增强内容（质量提升5倍+）"
+            )
+            with st.expander("📖 如何获取API Key？", expanded=True):
+                st.markdown(
+                    """
+**3步配置，2分钟搞定：**
+
+1. 访问 [MOKA AI](https://moka-ai.com) 注册账号并获取API Key
+2. 在项目根目录创建 `.env` 文件（可从 `.env.example` 复制）
+3. 填入: `MOKA_API_KEY=sk-your-key-here`
+
+配置后重启应用即可。**不配置也能用**，只是输出为模板填充内容。
+"""
+                )
+        else:
+            st.success("✅ AI增强模式已就绪")
+
+        st.markdown("### 🎯 我能直接帮你完成并交付：")
+
+        st.markdown("**核心场景（最常用）**")
+        core_cols = st.columns(2)
+        for i, sc in enumerate(SCENARIOS_CORE):
+            with core_cols[i % 2]:
+                if st.button(
+                    f"{sc['icon']} **{sc['title']}**\n\n📌 {sc['desc']}\n\n_涵盖: {', '.join(sc['coverage'])}_",
+                    key=f"core_{sc['id']}",
+                    use_container_width=True,
+                ):
+                    st.session_state.pending_prompt = sc.get(
+                        "prompt", f"帮我执行「{sc['title']}」相关任务"
+                    )
+                    st.rerun()
+
+        with st.expander("🔍 更多具体场景（8个）", expanded=False):
+            st.markdown("**选择一个具体的场景模板：**")
+            more_cols = st.columns(2)
+            for i, sc in enumerate(SCENARIOS_MORE):
+                with more_cols[i % 2]:
+                    if st.button(
+                        f"{sc['icon']} {sc['title']}\n_{sc['desc']}",
+                        key=f"more_{sc['id']}",
+                        use_container_width=True,
+                    ):
+                        st.session_state.pending_prompt = sc.get(
+                            "prompt", f"帮我执行「{sc['title']}」场景"
+                        )
+                        st.rerun()
+
+        st.divider()
+        st.markdown(
+            "<div style='text-align:center; color:#888;'>"
+            "💡 输入需求 → 执行任务 → 生成文件 → 立即下载</div>",
+            unsafe_allow_html=True,
+        )
+
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            if msg.get("deliverable_path") and os.path.exists(msg["deliverable_path"]):
+                col_dl, col_info = st.columns([1, 3])
+                with col_dl:
+                    with open(msg["deliverable_path"], "r", encoding="utf-8") as f:
+                        file_content = f.read()
+                    st.download_button(
+                        label="📥 下载文件",
+                        data=file_content,
+                        file_name=os.path.basename(msg["deliverable_path"]),
+                        mime="text/markdown",
+                        key=f"dl_{msg.get('deliverable_id', id(msg))}",
+                        use_container_width=True,
+                    )
+                with col_info:
+                    size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
+                    st.caption(
+                        f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
+                    )
+
+    pending = st.session_state.pop("pending_prompt", None)
+    if pending:
+        prompt = pending
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        _save_chat_history()
+        with st.chat_message("user"):
+            st.markdown(prompt)
+    elif prompt := st.chat_input("告诉我你需要什么结果，我直接做完并交付文件..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        _save_chat_history()
+        with st.chat_message("user"):
+            st.markdown(prompt)
+    else:
+        prompt = None
+
+    if prompt:
+
+        executor = st.session_state.async_executor
+
+        detected_type, confidence, method = safe_detect(prompt)
+        st.session_state.detected_type = detected_type
+        persona_name, persona_tone = safe_get_persona(detected_type)
+        st.session_state.detected_name = persona_name
+        safe_track_flywheel(detected_type)
+
+        task_id = executor.submit(
+            prompt,
+            execute_func=_async_execute_task,
+            session_ctx=st.session_state.get("session_ctx"),
+            business_type=detected_type,
+        )
+
+        if not task_id:
+            st.error("⚠️ 系统繁忙，请稍后再试（并发任务已达上限）")
+            st.stop()
+
+        print(f"[frontend] 任务已提交: {task_id} (异步模式)")
+
+        with st.chat_message("assistant"):
+            status_container = st.status(
+                "🚀 任务已提交，正在后台执行...", expanded=True
+            )
+
+            cancel_col, _ = st.columns([1, 4])
+            with cancel_col:
+                if st.button(
+                    "❌ 取消任务", key=f"cancel_{task_id}", use_container_width=True
+                ):
+                    if executor.cancel(task_id):
+                        st.warning("⏹️ 任务已取消")
+                        st.stop()
+                    else:
+                        st.error("取消失败（任务可能已完成）")
+
+            EXECUTION_PHASES = [
+                (0, 3, "🚀 任务启动", "初始化任务执行环境..."),
+                (3, 8, "🔎 信息搜索", "搜索相关参考资料..."),
+                (8, 25, "🤖 LLM生成", "AI正在撰写专业内容..."),
+                (25, 50, "✍️ 内容润色", "优化输出质量..."),
+                (50, 60, "📦 交付准备", "生成可下载文件..."),
+            ]
+
+            max_polls = 180
+            poll_interval = 1.0
+            start_time = time.time()
+            progress_placeholder = st.empty()
+
+            for poll_count in range(max_polls):
+                task_status = executor.get_status(task_id)
+                current_status = task_status.get("status", "unknown")
+                elapsed = task_status.get("elapsed", 0)
+
+                if current_status == "pending":
+                    if poll_count < 3:
+                        status_container.update(label="⏳ 排队中，等待执行...")
+                    time.sleep(poll_interval)
+                    continue
+
+                elif current_status == "retrying":
+                    retry_count = task_status.get("retry_count", 0)
+                    max_retries = task_status.get("max_retries", 2)
+                    status_container.update(
+                        label=f"🔄 自动重试中 ({retry_count}/{max_retries})..."
+                    )
+                    max_polls += 10
+                    time.sleep(poll_interval)
+                    continue
+
+                elif current_status == "running":
+                    phase_icon, phase_name, phase_hint = "⚡", "执行中", "处理中..."
+                    for phase_start, phase_end, icon, hint in EXECUTION_PHASES:
+                        if phase_start <= elapsed < phase_end:
+                            phase_icon, phase_name, phase_hint = (
+                                icon,
+                                hint.split("...")[0],
+                                hint,
+                            )
+                            break
+                    if elapsed >= 60:
+                        phase_icon, phase_name, phase_hint = (
+                            "🔄",
+                            "深度处理",
+                            "内容较长，请耐心等待...",
+                        )
+
+                    estimated_total = (
+                        max(30, elapsed * 1.5)
+                        if elapsed < 10
+                        else max(30, elapsed / 0.7)
+                    )
+                    remaining = max(0, estimated_total - elapsed)
+                    progress_pct = min(int((elapsed / estimated_total) * 100), 95)
+
+                    status_container.update(
+                        label=f"{phase_icon} {phase_name} ({elapsed:.0f}s / 预计还需{remaining:.0f}s)",
+                        state="running",
+                    )
+                    progress_placeholder.progress(
+                        progress_pct / 100.0,
+                        text=f"预估进度 {progress_pct}% — {phase_hint} — 已耗时 {elapsed:.0f}s",
+                    )
+                    time.sleep(poll_interval)
+                    continue
+
+                elif current_status == "done":
+                    status_container.update(label="✅ 任务完成", state="complete")
+
+                    track_event(
+                        "task_completed",
+                        {
+                            "mode": "async",
+                            "latency_ms": round(task_status.get("elapsed", 0) * 1000),
+                        },
+                    )
+
+                    result_content = task_status.get("result_content")
+                    result_filepath = task_status.get("result_filepath")
+                    result_deliverable_record = task_status.get("result_deliverable_record")
+
+                    if result_deliverable_record:
+                        st.session_state.deliverables.insert(0, result_deliverable_record)
+
+                    if result_content:
+                        st.markdown(result_content)
+
+                        if result_filepath and os.path.exists(result_filepath):
+                            col_dl, col_info = st.columns([1, 3])
+                            with col_dl:
+                                with open(result_filepath, "r", encoding="utf-8") as f:
+                                    file_content = f.read()
+                                st.download_button(
+                                    label="📥 下载成果物",
+                                    data=file_content,
+                                    file_name=os.path.basename(result_filepath),
+                                    mime="text/markdown",
+                                    key=f"dl_async_{int(time.time()*1000)}",
+                                    use_container_width=True,
+                                    type="primary",
+                                )
+                            with col_info:
+                                size_kb = round(
+                                    len(file_content.encode("utf-8")) / 1024, 1
+                                )
+                                st.success(
+                                    f"✅ 已生成: {os.path.basename(result_filepath)} ({size_kb}KB)"
+                                )
+
+                        msg_record = {
+                            "role": "assistant",
+                            "content": result_content,
+                            "deliverable_id": f"{int(time.time()*1000)}",
+                        }
+                        if result_filepath and os.path.exists(result_filepath):
+                            msg_record["deliverable_path"] = result_filepath
+                        st.session_state.messages.append(msg_record)
+                        _save_chat_history()
+                    break
+
+                elif current_status == "failed":
+                    error_msg = task_status.get("error_message", "未知错误")
+                    status_container.update(label="❌ 任务执行失败", state="error")
+
+                    track_error(
+                        Exception(error_msg), {"mode": "async", "prompt": prompt[:50]}
+                    )
+
+                    FRIENDLY_ERRORS = {
+                        "timeout": (
+                            "⏰ AI助手思考时间过长",
+                            "网络或AI服务响应较慢，请稍后重试。简短的需求通常更快完成。",
+                        ),
+                        "connection": (
+                            "🌐 网络连接中断",
+                            "请检查网络连接后重试。如果问题持续，可能是AI服务暂时不可用。",
+                        ),
+                        "api_key": (
+                            "🔑 API Key无效或已过期",
+                            "请在.env文件中更新你的API Key，然后重启应用。",
+                        ),
+                        "incorrect api key": (
+                            "🔑 API Key无效或已过期",
+                            "请在.env文件中更新你的API Key，然后重启应用。",
+                        ),
+                        "authentication": (
+                            "🔑 认证失败",
+                            "API Key可能无效或已过期，请检查配置后重试。",
+                        ),
+                        "rate_limit": (
+                            "🚦 请求过于频繁",
+                            "AI服务暂时限流，请等待1-2分钟后重试。",
+                        ),
+                        "rate limit": (
+                            "🚦 请求过于频繁",
+                            "AI服务暂时限流，请等待1-2分钟后重试。",
+                        ),
+                        "429": (
+                            "🚦 请求过于频繁",
+                            "AI服务暂时限流，请等待1-2分钟后重试。",
+                        ),
+                        "server_error": (
+                            "🔧 AI服务暂时不可用",
+                            "服务端正在维护，请稍后重试。系统会自动使用模板模式作为备选。",
+                        ),
+                        "500": (
+                            "🔧 AI服务暂时不可用",
+                            "服务端正在维护，请稍后重试。",
+                        ),
+                        "502": (
+                            "🔧 AI服务暂时不可用",
+                            "服务端正在维护，请稍后重试。",
+                        ),
+                        "503": (
+                            "🔧 AI服务暂时不可用",
+                            "服务端正在维护，请稍后重试。",
+                        ),
+                    }
+
+                    error_lower = error_msg.lower()
+                    friendly_title = "⚠️ 任务执行遇到问题"
+                    friendly_hint = "请稍后重试，或换个方式描述你的需求。"
+
+                    for kw, (title, hint) in FRIENDLY_ERRORS.items():
+                        if kw in error_lower:
+                            friendly_title = title
+                            friendly_hint = hint
+                            break
+
+                    prompt_short = html.escape(prompt[:40] + ("..." if len(prompt) > 40 else ""))
+                    safe_error = html.escape(error_msg[:300])
+
+                    st.error(friendly_title)
+                    st.caption(f"关于「{prompt_short}」")
+                    st.info(friendly_hint)
+                    with st.expander("技术详情"):
+                        st.code(safe_error)
+
+                    fallback = (
+                        f"{friendly_title}\n\n"
+                        f"关于「**{prompt_short}**」\n\n"
+                        f"{friendly_hint}\n\n"
+                        f"<details><summary>技术详情</summary>\n\n`{safe_error}`\n</details>"
+                    )
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": fallback}
+                    )
+                    _save_chat_history()
+                    st.session_state.last_failed_prompt = prompt
+                    break
+
+                elif current_status == "cancelled":
+                    status_container.update(label="⏹️ 任务已取消", state="complete")
+                    st.info("任务已被用户取消")
+                    break
+
+                else:
+                    time.sleep(poll_interval)
+                    continue
+
+            else:
+                status_container.update(label="⏰ 任务执行超时", state="error")
+                st.warning("任务执行时间过长，请查看历史记录或重新提交")
+
+        failed_prompt = st.session_state.pop("last_failed_prompt", None)
+        if failed_prompt:
+            if st.button("🔄 重新执行", key=f"retry_{int(time.time()*1000)}"):
+                st.session_state.pending_prompt = failed_prompt
+                st.rerun()
+
+
+elif page == "📁 成果物":
+    """成果物库页面 — 历史文件的管理中心
+
+    功能：
+    - 空状态提示引导用户去对话页执行任务
+    - 列表展示每个成果物的元数据（任务/类型/时间/大小）
+    - 每个文件独立下载按钮
+    - 前500字Markdown预览（使用st.code语法高亮）
+    """
+    st.markdown("## 📁 我的成果物")
+
+    if not st.session_state.deliverables:
+        st.info("💡 还没有生成任何成果物。去「对话」页面执行一个任务吧！")
+    else:
+        for i, d in enumerate(st.session_state.deliverables):
+            with st.expander(f"📄 {d['filename']}", expanded=(i == 0)):
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.markdown(f"**任务**: `{d['prompt']}`")
+                    st.markdown(f"**类型**: {d['task_type']}")
+                    st.markdown(f"**时间**: {d['created_at']}")
+                with col2:
+                    st.metric("大小", f"{d['size_kb']} KB")
+                with col3:
+                    if os.path.exists(d["filepath"]):
+                        with open(d["filepath"], "r", encoding="utf-8") as f:
+                            content = f.read()
+                        st.download_button(
+                            "📥 下载",
+                            data=content,
+                            file_name=d["filename"],
+                            mime="text/markdown",
+                            key=f"dl_lib_{i}",
+                            use_container_width=True,
+                        )
+                    if st.button("🗑️ 删除", key=f"del_lib_{d['filename']}"):
+                        try:
+                            real_path = os.path.realpath(d["filepath"])
+                            if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
+                                st.error("非法文件路径")
+                            elif os.path.exists(real_path):
+                                os.remove(real_path)
+                        except OSError:
+                            pass
+                        st.session_state.deliverables = [
+                            item
+                            for item in st.session_state.deliverables
+                            if item.get("filename") != d["filename"]
+                        ]
+                        st.rerun()
+
+                st.markdown("**预览（前500字）**:")
+                if os.path.exists(d["filepath"]):
+                    with open(d["filepath"], "r", encoding="utf-8") as f:
+                        preview = f.read()[:500]
+                    st.code(preview, language="markdown")
+
+
+elif page == "📊 成长":
+    """成长飞轮页面 — 游戏化的用户激励系统
+
+    数据来源：
+    - flywheel_scores: 五维评分（内容质量/受众增长/变现能力/跨域推广/生态协同）
+    - flywheel_level: 当前等级（L1探索者/L2连接者/L3生态构建者）
+    - scenario_count: 累计互动次数
+
+    等级晋升规则：
+    - L1→L2: 平均分 ≥ 35
+    - L2→L3: 平均分 ≥ 60
+    - 每次互动对应维度 +8分（上限100）
+
+    UI组件：
+    - 等级卡片（渐变背景色随等级变化）
+    - 互动次数指标
+    - 五维进度条（颜色编码：绿≥60/橙≥30/灰<30）
+    - 升级提示（未满级时显示下一级目标）
+    """
+    st.markdown("## 📊 我的成长飞轮")
+    scores = st.session_state.flywheel_scores
+    level = st.session_state.flywheel_level
+    count = st.session_state.scenario_count
+
+    level_info = {
+        1: ("🌱 探索者", "专注单一业务类型，持续深耕", "#4CAF50"),
+        2: ("🔗 连接者", "双类型组合，产生协同效应", "#FF9800"),
+        3: ("🌍 生态构建者", "全生态系统，商业闭环运转", "#E91E63"),
+    }
+    lv_name, lv_desc, lv_color = level_info.get(level, level_info[1])
+
+    col_level, col_count = st.columns([2, 1])
+    with col_level:
+        st.markdown(
+            f"<div style='padding:20px;border-radius:12px;"
+            f"background:linear-gradient(135deg,{lv_color}22,{lv_color}08);"
+            f"border:2px solid {lv_color}66;'>"
+            f"<h2 style='color:{lv_color};margin:0;'>{lv_name}</h2>"
+            f"<p style='color:#666;margin:4px 0 0 0;'>{lv_desc}</p></div>",
+            unsafe_allow_html=True,
+        )
+    with col_count:
+        st.metric("互动次数", count)
+    if count > 0:
+        st.metric("当前等级", f"Lv.{level}")
+
+    st.divider()
+    st.markdown("### 五维健康度")
+    dims = [
+        ("📝", "内容质量"),
+        ("👥", "受众增长"),
+        ("💰", "变现能力"),
+        ("🔗", "跨域推广"),
+        ("🌍", "生态协同"),
+    ]
+    for icon, dim in dims:
+        score = scores.get(dim, 0)
+        c1, c2, c3 = st.columns([1.5, 6, 1])
+        with c1:
+            st.markdown(f"{icon} **{dim}**")
+        with c2:
+            st.progress(score / 100)
+        with c3:
+            color = "#4CAF50" if score >= 60 else ("#FF9800" if score >= 30 else "#ccc")
+            st.markdown(
+                f"<span style='color:{color};font-weight:bold;font-size:1.1em;'>{score}</span>",
+                unsafe_allow_html=True,
+            )
+
+    if count == 0:
+        st.info("💡 开始与助手对话，你的成长数据会自动记录在这里！")
+    elif level < 3:
+        ni = level_info.get(level + 1, level_info[1])
+        st.success(f"🎯 继续互动可以升级到 **{ni[0]}**！")
+
+
+elif page == "⚙️ 设置":
+    """设置页面 — 用户偏好和系统配置
+
+    功能分区：
+    1. AI模式: 显示当前模式（模板/AI增强）
+    2. 成果物设置: 显示保存路径 + 删除功能
+    3. 数据: 重置所有数据（含磁盘文件选项）
+    4. 开发者: API Key 状态检查
+    """
+    st.markdown("## ⚙️ 设置")
+
+    has_api_key = _has_api_key()
+    mode_label = "🤖 AI增强模式" if has_api_key else "📝 模板模式"
+    mode_desc = (
+        "已检测到API Key，LLM将生成高质量专业内容"
+        if has_api_key
+        else "未检测到API Key，输出为模板填充。配置MOKA_API_KEY可提升5倍+质量"
+    )
+    st.markdown(f"### {mode_label}")
+    st.caption(mode_desc)
+    if not has_api_key:
+        st.info(
+            "💡 **快速配置**：在项目根目录的 `.env` 文件中添加 `MOKA_API_KEY=sk-xxx`，重启即可"
+        )
+
+    st.markdown("### 📦 成果物设置")
+    st.text_input("成果物保存路径", value=DELIVERABLES_DIR, disabled=True)
+    st.caption("所有生成的文件都保存在此目录下")
+
+    st.markdown("### 📊 数据管理")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 重置会话数据"):
+            st.session_state.messages = []
+            st.session_state.deliverables = []
+            st.session_state.scenario_count = 0
+            st.session_state.detected_type = None
+            st.session_state.detected_name = None
+            st.session_state.flywheel_scores = {
+                d: 0
+                for d in ["内容质量", "受众增长", "变现能力", "跨域推广", "生态协同"]
+            }
+            st.session_state.flywheel_level = 1
+            st.session_state.achievements = []
+            if "session_ctx" in st.session_state:
+                st.session_state.session_ctx.clear()
+            _save_chat_history()
+            st.success("✅ 已重置会话数据")
+            st.rerun()
+    with col2:
+        if st.button("🗑️ 清空成果物文件"):
+            deleted = 0
+            if os.path.exists(DELIVERABLES_DIR):
+                for f in os.listdir(DELIVERABLES_DIR):
+                    if f.endswith(".md"):
+                        try:
+                            os.remove(os.path.join(DELIVERABLES_DIR, f))
+                            deleted += 1
+                        except OSError:
+                            pass
+            st.session_state.deliverables = []
+            st.success(f"✅ 已删除 {deleted} 个成果物文件")
+            st.rerun()
+
+    with st.expander("🔧 开发者选项"):
+        st.markdown("**API Key 状态**")
+        for key_name, env_var in [
+            ("MOKA", "MOKA_API_KEY"),
+            ("GLM", "GLM_API_KEY"),
+            ("OpenAI", "OPENAI_API_KEY"),
+        ]:
+            val = os.environ.get(env_var, "")
+            if val and val.strip():
+                st.markdown(f"- {key_name}: ✅ 已配置")
+            else:
+                st.markdown(f"- {key_name}: ❌ 未配置")
+        st.caption("通过 `.env` 文件配置 API Key，修改后需重启应用")
+
+    st.divider()
+
+    existing_files = (
+        [f for f in os.listdir(DELIVERABLES_DIR) if f.endswith(".md")]
+        if os.path.exists(DELIVERABLES_DIR)
+        else []
+    )
+    if existing_files:
+        st.markdown(f"### 📂 成果物目录中的文件 ({len(existing_files)} 个)")
+        for f in sorted(existing_files)[-5:]:
+            fp = os.path.join(DELIVERABLES_DIR, f)
+            size = round(os.path.getsize(fp) / 1024, 1)
+            st.caption(f"📄 {f} ({size}KB)")
+
+    from opc_manager.version import get_version
+
+    st.caption(f"OPC-Agents v{get_version()} | 成果物交付版")

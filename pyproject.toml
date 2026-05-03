@@ -1,0 +1,99 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel>=0.40"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opc-agents"
+dynamic = ["version"]
+description = "AI-powered OPC business document generation agent with multi-LLM backend support"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [
+    {name = "OPC-Agents Contributors"},
+]
+keywords = [
+    "opc",
+    "agents",
+    "llm",
+    "ai",
+    "document-generation",
+    "business-intelligence",
+    "streamlit",
+    "claude",
+    "glm",
+    "openai",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "streamlit>=1.28.0",
+    "requests>=2.31.0",
+    "ddgs>=5.0.0",
+    "httpx>=0.24.0",
+    "beautifulsoup4>=4.12.0",
+    "jieba>=0.42.1",
+    "python-dotenv>=1.0.0",
+    "loguru>=0.7.0",
+    "pandas>=2.0.0",
+    "openai>=1.0.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=25.0,<26.0",
+    "flake8>=7.0.0",
+    "build>=1.0.0",
+    "twine>=5.0.0",
+]
+
+[project.scripts]
+opc-agents = "opc_manager.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/lulin70/OPC-Agents"
+Documentation = "https://github.com/lulin70/OPC-Agents#readme"
+Repository = "https://github.com/lulin70/OPC-Agents"
+Issues = "https://github.com/lulin70/OPC-Agents/issues"
+Changelog = "https://github.com/lulin70/OPC-Agents/blob/main/docs/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["opc_manager*", "opc_hr*", "frontend*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "opc_manager.version.__version__"}
+
+[tool.setuptools.package-data]
+opc_manager = ["py.typed", "persona_variants.yaml"]
+frontend = ["*.py"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: Fast unit tests with no external dependencies (<1s each)",
+    "integration: Integration tests with mocked external services",
+    "e2e: End-to-end tests with real API calls (requires API keys)",
+    "e2e_search: Real DuckDuckGo search only (no LLM API key needed)",
+    "e2e_llm: Real LLM API call (requires MOKA_API_KEY or GLM_API_KEY)",
+    "security: Security-focused tests (injection, XSS, leakage)",
+]
+addopts = "-v --tb=short"
