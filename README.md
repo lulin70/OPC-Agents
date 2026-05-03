@@ -130,6 +130,8 @@ OPC-Agents/
 │   ├── persona_variants.yaml         # 6种业务类型人格配置
 │   ├── monitoring.py                 # 监控与日志
 │   ├── config.py                     # 配置管理
+│   ├── protocols.py                  # Protocol接口+NullProvider降级模式
+│   ├── secure_storage.py             # API密钥加密存储
 │   └── version.py         # 版本号管理（SSOT）
 ├── opc_hr/                # 搜索与知识库
 │   └── web_search.py      # DuckDuckGo网络搜索

@@ -123,8 +123,8 @@ def get_search_provider() -> SearchProvider:
     if _search_provider is not None:
         return _search_provider
     try:
-        from opc_manager.search_processor import SearchProcessor
-        _search_provider = _SearchProviderWrapper(SearchProcessor())
+        from opc_manager.search_processor import SearchResultProcessor
+        _search_provider = _SearchProviderWrapper(SearchResultProcessor())
         return _search_provider
     except Exception:
         pass

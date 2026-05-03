@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opc-agents"
 dynamic = ["version"]
-description = "AI-powered OPC business document generation agent with multi-LLM backend support"
+description = "Intelligent task execution system for one-person companies with multi-LLM backend support"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]

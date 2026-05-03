@@ -328,8 +328,9 @@ def safe_detect(prompt_text):
     try:
         from opc_manager.business_type_detector_v2 import BusinessTypeDetectorV2
 
-        detector = BusinessTypeDetectorV2()
-        result = detector.detect(prompt_text)
+        if "biz_detector" not in st.session_state:
+            st.session_state.biz_detector = BusinessTypeDetectorV2()
+        result = st.session_state.biz_detector.detect(prompt_text)
         if result and result.business_type:
             return result.business_type.value, result.confidence, result.method
         return "content_creator", 0.5, "default"
@@ -352,13 +353,12 @@ def safe_get_persona(type_value):
     """
     try:
         from opc_manager.persona_manager import PersonaManager
+        from opc_manager.business_types import BusinessType
 
-        pm = PersonaManager()
-        persona = pm.get_persona(
-            business_type=__import__(
-                "opc_manager.business_types", fromlist=["BusinessType"]
-            ).BusinessType(type_value)
-        )
+        if "persona_manager" not in st.session_state:
+            st.session_state.persona_manager = PersonaManager()
+        pm = st.session_state.persona_manager
+        persona = pm.get_persona(business_type=BusinessType(type_value))
         if persona:
             return persona.display_name, persona.style_overrides.get("tone", "专业温暖")
         return "智能助手", "专业温暖"
@@ -388,7 +388,9 @@ def safe_track_flywheel(type_value):
         from opc_manager.flywheel_tracker import FlywheelTracker
         from opc_manager.business_types import BusinessType
 
-        tracker = FlywheelTracker()
+        if "flywheel_tracker" not in st.session_state:
+            st.session_state.flywheel_tracker = FlywheelTracker()
+        tracker = st.session_state.flywheel_tracker
         bt = BusinessType(type_value)
         tracker.record_scenario_completion("web_user", "chat_interaction", bt)
         st.session_state.scenario_count += 1
@@ -758,11 +760,15 @@ if page == "💬 对话":
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-            if msg.get("deliverable_path") and os.path.exists(msg["deliverable_path"]):
-                col_dl, col_info = st.columns([1, 3])
-                with col_dl:
-                    with open(msg["deliverable_path"], "r", encoding="utf-8") as f:
-                        file_content = f.read()
+            if msg.get("deliverable_path"):
+                real_path = os.path.realpath(msg["deliverable_path"])
+                if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
+                    continue
+                if os.path.exists(real_path):
+                    col_dl, col_info = st.columns([1, 3])
+                    with col_dl:
+                        with open(real_path, "r", encoding="utf-8") as f:
+                            file_content = f.read()
                     st.download_button(
                         label="📥 下载文件",
                         data=file_content,
@@ -1014,7 +1020,7 @@ if page == "💬 对话":
                     status_container.update(label="❌ 任务执行失败", state="error")
 
                     track_error(
-                        Exception(error_msg), {"mode": "async", "prompt": prompt[:50]}
+                        Exception(error_msg), {"mode": "async"}
                     )
 
                     FRIENDLY_ERRORS = {
@@ -1158,8 +1164,11 @@ elif page == "📁 成果物":
                 with col2:
                     st.metric("大小", f"{d['size_kb']} KB")
                 with col3:
-                    if os.path.exists(d["filepath"]):
-                        with open(d["filepath"], "r", encoding="utf-8") as f:
+                    real_fp = os.path.realpath(d["filepath"])
+                    if not real_fp.startswith(os.path.realpath(DELIVERABLES_DIR)):
+                        continue
+                    if os.path.exists(real_fp):
+                        with open(real_fp, "r", encoding="utf-8") as f:
                             content = f.read()
                         st.download_button(
                             "📥 下载",
@@ -1250,7 +1259,7 @@ elif page == "📊 成长":
             st.progress(score / 100)
         with c3:
             color = "#4CAF50" if score >= 60 else ("#FF9800" if score >= 30 else "#ccc")
-            st.metric(label=label, value=score)
+            st.metric(label=dim, value=score)
 
     if count == 0:
         st.info("💡 开始与助手对话，你的成长数据会自动记录在这里！")

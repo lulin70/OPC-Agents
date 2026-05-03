@@ -26,9 +26,17 @@ class TaskRequest(BaseModel):
         dangerous_patterns = [
             r"<script[^>]*>.*?</script>",
             r"javascript:",
+            r"vbscript:",
+            r"data:text/html",
             r"on\w+\s*=",
+            r"on\w+=",
             r"eval\s*\(",
             r"exec\s*\(",
+            r"<\s*iframe",
+            r"<\s*object",
+            r"<\s*embed",
+            r"<\s*svg[^>]+on\w+",
+            r"<\s*img[^>]+on\w+",
         ]
         for pattern in dangerous_patterns:
             if re.search(pattern, v, re.IGNORECASE):

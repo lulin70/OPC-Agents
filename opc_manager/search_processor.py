@@ -384,7 +384,7 @@ class SearchResultProcessor:
                 f"[SearchResultProcessor] Filtered: {original_count}→{len(filtered)}"
             )
 
-            scored = self._score_relevance(query, filtered)
+            scored = self._score_relevance(query, filtered, keywords)
 
             if len(scored) < self.min_results and original_count >= self.min_results:
                 logger.info("[SearchResultProcessor] Insufficient relevant results, enabling KB fallback")
@@ -603,7 +603,7 @@ class SearchResultProcessor:
 
         return filtered
 
-    def _score_relevance(self, query: str, results: List[Dict]) -> List[Dict]:
+    def _score_relevance(self, query: str, results: List[Dict], keywords: List[str] = None) -> List[Dict]:
         """Simplified TF-IDF scoring: title weight ×2 + snippet overlap
 
         Scoring formula:
@@ -617,6 +617,7 @@ class SearchResultProcessor:
         Args:
             query: Original query (for re-extracting keywords to ensure consistency)
             results: Already filtered relevant result list
+            keywords: Pre-extracted keywords (avoids redundant extraction)
 
         Returns:
             Result list sorted by score in descending order
@@ -624,7 +625,8 @@ class SearchResultProcessor:
         if not results:
             return results
 
-        keywords = self._extract_keywords(query)
+        if keywords is None:
+            keywords = self._extract_keywords(query)
 
         scored_results = []
         for result in results:

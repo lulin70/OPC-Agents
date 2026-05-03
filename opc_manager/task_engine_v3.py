@@ -184,7 +184,7 @@ class SearchCache:
         self._ttl = ttl
         self._hits = 0
         self._misses = 0
-        self._lock = __import__("threading").RLock()
+        self._lock = threading.RLock()
 
     def _make_key(self, query: str, max_results: int) -> str:
         raw = f"{query}:{max_results}"
@@ -199,7 +199,7 @@ class SearchCache:
                     self._cache.move_to_end(key)
                     self._hits += 1
                     logger.info(f"[SearchCache] Hit: {query[:30]}...")
-                    return copy.deepcopy(results)
+                    return list(results)
                 else:
                     del self._cache[key]
             self._misses += 1
@@ -385,12 +385,27 @@ class IntentClassifier:
         ],
     }
 
+    _COMPILED_PATTERNS: Dict[TaskType, list] = {}
+    _COMPILED_FOLLOW_UP: list = []
+    _COMPILED_NEW_TASK: list = []
+
+    @classmethod
+    def _ensure_compiled(cls):
+        if not cls._COMPILED_PATTERNS:
+            cls._COMPILED_PATTERNS = {
+                task_type: [re.compile(p, re.IGNORECASE) for p in patterns]
+                for task_type, patterns in cls.PATTERNS.items()
+            }
+            cls._COMPILED_FOLLOW_UP = [re.compile(p, re.IGNORECASE) for p in cls.FOLLOW_UP_PATTERNS]
+            cls._COMPILED_NEW_TASK = [re.compile(p, re.IGNORECASE) for p in cls.NEW_TASK_PATTERNS]
+
     @classmethod
     def classify(cls, user_input: str) -> Tuple[TaskType, float]:
+        cls._ensure_compiled()
         text = user_input.lower().strip()
-        for task_type, patterns in cls.PATTERNS.items():
-            for pattern in patterns:
-                if re.search(pattern, text):
+        for task_type, compiled_list in cls._COMPILED_PATTERNS.items():
+            for compiled in compiled_list:
+                if compiled.search(text):
                     return task_type, 0.85
         return TaskType.GENERAL_CHAT, 0.5
 
@@ -415,11 +430,12 @@ class IntentClassifier:
             True if this appears to be a follow-up request, False otherwise
         """
         text = user_input.strip()
-        for pattern in cls.NEW_TASK_PATTERNS:
-            if re.search(pattern, text, re.IGNORECASE):
+        cls._ensure_compiled()
+        for compiled in cls._COMPILED_NEW_TASK:
+            if compiled.search(text):
                 return False
-        for pattern in cls.FOLLOW_UP_PATTERNS:
-            if re.search(pattern, text, re.IGNORECASE):
+        for compiled in cls._COMPILED_FOLLOW_UP:
+            if compiled.search(text):
                 return True
         return False
 
@@ -582,8 +598,9 @@ class TaskEngineV3:
             if history_context:
                 is_follow_up = IntentClassifier.is_follow_up(sanitized)
                 if is_follow_up:
+                    safe_history = history_context.replace("<", "&lt;").replace(">", "&gt;")
                     enriched_input = (
-                        f"<history_context>\n{history_context}\n</history_context>\n\n"
+                        f"<history_context>\n{safe_history}\n</history_context>\n\n"
                         f"[追问请求 — 用户要求基于已有内容补充或修改]\n"
                         f"{sanitized}\n\n"
                         f"重要：请基于上述历史对话中的已有内容，针对用户的追问请求进行补充或修改。"
