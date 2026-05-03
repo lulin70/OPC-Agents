@@ -52,6 +52,8 @@ data/checkpoints/
 data/loop_progress/
 data/workflows/
 data/chat_history.json
+data/llm_cache/
+data/feedback/
 deliverables/
 output/
 reports/
