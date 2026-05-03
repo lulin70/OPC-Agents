@@ -2,6 +2,28 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.6] - 2026-05-03
+
+### Added
+- **First-time user onboarding** — 3-step guided tour (input → wait → download), skippable, persists across sessions
+- **Empty state example queries** — 3 clickable example questions when no conversation history exists
+- **Quality feedback buttons** — 👍/👎 after each deliverable, feedback saved to `data/feedback/`
+- **Deliverable search** — Search deliverables by keyword (prompt/filename/type) in the 📁 tab
+- **Deliverable count display** — Shows total and filtered count in deliverables page
+
+### Changed
+- Version bumped from 0.1.5 to 0.1.6
+- `version.py` is SSOT: `__version__ = "0.1.6"`, `__version_info__ = (0, 1, 6)`
+- `requirements.txt` version comment updated to 0.1.6
+- `VERSION` file updated to 0.1.6
+
+### Security
+- Feedback file names sanitized with `re.sub(r'[^\w-]', '', task_id)` to prevent path traversal
+
+### Testing
+- 350 tests passing, 21 skipped, 0 failures
+- Test execution time: ~10s
+
 ## [0.1.5] - 2026-05-03
 
 ### Added

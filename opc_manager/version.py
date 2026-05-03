@@ -5,8 +5,8 @@ This is the Single Source of Truth (SSOT) for version numbers.
 All other version references should import from here.
 """
 
-__version__ = "0.1.5"
-__version_info__ = (0, 1, 5)
+__version__ = "0.1.6"
+__version_info__ = (0, 1, 6)
 
 
 def get_version() -> str:
@@ -31,6 +31,6 @@ def get_version_string() -> str:
     """Get full version string (including project name)
 
     Returns:
-        str: Full version string, e.g. "OPC-Agents v0.1.5"
+        str: Full version string, e.g. "OPC-Agents v0.1.6"
     """
     return f"OPC-Agents v{__version__}"

@@ -122,6 +122,9 @@ if "initialized" not in st.session_state:
     st.session_state.scenario_count = 0
     st.session_state.detected_type = None
     st.session_state.detected_name = None
+    st.session_state.onboarding_complete = False
+    st.session_state.onboarding_step = 0
+    st.session_state.quality_feedback = {}
     st.session_state.flywheel_scores = {
         "内容质量": 0,
         "受众增长": 0,
@@ -651,6 +654,49 @@ if page == "💬 对话":
             "我是你的**任务执行与成果交付助手**。"
             "**告诉我你要什么结果，我直接做完并交付文件给你** — 可下载、可保存、可复用。"
         )
+
+        if not st.session_state.get("onboarding_complete", False):
+            onboarding_step = st.session_state.get("onboarding_step", 0)
+            with st.container():
+                if onboarding_step == 0:
+                    st.info("👋 **欢迎使用 OPC-Agents！** 让我用 30 秒带你快速上手")
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("▶️ 开始快速引导", type="primary", use_container_width=True):
+                            st.session_state.onboarding_step = 1
+                            st.rerun()
+                    with col2:
+                        if st.button("⏭️ 跳过引导，直接使用"):
+                            st.session_state.onboarding_complete = True
+                            st.rerun()
+                elif onboarding_step == 1:
+                    st.success("✅ **第1步/3步：输入你的需求**\n\n在下方输入框中，用自然语言描述你要什么结果。比如：\"分析电商行业竞争格局\"")
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("下一步 →", type="primary", use_container_width=True):
+                            st.session_state.onboarding_step = 2
+                            st.rerun()
+                    with col2:
+                        if st.button("跳过引导"):
+                            st.session_state.onboarding_complete = True
+                            st.rerun()
+                elif onboarding_step == 2:
+                    st.success("✅ **第2步/3步：等待AI执行**\n\n提交后系统会自动搜索资料、生成内容。你会看到实时进度和预估时间，也可以随时取消。")
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("下一步 →", type="primary", use_container_width=True):
+                            st.session_state.onboarding_step = 3
+                            st.rerun()
+                    with col2:
+                        if st.button("跳过引导"):
+                            st.session_state.onboarding_complete = True
+                            st.rerun()
+                elif onboarding_step == 3:
+                    st.success("✅ **第3步/3步：下载成果物**\n\n生成完成后，你可以直接下载 .md 文件，也可以追问\"补充XX\"让AI继续完善。")
+                    if st.button("🎉 完成！开始使用", type="primary", use_container_width=True):
+                        st.session_state.onboarding_complete = True
+                        st.rerun()
+
         st.markdown(
             "**使用步骤**：① 在下方输入需求或点击场景按钮 → ② 等待AI执行 → ③ 下载成果物文件"
         )
@@ -730,6 +776,21 @@ if page == "💬 对话":
                     st.caption(
                         f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
                     )
+
+    if len(st.session_state.messages) == 0:
+        with st.container():
+            st.markdown("### 💬 试试问我：")
+            example_cols = st.columns(3)
+            EXAMPLE_QUERIES = [
+                ("📊 竞品分析", "分析电商行业竞争格局，帮我了解主要玩家和差异化策略"),
+                ("📋 营销方案", "帮我制定Q2社交媒体营销方案，预算5万以内"),
+                ("🔍 行业趋势", "收集2026年AI Agent行业最新趋势和投资动态"),
+            ]
+            for i, (title, query) in enumerate(EXAMPLE_QUERIES):
+                with example_cols[i]:
+                    if st.button(title, key=f"example_{i}", use_container_width=True):
+                        st.session_state.pending_prompt = query
+                        st.rerun()
 
     pending = st.session_state.pop("pending_prompt", None)
     if pending:
@@ -883,6 +944,37 @@ if page == "💬 对话":
 
                     if result_content:
                         st.markdown(result_content)
+
+                        feedback_key = f"fb_{task_id}"
+                        safe_task_id = re.sub(r'[^\w-]', '', task_id)
+                        if feedback_key not in st.session_state.quality_feedback:
+                            fb_cols = st.columns([1, 1, 6])
+                            with fb_cols[0]:
+                                if st.button("👍 有用", key=f"good_{task_id}"):
+                                    st.session_state.quality_feedback[feedback_key] = "good"
+                                    try:
+                                        os.makedirs(os.path.join(_WORKSPACE_DIR, "data", "feedback"), exist_ok=True)
+                                        with open(os.path.join(_WORKSPACE_DIR, "data", "feedback", f"{safe_task_id}.json"), "w") as f:
+                                            json.dump({"task_id": task_id, "feedback": "good", "timestamp": time.time()}, f)
+                                    except Exception:
+                                        pass
+                                    st.success("感谢反馈！")
+                                    st.rerun()
+                            with fb_cols[1]:
+                                if st.button("👎 需改进", key=f"bad_{task_id}"):
+                                    st.session_state.quality_feedback[feedback_key] = "bad"
+                                    try:
+                                        os.makedirs(os.path.join(_WORKSPACE_DIR, "data", "feedback"), exist_ok=True)
+                                        with open(os.path.join(_WORKSPACE_DIR, "data", "feedback", f"{safe_task_id}.json"), "w") as f:
+                                            json.dump({"task_id": task_id, "feedback": "bad", "timestamp": time.time()}, f)
+                                    except Exception:
+                                        pass
+                                    st.info("感谢反馈！我们会持续改进")
+                                    st.rerun()
+                        elif st.session_state.quality_feedback.get(feedback_key) == "good":
+                            st.caption("👍 你觉得这次输出有用")
+                        elif st.session_state.quality_feedback.get(feedback_key) == "bad":
+                            st.caption("👎 你觉得这次输出需要改进")
 
                         if result_filepath and os.path.exists(result_filepath):
                             col_dl, col_info = st.columns([1, 3])
@@ -1042,7 +1134,21 @@ elif page == "📁 成果物":
     if not st.session_state.deliverables:
         st.info("💡 还没有生成任何成果物。去「对话」页面执行一个任务吧！")
     else:
-        for i, d in enumerate(st.session_state.deliverables):
+        search_query = st.text_input("🔍 搜索成果物", placeholder="输入关键词搜索...", key="deliverable_search")
+        
+        filtered_deliverables = st.session_state.deliverables
+        if search_query:
+            search_lower = search_query.lower()
+            filtered_deliverables = [
+                d for d in st.session_state.deliverables
+                if search_lower in d.get("prompt", "").lower()
+                or search_lower in d.get("filename", "").lower()
+                or search_lower in d.get("task_type", "").lower()
+            ]
+        
+        st.caption(f"共 {len(st.session_state.deliverables)} 个成果物" + (f"，匹配 {len(filtered_deliverables)} 个" if search_query else ""))
+        
+        for i, d in enumerate(filtered_deliverables):
             with st.expander(f"📄 {d['filename']}", expanded=(i == 0)):
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
