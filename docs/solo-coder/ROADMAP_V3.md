@@ -200,7 +200,7 @@
 ## 触发事件与决策依据
 
 **触发**: 用户提出"从用户角度来看，这是一款好产品吗？" → 四角色独立评审 → 全票通过4个P0改进项  
-**权威参考**: [v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)  
+**权威参考**: [v3.5-consensus-decision-record.md](../internal/v3.5-consensus-decision-record.md)  
 **共识日期**: 2026-04-16 (PM/ARCH/QA/UI 4/4全票)
 
 ### v3.5 解决的核心问题（来自用户旅程走查）
@@ -441,4 +441,4 @@ assert "Q2方案" in ctx and "缩短到2周" in ctx
 >
 > **执行原则**: 文档先行 → 按文档推进 → 完成即更新文档 → 闭环确认
 >
-> **权威参考**: [v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)（唯一权威决策来源）
+> **权威参考**: [v3.5-consensus-decision-record.md](../internal/v3.5-consensus-decision-record.md)（唯一权威决策来源）

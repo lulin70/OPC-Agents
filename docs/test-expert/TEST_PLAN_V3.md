@@ -263,7 +263,7 @@ jobs:
 
 ## 更新背景
 
-**触发文档**: [v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)  
+**触发文档**: [v3.5-consensus-decision-record.md](../internal/v3.5-consensus-decision-record.md)  
 **共识日期**: 2026-04-16  
 **参与角色**: PM / ARCH / QA / UI (4/4全票通过)
 
@@ -620,4 +620,4 @@ jobs:
 > 3. **CI/CD流水线更新**（新增5个gate脚本）
 > 4. **总测试数从45增长到82**（+82%）
 >
-> **权威参考**: [v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md) Section 5 (Testing Gates)
+> **权威参考**: [v3.5-consensus-decision-record.md](../internal/v3.5-consensus-decision-record.md) Section 5 (Testing Gates)

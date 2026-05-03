@@ -76,8 +76,7 @@ Fixes #<issue_number>
 
 <!-- 链接到相关的架构文档或设计文档 -->
 
-- [架构文档](docs/architecture/ARCHITECTURE.md)
-- [代码地图](docs/architecture/CODE_MAP.md)
+- [架构文档](docs/architect/ARCHITECTURE_DESIGN_V3.md)
 - [贡献指南](CONTRIBUTING.md)
 
 ---

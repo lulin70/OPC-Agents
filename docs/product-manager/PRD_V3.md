@@ -208,7 +208,7 @@ AC-4 (方案质量): ✅ 通过 — SMART指标/三阶段路线图/风险管理�
 
 ## ⚡ v3.5 四角色共识提升方案（当前执行中）
 
-> **决策文档**: [v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)  
+> **决策文档**: [v3.5-consensus-decision-record.md](../internal/v3.5-consensus-decision-record.md)  
 > **决策方式**: PM + ARCH + QA + UI 四角色独立评审 → 全票通过(4/4)
 
 ### v3.5 核心问题（用户视角）

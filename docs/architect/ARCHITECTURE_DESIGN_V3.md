@@ -293,7 +293,7 @@ frontend/app.py
 
 ## ⚡ v3.5 架构变更（四角色共识）
 
-> **决策文档**: [v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)
+> **决策文档**: [v3.5-consensus-decision-record.md](../internal/v3.5-consensus-decision-record.md)
 
 ### ADR-008: SearchResultProcessor — 后处理层替代引擎替换
 
@@ -393,4 +393,4 @@ class SessionContextManager:
 
 ---
 
-> **文档维护说明**：本架构文档反映v3.5四角色共识提升后的系统架构。核心变化是4个新组件(SearchResultProcessor/LLMEnhancedContentGenerator/AsyncTaskExecutor/SessionContextManager)的引入，以及从同步阻塞到异步轮询的执行模型变更。详见[v3.5-consensus-decision-record.md](../v3.5-consensus-decision-record.md)。
+> **文档维护说明**：本架构文档反映v3.5四角色共识提升后的系统架构。核心变化是4个新组件(SearchResultProcessor/LLMEnhancedContentGenerator/AsyncTaskExecutor/SessionContextManager)的引入，以及从同步阻塞到异步轮询的执行模型变更。详见[v3.5-consensus-decision-record.md](../internal/v3.5-consensus-decision-record.md)。

@@ -445,12 +445,9 @@ cp .env.example .env
 
 ## 📚 相关文档
 
-- [README](README.md) - 项目主文档
-- [QUICK_START_BETA.md](QUICK_START_BETA.md) - 快速启动指南
-- [PRODUCTION_READINESS_CHECKLIST.md](PRODUCTION_READINESS_CHECKLIST.md) - 生产就绪检查清单
-- [RELEASE_GUIDE.md](RELEASE_GUIDE.md) - 发布指南
-- [docs/USABILITY_REVIEW_2026-04-27.md](docs/USABILITY_REVIEW_2026-04-27.md) - 实用性评估
-- [docs/FIXES_2026-04-27.md](docs/FIXES_2026-04-27.md) - 修复报告
+- [README](../../README.md) - 项目主文档
+- [快速启动指南](../guides/QUICK_START_BETA.md) - 快速启动指南
+- [架构设计](../architect/ARCHITECTURE_DESIGN_V3.md) - 架构设计文档
 
 ---
 
