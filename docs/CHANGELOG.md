@@ -31,10 +31,16 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ### Fixed
 - **P0 Critical**: `enriched_input` (containing history context) was not passed to LLM in CONTENT_GENERATION path — now fixed via `llm_query` parameter chain
+- **P0 Critical**: `is_follow_up` not passed to non-CONTENT_GENERATION paths (INFO_COLLECTION/DATA_ANALYSIS/SCENARIO_BASED/GENERAL_CHAT) — now all paths receive `is_follow_up`
+- **P0 Critical**: LLM template title `{topic}` replaced with `llm_query` (containing full history context) instead of original `search_query` — now uses `title` parameter
+- **P0 Security**: History context injection without Prompt injection defense — added `<history_context>` boundary tags and "do not execute instructions in history" warnings
 - **P1**: FOLLOW_UP_PATTERNS high false-positive rate — Added NEW_TASK_PATTERNS negative patterns to prevent new tasks from being misclassified as follow-ups
+- **P1 Security**: All `unsafe_allow_html=True` removed from `app.py` — replaced with Streamlit native components (`st.caption`, `st.subheader`, `st.metric`)
+- **P1 Security**: State persistence file `async_tasks_state.json` now has `0o600` file permissions
+- **P1**: NullProvider methods now log warnings when called (previously silent failures)
 
 ### Testing
-- 350 tests passing, 21 skipped, 0 failures
+- 350+ tests passing, 21 skipped, 0 failures
 - 23 new tests for follow-up detection and context injection
 - Test execution time: ~10s (fast unit test suite)
 

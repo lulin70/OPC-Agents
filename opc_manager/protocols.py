@@ -24,6 +24,7 @@ Usage:
 """
 
 from typing import Optional, Dict, List, Any, Protocol, runtime_checkable
+from loguru import logger
 
 
 @runtime_checkable
@@ -57,6 +58,7 @@ class NullLLMProvider:
         return False
 
     def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> Optional[str]:
+        logger.warning("[NullLLMProvider] LLM unavailable — generate() returned None")
         return None
 
 
@@ -65,6 +67,7 @@ class NullSearchProvider:
         return False
 
     def search(self, query: str, max_results: int = 10) -> List[Dict]:
+        logger.warning("[NullSearchProvider] Search unavailable — search() returned []")
         return []
 
 
@@ -73,12 +76,14 @@ class NullSecureProvider:
         return False
 
     def set_key(self, name: str, value: str) -> bool:
+        logger.warning(f"[NullSecureProvider] Secure storage unavailable — set_key({name}) returned False")
         return False
 
     def get_key(self, name: str) -> Optional[str]:
         return None
 
     def load_to_env(self) -> int:
+        logger.warning("[NullSecureProvider] Secure storage unavailable — load_to_env() returned 0")
         return 0
 
 

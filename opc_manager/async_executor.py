@@ -783,6 +783,7 @@ class AsyncTaskExecutor:
                 payload["sha256"] = checksum
                 with open(state_file, "w") as f:
                     json.dump(payload, f, indent=2)
+                os.chmod(state_file, 0o600)
                 logger.info(
                     f"[AsyncTaskExecutor] Persisted {len(active_tasks)} active tasks"
                 )

@@ -707,11 +707,7 @@ if page == "💬 对话":
                         st.rerun()
 
         st.divider()
-        st.markdown(
-            "<div style='text-align:center; color:#888;'>"
-            "💡 输入需求 → 执行任务 → 生成文件 → 立即下载</div>",
-            unsafe_allow_html=True,
-        )
+        st.caption("💡 输入需求 → 执行任务 → 生成文件 → 立即下载")
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
@@ -1123,14 +1119,8 @@ elif page == "📊 成长":
 
     col_level, col_count = st.columns([2, 1])
     with col_level:
-        st.markdown(
-            f"<div style='padding:20px;border-radius:12px;"
-            f"background:linear-gradient(135deg,{lv_color}22,{lv_color}08);"
-            f"border:2px solid {lv_color}66;'>"
-            f"<h2 style='color:{lv_color};margin:0;'>{lv_name}</h2>"
-            f"<p style='color:#666;margin:4px 0 0 0;'>{lv_desc}</p></div>",
-            unsafe_allow_html=True,
-        )
+        st.subheader(f"{lv_name}")
+        st.caption(lv_desc)
     with col_count:
         st.metric("互动次数", count)
     if count > 0:
@@ -1154,10 +1144,7 @@ elif page == "📊 成长":
             st.progress(score / 100)
         with c3:
             color = "#4CAF50" if score >= 60 else ("#FF9800" if score >= 30 else "#ccc")
-            st.markdown(
-                f"<span style='color:{color};font-weight:bold;font-size:1.1em;'>{score}</span>",
-                unsafe_allow_html=True,
-            )
+            st.metric(label=label, value=score)
 
     if count == 0:
         st.info("💡 开始与助手对话，你的成长数据会自动记录在这里！")
