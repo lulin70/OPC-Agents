@@ -41,9 +41,9 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - ✅ **Output Redaction** — Auto-detect and replace API keys/GitHub tokens in generated content
 - ✅ **Knowledge Base Fallback** — 6 categories, 20 professional knowledge entries, auto-fallback when search fails
 - ✅ **File Delivery** — Auto-generates `.md` files with download button
-- ✅ **Multi-turn Conversation** — Context-aware iterative optimization
+- ✅ **Multi-turn Conversation** — Follow up with "add XX"/"modify XX" and the system continues from previous results instead of starting over
 - ✅ **Security Protection** — Input validation + Prompt injection defense + URL safety + error sanitization + encrypted API key storage
-- ✅ **Test Coverage** — 310+ test cases, 100% pass rate, CI auto-verification
+- ✅ **Test Coverage** — 350+ test cases, 100% pass rate, CI auto-verification
 
 ## Quick Start
 

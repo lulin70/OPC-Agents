@@ -478,5 +478,111 @@ class TestTaskEngineEdgeCases(unittest.TestCase):
         self.assertGreaterEqual(stats_after["hits"], stats_before["hits"])
 
 
+class TestFollowUpDetection(unittest.TestCase):
+    """追问意图识别测试 — Sprint2 P0: 多轮对话增强"""
+
+    def test_supplement_keyword_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("补充竞品分析"))
+
+    def test_modify_keyword_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("修改第三阶段时间"))
+
+    def test_adjust_keyword_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("调整预算分配"))
+
+    def test_shorten_keyword_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("缩短到2周"))
+
+    def test_add_keyword_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("加上风险分析"))
+
+    def test_expand_keyword_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("展开说明第二部分"))
+
+    def test_replace_keyword_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("把第三阶段换成敏捷迭代"))
+
+    def test_can_you_modify_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("能不能把时间改成3周"))
+
+    def test_english_modify_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("modify the timeline"))
+
+    def test_english_add_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("add competitor analysis"))
+
+    def test_japanese_modify_detected(self):
+        self.assertTrue(IntentClassifier.is_follow_up("修正して"))
+
+    def test_new_task_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("帮我写Q2营销方案"))
+
+    def test_info_collection_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("收集2024年AI趋势"))
+
+    def test_greeting_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("你好"))
+
+    def test_data_analysis_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("分析一下我的业务现状"))
+
+    def test_new_task_with_optimize_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("帮我写一份优化方案"))
+
+    def test_new_task_with_generate_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("帮我生成一份报告"))
+
+    def test_new_task_with_create_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("帮我创建一个新方案"))
+
+    def test_new_task_with_plan_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("帮我制定Q2计划"))
+
+    def test_english_generate_not_detected(self):
+        self.assertFalse(IntentClassifier.is_follow_up("generate a new report"))
+
+
+class TestFollowUpContextInjection(unittest.TestCase):
+    """追问上下文注入测试 — 确保追问模式正确注入历史上下文"""
+
+    def setUp(self):
+        self.engine = TaskEngineV3()
+        self.engine._initialized = True
+        self.engine.web_search = None
+        self.engine.scenario_engine = None
+        self.engine.llm_content_gen = None
+
+    def test_follow_up_adds_marker_to_content(self):
+        from opc_manager.session_context import SessionContextManager
+        session = SessionContextManager(max_turns=20)
+        session.add_turn(
+            user_input="帮我写Q2营销方案",
+            assistant_response="已生成Q2营销方案，包含3个阶段...",
+            task_type="content_generation",
+        )
+        result = self.engine.execute("补充竞品分析部分", session_ctx=session)
+        self.assertTrue(result.success)
+        self.assertIn("基于上次结果继续", result.content)
+
+    def test_new_task_no_marker(self):
+        from opc_manager.session_context import SessionContextManager
+        session = SessionContextManager(max_turns=20)
+        session.add_turn(
+            user_input="帮我写Q2营销方案",
+            assistant_response="已生成Q2营销方案...",
+            task_type="content_generation",
+        )
+        result = self.engine.execute("收集AI行业最新趋势", session_ctx=session)
+        self.assertTrue(result.success)
+        self.assertNotIn("基于上次结果继续", result.content)
+
+    def test_no_history_no_follow_up(self):
+        from opc_manager.session_context import SessionContextManager
+        session = SessionContextManager(max_turns=20)
+        result = self.engine.execute("补充竞品分析", session_ctx=session)
+        self.assertTrue(result.success)
+        self.assertNotIn("基于上次结果继续", result.content)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

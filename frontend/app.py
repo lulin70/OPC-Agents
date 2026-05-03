@@ -753,6 +753,14 @@ if page == "💬 对话":
     if prompt:
 
         executor = st.session_state.async_executor
+        session_ctx = st.session_state.get("session_ctx")
+
+        is_follow_up = False
+        if session_ctx and session_ctx.get_turn_count() > 0:
+            from opc_manager.task_engine_v3 import IntentClassifier
+            is_follow_up = IntentClassifier.is_follow_up(prompt)
+            if is_follow_up:
+                st.info("🔄 检测到追问请求 — 系统将基于上次结果继续，而非从头生成")
 
         detected_type, confidence, method = safe_detect(prompt)
         st.session_state.detected_type = detected_type
@@ -771,7 +779,7 @@ if page == "💬 对话":
             st.error("⚠️ 系统繁忙，请稍后再试（并发任务已达上限）")
             st.stop()
 
-        print(f"[frontend] 任务已提交: {task_id} (异步模式)")
+        print(f"[frontend] 任务已提交: {task_id} (异步模式{'，追问模式' if is_follow_up else ''})")
 
         with st.chat_message("assistant"):
             status_container = st.status(

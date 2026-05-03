@@ -2,6 +2,42 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.5] - 2026-05-03
+
+### Added
+- **Multi-turn conversation enhancement (Sprint2 P0)** — Users can now follow up with "补充XX" or "修改XX" and the system will continue based on previous results instead of starting from scratch
+- `IntentClassifier.is_follow_up()` — Detects follow-up requests vs new tasks with 40+ patterns in 3 languages (zh/en/jp)
+- `IntentClassifier.NEW_TASK_PATTERNS` — Negative patterns to prevent new tasks from being misclassified as follow-ups
+- Follow-up context injection in `TaskEngineV3.execute()` — When follow-up is detected, enriched_input includes history context with modification instructions
+- Follow-up prompt instructions in `LLMEnhancedContentGenerator._build_prompt()` — LLM receives explicit instructions to modify incrementally
+- Frontend follow-up detection and UI hint — Shows "🔄 检测到追问请求" when follow-up is detected
+- `llm_query` parameter in `_gen_real_report/plan/content` — Ensures enriched input (with history context) reaches LLM, not just search query
+- Deliverable quality gate — Zero placeholders + minimum length + data source checks
+- Anti-rationalization instructions in LLM system prompt — Prevents hollow suggestions
+- Configuration SSOT — `version.py` is the single source of truth for version numbers
+- Protocol + NullProvider pattern — Unified degradation for LLM/Search/Secure/Monitor providers
+- Security test suite (`test_security.py`) — Prompt injection, XSS, path traversal, API key leakage
+- pytest markers — unit/integration/e2e/security test layering
+- SHA256 checkpoint in `AsyncTaskExecutor._persist_active_tasks()`
+- Output redaction in `LLMEnhancedContentGenerator._redact_secrets()` — Auto-replaces API keys with [REDACTED]
+- Ollama backend support — OpenAI-compatible endpoint, no API key needed
+
+### Changed
+- `TaskEngineV3.execute()` — Now detects follow-up requests and injects history context with modification instructions
+- `LLMEnhancedContentGenerator.generate()` — Accepts `is_follow_up` parameter for incremental modification mode
+- `_build_prompt()` — Adds follow-up-specific rules when `is_follow_up=True`
+- `_try_llm_generate()` and `_gen_real_*()` methods — Now accept `llm_query` parameter to pass enriched input to LLM
+- Frontend `app.py` — Shows follow-up detection hint before task submission
+
+### Fixed
+- **P0 Critical**: `enriched_input` (containing history context) was not passed to LLM in CONTENT_GENERATION path — now fixed via `llm_query` parameter chain
+- **P1**: FOLLOW_UP_PATTERNS high false-positive rate — Added NEW_TASK_PATTERNS negative patterns to prevent new tasks from being misclassified as follow-ups
+
+### Testing
+- 350 tests passing, 21 skipped, 0 failures
+- 23 new tests for follow-up detection and context injection
+- Test execution time: ~10s (fast unit test suite)
+
 ## [0.1.0] - 2026-04-23
 
 ### Added

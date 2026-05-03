@@ -244,6 +244,65 @@ class IntentClassifier:
     Note: Keep priority order from high to low.
     """
 
+    FOLLOW_UP_PATTERNS = [
+        r"补充",
+        r"加上",
+        r"添加",
+        r"增加",
+        r"修改",
+        r"调整",
+        r"缩短",
+        r"延长",
+        r"删掉",
+        r"去掉",
+        r"替换",
+        r"换成",
+        r"展开",
+        r"详细.*说明",
+        r"更具体",
+        r"细化",
+        r"完善",
+        r"优化",
+        r"改进",
+        r"能不能.*改",
+        r"能不能.*加",
+        r"能不能.*缩短",
+        r"能不能.*延长",
+        r"把.*改成",
+        r"把.*换成",
+        r"add",
+        r"include",
+        r"modify",
+        r"change",
+        r"adjust",
+        r"expand",
+        r"elaborate",
+        r"detail",
+        r"refine",
+        r"improve",
+        r"update",
+        r"replace",
+        r"追加",
+        r"もう少し",
+        r"追加して",
+        r"修正して",
+        r"変更して",
+        r"詳細に",
+    ]
+
+    NEW_TASK_PATTERNS = [
+        r"帮我写",
+        r"帮我生成",
+        r"帮我创建",
+        r"帮我做",
+        r"帮我制定",
+        r"帮我规划",
+        r"write.*(?:report|plan|proposal|document)",
+        r"create.*(?:new|fresh|document)",
+        r"generate",
+        r"新.*(?:方案|计划|报告)",
+    ]
+
     PATTERNS = {
         TaskType.INFO_COLLECTION: [
             r"收集",
@@ -334,6 +393,35 @@ class IntentClassifier:
                 if re.search(pattern, text):
                     return task_type, 0.85
         return TaskType.GENERAL_CHAT, 0.5
+
+    @classmethod
+    def is_follow_up(cls, user_input: str) -> bool:
+        """Detect if user input is a follow-up request (supplement/modify/adjust)
+
+        A follow-up is when the user wants to modify or supplement previous output,
+        not start a completely new task. This is critical for multi-turn conversation:
+        - Follow-up: "补充竞品分析" → Should reference previous output and modify it
+        - New task: "帮我写Q2方案" → Should start fresh
+
+        Detection logic:
+        1. NEW_TASK_PATTERNS have priority — if matched, it's NOT a follow-up
+        2. Then check FOLLOW_UP_PATTERNS (supplement/modify/adjust keywords)
+        3. Always returns False if no conversation history exists (caller's responsibility)
+
+        Args:
+            user_input: User's original input text
+
+        Returns:
+            True if this appears to be a follow-up request, False otherwise
+        """
+        text = user_input.strip()
+        for pattern in cls.NEW_TASK_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                return False
+        for pattern in cls.FOLLOW_UP_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                return True
+        return False
 
 
 class TaskEngineV3:
@@ -488,10 +576,24 @@ class TaskEngineV3:
         self._ensure_initialized()
 
         enriched_input = sanitized
+        is_follow_up = False
         if session_ctx and session_ctx.get_turn_count() > 0:
             history_context = session_ctx.get_context_for_llm(max_turns=3)
             if history_context:
-                enriched_input = f"{history_context}\n\n[当前请求]\n{sanitized}"
+                is_follow_up = IntentClassifier.is_follow_up(sanitized)
+                if is_follow_up:
+                    enriched_input = (
+                        f"{history_context}\n\n"
+                        f"[追问请求 — 用户要求基于已有内容补充或修改]\n"
+                        f"{sanitized}\n\n"
+                        f"重要：请基于上述历史对话中的已有内容，针对用户的追问请求进行补充或修改。"
+                        f"不要从头重新生成，而是在原有基础上增量修改。"
+                    )
+                    logger.info(
+                        f"[TaskEngineV3] Follow-up detected: injecting modification context"
+                    )
+                else:
+                    enriched_input = f"{history_context}\n\n[当前请求]\n{sanitized}"
                 logger.info(
                     f"[TaskEngineV3] Injected {session_ctx.get_turn_count()} turns of context"
                 )
@@ -512,7 +614,7 @@ class TaskEngineV3:
                 )
             elif task_type == TaskType.CONTENT_GENERATION:
                 result = self._execute_content_generation(
-                    sanitized, enriched_input, business_type
+                    sanitized, enriched_input, business_type, is_follow_up=is_follow_up
                 )
             elif task_type == TaskType.DATA_ANALYSIS:
                 result = self._execute_data_analysis(
@@ -520,6 +622,12 @@ class TaskEngineV3:
                 )
             else:
                 result = self._execute_general_chat(sanitized, enriched_input)
+
+            if is_follow_up and result.success and result.content:
+                result.content = (
+                    f"> 🔄 **基于上次结果继续** — 以下内容在原有基础上进行了补充/修改\n\n"
+                    f"{result.content}"
+                )
 
             result.execution_time_ms = (time.time() - start_time) * 1000
 
@@ -737,7 +845,7 @@ class TaskEngineV3:
         )
 
     def _execute_content_generation(
-        self, search_query: str, llm_query: str = None, business_type: str = None
+        self, search_query: str, llm_query: str = None, business_type: str = None, is_follow_up: bool = False
     ) -> TaskResult:
         """Path B: Content generation — Search reference materials first, then generate specific document
 
@@ -774,15 +882,15 @@ class TaskEngineV3:
 
         if is_report:
             content = self._gen_real_report(
-                search_query, context_lines, results, business_type
+                search_query, context_lines, results, business_type, is_follow_up=is_follow_up, llm_query=llm_query
             )
         elif is_plan or is_proposal:
             content = self._gen_real_plan(
-                search_query, context_lines, results, business_type
+                search_query, context_lines, results, business_type, is_follow_up=is_follow_up, llm_query=llm_query
             )
         else:
             content = self._gen_real_content(
-                search_query, context_lines, results, business_type
+                search_query, context_lines, results, business_type, is_follow_up=is_follow_up, llm_query=llm_query
             )
 
         return TaskResult(
@@ -799,6 +907,7 @@ class TaskEngineV3:
         search_results: List[Dict],
         doc_type: str = "report",
         business_type: str = None,
+        is_follow_up: bool = False,
     ) -> Optional[str]:
         """Attempt LLM-enhanced content generation, returns None on failure"""
         if not self.llm_content_gen:
@@ -817,6 +926,7 @@ class TaskEngineV3:
                 template=template,
                 search_results=search_results,
                 business_type=business_type,
+                is_follow_up=is_follow_up,
             )
             if (
                 result.success
@@ -842,6 +952,8 @@ class TaskEngineV3:
         context: List[str],
         search_results: List[Dict],
         business_type: str = None,
+        is_follow_up: bool = False,
+        llm_query: str = None,
     ) -> str:
         """Generate report-type document — Structured, data-supported, actionable
 
@@ -857,10 +969,11 @@ class TaskEngineV3:
         - Data metrics have clear baselines and measurement methods (not "待测量")
         """
         llm_content = self._try_llm_generate(
-            query,
+            llm_query or query,
             search_results,
             "report",
             business_type,
+            is_follow_up=is_follow_up,
         )
         if llm_content:
             return llm_content
@@ -985,6 +1098,8 @@ class TaskEngineV3:
         context: List[str],
         search_results: List[Dict],
         business_type: str = None,
+        is_follow_up: bool = False,
+        llm_query: str = None,
     ) -> str:
         """Generate plan/proposal-type document — With SMART goals, 3-phase roadmap, resources, risks, acceptance criteria
 
@@ -1004,7 +1119,7 @@ class TaskEngineV3:
         - SMART metrics provide example values (improve 30%/≥95%) for reference and adjustment
         """
         llm_content = self._try_llm_generate(
-            query, search_results, "plan", business_type
+            llm_query or query, search_results, "plan", business_type, is_follow_up=is_follow_up
         )
         if llm_content:
             return llm_content
@@ -1136,6 +1251,8 @@ class TaskEngineV3:
         context: List[str],
         search_results: List[Dict],
         business_type: str = None,
+        is_follow_up: bool = False,
+        llm_query: str = None,
     ) -> str:
         """General content generation — Fallback template when unable to determine if report or plan
 
@@ -1147,10 +1264,11 @@ class TaskEngineV3:
         This is the safest fallback — at least ensures real information with sources.
         """
         llm_content = self._try_llm_generate(
-            query,
+            llm_query or query,
             search_results,
             "content",
             business_type,
+            is_follow_up=is_follow_up,
         )
         if llm_content:
             return llm_content
