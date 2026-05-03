@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司智能任务执行系统
 
-> **版本**: v0.1.5 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.1.6 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -133,7 +133,7 @@ OPC-Agents/
 │   └── version.py         # 版本号管理（SSOT）
 ├── opc_hr/                # 搜索与知识库
 │   └── web_search.py      # DuckDuckGo网络搜索
-├── tests/                 # 测试套件（277+个测试，100%通过）
+├── tests/                 # 测试套件（350+个测试，100%通过）
 ├── docs/                  # 项目文档
 ├── requirements.txt       # 核心依赖
 ├── requirements-dev.txt   # 开发依赖（含black/flake8/pytest）

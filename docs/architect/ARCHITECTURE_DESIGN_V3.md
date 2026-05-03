@@ -1,5 +1,7 @@
 # OPC-Agents 架构设计文档 v3.5 (四角色共识提升版)
 
+> ⚠️ **文档状态说明**: 本文档基于 v3.5 四角色共识编写，部分设计已在 v0.1.5/v0.1.6 中实现（如AsyncTaskExecutor、SessionContextManager、LLMEnhancedContentGenerator、SearchResultProcessor、Protocol降级、质量门禁等）。具体实现状态请参考 `docs/CHANGELOG.md` 和源代码。
+
 ## 更新履历
 
 | 版本 | 日期 | 更新人 | 更新内容 |

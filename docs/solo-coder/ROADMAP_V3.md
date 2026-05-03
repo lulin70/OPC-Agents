@@ -1,5 +1,7 @@
 # OPC-Agents 开发路线图 v3.5 (四角色共识提升版)
 
+> ⚠️ **文档状态说明**: 本文档基于 v3.5 四角色共识编写，V35-T01~T16 任务大部分已在 v0.1.5/v0.1.6 中完成。最新进度请参考 `docs/CHANGELOG.md` 和 `docs/internal/v0.1.6-optimization-consensus.md`。
+
 ## 更新履历
 
 | 版本 | 日期 | 状态 | 说明 |

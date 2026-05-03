@@ -14,12 +14,10 @@
 
 Thank you for participating in the OPC-Agents Beta test! This guide will help you get started quickly.
 
-**Latest Updates (2026-04-28)**:
-- ✅ Security hardening: XSS fixes, Prompt injection defense, API Key masking
-- ✅ Performance optimization: Singleton pattern, thread safety, Token savings
-- ✅ PyPI release: `pip install opc-agents` now available
-- ✅ Fixed LLM init / search deps / scenario path / context pollution issues
-- ✅ System is now more stable and reliable
+**Latest Updates (2026-05-03)**:
+- ✅ v0.1.6: First-time onboarding + Quality feedback + Deliverable search + Empty state examples
+- ✅ v0.1.5: Multi-turn follow-up + Quality gate + Output redaction + Ollama support + Protocol degradation
+- ✅ v0.1.2: Security hardening (XSS/Prompt injection) + Performance optimization + PyPI release
 
 ---
 

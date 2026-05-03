@@ -31,7 +31,7 @@ Steps to reproduce the behavior:
 
 - **OS**: [e.g. macOS, Windows, Linux]
 - **Python Version**: [e.g. 3.9]
-- **OPC-Agents Version**: [e.g. 0.0.1]
+- **OPC-Agents Version**: [e.g. 0.1.6]
 
 ## 📝 日志信息
 

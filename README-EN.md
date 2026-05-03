@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.1.5 | **Status**: Beta | **License**: MIT
+> **Version**: v0.1.6 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -133,7 +133,7 @@ OPC-Agents/
 │   └── version.py         # Version management (SSOT)
 ├── opc_hr/                # Search & knowledge base
 │   └── web_search.py      # DuckDuckGo web search
-├── tests/                 # Test suite (277+ tests, 100% pass)
+├── tests/                 # Test suite (350+ tests, 100% pass)
 ├── docs/                  # Project documentation
 ├── requirements.txt       # Core dependencies
 ├── requirements-dev.txt   # Dev dependencies (black/flake8/pytest)
