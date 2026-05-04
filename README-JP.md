@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.1.6 | **状態**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.1.7 | **状態**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -130,6 +130,8 @@ OPC-Agents/
 │   ├── persona_variants.yaml         # 6種ビジネスタイプペルソナ設定
 │   ├── monitoring.py                 # モニタリング＆ロギング
 │   ├── config.py                     # 設定管理
+│   ├── protocols.py                  # Protocolインターフェース+NullProvider降格
+│   ├── secure_storage.py             # APIキー暗号化ストレージ
 │   └── version.py         # バージョン管理（SSOT）
 ├── opc_hr/                # 検索＆ナレッジベース
 │   └── web_search.py      # DuckDuckGo Web検索
@@ -160,6 +162,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| 0.1.7 | 2026-05-04 | 3Dコードレビュー修正：二重リトライ/ゾンビ検出/ハードコード塩値/インジェクション防御/ドキュメント整合性 |
 | 0.1.6 | 2026-05-03 | ユーザーオンボーディング+品質フィードバック+成果物検索+空状態例 |
 | 0.1.5 | 2026-05-03 | マルチターンフォローアップ+品質ゲート+セキュリティテスト+Protocol降格+出力秘匿化+Ollamaサポート |
 | 0.1.2 | 2026-04-28 | セキュリティ強化+パフォーマンス最適化：XSS修正、プロンプトインジェクション防御、シングルトンパターン、スレッドセーフ |

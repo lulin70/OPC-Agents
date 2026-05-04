@@ -501,9 +501,9 @@ class LLMEnhancedContentGenerator:
             else "(未检测到具体业务信息)"
         )
 
-        safe_input = user_input.replace("<", "&lt;").replace(">", "&gt;").replace("&", "&amp;")
-        safe_business = business_str.replace("<", "&lt;").replace(">", "&gt;").replace("&", "&amp;")
-        safe_context = context.replace("</search_context>", "").replace("<search_context>", "").replace("<", "&lt;").replace(">", "&gt;")
+        safe_input = user_input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        safe_business = business_str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        safe_context = re.sub(r"</?\w+[^>]*>", "", context).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
         persona = self.BUSINESS_TYPE_PERSONAS.get(
             business_type, self.BUSINESS_TYPE_PERSONAS.get("content_creator")

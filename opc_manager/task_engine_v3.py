@@ -199,7 +199,7 @@ class SearchCache:
                     self._cache.move_to_end(key)
                     self._hits += 1
                     logger.info(f"[SearchCache] Hit: {query[:30]}...")
-                    return list(results)
+                    return [dict(r) if isinstance(r, dict) else r for r in results]
                 else:
                     del self._cache[key]
             self._misses += 1

@@ -80,22 +80,10 @@ def _get_machine_fingerprint() -> str:
 
 
 def _derive_fernet_key(fingerprint: str) -> bytes:
-    """Derive a Fernet-compatible key from machine fingerprint
-
-    Uses PBKDF2-HMAC-SHA256 with 100,000 iterations for key stretching.
-    This makes brute-force attacks on the fingerprint significantly harder
-    compared to a single SHA-256 hash.
-
-    Args:
-        fingerprint: Machine fingerprint hex string
-
-    Returns:
-        44-byte base64url-encoded Fernet key
-    """
     key_material = hashlib.pbkdf2_hmac(
         "sha256",
         f"opc-agents-secure-storage:{fingerprint}".encode(),
-        b"opc-agents-salt-v1",
+        hashlib.sha256(f"opc-agents-salt:{fingerprint}".encode()).digest(),
         100000,
     )
     return base64.urlsafe_b64encode(key_material)

@@ -285,7 +285,7 @@ def test_<function>_<scenario>_<expected_result>():
 
 - [ ] 更新 [VERSION](VERSION) 文件
 - [ ] 更新 README 中的版本号
-- [ ] 更新 CHANGELOG.md
+- [ ] 更新 [docs/CHANGELOG.md](docs/CHANGELOG.md)
 - [ ] 所有测试通过
 - [ ] 文档已更新
 - [ ] 代码已格式化

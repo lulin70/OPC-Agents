@@ -301,13 +301,14 @@ class AsyncTaskExecutor:
                 self._schedule_retry(task)
 
             if task.status == TaskStatus.RUNNING:
-                running_elapsed = time.time() - (task.started_at or task.created_at)
-                if running_elapsed > self.default_timeout:
-                    task.status = TaskStatus.FAILED
-                    task.completed_at = time.time()
-                    task.error_message = f"Task RUNNING for {running_elapsed:.0f}s (timeout: {self.default_timeout}s)"
-                    logger.warning(f"[AsyncTaskExecutor] RUNNING timeout: {task_id}")
-                    self._schedule_retry(task)
+                if task.started_at is not None:
+                    running_elapsed = time.time() - task.started_at
+                    if running_elapsed > self.default_timeout:
+                        task.status = TaskStatus.FAILED
+                        task.completed_at = time.time()
+                        task.error_message = f"Task RUNNING for {running_elapsed:.0f}s (timeout: {self.default_timeout}s)"
+                        logger.warning(f"[AsyncTaskExecutor] RUNNING timeout: {task_id}")
+                        self._schedule_retry(task)
 
             return {
                 "status": task.status.value,
@@ -593,6 +594,12 @@ class AsyncTaskExecutor:
                 )
                 return
 
+            if task.status == TaskStatus.RETRYING:
+                logger.debug(
+                    f"[AsyncTaskExecutor] Retry already scheduled for {task.task_id}, skipping duplicate"
+                )
+                return
+
             task.retry_count += 1
             delay = self.retry_backoff_base * (2 ** (task.retry_count - 1))
             task.status = TaskStatus.RETRYING
@@ -657,12 +664,15 @@ class AsyncTaskExecutor:
                     logger.warning(f"[AsyncTaskExecutor] Zombie PENDING: {task.task_id}")
                     retry_candidates.append(task)
 
-                elif task.status == TaskStatus.RUNNING and elapsed > self.default_timeout:
-                    task.status = TaskStatus.FAILED
-                    task.completed_at = now
-                    task.error_message = f"Zombie scan: RUNNING for {elapsed:.0f}s"
-                    logger.warning(f"[AsyncTaskExecutor] Zombie RUNNING: {task.task_id}")
-                    retry_candidates.append(task)
+                elif task.status == TaskStatus.RUNNING:
+                    if task.started_at is not None:
+                        running_elapsed = now - task.started_at
+                        if running_elapsed > self.default_timeout:
+                            task.status = TaskStatus.FAILED
+                            task.completed_at = now
+                            task.error_message = f"Zombie scan: RUNNING for {running_elapsed:.0f}s"
+                            logger.warning(f"[AsyncTaskExecutor] Zombie RUNNING: {task.task_id}")
+                            retry_candidates.append(task)
 
         for task in retry_candidates:
             self._schedule_retry(task)

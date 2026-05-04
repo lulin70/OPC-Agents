@@ -7,8 +7,7 @@ include .env.example
 include requirements.txt
 include requirements-dev.txt
 
-recursive-include config *.yaml
-recursive-include opc_manager *.py *.typed
+recursive-include opc_manager *.py *.typed *.yaml
 recursive-include opc_hr *.py
 recursive-include frontend *.py
 

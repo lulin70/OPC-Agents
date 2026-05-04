@@ -24,6 +24,7 @@ Usage:
 """
 
 from typing import Optional, Dict, List, Any, Protocol, runtime_checkable
+import threading
 from loguru import logger
 
 
@@ -99,61 +100,74 @@ _llm_provider = None
 _search_provider = None
 _secure_provider = None
 _monitor_provider = None
+_provider_lock = threading.Lock()
 
 
 def get_llm_provider() -> LLMProvider:
     global _llm_provider
     if _llm_provider is not None:
         return _llm_provider
-    try:
-        from opc_manager.llm_content import LLMEnhancedContentGenerator
-        gen = LLMEnhancedContentGenerator()
-        api_key, api_base, model = gen._get_llm_config()
-        if api_base:
-            _llm_provider = _LLMProviderWrapper(gen)
+    with _provider_lock:
+        if _llm_provider is not None:
             return _llm_provider
-    except Exception:
-        pass
-    _llm_provider = NullLLMProvider()
-    return _llm_provider
+        try:
+            from opc_manager.llm_content import LLMEnhancedContentGenerator
+            gen = LLMEnhancedContentGenerator()
+            api_key, api_base, model = gen._get_llm_config()
+            if api_base:
+                _llm_provider = _LLMProviderWrapper(gen)
+                return _llm_provider
+        except Exception:
+            pass
+        _llm_provider = NullLLMProvider()
+        return _llm_provider
 
 
 def get_search_provider() -> SearchProvider:
     global _search_provider
     if _search_provider is not None:
         return _search_provider
-    try:
-        from opc_manager.search_processor import SearchResultProcessor
-        _search_provider = _SearchProviderWrapper(SearchResultProcessor())
+    with _provider_lock:
+        if _search_provider is not None:
+            return _search_provider
+        try:
+            from opc_manager.search_processor import SearchResultProcessor
+            _search_provider = _SearchProviderWrapper(SearchResultProcessor())
+            return _search_provider
+        except Exception:
+            pass
+        _search_provider = NullSearchProvider()
         return _search_provider
-    except Exception:
-        pass
-    _search_provider = NullSearchProvider()
-    return _search_provider
 
 
 def get_secure_provider() -> SecureProvider:
     global _secure_provider
     if _secure_provider is not None:
         return _secure_provider
-    try:
-        from opc_manager.secure_storage import SecureKeyStore
-        store = SecureKeyStore()
-        if store.is_available:
-            _secure_provider = _SecureProviderWrapper(store)
+    with _provider_lock:
+        if _secure_provider is not None:
             return _secure_provider
-    except Exception:
-        pass
-    _secure_provider = NullSecureProvider()
-    return _secure_provider
+        try:
+            from opc_manager.secure_storage import SecureKeyStore
+            store = SecureKeyStore()
+            if store.is_available:
+                _secure_provider = _SecureProviderWrapper(store)
+                return _secure_provider
+        except Exception:
+            pass
+        _secure_provider = NullSecureProvider()
+        return _secure_provider
 
 
 def get_monitor_provider() -> MonitorProvider:
     global _monitor_provider
     if _monitor_provider is not None:
         return _monitor_provider
-    _monitor_provider = NullMonitorProvider()
-    return _monitor_provider
+    with _provider_lock:
+        if _monitor_provider is not None:
+            return _monitor_provider
+        _monitor_provider = NullMonitorProvider()
+        return _monitor_provider
 
 
 class _LLMProviderWrapper:
