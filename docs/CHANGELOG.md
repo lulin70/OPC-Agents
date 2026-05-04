@@ -2,24 +2,6 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
-## [0.1.7] - 2026-05-04
-
-### Fixed
-- **P0 Logic**: `AsyncTaskExecutor._schedule_retry()` duplicate retry — Added RETRYING state check to prevent concurrent retry scheduling from `get_status()` timeout and worker exception
-- **P0 Logic**: `AsyncTaskExecutor` zombie scan used `created_at` for RUNNING timeout — Now correctly uses `started_at` for RUNNING tasks in both `get_status()` and `_scan_zombies()`
-- **P0 Security**: `secure_storage.py` hardcoded PBKDF2 salt — Salt now derived from machine fingerprint (`SHA-256(fingerprint)`) making it installation-specific
-- **P0 Security**: `llm_content.py` prompt injection via XML tag escape — Fixed HTML entity escape order (`&` before `<`/`>`), added regex-based XML tag stripping for search context
-- **P1 Doc**: `MANIFEST.in` referenced non-existent `config/` directory — Removed, added `*.yaml` to `opc_manager` include
-- **P1 Doc**: `README-EN.md` and `README-JP.md` missing `protocols.py` and `secure_storage.py` in project structure — Added
-
-### Changed
-- Version bumped from 0.1.6 to 0.1.7
-- `docs/internal/` archived 5 obsolete decision records to `docs/internal/archive/`
-
-### Testing
-- 350 tests passing, 21 skipped, 0 failures
-- All regression tests pass after fixes
-
 ## [0.1.6] - 2026-05-03
 
 ### Added
@@ -30,10 +12,19 @@ All notable changes to OPC-Agents will be documented in this file.
 - **Deliverable count display** — Shows total and filtered count in deliverables page
 
 ### Changed
-- Version bumped from 0.1.5 to 0.1.6
 - `version.py` is SSOT: `__version__ = "0.1.6"`, `__version_info__ = (0, 1, 6)`
 - `requirements.txt` version comment updated to 0.1.6
 - `VERSION` file updated to 0.1.6
+- `docs/internal/` archived 5 obsolete decision records to `docs/internal/archive/`
+
+### Fixed
+- **P0 Logic**: `AsyncTaskExecutor._schedule_retry()` duplicate retry — Added RETRYING state check to prevent concurrent retry scheduling from `get_status()` timeout and worker exception
+- **P0 Logic**: `AsyncTaskExecutor` zombie scan used `created_at` for RUNNING timeout — Now correctly uses `started_at` for RUNNING tasks in both `get_status()` and `_scan_zombies()`
+- **P0 Security**: `secure_storage.py` hardcoded PBKDF2 salt — Salt now derived from machine fingerprint (`SHA-256(fingerprint)`) making it installation-specific
+- **P0 Security**: `llm_content.py` prompt injection via XML tag escape — Fixed HTML entity escape order (`&` before `<`/`>`), added regex-based XML tag stripping for search context
+- **P1 Doc**: `MANIFEST.in` referenced non-existent `config/` directory — Removed, added `*.yaml` to `opc_manager` include
+- **P1 Doc**: `README-EN.md` and `README-JP.md` missing `protocols.py` and `secure_storage.py` in project structure — Added
+- **P1 Doc**: `CONTRIBUTING.md` CHANGELOG path corrected to `docs/CHANGELOG.md`
 
 ### Security
 - Feedback file names sanitized with `re.sub(r'[^\w-]', '', task_id)` to prevent path traversal

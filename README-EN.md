@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.1.7 | **Status**: Beta | **License**: MIT
+> **Version**: v0.1.6 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -162,8 +162,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 | Version | Date | Milestone |
 |---------|------|-----------|
-| 0.1.7 | 2026-05-04 | 3D code review fixes: duplicate retry / zombie detection / hardcoded salt / injection defense / doc consistency |
-| 0.1.6 | 2026-05-03 | User onboarding + Quality feedback + Deliverable search + Empty state examples |
+| 0.1.6 | 2026-05-03 | User onboarding + Quality feedback + Deliverable search + Empty state examples + 3D code review fixes |
 | 0.1.5 | 2026-05-03 | Multi-turn follow-up + Quality gate + Security tests + Protocol degradation + Output redaction + Ollama support |
 | 0.1.2 | 2026-04-28 | Security hardening + Performance optimization: XSS fixes, Prompt injection defense, singleton pattern, thread safety |
 | 0.1.1-beta | 2026-04-27 | Bug fixes: LLM init / search deps / scenario path / context pollution / placeholder replacement |
