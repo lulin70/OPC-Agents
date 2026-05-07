@@ -18,19 +18,21 @@ import uuid
 from .strategist_brain import StrategistBrain, Intent, ExecutionPlan
 from .executor_brain import ExecutorBrain, ExecutionResult, ExecutionStatus
 from .reflector_brain import ReflectorBrain, Evaluation, NextAction, NextActionType
-from .consensus_engine import ConsensusEngine, Opinion, OpinionType
+from .consensus_engine import ConsensusEngine, Opinion, OpinionType, DecisionType
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
+from .utils import BoundedDict
 
 logger = logging.getLogger(__name__)
 
 MAX_RETRY_PER_STEP = 3
 MAX_CONTEXT_HISTORY = 100
 MAX_REFLECT_ROUNDS = 3
+RETRY_BACKOFF_BASE = 2
+RETRY_BACKOFF_CAP = 10
 
 
 class AgentState(Enum):
-    """Agent 状态枚举"""
     IDLE = "idle"
     PLANNING = "planning"
     EXECUTING = "executing"
@@ -43,7 +45,6 @@ class AgentState(Enum):
 
 @dataclass
 class AgentContext:
-    """Agent 上下文对象 — 每个任务独立的状态容器"""
     task_id: str
     user_input: str
     state: AgentState = AgentState.IDLE
@@ -60,7 +61,6 @@ class AgentContext:
 
 
 class AgentLoop:
-    """执行循环 — 协调三贤者的完整执行流程"""
 
     def __init__(self,
                  strategist_brain: StrategistBrain = None,
@@ -68,7 +68,9 @@ class AgentLoop:
                  reflector_brain: ReflectorBrain = None,
                  consensus_engine: ConsensusEngine = None,
                  skill_registry: SkillRegistry = None,
-                 tool_system: ToolSystem = None):
+                 tool_system: ToolSystem = None,
+                 max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
+                 max_retry_per_step: int = MAX_RETRY_PER_STEP):
         self.strategist_brain = strategist_brain or StrategistBrain()
         self.executor_brain = executor_brain or ExecutorBrain()
         self.reflector_brain = reflector_brain or ReflectorBrain()
@@ -76,7 +78,10 @@ class AgentLoop:
         self.skill_registry = skill_registry or SkillRegistry()
         self.tool_system = tool_system or ToolSystem()
 
-        self.contexts: Dict[str, AgentContext] = {}
+        self.max_reflect_rounds = max_reflect_rounds
+        self.max_retry_per_step = max_retry_per_step
+
+        self.contexts: BoundedDict = BoundedDict(max_size=MAX_CONTEXT_HISTORY)
 
     async def run(self, user_input: str, context: Optional[Dict] = None) -> Dict[str, Any]:
         logger.info(f"AgentLoop 开始执行: {user_input[:50]}...")
@@ -99,7 +104,7 @@ class AgentLoop:
                 agent_context.set_state(AgentState.CANCELLED)
                 return self._build_result(agent_context, cancelled=True)
 
-            for reflect_round in range(MAX_REFLECT_ROUNDS):
+            for reflect_round in range(self.max_reflect_rounds):
                 agent_context.set_state(AgentState.EXECUTING)
                 await self._phase_execute(agent_context)
 
@@ -136,7 +141,7 @@ class AgentLoop:
                         await self._phase_plan(agent_context)
                     continue
             else:
-                logger.warning(f"反思循环已达上限 {MAX_REFLECT_ROUNDS} 次")
+                logger.warning(f"反思循环已达上限 {self.max_reflect_rounds} 次")
 
             agent_context.set_state(AgentState.COMPLETED)
             logger.info(f"AgentLoop 执行完成: {task_id}")
@@ -152,8 +157,6 @@ class AgentLoop:
                 "error": str(e),
                 "message": "执行失败"
             }
-        finally:
-            self._cleanup_old_contexts()
 
     def _build_result(self, context: AgentContext, cancelled: bool = False) -> Dict[str, Any]:
         if cancelled:
@@ -169,16 +172,6 @@ class AgentLoop:
             "results": context.execution_results,
             "message": "执行完成"
         }
-
-    def _cleanup_old_contexts(self) -> None:
-        if len(self.contexts) <= MAX_CONTEXT_HISTORY:
-            return
-        completed_ids = [
-            tid for tid, ctx in self.contexts.items()
-            if ctx.state in (AgentState.COMPLETED, AgentState.FAILED, AgentState.CANCELLED)
-        ]
-        for tid in completed_ids[:len(self.contexts) - MAX_CONTEXT_HISTORY]:
-            del self.contexts[tid]
 
     async def _phase_plan(self, context: AgentContext) -> None:
         logger.info("Phase 1: 规划开始")
@@ -233,16 +226,16 @@ class AgentLoop:
             context={"task_id": context.task_id}
         )
 
-        while not result.success and step_retries < MAX_RETRY_PER_STEP:
+        while not result.success and step_retries < self.max_retry_per_step:
             if context.cancel_requested:
                 return result
 
             step_retries += 1
             context.step_retry_counts[step.id] = step_retries
             context.retry_count += 1
-            logger.info(f"步骤 {step.id} 失败，重试第 {step_retries}/{MAX_RETRY_PER_STEP} 次")
+            logger.info(f"步骤 {step.id} 失败，重试第 {step_retries}/{self.max_retry_per_step} 次")
 
-            await asyncio.sleep(min(2 ** step_retries, 10))
+            await asyncio.sleep(min(RETRY_BACKOFF_BASE ** step_retries, RETRY_BACKOFF_CAP))
 
             result = await self.executor_brain.execute_step(
                 step_id=step.id,
@@ -309,8 +302,63 @@ class AgentLoop:
             plan=plan_dict
         )
 
+        consensus_decision = self._consult_consensus(context, evaluation, next_action)
+        if consensus_decision is not None:
+            return consensus_decision
+
         logger.info(f"决定下一步行动: {next_action.action_type.name}")
         return next_action
+
+    def _consult_consensus(self, context: AgentContext,
+                           evaluation: Evaluation,
+                           reflector_action: NextAction) -> Optional[NextAction]:
+        if evaluation.quality_score >= 0.7:
+            return None
+
+        strategist_opinion = Opinion(
+            brain_type="strategist",
+            opinion_type=OpinionType.AGREE if context.intent and context.intent.confidence > 0.5 else OpinionType.CONDITIONAL,
+            reasoning=f"策略脑置信度: {context.intent.confidence:.2f}" if context.intent else "无意图信息",
+            confidence=context.intent.confidence if context.intent else 0.5
+        )
+
+        executor_opinion = Opinion(
+            brain_type="executor",
+            opinion_type=OpinionType.AGREE if context.retry_count < 2 else OpinionType.DISAGREE,
+            reasoning=f"执行重试次数: {context.retry_count}",
+            confidence=max(0.3, 1.0 - context.retry_count * 0.3)
+        )
+
+        reflector_opinion = Opinion(
+            brain_type="reflector",
+            opinion_type=OpinionType.AGREE if reflector_action.action_type in (NextActionType.CONTINUE, NextActionType.RETRY) else OpinionType.DISAGREE,
+            reasoning=f"反思评估: {evaluation.result.name}",
+            confidence=evaluation.quality_score
+        )
+
+        decision = self.consensus_engine.collect_opinions([
+            strategist_opinion,
+            executor_opinion,
+            reflector_opinion
+        ])
+
+        if decision.decision_type == DecisionType.VETOED:
+            logger.info(f"共识引擎否决: {decision.reasoning}")
+            return NextAction(
+                action_type=NextActionType.ABANDON,
+                reason=decision.reasoning,
+                confidence=decision.confidence
+            )
+
+        if decision.decision_type == DecisionType.ESCALATED:
+            logger.info(f"共识引擎升级: {decision.reasoning}")
+            return NextAction(
+                action_type=NextActionType.REVIEW,
+                reason=decision.reasoning,
+                confidence=decision.confidence
+            )
+
+        return None
 
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         context = self.contexts.get(task_id)

@@ -57,6 +57,7 @@ from .scenario_migrator import (
     migrate_scenarios_to_skills,
     get_migration_status
 )
+from .utils import BoundedDict
 
 __all__ = [
     # 版本信息
@@ -117,5 +118,8 @@ __all__ = [
     # 场景迁移器
     "ScenarioToSkillMigrator",
     "migrate_scenarios_to_skills",
-    "get_migration_status"
+    "get_migration_status",
+    
+    # 公共工具
+    "BoundedDict"
 ]

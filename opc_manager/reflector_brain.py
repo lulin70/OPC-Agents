@@ -14,6 +14,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+WEIGHT_SUCCESS = 0.3
+WEIGHT_DATA_COMPLETE_DICT = 0.3
+WEIGHT_DATA_COMPLETE_OTHER = 0.25
+WEIGHT_RELEVANCE = 0.2
+WEIGHT_TIMELY = 0.1
+WEIGHT_ALL_STEPS_DONE = 0.1
+PENALTY_ERROR = 0.3
+MAX_RETRY_COUNT = 3
+CONFIDENCE_CAP = 0.95
+IMPROVEMENT_QUALITY_THRESHOLD = 0.7
+
 
 class EvaluationResult(Enum):
     """评估结果类型枚举"""
@@ -126,25 +137,25 @@ class ReflectorBrain:
         factors = []
         
         if actual.get("success", False):
-            factors.append(("执行成功", 0.3))
+            factors.append(("执行成功", WEIGHT_SUCCESS))
         
         data = actual.get("data")
         if data is not None:
             if isinstance(data, dict) and len(data) > 0:
-                factors.append(("数据完整", 0.3))
+                factors.append(("数据完整", WEIGHT_DATA_COMPLETE_DICT))
             elif isinstance(data, (list, str)) and len(data) > 0:
-                factors.append(("数据完整", 0.25))
+                factors.append(("数据完整", WEIGHT_DATA_COMPLETE_OTHER))
         
         goal = expected.get("goal", "")
         if goal and isinstance(data, dict):
             result_str = str(data).lower()
             goal_str = goal.lower()
             if any(keyword in result_str for keyword in goal_str.split()[:5]):
-                factors.append(("结果相关", 0.2))
+                factors.append(("结果相关", WEIGHT_RELEVANCE))
         
         execution_time = actual.get("execution_time", 0)
         if isinstance(execution_time, (int, float)) and 0 < execution_time < 60:
-            factors.append(("执行及时", 0.1))
+            factors.append(("执行及时", WEIGHT_TIMELY))
         
         if isinstance(data, dict):
             results = data.get("results", [])
@@ -152,12 +163,12 @@ class ReflectorBrain:
                 completed_steps = sum(1 for r in results if isinstance(r, dict) and r.get("success", False))
                 total_steps = len(results)
                 if total_steps > 0 and completed_steps == total_steps:
-                    factors.append(("步骤全完成", 0.1))
+                    factors.append(("步骤全完成", WEIGHT_ALL_STEPS_DONE))
         
         score = sum(weight for _, weight in factors)
         
         if actual.get("error"):
-            score = max(0.0, score - 0.3)
+            score = max(0.0, score - PENALTY_ERROR)
         
         return min(1.0, max(0.0, score))
 
@@ -268,7 +279,7 @@ class ReflectorBrain:
             action = NextAction(
                 action_type=NextActionType.CONTINUE,
                 reason=f"执行结果良好（质量评分: {evaluation.quality_score:.2f}），继续下一步",
-                confidence=min(0.95, evaluation.quality_score)
+                confidence=min(CONFIDENCE_CAP, evaluation.quality_score)
             )
         
         elif evaluation.result == EvaluationResult.ACCEPTABLE:
@@ -300,7 +311,7 @@ class ReflectorBrain:
             # 结果较差，尝试重试或调整策略
             if plan:
                 retry_count = plan.get("retry_count", 0)
-                if retry_count < 3:
+                if retry_count < MAX_RETRY_COUNT:
                     # 重试
                     action = NextAction(
                         action_type=NextActionType.RETRY,
@@ -326,7 +337,7 @@ class ReflectorBrain:
             # 执行失败
             if plan:
                 retry_count = plan.get("retry_count", 0)
-                if retry_count < 3:
+                if retry_count < MAX_RETRY_COUNT:
                     action = NextAction(
                         action_type=NextActionType.RETRY,
                         reason=f"执行失败（质量评分: {evaluation.quality_score:.2f}），尝试重试（第{retry_count + 1}次）",
@@ -368,7 +379,7 @@ class ReflectorBrain:
             suggestions.append("• 尝试使用不同的技能或工具")
             suggestions.append("• 考虑拆分任务为更小的步骤")
         
-        if evaluation.quality_score < 0.7:
+        if evaluation.quality_score < IMPROVEMENT_QUALITY_THRESHOLD:
             suggestions.append("• 增加执行步骤的详细程度")
             suggestions.append("• 引入人工复核环节")
         

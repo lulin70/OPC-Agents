@@ -17,6 +17,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+ESTIMATED_TIME_PER_STEP = 30
+
 
 class IntentType(Enum):
     """意图类型枚举"""
@@ -311,7 +313,7 @@ class StrategistBrain:
         steps = self._generate_steps(intent)
         
         # 估算执行时间
-        estimated_time = len(steps) * 30  # 每个步骤大约30秒
+        estimated_time = len(steps) * ESTIMATED_TIME_PER_STEP
         
         plan = ExecutionPlan(
             plan_id=plan_id,

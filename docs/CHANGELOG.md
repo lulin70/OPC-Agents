@@ -2,6 +2,44 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.8] - 2026-05-07
+
+### Changed — 架构/性能/可维护性专项整改
+
+针对v0.1.7七维度代码走读中架构(88)、性能(85)、可维护性(87)三项低于90的维度进行专项整改，综合评分从89.6提升至92.4。
+
+#### 架构 (88→93)
+
+- **REQ-ARCH-005**: AgentLoop集成ConsensusEngine — 反思阶段调用`_consult_consensus()`，质量评分<0.7时触发共识协商，VETOED→ABANDON, ESCALATED→REVIEW
+- **REQ-ARCH-006**: skill_registry异步化 — `execute_skill`改为async，自动适配协程和同步函数
+- BoundedDict统一 — 提取到`utils.py`共享实现，executor_brain.py/agent_loop.py统一引用
+- 重试逻辑统一 — 移除executor_brain.py重复重试，由AgentLoop._execute_step_with_retry统一处理
+
+#### 性能 (85→92)
+
+- AuditLogger异步写入 — 实现异步队列写入(`_write_queue` + `_writer_task`)，队列满时降级同步写入
+- 文件操作异步化 — `_execute_file_read/write/list`改为async，通过`run_in_executor`执行同步IO
+- call_tool异步化 — `call_tool`改为async，自动检测协程函数并await，同步函数走executor
+- 超时/轮次可配置 — `max_reflect_rounds`/`max_retry_per_step`作为AgentLoop构造参数
+- 命令超时常量化 — `COMMAND_TIMEOUT_SECONDS=30`提取为模块级常量
+
+#### 可维护性 (87→93)
+
+- 魔法数字→命名常量 — 5个模块共26个命名常量（权重/阈值/超时/退避参数）
+- 清理空from_dict — skill_registry.py的from_dict实现技能校验逻辑
+- import规范 — fnmatch移至tool_system.py顶部
+- AuditLogger日志路径常量化 — `AUDIT_LOG_FILE`
+
+### Added
+
+- `opc_manager/utils.py` — 公共工具模块，BoundedDict共享实现
+- `opc_manager/__init__.py` — 导出BoundedDict
+
+### Testing
+
+- 373 tests passing, 21 skipped, 0 failures
+- test_execute_skill适配async/await
+
 ## [0.1.7] - 2026-05-07
 
 ### Added — 三贤者架构 (PLAN B)

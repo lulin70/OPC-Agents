@@ -223,10 +223,10 @@ class TestSkillRegistry:
         assert len(skills) > 0
         assert any(s.skill_id == "search" for s in skills)
 
-    def test_execute_skill(self):
-        """测试执行技能"""
+    @pytest.mark.asyncio
+    async def test_execute_skill(self):
         registry = SkillRegistry()
-        result = registry.execute_skill("search", query="test")
+        result = await registry.execute_skill("search", query="test")
         
         assert result["success"] is True
         assert "results" in result["data"]

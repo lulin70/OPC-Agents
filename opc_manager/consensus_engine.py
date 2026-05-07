@@ -14,6 +14,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+CONFIDENCE_WEIGHT_AVG = 0.5
+CONFIDENCE_WEIGHT_CONSISTENCY = 0.5
+COMPROMISE_CONFIDENCE_FACTOR = 0.8
+ESCALATED_CONFIDENCE = 0.5
+VETO_CONFIDENCE = 0.7
+NO_CONSENSUS_CONFIDENCE = 0.4
+
 
 class OpinionType(Enum):
     """意见类型枚举"""
@@ -131,7 +138,7 @@ class ConsensusEngine:
                 approved=True,
                 reasoning=f"有条件同意，需满足: {'; '.join(alternatives) if alternatives else '特定条件'}",
                 alternative="; ".join(alternatives) if alternatives else None,
-                confidence=self._calculate_confidence(opinions) * 0.8
+                confidence=self._calculate_confidence(opinions) * COMPROMISE_CONFIDENCE_FACTOR
             )
         
         else:
@@ -140,7 +147,7 @@ class ConsensusEngine:
                 decision_type=DecisionType.ESCALATED,
                 approved=False,
                 reasoning=f"意见分歧较大（同意:{agree_count}, 不同意:{disagree_count}），需要人工介入或重新讨论",
-                confidence=0.5
+                confidence=ESCALATED_CONFIDENCE
             )
 
     def _check_veto(self, opinions: List[Opinion]) -> Optional[Opinion]:
@@ -180,7 +187,7 @@ class ConsensusEngine:
         consistency = agree_count / len(opinions)
         
         # 综合置信度 = 平均置信度 * 一致性系数
-        confidence = avg_confidence * (0.5 + consistency * 0.5)
+        confidence = avg_confidence * (CONFIDENCE_WEIGHT_AVG + consistency * CONFIDENCE_WEIGHT_CONSISTENCY)
         
         return min(1.0, max(0.0, confidence))
 
@@ -208,7 +215,7 @@ class ConsensusEngine:
                 approved=True,
                 reasoning=f"达成折中方案: {compromise}",
                 alternative=compromise,
-                confidence=0.7
+                confidence=VETO_CONFIDENCE
             )
         
         # 无法达成折中，建议升级
@@ -216,7 +223,7 @@ class ConsensusEngine:
             decision_type=DecisionType.ESCALATED,
             approved=False,
             reasoning=f"无法自动解决冲突: {conflict_analysis}。建议人工介入。",
-            confidence=0.4
+            confidence=NO_CONSENSUS_CONFIDENCE
         )
 
     def _analyze_conflict(self, opinions: List[Opinion]) -> str:

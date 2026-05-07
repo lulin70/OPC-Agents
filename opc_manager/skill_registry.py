@@ -10,6 +10,7 @@
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
 from enum import Enum
+import asyncio
 import json
 import logging
 
@@ -295,39 +296,30 @@ class SkillRegistry:
         """
         return list(self.skills.values())
 
-    def execute_skill(self, skill_id: str, **kwargs) -> Dict[str, Any]:
-        """
-        执行技能
-        
-        Args:
-            skill_id: 技能ID
-            **kwargs: 技能参数
-        
-        Returns:
-            Dict[str, Any]: 执行结果
-        """
+    async def execute_skill(self, skill_id: str, **kwargs) -> Dict[str, Any]:
         skill = self.get_skill(skill_id)
         if not skill:
             return {"success": False, "error": f"技能不存在: {skill_id}"}
-        
+
         if not skill.enabled:
             return {"success": False, "error": f"技能已禁用: {skill_id}"}
-        
+
         try:
-            # 验证输入参数
             missing_params = []
             for input_spec in skill.inputs:
                 if input_spec.required and input_spec.name not in kwargs:
                     missing_params.append(input_spec.name)
-            
+
             if missing_params:
                 return {"success": False, "error": f"缺少必填参数: {', '.join(missing_params)}"}
-            
-            # 执行技能
-            result = skill.execute(**kwargs)
-            
+
+            if asyncio.iscoroutinefunction(skill.execute):
+                result = await skill.execute(**kwargs)
+            else:
+                result = skill.execute(**kwargs)
+
             return {"success": True, "data": result}
-        
+
         except Exception as e:
             logger.error(f"技能执行异常: {skill_id}, 错误: {str(e)}")
             return {"success": False, "error": str(e)}
@@ -354,14 +346,10 @@ class SkillRegistry:
         }
 
     def from_dict(self, data: Dict[str, Any]) -> None:
-        """
-        从字典恢复技能注册表状态
-        
-        Args:
-            data: 状态字典
-        """
-        # 这里可以添加从持久化存储恢复的逻辑
-        pass
+        if "skills" in data:
+            for sid, sdata in data["skills"].items():
+                if sid not in self.skills:
+                    logger.warning(f"跳过未知技能恢复: {sid}")
 
     # 内置技能执行函数
     def _execute_intent_analysis(self, user_input: str, context: dict = None) -> Dict[str, Any]:
