@@ -2,6 +2,67 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.7] - 2026-05-07
+
+### Added — 三贤者架构 (PLAN B)
+
+- **StrategistBrain (策略脑)** — 意图理解+任务规划，支持6种意图类型(ANALYSIS/CREATION/OPERATION/SEARCH/NOTIFICATION/COMBINED)和5种约束类型
+- **ExecutorBrain (执行脑)** — 技能执行+工具调用，优先使用SkillRegistry，mock作为备选
+- **ReflectorBrain (反思脑)** — 结果评估+策略调整，5级评估(EXCELLENT/GOOD/ACCEPTABLE/POOR/FAILURE)+5种后续行动(CONTINUE/RETRY/ADJUST_STRATEGY/ABANDON/REVIEW)
+- **ConsensusEngine (共识引擎)** — 三贤者意见协调，支持一致同意/多数同意/折中/否决/升级5种决策类型
+- **AgentLoop (执行循环)** — Plan→Act→Observe→Reflect四阶段闭环，反思驱动的重试与策略调整
+- **SkillRegistry (技能注册表)** — 7个内置技能+9个场景迁移技能，关键词/分类索引
+- **ToolSystem (工具调用框架)** — 6个内置工具(文件读写/列表/搜索/邮件/命令)，权限分级
+- **ScenarioToSkillMigrator (场景迁移器)** — 9个现有场景无缝迁移为技能格式
+- **AuditLogger (审计日志)** — 安全事件审计记录和查询，JSONL格式持久化
+- **BoundedDict (有界字典)** — 自动清理超限历史记录，防止内存泄漏
+
+### Added — 安全控制
+
+- **REQ-SEC-001**: 命令注入防护 — `shell=False` + `shlex.split()` + 命令白名单(17个安全命令)
+- **REQ-SEC-002**: 路径穿越防护 — `_validate_path()` 拒绝`..`路径 + `_ALLOWED_BASE_DIRS` 白名单目录
+- **REQ-SEC-003**: 输入长度限制 — `INPUT_LENGTH_LIMITS` 4类输入上限校验
+- **REQ-SEC-004**: 审计日志 — `AuditLogger.log/query` 覆盖命令执行/文件访问8个关键点
+
+### Added — 架构改进
+
+- **REQ-ARCH-001**: 执行脑集成SkillRegistry — 优先使用注册技能，mock仅作备选
+- **REQ-ARCH-002**: 任务隔离 — `AgentContext`每任务独立状态，消除并发状态污染
+- **REQ-ARCH-003**: 反思-重试闭环 — `MAX_REFLECT_ROUNDS=3`，RETRY/ADJUST_STRATEGY触发重新执行
+- **REQ-ARCH-004**: 步骤级重试 — `step_retry_counts` + `MAX_RETRY_PER_STEP=3` + 指数退避 + 失败不终止(进入反思)
+
+### Added — 质量改进
+
+- **REQ-QUAL-002**: import规范 — 核心模块无方法内import
+- **REQ-QUAL-003**: 数据结构校验 — `isinstance`类型检查+防御性处理
+- **REQ-QUAL-004**: 资源生命周期 — `BoundedDict`自动清理 + `MAX_TASK_HISTORY=100` + `MAX_CONTEXT_HISTORY=100`
+- **REQ-QUAL-005**: 数据不可变 — `copy.deepcopy(steps)` 防止修改输入参数
+- **REQ-SIDE-001**: 模块初始化安全 — `scenario_migrator`移除自动执行，显式调用+状态标记
+
+### Added — 文档
+
+- `docs/internal/SECURITY_DESIGN.md` — 安全设计文档(威胁建模+安全控制+编码规范)
+- `docs/internal/CODE_REVIEW_7DIM_v0.1.7.md` — 七维度代码走读报告(综合评分89.6/100)
+- `docs/internal/AGENT_BRAIN_DESIGN_CONSENSUS.md` v2.0 — 架构设计(新增安全架构+任务隔离+资源管理)
+- `docs/internal/TEST_PLAN_PHASE1.md` v2.0 — 测试计划(新增45个安全/架构/质量测试用例)
+- `docs/product-manager/PRD_V3.md` — 新增PLAN B三贤者架构需求(15个需求+验收标准)
+- `docs/product-manager/USER_STORIES.md` — 新增11个安全/架构/质量用户故事
+
+### Changed
+
+- `version.py`: 0.1.6 → 0.1.7
+- `opc_manager/__init__.py`: 导出三贤者架构全部公开API
+- `tool_system.py`: 命令执行改用`asyncio.create_subprocess_exec`，文件操作添加审计日志和长度校验
+- `executor_brain.py`: `task_statuses`改用`BoundedDict`，`steps`改用`copy.deepcopy`
+- `agent_loop.py`: `import uuid`移至顶部，步骤失败break而非raise
+- `reflector_brain.py`: `_calculate_quality_score`添加`isinstance`类型校验
+
+### Testing
+
+- 373 tests passing, 21 skipped, 0 failures
+- 77 security+architecture+validator专项测试全通过
+- Test execution time: ~11s
+
 ## [0.1.6] - 2026-05-03
 
 ### Added

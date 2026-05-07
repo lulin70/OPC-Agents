@@ -1,0 +1,303 @@
+"""
+三贤者架构单元测试
+
+覆盖策略脑、执行脑、反思脑、共识引擎、技能注册表、工具系统、执行循环
+"""
+
+import pytest
+import asyncio
+
+from opc_manager import (
+    StrategistBrain, Intent, IntentType, Constraint, ConstraintType, ExecutionPlan, Step,
+    ExecutorBrain, ExecutionResult, ExecutionStatus, ExecutionStatusType, ExecutionResultType,
+    ReflectorBrain, Evaluation, EvaluationResult, NextAction, NextActionType,
+    ConsensusEngine, Opinion, OpinionType, Decision, DecisionType,
+    SkillRegistry, Skill, SkillCategory, SkillInput, SkillOutput,
+    ToolSystem, Tool, ToolCategory, ToolParameter, PermissionLevel,
+    AgentLoop, AgentContext, AgentState
+)
+
+
+class TestStrategistBrain:
+    """策略脑单元测试"""
+
+    def test_intent_understanding_analysis(self):
+        """测试意图理解 - 分析类任务"""
+        strategist = StrategistBrain()
+        intent = strategist.understand_intent("帮我分析竞争对手")
+        
+        assert intent.type == IntentType.ANALYSIS
+        assert "分析任务" in intent.goal
+        assert intent.confidence > 0.5
+
+    def test_intent_understanding_creation(self):
+        """测试意图理解 - 创作类任务"""
+        strategist = StrategistBrain()
+        intent = strategist.understand_intent("帮我写文档")
+        
+        assert intent.type == IntentType.CREATION
+        assert "创作任务" in intent.goal
+
+    def test_intent_understanding_with_constraints(self):
+        """测试意图理解 - 带约束条件"""
+        strategist = StrategistBrain()
+        intent = strategist.understand_intent("帮我分析3个竞争对手")
+        
+        assert len(intent.constraints) > 0
+
+    def test_plan_generation(self):
+        """测试计划生成"""
+        strategist = StrategistBrain()
+        intent = strategist.understand_intent("帮我搜索资料")
+        plan = strategist.plan(intent)
+        
+        assert plan is not None
+        assert len(plan.steps) >= 2
+        assert plan.plan_id is not None
+
+
+class TestExecutorBrain:
+    """执行脑单元测试"""
+
+    @pytest.mark.asyncio
+    async def test_execute_step_success(self):
+        """测试执行步骤 - 成功"""
+        executor = ExecutorBrain()
+        result = await executor.execute_step("step_1", "search", {"query": "test"})
+        
+        assert result.success is True
+        assert "results" in result.data
+
+    @pytest.mark.asyncio
+    async def test_execute_step_failure(self):
+        """测试执行步骤 - 失败"""
+        executor = ExecutorBrain()
+        result = await executor.execute_step("step_1", "invalid_skill", {})
+        
+        assert result.success is False
+        assert "未知技能" in result.error
+
+    @pytest.mark.asyncio
+    async def test_execute_plan(self):
+        """测试执行计划"""
+        executor = ExecutorBrain()
+        steps = [
+            {"id": "step_1", "skill_id": "intent_analysis", "parameters": {"goal": "test"}}
+        ]
+        result = await executor.execute_plan("plan_1", steps)
+        
+        assert result.success is True
+
+
+class TestReflectorBrain:
+    """反思脑单元测试"""
+
+    def test_evaluation_excellent(self):
+        """测试评估 - 优秀"""
+        reflector = ReflectorBrain()
+        actual = {
+            "success": True, 
+            "data": {
+                "results": [{"success": True}] * 5,
+                "content": "test result content"
+            },
+            "execution_time": 10
+        }
+        expected = {"goal": "test"}
+        
+        evaluation = reflector.evaluate_result(actual, expected)
+        
+        assert evaluation.result == EvaluationResult.EXCELLENT
+        assert evaluation.quality_score >= 0.9
+
+    def test_evaluation_failure(self):
+        """测试评估 - 失败"""
+        reflector = ReflectorBrain()
+        actual = {"success": False, "error": "failed"}
+        expected = {"goal": "test"}
+        
+        evaluation = reflector.evaluate_result(actual, expected)
+        
+        assert evaluation.result == EvaluationResult.FAILURE
+        assert evaluation.quality_score < 0.3
+
+    def test_decision_continue(self):
+        """测试决策 - 继续"""
+        reflector = ReflectorBrain()
+        evaluation = Evaluation(
+            result=EvaluationResult.EXCELLENT,
+            quality_score=0.95,
+            deviation_analysis="执行正常"
+        )
+        
+        action = reflector.decide_next_action(evaluation)
+        
+        assert action.action_type == NextActionType.CONTINUE
+
+    def test_decision_retry(self):
+        """测试决策 - 重试"""
+        reflector = ReflectorBrain()
+        evaluation = Evaluation(
+            result=EvaluationResult.FAILURE,
+            quality_score=0.1,
+            deviation_analysis="执行失败"
+        )
+        
+        action = reflector.decide_next_action(evaluation, {"retry_count": 0})
+        
+        assert action.action_type == NextActionType.RETRY
+
+
+class TestConsensusEngine:
+    """共识引擎单元测试"""
+
+    def test_consensus_unanimous_agree(self):
+        """测试共识 - 一致同意"""
+        engine = ConsensusEngine()
+        opinions = [
+            Opinion(brain_type="strategist", opinion_type=OpinionType.AGREE, reasoning="同意"),
+            Opinion(brain_type="executor", opinion_type=OpinionType.AGREE, reasoning="同意"),
+            Opinion(brain_type="reflector", opinion_type=OpinionType.AGREE, reasoning="同意")
+        ]
+        
+        decision = engine.collect_opinions(opinions)
+        
+        assert decision.decision_type == DecisionType.UNANIMOUS
+        assert decision.approved is True
+
+    def test_consensus_majority(self):
+        """测试共识 - 多数同意"""
+        engine = ConsensusEngine()
+        opinions = [
+            Opinion(brain_type="strategist", opinion_type=OpinionType.AGREE, reasoning="同意"),
+            Opinion(brain_type="executor", opinion_type=OpinionType.DISAGREE, reasoning="不同意"),  # executor没有否决权
+            Opinion(brain_type="reflector", opinion_type=OpinionType.AGREE, reasoning="同意")
+        ]
+        
+        decision = engine.collect_opinions(opinions)
+        
+        assert decision.decision_type == DecisionType.MAJORITY
+        assert decision.approved is True
+
+    def test_consensus_veto(self):
+        """测试共识 - 否决"""
+        engine = ConsensusEngine()
+        opinions = [
+            Opinion(brain_type="strategist", opinion_type=OpinionType.DISAGREE, reasoning="否决"),
+            Opinion(brain_type="executor", opinion_type=OpinionType.AGREE, reasoning="同意"),
+            Opinion(brain_type="reflector", opinion_type=OpinionType.AGREE, reasoning="同意")
+        ]
+        
+        decision = engine.collect_opinions(opinions)
+        
+        assert decision.decision_type == DecisionType.VETOED
+        assert decision.approved is False
+
+
+class TestSkillRegistry:
+    """技能注册表单元测试"""
+
+    def test_register_skill(self):
+        """测试注册技能"""
+        registry = SkillRegistry()
+        skill = Skill(
+            skill_id="test_skill",
+            name="测试技能",
+            description="测试技能描述",
+            category=SkillCategory.UTILITY,
+            inputs=[SkillInput(name="param1", type="str")],
+            outputs=[SkillOutput(name="result", type="str")],
+            execute=lambda: {"success": True}
+        )
+        
+        result = registry.register_skill(skill)
+        
+        assert result is True
+        assert registry.get_skill("test_skill") is not None
+
+    def test_find_by_intent(self):
+        """测试根据意图查找技能"""
+        registry = SkillRegistry()
+        skills = registry.find_by_intent("搜索资料")
+        
+        assert len(skills) > 0
+        assert any(s.skill_id == "search" for s in skills)
+
+    def test_execute_skill(self):
+        """测试执行技能"""
+        registry = SkillRegistry()
+        result = registry.execute_skill("search", query="test")
+        
+        assert result["success"] is True
+        assert "results" in result["data"]
+
+
+class TestToolSystem:
+    """工具调用框架单元测试"""
+
+    def test_register_tool(self):
+        """测试注册工具"""
+        tools = ToolSystem()
+        tool = Tool(
+            tool_id="test_tool",
+            name="测试工具",
+            description="测试工具描述",
+            category=ToolCategory.SYSTEM,
+            parameters=[ToolParameter(name="param1", type="str")],
+            execute=lambda: {"success": True}
+        )
+        
+        result = tools.register_tool(tool)
+        
+        assert result is True
+        assert tools.get_tool("test_tool") is not None
+
+    @pytest.mark.asyncio
+    async def test_call_tool_success(self):
+        """测试调用工具 - 成功"""
+        tools = ToolSystem()
+        result = await tools.call_tool("web_search", query="test")
+        
+        assert result["success"] is True
+        assert "results" in result["data"]
+
+    @pytest.mark.asyncio
+    async def test_call_tool_permission_denied(self):
+        """测试调用工具 - 权限不足"""
+        tools = ToolSystem()
+        result = await tools.call_tool("run_command", PermissionLevel.USER, command="ls")
+        
+        assert result["success"] is False
+        assert "权限不足" in result["error"]
+
+
+class TestAgentLoop:
+    """执行循环单元测试"""
+
+    @pytest.mark.asyncio
+    async def test_run_simple_task(self):
+        """测试运行简单任务"""
+        loop = AgentLoop()
+        result = await loop.run("帮我搜索资料")
+        
+        assert result is not None
+        assert "task_id" in result
+
+    def test_get_task_status(self):
+        """测试获取任务状态"""
+        loop = AgentLoop()
+        status = loop.get_task_status("non_existent")
+        
+        assert status is None
+
+    @pytest.mark.asyncio
+    async def test_cancel_task(self):
+        """测试取消任务"""
+        loop = AgentLoop()
+        result = await loop.cancel_task("non_existent")
+        
+        assert result is False
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
