@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司智能任务执行系统
 
-> **版本**: v0.2.0 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.1.8 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -33,6 +33,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 ### 关键特性
 
 - ✅ **三贤者架构** — 策略脑(意图理解)+执行脑(技能执行)+反思脑(结果评估)闭环协作
+- ✅ **技能上下文传递** — SkillContext支持技能间数据流转，搜索→分析→创作闭环
 - ✅ **LLM增强内容生成** — 接入Claude Sonnet 4，高质量中文输出
 - ✅ **真实网络搜索** — DuckDuckGo实时搜索，不编造数据
 - ✅ **零占位符保证** — 每个输出都有具体的、可操作的内容
@@ -44,7 +45,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **文件交付** — 自动生成`.md`文件，提供下载按钮
 - ✅ **多轮对话** — 追问"补充XX"/"修改XX"，系统基于上次结果继续，而非从头生成
 - ✅ **安全防护** — 命令白名单+路径校验+输入长度限制+审计日志+输入验证+Prompt注入防护+URL安全+错误脱敏+API Key加密存储
-- ✅ **测试覆盖** — 373个测试用例，100%通过率，CI自动验证
+- ✅ **测试覆盖** — 386个测试用例，100%通过率，CI自动验证
 
 ## 快速开始
 

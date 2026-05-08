@@ -2,7 +2,7 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
-## [0.2.0] - 2026-05-08
+## [0.1.8] - 2026-05-08
 
 ### Added — PHASE2 核心技能开发
 
