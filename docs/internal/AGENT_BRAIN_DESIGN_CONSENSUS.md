@@ -690,6 +690,193 @@ def migrate_scenarios(registry: SkillRegistry) -> None:
 
 ---
 
-**文档版本**: v1.0  
+**文档版本**: v3.0  
 **创建日期**: 2026-05-07  
 **下次评审日期**: 2026-05-21
+
+---
+
+## 10. PHASE2 技能开发架构（v3.0 新增）
+
+> **背景**：PHASE1已完成三贤者架构基础设施（v0.1.7-v0.1.9），7个内置技能均为mock。PHASE2将mock替换为真实技能，对接现有LLMService/SearchResultProcessor/ToolSystem。
+
+### 10.1 技能-LLM集成架构（REQ-SKILL-006）
+
+**核心设计**：SkillRegistry通过依赖注入接收LLMService实例，技能执行时通过注册表获取LLM服务。
+
+```
+┌──────────────┐     注入      ┌──────────────┐
+│  LLMService  │──────────────→│ SkillRegistry │
+│              │               │              │
+│  - call()    │               │  - llm_service│
+│  - timeout   │               │  - search_proc│
+│  - fallback  │               │  - tool_system│
+└──────────────┘               └──────┬───────┘
+                                      │ 获取服务
+                    ┌─────────────────┼─────────────────┐
+                    │                 │                  │
+              ┌─────▼─────┐   ┌──────▼──────┐   ┌──────▼──────┐
+              │ 搜索技能   │   │ 分析技能     │   │ 创作技能     │
+              │ (SKILL-003)│   │ (SKILL-001) │   │ (SKILL-002) │
+              └────────────┘   └─────────────┘   └─────────────┘
+```
+
+**SkillRegistry改造**：
+```python
+class SkillRegistry:
+    def __init__(
+        self,
+        llm_service: Optional[LLMService] = None,
+        search_processor: Optional[SearchResultProcessor] = None,
+        tool_system: Optional[ToolSystem] = None,
+    ):
+        self.llm_service = llm_service
+        self.search_processor = search_processor
+        self.tool_system = tool_system
+        self.skills: Dict[str, Skill] = {}
+        self._register_builtin_skills()
+```
+
+**降级策略**：
+- LLM不可用 → 使用规则引擎（模板+关键词匹配）
+- 搜索不可用 → 使用SearchCache缓存或知识库兜底
+- 工具系统不可用 → 返回明确错误信息
+
+### 10.2 技能上下文传递机制
+
+**设计**：技能执行时接收AgentContext，包含用户输入、历史步骤结果和会话信息。
+
+```python
+@dataclass
+class SkillContext:
+    user_input: str
+    session_id: str
+    step_results: Dict[str, Any]
+    conversation_history: List[Dict[str, str]]
+    metadata: Dict[str, Any]
+```
+
+**传递方式**：execute_skill方法增加可选的context参数
+```python
+async def execute_skill(
+    self, skill_id: str, context: Optional[SkillContext] = None, **kwargs
+) -> Dict[str, Any]:
+```
+
+**技能间协作**：
+- 搜索技能结果 → 通过step_results传递给分析技能
+- 分析技能结果 → 通过step_results传递给通知技能
+- 上下文由AgentLoop在执行步骤间自动传递
+
+### 10.3 搜索增强技能架构（REQ-SKILL-003）
+
+**执行流程**：
+```
+用户输入 → 查询预处理 → DuckDuckGo搜索 → SearchResultProcessor重排序
+                                              ↓
+                                    结果数量不足 → 知识库兜底
+                                              ↓
+                                    返回结构化搜索结果
+```
+
+**对接现有代码**：
+- `SearchResultProcessor.process()` — 结果重排序和知识库兜底
+- `SearchCache` — 搜索结果缓存
+- `validators.SearchQuery` — 搜索参数校验
+
+### 10.4 商业分析技能架构（REQ-SKILL-001）
+
+**执行流程**：
+```
+用户输入 → 搜索相关数据 → LLM生成分析报告 → 反思脑评估 → 输出
+```
+
+**对接现有代码**：
+- `LLMEnhancedContentGenerator.generate()` — RAG混合生成
+- 搜索技能 → 获取上下文数据
+- 反思脑 → 评估报告质量
+
+**输出结构**：
+```python
+{
+    "summary": "分析摘要",
+    "key_findings": ["发现1", "发现2"],
+    "swot": {
+        "strengths": [...],
+        "weaknesses": [...],
+        "opportunities": [...],
+        "threats": [...]
+    },
+    "action_items": [
+        {"priority": "高", "action": "具体行动", "rationale": "依据"}
+    ]
+}
+```
+
+### 10.5 内容创作技能架构（REQ-SKILL-002）
+
+**执行流程**：
+```
+用户输入 → 意图分类 → 搜索增强 → LLM生成内容 → 零占位符检查 → 输出
+```
+
+**内容模板映射**：
+| 意图关键词 | 模板类型 | 输出结构 |
+|-----------|---------|---------|
+| 方案/计划 | plan | 目标+路线图+资源+风险+验收 |
+| 报告/总结 | report | 摘要+正文+结论+建议 |
+| 文案/宣传 | copy | 标题+正文+CTA |
+| 邮件/通知 | email | 主题+正文+签名 |
+
+### 10.6 文件操作技能架构（REQ-SKILL-004）
+
+**对接ToolSystem**：
+- 读取 → `ToolSystem._execute_read_file`（含路径安全校验）
+- 写入 → `ToolSystem._execute_write_file`（含路径安全校验）
+- 列表 → `ToolSystem._execute_list_directory`
+- 搜索 → `ToolSystem._execute_search_files`
+
+**安全约束**：
+- 路径校验复用REQ-SEC-002的安全架构
+- 文件大小限制：MAX_FILE_SIZE = 10MB
+- 审计日志：所有操作记录
+
+### 10.7 消息通知技能架构（REQ-SKILL-005）
+
+**对接ToolSystem**：
+- 发送邮件 → `ToolSystem._execute_send_email`
+
+**安全增强**（审核补充项）：
+- CRLF注入防护：过滤`\r\n`字符
+- HTML转义：邮件正文HTML内容转义
+- 参数校验：邮箱格式、必填字段
+
+### 10.8 PHASE2 实施顺序
+
+```
+Step 1: SKILL-006（LLM集成基础设施）
+  ├── SkillRegistry依赖注入改造
+  ├── SkillContext定义
+  └── 降级策略实现
+
+Step 2: SKILL-003（搜索增强）
+  ├── 对接SearchResultProcessor
+  ├── 对接DuckDuckGo搜索
+  └── 知识库兜底
+
+Step 3: SKILL-001（商业分析）+ SKILL-002（内容创作）
+  ├── 对接LLMEnhancedContentGenerator
+  ├── 搜索→分析/创作闭环
+  └── 零占位符保证
+
+Step 4: SKILL-004（文件操作）+ SKILL-005（消息通知）
+  ├── 对接ToolSystem
+  ├── 安全增强（CRLF防护）
+  └── 审计日志
+
+Step 5: 集成测试
+  ├── 搜索→分析闭环
+  ├── 搜索→创作闭环
+  ├── 分析→通知闭环
+  └── LLM降级路径
+```

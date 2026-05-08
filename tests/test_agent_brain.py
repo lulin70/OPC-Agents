@@ -12,7 +12,7 @@ from opc_manager import (
     ExecutorBrain, ExecutionResult, ExecutionStatus, ExecutionStatusType, ExecutionResultType,
     ReflectorBrain, Evaluation, EvaluationResult, NextAction, NextActionType,
     ConsensusEngine, Opinion, OpinionType, Decision, DecisionType,
-    SkillRegistry, Skill, SkillCategory, SkillInput, SkillOutput,
+    SkillRegistry, Skill, SkillCategory, SkillInput, SkillOutput, SkillContext,
     ToolSystem, Tool, ToolCategory, ToolParameter, PermissionLevel,
     AgentLoop, AgentContext, AgentState
 )
@@ -297,6 +297,113 @@ class TestAgentLoop:
         result = await loop.cancel_task("non_existent")
         
         assert result is False
+
+
+class TestPHASE2SkillIntegration:
+    """PHASE2 核心技能集成测试"""
+
+    def test_skill_context_creation(self):
+        ctx = SkillContext(user_input="帮我分析竞品", session_id="test-001")
+        assert ctx.user_input == "帮我分析竞品"
+        assert ctx.session_id == "test-001"
+        assert ctx.step_results == {}
+        assert ctx.conversation_history == []
+
+    def test_skill_context_with_step_results(self):
+        ctx = SkillContext(
+            user_input="帮我分析",
+            step_results={"search": {"results": [{"title": "test"}]}}
+        )
+        assert "search" in ctx.step_results
+
+    def test_skill_registry_dependency_injection(self):
+        registry = SkillRegistry(llm_service=None, search_processor=None, tool_system=None)
+        assert registry.llm_service is None
+        assert registry.search_processor is None
+        assert registry.tool_system is None
+
+    def test_skill_registry_with_search_processor(self):
+        from opc_manager.search_processor import SearchResultProcessor
+        processor = SearchResultProcessor()
+        registry = SkillRegistry(search_processor=processor)
+        assert registry.search_processor is not None
+
+    @pytest.mark.asyncio
+    async def test_search_skill_query_preprocessing(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill("search", query="AI<>&趋势")
+        assert result["success"] is True
+        assert result["data"]["count"] >= 0
+
+    @pytest.mark.asyncio
+    async def test_search_skill_empty_query(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill("search", query="<>")
+        assert result["success"] is True
+        assert result["data"]["count"] == 0
+
+    @pytest.mark.asyncio
+    async def test_analysis_skill_rule_based_fallback(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill("analysis", goal="竞品分析")
+        assert result["success"] is True
+        data = result["data"]
+        assert "analysis_result" in data
+        assert "swot" in data
+        assert "action_items" in data
+
+    @pytest.mark.asyncio
+    async def test_content_generation_rule_based_fallback(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill("content_generation", goal="Q2营销方案")
+        assert result["success"] is True
+        data = result["data"]
+        assert "content" in data
+        assert "fallback_used" in data
+
+    @pytest.mark.asyncio
+    async def test_operation_skill_no_tool_system(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill("execute_operation", operation="read_file", parameters={"file_path": "/tmp/test.txt"})
+        assert result["success"] is True
+        assert "error" in result["data"]
+
+    @pytest.mark.asyncio
+    async def test_notification_skill_no_tool_system(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill("send_notification", message="测试消息", recipient="test@example.com")
+        assert result["success"] is True
+        data = result["data"]
+        assert data.get("sent") is False or "error" in data
+
+    @pytest.mark.asyncio
+    async def test_notification_crlf_injection_protection(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill(
+            "send_notification",
+            message="测试",
+            recipient="test@example.com\r\nBCC:evil@evil.com"
+        )
+        assert result["success"] is True
+
+    @pytest.mark.asyncio
+    async def test_skill_context_passing(self):
+        registry = SkillRegistry()
+        ctx = SkillContext(user_input="测试", session_id="s1", step_results={"prev": "data"})
+        result = await registry.execute_skill("search", context=ctx, query="AI趋势")
+        assert result["success"] is True
+
+    @pytest.mark.asyncio
+    async def test_analysis_output_structure(self):
+        registry = SkillRegistry()
+        result = await registry.execute_skill("analysis", goal="市场分析")
+        data = result["data"]
+        assert "swot" in data
+        swot = data["swot"]
+        assert "strengths" in swot
+        assert "weaknesses" in swot
+        assert "opportunities" in swot
+        assert "threats" in swot
 
 
 if __name__ == "__main__":

@@ -38,7 +38,8 @@ from .skill_registry import (
     Skill,
     SkillCategory,
     SkillInput,
-    SkillOutput
+    SkillOutput,
+    SkillContext
 )
 from .tool_system import (
     ToolSystem,
@@ -102,6 +103,7 @@ __all__ = [
     "SkillCategory",
     "SkillInput",
     "SkillOutput",
+    "SkillContext",
     
     # 工具调用框架
     "ToolSystem",

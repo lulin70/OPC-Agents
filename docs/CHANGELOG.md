@@ -2,6 +2,63 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.2.0] - 2026-05-08
+
+### Added — PHASE2 核心技能开发
+
+完成6个核心技能从mock实现到真实能力的升级，实现搜索→分析/创作闭环和工具系统对接。
+
+#### SKILL-006: LLM集成基础设施
+
+- 新增 `SkillContext` 数据类，支持技能间上下文传递（用户输入、历史步骤结果、会话信息）
+- `SkillRegistry` 支持依赖注入 `llm_service`/`search_processor`/`tool_system`
+- `execute_skill` 方法自动传递 `_context` 参数给技能执行函数
+- 所有内置技能执行函数统一添加 `_context` 可选参数
+
+#### SKILL-003: 搜索增强技能
+
+- 搜索技能从mock实现升级为真实搜索：集成 `WebSearchMCP`（DuckDuckGo）
+- 集成 `SearchResultProcessor` 实现搜索结果重排序和知识库兜底
+- 查询预处理：自动清理 `<>&"'` 等特殊字符，防止注入
+- 三级搜索架构：WebSearchMCP → SearchResultProcessor → 空结果降级
+
+#### SKILL-001: 商业分析技能
+
+- 分析技能从mock实现升级为LLM增强分析
+- 自动搜索增强：无数据时自动调用搜索技能获取背景信息
+- 集成 `LLMEnhancedContentGenerator` 实现RAG混合模式分析
+- SWOT分析模板 + 结果结构化解析（摘要/关键发现/SWOT/行动清单）
+- 规则引擎降级：LLM不可用时自动切换到规则引擎
+
+#### SKILL-002: 内容创作技能
+
+- 内容创作从mock实现升级为LLM增强创作
+- 智能模板选择：根据目标关键词自动选择方案/报告/通用模板
+- 搜索→创作闭环：自动搜索相关资料后生成内容
+- 返回质量评分和降级标记
+
+#### SKILL-004: 文件操作技能
+
+- 文件操作从mock实现升级为ToolSystem对接
+- 支持4种操作：read_file/write_file/list_directory/search_files
+- 操作名到工具ID的字典映射，易于扩展
+
+#### SKILL-005: 消息通知技能
+
+- 通知技能从mock实现升级为ToolSystem邮件对接
+- CRLF注入防护：清理收件人中的 `\r\n` 字符
+
+### Fixed — 代码走读修复
+
+- 修复 `execute_skill` 内部递归调用时参数名错误（`_context` → `context`）
+- 修复 `asyncio.get_event_loop()` 废弃API调用，改用 `asyncio.get_running_loop()`
+- 优化 `_execute_operation` if-elif链为字典映射，提升可维护性
+
+### Testing
+
+- 新增13个PHASE2集成测试用例
+- 386 tests passing, 21 skipped, 0 failures
+
 ## [0.1.9] - 2026-05-07
 
 ### Changed — PHASE2启动前代码走读整改
