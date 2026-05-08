@@ -16,7 +16,7 @@ import logging
 import uuid
 
 from .strategist_brain import StrategistBrain, Intent, ExecutionPlan
-from .executor_brain import ExecutorBrain, ExecutionResult, ExecutionStatus
+from .executor_brain import ExecutorBrain, ExecutionResult
 from .reflector_brain import ReflectorBrain, Evaluation, NextAction, NextActionType
 from .consensus_engine import ConsensusEngine, Opinion, OpinionType, DecisionType
 from .skill_registry import SkillRegistry

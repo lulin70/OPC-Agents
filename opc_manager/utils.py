@@ -45,6 +45,9 @@ class BoundedDict:
     def __bool__(self) -> bool:
         return bool(self._data)
 
+    def __repr__(self) -> str:
+        return f"BoundedDict(max_size={self.max_size}, items={len(self._data)})"
+
     def get(self, key: str, default: Any = None) -> Any:
         return self._data.get(key, default)
 

@@ -16,7 +16,6 @@ import json
 import logging
 import os
 import shlex
-from collections import OrderedDict
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -64,6 +63,7 @@ class AuditLogger:
     _log_file = AUDIT_LOG_FILE
     _write_queue: Optional[asyncio.Queue] = None
     _writer_task: Optional[asyncio.Task] = None
+    _shutdown_event: Optional[asyncio.Event] = None
 
     @classmethod
     def _ensure_queue(cls) -> asyncio.Queue:
@@ -76,13 +76,20 @@ class AuditLogger:
         if cls._writer_task is not None and not cls._writer_task.done():
             return
         queue = cls._ensure_queue()
+        if cls._shutdown_event is None:
+            cls._shutdown_event = asyncio.Event()
+        shutdown = cls._shutdown_event
+
         async def _writer():
             try:
                 os.makedirs(os.path.dirname(cls._log_file), exist_ok=True)
             except OSError:
                 pass
-            while True:
-                record = await queue.get()
+            while not shutdown.is_set():
+                try:
+                    record = await asyncio.wait_for(queue.get(), timeout=1.0)
+                except asyncio.TimeoutError:
+                    continue
                 try:
                     with open(cls._log_file, "a") as f:
                         f.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -90,7 +97,27 @@ class AuditLogger:
                     logger.error(f"审计日志写入失败: {e}")
                 finally:
                     queue.task_done()
+            while not queue.empty():
+                try:
+                    record = queue.get_nowait()
+                    with open(cls._log_file, "a") as f:
+                        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+                    queue.task_done()
+                except Exception:
+                    break
         cls._writer_task = asyncio.create_task(_writer())
+
+    @classmethod
+    async def shutdown(cls) -> None:
+        if cls._shutdown_event is not None:
+            cls._shutdown_event.set()
+        if cls._writer_task is not None and not cls._writer_task.done():
+            try:
+                await asyncio.wait_for(cls._writer_task, timeout=5.0)
+            except asyncio.TimeoutError:
+                cls._writer_task.cancel()
+        cls._writer_task = None
+        cls._shutdown_event = None
 
     @classmethod
     async def log_async(cls, event_type: str, details: Dict[str, Any]) -> None:
@@ -515,7 +542,7 @@ class ToolSystem:
             })
         return file_info
 
-    def _execute_web_search(self, query: str, max_results: int = 10) -> Dict[str, Any]:
+    async def _execute_web_search(self, query: str, max_results: int = 10) -> Dict[str, Any]:
         return {
             "query": query,
             "results": [
@@ -525,7 +552,7 @@ class ToolSystem:
             "total": min(max_results, 5)
         }
 
-    def _execute_send_email(self, to: str, subject: str, body: str, attachments: list = None) -> Dict[str, Any]:
+    async def _execute_send_email(self, to: str, subject: str, body: str, attachments: list = None) -> Dict[str, Any]:
         return {
             "sent": True,
             "to": to,

@@ -78,9 +78,6 @@ class SkillRegistry:
 
     def _register_builtin_skills(self):
         """注册内置技能"""
-        # 意图分析技能
-        from .strategist_brain import IntentType
-        
         intent_analysis_skill = Skill(
             skill_id="intent_analysis",
             name="意图分析",

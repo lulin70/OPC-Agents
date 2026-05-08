@@ -2,6 +2,34 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.9] - 2026-05-07
+
+### Changed — PHASE2启动前代码走读整改
+
+PHASE2（核心技能开发）启动前的全面7维度代码走读，修复6个遗留问题，综合评分从92.4提升至93.1。
+
+#### 代码质量 (92→94)
+
+- 移除agent_loop.py中未使用的ExecutionStatus导入
+- 移除tool_system.py中未使用的OrderedDict导入
+- 移除skill_registry.py中未使用的延迟import IntentType
+
+#### 架构 (93→94)
+
+- `_execute_web_search`/`_execute_send_email`改为async，与call_tool异步框架一致
+
+#### 性能 (92→93)
+
+- AuditLogger添加优雅关闭机制：`shutdown_event` + drain队列 + 5秒超时
+
+#### 可维护性 (93→94)
+
+- BoundedDict添加`__repr__`用于调试输出
+
+### Testing
+
+- 373 tests passing, 21 skipped, 0 failures
+
 ## [0.1.8] - 2026-05-07
 
 ### Changed — 架构/性能/可维护性专项整改
