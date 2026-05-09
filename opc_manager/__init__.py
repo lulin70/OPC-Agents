@@ -24,7 +24,8 @@ from .reflector_brain import (
     Evaluation,
     EvaluationResult,
     NextAction,
-    NextActionType
+    NextActionType,
+    CorrectionStrategy
 )
 from .consensus_engine import (
     ConsensusEngine,
@@ -58,7 +59,7 @@ from .scenario_migrator import (
     migrate_scenarios_to_skills,
     get_migration_status
 )
-from .utils import BoundedDict
+from .utils import BoundedDict, EventEmitter, Event
 
 __all__ = [
     # 版本信息
@@ -89,6 +90,7 @@ __all__ = [
     "EvaluationResult",
     "NextAction",
     "NextActionType",
+    "CorrectionStrategy",
     
     # 共识引擎
     "ConsensusEngine",
@@ -123,5 +125,7 @@ __all__ = [
     "get_migration_status",
     
     # 公共工具
-    "BoundedDict"
+    "BoundedDict",
+    "EventEmitter",
+    "Event"
 ]

@@ -13,15 +13,17 @@ from dataclasses import dataclass, field
 from enum import Enum
 import asyncio
 import logging
+import time
 import uuid
 
 from .strategist_brain import StrategistBrain, Intent, ExecutionPlan
 from .executor_brain import ExecutorBrain, ExecutionResult
-from .reflector_brain import ReflectorBrain, Evaluation, NextAction, NextActionType
+from .reflector_brain import ReflectorBrain, Evaluation, NextAction, NextActionType, CorrectionStrategy
 from .consensus_engine import ConsensusEngine, Opinion, OpinionType, DecisionType
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
-from .utils import BoundedDict
+from .session_context import SessionContextManager
+from .utils import BoundedDict, EventEmitter
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ MAX_CONTEXT_HISTORY = 100
 MAX_REFLECT_ROUNDS = 3
 RETRY_BACKOFF_BASE = 2
 RETRY_BACKOFF_CAP = 10
+PAUSE_TIMEOUT_SECONDS = 1800
 
 
 class AgentState(Enum):
@@ -41,6 +44,7 @@ class AgentState(Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    PAUSED = "paused"
 
 
 @dataclass
@@ -55,6 +59,9 @@ class AgentContext:
     retry_count: int = 0
     step_retry_counts: Dict[str, int] = field(default_factory=dict)
     cancel_requested: bool = False
+    session_id: Optional[str] = None
+    correction_count: int = 0
+    paused_at: Optional[float] = None
 
     def set_state(self, new_state: AgentState) -> None:
         self.state = new_state
@@ -69,6 +76,7 @@ class AgentLoop:
                  consensus_engine: ConsensusEngine = None,
                  skill_registry: SkillRegistry = None,
                  tool_system: ToolSystem = None,
+                 session_manager: SessionContextManager = None,
                  max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
                  max_retry_per_step: int = MAX_RETRY_PER_STEP):
         self.strategist_brain = strategist_brain or StrategistBrain()
@@ -77,13 +85,15 @@ class AgentLoop:
         self.consensus_engine = consensus_engine or ConsensusEngine()
         self.skill_registry = skill_registry or SkillRegistry()
         self.tool_system = tool_system or ToolSystem()
+        self.session_manager = session_manager or SessionContextManager()
+        self.event_emitter = EventEmitter()
 
         self.max_reflect_rounds = max_reflect_rounds
         self.max_retry_per_step = max_retry_per_step
 
         self.contexts: BoundedDict = BoundedDict(max_size=MAX_CONTEXT_HISTORY)
 
-    async def run(self, user_input: str, context: Optional[Dict] = None) -> Dict[str, Any]:
+    async def run(self, user_input: str, context: Optional[Dict] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
         logger.info(f"AgentLoop 开始执行: {user_input[:50]}...")
 
         if not user_input or not user_input.strip():
@@ -92,13 +102,20 @@ class AgentLoop:
         task_id = f"agent_task_{uuid.uuid4().hex[:8]}"
         agent_context = AgentContext(
             task_id=task_id,
-            user_input=user_input.strip()
+            user_input=user_input.strip(),
+            session_id=session_id or str(uuid.uuid4())
         )
         self.contexts[task_id] = agent_context
 
+        conversation_history = []
+        if session_id:
+            history_text = self.session_manager.get_context_for_llm(max_turns=5)
+            if history_text:
+                conversation_history = [{"role": "history", "content": history_text}]
+
         try:
             agent_context.set_state(AgentState.PLANNING)
-            await self._phase_plan(agent_context)
+            await self._phase_plan(agent_context, conversation_history)
 
             if agent_context.cancel_requested:
                 agent_context.set_state(AgentState.CANCELLED)
@@ -146,6 +163,13 @@ class AgentLoop:
             agent_context.set_state(AgentState.COMPLETED)
             logger.info(f"AgentLoop 执行完成: {task_id}")
 
+            self.event_emitter.emit(
+                event_type="task_completed",
+                step_id="final",
+                step_name="任务完成",
+                status="completed"
+            )
+
             return self._build_result(agent_context)
 
         except Exception as e:
@@ -163,22 +187,43 @@ class AgentLoop:
             return {
                 "success": False,
                 "task_id": context.task_id,
+                "session_id": context.session_id,
                 "results": context.execution_results,
                 "message": "任务已取消"
             }
+
+        result_summary = ""
+        if context.execution_results:
+            last_result = context.execution_results[-1]
+            if last_result.get("success") and last_result.get("data"):
+                data = last_result["data"]
+                if isinstance(data, dict):
+                    result_summary = data.get("content", data.get("analysis_result", str(data)[:200]))
+                else:
+                    result_summary = str(data)[:200]
+
+        if context.session_id and result_summary:
+            self.session_manager.add_turn(
+                user_input=context.user_input,
+                assistant_response=result_summary,
+                task_type=context.intent.type.value if context.intent else None,
+            )
+
         return {
             "success": True,
             "task_id": context.task_id,
+            "session_id": context.session_id,
             "results": context.execution_results,
             "message": "执行完成"
         }
 
-    async def _phase_plan(self, context: AgentContext) -> None:
+    async def _phase_plan(self, context: AgentContext, conversation_history: Optional[List[Dict]] = None) -> None:
         logger.info("Phase 1: 规划开始")
 
+        history = conversation_history or []
         intent = self.strategist_brain.understand_intent(
             user_input=context.user_input,
-            context={"history": []}
+            context={"history": history}
         )
         context.intent = intent
         logger.info(f"意图理解完成: {intent.type.name} - {intent.goal}")
@@ -187,20 +232,29 @@ class AgentLoop:
         context.plan = plan
         logger.info(f"计划制定完成: {len(plan.steps)} 个步骤")
 
-    async def _phase_execute(self, context: AgentContext) -> None:
+    async def _phase_execute(self, context: AgentContext, start_step: int = 0) -> None:
         logger.info("Phase 2: 执行开始")
 
         if not context.plan:
             raise ValueError("没有执行计划，无法执行")
 
-        for step in context.plan.steps:
+        for step in context.plan.steps[start_step:]:
             if context.cancel_requested:
                 return
 
             context.current_step += 1
             logger.info(f"执行步骤 {context.current_step}/{len(context.plan.steps)}: {step.description}")
 
+            self.event_emitter.emit(
+                event_type="step_started",
+                step_id=step.id,
+                step_name=step.description,
+                status="running"
+            )
+
+            step_start_time = time.time()
             result = await self._execute_step_with_retry(context, step)
+            step_duration_ms = (time.time() - step_start_time) * 1000
 
             context.execution_results.append({
                 "step_id": step.id,
@@ -212,7 +266,23 @@ class AgentLoop:
                 "execution_time": result.execution_time
             })
 
-            if not result.success:
+            if result.success:
+                self.event_emitter.emit(
+                    event_type="step_completed",
+                    step_id=step.id,
+                    step_name=step.description,
+                    status="completed",
+                    duration_ms=step_duration_ms
+                )
+            else:
+                self.event_emitter.emit(
+                    event_type="step_failed",
+                    step_id=step.id,
+                    step_name=step.description,
+                    status="failed",
+                    duration_ms=step_duration_ms,
+                    data={"error": result.error}
+                )
                 logger.warning(f"步骤 {step.id} 执行失败（已重试{context.step_retry_counts.get(step.id, 0)}次）: {result.error}")
                 break
 
@@ -287,6 +357,45 @@ class AgentLoop:
 
         logger.info(f"评估结果: {evaluation.result.name} (质量评分: {evaluation.quality_score:.2f})")
 
+        correction_strategy = self.reflector_brain.suggest_correction_strategy(
+            evaluation=evaluation,
+            execution_results=context.execution_results,
+            correction_count=context.correction_count
+        )
+
+        if correction_strategy is not None:
+            logger.info(f"触发自动修正: {correction_strategy.value}")
+            correction_result = await self._apply_correction(context, correction_strategy)
+            if correction_result:
+                context.correction_count += 1
+                re_eval = self.reflector_brain.evaluate_result(
+                    actual_result={
+                        "success": all(r.get("success", False) for r in context.execution_results),
+                        "data": {
+                            "results": context.execution_results,
+                            "total_steps": len(context.execution_results),
+                            "completed_steps": sum(1 for r in context.execution_results if r.get("success", False)),
+                            "total_time": sum(r.get("execution_time", 0) for r in context.execution_results)
+                        }
+                    },
+                    expected_intent={"goal": context.intent.goal} if context.intent else {}
+                )
+                logger.info(f"修正后评估: {re_eval.result.name} (质量评分: {re_eval.quality_score:.2f})")
+                if re_eval.quality_score >= 0.6:
+                    return NextAction(
+                        action_type=NextActionType.CONTINUE,
+                        reason=f"修正后质量达标(评分: {re_eval.quality_score:.2f})",
+                        confidence=re_eval.quality_score
+                    )
+
+        if context.correction_count >= 2 and evaluation.quality_score < 0.6:
+            logger.warning(f"修正{context.correction_count}次仍未达标，标记需人工复核")
+            return NextAction(
+                action_type=NextActionType.REVIEW,
+                reason=f"修正{context.correction_count}次后质量仍不达标(评分: {evaluation.quality_score:.2f})",
+                confidence=evaluation.quality_score
+            )
+
         plan_dict = None
         if context.plan:
             plan_dict = {
@@ -308,6 +417,113 @@ class AgentLoop:
 
         logger.info(f"决定下一步行动: {next_action.action_type.name}")
         return next_action
+
+    async def _apply_correction(self, context: AgentContext, strategy: CorrectionStrategy) -> bool:
+        if strategy == CorrectionStrategy.RETRY:
+            if context.plan and context.plan.steps:
+                last_step = context.plan.steps[-1]
+                result = await self.executor_brain.execute_step(
+                    step_id=last_step.id,
+                    skill_id=last_step.skill_id,
+                    parameters=last_step.parameters,
+                    context={"task_id": context.task_id}
+                )
+                if context.execution_results:
+                    context.execution_results[-1] = {
+                        "step_id": last_step.id,
+                        "skill_id": last_step.skill_id,
+                        "description": f"{last_step.description} (修正-重试)",
+                        "success": result.success,
+                        "data": result.data,
+                        "error": result.error,
+                        "execution_time": result.execution_time,
+                        "correction": "retry"
+                    }
+                return result.success
+
+        elif strategy == CorrectionStrategy.SEARCH_AND_RETRY:
+            if context.intent:
+                search_result = await self.skill_registry.execute_skill(
+                    "search", query=context.intent.goal, max_results=5
+                )
+                if search_result.get("success") and context.plan and context.plan.steps:
+                    last_step = context.plan.steps[-1]
+                    enriched_params = dict(last_step.parameters or {})
+                    enriched_params["data"] = search_result.get("data", {}).get("results", [])
+                    result = await self.executor_brain.execute_step(
+                        step_id=last_step.id,
+                        skill_id=last_step.skill_id,
+                        parameters=enriched_params,
+                        context={"task_id": context.task_id}
+                    )
+                    if context.execution_results:
+                        context.execution_results[-1] = {
+                            "step_id": last_step.id,
+                            "skill_id": last_step.skill_id,
+                            "description": f"{last_step.description} (修正-补充搜索)",
+                            "success": result.success,
+                            "data": result.data,
+                            "error": result.error,
+                            "execution_time": result.execution_time,
+                            "correction": "search_and_retry"
+                        }
+                    return result.success
+            return False
+
+        elif strategy == CorrectionStrategy.SWITCH_SKILL:
+            fallback_map = {
+                "analysis": "content_generation",
+                "content_generation": "analysis",
+                "search": "analysis",
+            }
+            if context.plan and context.plan.steps:
+                last_step = context.plan.steps[-1]
+                new_skill = fallback_map.get(last_step.skill_id)
+                if new_skill:
+                    result = await self.executor_brain.execute_step(
+                        step_id=last_step.id,
+                        skill_id=new_skill,
+                        parameters=last_step.parameters,
+                        context={"task_id": context.task_id}
+                    )
+                    if context.execution_results:
+                        context.execution_results[-1] = {
+                            "step_id": last_step.id,
+                            "skill_id": new_skill,
+                            "description": f"{last_step.description} (修正-换技能)",
+                            "success": result.success,
+                            "data": result.data,
+                            "error": result.error,
+                            "execution_time": result.execution_time,
+                            "correction": "switch_skill"
+                        }
+                    return result.success
+            return False
+
+        elif strategy == CorrectionStrategy.DEGRADE:
+            if context.plan and context.plan.steps:
+                last_step = context.plan.steps[-1]
+                result = await self.executor_brain.execute_step(
+                    step_id=last_step.id,
+                    skill_id=last_step.skill_id,
+                    parameters=last_step.parameters,
+                    context={"task_id": context.task_id, "degrade": True}
+                )
+                if context.execution_results:
+                    context.execution_results[-1] = {
+                        "step_id": last_step.id,
+                        "skill_id": last_step.skill_id,
+                        "description": f"{last_step.description} (修正-降级)",
+                        "success": result.success,
+                        "data": result.data,
+                        "error": result.error,
+                        "execution_time": result.execution_time,
+                        "correction": "degrade"
+                    }
+                return result.success
+            return False
+
+        return False
 
     def _consult_consensus(self, context: AgentContext,
                            evaluation: Evaluation,
@@ -384,6 +600,77 @@ class AgentLoop:
         await self.executor_brain.cancel_execution(task_id)
         logger.info(f"任务已取消: {task_id}")
         return True
+
+    async def pause_task(self, task_id: str) -> bool:
+        context = self.contexts.get(task_id)
+        if not context:
+            return False
+
+        if context.state not in (AgentState.EXECUTING, AgentState.PLANNING, AgentState.OBSERVING, AgentState.REFLECTING):
+            logger.warning(f"任务 {task_id} 当前状态 {context.state.value} 不可暂停")
+            return False
+
+        context.paused_at = time.time()
+        context.set_state(AgentState.PAUSED)
+        logger.info(f"任务已暂停: {task_id} (步骤: {context.current_step})")
+        return True
+
+    async def resume_task(self, task_id: str) -> Dict[str, Any]:
+        context = self.contexts.get(task_id)
+        if not context:
+            return {"success": False, "error": f"任务 {task_id} 不存在"}
+
+        if context.state != AgentState.PAUSED:
+            return {"success": False, "error": f"任务 {task_id} 当前状态 {context.state.value} 不可恢复"}
+
+        if context.paused_at and (time.time() - context.paused_at) > PAUSE_TIMEOUT_SECONDS:
+            context.cancel_requested = True
+            context.set_state(AgentState.CANCELLED)
+            logger.warning(f"任务 {task_id} 暂停超时，自动取消")
+            return {"success": False, "error": "暂停超时，任务已自动取消"}
+
+        context.paused_at = None
+        context.set_state(AgentState.EXECUTING)
+        resume_step = context.current_step
+        logger.info(f"任务已恢复: {task_id} (从步骤 {resume_step} 继续)")
+
+        try:
+            for reflect_round in range(self.max_reflect_rounds):
+                context.set_state(AgentState.EXECUTING)
+                await self._phase_execute(context, start_step=resume_step)
+
+                if context.cancel_requested:
+                    context.set_state(AgentState.CANCELLED)
+                    return self._build_result(context, cancelled=True)
+
+                context.set_state(AgentState.OBSERVING)
+                await self._phase_observe(context)
+
+                context.set_state(AgentState.REFLECTING)
+                next_action = await self._phase_reflect(context)
+
+                if next_action.action_type == NextActionType.CONTINUE:
+                    break
+                elif next_action.action_type == NextActionType.REVIEW:
+                    break
+                elif next_action.action_type == NextActionType.ABANDON:
+                    context.set_state(AgentState.FAILED)
+                    return {"success": False, "task_id": task_id, "error": next_action.reason}
+                elif next_action.action_type in (NextActionType.RETRY, NextActionType.ADJUST_STRATEGY):
+                    context.execution_results = []
+                    context.current_step = 0
+                    if next_action.action_type == NextActionType.ADJUST_STRATEGY:
+                        context.set_state(AgentState.PLANNING)
+                        await self._phase_plan(context)
+                    continue
+
+            context.set_state(AgentState.COMPLETED)
+            return self._build_result(context)
+
+        except Exception as e:
+            context.set_state(AgentState.FAILED)
+            logger.error(f"恢复任务执行失败: {str(e)}")
+            return {"success": False, "task_id": task_id, "error": str(e)}
 
     def list_tasks(self) -> List[Dict[str, Any]]:
         tasks = []

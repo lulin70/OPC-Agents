@@ -56,12 +56,15 @@ class Intent:
     constraints: List[Constraint] = None  # 约束条件列表
     context: Dict[str, Any] = None      # 上下文信息
     confidence: float = 1.0             # 置信度
+    sub_intents: List['Intent'] = None   # 子意图列表（复合意图时使用）
 
     def __post_init__(self):
         if self.constraints is None:
             self.constraints = []
         if self.context is None:
             self.context = {}
+        if self.sub_intents is None:
+            self.sub_intents = []
 
 
 @dataclass
@@ -140,43 +143,31 @@ class StrategistBrain:
         }
 
     def understand_intent(self, user_input: str, context: Optional[Dict] = None) -> Intent:
-        """
-        理解用户意图
-        
-        Args:
-            user_input: 用户输入的自然语言文本
-            context: 会话上下文（历史记录、用户偏好等）
-        
-        Returns:
-            Intent: 结构化意图对象
-        """
         logger.info(f"开始理解意图: {user_input[:50]}...")
         
-        # 确定意图类型
         intent_type = self._detect_intent_type(user_input)
-        
-        # 提取约束条件
         constraints = self._extract_constraints(user_input)
-        
-        # 提取核心目标
         goal = self._extract_goal(user_input, intent_type)
         
-        # 设置上下文
         if context is None:
             context = {}
         
-        # 计算置信度
         confidence = self._calculate_confidence(user_input, intent_type)
+        
+        sub_intents = []
+        if intent_type == IntentType.COMBINED:
+            sub_intents = self._decompose_intent(user_input)
         
         intent = Intent(
             goal=goal,
             type=intent_type,
             constraints=constraints,
             context=context,
-            confidence=confidence
+            confidence=confidence,
+            sub_intents=sub_intents
         )
         
-        logger.info(f"意图理解完成: {intent.type.name} - '{goal}' (置信度: {confidence:.2f})")
+        logger.info(f"意图理解完成: {intent.type.name} - '{goal}' (置信度: {confidence:.2f}, 子意图: {len(sub_intents)})")
         return intent
 
     def _detect_intent_type(self, user_input: str) -> IntentType:
@@ -203,6 +194,41 @@ class StrategistBrain:
             return matched_types[0]
         else:
             return IntentType.UNKNOWN
+
+    def _decompose_intent(self, user_input: str) -> List[Intent]:
+        sub_intents = []
+        separators = ["然后", "接着", "再", "并且", "以及", "还有", "和", "，", "、"]
+        segments = [user_input]
+        for sep in separators:
+            new_segments = []
+            for seg in segments:
+                parts = seg.split(sep)
+                new_segments.extend([p.strip() for p in parts if p.strip()])
+            segments = new_segments
+            if len(segments) >= 4:
+                break
+
+        if len(segments) < 2:
+            segments = [user_input]
+
+        for segment in segments:
+            seg_type = self._detect_single_intent_type(segment)
+            goal = self._extract_goal(segment, seg_type)
+            confidence = self._calculate_confidence(segment, seg_type)
+            sub_intents.append(Intent(
+                goal=goal,
+                type=seg_type,
+                confidence=confidence
+            ))
+
+        return sub_intents
+
+    def _detect_single_intent_type(self, text: str) -> IntentType:
+        for intent_type, keywords in self.intent_keywords.items():
+            for keyword in keywords:
+                if keyword in text:
+                    return intent_type
+        return IntentType.UNKNOWN
 
     def _extract_constraints(self, user_input: str) -> List[Constraint]:
         """
@@ -326,21 +352,9 @@ class StrategistBrain:
         return plan
 
     def _generate_steps(self, intent: Intent) -> List[Step]:
-        """
-        根据意图生成执行步骤
-        
-        Args:
-            intent: 意图对象
-        
-        Returns:
-            List[Step]: 步骤列表
-        """
         steps = []
-        
-        # 根据意图类型生成不同的步骤序列
         step_id = 1
-        
-        # 通用步骤：理解需求
+
         steps.append(Step(
             id=f"step_{step_id}",
             skill_id="intent_analysis",
@@ -348,18 +362,45 @@ class StrategistBrain:
             parameters={"goal": intent.goal, "constraints": [c.type.value for c in intent.constraints]}
         ))
         step_id += 1
-        
-        # 根据意图类型添加特定步骤
+
+        if intent.type == IntentType.COMBINED and intent.sub_intents:
+            prev_step_id = "step_1"
+            for sub_intent in intent.sub_intents:
+                sub_steps = self._generate_skill_steps(sub_intent, step_id, prev_step_id)
+                steps.extend(sub_steps)
+                if sub_steps:
+                    prev_step_id = sub_steps[-1].id
+                    step_id += len(sub_steps)
+        else:
+            skill_steps = self._generate_skill_steps(intent, step_id, "step_1")
+            steps.extend(skill_steps)
+            if skill_steps:
+                step_id += len(skill_steps)
+
+        steps.append(Step(
+            id=f"step_{step_id}",
+            skill_id="output_result",
+            description="输出最终结果",
+            parameters={"format": "markdown"},
+            dependencies=[steps[-1].id] if len(steps) > 1 else []
+        ))
+
+        return steps
+
+    def _generate_skill_steps(self, intent: Intent, start_id: int, dep_id: str) -> List[Step]:
+        steps = []
+        step_id = start_id
+
         if intent.type in [IntentType.ANALYSIS, IntentType.COMBINED]:
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="search",
                 description="搜索相关信息和数据",
                 parameters={"query": intent.goal, "max_results": 10},
-                dependencies=["step_1"]
+                dependencies=[dep_id]
             ))
             step_id += 1
-            
+
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="analysis",
@@ -368,56 +409,47 @@ class StrategistBrain:
                 dependencies=[f"step_{step_id - 1}"]
             ))
             step_id += 1
-        
+
         if intent.type in [IntentType.CREATION, IntentType.COMBINED]:
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="content_generation",
                 description="生成内容",
                 parameters={"goal": intent.goal, "format": "markdown"},
-                dependencies=["step_1"] if step_id > 2 else []
+                dependencies=[dep_id] if not steps else [steps[-1].id]
             ))
             step_id += 1
-        
-        if intent.type in [IntentType.SEARCH]:
+
+        if intent.type == IntentType.SEARCH:
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="search",
                 description="执行搜索",
                 parameters={"query": intent.goal, "max_results": 15},
-                dependencies=["step_1"]
+                dependencies=[dep_id]
             ))
             step_id += 1
-        
-        if intent.type in [IntentType.OPERATION]:
+
+        if intent.type == IntentType.OPERATION:
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="execute_operation",
                 description="执行操作",
                 parameters={"operation": intent.goal},
-                dependencies=["step_1"]
+                dependencies=[dep_id]
             ))
             step_id += 1
-        
-        if intent.type in [IntentType.NOTIFICATION]:
+
+        if intent.type == IntentType.NOTIFICATION:
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="send_notification",
                 description="发送通知",
                 parameters={"message": intent.goal},
-                dependencies=["step_1"]
+                dependencies=[dep_id]
             ))
             step_id += 1
-        
-        # 通用步骤：输出结果
-        steps.append(Step(
-            id=f"step_{step_id}",
-            skill_id="output_result",
-            description="输出最终结果",
-            parameters={"format": "markdown"},
-            dependencies=[f"step_{step_id - 1}"]
-        ))
-        
+
         return steps
 
     def to_dict(self) -> Dict[str, Any]:

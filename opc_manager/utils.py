@@ -4,13 +4,17 @@
 将重复定义的工具类提取到统一位置，避免代码重复。
 """
 
+import asyncio
+import time
 from collections import OrderedDict
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any, AsyncIterator, List, Optional
 import logging
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_SIZE = 100
+EVENT_QUEUE_MAX_SIZE = 1000
 
 
 class BoundedDict:
@@ -66,3 +70,57 @@ class BoundedDict:
     def _cleanup(self) -> None:
         while len(self._data) > self.max_size:
             self._data.popitem(last=False)
+
+
+@dataclass
+class Event:
+    event_type: str
+    step_id: str
+    step_name: str
+    status: str
+    timestamp: float
+    duration_ms: float = 0.0
+    data: Optional[dict] = None
+
+
+class EventEmitter:
+    def __init__(self, max_queue_size: int = EVENT_QUEUE_MAX_SIZE):
+        self._subscribers: List[asyncio.Queue] = []
+        self._max_queue_size = max_queue_size
+
+    def emit(self, event_type: str, step_id: str, step_name: str,
+             status: str, duration_ms: float = 0.0, data: Optional[dict] = None) -> None:
+        event = Event(
+            event_type=event_type,
+            step_id=step_id,
+            step_name=step_name,
+            status=status,
+            timestamp=time.time(),
+            duration_ms=duration_ms,
+            data=data
+        )
+        for queue in self._subscribers:
+            try:
+                if queue.full():
+                    try:
+                        queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        pass
+                queue.put_nowait(event)
+            except Exception:
+                pass
+
+    async def subscribe(self) -> AsyncIterator[Event]:
+        queue: asyncio.Queue = asyncio.Queue(maxsize=self._max_queue_size)
+        self._subscribers.append(queue)
+        try:
+            while True:
+                event = await queue.get()
+                yield event
+        finally:
+            if queue in self._subscribers:
+                self._subscribers.remove(queue)
+
+    @property
+    def subscriber_count(self) -> int:
+        return len(self._subscribers)

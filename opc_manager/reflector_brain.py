@@ -44,6 +44,19 @@ class NextActionType(Enum):
     REVIEW = "review"               # 人工复核（需要人工介入）
 
 
+class CorrectionStrategy(Enum):
+    """修正策略类型枚举"""
+    RETRY = "retry"                           # 重试当前步骤
+    SEARCH_AND_RETRY = "search_and_retry"     # 补充搜索后重试
+    SWITCH_SKILL = "switch_skill"             # 换技能执行
+    DEGRADE = "degrade"                       # 降级到规则引擎
+
+
+QUALITY_THRESHOLD_CORRECTION = 0.6
+MAX_CORRECTION_ATTEMPTS = 2
+PLACEHOLDER_PATTERNS = ["[待补充]", "[占位符]", "[TODO]", "[placeholder]", "[待完善]", "[TBD]"]
+
+
 @dataclass
 class Evaluation:
     """评估结果对象"""
@@ -362,16 +375,6 @@ class ReflectorBrain:
 
     def suggest_improvement(self, evaluation: Evaluation, 
                            plan: Dict[str, Any]) -> List[str]:
-        """
-        根据评估结果提出改进建议
-        
-        Args:
-            evaluation: 评估结果
-            plan: 当前执行计划
-        
-        Returns:
-            List[str]: 改进建议列表
-        """
         suggestions = []
         
         if evaluation.result in [EvaluationResult.POOR, EvaluationResult.FAILURE]:
@@ -388,6 +391,51 @@ class ReflectorBrain:
             suggestions.append("• 优化执行流程，减少不必要的步骤")
         
         return suggestions
+
+    def suggest_correction_strategy(self, evaluation: Evaluation,
+                                    execution_results: List[Dict],
+                                    correction_count: int = 0) -> Optional[CorrectionStrategy]:
+        if evaluation.quality_score >= QUALITY_THRESHOLD_CORRECTION:
+            return None
+
+        if correction_count >= MAX_CORRECTION_ATTEMPTS:
+            logger.info(f"修正次数已达上限({MAX_CORRECTION_ATTEMPTS})，标记需人工复核")
+            return None
+
+        has_placeholders = self._check_placeholders(execution_results)
+        has_error = any(not r.get("success", False) for r in execution_results)
+        has_empty_data = any(
+            r.get("success") and not r.get("data") for r in execution_results
+        )
+
+        if has_error:
+            strategy = CorrectionStrategy.RETRY
+        elif has_placeholders or has_empty_data:
+            strategy = CorrectionStrategy.SEARCH_AND_RETRY
+        elif evaluation.result == EvaluationResult.POOR:
+            strategy = CorrectionStrategy.SWITCH_SKILL
+        else:
+            strategy = CorrectionStrategy.DEGRADE
+
+        logger.info(f"建议修正策略: {strategy.value} (质量评分: {evaluation.quality_score:.2f}, 修正次数: {correction_count})")
+        return strategy
+
+    def _check_placeholders(self, execution_results: List[Dict]) -> bool:
+        for result in execution_results:
+            data = result.get("data")
+            if not data:
+                continue
+            text = ""
+            if isinstance(data, dict):
+                text = str(data.get("content", "")) + str(data.get("analysis_result", ""))
+            elif isinstance(data, str):
+                text = data
+            else:
+                text = str(data)
+            for pattern in PLACEHOLDER_PATTERNS:
+                if pattern in text:
+                    return True
+        return False
 
     def to_dict(self) -> Dict[str, Any]:
         """

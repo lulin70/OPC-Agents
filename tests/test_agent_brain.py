@@ -10,11 +10,12 @@ import asyncio
 from opc_manager import (
     StrategistBrain, Intent, IntentType, Constraint, ConstraintType, ExecutionPlan, Step,
     ExecutorBrain, ExecutionResult, ExecutionStatus, ExecutionStatusType, ExecutionResultType,
-    ReflectorBrain, Evaluation, EvaluationResult, NextAction, NextActionType,
+    ReflectorBrain, Evaluation, EvaluationResult, NextAction, NextActionType, CorrectionStrategy,
     ConsensusEngine, Opinion, OpinionType, Decision, DecisionType,
     SkillRegistry, Skill, SkillCategory, SkillInput, SkillOutput, SkillContext,
     ToolSystem, Tool, ToolCategory, ToolParameter, PermissionLevel,
-    AgentLoop, AgentContext, AgentState
+    AgentLoop, AgentContext, AgentState,
+    EventEmitter, Event
 )
 
 
@@ -404,6 +405,147 @@ class TestPHASE2SkillIntegration:
         assert "weaknesses" in swot
         assert "opportunities" in swot
         assert "threats" in swot
+
+
+class TestPHASE3EndToEnd:
+    """PHASE3 端到端闭环集成测试"""
+
+    def test_agent_loop_accepts_session_id(self):
+        loop = AgentLoop()
+        assert hasattr(loop, 'session_manager')
+
+    def test_agent_context_has_session_id(self):
+        ctx = AgentContext(task_id="test", user_input="hello")
+        assert ctx.session_id is None
+
+    def test_agent_context_has_correction_count(self):
+        ctx = AgentContext(task_id="test", user_input="hello")
+        assert ctx.correction_count == 0
+
+    def test_agent_context_has_paused_at(self):
+        ctx = AgentContext(task_id="test", user_input="hello")
+        assert ctx.paused_at is None
+
+    def test_agent_state_has_paused(self):
+        assert AgentState.PAUSED.value == "paused"
+
+    def test_correction_strategy_enum(self):
+        assert CorrectionStrategy.RETRY.value == "retry"
+        assert CorrectionStrategy.SEARCH_AND_RETRY.value == "search_and_retry"
+        assert CorrectionStrategy.SWITCH_SKILL.value == "switch_skill"
+        assert CorrectionStrategy.DEGRADE.value == "degrade"
+
+    def test_reflector_suggest_correction_high_quality(self):
+        brain = ReflectorBrain()
+        evaluation = Evaluation(
+            result=EvaluationResult.GOOD,
+            quality_score=0.8,
+            deviation_analysis="结果良好"
+        )
+        strategy = brain.suggest_correction_strategy(evaluation, [], 0)
+        assert strategy is None
+
+    def test_reflector_suggest_correction_low_quality(self):
+        brain = ReflectorBrain()
+        evaluation = Evaluation(
+            result=EvaluationResult.POOR,
+            quality_score=0.3,
+            deviation_analysis="结果较差"
+        )
+        strategy = brain.suggest_correction_strategy(evaluation, [{"success": False}], 0)
+        assert strategy == CorrectionStrategy.RETRY
+
+    def test_reflector_suggest_correction_max_attempts(self):
+        brain = ReflectorBrain()
+        evaluation = Evaluation(
+            result=EvaluationResult.POOR,
+            quality_score=0.3,
+            deviation_analysis="结果较差"
+        )
+        strategy = brain.suggest_correction_strategy(evaluation, [], 2)
+        assert strategy is None
+
+    def test_reflector_check_placeholders(self):
+        brain = ReflectorBrain()
+        results = [{"success": True, "data": {"content": "结果[待补充]内容"}}]
+        assert brain._check_placeholders(results) is True
+
+    def test_reflector_check_no_placeholders(self):
+        brain = ReflectorBrain()
+        results = [{"success": True, "data": {"content": "结果完整内容"}}]
+        assert brain._check_placeholders(results) is False
+
+    def test_composite_intent_decomposition(self):
+        brain = StrategistBrain()
+        intent = brain.understand_intent("帮我分析竞品然后写方案")
+        assert intent.type == IntentType.COMBINED
+        assert len(intent.sub_intents) >= 2
+
+    def test_composite_plan_has_multiple_steps(self):
+        brain = StrategistBrain()
+        intent = brain.understand_intent("帮我分析竞品然后写方案")
+        plan = brain.plan(intent)
+        assert len(plan.steps) >= 4
+
+    @pytest.mark.asyncio
+    async def test_pause_task(self):
+        loop = AgentLoop()
+        result = await loop.run("帮我搜索AI趋势")
+        task_id = result["task_id"]
+        paused = await loop.pause_task(task_id)
+        assert paused is False
+
+    @pytest.mark.asyncio
+    async def test_pause_nonexistent_task(self):
+        loop = AgentLoop()
+        paused = await loop.pause_task("nonexistent")
+        assert paused is False
+
+    @pytest.mark.asyncio
+    async def test_resume_nonexistent_task(self):
+        loop = AgentLoop()
+        result = await loop.resume_task("nonexistent")
+        assert result["success"] is False
+
+    def test_event_emitter_creation(self):
+        emitter = EventEmitter()
+        assert emitter.subscriber_count == 0
+
+    def test_event_emitter_emit(self):
+        emitter = EventEmitter()
+        emitter.emit("step_started", "step_1", "测试步骤", "running")
+        assert emitter.subscriber_count == 0
+
+    def test_event_dataclass(self):
+        import time
+        event = Event(
+            event_type="step_completed",
+            step_id="step_1",
+            step_name="测试步骤",
+            status="completed",
+            timestamp=time.time(),
+            duration_ms=150.5
+        )
+        assert event.event_type == "step_completed"
+        assert event.duration_ms == 150.5
+
+    def test_agent_loop_has_event_emitter(self):
+        loop = AgentLoop()
+        assert hasattr(loop, 'event_emitter')
+        assert isinstance(loop.event_emitter, EventEmitter)
+
+    @pytest.mark.asyncio
+    async def test_run_with_session_id(self):
+        loop = AgentLoop()
+        result = await loop.run("帮我搜索AI趋势", session_id="test-session-001")
+        assert result["session_id"] == "test-session-001"
+
+    @pytest.mark.asyncio
+    async def test_run_generates_session_id(self):
+        loop = AgentLoop()
+        result = await loop.run("帮我搜索AI趋势")
+        assert result["session_id"] is not None
+        assert len(result["session_id"]) > 0
 
 
 if __name__ == "__main__":

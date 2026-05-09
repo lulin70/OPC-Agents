@@ -2,6 +2,59 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.9] - 2026-05-08
+
+### Added — PHASE3 端到端闭环
+
+实现从用户目标到任务完成的完整闭环，让Agent真正"能干活"。
+
+#### REQ-3.2: 长会话上下文传递
+
+- `AgentLoop.run` 新增 `session_id` 参数，支持多轮对话上下文保持
+- `AgentContext` 新增 `session_id` 字段
+- 集成 `SessionContextManager`，任务完成后自动写入对话历史
+- 策略脑理解意图时注入对话历史，支持追问场景
+- 自动生成 uuid4 格式 session_id
+
+#### REQ-3.3: 结果验证与自动修正
+
+- 新增 `CorrectionStrategy` 枚举：RETRY/SEARCH_AND_RETRY/SWITCH_SKILL/DEGRADE
+- `ReflectorBrain` 新增 `suggest_correction_strategy()` 方法
+- `ReflectorBrain` 新增 `_check_placeholders()` 占位符检测
+- `AgentLoop._phase_reflect` 集成自动修正循环
+- `AgentLoop` 新增 `_apply_correction()` 方法实现4种修正策略
+- 质量评分<0.6自动触发修正，最多修正2次
+- 修正后仍不达标标记需人工复核
+
+#### REQ-3.4: 多技能编排
+
+- `Intent` 新增 `sub_intents` 字段，支持复合意图拆解
+- `StrategistBrain` 新增 `_decompose_intent()` 复合意图分解方法
+- `StrategistBrain` 新增 `_detect_single_intent_type()` 单意图检测
+- `_generate_steps` 重构为支持子意图编排的 `_generate_skill_steps`
+- 复合意图自动拆解为多步骤执行计划（如"分析竞品并写方案"→搜索→分析→创作）
+
+#### REQ-3.1: 任务暂停/恢复
+
+- `AgentState` 新增 `PAUSED` 状态
+- `AgentContext` 新增 `paused_at` 字段记录暂停时间
+- `AgentLoop` 新增 `pause_task()` 方法
+- `AgentLoop` 新增 `resume_task()` 方法，从暂停点继续执行
+- 暂停超时30分钟自动取消（`PAUSE_TIMEOUT_SECONDS` 常量）
+
+#### REQ-3.5: 执行进度可视化
+
+- 新增 `Event` 数据类（event_type/step_id/step_name/status/timestamp/duration_ms）
+- 新增 `EventEmitter` 类，基于内存队列的事件发布/订阅
+- `AgentLoop` 集成 `EventEmitter`，步骤开始/完成/失败自动发事件
+- 任务完成发送 `task_completed` 事件
+- 支持 `subscribe()` 获取 AsyncIterator 事件流
+
+#### 测试
+
+- 新增22个PHASE3端到端闭环集成测试
+- 全量回归测试408个通过
+
 ## [0.1.8] - 2026-05-08
 
 ### Added — PHASE2 核心技能开发

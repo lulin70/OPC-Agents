@@ -690,9 +690,144 @@ def migrate_scenarios(registry: SkillRegistry) -> None:
 
 ---
 
-**文档版本**: v3.0  
+**文档版本**: v4.0  
 **创建日期**: 2026-05-07  
 **下次评审日期**: 2026-05-21
+
+---
+
+## 11. PHASE3 端到端闭环架构（v4.0 新增）
+
+> **背景**：PHASE2（v0.1.8）已完成6个核心技能从mock到真实能力的升级。PHASE3目标是实现从用户目标到任务完成的完整闭环，让Agent真正"能干活"。
+
+### 11.1 长会话上下文传递架构（REQ-3.2）
+
+**设计思路**：将SessionContextManager与AgentLoop集成，通过session_id关联会话。
+
+```
+AgentLoop.run(user_input, session_id=None)
+    │
+    ├─ session_id=None → 创建新会话
+    │   └─ SessionContextManager.create_session()
+    │
+    └─ session_id=xxx → 恢复已有会话
+        └─ SessionContextManager.get_context(session_id)
+            └─ 历史步骤结果 → SkillContext.step_results
+            └─ 对话历史 → StrategistBrain.understand_intent()
+```
+
+**关键变更**：
+- AgentLoop.run 新增 session_id 参数
+- AgentContext 新增 session_id 字段
+- 每步执行结果写入 SessionContextManager
+- 策略脑理解意图时注入对话历史
+
+### 11.2 结果验证与自动修正架构（REQ-3.3）
+
+**设计思路**：在AgentLoop的反思阶段增加自动修正循环。
+
+```
+AgentLoop._observe_and_reflect()
+    │
+    ├─ ReflectorBrain.evaluate_result() → quality_score
+    │
+    ├─ quality_score >= 0.6 → 继续
+    │
+    └─ quality_score < 0.6 → 自动修正
+        │
+        ├─ 修正策略选择：
+        │   ├─ retry: 重试当前步骤（最多2次）
+        │   ├─ search_and_retry: 补充搜索后重试
+        │   ├─ switch_skill: 换技能执行
+        │   └─ degrade: 降级到规则引擎
+        │
+        └─ 修正后重新评估 → 仍不达标 → 标记需人工复核
+```
+
+**关键变更**：
+- AgentLoop._observe_and_reflect 增加修正循环
+- ReflectorBrain 新增 suggest_correction_strategy() 方法
+- AgentContext 新增 correction_count 字段
+- 最大修正次数常量 MAX_CORRECTION_ATTEMPTS = 2
+
+### 11.3 多技能编排架构（REQ-3.4）
+
+**设计思路**：策略脑识别复合意图，生成多步骤执行计划。
+
+```
+StrategistBrain.create_plan(composite_intent)
+    │
+    ├─ 识别复合意图 → 拆解为子意图列表
+    │   例: "分析竞品并写方案" → [搜索, 分析, 内容创作]
+    │
+    ├─ 为每个子意图匹配技能
+    │   └─ SkillRegistry.find_by_intent()
+    │
+    ├─ 生成执行计划（多步骤ExecutionPlan）
+    │   └─ 步骤间数据依赖通过SkillContext传递
+    │
+    └─ 编排失败 → 降级为单技能执行
+```
+
+**关键变更**：
+- StrategistBrain 新增 create_composite_plan() 方法
+- Intent 新增 sub_intents 字段
+- ExecutionPlan 支持步骤间数据依赖声明
+- SkillContext.step_results 自动填充前序步骤结果
+
+### 11.4 任务暂停/恢复架构（REQ-3.1）
+
+**设计思路**：在AgentState中增加PAUSED状态，保存断点信息。
+
+```
+AgentState 新增:
+    PAUSED = "paused"
+
+AgentLoop 新增:
+    async pause_task(task_id) → 保存断点
+    async resume_task(task_id) → 从断点恢复
+
+断点信息:
+    - 当前步骤索引
+    - 已完成步骤结果
+    - AgentContext快照
+    - 暂停时间戳（用于超时检测）
+```
+
+**关键变更**：
+- AgentState 枚举新增 PAUSED
+- AgentLoop 新增 pause_task/resume_task 方法
+- AgentContext 新增 paused_at 字段
+- 后台定时器检查暂停超时（30分钟）
+
+### 11.5 执行进度可视化架构（REQ-3.5）
+
+**设计思路**：基于内存队列的事件流，支持SSE推送。
+
+```
+EventEmitter:
+    - emit(event_type, step_id, data)
+    - subscribe() → AsyncIterator[Event]
+
+Event:
+    - event_type: step_started / step_completed / step_failed / task_completed
+    - step_id: 步骤标识
+    - step_name: 步骤名称
+    - status: 状态
+    - duration_ms: 耗时
+    - timestamp: 时间戳
+
+集成点:
+    AgentLoop._execute_step() → emit("step_started")
+    AgentLoop._execute_step() → emit("step_completed")
+    AgentLoop._observe_and_reflect() → emit("step_failed")
+```
+
+**关键变更**：
+- 新增 EventEmitter 类（内存队列实现）
+- AgentLoop 持有 EventEmitter 实例
+- 每步执行前后发送事件
+- FastAPI SSE endpoint 订阅事件流
 
 ---
 
