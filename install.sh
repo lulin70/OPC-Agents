@@ -71,7 +71,7 @@ if [ ! -f ".env" ]; then
     else
         cat > .env << 'EOF'
 # OPC-Agents 配置文件
-# 版本: 0.1.9
+# 版本: 0.1.9-delta
 
 # === LLM API 配置（至少配置一个）===
 # 推荐：MOKA AI（支持 Claude Sonnet 4）
@@ -85,6 +85,11 @@ MOKA_MODEL=moka/claude-sonnet-4-6
 # 备选：OpenAI
 # OPENAI_API_KEY=
 # OPENAI_API_BASE=https://api.openai.com/v1
+
+# 备选：Ollama本地模型（无需API Key，使用OpenAI兼容端点）
+# OLLAMA_ENABLED=true
+# OLLAMA_BASE_URL=http://localhost:11434
+# OLLAMA_MODEL=llama3
 EOF
         echo -e "${GREEN}✓ 默认配置文件 .env 创建成功${NC}"
         echo -e "${YELLOW}⚠  请编辑 .env 配置 API 密钥${NC}"

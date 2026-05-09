@@ -1,6 +1,6 @@
 # OPC-Agents Beta Quick Start Guide
 
-> **Version**: v0.1.9  
+> **Version**: v0.1.9-delta  
 > **Updated**: 2026-05-09  
 > **Status**: Beta
 
@@ -15,6 +15,8 @@
 Thank you for participating in the OPC-Agents Beta test! This guide will help you get started quickly.
 
 **Latest Updates (2026-05-09)**:
+- ✅ v0.1.9-delta: Real-run verification — Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring
+- ✅ v0.1.9-gamma: Refactoring — Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor
 - ✅ v0.1.9: End-to-end closed loop — auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context
 - ✅ v0.1.8: Core skill development — 6 skills upgraded from mock to real + search enhancement + LLM integration
 - ✅ v0.1.7: Three-Sage Architecture — Strategist Brain + Executor Brain + Reflector Brain + Consensus Engine + Skill Registry + Tool Framework
@@ -295,5 +297,5 @@ Thank you for your participation! We value your feedback:
 
 ---
 
-*Last updated: 2026-05-03*  
-*Version: v0.1.6*
+*Last updated: 2026-05-09*  
+*Version: v0.1.9-delta*

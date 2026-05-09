@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.1.9 | **状態**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.1.9-delta | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -48,7 +48,12 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 - ✅ **ナレッジベースフォールバック** — 6カテゴリ20件の専門知識、検索失敗時の自動フォールバック
 - ✅ **ファイル納品** — `.md`ファイルを自動生成、ダウンロードボタン付き
 - ✅ **セキュリティ保護** — コマンドホワイトリスト+パス検証+入力長制限+監査ログ+入力検証+プロンプトインジェクション防御+URL安全性+エラー秘匿化+APIキー暗号化ストレージ
-- ✅ **テストカバレッジ** — 408テストケース、100%合格率、CI自動検証
+- ✅ **テストカバレッジ** — 470テストケース、100%合格率、CI自動検証
+- ✅ **スキルマーケットAPI** — 外部スキル登録/発見/呼び出し、APIキー認証+権限レベル
+- ✅ **MCPプロトコル互換** — Microsoft Model Context Protocol標準互換、ツール/リソース/プロンプト対応
+- ✅ **プラグインシステム** — コミュニティプラグインのホットロード+サンドボックス隔離+ライフサイクル管理
+- ✅ **カスタムスキルエディタ** — フォーム式スキル作成/テスト/プレビュー/公開
+- ✅ **品質/クイックモード** — ユーザー選択可能な三賢者フルクローズドループまたはリフレクションスキップ高速実行
 
 ## クイックスタート
 
@@ -129,6 +134,13 @@ OPC-Agents/
 │   ├── tool_system.py     # ツールフレームワーク（権限制御+セキュリティ保護+監査ログ）
 │   ├── utils.py           # ユーティリティ（BoundedDict+EventEmitter）
 │   ├── scenario_migrator.py# シナリオ移行ツール（9シナリオ→スキルマッピング）
+│   ├── task_engine_adapter.py# TaskEngineアダプタ（三賢者↔TaskEngineV3ブリッジ）
+│   ├── skill_marketplace.py # スキルマーケットAPI（登録/発見/呼び出し+認証+権限）
+│   ├── mcp_protocol.py      # MCPプロトコルサポート（Model Context Protocol互換）
+│   ├── mcp_transport.py     # MCP転送層（SSE + stdio）
+│   ├── plugin_system.py     # プラグインシステム（サンドボックス隔離+ライフサイクル管理）
+│   ├── skill_editor.py      # スキルエディタ（カスタムスキル作成/テスト/公開）
+│   ├── performance_monitor.py# パフォーマンス監視（SLA管理+LLMキャッシュ+メトリクス）
 │   ├── task_engine_v3.py  # タスク実行エンジン
 │   ├── llm_content.py     # LLM拡張コンテンツ生成（RAGハイブリッドモード）
 │   ├── llm_service.py     # LLMサービス層（MOKA/GLM/OpenAI/Ollama）
@@ -149,7 +161,7 @@ OPC-Agents/
 │   └── version.py         # バージョン管理（SSOT）
 ├── opc_hr/                # 検索＆ナレッジベース
 │   └── web_search.py      # DuckDuckGo Web検索
-├── tests/                 # テストスイート（450テスト、100%合格）
+├── tests/                 # テストスイート（470テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 ├── requirements.txt       # コア依存パッケージ
 ├── requirements-dev.txt   # 開発依存パッケージ（black/flake8/pytest）
@@ -176,6 +188,8 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| 0.1.9-delta | 2026-05-09 | 実動作検証：三賢者LLM駆動+スキルマーケットFastAPI+MCP転送+プラグイン例+エディタUI+パフォーマンス監視 |
+| 0.1.9-gamma | 2026-05-09 | リファクタリング：三賢者統合+スキルマーケットAPI+MCPプロトコル+プラグインシステム+スキルエディタ |
 | 0.1.9 | 2026-05-09 | エンドツーエンドクローズドループ：自動修正+マルチスキルオーケストレーション+タスク一時停止/再開+進捗可視化+長セッションコンテキスト |
 | 0.1.8 | 2026-05-08 | コアスキル開発：6スキルをモックからリアルにアップグレード+検索強化+LLM統合 |
 | 0.1.7 | 2026-05-07 | 三賢者アーキテクチャ：戦略脳+実行脳+反省脳+コンセンサスエンジン+スキルレジストリ+ツールフレームワーク |

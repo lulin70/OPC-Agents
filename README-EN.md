@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.1.9 | **Status**: Beta | **License**: MIT
+> **Version**: v0.1.9-delta | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -48,7 +48,12 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - ✅ **Knowledge Base Fallback** — 6 categories, 20 professional knowledge entries, auto-fallback when search fails
 - ✅ **File Delivery** — Auto-generates `.md` files with download button
 - ✅ **Security Protection** — Command whitelist + path validation + input length limit + audit log + input validation + Prompt injection defense + URL safety + error sanitization + encrypted API key storage
-- ✅ **Test Coverage** — 408 test cases, 100% pass rate, CI auto-verification
+- ✅ **Test Coverage** — 470 test cases, 100% pass rate, CI auto-verification
+- ✅ **Skill Marketplace API** — External skill registration/discovery/invocation, API Key auth + permission levels
+- ✅ **MCP Protocol Compatible** — Compatible with Microsoft Model Context Protocol standard, supports tools/resources/prompts
+- ✅ **Plugin System** — Community plugin hot-loading + sandbox isolation + lifecycle management
+- ✅ **Custom Skill Editor** — Form-based skill creation/testing/preview/publishing
+- ✅ **Quality/Fast Mode** — User-selectable three-sage full closed loop or skip-reflection fast execution
 
 ## Quick Start
 
@@ -129,6 +134,13 @@ OPC-Agents/
 │   ├── tool_system.py     # Tool Framework (permission control + security protection + audit log)
 │   ├── utils.py           # Utilities (BoundedDict + EventEmitter)
 │   ├── scenario_migrator.py# Scenario Migrator (9 scenarios → skill mapping)
+│   ├── task_engine_adapter.py# TaskEngine adapter (Three-Sage ↔ TaskEngineV3 bridge)
+│   ├── skill_marketplace.py # Skill Marketplace API (register/discover/invoke + auth + permissions)
+│   ├── mcp_protocol.py      # MCP protocol support (Model Context Protocol compatible)
+│   ├── mcp_transport.py     # MCP transport layer (SSE + stdio)
+│   ├── plugin_system.py     # Plugin system (sandbox isolation + lifecycle management)
+│   ├── skill_editor.py      # Skill editor (custom skill creation/testing/publishing)
+│   ├── performance_monitor.py# Performance monitoring (SLA management + LLM cache + metrics)
 │   ├── task_engine_v3.py  # Task execution engine
 │   ├── llm_content.py     # LLM-enhanced content generation (RAG hybrid mode)
 │   ├── llm_service.py     # LLM service layer (MOKA/GLM/OpenAI/Ollama)
@@ -149,7 +161,7 @@ OPC-Agents/
 │   └── version.py         # Version management (SSOT)
 ├── opc_hr/                # Search & knowledge base
 │   └── web_search.py      # DuckDuckGo web search
-├── tests/                 # Test suite (450 tests, 100% pass)
+├── tests/                 # Test suite (470 tests, 100% pass)
 ├── docs/                  # Project documentation
 ├── requirements.txt       # Core dependencies
 ├── requirements-dev.txt   # Dev dependencies (black/flake8/pytest)
@@ -176,6 +188,8 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| 0.1.9-delta | 2026-05-09 | Real-run verification: Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring |
+| 0.1.9-gamma | 2026-05-09 | Refactoring: Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor |
 | 0.1.9 | 2026-05-09 | End-to-end closed loop: auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context |
 | 0.1.8 | 2026-05-08 | Core skill development: 6 skills upgraded from mock to real + search enhancement + LLM integration |
 | 0.1.7 | 2026-05-07 | Three-Sage Architecture: Strategist Brain + Executor Brain + Reflector Brain + Consensus Engine + Skill Registry + Tool Framework |
