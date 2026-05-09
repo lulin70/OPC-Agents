@@ -2,6 +2,84 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.9-gamma] - 2026-05-09
+
+### Added — v0.1.9-gamma 整改优化（G1-G9全任务）
+
+#### G1: AgentLoop接入主流程（P0）
+- 新增 `TaskEngineAdapter`：ExecutorBrain与TaskEngineV3之间的适配器层
+  - IntentType→TaskType映射表（7种IntentType完整映射）
+  - skill_id→TaskType映射表（7个核心技能映射）
+  - sync/async桥接（`execute_skill_async`用`run_in_executor`包装）
+  - TaskResult↔Dict双向转换
+- 修改 `ExecutorBrain`：新增`task_engine_adapter`参数，优先使用Adapter执行
+- 修改 `frontend/app.py`：新增`execute_with_agent_loop()`函数，替代原入口
+  - `OPC_USE_AGENT_LOOP`环境变量控制入口选择
+  - AgentLoop失败自动降级到TaskEngineV3
+- 修改 `AgentLoop`：集成TaskEngineAdapter，新增总超时60秒机制
+
+#### G2: 策略脑替代IntentClassifier（P0）
+- TaskEngineAdapter中实现IntentType→TaskType完整映射
+- 策略脑通过AgentLoop._phase_plan()在运行时被调用
+- 保留IntentClassifier作为降级路径
+
+#### G3: 反思脑质量把关（P0）
+- AgentLoop总超时60秒（AGENT_LOOP_TIMEOUT_SECONDS）
+- 超时强制返回当前结果
+- 前端降级路径：AgentLoop异常→TaskEngineV3直接执行
+
+#### G4: 共识引擎集成（P1）
+- 共识引擎已在AgentLoop._consult_consensus()中集成
+- 新增决策日志持久化（JSONL格式，data/consensus_logs/）
+
+#### G5: 执行进度可视化（P1）
+- 前端侧边栏新增"执行模式"开关（质量模式/快速模式）
+- `OPC_SKIP_REFLECT`环境变量控制反思跳过
+- 快速模式：跳过反思评估，直接执行返回
+
+#### G6: 技能市场API（P1）
+- 新增 `SkillMarketplace`：技能注册/发现/调用
+  - API Key认证（SHA256哈希存储）
+  - 权限分级（read/write/execute）
+  - 技能审核流程（pending→approved/rejected）
+  - 技能发现（按分类/关键词搜索）
+  - 数据持久化（JSON格式）
+
+#### G7: MCP协议支持（P1）
+- 新增 `MCPServer`：Model Context Protocol兼容
+  - MCP Server端点（initialize/tools/list/tools/call/resources/prompts）
+  - 4个内置工具（execute_task/search_web/analyze_business/generate_content）
+  - 3个内置资源（deliverables/knowledge-base/skills）
+  - 2个内置提示词（business_analysis/content_creation）
+  - JSON-RPC 2.0协议
+
+#### G8: 插件系统（P2）
+- 新增 `PluginManager`：插件生命周期管理
+  - 插件注册/初始化/执行/停止/卸载
+  - 依赖解析（缺失依赖拒绝注册）
+- 新增 `PluginSandbox`：沙箱隔离
+  - 安全红线：禁止未授权的文件系统/网络/环境变量/子进程访问
+  - 受限import（仅允许json/math/re/datetime等安全模块）
+  - 访问日志记录
+  - 执行超时限制（30秒）
+
+#### G9: 自定义技能编辑器（P2）
+- 新增 `SkillEditor`：表单式技能配置
+  - 技能创建/编辑/删除
+  - 参数定义（类型/必填/默认值/枚举）
+  - 模板预览（{{变量}}替换）
+  - 技能测试（参数校验+预览）
+  - 发布到技能市场
+  - 数据持久化（JSON格式）
+
+### Testing
+- 新增42个gamma集成测试（test_gamma_integration.py）
+- 全量测试：450 passed, 21 skipped
+
+### Changed
+- VERSION: 0.1.9-beta → 0.1.9-gamma
+- version.py: __version__ = "0.1.9-gamma"
+
 ## [0.1.9-beta] - 2026-05-09
 
 ### Changed — Phase 3.5 公开测试版

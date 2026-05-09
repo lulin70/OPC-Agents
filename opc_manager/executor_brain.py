@@ -65,9 +65,10 @@ class ExecutionStatus:
 
 class ExecutorBrain:
 
-    def __init__(self, skill_registry=None, tool_system=None):
+    def __init__(self, skill_registry=None, tool_system=None, task_engine_adapter=None):
         self.skill_registry = skill_registry
         self.tool_system = tool_system
+        self.task_engine_adapter = task_engine_adapter
         self.task_statuses: BoundedDict = BoundedDict(max_size=MAX_TASK_HISTORY)
 
     async def execute_step(self, step_id: str, skill_id: str,
@@ -120,6 +121,20 @@ class ExecutorBrain:
 
     async def _execute_skill(self, skill_id: str, parameters: Dict[str, Any],
                             context: Optional[Dict]) -> ExecutionResult:
+        if self.task_engine_adapter:
+            try:
+                result_dict = await self.task_engine_adapter.execute_skill_async(
+                    skill_id, parameters, context
+                )
+                return ExecutionResult(
+                    success=result_dict.get("success", False),
+                    data=result_dict.get("data", {}),
+                    error=result_dict.get("error"),
+                    execution_time=result_dict.get("execution_time", 0),
+                )
+            except Exception as e:
+                logger.warning(f"TaskEngineAdapter执行失败，降级到skill_registry: {e}")
+
         if self.skill_registry:
             skill = self.skill_registry.get_skill(skill_id)
             if skill is None:

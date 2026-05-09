@@ -149,7 +149,7 @@ OPC-Agents/
 │   └── version.py         # Version management (SSOT)
 ├── opc_hr/                # Search & knowledge base
 │   └── web_search.py      # DuckDuckGo web search
-├── tests/                 # Test suite (408 tests, 100% pass)
+├── tests/                 # Test suite (450 tests, 100% pass)
 ├── docs/                  # Project documentation
 ├── requirements.txt       # Core dependencies
 ├── requirements-dev.txt   # Dev dependencies (black/flake8/pytest)

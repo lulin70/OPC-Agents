@@ -149,7 +149,7 @@ OPC-Agents/
 │   └── version.py         # バージョン管理（SSOT）
 ├── opc_hr/                # 検索＆ナレッジベース
 │   └── web_search.py      # DuckDuckGo Web検索
-├── tests/                 # テストスイート（408テスト、100%合格）
+├── tests/                 # テストスイート（450テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 ├── requirements.txt       # コア依存パッケージ
 ├── requirements-dev.txt   # 開発依存パッケージ（black/flake8/pytest）

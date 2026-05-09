@@ -463,6 +463,102 @@ def save_deliverable(
     return filepath, deliverable_record
 
 
+def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
+    """Execute task via AgentLoop (Three-Sage Architecture) with fallback to TaskEngineV3
+
+    Returns:
+        Same format as execute_task_and_deliver:
+        (content_with_meta, success, filepath, task_type_value, deliverable_record)
+    """
+    import os
+    import asyncio
+
+    use_agent_loop = os.environ.get("OPC_USE_AGENT_LOOP", "true").lower() == "true"
+
+    if not use_agent_loop:
+        return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+
+    try:
+        from opc_manager.agent_loop import AgentLoop
+        from opc_manager.task_engine_adapter import TaskEngineAdapter
+        from opc_manager.task_engine_v3 import task_engine_v3
+
+        adapter = TaskEngineAdapter(task_engine=task_engine_v3)
+        agent_loop = AgentLoop(task_engine_adapter=adapter)
+
+        loop = asyncio.new_event_loop()
+        try:
+            result_dict = loop.run_until_complete(
+                agent_loop.run(prompt, session_id=getattr(session_ctx, '_session_id', None) if session_ctx else None)
+            )
+        finally:
+            loop.close()
+
+        if not result_dict.get("success"):
+            logger.warning(f"[frontend] AgentLoop执行失败，降级到TaskEngineV3")
+            return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+
+        from opc_manager.task_engine_adapter import TaskEngineAdapter as TEA
+        task_result = TEA.dict_to_task_result(result_dict)
+
+        if not task_result.content:
+            results = result_dict.get("results", [])
+            if results:
+                last = results[-1]
+                data = last.get("data", {})
+                if isinstance(data, dict):
+                    task_result.content = data.get("content", "")
+                elif isinstance(data, str):
+                    task_result.content = data
+
+        if not task_result.content:
+            logger.warning("[frontend] AgentLoop返回空内容，降级到TaskEngineV3")
+            return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+
+        from opc_manager.task_engine_v3 import TaskType
+        if task_result.task_type == TaskType.GENERAL_CHAT and len(task_result.content) < 300:
+            return task_result.content, True, None, "general_chat", None
+
+        meta_lines = []
+        if task_result.execution_time_ms:
+            meta_lines.append(f"⏱️ 执行耗时: {task_result.execution_time_ms:.0f}ms")
+        type_labels = {
+            TaskType.INFO_COLLECTION: "🔍 信息收集",
+            TaskType.CONTENT_GENERATION: "✍️ 内容生成",
+            TaskType.DATA_ANALYSIS: "📊 数据分析",
+            TaskType.SCENARIO_BASED: "🎯 场景工作流",
+            TaskType.GENERAL_CHAT: "💬 智能对话",
+        }
+        task_type_label = type_labels.get(task_result.task_type, "通用")
+        meta_lines.append(f"📌 任务类型: {task_type_label}")
+        meta_lines.append("🧠 三贤者架构执行")
+        if task_result.sources:
+            meta_lines.append(f"🔗 信息来源: {len(task_result.sources)} 条")
+
+        meta_str = "\n".join(meta_lines)
+        content_with_meta = f"{task_result.content}\n\n---\n*{meta_str}*"
+
+        filepath, deliverable_record = save_deliverable(
+            content=content_with_meta,
+            prompt=prompt,
+            task_type=task_result.task_type.value,
+            meta={
+                "sources_count": len(task_result.sources) if task_result.sources else 0,
+                "execution_time_ms": task_result.execution_time_ms,
+                "success": task_result.success,
+                "agent_loop": True,
+            },
+        )
+
+        return content_with_meta, task_result.success, filepath, task_result.task_type.value, deliverable_record
+
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        logger.warning(f"[frontend] AgentLoop异常，降级到TaskEngineV3: {e}\n{tb}")
+        return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+
+
 def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
     """Execute task pipeline — from user input to file delivery
 
@@ -570,7 +666,7 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
     """
     try:
         print(f"[frontend-async] 开始后台执行: {prompt[:50]}")
-        content, success, filepath, task_type, deliverable_record = execute_task_and_deliver(
+        content, success, filepath, task_type, deliverable_record = execute_with_agent_loop(
             prompt, session_ctx=session_ctx, business_type=business_type
         )
         print(
@@ -627,6 +723,17 @@ with st.sidebar:
     if st.session_state.deliverables:
         st.divider()
         st.markdown(f"**📦 已生成 {len(st.session_state.deliverables)} 个成果物**")
+
+    st.divider()
+    exec_mode = st.radio(
+        "🧠 执行模式",
+        ["质量模式", "快速模式"],
+        index=0,
+        help="质量模式：三贤者架构（策略脑+执行脑+反思脑），自动修正低质量结果\n快速模式：直接执行，跳过反思评估"
+    )
+    import os
+    os.environ["OPC_USE_AGENT_LOOP"] = "true" if exec_mode == "质量模式" else "false"
+    os.environ["OPC_SKIP_REFLECT"] = "false" if exec_mode == "质量模式" else "true"
 
     st.divider()
     from opc_manager.version import get_version

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import asyncio
 import logging
+import os
 import time
 import uuid
 
@@ -23,6 +24,7 @@ from .consensus_engine import ConsensusEngine, Opinion, OpinionType, DecisionTyp
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
 from .session_context import SessionContextManager
+from .task_engine_adapter import TaskEngineAdapter
 from .utils import BoundedDict, EventEmitter
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,7 @@ MAX_REFLECT_ROUNDS = 3
 RETRY_BACKOFF_BASE = 2
 RETRY_BACKOFF_CAP = 10
 PAUSE_TIMEOUT_SECONDS = 1800
+AGENT_LOOP_TIMEOUT_SECONDS = 60
 
 
 class AgentState(Enum):
@@ -77,10 +80,12 @@ class AgentLoop:
                  skill_registry: SkillRegistry = None,
                  tool_system: ToolSystem = None,
                  session_manager: SessionContextManager = None,
+                 task_engine_adapter: TaskEngineAdapter = None,
                  max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
                  max_retry_per_step: int = MAX_RETRY_PER_STEP):
+        self.task_engine_adapter = task_engine_adapter or TaskEngineAdapter()
         self.strategist_brain = strategist_brain or StrategistBrain()
-        self.executor_brain = executor_brain or ExecutorBrain()
+        self.executor_brain = executor_brain or ExecutorBrain(task_engine_adapter=self.task_engine_adapter)
         self.reflector_brain = reflector_brain or ReflectorBrain()
         self.consensus_engine = consensus_engine or ConsensusEngine()
         self.skill_registry = skill_registry or SkillRegistry()
@@ -98,6 +103,8 @@ class AgentLoop:
 
         if not user_input or not user_input.strip():
             return {"success": False, "error": "用户输入不能为空", "message": "输入无效"}
+
+        run_start_time = time.time()
 
         task_id = f"agent_task_{uuid.uuid4().hex[:8]}"
         agent_context = AgentContext(
@@ -121,7 +128,20 @@ class AgentLoop:
                 agent_context.set_state(AgentState.CANCELLED)
                 return self._build_result(agent_context, cancelled=True)
 
+            skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
+
+            if skip_reflect:
+                agent_context.set_state(AgentState.EXECUTING)
+                await self._phase_execute(agent_context)
+                agent_context.set_state(AgentState.COMPLETED)
+                return self._build_result(agent_context)
+
             for reflect_round in range(self.max_reflect_rounds):
+                if time.time() - run_start_time > AGENT_LOOP_TIMEOUT_SECONDS:
+                    logger.warning(f"AgentLoop总超时({AGENT_LOOP_TIMEOUT_SECONDS}s)，强制返回当前结果")
+                    agent_context.set_state(AgentState.COMPLETED)
+                    return self._build_result(agent_context)
+
                 agent_context.set_state(AgentState.EXECUTING)
                 await self._phase_execute(agent_context)
 
@@ -558,6 +578,8 @@ class AgentLoop:
             reflector_opinion
         ])
 
+        self._log_consensus_decision(context, evaluation, decision)
+
         if decision.decision_type == DecisionType.VETOED:
             logger.info(f"共识引擎否决: {decision.reasoning}")
             return NextAction(
@@ -575,6 +597,29 @@ class AgentLoop:
             )
 
         return None
+
+    def _log_consensus_decision(self, context: AgentContext,
+                                 evaluation: Evaluation,
+                                 decision) -> None:
+        import json
+        import os
+        log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "consensus_logs")
+        os.makedirs(log_dir, exist_ok=True)
+        log_entry = {
+            "task_id": context.task_id,
+            "quality_score": evaluation.quality_score,
+            "result_level": evaluation.result.name,
+            "decision_type": decision.decision_type.name if decision.decision_type else None,
+            "confidence": decision.confidence,
+            "reasoning": decision.reasoning,
+            "timestamp": time.time(),
+        }
+        log_file = os.path.join(log_dir, f"{context.task_id}.jsonl")
+        try:
+            with open(log_file, "a") as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        except Exception as e:
+            logger.warning(f"共识日志写入失败: {e}")
 
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         context = self.contexts.get(task_id)

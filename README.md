@@ -48,7 +48,12 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **知识库兜底** — 6类20条专业知识，搜索失败时自动兜底
 - ✅ **文件交付** — 自动生成`.md`文件，提供下载按钮
 - ✅ **安全防护** — 命令白名单+路径校验+输入长度限制+审计日志+输入验证+Prompt注入防护+URL安全+错误脱敏+API Key加密存储
-- ✅ **测试覆盖** — 408个测试用例，100%通过率，CI自动验证
+- ✅ **测试覆盖** — 450个测试用例，100%通过率，CI自动验证
+- ✅ **技能市场API** — 外部技能注册/发现/调用，API Key认证+权限分级
+- ✅ **MCP协议兼容** — 兼容微软Model Context Protocol标准，支持工具/资源/提示词
+- ✅ **插件系统** — 社区插件热加载+沙箱隔离+生命周期管理
+- ✅ **自定义技能编辑器** — 表单式技能创建/测试/预览/发布
+- ✅ **质量/快速模式** — 用户可选三贤者完整闭环或跳过反思快速执行
 
 ## 快速开始
 
@@ -129,6 +134,11 @@ OPC-Agents/
 │   ├── tool_system.py     # 工具调用框架（权限控制+安全防护+审计日志）
 │   ├── utils.py           # 公共工具（BoundedDict+EventEmitter）
 │   ├── scenario_migrator.py# 场景迁移器（9场景→技能映射）
+│   ├── task_engine_adapter.py# TaskEngine适配器（三贤者↔TaskEngineV3桥接）
+│   ├── skill_marketplace.py # 技能市场API（注册/发现/调用+认证+权限）
+│   ├── mcp_protocol.py      # MCP协议支持（Model Context Protocol兼容）
+│   ├── plugin_system.py     # 插件系统（沙箱隔离+生命周期管理）
+│   ├── skill_editor.py      # 技能编辑器（自定义技能创建/测试/发布）
 │   ├── task_engine_v3.py  # 任务执行引擎
 │   ├── llm_content.py     # LLM增强内容生成（RAG混合模式）
 │   ├── llm_service.py     # LLM服务层（MOKA/GLM/OpenAI/Ollama）
@@ -149,7 +159,7 @@ OPC-Agents/
 │   └── version.py         # 版本号管理（SSOT）
 ├── opc_hr/                # 搜索与知识库
 │   └── web_search.py      # DuckDuckGo网络搜索
-├── tests/                 # 测试套件（408个测试，100%通过）
+├── tests/                 # 测试套件（450个测试，100%通过）
 ├── docs/                  # 项目文档
 ├── requirements.txt       # 核心依赖
 ├── requirements-dev.txt   # 开发依赖（含black/flake8/pytest）
@@ -176,6 +186,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| 0.1.9-gamma | 2026-05-09 | 整改优化：三贤者接入主流程+技能市场API+MCP协议+插件系统+技能编辑器 |
 | 0.1.9 | 2026-05-09 | 端到端闭环：自动修正+多技能编排+任务暂停/恢复+进度可视化+长会话上下文 |
 | 0.1.8 | 2026-05-08 | 核心技能开发：6技能从mock升级为真实能力+搜索增强+LLM集成 |
 | 0.1.7 | 2026-05-07 | 三贤者架构：策略脑+执行脑+反思脑+共识引擎+技能注册表+工具框架 |
