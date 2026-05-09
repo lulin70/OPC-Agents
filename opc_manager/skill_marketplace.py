@@ -28,8 +28,6 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "marketplace")
-API_KEYS_FILE = os.path.join(DATA_DIR, "api_keys.json")
-SKILLS_FILE = os.path.join(DATA_DIR, "skills.json")
 
 
 class PermissionLevel(str, Enum):
@@ -84,15 +82,17 @@ class SkillMarketplace:
 
     def __init__(self, data_dir: Optional[str] = None):
         self._data_dir = data_dir or DATA_DIR
+        self._api_keys_file = os.path.join(self._data_dir, "api_keys.json")
+        self._skills_file = os.path.join(self._data_dir, "skills.json")
         os.makedirs(self._data_dir, exist_ok=True)
         self._api_keys: Dict[str, APIKey] = {}
         self._skills: Dict[str, MarketplaceSkill] = {}
         self._load_data()
 
     def _load_data(self) -> None:
-        if os.path.exists(API_KEYS_FILE):
+        if os.path.exists(self._api_keys_file):
             try:
-                with open(API_KEYS_FILE, "r") as f:
+                with open(self._api_keys_file, "r") as f:
                     data = json.load(f)
                 for k, v in data.items():
                     perms = [PermissionLevel(p) for p in v.get("permissions", ["read"])]
@@ -104,9 +104,9 @@ class SkillMarketplace:
             except Exception as e:
                 logger.warning(f"加载API Keys失败: {e}")
 
-        if os.path.exists(SKILLS_FILE):
+        if os.path.exists(self._skills_file):
             try:
-                with open(SKILLS_FILE, "r") as f:
+                with open(self._skills_file, "r") as f:
                     data = json.load(f)
                 for k, v in data.items():
                     perms = [PermissionLevel(p) for p in v.get("permissions", ["read"])]
@@ -133,7 +133,7 @@ class SkillMarketplace:
                     "permissions": [p.value for p in v.permissions],
                     "created_at": v.created_at, "rate_limit": v.rate_limit
                 }
-            with open(API_KEYS_FILE, "w") as f:
+            with open(self._api_keys_file, "w") as f:
                 json.dump(keys_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.warning(f"保存API Keys失败: {e}")
@@ -151,7 +151,7 @@ class SkillMarketplace:
                     "created_at": v.created_at, "updated_at": v.updated_at,
                     "config": v.config
                 }
-            with open(SKILLS_FILE, "w") as f:
+            with open(self._skills_file, "w") as f:
                 json.dump(skills_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.warning(f"保存技能数据失败: {e}")

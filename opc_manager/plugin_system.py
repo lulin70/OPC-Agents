@@ -195,8 +195,6 @@ class PluginManager:
             return {"success": False, "error": f"Plugin not initialized: {instance.state.value}"}
 
         sandbox = self._sandboxes.get(plugin_id)
-        if sandbox and not sandbox.check_permission(Permission.SUBPROCESS):
-            pass
 
         try:
             instance.state = PluginState.RUNNING
@@ -206,6 +204,12 @@ class PluginManager:
                 return {"success": False, "error": f"Method not found: {method}"}
 
             func = getattr(instance.module, method)
+
+            if sandbox:
+                for perm in [Permission.FILESYSTEM, Permission.NETWORK, Permission.ENV_VARS, Permission.SUBPROCESS]:
+                    if perm not in sandbox.allowed_permissions:
+                        sandbox.log_access(plugin_id, "blocked", perm.value, False)
+
             result = func(**parameters)
 
             elapsed = time.time() - start_time

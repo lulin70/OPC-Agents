@@ -47,6 +47,7 @@ import html
 import traceback
 import time
 import json
+import logging
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -65,6 +66,8 @@ except Exception as e:
     _logging.getLogger(__name__).warning(f"Secure storage init failed: {e}")
 
 from opc_manager.monitoring import init_monitoring, track_event, track_error
+
+logger = logging.getLogger(__name__)
 
 init_monitoring()
 
@@ -483,8 +486,10 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
         from opc_manager.task_engine_adapter import TaskEngineAdapter
         from opc_manager.task_engine_v3 import task_engine_v3
 
-        adapter = TaskEngineAdapter(task_engine=task_engine_v3)
-        agent_loop = AgentLoop(task_engine_adapter=adapter)
+        if "agent_loop" not in st.session_state:
+            adapter = TaskEngineAdapter(task_engine=task_engine_v3)
+            st.session_state.agent_loop = AgentLoop(task_engine_adapter=adapter)
+        agent_loop = st.session_state.agent_loop
 
         loop = asyncio.new_event_loop()
         try:

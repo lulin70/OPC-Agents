@@ -225,8 +225,17 @@ class MCPServer:
         tool_name = params.get("name", "")
         arguments = params.get("arguments", {})
 
+        if not tool_name:
+            return {"content": [{"type": "text", "text": "Missing tool name"}], "isError": True}
+
         if tool_name not in self._tools:
             return {"content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}], "isError": True}
+
+        tool = self._tools[tool_name]
+        required_params = tool.input_schema.get("required", [])
+        for rp in required_params:
+            if rp not in arguments:
+                return {"content": [{"type": "text", "text": f"Missing required parameter: {rp}"}], "isError": True}
 
         if tool_name == "execute_task" and self.task_engine_adapter:
             user_input = arguments.get("user_input", "")
