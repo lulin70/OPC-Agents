@@ -86,7 +86,8 @@ class NextAction:
 class ReflectorBrain:
     """反思脑 — 负责结果评估和策略调整"""
 
-    def __init__(self):
+    def __init__(self, llm_service=None):
+        self.llm_service = llm_service
         """初始化反思脑"""
         # 评估阈值配置
         self.evaluation_thresholds = {
@@ -99,33 +100,25 @@ class ReflectorBrain:
 
     def evaluate_result(self, actual_result: Dict[str, Any], 
                        expected_intent: Dict[str, Any]) -> Evaluation:
-        """
-        评估执行结果
-        
-        Args:
-            actual_result: 实际执行结果
-            expected_intent: 预期意图
-        
-        Returns:
-            Evaluation: 评估结果（符合度、质量评分、偏差分析）
-        """
         logger.info("开始评估执行结果")
         
-        # 提取关键信息
+        if self.llm_service:
+            try:
+                evaluation = self._evaluate_with_llm(actual_result, expected_intent)
+                if evaluation:
+                    logger.info(f"LLM评估完成: {evaluation.result.name} (质量评分: {evaluation.quality_score:.2f})")
+                    return evaluation
+                logger.info("LLM评估失败，降级到规则评估")
+            except Exception as e:
+                logger.warning(f"LLM评估异常，降级到规则评估: {e}")
+        
         success = actual_result.get("success", False)
         data = actual_result.get("data", {})
         error = actual_result.get("error", "")
         
-        # 计算质量评分
         quality_score = self._calculate_quality_score(actual_result, expected_intent)
-        
-        # 确定评估等级
         result_type = self._determine_result_type(quality_score)
-        
-        # 分析偏差
         deviation_analysis = self._analyze_deviation(actual_result, expected_intent)
-        
-        # 提取关键发现
         key_findings = self._extract_key_findings(actual_result, expected_intent)
         
         evaluation = Evaluation(
@@ -137,6 +130,85 @@ class ReflectorBrain:
         
         logger.info(f"评估完成: {result_type.name} (质量评分: {quality_score:.2f})")
         return evaluation
+
+    def _evaluate_with_llm(self, actual_result: Dict[str, Any],
+                           expected_intent: Dict[str, Any]) -> Optional[Evaluation]:
+        import json, re
+        
+        content = ""
+        data = actual_result.get("data", {})
+        if isinstance(data, dict):
+            content = str(data.get("content", ""))[:800]
+        elif isinstance(data, str):
+            content = data[:800]
+        
+        if not content:
+            return None
+        
+        goal = str(expected_intent.get("goal", ""))[:200] if isinstance(expected_intent, dict) else ""
+        content = content.replace("```", "").replace("---", "")
+        goal = goal.replace("```", "").replace("---", "")
+        
+        prompt = f"""评估以下任务执行结果的质量。
+
+用户目标: {goal}
+执行结果摘要: {content[:800]}
+
+请返回JSON格式（不要包含其他内容）:
+{{
+  "quality_score": 0.0-1.0的质量评分,
+  "result_level": "EXCELLENT|GOOD|ACCEPTABLE|POOR|FAILURE",
+  "deviation_analysis": "偏差分析（一句话）",
+  "key_findings": ["发现1", "发现2"],
+  "improvement_suggestion": "改进建议（如有）"
+}}
+
+评分标准:
+- EXCELLENT(0.9+): 完全满足目标，内容充实有深度
+- GOOD(0.7-0.9): 基本满足目标，内容质量良好
+- ACCEPTABLE(0.5-0.7): 部分满足目标，有改进空间
+- POOR(0.3-0.5): 未能满足目标，需要修正
+- FAILURE(<0.3): 完全未满足目标"""
+
+        llm_response = self._call_llm(prompt)
+        if not llm_response:
+            return None
+        
+        try:
+            json_match = re.search(r'\{[\s\S]*\}', llm_response)
+            if not json_match:
+                return None
+            data = json.loads(json_match.group())
+            
+            quality_score = min(1.0, max(0.0, float(data.get("quality_score", 0.5))))
+            result_level_str = data.get("result_level", "ACCEPTABLE")
+            result_type = EvaluationResult.ACCEPTABLE
+            for rt in EvaluationResult:
+                if rt.name == result_level_str:
+                    result_type = rt
+                    break
+            
+            return Evaluation(
+                result=result_type,
+                quality_score=quality_score,
+                deviation_analysis=data.get("deviation_analysis", ""),
+                key_findings=data.get("key_findings", [])
+            )
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.warning(f"LLM评估结果解析失败: {e}")
+            return None
+
+    def _call_llm(self, prompt: str) -> Optional[str]:
+        if not self.llm_service:
+            return None
+        try:
+            if hasattr(self.llm_service, 'generate'):
+                return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
+            elif hasattr(self.llm_service, '_call_llm_api'):
+                return self.llm_service._call_llm_api(prompt)
+        except Exception as e:
+            logger.warning(f"LLM调用失败: {e}")
+        return None
 
     def _calculate_quality_score(self, actual: Dict[str, Any], expected: Dict[str, Any]) -> float:
         if not isinstance(actual, dict):

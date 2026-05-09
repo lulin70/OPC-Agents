@@ -488,7 +488,12 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
         if "agent_loop" not in st.session_state:
             adapter = TaskEngineAdapter(task_engine=task_engine_v3)
-            st.session_state.agent_loop = AgentLoop(task_engine_adapter=adapter)
+            from opc_manager.llm_content import LLMEnhancedContentGenerator
+            llm_gen = LLMEnhancedContentGenerator()
+            st.session_state.agent_loop = AgentLoop(
+                task_engine_adapter=adapter,
+                llm_service=llm_gen
+            )
         agent_loop = st.session_state.agent_loop
 
         loop = asyncio.new_event_loop()
@@ -739,6 +744,44 @@ with st.sidebar:
     import os
     os.environ["OPC_USE_AGENT_LOOP"] = "true" if exec_mode == "质量模式" else "false"
     os.environ["OPC_SKIP_REFLECT"] = "false" if exec_mode == "质量模式" else "true"
+
+    st.divider()
+    if st.button("🔧 技能编辑器", use_container_width=True):
+        st.session_state.show_skill_editor = not st.session_state.get("show_skill_editor", False)
+
+    if st.session_state.get("show_skill_editor", False):
+        st.markdown("#### 技能编辑器")
+        from opc_manager.skill_editor import SkillEditor, CustomSkill, SkillParameter, ParameterType, OutputFormat
+        editor = SkillEditor()
+        with st.form("create_skill_form"):
+            sk_name = st.text_input("技能名称", key="sk_name")
+            sk_desc = st.text_input("描述", key="sk_desc")
+            sk_cat = st.selectbox("分类", ["custom", "analysis", "creation", "search", "operation"], key="sk_cat")
+            sk_output = st.selectbox("输出格式", ["markdown", "json", "text"], key="sk_output")
+            sk_template = st.text_area("模板 (用{{变量名}}占位)", key="sk_template", height=100)
+            submitted = st.form_submit_button("创建技能")
+            if submitted and sk_name:
+                import re
+                if not re.match(r'^[\w\u4e00-\u9fff\s-]+$', sk_name) or len(sk_name) > 50:
+                    st.error("技能名称只能包含字母、数字、中文、下划线、连字符，且不超过50字符")
+                elif len(sk_desc) > 500:
+                    st.error("描述不能超过500字符")
+                else:
+                    skill = CustomSkill(
+                        skill_id=f"custom_{sk_name.lower().replace(' ', '_')}",
+                        name=sk_name, description=sk_desc, category=sk_cat,
+                        output_format=OutputFormat(sk_output), template=sk_template,
+                    )
+                    result = editor.create_skill(skill)
+                    if result["success"]:
+                        st.success(f"技能 '{sk_name}' 创建成功！")
+                    else:
+                        st.error(result.get("error", "创建失败"))
+        skills = editor.list_skills()
+        if skills:
+            st.markdown(f"**已创建 {len(skills)} 个自定义技能**")
+            for s in skills[:5]:
+                st.markdown(f"- {s['name']} ({s['skill_id']})")
 
     st.divider()
     from opc_manager.version import get_version

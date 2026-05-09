@@ -48,7 +48,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **知识库兜底** — 6类20条专业知识，搜索失败时自动兜底
 - ✅ **文件交付** — 自动生成`.md`文件，提供下载按钮
 - ✅ **安全防护** — 命令白名单+路径校验+输入长度限制+审计日志+输入验证+Prompt注入防护+URL安全+错误脱敏+API Key加密存储
-- ✅ **测试覆盖** — 450个测试用例，100%通过率，CI自动验证
+- ✅ **测试覆盖** — 470个测试用例，100%通过率，CI自动验证
 - ✅ **技能市场API** — 外部技能注册/发现/调用，API Key认证+权限分级
 - ✅ **MCP协议兼容** — 兼容微软Model Context Protocol标准，支持工具/资源/提示词
 - ✅ **插件系统** — 社区插件热加载+沙箱隔离+生命周期管理
@@ -159,7 +159,7 @@ OPC-Agents/
 │   └── version.py         # 版本号管理（SSOT）
 ├── opc_hr/                # 搜索与知识库
 │   └── web_search.py      # DuckDuckGo网络搜索
-├── tests/                 # 测试套件（450个测试，100%通过）
+├── tests/                 # 测试套件（470个测试，100%通过）
 ├── docs/                  # 项目文档
 ├── requirements.txt       # 核心依赖
 ├── requirements-dev.txt   # 开发依赖（含black/flake8/pytest）

@@ -145,6 +145,16 @@ class StrategistBrain:
     def understand_intent(self, user_input: str, context: Optional[Dict] = None) -> Intent:
         logger.info(f"开始理解意图: {user_input[:50]}...")
         
+        if self.llm_service:
+            try:
+                intent = self._understand_intent_with_llm(user_input, context)
+                if intent and intent.confidence > 0.5:
+                    logger.info(f"LLM意图理解成功: {intent.type.name} (置信度: {intent.confidence:.2f})")
+                    return intent
+                logger.info("LLM意图理解置信度不足，降级到关键词匹配")
+            except Exception as e:
+                logger.warning(f"LLM意图理解失败，降级到关键词匹配: {e}")
+        
         intent_type = self._detect_intent_type(user_input)
         constraints = self._extract_constraints(user_input)
         goal = self._extract_goal(user_input, intent_type)
@@ -169,6 +179,92 @@ class StrategistBrain:
         
         logger.info(f"意图理解完成: {intent.type.name} - '{goal}' (置信度: {confidence:.2f}, 子意图: {len(sub_intents)})")
         return intent
+
+    def _understand_intent_with_llm(self, user_input: str, context: Optional[Dict] = None) -> Optional[Intent]:
+        sanitized_input = user_input[:500].replace("```", "").replace("---", "")
+        
+        prompt = f"""分析以下用户请求，返回JSON格式的意图分析结果。
+
+用户请求: {sanitized_input}
+
+请返回如下JSON格式（不要包含其他内容）:
+{{
+  "goal": "用户的核心目标（一句话描述）",
+  "intent_type": "analysis|creation|operation|search|notification|combined",
+  "confidence": 0.0-1.0的置信度,
+  "sub_intents": ["子意图1", "子意图2"],
+  "constraints": ["约束1", "约束2"]
+}}
+
+意图类型说明:
+- analysis: 分析/调研/评估/竞品分析/SWOT/对比
+- creation: 写/创建/生成/制作/起草/方案/报告/计划
+- operation: 执行/操作/处理/整理/转换
+- search: 搜索/查找/查询/了解
+- notification: 通知/提醒/发送/告知
+- combined: 包含两个及以上不同类型的子任务"""
+
+        llm_response = self._call_llm(prompt)
+        if not llm_response:
+            return None
+
+        try:
+            json_match = re.search(r'\{[\s\S]*\}', llm_response)
+            if not json_match:
+                return None
+            data = json.loads(json_match.group())
+            
+            intent_type_str = data.get("intent_type", "unknown")
+            intent_type = IntentType.UNKNOWN
+            for it in IntentType:
+                if it.value == intent_type_str:
+                    intent_type = it
+                    break
+            
+            goal = data.get("goal", user_input)
+            confidence = min(1.0, max(0.0, float(data.get("confidence", 0.5))))
+            
+            sub_intents = []
+            for sub_goal in data.get("sub_intents", []):
+                sub_type = self._detect_intent_type(sub_goal)
+                sub_intents.append(Intent(
+                    goal=sub_goal,
+                    type=sub_type,
+                    confidence=self._calculate_confidence(sub_goal, sub_type)
+                ))
+            
+            constraints = []
+            for c_str in data.get("constraints", []):
+                constraints.append(Constraint(
+                    type=ConstraintType.SCOPE,
+                    value=None,
+                    description=c_str
+                ))
+            constraints.extend(self._extract_constraints(user_input))
+            
+            return Intent(
+                goal=goal,
+                type=intent_type,
+                constraints=constraints,
+                context=context or {},
+                confidence=confidence,
+                sub_intents=sub_intents
+            )
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.warning(f"LLM意图解析失败: {e}")
+            return None
+
+    def _call_llm(self, prompt: str) -> Optional[str]:
+        if not self.llm_service:
+            return None
+        try:
+            if hasattr(self.llm_service, 'generate'):
+                return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
+            elif hasattr(self.llm_service, '_call_llm_api'):
+                return self.llm_service._call_llm_api(prompt)
+        except Exception as e:
+            logger.warning(f"LLM调用失败: {e}")
+        return None
 
     def _detect_intent_type(self, user_input: str) -> IntentType:
         """
@@ -322,23 +418,20 @@ class StrategistBrain:
         return confidence
 
     def plan(self, intent: Intent) -> ExecutionPlan:
-        """
-        制定执行计划
-        
-        Args:
-            intent: 意图对象
-        
-        Returns:
-            ExecutionPlan: 执行计划（步骤列表+资源配置）
-        """
         logger.info(f"开始制定执行计划: {intent.goal[:50]}...")
         
+        if self.llm_service:
+            try:
+                plan = self._plan_with_llm(intent)
+                if plan and plan.steps:
+                    logger.info(f"LLM规划完成: {len(plan.steps)} 个步骤")
+                    return plan
+                logger.info("LLM规划失败，降级到规则规划")
+            except Exception as e:
+                logger.warning(f"LLM规划异常，降级到规则规划: {e}")
+        
         plan_id = f"plan_{uuid.uuid4().hex[:8]}"
-        
-        # 根据意图类型生成步骤
         steps = self._generate_steps(intent)
-        
-        # 估算执行时间
         estimated_time = len(steps) * ESTIMATED_TIME_PER_STEP
         
         plan = ExecutionPlan(
@@ -350,6 +443,69 @@ class StrategistBrain:
         
         logger.info(f"执行计划制定完成: {len(steps)} 个步骤")
         return plan
+
+    def _plan_with_llm(self, intent: Intent) -> Optional[ExecutionPlan]:
+        sub_goals = [si.goal for si in intent.sub_intents] if intent.sub_intents else []
+        
+        prompt = f"""为以下任务制定执行计划，返回JSON格式。
+
+任务目标: {intent.goal}
+意图类型: {intent.type.value}
+子目标: {json.dumps(sub_goals, ensure_ascii=False) if sub_goals else "无"}
+
+可用技能: search(搜索), analysis(分析), content_generation(内容创作), execute_operation(执行操作), send_notification(发送通知), output_result(输出结果)
+
+请返回JSON格式:
+{{
+  "steps": [
+    {{"skill_id": "技能名", "description": "步骤描述", "parameters": {{"key": "value"}}}},
+    ...
+  ]
+}}
+
+规则:
+1. 第一步通常是搜索或分析
+2. 后续步骤基于前一步结果
+3. 最后一步是output_result
+4. 复合意图需要多步骤"""
+
+        llm_response = self._call_llm(prompt)
+        if not llm_response:
+            return None
+        
+        try:
+            json_match = re.search(r'\{[\s\S]*\}', llm_response)
+            if not json_match:
+                return None
+            data = json.loads(json_match.group())
+            
+            steps_data = data.get("steps", [])
+            if not steps_data:
+                return None
+            
+            steps = []
+            for i, sd in enumerate(steps_data):
+                skill_id = sd.get("skill_id", "output_result")
+                if skill_id not in ["search", "analysis", "content_generation", "execute_operation", "send_notification", "intent_analysis", "output_result"]:
+                    skill_id = "output_result"
+                steps.append(Step(
+                    id=f"step_{i+1}",
+                    skill_id=skill_id,
+                    description=sd.get("description", f"执行步骤{i+1}"),
+                    parameters=sd.get("parameters", {"goal": intent.goal}),
+                    dependencies=[f"step_{i}"] if i > 0 else []
+                ))
+            
+            plan_id = f"plan_{uuid.uuid4().hex[:8]}"
+            return ExecutionPlan(
+                plan_id=plan_id,
+                intent=intent,
+                steps=steps,
+                estimated_time=len(steps) * ESTIMATED_TIME_PER_STEP
+            )
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.warning(f"LLM规划结果解析失败: {e}")
+            return None
 
     def _generate_steps(self, intent: Intent) -> List[Step]:
         steps = []

@@ -2,6 +2,71 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.9-delta] - 2026-05-09
+
+### Added — v0.1.9-delta 真实运行验证（V2-1到V2-7）
+
+#### V2-1: 三贤者LLM驱动升级
+- 策略脑(StrategistBrain)：LLM驱动意图理解+LLM驱动执行计划生成
+  - `_understand_intent_with_llm()`: LLM语义理解意图类型+置信度+子意图+约束
+  - `_plan_with_llm()`: LLM动态规划多步骤执行计划
+  - 关键词匹配作为降级路径（LLM失败时自动降级）
+- 反思脑(ReflectorBrain)：LLM驱动结果评估
+  - `_evaluate_with_llm()`: LLM评估质量评分+偏差分析+关键发现+改进建议
+  - 规则评估作为降级路径
+- AgentLoop：新增`llm_service`参数，传递给策略脑和反思脑
+- 前端：AgentLoop初始化时注入LLMEnhancedContentGenerator
+
+#### V2-2: 复合意图拆解实测
+- 策略脑LLM规划支持复合意图自动拆解为多步骤
+- LLM返回的步骤自动映射到可用技能（search/analysis/content_generation等）
+
+#### V2-3: 技能市场API服务化
+- 新增 `skill_marketplace_api.py`: FastAPI REST服务
+  - POST /api/v1/keys — 创建API Key
+  - POST /api/v1/skills — 注册技能
+  - PUT /api/v1/skills/{id}/approve — 审核技能
+  - GET /api/v1/skills — 发现技能（支持category/keyword过滤）
+  - GET /api/v1/skills/{id} — 获取技能详情
+  - POST /api/v1/skills/{id}/execute — 调用技能
+  - GET /api/v1/stats — 市场统计
+  - CORS中间件 + API Key认证 + 权限分级
+
+#### V2-4: MCP协议真实对接
+- 新增 `mcp_transport.py`: SSE + stdio 传输层
+  - SSE模式：EventSourceResponse + POST /messages
+  - stdio模式：标准输入输出JSON-RPC
+  - 可选启动：`uvicorn opc_manager.mcp_transport:create_sse_app` 或 `python -m opc_manager.mcp_transport --transport stdio`
+
+#### V2-5: 插件示例+热加载
+- 新增 `plugins/text_summarizer.py`: 文本摘要生成器示例
+- 新增 `plugins/data_converter.py`: JSON→Markdown表格转换器示例
+- 插件热加载测试通过（register→initialize→execute→shutdown）
+
+#### V2-6: 技能编辑器Streamlit UI
+- 前端侧边栏新增"技能编辑器"按钮
+- 表单式技能创建（名称/描述/分类/输出格式/模板）
+- 已创建技能列表展示
+
+#### V2-7: 性能调优
+- 新增 `performance_monitor.py`: 性能监控与SLA管理
+  - SLA: 单次请求<30秒, 反思循环<60秒
+  - LRU缓存: 相同prompt 5分钟内返回缓存（最大100条）
+  - 性能指标采集: avg/max/min/p95
+  - SLA违规告警
+
+### Testing
+- 新增20个delta集成测试（test_delta_integration.py）
+- 全量测试：470 passed, 21 skipped
+
+### Changed
+- VERSION: 0.1.9-gamma → 0.1.9-delta
+- version.py: __version__ = "0.1.9-delta"
+- strategist_brain.py: 新增LLM驱动意图理解+规划
+- reflector_brain.py: 新增LLM驱动结果评估
+- agent_loop.py: 新增llm_service参数+性能监控集成
+- frontend/app.py: LLM注入+技能编辑器UI
+
 ## [0.1.9-gamma] - 2026-05-09
 
 ### Added — v0.1.9-gamma 整改优化（G1-G9全任务）

@@ -26,6 +26,7 @@ from .tool_system import ToolSystem
 from .session_context import SessionContextManager
 from .task_engine_adapter import TaskEngineAdapter
 from .utils import BoundedDict, EventEmitter
+from .performance_monitor import performance_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -81,12 +82,14 @@ class AgentLoop:
                  tool_system: ToolSystem = None,
                  session_manager: SessionContextManager = None,
                  task_engine_adapter: TaskEngineAdapter = None,
+                 llm_service=None,
                  max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
                  max_retry_per_step: int = MAX_RETRY_PER_STEP):
         self.task_engine_adapter = task_engine_adapter or TaskEngineAdapter()
-        self.strategist_brain = strategist_brain or StrategistBrain()
+        self.llm_service = llm_service
+        self.strategist_brain = strategist_brain or StrategistBrain(llm_service=llm_service)
         self.executor_brain = executor_brain or ExecutorBrain(task_engine_adapter=self.task_engine_adapter)
-        self.reflector_brain = reflector_brain or ReflectorBrain()
+        self.reflector_brain = reflector_brain or ReflectorBrain(llm_service=llm_service)
         self.consensus_engine = consensus_engine or ConsensusEngine()
         self.skill_registry = skill_registry or SkillRegistry()
         self.tool_system = tool_system or ToolSystem()
@@ -105,6 +108,7 @@ class AgentLoop:
             return {"success": False, "error": "用户输入不能为空", "message": "输入无效"}
 
         run_start_time = time.time()
+        _perf_start = time.time()
 
         task_id = f"agent_task_{uuid.uuid4().hex[:8]}"
         agent_context = AgentContext(
@@ -190,11 +194,15 @@ class AgentLoop:
                 status="completed"
             )
 
+            duration_ms = (time.time() - _perf_start) * 1000
+            performance_monitor.record("agent_loop", duration_ms, success=True)
             return self._build_result(agent_context)
 
         except Exception as e:
             agent_context.set_state(AgentState.FAILED)
             logger.error(f"AgentLoop 执行失败: {str(e)}")
+            duration_ms = (time.time() - _perf_start) * 1000
+            performance_monitor.record("agent_loop", duration_ms, success=False)
             return {
                 "success": False,
                 "task_id": task_id,

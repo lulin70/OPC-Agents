@@ -1,0 +1,157 @@
+"""
+SkillMarketplaceAPI — FastAPI REST服务
+
+提供技能市场的HTTP API端点：
+- POST /api/v1/keys — 创建API Key
+- POST /api/v1/skills — 注册技能
+- PUT /api/v1/skills/{skill_id}/approve — 审核技能
+- GET /api/v1/skills — 发现技能
+- GET /api/v1/skills/{skill_id} — 获取技能详情
+- POST /api/v1/skills/{skill_id}/execute — 调用技能
+- GET /api/v1/stats — 市场统计
+
+启动方式：
+  uvicorn opc_manager.skill_marketplace_api:app --host 0.0.0.0 --port 8900
+"""
+
+import logging
+import os
+import time
+from typing import Dict, List, Optional, Any
+
+logger = logging.getLogger(__name__)
+
+FASTAPI_AVAILABLE = False
+try:
+    from fastapi import FastAPI, HTTPException, Header, Depends, Query
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    pass
+
+if FASTAPI_AVAILABLE:
+    from .skill_marketplace import (
+        SkillMarketplace, MarketplaceSkill, PermissionLevel, SkillStatus
+    )
+
+    app = FastAPI(
+        title="OPC-Agents Skill Marketplace API",
+        version="0.1.9-delta",
+        description="技能市场REST API — 注册/发现/调用技能",
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    marketplace = SkillMarketplace()
+    _rate_limit_store: Dict[str, List[float]] = {}
+
+    class SkillRegisterRequest(BaseModel):
+        skill_id: str
+        name: str
+        description: str
+        version: str = "1.0.0"
+        category: str = "general"
+        author: str = "anonymous"
+        dependencies: List[str] = []
+        config: Dict[str, Any] = {}
+
+    class SkillExecuteRequest(BaseModel):
+        parameters: Dict[str, Any] = {}
+
+    class APIKeyCreateRequest(BaseModel):
+        name: str
+        permissions: List[str] = ["read"]
+        rate_limit: int = 100
+
+    def _get_api_key(x_api_key: str = Header(None)) -> str:
+        if not x_api_key:
+            raise HTTPException(status_code=401, detail="Missing X-API-Key header")
+        key_info = marketplace.authenticate(x_api_key)
+        if not key_info:
+            raise HTTPException(status_code=401, detail="Invalid API key")
+        now = time.time()
+        requests = _rate_limit_store.get(x_api_key, [])
+        requests = [t for t in requests if now - t < 60]
+        if len(requests) >= key_info.rate_limit:
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+        requests.append(now)
+        _rate_limit_store[x_api_key] = requests
+        return x_api_key
+
+    def _check_permission(api_key: str, required: PermissionLevel) -> None:
+        if not marketplace.check_permission(api_key, required):
+            raise HTTPException(status_code=403, detail=f"Insufficient permissions: {required.value} required")
+
+    @app.post("/api/v1/keys")
+    async def create_api_key(request: APIKeyCreateRequest):
+        perms = [PermissionLevel(p) for p in request.permissions]
+        raw_key = marketplace.create_api_key(request.name, perms, request.rate_limit)
+        return {"success": True, "api_key": raw_key, "name": request.name}
+
+    @app.post("/api/v1/skills")
+    async def register_skill(request: SkillRegisterRequest, api_key: str = Depends(_get_api_key)):
+        _check_permission(api_key, PermissionLevel.WRITE)
+        skill = MarketplaceSkill(
+            skill_id=request.skill_id, name=request.name,
+            description=request.description, version=request.version,
+            category=request.category, author=request.author,
+            dependencies=request.dependencies, config=request.config,
+        )
+        result = marketplace.register_skill(skill, api_key)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+
+    @app.put("/api/v1/skills/{skill_id}/approve")
+    async def approve_skill(skill_id: str, api_key: str = Depends(_get_api_key)):
+        _check_permission(api_key, PermissionLevel.WRITE)
+        result = marketplace.approve_skill(skill_id, api_key)
+        if not result["success"]:
+            raise HTTPException(status_code=404, detail=result["error"])
+        return result
+
+    @app.get("/api/v1/skills")
+    async def discover_skills(
+        category: Optional[str] = Query(None),
+        keyword: Optional[str] = Query(None),
+    ):
+        results = marketplace.discover_skills(category=category, keyword=keyword)
+        return {"skills": results, "total": len(results)}
+
+    @app.get("/api/v1/skills/{skill_id}")
+    async def get_skill(skill_id: str):
+        skill = marketplace.get_skill(skill_id)
+        if not skill:
+            raise HTTPException(status_code=404, detail=f"Skill not found: {skill_id}")
+        return skill
+
+    @app.post("/api/v1/skills/{skill_id}/execute")
+    async def execute_skill(skill_id: str, request: SkillExecuteRequest, api_key: str = Depends(_get_api_key)):
+        _check_permission(api_key, PermissionLevel.EXECUTE)
+        result = marketplace.execute_skill(skill_id, request.parameters, api_key)
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+
+    @app.get("/api/v1/stats")
+    async def get_stats():
+        return marketplace.get_stats()
+
+    @app.get("/api/v1/categories")
+    async def list_categories():
+        return {"categories": marketplace.list_categories()}
+
+    @app.get("/health")
+    async def health_check():
+        return {"status": "ok", "version": "0.1.9-delta"}
+
+else:
+    app = None
+    logger.warning("FastAPI not available. Install with: pip install fastapi uvicorn")
