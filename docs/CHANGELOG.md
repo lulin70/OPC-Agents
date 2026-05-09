@@ -2,6 +2,32 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.9-beta] - 2026-05-09
+
+### Changed — Phase 3.5 公开测试版
+
+基于v0.1.9端到端闭环版本，进行文档一致性审查、目录结构清理和版本号统一。
+
+#### 文档一致性更新
+
+- README.md/README-EN.md/README-JP.md: 补充三贤者架构模块到项目结构，更新关键特性（自动修正/多技能编排/任务暂停/进度可视化/长会话上下文），测试数量350+→408，补充v0.1.7-v0.1.9版本历史
+- QUICK_START_BETA.md/EN/JP: 版本号v0.1.6→v0.1.9，更新日期，补充v0.1.7-v0.1.9更新日志
+- .env.example: 版本号v0.1.6→v0.1.9
+- install.sh: 生成的.env模板版本号v0.1.6→v0.1.9
+- CONTRIBUTING.md: 测试命令补充PYTHONPATH=.和-v参数
+- ROADMAP_AGENT_EVOLUTION.md: 当前状态从v0.1.6更新为v0.1.9，v0.1.9-beta状态从"规划中"→"进行中"
+
+#### 版本号更新
+
+- VERSION: 0.1.9 → 0.1.9-beta
+- version.py: __version__ = "0.1.9-beta", __version_info__ = (0, 1, 9, "beta")
+
+#### 验证结果
+
+- 全量测试: 408 passed, 21 skipped ✅
+- 安全扫描(bandit): No issues identified ✅
+- 语法检查(py_compile): 9核心模块全部通过 ✅
+
 ## [0.1.9] - 2026-05-08
 
 ### Added — PHASE3 端到端闭环

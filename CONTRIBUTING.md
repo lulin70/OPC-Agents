@@ -96,13 +96,13 @@ git checkout -b fix/bug-fix-name
 
 ```bash
 # 运行所有测试
-pytest
+PYTHONPATH=. pytest tests/ -v
 
 # 运行特定测试
-pytest tests/your_test.py
+PYTHONPATH=. pytest tests/your_test.py -v
 
 # 查看测试覆盖率
-pytest --cov=opc_manager --cov-report=html
+PYTHONPATH=. pytest --cov=opc_manager --cov-report=html
 ```
 
 ### 5. 提交变更
@@ -307,7 +307,7 @@ A: 当然！请先创建 Issue 讨论你的想法，确认后再开始开发。
 
 ### Q: 如何运行测试？
 
-A: 运行 `pytest` 即可运行所有测试。详细信息请参考 [测试要求](#测试要求)。
+A: 运行 `PYTHONPATH=. pytest tests/ -v` 即可运行所有测试。详细信息请参考 [测试要求](#测试要求)。
 
 ## 联系方式
 

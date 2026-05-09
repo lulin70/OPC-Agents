@@ -1,7 +1,7 @@
 # OPC-Agents Beta Quick Start Guide
 
-> **Version**: v0.1.6  
-> **Updated**: 2026-05-03  
+> **Version**: v0.1.9  
+> **Updated**: 2026-05-09  
 > **Status**: Beta
 
 ---
@@ -14,7 +14,10 @@
 
 Thank you for participating in the OPC-Agents Beta test! This guide will help you get started quickly.
 
-**Latest Updates (2026-05-03)**:
+**Latest Updates (2026-05-09)**:
+- ✅ v0.1.9: End-to-end closed loop — auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context
+- ✅ v0.1.8: Core skill development — 6 skills upgraded from mock to real + search enhancement + LLM integration
+- ✅ v0.1.7: Three-Sage Architecture — Strategist Brain + Executor Brain + Reflector Brain + Consensus Engine + Skill Registry + Tool Framework
 - ✅ v0.1.6: First-time onboarding + Quality feedback + Deliverable search + Empty state examples
 - ✅ v0.1.5: Multi-turn follow-up + Quality gate + Output redaction + Ollama support + Protocol degradation
 - ✅ v0.1.2: Security hardening (XSS/Prompt injection) + Performance optimization + PyPI release
