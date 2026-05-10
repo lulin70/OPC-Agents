@@ -11,6 +11,7 @@ import hashlib
 import json
 import logging
 import os
+import threading
 import time
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
@@ -43,26 +44,29 @@ class LRUCache:
         self._max_size = max_size
         self._ttl = ttl
         self._cache: OrderedDict = OrderedDict()
+        self._lock = threading.Lock()
         self._hits = 0
         self._misses = 0
 
     def get(self, key: str) -> Optional[str]:
-        if key in self._cache:
-            value, timestamp = self._cache[key]
-            if time.time() - timestamp < self._ttl:
-                self._cache.move_to_end(key)
-                self._hits += 1
-                return value
-            del self._cache[key]
-        self._misses += 1
-        return None
+        with self._lock:
+            if key in self._cache:
+                value, timestamp = self._cache[key]
+                if time.time() - timestamp < self._ttl:
+                    self._cache.move_to_end(key)
+                    self._hits += 1
+                    return value
+                del self._cache[key]
+            self._misses += 1
+            return None
 
     def put(self, key: str, value: str) -> None:
-        if key in self._cache:
-            del self._cache[key]
-        elif len(self._cache) >= self._max_size:
-            self._cache.popitem(last=False)
-        self._cache[key] = (value, time.time())
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
+            elif len(self._cache) >= self._max_size:
+                self._cache.popitem(last=False)
+            self._cache[key] = (value, time.time())
 
     @staticmethod
     def make_key(prompt: str) -> str:
@@ -81,24 +85,38 @@ class LRUCache:
 
 class PerformanceMonitor:
 
+    PERSIST_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "perf_metrics.json")
+
     def __init__(self):
         self._metrics: List[PerformanceMetric] = []
         self._llm_cache = LRUCache()
         self._max_metrics = 1000
+        self._lock = threading.Lock()
+        self._persist_interval = 60
+        self._last_persist = 0.0
 
     def record(self, operation: str, duration_ms: float, success: bool = True, **metadata) -> None:
         metric = PerformanceMetric(
             operation=operation, duration_ms=duration_ms,
             success=success, metadata=metadata
         )
-        self._metrics.append(metric)
-        if len(self._metrics) > self._max_metrics:
-            self._metrics = self._metrics[-self._max_metrics:]
+        should_persist = False
+        with self._lock:
+            self._metrics.append(metric)
+            if len(self._metrics) > self._max_metrics:
+                self._metrics = self._metrics[-self._max_metrics:]
+            now = time.time()
+            if now - self._last_persist > self._persist_interval:
+                self._last_persist = now
+                should_persist = True
 
         if operation == "agent_loop" and duration_ms > SLA_SINGLE_REQUEST_MS:
             logger.warning(f"SLA breach: agent_loop took {duration_ms:.0f}ms (SLA: {SLA_SINGLE_REQUEST_MS}ms)")
         if operation == "reflect_loop" and duration_ms > SLA_REFLECT_LOOP_MS:
             logger.warning(f"SLA breach: reflect_loop took {duration_ms:.0f}ms (SLA: {SLA_REFLECT_LOOP_MS}ms)")
+
+        if should_persist:
+            self._persist_metrics()
 
     def cache_get(self, prompt: str) -> Optional[str]:
         key = LRUCache.make_key(prompt)
@@ -136,12 +154,37 @@ class PerformanceMonitor:
 
     def check_sla(self) -> Dict[str, Any]:
         sla_status = {"single_request": True, "reflect_loop": True}
-        for m in self._metrics:
-            if m.operation == "agent_loop" and m.duration_ms > SLA_SINGLE_REQUEST_MS:
-                sla_status["single_request"] = False
-            if m.operation == "reflect_loop" and m.duration_ms > SLA_REFLECT_LOOP_MS:
-                sla_status["reflect_loop"] = False
+        with self._lock:
+            for m in self._metrics:
+                if m.operation == "agent_loop" and m.duration_ms > SLA_SINGLE_REQUEST_MS:
+                    sla_status["single_request"] = False
+                if m.operation == "reflect_loop" and m.duration_ms > SLA_REFLECT_LOOP_MS:
+                    sla_status["reflect_loop"] = False
         return sla_status
+
+    def _persist_metrics(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(self.PERSIST_FILE), exist_ok=True)
+            with self._lock:
+                data = [{"op": m.operation, "ms": m.duration_ms, "ok": m.success, "ts": m.timestamp} for m in self._metrics[-200:]]
+            with open(self.PERSIST_FILE, "w") as f:
+                json.dump(data, f)
+        except Exception as e:
+            logger.warning(f"Metrics persist failed: {e}")
+
+    def _load_metrics(self) -> None:
+        try:
+            if os.path.exists(self.PERSIST_FILE):
+                with open(self.PERSIST_FILE, "r") as f:
+                    data = json.load(f)
+                with self._lock:
+                    for d in data[-200:]:
+                        self._metrics.append(PerformanceMetric(
+                            operation=d["op"], duration_ms=d["ms"],
+                            success=d.get("ok", True), timestamp=d.get("ts", 0)
+                        ))
+        except Exception as e:
+            logger.warning(f"Metrics load failed: {e}")
 
 
 performance_monitor = PerformanceMonitor()

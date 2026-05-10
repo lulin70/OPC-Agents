@@ -107,6 +107,10 @@ mkdir -p data/completions
 mkdir -p data/context
 mkdir -p data/checkpoints
 mkdir -p data/loop_progress
+mkdir -p data/consensus_logs
+mkdir -p data/marketplace
+mkdir -p data/feedback
+mkdir -p plugins
 mkdir -p data/workflows
 mkdir -p logs
 echo -e "${GREEN}✓ 数据目录创建完成${NC}"

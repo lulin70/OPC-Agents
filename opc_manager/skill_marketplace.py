@@ -72,6 +72,7 @@ class APIKey:
     permissions: List[PermissionLevel] = field(default_factory=lambda: [PermissionLevel.READ])
     created_at: float = 0.0
     rate_limit: int = 100
+    salt: str = ""
 
     def __post_init__(self):
         if self.created_at == 0.0:
@@ -96,11 +97,13 @@ class SkillMarketplace:
                     data = json.load(f)
                 for k, v in data.items():
                     perms = [PermissionLevel(p) for p in v.get("permissions", ["read"])]
-                    self._api_keys[k] = APIKey(
+                    api_key_obj = APIKey(
                         key_hash=v["key_hash"], name=v["name"],
                         permissions=perms, created_at=v.get("created_at", 0),
                         rate_limit=v.get("rate_limit", 100)
                     )
+                    api_key_obj.salt = v.get("salt", "")
+                    self._api_keys[k] = api_key_obj
             except Exception as e:
                 logger.warning(f"加载API Keys失败: {e}")
 
@@ -131,7 +134,8 @@ class SkillMarketplace:
                 keys_data[k] = {
                     "key_hash": v.key_hash, "name": v.name,
                     "permissions": [p.value for p in v.permissions],
-                    "created_at": v.created_at, "rate_limit": v.rate_limit
+                    "created_at": v.created_at, "rate_limit": v.rate_limit,
+                    "salt": v.salt
                 }
             with open(self._api_keys_file, "w") as f:
                 json.dump(keys_data, f, ensure_ascii=False, indent=2)
@@ -160,17 +164,24 @@ class SkillMarketplace:
                        rate_limit: int = 100) -> str:
         import secrets
         raw_key = f"opc_{secrets.token_hex(16)}"
-        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        salt = secrets.token_hex(8)
+        key_hash = hashlib.sha256(f"{salt}:{raw_key}".encode()).hexdigest()
         self._api_keys[key_hash] = APIKey(
             key_hash=key_hash, name=name,
             permissions=permissions, rate_limit=rate_limit
         )
+        self._api_keys[key_hash].salt = salt
         self._save_data()
         return raw_key
 
     def authenticate(self, api_key: str) -> Optional[APIKey]:
-        key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-        return self._api_keys.get(key_hash)
+        for key_hash, key_info in self._api_keys.items():
+            salt = key_info.salt
+            check_hash = hashlib.sha256(f"{salt}:{api_key}".encode()).hexdigest()
+            if check_hash == key_hash:
+                return key_info
+        plain_hash = hashlib.sha256(api_key.encode()).hexdigest()
+        return self._api_keys.get(plain_hash)
 
     def check_permission(self, api_key: str, required: PermissionLevel) -> bool:
         key_info = self.authenticate(api_key)

@@ -41,9 +41,10 @@ if FASTAPI_AVAILABLE:
         description="技能市场REST API — 注册/发现/调用技能",
     )
 
+    _allowed_origins = os.environ.get("MARKETPLACE_CORS_ORIGINS", "http://localhost:8501,http://localhost:8900").split(",")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=_allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -51,6 +52,16 @@ if FASTAPI_AVAILABLE:
 
     marketplace = SkillMarketplace()
     _rate_limit_store: Dict[str, List[float]] = {}
+    MAX_REQUEST_BODY_BYTES = 1_000_000
+
+    @app.middleware("http")
+    async def limit_request_size(request, call_next):
+        if request.method in ("POST", "PUT"):
+            body = await request.body()
+            if len(body) > MAX_REQUEST_BODY_BYTES:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(status_code=413, content={"error": "Request body too large"})
+        return await call_next(request)
 
     class SkillRegisterRequest(BaseModel):
         skill_id: str

@@ -66,6 +66,19 @@ dev = [
     "build>=1.0.0",
     "twine>=5.0.0",
 ]
+marketplace = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "sse-starlette>=1.6.0",
+]
+mcp = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "sse-starlette>=1.6.0",
+]
+all = [
+    "opc-agents[dev,marketplace,mcp]",
+]
 
 [project.scripts]
 opc-agents = "opc_manager.cli:main"

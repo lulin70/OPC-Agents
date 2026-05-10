@@ -62,14 +62,15 @@ class Decision:
 class ConsensusEngine:
     """共识引擎 — 协调三贤者决策"""
 
+    MAX_LOG_SIZE = 1000
+
     def __init__(self):
-        """初始化共识引擎"""
-        # 否决权配置（哪些角色有否决权）
         self.veto_enabled = {
-            "strategist": True,   # 策略脑有否决权
-            "executor": False,    # 执行脑无否决权
-            "reflector": True     # 反思脑有否决权
+            "strategist": True,
+            "executor": False,
+            "reflector": True
         }
+        self._decision_log: List[Dict[str, Any]] = []
 
     def collect_opinions(self, opinions: List[Opinion]) -> Decision:
         """
@@ -84,71 +85,68 @@ class ConsensusEngine:
         logger.info(f"开始处理 {len(opinions)} 个意见")
         
         if not opinions or len(opinions) == 0:
-            return Decision(
+            decision = Decision(
                 decision_type=DecisionType.ESCALATED,
                 approved=False,
                 reasoning="未收到任何意见，无法做出决策",
                 confidence=0.0
             )
+            self._log_decision(opinions, decision)
+            return decision
         
-        # 检查是否有否决
         veto_opinion = self._check_veto(opinions)
         if veto_opinion:
             logger.info(f"检测到否决: {veto_opinion.brain_type}")
-            return Decision(
+            decision = Decision(
                 decision_type=DecisionType.VETOED,
                 approved=False,
                 reasoning=f"{veto_opinion.brain_type} 行使否决权: {veto_opinion.reasoning}",
                 confidence=0.9
             )
+            self._log_decision(opinions, decision)
+            return decision
         
-        # 统计同意/不同意的数量
         agree_count = sum(1 for o in opinions if o.opinion_type == OpinionType.AGREE)
         disagree_count = sum(1 for o in opinions if o.opinion_type == OpinionType.DISAGREE)
         conditional_count = sum(1 for o in opinions if o.opinion_type == OpinionType.CONDITIONAL)
         
         logger.info(f"意见统计: 同意={agree_count}, 不同意={disagree_count}, 有条件={conditional_count}")
         
-        # 判断决策类型
         total_voters = len(opinions)
         
         if agree_count == total_voters:
-            # 全票同意
-            return Decision(
+            decision = Decision(
                 decision_type=DecisionType.UNANIMOUS,
                 approved=True,
                 reasoning="三贤者一致同意",
                 confidence=self._calculate_confidence(opinions)
             )
-        
         elif agree_count > total_voters / 2:
-            # 多数同意
-            return Decision(
+            decision = Decision(
                 decision_type=DecisionType.MAJORITY,
                 approved=True,
                 reasoning=f"多数同意 ({agree_count}/{total_voters})",
                 confidence=self._calculate_confidence(opinions)
             )
-        
         elif conditional_count > 0 and disagree_count == 0:
-            # 有条件同意，无反对
             alternatives = [o.alternative for o in opinions if o.alternative]
-            return Decision(
+            decision = Decision(
                 decision_type=DecisionType.COMPROMISE,
                 approved=True,
                 reasoning=f"有条件同意，需满足: {'; '.join(alternatives) if alternatives else '特定条件'}",
                 alternative="; ".join(alternatives) if alternatives else None,
                 confidence=self._calculate_confidence(opinions) * COMPROMISE_CONFIDENCE_FACTOR
             )
-        
         else:
-            # 意见分歧，需要升级
-            return Decision(
+            decision = Decision(
                 decision_type=DecisionType.ESCALATED,
                 approved=False,
                 reasoning=f"意见分歧较大（同意:{agree_count}, 不同意:{disagree_count}），需要人工介入或重新讨论",
                 confidence=ESCALATED_CONFIDENCE
             )
+        
+        self._log_decision(opinions, decision)
+        return decision
 
     def _check_veto(self, opinions: List[Opinion]) -> Optional[Opinion]:
         """
@@ -315,23 +313,26 @@ class ConsensusEngine:
         return suggestions
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        将共识引擎状态转换为字典
-        
-        Returns:
-            Dict[str, Any]: 状态字典
-        """
         return {
             "type": "consensus_engine",
             "veto_enabled": self.veto_enabled
         }
 
     def from_dict(self, data: Dict[str, Any]) -> None:
-        """
-        从字典恢复共识引擎状态
-        
-        Args:
-            data: 状态字典
-        """
         if "veto_enabled" in data:
             self.veto_enabled = data["veto_enabled"]
+
+    def _log_decision(self, opinions: List[Opinion], decision: Decision) -> None:
+        import time as _time
+        self._decision_log.append({
+            "timestamp": _time.time(),
+            "opinion_count": len(opinions),
+            "decision_type": decision.decision_type.value,
+            "approved": decision.approved,
+            "confidence": decision.confidence,
+        })
+        if len(self._decision_log) > self.MAX_LOG_SIZE:
+            self._decision_log = self._decision_log[-self.MAX_LOG_SIZE:]
+
+    def get_decision_log(self, limit: int = 100) -> List[Dict[str, Any]]:
+        return self._decision_log[-limit:]

@@ -15,6 +15,8 @@ import re
 import uuid
 import logging
 
+from opc_manager.utils import extract_json_from_llm, sanitize_for_llm, _llm_thread_semaphore
+
 logger = logging.getLogger(__name__)
 
 ESTIMATED_TIME_PER_STEP = 30
@@ -181,7 +183,7 @@ class StrategistBrain:
         return intent
 
     def _understand_intent_with_llm(self, user_input: str, context: Optional[Dict] = None) -> Optional[Intent]:
-        sanitized_input = user_input[:500].replace("```", "").replace("---", "")
+        sanitized_input = sanitize_for_llm(user_input, 500)
         
         prompt = f"""分析以下用户请求，返回JSON格式的意图分析结果。
 
@@ -209,10 +211,9 @@ class StrategistBrain:
             return None
 
         try:
-            json_match = re.search(r'\{[\s\S]*\}', llm_response)
-            if not json_match:
+            data = extract_json_from_llm(llm_response)
+            if not data:
                 return None
-            data = json.loads(json_match.group())
             
             intent_type_str = data.get("intent_type", "unknown")
             intent_type = IntentType.UNKNOWN
@@ -258,10 +259,14 @@ class StrategistBrain:
         if not self.llm_service:
             return None
         try:
-            if hasattr(self.llm_service, 'generate'):
-                return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
-            elif hasattr(self.llm_service, '_call_llm_api'):
-                return self.llm_service._call_llm_api(prompt)
+            _llm_thread_semaphore.acquire(timeout=30)
+            try:
+                if hasattr(self.llm_service, 'generate'):
+                    return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
+                elif hasattr(self.llm_service, '_call_llm_api'):
+                    return self.llm_service._call_llm_api(prompt)
+            finally:
+                _llm_thread_semaphore.release()
         except Exception as e:
             logger.warning(f"LLM调用失败: {e}")
         return None
@@ -474,10 +479,9 @@ class StrategistBrain:
             return None
         
         try:
-            json_match = re.search(r'\{[\s\S]*\}', llm_response)
-            if not json_match:
+            data = extract_json_from_llm(llm_response)
+            if not data:
                 return None
-            data = json.loads(json_match.group())
             
             steps_data = data.get("steps", [])
             if not steps_data:

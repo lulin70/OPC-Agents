@@ -476,7 +476,7 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
     import os
     import asyncio
 
-    use_agent_loop = os.environ.get("OPC_USE_AGENT_LOOP", "true").lower() == "true"
+    use_agent_loop = st.session_state.get("exec_mode", "质量模式") == "质量模式"
 
     if not use_agent_loop:
         return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
@@ -501,6 +501,9 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
             result_dict = loop.run_until_complete(
                 agent_loop.run(prompt, session_id=getattr(session_ctx, '_session_id', None) if session_ctx else None)
             )
+            pending = asyncio.all_tasks(loop)
+            if pending:
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
         finally:
             loop.close()
 
@@ -735,15 +738,15 @@ with st.sidebar:
         st.markdown(f"**📦 已生成 {len(st.session_state.deliverables)} 个成果物**")
 
     st.divider()
+    if "exec_mode" not in st.session_state:
+        st.session_state.exec_mode = "质量模式"
     exec_mode = st.radio(
         "🧠 执行模式",
         ["质量模式", "快速模式"],
-        index=0,
+        index=0 if st.session_state.exec_mode == "质量模式" else 1,
         help="质量模式：三贤者架构（策略脑+执行脑+反思脑），自动修正低质量结果\n快速模式：直接执行，跳过反思评估"
     )
-    import os
-    os.environ["OPC_USE_AGENT_LOOP"] = "true" if exec_mode == "质量模式" else "false"
-    os.environ["OPC_SKIP_REFLECT"] = "false" if exec_mode == "质量模式" else "true"
+    st.session_state.exec_mode = exec_mode
 
     st.divider()
     if st.button("🔧 技能编辑器", use_container_width=True):
@@ -782,6 +785,50 @@ with st.sidebar:
             st.markdown(f"**已创建 {len(skills)} 个自定义技能**")
             for s in skills[:5]:
                 st.markdown(f"- {s['name']} ({s['skill_id']})")
+
+    st.divider()
+    if st.button("🏪 技能市场", use_container_width=True):
+        st.session_state.show_marketplace = not st.session_state.get("show_marketplace", False)
+
+    if st.session_state.get("show_marketplace", False):
+        st.markdown("#### 技能市场")
+        from opc_manager.skill_marketplace import SkillMarketplace
+        mp = SkillMarketplace()
+        stats = mp.get_stats()
+        st.caption(f"📊 共 {stats['total_skills']} 个技能 | ✅ 已审核 {stats['approved_skills']} | ⏳ 待审核 {stats['pending_skills']}")
+        categories = mp.list_categories()
+        if categories:
+            sel_cat = st.selectbox("按分类筛选", ["全部"] + categories, key="mp_cat")
+            discovered = mp.discover_skills(category=sel_cat if sel_cat != "全部" else None)
+        else:
+            discovered = mp.discover_skills()
+        if discovered:
+            for sk in discovered[:10]:
+                st.markdown(f"**{sk['name']}** `v{sk['version']}` — {sk['description'][:80]}")
+                st.caption(f"分类: {sk['category']} | 作者: {sk['author']}")
+        else:
+            st.info("暂无已审核的技能")
+
+    st.divider()
+    if st.button("📊 性能监控", use_container_width=True):
+        st.session_state.show_perf = not st.session_state.get("show_perf", False)
+
+    if st.session_state.get("show_perf", False):
+        st.markdown("#### 性能监控")
+        from opc_manager.performance_monitor import performance_monitor
+        stats = performance_monitor.get_stats()
+        sla = performance_monitor.check_sla()
+        total = stats.get("total_operations", 0)
+        st.metric("总操作数", total)
+        sla_color = "🟢" if all(sla.values()) else "🔴"
+        st.markdown(f"**SLA状态**: {sla_color} 单次请求{'✅' if sla.get('single_request') else '❌'} | 反思循环{'✅' if sla.get('reflect_loop') else '❌'}")
+        cache = stats.get("cache", {})
+        if cache:
+            st.caption(f"LLM缓存: 命中率 {cache.get('hit_rate', 0):.0%} | 大小 {cache.get('size', 0)}/{cache.get('max_size', 0)}")
+        ops = stats.get("operations", {})
+        if ops:
+            for op, op_stats in ops.items():
+                st.caption(f"  {op}: 平均{op_stats['avg_ms']:.0f}ms | P95 {op_stats.get('p95_ms', 0):.0f}ms")
 
     st.divider()
     from opc_manager.version import get_version
@@ -1518,3 +1565,8 @@ elif page == "⚙️ 设置":
     from opc_manager.version import get_version
 
     st.caption(f"OPC-Agents v{get_version()} | 成果物交付版")
+
+
+if st.query_params.get("_stcore_health") == "1":
+    st.write("ok")
+    st.stop()

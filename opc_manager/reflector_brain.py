@@ -10,7 +10,10 @@
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+import json
 import logging
+
+from opc_manager.utils import extract_json_from_llm, sanitize_for_llm, _llm_thread_semaphore
 
 logger = logging.getLogger(__name__)
 
@@ -133,8 +136,6 @@ class ReflectorBrain:
 
     def _evaluate_with_llm(self, actual_result: Dict[str, Any],
                            expected_intent: Dict[str, Any]) -> Optional[Evaluation]:
-        import json, re
-        
         content = ""
         data = actual_result.get("data", {})
         if isinstance(data, dict):
@@ -146,8 +147,8 @@ class ReflectorBrain:
             return None
         
         goal = str(expected_intent.get("goal", ""))[:200] if isinstance(expected_intent, dict) else ""
-        content = content.replace("```", "").replace("---", "")
-        goal = goal.replace("```", "").replace("---", "")
+        content = sanitize_for_llm(content, 800)
+        goal = sanitize_for_llm(goal, 200)
         
         prompt = f"""评估以下任务执行结果的质量。
 
@@ -175,10 +176,9 @@ class ReflectorBrain:
             return None
         
         try:
-            json_match = re.search(r'\{[\s\S]*\}', llm_response)
-            if not json_match:
+            data = extract_json_from_llm(llm_response)
+            if not data:
                 return None
-            data = json.loads(json_match.group())
             
             quality_score = min(1.0, max(0.0, float(data.get("quality_score", 0.5))))
             result_level_str = data.get("result_level", "ACCEPTABLE")
@@ -202,10 +202,14 @@ class ReflectorBrain:
         if not self.llm_service:
             return None
         try:
-            if hasattr(self.llm_service, 'generate'):
-                return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
-            elif hasattr(self.llm_service, '_call_llm_api'):
-                return self.llm_service._call_llm_api(prompt)
+            _llm_thread_semaphore.acquire(timeout=30)
+            try:
+                if hasattr(self.llm_service, 'generate'):
+                    return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
+                elif hasattr(self.llm_service, '_call_llm_api'):
+                    return self.llm_service._call_llm_api(prompt)
+            finally:
+                _llm_thread_semaphore.release()
         except Exception as e:
             logger.warning(f"LLM调用失败: {e}")
         return None

@@ -103,28 +103,37 @@ class PluginSandbox:
             "timestamp": time.time(),
         })
 
-    def create_restricted_globals(self, plugin_id: str) -> Dict[str, Any]:
-        safe_builtins = {}
-        for name in self.ALLOWED_BUILTINS:
-            if name in __builtins__ if isinstance(__builtins__, dict) else hasattr(__builtins__, name):
-                safe_builtins[name] = __builtins__[name] if isinstance(__builtins__, dict) else getattr(__builtins__, name)
-
-        safe_builtins["__import__"] = self._create_restricted_import(plugin_id)
-
-        return {"__builtins__": safe_builtins}
-
     def _create_restricted_import(self, plugin_id: str) -> Callable:
-        ALLOWED_MODULES = {"json", "math", "re", "datetime", "collections", "itertools", "typing"}
+        config_path = os.path.join(PLUGIN_DIR, "plugin_config.json")
+        default_modules = {"json", "math", "re", "datetime", "collections", "itertools", "typing"}
+        allowed_modules = default_modules
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, "r") as f:
+                    cfg = json.load(f)
+                if "allowed_modules" in cfg:
+                    allowed_modules = set(cfg["allowed_modules"])
+        except Exception:
+            pass
 
         def restricted_import(name, *args, **kwargs):
             top_level = name.split(".")[0]
-            if top_level in ALLOWED_MODULES:
+            if top_level in allowed_modules:
                 self.log_access(plugin_id, "import", name, True)
                 return importlib.import_module(name)
             self.log_access(plugin_id, "import", name, False)
             raise ImportError(f"Plugin {plugin_id}: import '{name}' not allowed")
 
         return restricted_import
+
+    def create_restricted_globals(self, plugin_id: str) -> Dict[str, Any]:
+        safe_builtins = {}
+        source = __builtins__ if isinstance(__builtins__, dict) else vars(__builtins__)
+        for name in self.ALLOWED_BUILTINS:
+            if name in source:
+                safe_builtins[name] = source[name]
+        safe_builtins["__import__"] = self._create_restricted_import(plugin_id)
+        return {"__builtins__": safe_builtins}
 
     def get_access_log(self) -> List[Dict[str, Any]]:
         return list(self._access_log)
@@ -169,6 +178,10 @@ class PluginManager:
 
             spec = importlib.util.spec_from_file_location(plugin_id, plugin_path)
             module = importlib.util.module_from_spec(spec)
+            sandbox = self._sandboxes.get(plugin_id)
+            if sandbox:
+                restricted_globals = sandbox.create_restricted_globals(plugin_id)
+                module.__builtins__ = restricted_globals["__builtins__"]
             spec.loader.exec_module(module)
 
             if hasattr(module, "initialize"):

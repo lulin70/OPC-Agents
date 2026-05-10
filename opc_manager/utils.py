@@ -5,6 +5,9 @@
 """
 
 import asyncio
+import json
+import re
+import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -15,6 +18,45 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_SIZE = 100
 EVENT_QUEUE_MAX_SIZE = 1000
+LLM_CONCURRENCY_LIMIT = 5
+
+_llm_thread_semaphore = threading.Semaphore(LLM_CONCURRENCY_LIMIT)
+
+_INJECTION_PATTERNS = [
+    re.compile(r"(?i)(ignore|忽略)\s*(previous|之前的|above)\s*(instruction|指令|prompt)", re.IGNORECASE),
+    re.compile(r"(?i)system\s*:", re.IGNORECASE),
+    re.compile(r"(?i)(you\s+are\s+now|你现在是)", re.IGNORECASE),
+    re.compile(r"(?i)(forget|忘记)\s*(everything|所有|previous|之前的)", re.IGNORECASE),
+    re.compile(r"(?i)(new\s+instruction|新指令|override|覆盖)", re.IGNORECASE),
+]
+
+
+def extract_json_from_llm(text: str) -> Optional[dict]:
+    depth = 0
+    start = -1
+    for i, ch in enumerate(text):
+        if ch == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == '}':
+            if depth > 0:
+                depth -= 1
+            if depth == 0 and start >= 0:
+                candidate = text[start:i + 1]
+                try:
+                    return json.loads(candidate)
+                except json.JSONDecodeError:
+                    start = -1
+                    continue
+    return None
+
+
+def sanitize_for_llm(text: str, max_len: int = 800) -> str:
+    sanitized = text[:max_len].replace("```", "").replace("---", "")
+    for pattern in _INJECTION_PATTERNS:
+        sanitized = pattern.sub("[FILTERED]", sanitized)
+    return sanitized
 
 
 class BoundedDict:

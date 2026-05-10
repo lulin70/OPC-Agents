@@ -14,6 +14,7 @@ MCP Transport — SSE + stdio 传输层
 """
 
 import asyncio
+import hmac
 import json
 import logging
 import os
@@ -46,8 +47,17 @@ if SSE_AVAILABLE:
         mcp_server = create_mcp_server()
         app = FastAPI(title="OPC-Agents MCP SSE Endpoint", version="0.1.9-delta")
 
+        MCP_API_KEY = os.environ.get("MCP_API_KEY", "")
+
         @app.get("/sse")
         async def sse_endpoint(request: Request):
+            if MCP_API_KEY:
+                auth = request.headers.get("Authorization", "")
+                token = auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+                if not hmac.compare_digest(token, MCP_API_KEY):
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
             async def event_generator():
                 yield {"event": "endpoint", "data": json.dumps({"type": "endpoint", "url": "/messages"})}
                 while True:
@@ -60,6 +70,12 @@ if SSE_AVAILABLE:
 
         @app.post("/messages")
         async def handle_message(request: Request):
+            if MCP_API_KEY:
+                auth = request.headers.get("Authorization", "")
+                token = auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+                if not hmac.compare_digest(token, MCP_API_KEY):
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(status_code=401, content={"error": "Unauthorized"})
             body = await request.json()
             result = mcp_server.handle_request(body)
             return result
@@ -75,10 +91,14 @@ class StdioTransport:
 
     def __init__(self, mcp_server: Optional[MCPServer] = None):
         self.mcp_server = mcp_server or create_mcp_server()
+        self._shutdown = False
+
+    def shutdown(self) -> None:
+        self._shutdown = True
 
     def run(self) -> None:
         logger.info("MCP stdio transport started")
-        while True:
+        while not self._shutdown:
             try:
                 line = sys.stdin.readline()
                 if not line:
@@ -99,7 +119,8 @@ class StdioTransport:
                 sys.stdout.flush()
             except Exception as e:
                 logger.error(f"stdio transport error: {e}")
-                break
+                if not self._shutdown:
+                    break
         logger.info("MCP stdio transport stopped")
 
 

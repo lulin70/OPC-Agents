@@ -1,0 +1,5 @@
+{
+  "allowed_modules": ["json", "math", "re", "datetime", "collections", "itertools", "typing"],
+  "plugin_timeout_seconds": 30,
+  "max_plugins": 50
+}
