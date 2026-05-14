@@ -31,20 +31,50 @@ INTENT_TO_TASK_MAP: Dict[IntentType, TaskType] = {
     IntentType.SEARCH: TaskType.INFO_COLLECTION,
     IntentType.ANALYSIS: TaskType.DATA_ANALYSIS,
     IntentType.CREATION: TaskType.CONTENT_GENERATION,
-    IntentType.OPERATION: TaskType.SCENARIO_BASED,
+    IntentType.OPERATION: TaskType.BUSINESS_OPERATION,
     IntentType.NOTIFICATION: TaskType.GENERAL_CHAT,
     IntentType.COMBINED: TaskType.CONTENT_GENERATION,
     IntentType.UNKNOWN: TaskType.GENERAL_CHAT,
+    IntentType.EMAIL: TaskType.BUSINESS_OPERATION,
+    IntentType.FINANCE: TaskType.BUSINESS_OPERATION,
+    IntentType.TASK: TaskType.BUSINESS_OPERATION,
+    IntentType.CRM: TaskType.BUSINESS_OPERATION,
+    IntentType.SOCIAL: TaskType.CONTENT_GENERATION,
+    IntentType.PROPOSAL: TaskType.CONTENT_GENERATION,
+    IntentType.INVOICE: TaskType.BUSINESS_OPERATION,
+    IntentType.REPORT: TaskType.CONTENT_GENERATION,
+    IntentType.CALENDAR: TaskType.BUSINESS_OPERATION,
+    IntentType.COMPETITOR: TaskType.DATA_ANALYSIS,
+    IntentType.PRICING: TaskType.DATA_ANALYSIS,
+    IntentType.TAX_REMINDER: TaskType.BUSINESS_OPERATION,
+    IntentType.DASHBOARD: TaskType.DATA_ANALYSIS,
+    IntentType.KNOWLEDGE: TaskType.INFO_COLLECTION,
+    IntentType.EXTENDED_SKILL: TaskType.BUSINESS_OPERATION,
 }
 
 SKILL_TO_TASK_MAP: Dict[str, TaskType] = {
     "search": TaskType.INFO_COLLECTION,
     "analysis": TaskType.DATA_ANALYSIS,
     "content_generation": TaskType.CONTENT_GENERATION,
-    "execute_operation": TaskType.SCENARIO_BASED,
+    "execute_operation": TaskType.BUSINESS_OPERATION,
     "send_notification": TaskType.GENERAL_CHAT,
     "intent_analysis": TaskType.INFO_COLLECTION,
     "output_result": TaskType.CONTENT_GENERATION,
+    "email": TaskType.BUSINESS_OPERATION,
+    "finance": TaskType.BUSINESS_OPERATION,
+    "task_manager": TaskType.BUSINESS_OPERATION,
+    "crm": TaskType.BUSINESS_OPERATION,
+    "social_publish": TaskType.CONTENT_GENERATION,
+    "proposal": TaskType.CONTENT_GENERATION,
+    "invoice": TaskType.BUSINESS_OPERATION,
+    "report": TaskType.CONTENT_GENERATION,
+    "calendar": TaskType.BUSINESS_OPERATION,
+    "competitor_watch": TaskType.DATA_ANALYSIS,
+    "pricing": TaskType.DATA_ANALYSIS,
+    "tax_reminder": TaskType.BUSINESS_OPERATION,
+    "dashboard": TaskType.DATA_ANALYSIS,
+    "knowledge_mgmt": TaskType.INFO_COLLECTION,
+    "ext_skill": TaskType.BUSINESS_OPERATION,
 }
 
 
@@ -75,6 +105,10 @@ class TaskEngineAdapter:
         user_input = parameters.get("query", parameters.get("goal", ""))
         if not user_input:
             user_input = parameters.get("user_input", "")
+        if not user_input:
+            user_input = parameters.get("input", "")
+        if not user_input:
+            user_input = parameters.get("content", "")
 
         if not user_input:
             return {
@@ -109,7 +143,7 @@ class TaskEngineAdapter:
         parameters: Dict[str, Any],
         context: Optional[Dict] = None,
     ) -> Dict[str, Any]:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             None, self.execute_skill, skill_id, parameters, context
         )

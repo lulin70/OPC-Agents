@@ -1,0 +1,7 @@
+{
+  "咨询": {"junior": 200, "mid": 500, "senior": 1000, "expert": 2000},
+  "设计": {"junior": 150, "mid": 400, "senior": 800, "expert": 1500},
+  "开发": {"junior": 200, "mid": 500, "senior": 1000, "expert": 2000},
+  "培训": {"junior": 300, "mid": 800, "senior": 1500, "expert": 3000},
+  "通用": {"junior": 200, "mid": 500, "senior": 1000, "expert": 2000}
+}

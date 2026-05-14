@@ -89,6 +89,7 @@ class TaskType(Enum):
     CONTENT_GENERATION = "content_generation"
     DATA_ANALYSIS = "data_analysis"
     SCENARIO_BASED = "scenario_based"
+    BUSINESS_OPERATION = "business_operation"
     GENERAL_CHAT = "general_chat"
 
 
@@ -136,7 +137,7 @@ class InputValidator:
         text = user_input.strip()
         if len(text) > MAX_INPUT_LENGTH:
             text = text[:MAX_INPUT_LENGTH]
-            logger.warning(f"[InputValidator] Input truncated to {MAX_INPUT_LENGTH} chars")
+            logger.warning("[InputValidator] Input truncated to %s chars", MAX_INPUT_LENGTH)
         text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
         text = re.sub(r"<[^>]*>", "", text)
         text = re.sub(r"<[^>]*$", "", text)
@@ -198,7 +199,7 @@ class SearchCache:
                 if time.time() - timestamp < self._ttl:
                     self._cache.move_to_end(key)
                     self._hits += 1
-                    logger.info(f"[SearchCache] Hit: {query[:30]}...")
+                    logger.info("[SearchCache] Hit: %s...", query[:30])
                     return [dict(r) if isinstance(r, dict) else r for r in results]
                 else:
                     del self._cache[key]
@@ -501,7 +502,7 @@ class TaskEngineV3:
                 self.web_search = WebSearchMCP()
                 logger.info("[TaskEngineV3] WebSearch initialized successfully")
             except Exception as e:
-                logger.warning(f"[TaskEngineV3] WebSearch initialization failed: {e}")
+                logger.warning("[TaskEngineV3] WebSearch initialization failed: %s", e)
 
             try:
                 from opc_manager.scenario_engine_v2 import ScenarioEngineV2
@@ -509,7 +510,7 @@ class TaskEngineV3:
                 self.scenario_engine = ScenarioEngineV2()
                 logger.info("[TaskEngineV3] ScenarioEngineV2 initialized successfully")
             except Exception as e:
-                logger.warning(f"[TaskEngineV3] ScenarioEngineV2 initialization failed: {e}")
+                logger.warning("[TaskEngineV3] ScenarioEngineV2 initialization failed: %s", e)
 
             try:
                 from opc_manager.llm_content import LLMEnhancedContentGenerator
@@ -659,7 +660,7 @@ class TaskEngineV3:
                     )
                     logger.debug("[TaskEngineV3] Recorded to session history")
                 except Exception as e:
-                    logger.warning(f"[TaskEngineV3] Failed to record session history (doesn't affect result): {e}")
+                    logger.warning("[TaskEngineV3] Failed to record session history (doesn't affect result): %s", e)
 
             cache_stats = self._search_cache.stats
             if cache_stats["hits"] + cache_stats["misses"] > 0:
@@ -669,7 +670,7 @@ class TaskEngineV3:
             return result
 
         except Exception as e:
-            logger.error(f"[TaskEngineV3] Execution failed: {e}", exc_info=True)
+            logger.error("[TaskEngineV3] Execution failed: %s", e, exc_info=True)
             return TaskResult(
                 success=False,
                 content="⚠️ 任务执行遇到问题，请稍后重试或调整需求描述",
@@ -749,9 +750,9 @@ class TaskEngineV3:
                 for r in results
                 if r.get("href")
             ]
-            logger.info(f"[TaskEngineV3] Search '{query[:40]}...' returned {len(results)} results")
+            logger.info("[TaskEngineV3] Search '%s...' returned %s results", query[:40], len(results))
         except Exception as e:
-            logger.error(f"[TaskEngineV3] Search failed: {e}")
+            logger.error("[TaskEngineV3] Search failed: %s", e)
         return results, sources
 
     def _extract_search_query(self, user_input: str) -> str:
@@ -962,7 +963,7 @@ class TaskEngineV3:
                     "[TaskEngineV3] LLM degraded to template, using local template (with search data) instead"
                 )
         except Exception as e:
-            logger.warning(f"[TaskEngineV3] LLM generation failed, degrading to template: {e}")
+            logger.warning("[TaskEngineV3] LLM generation failed, degrading to template: %s", e)
         return None
 
     def _gen_real_report(
@@ -1496,7 +1497,7 @@ class TaskEngineV3:
             )
 
         except Exception as e:
-            logger.error(f"[TaskEngineV3] Scenario execution failed: {e}")
+            logger.error("[TaskEngineV3] Scenario execution failed: %s", e)
             return self._execute_fallback(search_query)
 
     def _exec_step_with_data(self, step, query: str) -> str:

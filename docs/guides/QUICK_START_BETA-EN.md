@@ -1,7 +1,7 @@
 # OPC-Agents Beta Quick Start Guide
 
-> **Version**: v0.1.9-delta  
-> **Updated**: 2026-05-09  
+> **Version**: v0.1.8  
+> **Updated**: 2026-05-14  
 > **Status**: Beta
 
 ---
@@ -297,5 +297,5 @@ Thank you for your participation! We value your feedback:
 
 ---
 
-*Last updated: 2026-05-09*  
-*Version: v0.1.9-delta*
+*Last updated: 2026-05-14*  
+*Version: v0.1.8*

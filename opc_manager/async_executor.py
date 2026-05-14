@@ -297,7 +297,7 @@ class AsyncTaskExecutor:
                 task.status = TaskStatus.FAILED
                 task.completed_at = time.time()
                 task.error_message = f"Task stuck in PENDING for {elapsed:.0f}s (timeout: {self.default_timeout}s)"
-                logger.warning(f"[AsyncTaskExecutor] PENDING timeout: {task_id}")
+                logger.warning("[AsyncTaskExecutor] PENDING timeout: %s", task_id)
                 self._schedule_retry(task)
 
             if task.status == TaskStatus.RUNNING:
@@ -307,7 +307,7 @@ class AsyncTaskExecutor:
                         task.status = TaskStatus.FAILED
                         task.completed_at = time.time()
                         task.error_message = f"Task RUNNING for {running_elapsed:.0f}s (timeout: {self.default_timeout}s)"
-                        logger.warning(f"[AsyncTaskExecutor] RUNNING timeout: {task_id}")
+                        logger.warning("[AsyncTaskExecutor] RUNNING timeout: %s", task_id)
                         self._schedule_retry(task)
 
             return {
@@ -348,7 +348,7 @@ class AsyncTaskExecutor:
             task = self._tasks.get(task_id)
 
             if not task:
-                logger.warning(f"[AsyncTaskExecutor] Cancel failed: task {task_id} not found")
+                logger.warning("[AsyncTaskExecutor] Cancel failed: task %s not found", task_id)
                 return False
 
             if task.status not in [TaskStatus.PENDING, TaskStatus.RUNNING]:
@@ -361,7 +361,7 @@ class AsyncTaskExecutor:
             task.status = TaskStatus.CANCELLED
             task.completed_at = time.time()
 
-        logger.info(f"[AsyncTaskExecutor] Cancel signal sent: {task_id}")
+        logger.info("[AsyncTaskExecutor] Cancel signal sent: %s", task_id)
 
         return True
 
@@ -423,7 +423,7 @@ class AsyncTaskExecutor:
             task = self._tasks.get(task_id)
 
         if not task:
-            logger.error(f"[AsyncTaskExecutor] Worker startup failed: task {task_id} not found")
+            logger.error("[AsyncTaskExecutor] Worker startup failed: task %s not found", task_id)
             return
 
         if task.cancel_event.is_set():
@@ -441,7 +441,7 @@ class AsyncTaskExecutor:
                 task.status = TaskStatus.RUNNING
                 task.started_at = time.time()
 
-            logger.info(f"[AsyncTaskExecutor] Started execution: {task_id}")
+            logger.info("[AsyncTaskExecutor] Started execution: %s", task_id)
 
             result = execute_func(
                 prompt=task.prompt, cancel_event=task.cancel_event, **kwargs
@@ -451,7 +451,7 @@ class AsyncTaskExecutor:
                 with self._lock:
                     task.status = TaskStatus.CANCELLED
                     task.completed_at = time.time()
-                logger.info(f"[AsyncTaskExecutor] Task cancelled: {task_id}")
+                logger.info("[AsyncTaskExecutor] Task cancelled: %s", task_id)
                 return
 
             if isinstance(result, dict):
@@ -459,7 +459,7 @@ class AsyncTaskExecutor:
                     if task.cancel_event.is_set():
                         task.status = TaskStatus.CANCELLED
                         task.completed_at = time.time()
-                        logger.info(f"[AsyncTaskExecutor] Task cancelled after completion: {task_id}")
+                        logger.info("[AsyncTaskExecutor] Task cancelled after completion: %s", task_id)
                         return
                     is_success = result.get("success", True)
                     task.status = TaskStatus.DONE if is_success else TaskStatus.FAILED
@@ -500,7 +500,7 @@ class AsyncTaskExecutor:
             with self._lock:
                 task.status = TaskStatus.CANCELLED
                 task.completed_at = time.time()
-            logger.info(f"[AsyncTaskExecutor] Task interrupted and cancelled: {task_id}")
+            logger.info("[AsyncTaskExecutor] Task interrupted and cancelled: %s", task_id)
 
         except Exception as e:
             with self._lock:
@@ -542,7 +542,7 @@ class AsyncTaskExecutor:
                     result.task_type.value if result.task_type else "general",
                 )
             except Exception as e:
-                logger.warning(f"[AsyncTaskExecutor] save_callback failed: {e}")
+                logger.warning("[AsyncTaskExecutor] save_callback failed: %s", e)
 
         return {
             "content": result.content,
@@ -580,7 +580,7 @@ class AsyncTaskExecutor:
             del self._tasks[tid]
 
         if to_remove:
-            logger.debug(f"[AsyncTaskExecutor] Cleaned up {len(to_remove)} old task records")
+            logger.debug("[AsyncTaskExecutor] Cleaned up %s old task records", len(to_remove))
 
     def _schedule_retry(self, task: AsyncTask):
         if task.cancel_event.is_set():
@@ -630,7 +630,7 @@ class AsyncTaskExecutor:
             )
             task.thread_ref = thread
             thread.start()
-            logger.info(f"[AsyncTaskExecutor] Retry executing: {task.task_id}")
+            logger.info("[AsyncTaskExecutor] Retry executing: %s", task.task_id)
 
         retry_thread = threading.Thread(target=_do_retry, daemon=True)
         retry_thread.start()
@@ -649,7 +649,7 @@ class AsyncTaskExecutor:
                 self._scan_zombies()
                 self._process_retries()
             except Exception as e:
-                logger.error(f"[AsyncTaskExecutor] Zombie scan error: {e}")
+                logger.error("[AsyncTaskExecutor] Zombie scan error: %s", e)
 
     def _scan_zombies(self):
         now = time.time()
@@ -661,7 +661,7 @@ class AsyncTaskExecutor:
                     task.status = TaskStatus.FAILED
                     task.completed_at = now
                     task.error_message = f"Zombie scan: PENDING for {elapsed:.0f}s"
-                    logger.warning(f"[AsyncTaskExecutor] Zombie PENDING: {task.task_id}")
+                    logger.warning("[AsyncTaskExecutor] Zombie PENDING: %s", task.task_id)
                     retry_candidates.append(task)
 
                 elif task.status == TaskStatus.RUNNING:
@@ -671,7 +671,7 @@ class AsyncTaskExecutor:
                             task.status = TaskStatus.FAILED
                             task.completed_at = now
                             task.error_message = f"Zombie scan: RUNNING for {running_elapsed:.0f}s"
-                            logger.warning(f"[AsyncTaskExecutor] Zombie RUNNING: {task.task_id}")
+                            logger.warning("[AsyncTaskExecutor] Zombie RUNNING: %s", task.task_id)
                             retry_candidates.append(task)
 
         for task in retry_candidates:
@@ -699,7 +699,7 @@ class AsyncTaskExecutor:
             )
             task.thread_ref = thread
             thread.start()
-            logger.info(f"[AsyncTaskExecutor] Retry triggered: {task.task_id}")
+            logger.info("[AsyncTaskExecutor] Retry triggered: %s", task.task_id)
 
     def _load_persisted_tasks(self):
         """Load task states from persistence directory on startup
@@ -752,7 +752,7 @@ class AsyncTaskExecutor:
             state_file.unlink(missing_ok=True)
 
         except Exception as e:
-            logger.warning(f"[AsyncTaskExecutor] Failed to load persisted tasks: {e}")
+            logger.warning("[AsyncTaskExecutor] Failed to load persisted tasks: %s", e)
 
     def _persist_active_tasks(self):
         """Save active task states to disk for crash recovery
@@ -801,7 +801,7 @@ class AsyncTaskExecutor:
                 state_file.unlink(missing_ok=True)
 
         except Exception as e:
-            logger.warning(f"[AsyncTaskExecutor] Failed to persist tasks: {e}")
+            logger.warning("[AsyncTaskExecutor] Failed to persist tasks: %s", e)
 
     def shutdown(self):
         """Graceful shutdown: persist active tasks and stop zombie scanner

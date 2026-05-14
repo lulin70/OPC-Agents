@@ -149,7 +149,7 @@ class SkillEditor:
                     skill = CustomSkill.from_dict(data)
                     self._skills[skill.skill_id] = skill
                 except Exception as e:
-                    logger.warning(f"加载技能失败 {filename}: {e}")
+                    logger.warning("加载技能失败 %s: %s", filename, e)
 
     def _save_skill(self, skill: CustomSkill) -> None:
         filepath = os.path.join(self._skills_dir, f"{skill.skill_id}.json")

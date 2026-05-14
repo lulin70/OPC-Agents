@@ -630,7 +630,7 @@ def migrate_scenarios(registry: SkillRegistry) -> None:
 - 性能满足基本使用需求
 - 反馈收集系统就绪
 
-### 9.5 Phase 4 → v0.2.0
+### 9.5 Phase 4 → v0.1.8+
 
 **目标**: 开放平台，支持第三方扩展
 

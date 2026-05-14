@@ -21,6 +21,8 @@ import os
 import sys
 from typing import Dict, Any, Optional
 
+from .version import __version__
+
 logger = logging.getLogger(__name__)
 
 SSE_AVAILABLE = False
@@ -45,7 +47,7 @@ def create_mcp_server() -> MCPServer:
 if SSE_AVAILABLE:
     def create_sse_app() -> FastAPI:
         mcp_server = create_mcp_server()
-        app = FastAPI(title="OPC-Agents MCP SSE Endpoint", version="0.1.9-delta")
+        app = FastAPI(title="OPC-Agents MCP SSE Endpoint", version=__version__)
 
         MCP_API_KEY = os.environ.get("MCP_API_KEY", "")
 
@@ -82,7 +84,7 @@ if SSE_AVAILABLE:
 
         @app.get("/health")
         async def health():
-            return {"status": "ok", "transport": "sse", "version": "0.1.9-delta"}
+            return {"status": "ok", "transport": "sse", "version": __version__}
 
         return app
 
@@ -118,7 +120,7 @@ class StdioTransport:
                 sys.stdout.write(json.dumps(error_response) + "\n")
                 sys.stdout.flush()
             except Exception as e:
-                logger.error(f"stdio transport error: {e}")
+                logger.error("stdio transport error: %s", e)
                 if not self._shutdown:
                     break
         logger.info("MCP stdio transport stopped")

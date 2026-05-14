@@ -42,7 +42,7 @@ Reasons:
 import re
 import time
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Callable
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -160,10 +160,12 @@ class LLMEnhancedContentGenerator:
         llm_timeout: int = 30,
         max_content_length: int = 15000,
         min_fallback_length: int = 800,
+        llm_caller: Optional[Callable[[str], Optional[str]]] = None,
     ):
         self.llm_timeout = llm_timeout
         self.max_content_length = max_content_length
         self.min_fallback_length = min_fallback_length
+        self._llm_caller = llm_caller
 
     @staticmethod
     def _detect_language(text: str) -> str:
@@ -192,7 +194,7 @@ class LLMEnhancedContentGenerator:
             api_key = self._get_llm_api_key()
             return api_key is not None and len(api_key) > 0
         except Exception as e:
-            logger.warning(f"[LLMContentGen] Availability check failed: {e}")
+            logger.warning("[LLMContentGen] Availability check failed: %s", e)
             return False
 
     def generate(
@@ -258,7 +260,7 @@ class LLMEnhancedContentGenerator:
                     result.placeholder_count = self._count_placeholders(result.content)
 
                 result.content = self._redact_secrets(result.content)
-                result = self._quality_gate(result, business_info)
+                result = self._quality_gate(result, business_info, has_search_results=bool(search_results))
 
                 logger.info(
                     f"[LLMContentGen] LLM generation succeeded: "
@@ -269,7 +271,7 @@ class LLMEnhancedContentGenerator:
                 return result
 
         except Exception as e:
-            logger.error(f"[LLMContentGen] LLM generation exception: {e}")
+            logger.error("[LLMContentGen] LLM generation exception: %s", e)
 
         fallback_result = self._fallback_to_template(
             user_input=user_input,
@@ -291,7 +293,7 @@ class LLMEnhancedContentGenerator:
         fallback_result.quality_score = self._calculate_quality_score(fallback_result)
 
         fallback_result.content = self._redact_secrets(fallback_result.content)
-        fallback_result = self._quality_gate(fallback_result, business_info)
+        fallback_result = self._quality_gate(fallback_result, business_info, has_search_results=bool(search_results))
 
         logger.info(
             f"[LLMContentGen] Using degraded (template) mode: "
@@ -562,19 +564,13 @@ class LLMEnhancedContentGenerator:
         return prompt
 
     def _call_llm_api(self, prompt: str) -> Optional[str]:
-        """Call LLM API to generate content
+        if self._llm_caller is not None:
+            try:
+                return self._llm_caller(prompt)
+            except Exception as e:
+                logger.warning("[LLMContentGen] Injected llm_caller failed: %s", e)
+                return None
 
-        Supports multiple API providers (priority from high to low):
-        1. MOKA_API_KEY + MOKA_API_BASE (OpenAI-compatible format)
-        2. GLM_API_KEY (Zhipu GLM-4)
-        3. OPENAI_API_KEY (Official OpenAI)
-
-        Args:
-            prompt: Complete prompt text
-
-        Returns:
-            LLM-generated text content, or None (when call fails)
-        """
         try:
             import requests
             import json
@@ -601,6 +597,9 @@ class LLMEnhancedContentGenerator:
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
 
+            if not api_base.startswith("https://"):
+                logger.warning("[LLMContentGen] API base URL is not HTTPS: %s", api_base)
+
             response = requests.post(
                 endpoint,
                 headers=headers,
@@ -626,55 +625,18 @@ class LLMEnhancedContentGenerator:
             logger.debug("[LLMContentGen] requests library not available")
             return None
         except Exception as e:
-            logger.error(f"[LLMContentGen] LLM API call exception: {e}")
+            logger.error("[LLMContentGen] LLM API call exception: %s", e)
             return None
 
     def _get_llm_config(self) -> Tuple[Optional[str], str, str]:
-        """Get LLM API configuration (Key/Base/Model)
-
-        Priority:
-        1. MOKA_API_KEY + MOKA_API_BASE + MOKA_MODEL
-        2. GLM_API_KEY + Zhipu default endpoint
-        3. OPENAI_API_KEY + OpenAI default endpoint
-        4. OLLAMA_BASE_URL + OLLAMA_MODEL (OpenAI-compatible endpoint, no API Key needed)
-
-        Returns:
-            (api_key, api_base, model) triple. api_key may be None for Ollama.
-        """
-        import os
-
-        moka_key = os.environ.get("MOKA_API_KEY")
-        if moka_key and moka_key.strip():
-            api_base = os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1")
-            model = os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
-            logger.info(f"[LLMContentGen] Using MOKA API: base={api_base}, model={model}")
-            return moka_key, api_base, model
-
-        glm_key = os.environ.get("GLM_API_KEY")
-        if glm_key and glm_key.strip():
-            return glm_key, "https://open.bigmodel.cn/api/paas/v4", "glm-4"
-
-        openai_key = os.environ.get("OPENAI_API_KEY")
-        if openai_key and openai_key.strip():
-            api_base = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1")
-            return openai_key, api_base, "gpt-4o"
-
-        ollama_url = os.environ.get("OLLAMA_BASE_URL", "").strip()
-        if not ollama_url:
-            ollama_enabled = os.environ.get("OLLAMA_ENABLED", "").strip().lower()
-            if ollama_enabled in ("1", "true", "yes"):
-                ollama_url = "http://localhost:11434"
-        if ollama_url:
-            ollama_base = ollama_url.rstrip("/")
-            if not ollama_base.endswith("/v1"):
-                ollama_base = f"{ollama_base}/v1"
-            ollama_model = os.environ.get("OLLAMA_MODEL", "llama3")
-            logger.info(
-                f"[LLMContentGen] Using Ollama: base={ollama_base}, model={ollama_model}"
-            )
-            return None, ollama_base, ollama_model
-
-        return None, "", ""
+        from opc_manager.simple_llm_service import discover_llm_config
+        config = discover_llm_config()
+        api_key = config["api_key"] or None
+        api_base = config["base_url"]
+        model = config["model"]
+        if api_key or api_base:
+            logger.info("[LLMContentGen] Using LLM config: base=%s, model=%s", api_base, model)
+        return api_key, api_base, model
 
     def _get_llm_api_key(self) -> Optional[str]:
         """Get LLM API Key (backward compatible interface)"""
@@ -899,7 +861,8 @@ class LLMEnhancedContentGenerator:
         return max(0, min(100, score))
 
     def _quality_gate(
-        self, result: "GenerationResult", business_info: Dict[str, List[str]]
+        self, result: "GenerationResult", business_info: Dict[str, List[str]],
+        has_search_results: bool = False
     ) -> "GenerationResult":
         """Deliverable quality gate — reject low-quality output
 
@@ -907,6 +870,9 @@ class LLMEnhancedContentGenerator:
         1. Zero placeholders (placeholder_count == 0)
         2. Minimum length >= 300 chars
         3. At least 1 data source reference (URL or search citation)
+           — Only enforced when search results were provided to the generator.
+           When LLM generates from its own knowledge (no search results),
+           the source requirement is relaxed since no external data was used.
 
         If gate fails:
         - Log warning with specific failure reason
@@ -916,6 +882,7 @@ class LLMEnhancedContentGenerator:
         Args:
             result: Generation result to check
             business_info: Extracted business info for context
+            has_search_results: Whether search results were provided for generation
 
         Returns:
             GenerationResult with quality_gate_passed flag set
@@ -928,13 +895,14 @@ class LLMEnhancedContentGenerator:
         if len(result.content) < 300:
             failures.append(f"length={len(result.content)}<300")
 
-        has_source = bool(
-            re.search(r"https?://\S+", result.content)
-        ) or bool(
-            re.search(r"来源|参考|引用|出处|source|ref", result.content, re.IGNORECASE)
-        )
-        if not has_source:
-            failures.append("no_data_source")
+        if has_search_results:
+            has_source = bool(
+                re.search(r"https?://\S+", result.content)
+            ) or bool(
+                re.search(r"来源|参考|引用|出处|source|ref", result.content, re.IGNORECASE)
+            )
+            if not has_source:
+                failures.append("no_data_source")
 
         result.quality_gate_passed = len(failures) == 0
 
@@ -968,6 +936,10 @@ class LLMEnhancedContentGenerator:
             (r'ghp_[a-zA-Z0-9]{36}', '[REDACTED-GITHUB-TOKEN]'),
             (r'gho_[a-zA-Z0-9]{36}', '[REDACTED-GITHUB-TOKEN]'),
             (r'ghs_[a-zA-Z0-9]{36}', '[REDACTED-GITHUB-TOKEN]'),
+            (r'glm-[a-zA-Z0-9]{20,}', '[REDACTED-GLM-KEY]'),
+            (r'moka/[a-zA-Z0-9\-]{10,}', '[REDACTED-MOKA-KEY]'),
+            (r'AKIA[0-9A-Z]{16}', '[REDACTED-AWS-KEY]'),
+            (r'Bearer\s+[a-zA-Z0-9\-._~+/]+=*', '[REDACTED-BEARER-TOKEN]'),
         ]
         for pattern, replacement in patterns:
             content = re.sub(pattern, replacement, content)

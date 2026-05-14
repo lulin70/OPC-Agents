@@ -2,39 +2,48 @@
 PluginSystem — 插件系统
 
 支持社区开发和分发插件，核心特性：
-- 插件加载器（热加载/沙箱隔离）
+- 插件加载器（热加载/进程级沙箱隔离）
 - 插件生命周期管理（注册→初始化→运行→停止→卸载）
 - 插件依赖解析
-- 沙箱隔离（安全专家审核S-4红线）
+- subprocess进程隔离（安全专家审核S-4红线）
 
 架构位置：
-  PluginManager → PluginSandbox → Plugin.execute()
-       │
-       ├── 加载插件元数据 → 验证依赖 → 初始化
-       └── 执行时沙箱隔离 → 限制文件系统/网络/环境变量访问
+  PluginManager → PluginProcessPool → plugin_worker.py (子进程)
+       │                                    │
+       ├── 加载插件元数据 → 验证依赖 → 初始化  └── 受限import + rlimit + 超时kill
+       └── 执行时进程隔离 → 限制文件系统/网络/环境变量/内存/CPU
 
 安全红线：
+  - 插件在独立子进程中运行，主进程不受影响
   - 插件禁止访问文件系统（除非显式授权）
   - 插件禁止访问网络（除非显式授权）
   - 插件禁止读取环境变量（除非显式授权）
-  - 插件执行超时限制（默认30秒）
+  - 插件内存限制256MB，CPU时间限制30秒
+  - 插件执行超时限制（默认30秒），超时强制kill
+  - 插件仅允许导入安全模块（json/math/re/datetime等）
 """
 
 import importlib
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
+import threading
 import traceback
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
+from concurrent.futures import ThreadPoolExecutor, Future
 
 logger = logging.getLogger(__name__)
 
 PLUGIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "plugins")
 PLUGIN_TIMEOUT_SECONDS = 30
+MAX_CONCURRENT_PLUGINS = 4
+
+_WORKER_PATH = os.path.join(os.path.dirname(__file__), "plugin_worker.py")
 
 
 class PluginState(str, Enum):
@@ -77,19 +86,181 @@ class PluginInstance:
     execution_count: int = 0
 
 
+class PluginProcessPool:
+    """插件子进程池 — 管理并发执行和资源回收
+
+    - 限制最大并发插件数
+    - 超时强制kill子进程
+    - 僵尸进程回收
+    - 执行统计
+    """
+
+    def __init__(self, max_workers: int = MAX_CONCURRENT_PLUGINS,
+                 default_timeout: int = PLUGIN_TIMEOUT_SECONDS):
+        self._max_workers = max_workers
+        self._default_timeout = default_timeout
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        self._active_processes: Dict[str, subprocess.Popen] = {}
+        self._lock = threading.Lock()
+        self._stats = {
+            "total_executions": 0,
+            "successful_executions": 0,
+            "failed_executions": 0,
+            "timeout_kills": 0,
+        }
+
+    def execute_in_sandbox(self, plugin_id: str, plugin_path: str,
+                           method: str, parameters: Dict[str, Any],
+                           timeout: Optional[int] = None) -> Dict[str, Any]:
+        timeout = timeout or self._default_timeout
+        request = {
+            "action": "execute",
+            "plugin_path": plugin_path,
+            "method": method,
+            "parameters": parameters,
+        }
+
+        self._stats["total_executions"] += 1
+        start_time = time.time()
+
+        try:
+            process = subprocess.Popen(
+                [sys.executable, _WORKER_PATH],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            with self._lock:
+                self._active_processes[plugin_id] = process
+
+            try:
+                stdout, stderr = process.communicate(
+                    input=json.dumps(request, ensure_ascii=False) + "\n",
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+                self._stats["timeout_kills"] += 1
+                self._stats["failed_executions"] += 1
+                elapsed = time.time() - start_time
+                logger.warning("Plugin %s killed after %.1fs (timeout: %ss)", plugin_id, elapsed, timeout)
+                return {
+                    "success": False,
+                    "error": f"Plugin execution timed out ({timeout}s)",
+                    "execution_time": elapsed,
+                }
+            finally:
+                with self._lock:
+                    self._active_processes.pop(plugin_id, None)
+
+            elapsed = time.time() - start_time
+
+            if process.returncode != 0:
+                self._stats["failed_executions"] += 1
+                error_msg = stderr.strip()[:200] if stderr else f"Process exited with code {process.returncode}"
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "execution_time": elapsed,
+                }
+
+            if not stdout.strip():
+                self._stats["failed_executions"] += 1
+                return {
+                    "success": False,
+                    "error": "Plugin produced no output",
+                    "execution_time": elapsed,
+                }
+
+            try:
+                result = json.loads(stdout.strip())
+            except json.JSONDecodeError as e:
+                self._stats["failed_executions"] += 1
+                return {
+                    "success": False,
+                    "error": f"Invalid plugin output: {e}",
+                    "execution_time": elapsed,
+                }
+
+            result["execution_time"] = elapsed
+            if result.get("success"):
+                self._stats["successful_executions"] += 1
+            else:
+                self._stats["failed_executions"] += 1
+
+            return result
+
+        except Exception as e:
+            self._stats["failed_executions"] += 1
+            with self._lock:
+                self._active_processes.pop(plugin_id, None)
+            return {"success": False, "error": f"Sandbox error: {str(e)}"}
+
+    def submit_async(self, plugin_id: str, plugin_path: str,
+                     method: str, parameters: Dict[str, Any],
+                     timeout: Optional[int] = None,
+                     callback: Optional[Callable] = None) -> Future:
+        future = self._executor.submit(
+            self.execute_in_sandbox,
+            plugin_id, plugin_path, method, parameters, timeout,
+        )
+        if callback:
+            future.add_done_callback(callback)
+        return future
+
+    def kill_plugin(self, plugin_id: str) -> bool:
+        with self._lock:
+            process = self._active_processes.get(plugin_id)
+        if process and process.poll() is None:
+            process.kill()
+            logger.warning("Force killed plugin process: %s", plugin_id)
+            return True
+        return False
+
+    def kill_all(self) -> int:
+        killed = 0
+        with self._lock:
+            for pid, process in list(self._active_processes.items()):
+                if process.poll() is None:
+                    process.kill()
+                    killed += 1
+            self._active_processes.clear()
+        return killed
+
+    def get_active_count(self) -> int:
+        with self._lock:
+            return sum(1 for p in self._active_processes.values() if p.poll() is None)
+
+    def get_stats(self) -> Dict[str, Any]:
+        return {
+            **self._stats,
+            "active_processes": self.get_active_count(),
+            "max_workers": self._max_workers,
+        }
+
+    def shutdown(self, wait: bool = True) -> None:
+        self.kill_all()
+        self._executor.shutdown(wait=wait)
+
+
 class PluginSandbox:
+    """插件沙箱 — 兼容层，委托给PluginProcessPool执行
 
-    ALLOWED_BUILTINS = {
-        "abs", "all", "any", "bool", "dict", "enumerate", "filter",
-        "float", "format", "frozenset", "hash", "hex", "int", "isinstance",
-        "len", "list", "map", "max", "min", "oct", "ord", "pow", "print",
-        "range", "repr", "round", "set", "slice", "sorted", "str", "sum",
-        "tuple", "type", "zip",
-    }
+    保留原有的权限检查和访问日志功能，
+    execute()方法委托给进程池实现真正的进程级隔离。
+    """
 
-    def __init__(self, allowed_permissions: Optional[List[Permission]] = None):
+    def __init__(self, allowed_permissions: Optional[List[Permission]] = None,
+                 process_pool: Optional[PluginProcessPool] = None):
         self.allowed_permissions = set(allowed_permissions or [])
         self._access_log: List[Dict[str, Any]] = []
+        self._process_pool = process_pool
+
+    def set_process_pool(self, pool: PluginProcessPool) -> None:
+        self._process_pool = pool
 
     def check_permission(self, permission: Permission) -> bool:
         return permission in self.allowed_permissions
@@ -103,37 +274,19 @@ class PluginSandbox:
             "timestamp": time.time(),
         })
 
-    def _create_restricted_import(self, plugin_id: str) -> Callable:
-        config_path = os.path.join(PLUGIN_DIR, "plugin_config.json")
-        default_modules = {"json", "math", "re", "datetime", "collections", "itertools", "typing"}
-        allowed_modules = default_modules
-        try:
-            if os.path.exists(config_path):
-                with open(config_path, "r") as f:
-                    cfg = json.load(f)
-                if "allowed_modules" in cfg:
-                    allowed_modules = set(cfg["allowed_modules"])
-        except Exception:
-            pass
+    def execute_in_sandbox(self, plugin_id: str, plugin_path: str,
+                           method: str, parameters: Dict[str, Any],
+                           timeout: Optional[int] = None) -> Dict[str, Any]:
+        if self._process_pool is None:
+            self._process_pool = PluginProcessPool()
 
-        def restricted_import(name, *args, **kwargs):
-            top_level = name.split(".")[0]
-            if top_level in allowed_modules:
-                self.log_access(plugin_id, "import", name, True)
-                return importlib.import_module(name)
-            self.log_access(plugin_id, "import", name, False)
-            raise ImportError(f"Plugin {plugin_id}: import '{name}' not allowed")
+        for perm in [Permission.FILESYSTEM, Permission.NETWORK, Permission.ENV_VARS, Permission.SUBPROCESS]:
+            if perm not in self.allowed_permissions:
+                self.log_access(plugin_id, "blocked", perm.value, False)
 
-        return restricted_import
-
-    def create_restricted_globals(self, plugin_id: str) -> Dict[str, Any]:
-        safe_builtins = {}
-        source = __builtins__ if isinstance(__builtins__, dict) else vars(__builtins__)
-        for name in self.ALLOWED_BUILTINS:
-            if name in source:
-                safe_builtins[name] = source[name]
-        safe_builtins["__import__"] = self._create_restricted_import(plugin_id)
-        return {"__builtins__": safe_builtins}
+        return self._process_pool.execute_in_sandbox(
+            plugin_id, plugin_path, method, parameters, timeout,
+        )
 
     def get_access_log(self) -> List[Dict[str, Any]]:
         return list(self._access_log)
@@ -146,6 +299,7 @@ class PluginManager:
         os.makedirs(self._plugin_dir, exist_ok=True)
         self._plugins: Dict[str, PluginInstance] = {}
         self._sandboxes: Dict[str, PluginSandbox] = {}
+        self._process_pool = PluginProcessPool()
 
     def register_plugin(self, manifest: PluginManifest) -> Dict[str, Any]:
         if manifest.plugin_id in self._plugins:
@@ -155,7 +309,10 @@ class PluginManager:
         if missing:
             return {"success": False, "error": f"Missing dependencies: {missing}"}
 
-        sandbox = PluginSandbox(allowed_permissions=manifest.permissions)
+        sandbox = PluginSandbox(
+            allowed_permissions=manifest.permissions,
+            process_pool=self._process_pool,
+        )
         instance = PluginInstance(manifest=manifest)
         self._plugins[manifest.plugin_id] = instance
         self._sandboxes[manifest.plugin_id] = sandbox
@@ -176,18 +333,6 @@ class PluginManager:
                 instance.error = f"Entry point not found: {plugin_path}"
                 return {"success": False, "error": instance.error}
 
-            spec = importlib.util.spec_from_file_location(plugin_id, plugin_path)
-            module = importlib.util.module_from_spec(spec)
-            sandbox = self._sandboxes.get(plugin_id)
-            if sandbox:
-                restricted_globals = sandbox.create_restricted_globals(plugin_id)
-                module.__builtins__ = restricted_globals["__builtins__"]
-            spec.loader.exec_module(module)
-
-            if hasattr(module, "initialize"):
-                module.initialize(config or {})
-
-            instance.module = module
             instance.config = config or {}
             instance.state = PluginState.INITIALIZED
             instance.loaded_at = time.time()
@@ -213,26 +358,27 @@ class PluginManager:
             instance.state = PluginState.RUNNING
             start_time = time.time()
 
-            if not hasattr(instance.module, method):
-                return {"success": False, "error": f"Method not found: {method}"}
-
-            func = getattr(instance.module, method)
+            plugin_path = os.path.realpath(os.path.join(self._plugin_dir, instance.manifest.entry_point))
+            if not plugin_path.startswith(os.path.realpath(self._plugin_dir)):
+                instance.state = PluginState.ERROR
+                instance.error = "Entry point escapes plugin directory"
+                return {"success": False, "error": "Entry point escapes plugin directory"}
 
             if sandbox:
-                for perm in [Permission.FILESYSTEM, Permission.NETWORK, Permission.ENV_VARS, Permission.SUBPROCESS]:
-                    if perm not in sandbox.allowed_permissions:
-                        sandbox.log_access(plugin_id, "blocked", perm.value, False)
-
-            result = func(**parameters)
+                result = sandbox.execute_in_sandbox(
+                    plugin_id, plugin_path, method, parameters,
+                    timeout=PLUGIN_TIMEOUT_SECONDS,
+                )
+            else:
+                instance.state = PluginState.ERROR
+                instance.error = "No sandbox configured, refusing to execute"
+                return {"success": False, "error": f"Plugin {plugin_id} has no sandbox, refusing to execute"}
 
             elapsed = time.time() - start_time
-            if elapsed > PLUGIN_TIMEOUT_SECONDS:
-                logger.warning(f"Plugin {plugin_id} execution took {elapsed:.1f}s (timeout: {PLUGIN_TIMEOUT_SECONDS}s)")
-
             instance.execution_count += 1
             instance.state = PluginState.INITIALIZED
 
-            return {"success": True, "result": result, "execution_time": elapsed}
+            return result
 
         except Exception as e:
             instance.state = PluginState.ERROR
@@ -245,8 +391,7 @@ class PluginManager:
             return {"success": False, "error": f"Plugin not found: {plugin_id}"}
 
         try:
-            if instance.module and hasattr(instance.module, "shutdown"):
-                instance.module.shutdown()
+            self._process_pool.kill_plugin(plugin_id)
             instance.state = PluginState.STOPPED
             return {"success": True, "plugin_id": plugin_id, "state": "stopped"}
         except Exception as e:
@@ -312,4 +457,8 @@ class PluginManager:
             "running_plugins": sum(1 for p in self._plugins.values() if p.state == PluginState.RUNNING),
             "error_plugins": sum(1 for p in self._plugins.values() if p.state == PluginState.ERROR),
             "plugin_dir": self._plugin_dir,
+            "process_pool": self._process_pool.get_stats(),
         }
+
+    def shutdown(self) -> None:
+        self._process_pool.shutdown(wait=True)

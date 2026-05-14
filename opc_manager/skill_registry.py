@@ -16,7 +16,17 @@ import json
 import logging
 import re
 
+from opc_manager.intent_types import IntentType, INTENT_KEYWORDS, INTENT_STEP_MAP, SKILL_INTENT_MAP
+from opc_manager.protocols import LLMServiceProtocol
+
 logger = logging.getLogger(__name__)
+
+SKILL_COLLABORATIONS = {
+    "crm_to_email": {"trigger": ["跟进", "发邮件"], "skills": ["crm", "email"]},
+    "finance_to_tax": {"trigger": ["记账", "报税"], "skills": ["finance", "tax_reminder"]},
+    "deal_to_income": {"trigger": ["成交", "收款"], "skills": ["crm", "finance"]},
+    "report_full": {"trigger": ["经营报告", "全面报告"], "skills": ["finance", "crm", "task_manager", "report"]},
+}
 
 
 @dataclass
@@ -65,7 +75,7 @@ class Skill:
     category: SkillCategory         # 技能分类
     inputs: List[SkillInput]        # 输入参数规范
     outputs: List[SkillOutput]      # 输出规范
-    execute: Callable               # 执行函数
+    execute: Callable[..., Dict[str, Any]]
     enabled: bool = True            # 是否启用
     version: str = "1.0"            # 版本号
     intent_keywords: List[str] = None  # 触发意图的关键词
@@ -78,31 +88,51 @@ class Skill:
 class SkillRegistry:
     """技能注册表 — 负责技能的注册、发现和调用"""
 
+    _instance = None
+    _instance_lock = None
+
+    def __new__(cls, llm_service=None, search_processor=None, tool_system=None, register_builtins: bool = True, register_external: bool = True):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance_lock = __import__('threading').Lock()
+        return cls._instance
+
     def __init__(
         self,
         llm_service=None,
         search_processor=None,
         tool_system=None,
+        register_builtins: bool = True,
+        register_external: bool = True,
     ):
-        """初始化技能注册表
-
-        Args:
-            llm_service: LLM服务实例（可选，用于技能内容生成）
-            search_processor: 搜索结果处理器（可选，用于搜索增强）
-            tool_system: 工具系统实例（可选，用于文件操作和通知）
-        """
-        self.llm_service = llm_service
+        if hasattr(self, '_initialized') and self._initialized:
+            if llm_service is not None:
+                self.llm_service = llm_service
+            if search_processor is not None:
+                self.search_processor = search_processor
+            if tool_system is not None:
+                self.tool_system = tool_system
+            return
+        self._initialized = True
+        self.llm_service: Optional[LLMServiceProtocol] = llm_service
         self.search_processor = search_processor
         self.tool_system = tool_system
         self.skills: Dict[str, Skill] = {}
         self.category_index: Dict[str, List[str]] = {}
         self.keyword_index: Dict[str, List[str]] = {}
-        
-        # 注册内置技能
-        self._register_builtin_skills()
+        self._collab_in_progress = False
+        self._external_marketplace = None
+
+        if register_builtins:
+            self._register_builtin_skills()
+
+        if register_external:
+            self._register_external_skills()
+
+        self._web_search = None
+        self._content_generator = None
 
     def _register_builtin_skills(self):
-        """注册内置技能"""
         intent_analysis_skill = Skill(
             skill_id="intent_analysis",
             name="意图分析",
@@ -120,8 +150,7 @@ class SkillRegistry:
             intent_keywords=["分析", "理解", "需求"]
         )
         self.register_skill(intent_analysis_skill)
-        
-        # 搜索技能
+
         search_skill = Skill(
             skill_id="search",
             name="搜索",
@@ -137,11 +166,10 @@ class SkillRegistry:
                 SkillOutput(name="fallback_used", type="bool", description="是否使用了知识库兜底")
             ],
             execute=self._execute_search,
-            intent_keywords=["搜索", "查找", "查询"]
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("search"), [])
         )
         self.register_skill(search_skill)
-        
-        # 分析技能
+
         analysis_skill = Skill(
             skill_id="analysis",
             name="分析",
@@ -158,11 +186,10 @@ class SkillRegistry:
                 SkillOutput(name="action_items", type="list", description="行动清单")
             ],
             execute=self._execute_analysis,
-            intent_keywords=["分析", "研究", "评估"]
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("analysis"), [])
         )
         self.register_skill(analysis_skill)
-        
-        # 内容生成技能
+
         content_gen_skill = Skill(
             skill_id="content_generation",
             name="内容生成",
@@ -177,11 +204,10 @@ class SkillRegistry:
                 SkillOutput(name="format", type="str", description="输出格式")
             ],
             execute=self._execute_content_generation,
-            intent_keywords=["写", "创作", "生成"]
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("content_generation"), [])
         )
         self.register_skill(content_gen_skill)
-        
-        # 操作执行技能
+
         operation_skill = Skill(
             skill_id="execute_operation",
             name="操作执行",
@@ -195,11 +221,10 @@ class SkillRegistry:
                 SkillOutput(name="result", type="dict", description="操作结果")
             ],
             execute=self._execute_operation,
-            intent_keywords=["执行", "操作", "运行"]
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("execute_operation"), [])
         )
         self.register_skill(operation_skill)
-        
-        # 通知发送技能
+
         notification_skill = Skill(
             skill_id="send_notification",
             name="发送通知",
@@ -213,11 +238,10 @@ class SkillRegistry:
                 SkillOutput(name="sent", type="bool", description="是否发送成功")
             ],
             execute=self._execute_notification,
-            intent_keywords=["发送", "通知", "邮件"]
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("send_notification"), [])
         )
         self.register_skill(notification_skill)
-        
-        # 结果输出技能
+
         output_skill = Skill(
             skill_id="output_result",
             name="结果输出",
@@ -235,6 +259,265 @@ class SkillRegistry:
         )
         self.register_skill(output_skill)
 
+        email_skill = Skill(
+            skill_id="email",
+            name="邮件管理",
+            description="发送邮件、管理模板和草稿",
+            category=SkillCategory.OPERATION,
+            inputs=[
+                SkillInput(name="goal", type="str", description="邮件目标"),
+                SkillInput(name="to", type="str", required=False, description="收件人"),
+                SkillInput(name="subject", type="str", required=False, description="主题"),
+                SkillInput(name="body", type="str", required=False, description="正文"),
+            ],
+            outputs=[
+                SkillOutput(name="result", type="dict", description="发送结果"),
+            ],
+            execute=self._execute_email,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("email"), [])
+        )
+        self.register_skill(email_skill)
+
+        finance_skill = Skill(
+            skill_id="finance",
+            name="财务记账",
+            description="记账、报表、报税提醒",
+            category=SkillCategory.OPERATION,
+            inputs=[
+                SkillInput(name="goal", type="str", description="财务操作目标"),
+            ],
+            outputs=[
+                SkillOutput(name="result", type="dict", description="操作结果"),
+            ],
+            execute=self._execute_finance,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("finance"), [])
+        )
+        self.register_skill(finance_skill)
+
+        task_skill = Skill(
+            skill_id="task_manager",
+            name="待办管理",
+            description="创建/完成/查看待办",
+            category=SkillCategory.OPERATION,
+            inputs=[
+                SkillInput(name="goal", type="str", description="待办操作目标"),
+            ],
+            outputs=[
+                SkillOutput(name="result", type="dict", description="操作结果"),
+            ],
+            execute=self._execute_task,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("task_manager"), [])
+        )
+        self.register_skill(task_skill)
+
+        crm_skill = Skill(
+            skill_id="crm",
+            name="客户管理",
+            description="客户档案、合作记录、跟进提醒",
+            category=SkillCategory.OPERATION,
+            inputs=[
+                SkillInput(name="goal", type="str", description="客户操作目标"),
+            ],
+            outputs=[
+                SkillOutput(name="result", type="dict", description="操作结果"),
+            ],
+            execute=self._execute_crm,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("crm"), [])
+        )
+        self.register_skill(crm_skill)
+
+        social_skill = Skill(
+            skill_id="social_publish",
+            name="社交发布",
+            description="生成社交平台内容+发布指引",
+            category=SkillCategory.CREATION,
+            inputs=[SkillInput(name="goal", type="str", description="发布目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="生成结果")],
+            execute=self._execute_social,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("social_publish"), [])
+        )
+        self.register_skill(social_skill)
+
+        proposal_skill = Skill(
+            skill_id="proposal",
+            name="报价提案",
+            description="生成报价单和提案",
+            category=SkillCategory.CREATION,
+            inputs=[SkillInput(name="goal", type="str", description="报价目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="报价结果")],
+            execute=self._execute_proposal,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("proposal"), [])
+        )
+        self.register_skill(proposal_skill)
+
+        invoice_skill = Skill(
+            skill_id="invoice",
+            name="发票税务",
+            description="生成发票+税务日历",
+            category=SkillCategory.OPERATION,
+            inputs=[SkillInput(name="goal", type="str", description="发票/税务目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="操作结果")],
+            execute=self._execute_invoice,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("invoice"), [])
+        )
+        self.register_skill(invoice_skill)
+
+        report_skill = Skill(
+            skill_id="report",
+            name="报告生成",
+            description="周报/月报/年报自动生成",
+            category=SkillCategory.CREATION,
+            inputs=[SkillInput(name="goal", type="str", description="报告目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="报告结果")],
+            execute=self._execute_report,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("report"), [])
+        )
+        self.register_skill(report_skill)
+
+        calendar_skill = Skill(
+            skill_id="calendar",
+            name="日程管理",
+            description="日程安排+提醒",
+            category=SkillCategory.OPERATION,
+            inputs=[SkillInput(name="goal", type="str", description="日程目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="日程结果")],
+            execute=self._execute_calendar,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("calendar"), [])
+        )
+        self.register_skill(calendar_skill)
+
+        competitor_skill = Skill(
+            skill_id="competitor_watch",
+            name="竞品监控",
+            description="竞品添加/动态记录/分析报告",
+            category=SkillCategory.ANALYSIS,
+            inputs=[SkillInput(name="goal", type="str", description="竞品监控目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="监控结果")],
+            execute=self._execute_competitor,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("competitor_watch"), [])
+        )
+        self.register_skill(competitor_skill)
+
+        pricing_skill = Skill(
+            skill_id="pricing",
+            name="定价优化",
+            description="定价计算+行业参考+建议",
+            category=SkillCategory.ANALYSIS,
+            inputs=[SkillInput(name="goal", type="str", description="定价目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="定价结果")],
+            execute=self._execute_pricing,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("pricing"), [])
+        )
+        self.register_skill(pricing_skill)
+
+        tax_reminder_skill = Skill(
+            skill_id="tax_reminder",
+            name="税务提醒",
+            description="税务截止提醒+申报清单",
+            category=SkillCategory.NOTIFICATION,
+            inputs=[SkillInput(name="goal", type="str", description="税务提醒目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="提醒结果")],
+            execute=self._execute_tax_reminder,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("tax_reminder"), [])
+        )
+        self.register_skill(tax_reminder_skill)
+
+        dashboard_skill = Skill(
+            skill_id="dashboard",
+            name="数据看板",
+            description="经营数据概览+趋势分析",
+            category=SkillCategory.ANALYSIS,
+            inputs=[SkillInput(name="goal", type="str", description="看板目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="看板结果")],
+            execute=self._execute_dashboard,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("dashboard"), [])
+        )
+        self.register_skill(dashboard_skill)
+
+        knowledge_skill = Skill(
+            skill_id="knowledge_mgmt",
+            name="知识管理",
+            description="知识库CRUD+标签+检索",
+            category=SkillCategory.OPERATION,
+            inputs=[SkillInput(name="goal", type="str", description="知识管理目标")],
+            outputs=[SkillOutput(name="result", type="dict", description="管理结果")],
+            execute=self._execute_knowledge,
+            intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("knowledge_mgmt"), [])
+        )
+        self.register_skill(knowledge_skill)
+
+    def _register_external_skills(self):
+        try:
+            from opc_manager.data_manager import init_db, execute_query
+            init_db()
+            rows = execute_query("SELECT * FROM external_skills")
+            for row in rows:
+                skill_id = row["id"]
+                if skill_id in self.skills:
+                    continue
+                config = {}
+                if row.get("skill_config"):
+                    try:
+                        config = json.loads(row["skill_config"])
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                ext_skill = Skill(
+                    skill_id=f"ext_{skill_id}",
+                    name=row.get("name", skill_id),
+                    description=row.get("description", ""),
+                    category=SkillCategory.UTILITY,
+                    inputs=[SkillInput(name="goal", type="str", description="执行目标")],
+                    outputs=[SkillOutput(name="result", type="dict", description="执行结果")],
+                    execute=self._execute_extended_skill,
+                    enabled=True,
+                    version=row.get("version", "1.0.0"),
+                    intent_keywords=config.get("keywords", []),
+                )
+                self.register_skill(ext_skill)
+        except Exception as e:
+            logger.debug("注册外部技能失败: %s", e)
+
+    def _execute_extended_skill(self, goal: str = "", _context: Optional[SkillContext] = None, **kwargs) -> Dict[str, Any]:
+        try:
+            from opc_manager.skill_marketplace import ExternalSkillMarketplace
+            if self._external_marketplace is None:
+                self._external_marketplace = ExternalSkillMarketplace()
+            skill_id = kwargs.get("skill_id", "")
+            if skill_id:
+                clean_skill_id = skill_id.replace("ext_", "") if skill_id.startswith("ext_") else skill_id
+                return self._external_marketplace.execute_in_sandbox(
+                    clean_skill_id, {"goal": goal, **kwargs}
+                )
+        except Exception as e:
+            logger.warning("Extended skill sandbox execution failed: %s", e)
+        return {
+            "success": False,
+            "error": "外部技能执行失败",
+            "data": {"goal": goal, "extended": True},
+        }
+
+    def install_external_skill(self, skill_id: str, source: str = "opc_official") -> Dict[str, Any]:
+        if self._external_marketplace is None:
+            from opc_manager.skill_marketplace import ExternalSkillMarketplace
+            self._external_marketplace = ExternalSkillMarketplace()
+
+        result = self._external_marketplace.install_skill(skill_id, source)
+        if result.get("success"):
+            self._register_external_skills()
+        return result
+
+    def uninstall_external_skill(self, skill_id: str) -> Dict[str, Any]:
+        if self._external_marketplace is None:
+            from opc_manager.skill_marketplace import ExternalSkillMarketplace
+            self._external_marketplace = ExternalSkillMarketplace()
+
+        ext_skill_id = f"ext_{skill_id}"
+        result = self._external_marketplace.uninstall_skill(skill_id)
+        if result.get("success"):
+            if ext_skill_id in self.skills:
+                del self.skills[ext_skill_id]
+        return result
+
     def register_skill(self, skill: Skill) -> bool:
         """
         注册技能
@@ -246,7 +529,7 @@ class SkillRegistry:
             bool: 是否注册成功
         """
         if skill.skill_id in self.skills:
-            logger.warning(f"技能已存在: {skill.skill_id}")
+            logger.warning("技能已存在: %s", skill.skill_id)
             return False
         
         self.skills[skill.skill_id] = skill
@@ -263,7 +546,7 @@ class SkillRegistry:
                 self.keyword_index[keyword] = []
             self.keyword_index[keyword].append(skill.skill_id)
         
-        logger.info(f"技能注册成功: {skill.skill_id}")
+        logger.info("技能注册成功: %s", skill.skill_id)
         return True
 
     def get_skill(self, skill_id: str) -> Optional[Skill]:
@@ -346,7 +629,7 @@ class SkillRegistry:
             return {"success": True, "data": result}
 
         except Exception as e:
-            logger.error(f"技能执行异常: {skill_id}, 错误: {str(e)}")
+            logger.error("技能执行异常: %s, 错误: %s", skill_id, str(e))
             return {"success": False, "error": str(e)}
 
     def to_dict(self) -> Dict[str, Any]:
@@ -371,10 +654,36 @@ class SkillRegistry:
         }
 
     def from_dict(self, data: Dict[str, Any]) -> None:
-        if "skills" in data:
-            for sid, sdata in data["skills"].items():
-                if sid not in self.skills:
-                    logger.warning(f"跳过未知技能恢复: {sid}")
+        pass
+
+    def _execute_collaborative(self, goal: str, _context: Optional[SkillContext] = None) -> Optional[Dict[str, Any]]:
+        if self._collab_in_progress:
+            return None
+        for collab_name, collab_def in SKILL_COLLABORATIONS.items():
+            if any(trigger in goal for trigger in collab_def["trigger"]):
+                self._collab_in_progress = True
+                try:
+                    results = []
+                    for skill_id in collab_def["skills"]:
+                        skill = self.get_skill(skill_id)
+                        if not skill or not skill.enabled:
+                            continue
+                        try:
+                            result = skill.execute(goal=goal, _context=_context)
+                            results.append({"skill": skill_id, "result": result})
+                        except Exception as e:
+                            logger.warning("collaborative skill %s failed: %s", skill_id, e)
+                            results.append({"skill": skill_id, "error": str(e)})
+                    if results:
+                        return {
+                            "success": True,
+                            "collaboration": collab_name,
+                            "results": results,
+                            "message": f"已执行协作链: {collab_name}",
+                        }
+                finally:
+                    self._collab_in_progress = False
+        return None
 
     # 内置技能执行函数
     def _execute_intent_analysis(self, user_input: str, context: dict = None, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
@@ -406,7 +715,7 @@ class SkillRegistry:
                     "fallback_used": processed.fallback_used,
                 }
             except Exception as e:
-                logger.warning(f"搜索增强失败，使用降级: {e}")
+                logger.warning("搜索增强失败，使用降级: %s", e)
 
         raw_results = await self._do_web_search(cleaned_query, max_results)
         return {
@@ -424,19 +733,22 @@ class SkillRegistry:
 
     async def _do_web_search(self, query: str, max_results: int) -> list:
         try:
-            from opc_hr.web_search import WebSearchMCP
-            if not hasattr(self, '_web_search') or self._web_search is None:
-                self._web_search = WebSearchMCP()
+            if self._web_search is None:
+                try:
+                    from opc_hr.web_search import WebSearchMCP
+                    self._web_search = WebSearchMCP()
+                except ImportError:
+                    self._web_search = False
+            if self._web_search is False:
+                return []
             if self._web_search.is_available():
                 loop = asyncio.get_running_loop()
                 results = await loop.run_in_executor(
                     None, self._web_search.search, query, max_results
                 )
                 return results
-        except ImportError:
-            logger.warning("WebSearchMCP不可用，搜索功能降级")
         except Exception as e:
-            logger.warning(f"Web搜索失败: {e}")
+            logger.warning("Web搜索失败: %s", e)
         return []
 
     async def _execute_analysis(self, data: list = None, goal: str = "", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
@@ -459,7 +771,7 @@ class SkillRegistry:
                 if gen_result and gen_result.success:
                     return self._parse_analysis_result(gen_result.content, goal)
             except Exception as e:
-                logger.warning(f"LLM分析失败，使用规则引擎降级: {e}")
+                logger.warning("LLM分析失败，使用规则引擎降级: %s", e)
 
         return self._rule_based_analysis(goal, data or [])
 
@@ -487,14 +799,14 @@ class SkillRegistry:
                         "quality_score": gen_result.quality_score,
                     }
             except Exception as e:
-                logger.warning(f"LLM内容生成失败，使用规则引擎降级: {e}")
+                logger.warning("LLM内容生成失败，使用规则引擎降级: %s", e)
 
         return self._rule_based_content_generation(goal, format)
 
     async def _call_llm_generate(self, user_input: str, template: str, search_results: list = None):
         try:
             from opc_manager.llm_content import LLMEnhancedContentGenerator
-            if not hasattr(self, '_content_generator') or self._content_generator is None:
+            if self._content_generator is None:
                 self._content_generator = LLMEnhancedContentGenerator()
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(
@@ -509,7 +821,7 @@ class SkillRegistry:
             logger.warning("LLMEnhancedContentGenerator不可用")
             return None
         except Exception as e:
-            logger.warning(f"LLM生成调用失败: {e}")
+            logger.warning("LLM生成调用失败: %s", e)
             return None
 
     def _get_analysis_template(self, goal: str) -> str:
@@ -547,6 +859,24 @@ class SkillRegistry:
         return "# {topic}\n\n请根据用户需求生成详细内容。\n"
 
     def _parse_analysis_result(self, content: str, goal: str) -> Dict[str, Any]:
+        try:
+            json_str = content
+            if "```json" in json_str:
+                json_str = json_str.split("```json")[1].split("```")[0]
+            elif "```" in json_str:
+                json_str = json_str.split("```")[1].split("```")[0]
+            parsed = json.loads(json_str.strip())
+            if isinstance(parsed, dict):
+                return {
+                    "analysis_result": content,
+                    "summary": parsed.get("summary", ""),
+                    "key_findings": parsed.get("key_findings", []),
+                    "swot": parsed.get("swot", {"strengths": [], "weaknesses": [], "opportunities": [], "threats": []}),
+                    "action_items": parsed.get("action_items", []),
+                }
+        except (json.JSONDecodeError, IndexError, AttributeError):
+            pass
+
         result = {
             "analysis_result": content,
             "summary": "",
@@ -575,11 +905,16 @@ class SkillRegistry:
         return result
 
     def _rule_based_analysis(self, goal: str, data: list) -> Dict[str, Any]:
+        data_summary = ""
+        if data:
+            items = data[:5]
+            data_summary = "\n".join(f"- {item}" for item in items)
+
         return {
-            "analysis_result": f"# {goal} 分析报告\n\n## 摘要\n\n基于现有数据的分析。\n\n## 关键发现\n\n- 需要更多数据支持深度分析\n- 建议结合搜索结果进行LLM增强分析\n\n## SWOT分析\n\n### 优势\n- 待分析\n\n### 劣势\n- 待分析\n\n### 机会\n- 待分析\n\n### 威胁\n- 待分析\n\n## 行动清单\n\n1. 收集更多相关数据\n2. 启用LLM服务进行深度分析\n",
+            "analysis_result": f"# {goal} 分析报告\n\n## 摘要\n\n基于现有数据的分析。\n\n## 关键发现\n\n- 需要更多数据支持深度分析\n- 建议结合搜索结果进行LLM增强分析\n\n## 数据概览\n\n{data_summary}\n\n## SWOT分析\n\n### 优势\n- 数据可用，可进行基础分析\n\n### 劣势\n- 缺乏LLM深度推理能力\n\n### 机会\n- 可通过启用LLM服务获得更高质量分析\n\n### 威胁\n- 数据不足可能导致分析偏差\n\n## 行动清单\n\n1. 收集更多相关数据\n2. 启用LLM服务进行深度分析\n",
             "summary": f"基于现有数据的{goal}分析",
             "key_findings": ["需要更多数据支持深度分析", "建议结合搜索结果进行LLM增强分析"],
-            "swot": {"strengths": ["待分析"], "weaknesses": ["待分析"], "opportunities": ["待分析"], "threats": ["待分析"]},
+            "swot": {"strengths": ["数据可用，可进行基础分析"], "weaknesses": ["缺乏LLM深度推理能力"], "opportunities": ["可通过启用LLM服务获得更高质量分析"], "threats": ["数据不足可能导致分析偏差"]},
             "action_items": ["收集更多相关数据", "启用LLM服务进行深度分析"],
         }
 
@@ -607,7 +942,7 @@ class SkillRegistry:
                 result = await self.tool_system.call_tool(tool_id, params)
                 return result
             except Exception as e:
-                logger.warning(f"工具系统操作失败: {e}")
+                logger.warning("工具系统操作失败: %s", e)
                 return {"success": False, "error": str(e)}
         return {"success": False, "error": "工具系统未初始化"}
 
@@ -622,7 +957,7 @@ class SkillRegistry:
                 })
                 return result
             except Exception as e:
-                logger.warning(f"邮件发送失败: {e}")
+                logger.warning("邮件发送失败: %s", e)
                 return {"success": False, "error": str(e)}
         return {
             "sent": False,
@@ -632,8 +967,82 @@ class SkillRegistry:
         }
 
     def _execute_output(self, data: dict, format: str = "markdown", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
-        """输出结果"""
         return {
             "output": f"## 执行结果\n\n{json.dumps(data, indent=2, ensure_ascii=False)}",
             "format": format
         }
+
+    def _execute_email(self, goal: str, to: str = "", subject: str = "",
+                       body: str = "", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.email_skill import execute_goal
+        return execute_goal(goal, _context, to=to, subject=subject, body=body)
+
+    def _execute_finance(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.finance_skill import execute_goal as finance_execute_goal
+        if any(kw in goal for kw in ["报税", "提醒"]):
+            collab_result = self._execute_collaborative(goal, _context)
+            if collab_result:
+                return collab_result
+        return finance_execute_goal(goal, _context)
+
+    def _execute_task(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.task_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_crm(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.crm_skill import execute_goal as crm_execute_goal
+        if any(kw in goal for kw in ["发邮件", "跟进"]):
+            crm_result = None
+            name = goal
+            for kw in ["给", "发邮件", "跟进", "帮我", "的", "客户"]:
+                name = name.replace(kw, "")
+            name = name.strip().strip("，。、的")
+            if name:
+                from opc_manager.crm_skill import get_customer
+                crm_result = get_customer(name=name)
+            collab_result = self._execute_collaborative(goal, _context)
+            if collab_result:
+                if crm_result:
+                    collab_result["crm_lookup"] = crm_result
+                return collab_result
+        return crm_execute_goal(goal, _context)
+
+    def _execute_social(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.social_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_proposal(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.proposal_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_invoice(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.invoice_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_report(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.report_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_calendar(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.calendar_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_competitor(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.competitor_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_pricing(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.pricing_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_tax_reminder(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.tax_reminder_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_dashboard(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.dashboard_skill import execute_goal
+        return execute_goal(goal, _context)
+
+    def _execute_knowledge(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        from opc_manager.knowledge_skill import execute_goal
+        return execute_goal(goal, _context)

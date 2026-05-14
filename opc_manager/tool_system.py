@@ -15,17 +15,33 @@ import fnmatch
 import json
 import logging
 import os
+import re
 import shlex
+import time
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 ALLOWED_COMMANDS = {
     "ls", "cat", "head", "tail", "wc", "echo", "pwd", "whoami",
-    "date", "df", "du", "find", "grep", "sort", "uniq", "curl", "ping",
+    "date", "df", "du", "find", "grep", "sort", "uniq",
 }
 
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ALLOWED_BASE_DIRS: List[str] = []
+_ALLOWED_BASE_DIRS_INITIALIZED = False
+
+
+def _ensure_allowed_dirs() -> None:
+    global _ALLOWED_BASE_DIRS, _ALLOWED_BASE_DIRS_INITIALIZED
+    if _ALLOWED_BASE_DIRS_INITIALIZED:
+        return
+    _ALLOWED_BASE_DIRS_INITIALIZED = True
+    _ALLOWED_BASE_DIRS = [
+        os.path.join(_PROJECT_ROOT, "data"),
+        os.path.join(_PROJECT_ROOT, "output"),
+        os.path.join(_PROJECT_ROOT, "logs"),
+    ]
 
 INPUT_LENGTH_LIMITS = {
     "user_input": 10000,
@@ -38,13 +54,14 @@ COMMAND_TIMEOUT_SECONDS = 30
 AUDIT_LOG_FILE = "logs/security_audit.jsonl"
 
 
-def configure_allowed_dirs(dirs: List[str]) -> None:
+def _configure_allowed_dirs(dirs: List[str]) -> None:
     global _ALLOWED_BASE_DIRS
-    _ALLOWED_BASE_DIRS = [os.path.abspath(d) for d in dirs]
+    _ALLOWED_BASE_DIRS = [os.path.realpath(d) for d in dirs]
 
 
 def _validate_path(file_path: str) -> str:
-    abs_path = os.path.abspath(file_path)
+    _ensure_allowed_dirs()
+    abs_path = os.path.realpath(file_path)
     if ".." in os.path.normpath(file_path).split(os.sep):
         raise ValueError(f"路径不允许包含 '..': {file_path}")
     if _ALLOWED_BASE_DIRS:
@@ -64,6 +81,10 @@ class AuditLogger:
     _write_queue: Optional[asyncio.Queue] = None
     _writer_task: Optional[asyncio.Task] = None
     _shutdown_event: Optional[asyncio.Event] = None
+
+    @classmethod
+    def configure(cls, log_file: str) -> None:
+        cls._log_file = log_file
 
     @classmethod
     def _ensure_queue(cls) -> asyncio.Queue:
@@ -94,7 +115,7 @@ class AuditLogger:
                     with open(cls._log_file, "a") as f:
                         f.write(json.dumps(record, ensure_ascii=False) + "\n")
                 except Exception as e:
-                    logger.error(f"审计日志写入失败: {e}")
+                    logger.error("审计日志写入失败: %s", e)
                 finally:
                     queue.task_done()
             while not queue.empty():
@@ -162,8 +183,8 @@ class AuditLogger:
             os.makedirs(os.path.dirname(cls._log_file), exist_ok=True)
             with open(cls._log_file, "a") as f:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
-        except Exception as e:
-            logger.error(f"审计日志写入失败: {e}")
+        except Exception:
+            logger.error("审计日志写入失败")
 
     @classmethod
     def query(cls, event_type: str = None,
@@ -258,11 +279,12 @@ class Tool:
 
 class ToolSystem:
 
-    def __init__(self):
+    def __init__(self, register_builtins: bool = True):
         self.tools: Dict[str, Tool] = {}
         self.category_index: Dict[str, List[str]] = {}
         self.permission_index: Dict[str, List[str]] = {}
-        self._register_builtin_tools()
+        if register_builtins:
+            self._register_builtin_tools()
 
     def _register_builtin_tools(self):
         file_read_tool = Tool(
@@ -355,7 +377,7 @@ class ToolSystem:
 
     def register_tool(self, tool: Tool) -> bool:
         if tool.tool_id in self.tools:
-            logger.warning(f"工具已存在: {tool.tool_id}")
+            logger.warning("工具已存在: %s", tool.tool_id)
             return False
 
         self.tools[tool.tool_id] = tool
@@ -370,7 +392,7 @@ class ToolSystem:
             self.permission_index[permission_name] = []
         self.permission_index[permission_name].append(tool.tool_id)
 
-        logger.info(f"工具注册成功: {tool.tool_id}")
+        logger.info("工具注册成功: %s", tool.tool_id)
         return True
 
     def get_tool(self, tool_id: str) -> Optional[Tool]:
@@ -390,6 +412,11 @@ class ToolSystem:
         return list(self.tools.values())
 
     async def call_tool(self, tool_id: str, user_permission: PermissionLevel = PermissionLevel.PUBLIC, **kwargs) -> Dict[str, Any]:
+        """调用工具
+
+        注意：当前权限模型中 user_permission 由调用方传入，适用于受信任的内部调用场景。
+        生产环境应替换为基于 session/token 的认证上下文获取权限等级。
+        """
         tool = self.get_tool(tool_id)
         if not tool:
             return {"success": False, "error": f"工具不存在: {tool_id}"}
@@ -414,7 +441,7 @@ class ToolSystem:
             return {"success": True, "data": result}
 
         except Exception as e:
-            logger.error(f"工具调用异常: {tool_id}, 错误: {str(e)}")
+            logger.error("工具调用异常: %s, 错误: %s", tool_id, str(e))
             return {"success": False, "error": str(e)}
 
     def _check_permission(self, user_permission: PermissionLevel, required_permission: PermissionLevel) -> bool:
@@ -553,12 +580,107 @@ class ToolSystem:
         }
 
     async def _execute_send_email(self, to: str, subject: str, body: str, attachments: list = None) -> Dict[str, Any]:
+        to = to.replace("\r", "").replace("\n", "")
+        subject = subject.replace("\r", "").replace("\n", "")
+        if not to or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', to):
+            return {"sent": False, "error": f"Invalid email address: {to}"}
+
+        smtp_host = os.environ.get("OPC_SMTP_HOST", "")
+        smtp_port = int(os.environ.get("OPC_SMTP_PORT", "587"))
+        smtp_user = os.environ.get("OPC_SMTP_USER", "")
+        smtp_pass = os.environ.get("OPC_SMTP_PASS", "")
+        smtp_from = os.environ.get("OPC_SMTP_FROM", smtp_user)
+        smtp_tls = os.environ.get("OPC_SMTP_TLS", "true").lower() == "true"
+
+        if smtp_host and smtp_user and smtp_pass:
+            try:
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    self._send_smtp_sync,
+                    smtp_host, smtp_port, smtp_user, smtp_pass,
+                    smtp_from, to, subject, body, smtp_tls, attachments,
+                )
+                if result.get("sent"):
+                    logger.info("Email sent via SMTP to %s", to)
+                    return result
+                logger.warning("SMTP send failed: %s, falling back to log", result.get('error'))
+            except Exception as e:
+                logger.warning("SMTP send exception: %s, falling back to log", e)
+
+        notification_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "notifications")
+        timestamp = int(time.time() * 1000)
+        filename = f"notification_{timestamp}.json"
+        filepath = os.path.join(notification_dir, filename)
+
+        notification = {
+            "type": "email",
+            "to": to,
+            "subject": subject,
+            "body": body[:5000],
+            "attachments": attachments or [],
+            "timestamp": timestamp,
+            "status": "logged",
+            "note": "SMTP not configured. Notification logged to file. Configure OPC_SMTP_HOST/USER/PASS for actual email delivery.",
+        }
+
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, self._write_notification_sync, filepath, notification)
+            logger.info("Notification logged: %s", filepath)
+        except Exception as e:
+            logger.warning("Failed to log notification: %s", e)
+
         return {
             "sent": True,
             "to": to,
             "subject": subject,
-            "attachments": attachments or []
+            "attachments": attachments or [],
+            "delivery_mode": "logged",
+            "log_file": filename,
         }
+
+    @staticmethod
+    def _send_smtp_sync(host: str, port: int, user: str, password: str,
+                        from_addr: str, to_addr: str, subject: str,
+                        body: str, use_tls: bool, attachments: list = None) -> Dict[str, Any]:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        msg = MIMEMultipart()
+        msg["From"] = from_addr
+        msg["To"] = to_addr
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain", "utf-8"))
+
+        try:
+            if use_tls:
+                server = smtplib.SMTP(host, port)
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+            else:
+                server = smtplib.SMTP(host, port)
+
+            server.login(user, password)
+            server.sendmail(from_addr, [to_addr], msg.as_string())
+            server.quit()
+
+            return {
+                "sent": True,
+                "to": to_addr,
+                "subject": subject,
+                "delivery_mode": "smtp",
+            }
+        except Exception as e:
+            return {"sent": False, "error": str(e)}
+
+    @staticmethod
+    def _write_notification_sync(filepath: str, notification: dict) -> None:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(notification, f, ensure_ascii=False, indent=2)
 
     async def _execute_run_command(self, command: str, cwd: str = None) -> Dict[str, Any]:
         try:

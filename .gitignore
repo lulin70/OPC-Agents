@@ -54,6 +54,14 @@ data/workflows/
 data/chat_history.json
 data/llm_cache/
 data/feedback/
+data/consensus_logs/
+data/dashboard/
+data/perf_metrics.json
+data/marketplace/
+data/backups/
+data/*.db
+data/*.db-wal
+data/*.db-shm
 deliverables/
 output/
 reports/
@@ -76,3 +84,9 @@ build/
 *.pem
 *.key
 secrets/
+
+# Mock遗留
+MagicMock/
+
+# Node
+node_modules/

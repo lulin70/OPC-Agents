@@ -19,6 +19,8 @@ import os
 import time
 from typing import Dict, List, Optional, Any
 
+from .version import __version__
+
 logger = logging.getLogger(__name__)
 
 FASTAPI_AVAILABLE = False
@@ -37,7 +39,7 @@ if FASTAPI_AVAILABLE:
 
     app = FastAPI(
         title="OPC-Agents Skill Marketplace API",
-        version="0.1.9-delta",
+        version=__version__,
         description="技能市场REST API — 注册/发现/调用技能",
     )
 
@@ -161,7 +163,7 @@ if FASTAPI_AVAILABLE:
 
     @app.get("/health")
     async def health_check():
-        return {"status": "ok", "version": "0.1.9-delta"}
+        return {"status": "ok", "version": __version__}
 
 else:
     app = None

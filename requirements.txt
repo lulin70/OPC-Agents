@@ -1,5 +1,5 @@
 # OPC-Agents 核心依赖
-# 版本: 0.1.9-delta
+# 版本: 0.1.8
 # 最后更新: 2026-05-09
 
 # Web框架
@@ -33,3 +33,6 @@ pydantic>=2.0.0
 
 # YAML配置解析（persona_manager依赖）
 pyyaml>=6.0
+
+# 安全存储（secure_storage依赖）
+cryptography>=41.0.0

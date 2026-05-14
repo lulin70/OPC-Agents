@@ -1,0 +1,222 @@
+import json
+import logging
+import time
+from typing import Any, Dict, List, Optional
+
+from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
+from opc_manager.tool_system import AuditLogger
+
+logger = logging.getLogger(__name__)
+
+_DEFAULT_PLATFORMS = {
+    "小红书": {"max_title": 20, "max_body": 1000, "style": "种草风", "emoji": True, "tags": True},
+    "公众号": {"max_title": 64, "max_body": 20000, "style": "专业深度", "emoji": False, "tags": False},
+    "推特": {"max_title": 0, "max_body": 280, "style": "简洁有力", "emoji": True, "tags": True},
+    "微博": {"max_title": 0, "max_body": 2000, "style": "话题互动", "emoji": True, "tags": True},
+    "知乎": {"max_title": 50, "max_body": 50000, "style": "干货长文", "emoji": False, "tags": False},
+}
+
+
+def _load_platforms() -> dict:
+    try:
+        from opc_manager.utils import load_json_data
+        data = load_json_data("data/knowledge/social_platforms.json")
+        for k, v in data.items():
+            if "emoji" in v:
+                v["emoji"] = bool(v["emoji"])
+            if "tags" in v:
+                v["tags"] = bool(v["tags"])
+        return data
+    except Exception:
+        return dict(_DEFAULT_PLATFORMS)
+
+
+PLATFORMS = _load_platforms()
+
+
+def generate_content(platform: str, topic: str, key_points: str = "",
+                     tone: str = "") -> Dict[str, Any]:
+    platform = platform.strip()
+    if platform not in PLATFORMS:
+        return {"success": False, "error": f"不支持的平台: {platform}，支持: {list(PLATFORMS.keys())}"}
+
+    cfg = PLATFORMS[platform]
+    style = tone or cfg["style"]
+
+    title = _generate_title(platform, topic, cfg)
+    body = _generate_body(platform, topic, key_points, style, cfg)
+    tags = _generate_tags(platform, topic) if cfg["tags"] else []
+
+    content_id = gen_id()
+    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    try:
+        execute_write(
+            "INSERT INTO social_content (id,platform,topic,title,body,tags,status,created_at) VALUES (?,?,?,?,?,?,?,?)",
+            (content_id, platform, topic, title, body, json.dumps(tags, ensure_ascii=False), "draft", now),
+        )
+    except Exception as e:
+        logger.warning("social_skill.generate_content write failed: %s", e)
+        return {"success": False, "error": f"保存失败: {e}"}
+
+    AuditLogger.log("social_content_generated", {"platform": platform, "topic": topic[:30]})
+
+    return {
+        "success": True,
+        "id": content_id,
+        "platform": platform,
+        "title": title,
+        "body": body,
+        "tags": tags,
+        "status": "draft",
+        "message": f"{platform}内容已生成（草稿状态），请检查后发布",
+        "publish_guide": _get_publish_guide(platform),
+    }
+
+
+def list_drafts(platform: str = "") -> Dict[str, Any]:
+    try:
+        if platform:
+            rows = execute_query(
+                "SELECT * FROM social_content WHERE status='draft' AND platform=? ORDER BY created_at DESC",
+                (platform,),
+            )
+        else:
+            rows = execute_query(
+                "SELECT * FROM social_content WHERE status='draft' ORDER BY created_at DESC"
+            )
+    except Exception as e:
+        logger.warning("social_skill.list_drafts query failed: %s", e)
+        return {"success": True, "drafts": [], "count": 0}
+
+    drafts = []
+    for row in rows:
+        d = dict(row)
+        try:
+            d["tags"] = json.loads(d.get("tags", "[]"))
+        except (json.JSONDecodeError, TypeError):
+            d["tags"] = []
+        drafts.append(d)
+
+    return {"success": True, "drafts": drafts, "count": len(drafts)}
+
+
+def mark_published(content_id: str) -> Dict[str, Any]:
+    rows = execute_query("SELECT * FROM social_content WHERE id=?", (content_id,))
+    if not rows:
+        return {"success": False, "error": f"内容不存在: {content_id}"}
+
+    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        execute_write(
+            "UPDATE social_content SET status='published', published_at=? WHERE id=?",
+            (now, content_id),
+        )
+    except Exception as e:
+        logger.warning("social_skill.mark_published update failed: %s", e)
+        return {"success": False, "error": f"更新失败: {e}"}
+
+    record = dict(rows[0])
+    AuditLogger.log("social_content_published", {"id": content_id, "platform": record.get("platform")})
+    return {"success": True, "message": f"内容已标记为已发布: {record.get('title', content_id)}"}
+
+
+def _generate_title(platform: str, topic: str, cfg: dict) -> str:
+    if platform == "小红书":
+        return f"🔥 {topic}全攻略！一人公司必看"
+    elif platform == "公众号":
+        return f"深度解析：{topic}——一人公司实战指南"
+    elif platform == "知乎":
+        return f"一人公司如何做好{topic}？我的实战经验分享"
+    elif platform == "推特":
+        return ""
+    elif platform == "微博":
+        return ""
+    return topic
+
+
+def _generate_body(platform: str, topic: str, key_points: str, style: str, cfg: dict) -> str:
+    points = key_points.split("、") if key_points else ["核心要点", "实操方法", "注意事项"]
+
+    if platform == "小红书":
+        body = f"✨ {topic}干货来啦！\n\n"
+        for i, p in enumerate(points[:5], 1):
+            body += f"{i}️⃣ {p}\n\n"
+        body += "💡 以上就是我的经验分享，觉得有用的话点个赞吧～\n\n"
+        return body[:cfg["max_body"]]
+
+    elif platform == "公众号":
+        body = f"# {topic}\n\n"
+        body += "## 背景\n\n作为一人公司经营者，{topic}是必须掌握的核心能力。\n\n"
+        body += "## 核心要点\n\n"
+        for p in points[:8]:
+            body += f"- {p}\n\n"
+        body += "## 实操建议\n\n"
+        body += "1. 从小处着手，逐步优化\n2. 数据驱动决策\n3. 善用工具提升效率\n\n"
+        body += "---\n*本文由OPC-Agents辅助生成*"
+        return body[:cfg["max_body"]]
+
+    elif platform == "推特":
+        body = f"{topic} | 一人公司实战: {' / '.join(points[:3])}"
+        return body[:cfg["max_body"]]
+
+    elif platform == "微博":
+        body = f"#{topic}# 一人公司实战分享：{'、'.join(points[:4])}。关注我，持续分享一人公司运营干货！"
+        return body[:cfg["max_body"]]
+
+    elif platform == "知乎":
+        body = f"# {topic}\n\n"
+        body += "作为经营一人公司多年的实践者，分享一些真实经验。\n\n"
+        body += "## 核心观点\n\n"
+        for p in points[:6]:
+            body += f"### {p}\n\n基于实际运营经验的具体做法和分析。\n\n"
+        body += "---\n*以上为个人实战经验，欢迎交流讨论。*"
+        return body[:cfg["max_body"]]
+
+    return topic
+
+
+def _generate_tags(platform: str, topic: str) -> List[str]:
+    base = [topic, "一人公司", "创业"]
+    if platform == "小红书":
+        base.extend(["创业日记", "副业", "自由职业"])
+    elif platform == "微博":
+        base = [f"#{t}#" for t in base]
+    elif platform == "推特":
+        base = [f"#{t.replace(' ', '')}" for t in base]
+    return base[:6]
+
+
+def _get_publish_guide(platform: str) -> str:
+    guides = {
+        "小红书": "1. 打开小红书App → 2. 点击+号 → 3. 粘贴标题和正文 → 4. 添加标签 → 5. 发布",
+        "公众号": "1. 登录mp.weixin.qq.com → 2. 新建图文 → 3. 粘贴内容 → 4. 预览 → 5. 发布",
+        "推特": "1. 打开twitter.com → 2. 粘贴内容 → 3. 发布",
+        "微博": "1. 打开weibo.com → 2. 粘贴内容 → 3. 发布",
+        "知乎": "1. 打开zhihu.com → 2. 写文章 → 3. 粘贴内容 → 4. 发布",
+    }
+    return guides.get(platform, "请手动发布到对应平台")
+
+
+def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+    init_db()
+    platform = ""
+    for p in ["小红书", "公众号", "推特", "微博", "知乎"]:
+        if p in goal:
+            platform = p
+            break
+    if not platform:
+        return {"success": False, "error": "请指定平台（小红书/公众号/推特/微博/知乎）"}
+
+    if any(kw in goal for kw in ["草稿", "列表", "有哪些"]):
+        return list_drafts(platform=platform)
+
+    if any(kw in goal for kw in ["已发", "发布完成"]):
+        return {"success": False, "error": "请提供内容ID来标记发布"}
+
+    topic = goal
+    for kw in ["帮我发", "帮我写", "生成", "内容", platform, "的", "到", "上"]:
+        topic = topic.replace(kw, "")
+    topic = topic.strip().strip("，。、") or "今日分享"
+
+    return generate_content(platform, topic)

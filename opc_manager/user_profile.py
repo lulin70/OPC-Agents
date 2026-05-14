@@ -1,0 +1,170 @@
+import json
+import logging
+import time
+import uuid
+from typing import Dict, List, Optional, Any
+from collections import Counter
+
+logger = logging.getLogger(__name__)
+
+
+class UserProfile:
+
+    _initialized = False
+
+    def __init__(self):
+        if not UserProfile._initialized:
+            from opc_manager.data_manager import init_db
+            init_db()
+            UserProfile._initialized = True
+
+    def record_interaction(self, intent_type: str, goal: str, skill_used: str,
+                           result_success: bool, user_feedback: str = "") -> None:
+        from opc_manager.data_manager import execute_write, gen_id
+        interaction_id = gen_id()
+        now = time.strftime("%Y-%m-%dT%H:%M:%S")
+        execute_write(
+            "INSERT INTO interaction_log (id, intent_type, goal, skill_used, success, user_feedback, created_at) VALUES (?,?,?,?,?,?,?)",
+            (interaction_id, intent_type, goal, skill_used, 1 if result_success else 0, user_feedback, now)
+        )
+
+    def get_preferred_skills(self, intent_type: str) -> List[str]:
+        from opc_manager.data_manager import execute_query
+        rows = execute_query(
+            "SELECT skill_used, COUNT(*) as cnt FROM interaction_log WHERE intent_type=? AND success=1 GROUP BY skill_used ORDER BY cnt DESC LIMIT 10",
+            (intent_type,)
+        )
+        return [row["skill_used"] for row in rows]
+
+    def get_usage_patterns(self) -> Dict[str, Any]:
+        from opc_manager.data_manager import execute_query
+        total_rows = execute_query("SELECT COUNT(*) as cnt FROM interaction_log")
+        total = total_rows[0]["cnt"] if total_rows else 0
+
+        skill_rows = execute_query(
+            "SELECT skill_used, COUNT(*) as cnt FROM interaction_log GROUP BY skill_used ORDER BY cnt DESC LIMIT 10"
+        )
+        top_skills = [{"skill": row["skill_used"], "count": row["cnt"]} for row in skill_rows]
+
+        intent_rows = execute_query(
+            "SELECT intent_type, COUNT(*) as cnt FROM interaction_log GROUP BY intent_type ORDER BY cnt DESC LIMIT 10"
+        )
+        top_intents = [{"intent": row["intent_type"], "count": row["cnt"]} for row in intent_rows]
+
+        success_rows = execute_query(
+            "SELECT success, COUNT(*) as cnt FROM interaction_log GROUP BY success"
+        )
+        success_rate = 0.0
+        success_count = 0
+        for row in success_rows:
+            if row["success"] == 1:
+                success_count = row["cnt"]
+        if total > 0:
+            success_rate = round(success_count / total, 2)
+
+        time_rows = execute_query(
+            "SELECT created_at FROM interaction_log ORDER BY created_at DESC LIMIT 100"
+        )
+        active_hours = []
+        for row in time_rows:
+            try:
+                hour = int(row["created_at"].split("T")[1].split(":")[0])
+                active_hours.append(hour)
+            except (IndexError, ValueError, AttributeError):
+                pass
+        hour_counter = Counter(active_hours)
+        peak_hours = [h for h, _ in hour_counter.most_common(5)]
+
+        return {
+            "total_interactions": total,
+            "top_skills": top_skills,
+            "top_intents": top_intents,
+            "success_rate": success_rate,
+            "peak_hours": peak_hours,
+        }
+
+    def get_skill_recommendations(self) -> List[Dict[str, Any]]:
+        from opc_manager.data_manager import execute_query
+        recommendations = []
+
+        failed_rows = execute_query(
+            "SELECT intent_type, goal, COUNT(*) as cnt FROM interaction_log WHERE success=0 GROUP BY intent_type ORDER BY cnt DESC LIMIT 5"
+        )
+        for row in failed_rows:
+            top_skill_rows = execute_query(
+                "SELECT skill_used, COUNT(*) as cnt FROM interaction_log WHERE intent_type=? AND success=1 GROUP BY skill_used ORDER BY cnt DESC LIMIT 1",
+                (row["intent_type"],),
+            )
+            reason = f"意图 '{row['intent_type']}' 频繁失败({row['cnt']}次)"
+            if top_skill_rows:
+                reason += f"，可尝试已验证的 '{top_skill_rows[0]['skill_used']}' 技能"
+            else:
+                reason += "，建议安装相关外部技能"
+            recommendations.append({
+                "type": "failed_intent",
+                "intent_type": row["intent_type"],
+                "goal": row["goal"],
+                "fail_count": row["cnt"],
+                "suggestion": reason,
+            })
+
+        unknown_rows = execute_query(
+            "SELECT goal, COUNT(*) as cnt FROM interaction_log WHERE intent_type='unknown' GROUP BY goal ORDER BY cnt DESC LIMIT 5"
+        )
+        for row in unknown_rows:
+            recommendations.append({
+                "type": "unknown_intent",
+                "goal": row["goal"],
+                "count": row["cnt"],
+                "suggestion": f"无法识别的意图 '{row['goal']}' 出现 {row['cnt']} 次，建议搜索外部技能",
+            })
+
+        return recommendations
+
+    def record_preference(self, key: str, value: str) -> None:
+        from opc_manager.data_manager import set_preference
+        set_preference(key, value)
+
+    def get_preference(self, key: str, default: str = "") -> str:
+        from opc_manager.data_manager import get_preference
+        return get_preference(key, default)
+
+    def get_decision_history(self, limit: int = 20) -> List[Dict[str, Any]]:
+        from opc_manager.data_manager import execute_query
+        rows = execute_query(
+            "SELECT * FROM interaction_log ORDER BY created_at DESC LIMIT ?",
+            (limit,)
+        )
+        return [
+            {
+                "id": row["id"],
+                "intent_type": row["intent_type"],
+                "goal": row["goal"],
+                "skill_used": row["skill_used"],
+                "success": bool(row["success"]),
+                "user_feedback": row.get("user_feedback", ""),
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+
+    def update_interaction(self, interaction_id: str, **kwargs) -> bool:
+        from opc_manager.data_manager import execute_write, execute_query
+        rows = execute_query("SELECT id FROM interaction_log WHERE id=?", (interaction_id,))
+        if not rows:
+            return False
+        allowed = {"intent_type", "goal", "skill_used", "success", "user_feedback"}
+        updates = []
+        params = []
+        for key, value in kwargs.items():
+            if key in allowed:
+                updates.append(f"{key}=?")
+                params.append(value)
+        if not updates:
+            return False
+        params.append(interaction_id)
+        execute_write(
+            f"UPDATE interaction_log SET {', '.join(updates)} WHERE id=?",
+            tuple(params),
+        )
+        return True

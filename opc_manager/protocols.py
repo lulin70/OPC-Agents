@@ -25,13 +25,24 @@ Usage:
 
 from typing import Optional, Dict, List, Any, Protocol, runtime_checkable
 import threading
-from loguru import logger
+try:
+    from loguru import logger
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
 
 
 @runtime_checkable
 class LLMProvider(Protocol):
     def is_available(self) -> bool: ...
     def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> Optional[str]: ...
+
+
+@runtime_checkable
+class LLMServiceProtocol(Protocol):
+    def is_available(self) -> bool: ...
+    def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> Optional[str]: ...
+    def analyze(self, text: str, **kwargs) -> Optional[Dict[str, Any]]: ...
 
 
 @runtime_checkable
@@ -77,7 +88,7 @@ class NullSecureProvider:
         return False
 
     def set_key(self, name: str, value: str) -> bool:
-        logger.warning(f"[NullSecureProvider] Secure storage unavailable — set_key({name}) returned False")
+        logger.warning("[NullSecureProvider] Secure storage unavailable — set_key(%s) returned False", name)
         return False
 
     def get_key(self, name: str) -> Optional[str]:

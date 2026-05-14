@@ -13,7 +13,7 @@ from enum import Enum
 import json
 import logging
 
-from opc_manager.utils import extract_json_from_llm, sanitize_for_llm, _llm_thread_semaphore
+from opc_manager.utils import extract_json_from_llm, sanitize_for_llm, _llm_thread_semaphore, call_llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -109,11 +109,11 @@ class ReflectorBrain:
             try:
                 evaluation = self._evaluate_with_llm(actual_result, expected_intent)
                 if evaluation:
-                    logger.info(f"LLM评估完成: {evaluation.result.name} (质量评分: {evaluation.quality_score:.2f})")
+                    logger.info("LLM评估完成: %s (质量评分: %.2f)", evaluation.result.name, evaluation.quality_score)
                     return evaluation
                 logger.info("LLM评估失败，降级到规则评估")
             except Exception as e:
-                logger.warning(f"LLM评估异常，降级到规则评估: {e}")
+                logger.warning("LLM评估异常，降级到规则评估: %s", e)
         
         success = actual_result.get("success", False)
         data = actual_result.get("data", {})
@@ -131,7 +131,7 @@ class ReflectorBrain:
             key_findings=key_findings
         )
         
-        logger.info(f"评估完成: {result_type.name} (质量评分: {quality_score:.2f})")
+        logger.info("评估完成: %s (质量评分: %.2f)", result_type.name, quality_score)
         return evaluation
 
     def _evaluate_with_llm(self, actual_result: Dict[str, Any],
@@ -171,7 +171,7 @@ class ReflectorBrain:
 - POOR(0.3-0.5): 未能满足目标，需要修正
 - FAILURE(<0.3): 完全未满足目标"""
 
-        llm_response = self._call_llm(prompt)
+        llm_response = call_llm_service(self.llm_service, prompt)
         if not llm_response:
             return None
         
@@ -195,31 +195,15 @@ class ReflectorBrain:
                 key_findings=data.get("key_findings", [])
             )
         except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.warning(f"LLM评估结果解析失败: {e}")
+            logger.warning("LLM评估结果解析失败: %s", e)
             return None
-
-    def _call_llm(self, prompt: str) -> Optional[str]:
-        if not self.llm_service:
-            return None
-        try:
-            _llm_thread_semaphore.acquire(timeout=30)
-            try:
-                if hasattr(self.llm_service, 'generate'):
-                    return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
-                elif hasattr(self.llm_service, '_call_llm_api'):
-                    return self.llm_service._call_llm_api(prompt)
-            finally:
-                _llm_thread_semaphore.release()
-        except Exception as e:
-            logger.warning(f"LLM调用失败: {e}")
-        return None
 
     def _calculate_quality_score(self, actual: Dict[str, Any], expected: Dict[str, Any]) -> float:
         if not isinstance(actual, dict):
-            logger.warning(f"actual_result 不是dict类型: {type(actual)}")
+            logger.warning("actual_result 不是dict类型: %s", type(actual))
             return 0.0
         if not isinstance(expected, dict):
-            logger.warning(f"expected_intent 不是dict类型: {type(expected)}")
+            logger.warning("expected_intent 不是dict类型: %s", type(expected))
             expected = {}
 
         score = 0.0
@@ -360,7 +344,7 @@ class ReflectorBrain:
         Returns:
             NextAction: 下一步行动（类型、参数、原因）
         """
-        logger.info(f"根据评估结果决定下一步行动: {evaluation.result.name}")
+        logger.info("根据评估结果决定下一步行动: %s", evaluation.result.name)
         
         # 根据评估结果决定行动
         if evaluation.result in [EvaluationResult.EXCELLENT, EvaluationResult.GOOD]:
@@ -446,7 +430,7 @@ class ReflectorBrain:
                     confidence=0.8
                 )
         
-        logger.info(f"决定下一步行动: {action.action_type.name}")
+        logger.info("决定下一步行动: %s", action.action_type.name)
         return action
 
     def suggest_improvement(self, evaluation: Evaluation, 
@@ -475,7 +459,7 @@ class ReflectorBrain:
             return None
 
         if correction_count >= MAX_CORRECTION_ATTEMPTS:
-            logger.info(f"修正次数已达上限({MAX_CORRECTION_ATTEMPTS})，标记需人工复核")
+            logger.info("修正次数已达上限(%s)，标记需人工复核", MAX_CORRECTION_ATTEMPTS)
             return None
 
         has_placeholders = self._check_placeholders(execution_results)
@@ -493,7 +477,7 @@ class ReflectorBrain:
         else:
             strategy = CorrectionStrategy.DEGRADE
 
-        logger.info(f"建议修正策略: {strategy.value} (质量评分: {evaluation.quality_score:.2f}, 修正次数: {correction_count})")
+        logger.info("建议修正策略: %s (质量评分: %.2f, 修正次数: %s)", strategy.value, evaluation.quality_score, correction_count)
         return strategy
 
     def _check_placeholders(self, execution_results: List[Dict]) -> bool:
@@ -526,14 +510,25 @@ class ReflectorBrain:
         }
 
     def from_dict(self, data: Dict[str, Any]) -> None:
-        """
-        从字典恢复反思脑状态
-        
-        Args:
-            data: 状态字典
-        """
         if "evaluation_thresholds" in data:
             self.evaluation_thresholds = {
-                getattr(EvaluationResult, k): v 
+                getattr(EvaluationResult, k): v
                 for k, v in data["evaluation_thresholds"].items()
             }
+
+    def express_opinion(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        evaluation = context.get("evaluation")
+        action = context.get("next_action")
+        quality_score = evaluation.quality_score if evaluation else 0.5
+        opinion_type = "AGREE"
+        if action:
+            action_type = getattr(action, "action_type", None)
+            if action_type and action_type not in (NextActionType.CONTINUE, NextActionType.RETRY):
+                opinion_type = "DISAGREE"
+        reasoning = f"反思评估: {evaluation.result.name}" if evaluation else "无评估信息"
+        return {
+            "brain_type": "reflector",
+            "opinion_type": opinion_type,
+            "reasoning": reasoning,
+            "confidence": quality_score,
+        }

@@ -30,6 +30,7 @@ def main():
         print("The app will be available at http://localhost:8501")
         print()
         print("Environment variables (set in .env file):")
+        print("  OPC_WORKSPACE      Working directory (default: current directory)")
         print("  MOKA_API_KEY       MOKA AI API key (recommended)")
         print("  GLM_API_KEY        Zhipu GLM API key")
         print("  OPENAI_API_KEY     OpenAI API key")
@@ -37,7 +38,18 @@ def main():
         sys.exit(0)
 
     from dotenv import load_dotenv
-    load_dotenv()
+
+    workspace = os.environ.get("OPC_WORKSPACE", os.getcwd())
+    env_file = os.path.join(workspace, ".env")
+    if os.path.exists(env_file):
+        load_dotenv(env_file)
+    else:
+        example_file = os.path.join(workspace, ".env.example")
+        if os.path.exists(example_file):
+            print(f"提示: 未找到 .env 文件（已找到 .env.example 模板）")
+            print(f"  请执行: cp .env.example .env && 编辑 .env 填入你的 API Key")
+        print(f"提示: 工作目录为 {workspace}，可通过 OPC_WORKSPACE 环境变量修改")
+        load_dotenv()
 
     try:
         from opc_manager.secure_storage import init_secure_storage
@@ -54,8 +66,9 @@ def main():
         sys.exit(1)
 
     try:
+        extra_args = [a for a in sys.argv[1:] if a not in ("--version", "--help")]
         subprocess.run(
-            [sys.executable, "-m", "streamlit", "run", app_path],
+            [sys.executable, "-m", "streamlit", "run", app_path] + extra_args,
             check=True,
         )
     except KeyboardInterrupt:

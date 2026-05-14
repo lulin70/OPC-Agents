@@ -312,7 +312,7 @@ A: 运行 `PYTHONPATH=. pytest tests/ -v` 即可运行所有测试。详细信�
 ## 联系方式
 
 - **GitHub Issues**: [提交 Issue](https://github.com/lulin70/OPC-Agents/issues)
-- **Email**: [项目维护者邮箱]
+- **Email**: lulin70@gmail.com
 
 ## 贡献者名单
 

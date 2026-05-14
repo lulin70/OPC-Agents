@@ -71,7 +71,7 @@ if [ ! -f ".env" ]; then
     else
         cat > .env << 'EOF'
 # OPC-Agents 配置文件
-# 版本: 0.1.9-delta
+# 版本: 0.1.8
 
 # === LLM API 配置（至少配置一个）===
 # 推荐：MOKA AI（支持 Claude Sonnet 4）

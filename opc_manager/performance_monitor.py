@@ -19,7 +19,7 @@ from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
-SLA_SINGLE_REQUEST_MS = 30000
+SLA_SINGLE_REQUEST_MS = 60000
 SLA_REFLECT_LOOP_MS = 60000
 LLM_CACHE_TTL_SECONDS = 300
 LLM_CACHE_MAX_SIZE = 100
@@ -111,9 +111,9 @@ class PerformanceMonitor:
                 should_persist = True
 
         if operation == "agent_loop" and duration_ms > SLA_SINGLE_REQUEST_MS:
-            logger.warning(f"SLA breach: agent_loop took {duration_ms:.0f}ms (SLA: {SLA_SINGLE_REQUEST_MS}ms)")
+            logger.warning("SLA breach: agent_loop took %.0fms (SLA: %sms)", duration_ms, SLA_SINGLE_REQUEST_MS)
         if operation == "reflect_loop" and duration_ms > SLA_REFLECT_LOOP_MS:
-            logger.warning(f"SLA breach: reflect_loop took {duration_ms:.0f}ms (SLA: {SLA_REFLECT_LOOP_MS}ms)")
+            logger.warning("SLA breach: reflect_loop took %.0fms (SLA: %sms)", duration_ms, SLA_REFLECT_LOOP_MS)
 
         if should_persist:
             self._persist_metrics()
@@ -164,13 +164,23 @@ class PerformanceMonitor:
 
     def _persist_metrics(self) -> None:
         try:
-            os.makedirs(os.path.dirname(self.PERSIST_FILE), exist_ok=True)
             with self._lock:
                 data = [{"op": m.operation, "ms": m.duration_ms, "ok": m.success, "ts": m.timestamp} for m in self._metrics[-200:]]
-            with open(self.PERSIST_FILE, "w") as f:
-                json.dump(data, f)
+            persist_dir = os.path.dirname(self.PERSIST_FILE)
+
+            def _write():
+                os.makedirs(persist_dir, exist_ok=True)
+                with open(self.PERSIST_FILE, "w") as f:
+                    json.dump(data, f)
+
+            try:
+                import asyncio
+                loop = asyncio.get_running_loop()
+                loop.run_in_executor(None, _write)
+            except RuntimeError:
+                _write()
         except Exception as e:
-            logger.warning(f"Metrics persist failed: {e}")
+            logger.warning("Metrics persist failed")
 
     def _load_metrics(self) -> None:
         try:
@@ -184,7 +194,19 @@ class PerformanceMonitor:
                             success=d.get("ok", True), timestamp=d.get("ts", 0)
                         ))
         except Exception as e:
-            logger.warning(f"Metrics load failed: {e}")
+            logger.warning("Metrics load failed: %s", e)
 
 
-performance_monitor = PerformanceMonitor()
+_default_monitor: Optional[PerformanceMonitor] = None
+
+
+def get_performance_monitor() -> PerformanceMonitor:
+    global _default_monitor
+    if _default_monitor is None:
+        _default_monitor = PerformanceMonitor()
+    return _default_monitor
+
+
+def _reset_performance_monitor() -> None:
+    global _default_monitor
+    _default_monitor = None

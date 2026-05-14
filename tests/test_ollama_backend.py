@@ -121,8 +121,8 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
         gen = LLMEnhancedContentGenerator()
         api_key, api_base, model = gen._get_llm_config()
 
-        self.assertIsNone(api_key)
-        self.assertEqual(api_base, "http://localhost:11434/v1")
+        self.assertEqual(api_key, "ollama")
+        self.assertEqual(api_base, "http://localhost:11434")
         self.assertEqual(model, "llama3")
 
     def test_ollama_with_enabled_flag(self):
@@ -134,8 +134,8 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
         gen = LLMEnhancedContentGenerator()
         api_key, api_base, model = gen._get_llm_config()
 
-        self.assertIsNone(api_key)
-        self.assertEqual(api_base, "http://localhost:11434/v1")
+        self.assertEqual(api_key, "ollama")
+        self.assertEqual(api_base, "http://localhost:11434")
         self.assertEqual(model, "llama3")
 
     def test_ollama_custom_model(self):
@@ -170,7 +170,7 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
         gen = LLMEnhancedContentGenerator()
         api_key, api_base, model = gen._get_llm_config()
 
-        self.assertEqual(api_base, "http://localhost:11434/v1")
+        self.assertEqual(api_base, "http://localhost:11434/")
 
     def test_moka_takes_priority_over_ollama(self):
         from opc_manager.llm_content import LLMEnhancedContentGenerator
@@ -253,7 +253,7 @@ class TestOllamaCallLLMAPI(unittest.TestCase):
 
         call_args = mock_post.call_args
         headers = call_args.kwargs.get("headers") or call_args[1].get("headers")
-        self.assertNotIn("Authorization", headers)
+        self.assertEqual(headers.get("Authorization"), "Bearer ollama")
 
     @patch("requests.post")
     def test_ollama_endpoint_url(self, mock_post):
@@ -274,7 +274,7 @@ class TestOllamaCallLLMAPI(unittest.TestCase):
 
         call_args = mock_post.call_args
         endpoint = call_args[0][0] if call_args[0] else call_args.kwargs.get("url")
-        self.assertIn("localhost:11434/v1/chat/completions", endpoint)
+        self.assertIn("localhost:11434/chat/completions", endpoint)
 
     @patch("requests.post")
     def test_ollama_connection_error_returns_none(self, mock_post):

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
 MCP_SERVER_NAME = "opc-agents"
-MCP_SERVER_VERSION = "0.1.9-gamma"
+MCP_SERVER_VERSION = "0.1.8"
 
 
 @dataclass
@@ -197,7 +197,7 @@ class MCPServer:
             result = handler(params)
             return {"jsonrpc": "2.0", "id": request_id, "result": result}
         except Exception as e:
-            logger.error(f"MCP handler error for {method}: {e}")
+            logger.error("MCP handler error for %s: %s", method, e)
             return {
                 "jsonrpc": "2.0",
                 "id": request_id,

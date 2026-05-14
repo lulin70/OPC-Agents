@@ -60,6 +60,14 @@ from .scenario_migrator import (
     get_migration_status
 )
 from .utils import BoundedDict, EventEmitter, Event
+from .skill_marketplace import (
+    SkillMarketplace,
+    ExternalSkillMarketplace,
+    ExternalSkill,
+    MCPServerInfo,
+    TrustLevel
+)
+from .user_profile import UserProfile
 
 __all__ = [
     # 版本信息
@@ -127,5 +135,15 @@ __all__ = [
     # 公共工具
     "BoundedDict",
     "EventEmitter",
-    "Event"
+    "Event",
+
+    # 外部技能市场
+    "SkillMarketplace",
+    "ExternalSkillMarketplace",
+    "ExternalSkill",
+    "MCPServerInfo",
+    "TrustLevel",
+
+    # 用户画像
+    "UserProfile",
 ]

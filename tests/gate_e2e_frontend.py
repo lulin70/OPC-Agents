@@ -14,7 +14,7 @@
 - G-E2E-FRONTEND-01c: 知识库兜底命中率 ≥5个分类
 
 运行方式：
-    PYTHONPATH=/Users/lin/trae_projects/OPC-Agents python3 -m pytest tests/gate_e2e_frontend.py -v
+    PYTHONPATH=. python3 -m pytest tests/gate_e2e_frontend.py -v
 """
 
 import pytest

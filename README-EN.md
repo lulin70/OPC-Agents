@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.1.9-delta | **Status**: Beta | **License**: MIT
+> **Version**: v0.1.8 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -97,11 +97,25 @@ cp .env.example .env
 ./start.sh
 ```
 
+### Option 3: Docker Deployment
+
+```bash
+docker compose up -d
+```
+
+| Port | Service | Description |
+|------|---------|-------------|
+| 8501 | Main App (Streamlit) | Web UI |
+| 8900 | Skill Marketplace API (FastAPI) | REST API |
+| 8901 | MCP SSE Endpoint | Model Context Protocol |
+
 ### About API Keys
+
+> ⚠️ **OPC-Agents does NOT provide LLM services.** Choose your own LLM provider and obtain your own API key. The project does not store any API keys or sensitive information.
 
 | Backend | Model | Config Variable | Quality | Get Key |
 |---------|-------|-----------------|---------|---------|
-| **MOKA (Recommended)** | Claude Sonnet 4 | `MOKA_API_KEY` | ⭐⭐⭐⭐⭐ | [moka-ai.com](https://moka-ai.com) |
+| MOKA | Claude Sonnet 4 | `MOKA_API_KEY` | ⭐⭐⭐⭐⭐ | [moka-ai.com](https://moka-ai.com) |
 | Zhipu GLM | GLM-4 | `GLM_API_KEY` | ⭐⭐⭐⭐ | [open.bigmodel.cn](https://open.bigmodel.cn) |
 | OpenAI | GPT-4o | `OPENAI_API_KEY` | ⭐⭐⭐⭐ | [platform.openai.com](https://platform.openai.com) |
 | Ollama | Local models | `OLLAMA_BASE_URL` / `OLLAMA_ENABLED` / `OLLAMA_MODEL` | ⭐⭐⭐ | [ollama.com](https://ollama.com) |
@@ -135,9 +149,11 @@ OPC-Agents/
 │   ├── utils.py           # Utilities (BoundedDict + EventEmitter)
 │   ├── scenario_migrator.py# Scenario Migrator (9 scenarios → skill mapping)
 │   ├── task_engine_adapter.py# TaskEngine adapter (Three-Sage ↔ TaskEngineV3 bridge)
-│   ├── skill_marketplace.py # Skill Marketplace API (register/discover/invoke + auth + permissions)
+│   ├── skill_marketplace.py # Skill Marketplace (register/discover/invoke + auth + permissions)
+│   ├── skill_marketplace_api.py # Skill Marketplace API server (FastAPI server)
 │   ├── mcp_protocol.py      # MCP protocol support (Model Context Protocol compatible)
 │   ├── mcp_transport.py     # MCP transport layer (SSE + stdio)
+│   ├── simple_llm_service.py # Simplified LLM service (lightweight invocation interface)
 │   ├── plugin_system.py     # Plugin system (sandbox isolation + lifecycle management)
 │   ├── skill_editor.py      # Skill editor (custom skill creation/testing/publishing)
 │   ├── performance_monitor.py# Performance monitoring (SLA management + LLM cache + metrics)

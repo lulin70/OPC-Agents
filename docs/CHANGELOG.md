@@ -2,6 +2,16 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.8] - 2026-05-14
+
+### Added — v0.1.8 版本统一与目录清理
+
+- 版本号统一为0.1.8（从0.1.9-delta/0.2.0回归）
+- skill_marketplace_api.py / mcp_transport.py 版本号改为动态引用（from .version import __version__）
+- 清理MagicMock遗留目录
+- 清理运行时数据（consensus_logs/dashboard/perf_metrics）
+- 更新.gitignore（运行时数据/Mock遗留/Node规则）
+
 ## [0.1.9-delta] - 2026-05-09
 
 ### Added — v0.1.9-delta 真实运行验证（V2-1到V2-7）
@@ -171,7 +181,7 @@ All notable changes to OPC-Agents will be documented in this file.
 - 安全扫描(bandit): No issues identified ✅
 - 语法检查(py_compile): 9核心模块全部通过 ✅
 
-## [0.1.9] - 2026-05-08
+## [0.1.9] - 2026-05-07
 
 ### Added — PHASE3 端到端闭环
 
@@ -219,12 +229,34 @@ All notable changes to OPC-Agents will be documented in this file.
 - 任务完成发送 `task_completed` 事件
 - 支持 `subscribe()` 获取 AsyncIterator 事件流
 
-#### 测试
+### Changed — PHASE2启动前代码走读整改
+
+PHASE2（核心技能开发）启动前的全面7维度代码走读，修复6个遗留问题，综合评分从92.4提升至93.1。
+
+#### 代码质量 (92→94)
+
+- 移除agent_loop.py中未使用的ExecutionStatus导入
+- 移除tool_system.py中未使用的OrderedDict导入
+- 移除skill_registry.py中未使用的延迟import IntentType
+
+#### 架构 (93→94)
+
+- `_execute_web_search`/`_execute_send_email`改为async，与call_tool异步框架一致
+
+#### 性能 (92→93)
+
+- AuditLogger添加优雅关闭机制：`shutdown_event` + drain队列 + 5秒超时
+
+#### 可维护性 (93→94)
+
+- BoundedDict添加`__repr__`用于调试输出
+
+### Testing
 
 - 新增22个PHASE3端到端闭环集成测试
-- 全量回归测试408个通过
+- 408 tests passing, 21 skipped, 0 failures
 
-## [0.1.8] - 2026-05-08
+## [0.1.8] - 2026-05-07
 
 ### Added — PHASE2 核心技能开发
 
@@ -275,41 +307,6 @@ All notable changes to OPC-Agents will be documented in this file.
 - 修复 `execute_skill` 内部递归调用时参数名错误（`_context` → `context`）
 - 修复 `asyncio.get_event_loop()` 废弃API调用，改用 `asyncio.get_running_loop()`
 - 优化 `_execute_operation` if-elif链为字典映射，提升可维护性
-
-### Testing
-
-- 新增13个PHASE2集成测试用例
-- 386 tests passing, 21 skipped, 0 failures
-
-## [0.1.9] - 2026-05-07
-
-### Changed — PHASE2启动前代码走读整改
-
-PHASE2（核心技能开发）启动前的全面7维度代码走读，修复6个遗留问题，综合评分从92.4提升至93.1。
-
-#### 代码质量 (92→94)
-
-- 移除agent_loop.py中未使用的ExecutionStatus导入
-- 移除tool_system.py中未使用的OrderedDict导入
-- 移除skill_registry.py中未使用的延迟import IntentType
-
-#### 架构 (93→94)
-
-- `_execute_web_search`/`_execute_send_email`改为async，与call_tool异步框架一致
-
-#### 性能 (92→93)
-
-- AuditLogger添加优雅关闭机制：`shutdown_event` + drain队列 + 5秒超时
-
-#### 可维护性 (93→94)
-
-- BoundedDict添加`__repr__`用于调试输出
-
-### Testing
-
-- 373 tests passing, 21 skipped, 0 failures
-
-## [0.1.8] - 2026-05-07
 
 ### Changed — 架构/性能/可维护性专项整改
 

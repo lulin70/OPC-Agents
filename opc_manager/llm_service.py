@@ -118,7 +118,7 @@ class OpenAIBackend(LLMBackend):
                 raw_response=response,
             )
         except Exception as e:
-            logger.error(f"OpenAI API call failed: {e}")
+            logger.error("OpenAI API call failed: %s", e)
             raise
 
     def validate_config(self) -> bool:
@@ -255,7 +255,7 @@ class LLMService:
     def _create_backend(self, provider: LLMProvider) -> LLMBackend:
         backend_cls = self.BACKEND_MAP.get(provider)
         if backend_cls is None:
-            logger.warning(f"Unknown LLM provider: {provider}, falling back to MOKA")
+            logger.warning("Unknown LLM provider: %s, falling back to MOKA", provider)
             backend_cls = OpenAIBackend
         return backend_cls(self.config)
 
@@ -356,7 +356,7 @@ class LLMService:
             self.usage_tracker.record("persona", response.usage, 0)
             return response.content
         except Exception as e:
-            logger.warning(f"Persona generation failed: {e}")
+            logger.warning("Persona generation failed: %s", e)
             return f"抱歉，暂时无法生成风格化回复。（{type(e).__name__}）"
 
     def switch_provider(self, new_provider: LLMProvider, **overrides):

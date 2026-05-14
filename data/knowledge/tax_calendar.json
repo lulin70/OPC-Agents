@@ -1,0 +1,14 @@
+[
+  {"month": 1, "task": "增值税申报（上月）", "deadline": 15, "type": "增值税"},
+  {"month": 2, "task": "增值税申报（上月）", "deadline": 15, "type": "增值税"},
+  {"month": 3, "task": "增值税申报（上月）+ 年度个税汇算开始", "deadline": 15, "type": "增值税+个税"},
+  {"month": 4, "task": "增值税申报（上月）+ 企业所得税季度预缴", "deadline": 15, "type": "增值税+企业所得税"},
+  {"month": 5, "task": "增值税申报（上月）", "deadline": 15, "type": "增值税"},
+  {"month": 6, "task": "增值税申报（上月）+ 年度个税汇算截止(6.30)", "deadline": 15, "type": "增值税+个税"},
+  {"month": 7, "task": "增值税申报（上月）+ 企业所得税季度预缴", "deadline": 15, "type": "增值税+企业所得税"},
+  {"month": 8, "task": "增值税申报（上月）", "deadline": 15, "type": "增值税"},
+  {"month": 9, "task": "增值税申报（上月）", "deadline": 15, "type": "增值税"},
+  {"month": 10, "task": "增值税申报（上月）+ 企业所得税季度预缴", "deadline": 15, "type": "增值税+企业所得税"},
+  {"month": 11, "task": "增值税申报（上月）", "deadline": 15, "type": "增值税"},
+  {"month": 12, "task": "增值税申报（上月）", "deadline": 15, "type": "增值税"}
+]

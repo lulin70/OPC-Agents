@@ -15,22 +15,12 @@ import re
 import uuid
 import logging
 
-from opc_manager.utils import extract_json_from_llm, sanitize_for_llm, _llm_thread_semaphore
+from opc_manager.intent_types import IntentType, INTENT_KEYWORDS, INTENT_STEP_MAP
+from opc_manager.utils import extract_json_from_llm, sanitize_for_llm, _llm_thread_semaphore, call_llm_service
 
 logger = logging.getLogger(__name__)
 
 ESTIMATED_TIME_PER_STEP = 30
-
-
-class IntentType(Enum):
-    """意图类型枚举"""
-    UNKNOWN = "unknown"
-    ANALYSIS = "analysis"          # 分析类任务
-    CREATION = "creation"          # 创作类任务
-    OPERATION = "operation"        # 操作类任务
-    SEARCH = "search"              # 搜索类任务
-    NOTIFICATION = "notification"  # 通知类任务
-    COMBINED = "combined"          # 组合任务
 
 
 class ConstraintType(Enum):
@@ -111,29 +101,8 @@ class StrategistBrain:
             llm_service: LLM服务实例，用于意图理解
         """
         self.llm_service = llm_service
-        
-        # 意图关键词映射
-        self.intent_keywords = {
-            IntentType.ANALYSIS: [
-                "分析", "调研", "研究", "评估", "评价", "竞品", 
-                "市场", "SWOT", "分析报告", "数据分析", "对比"
-            ],
-            IntentType.CREATION: [
-                "写", "创作", "生成", "设计", "方案", "报告", 
-                "文档", "文案", "策划", "规划", "脚本", "邮件"
-            ],
-            IntentType.OPERATION: [
-                "操作", "执行", "运行", "启动", "停止", "上传", 
-                "下载", "保存", "删除", "修改", "更新", "配置"
-            ],
-            IntentType.SEARCH: [
-                "搜索", "查找", "查询", "搜索资料", "找信息", 
-                "搜索信息", "查找资料"
-            ],
-            IntentType.NOTIFICATION: [
-                "发送", "通知", "邮件", "消息", "提醒", "告知"
-            ]
-        }
+
+        self.intent_keywords = INTENT_KEYWORDS
 
         # 约束关键词映射
         self.constraint_keywords = {
@@ -145,17 +114,17 @@ class StrategistBrain:
         }
 
     def understand_intent(self, user_input: str, context: Optional[Dict] = None) -> Intent:
-        logger.info(f"开始理解意图: {user_input[:50]}...")
+        logger.info("开始理解意图: %s...", user_input[:50])
         
         if self.llm_service:
             try:
                 intent = self._understand_intent_with_llm(user_input, context)
                 if intent and intent.confidence > 0.5:
-                    logger.info(f"LLM意图理解成功: {intent.type.name} (置信度: {intent.confidence:.2f})")
+                    logger.info("LLM意图理解成功: %s (置信度: %.2f)", intent.type.name, intent.confidence)
                     return intent
                 logger.info("LLM意图理解置信度不足，降级到关键词匹配")
             except Exception as e:
-                logger.warning(f"LLM意图理解失败，降级到关键词匹配: {e}")
+                logger.warning("LLM意图理解失败，降级到关键词匹配: %s", e)
         
         intent_type = self._detect_intent_type(user_input)
         constraints = self._extract_constraints(user_input)
@@ -163,6 +132,13 @@ class StrategistBrain:
         
         if context is None:
             context = {}
+        
+        if intent_type == IntentType.UNKNOWN:
+            fallback_result = self._fallback_to_external(user_input, goal)
+            if fallback_result:
+                intent_type = IntentType.EXTENDED_SKILL
+                context.update(fallback_result.get("context", {}))
+                goal = fallback_result.get("goal", goal)
         
         confidence = self._calculate_confidence(user_input, intent_type)
         
@@ -179,7 +155,7 @@ class StrategistBrain:
             sub_intents=sub_intents
         )
         
-        logger.info(f"意图理解完成: {intent.type.name} - '{goal}' (置信度: {confidence:.2f}, 子意图: {len(sub_intents)})")
+        logger.info("意图理解完成: %s - '%s' (置信度: %.2f, 子意图: %s)", intent.type.name, goal, confidence, len(sub_intents))
         return intent
 
     def _understand_intent_with_llm(self, user_input: str, context: Optional[Dict] = None) -> Optional[Intent]:
@@ -206,7 +182,7 @@ class StrategistBrain:
 - notification: 通知/提醒/发送/告知
 - combined: 包含两个及以上不同类型的子任务"""
 
-        llm_response = self._call_llm(prompt)
+        llm_response = call_llm_service(self.llm_service, prompt)
         if not llm_response:
             return None
 
@@ -252,23 +228,39 @@ class StrategistBrain:
                 sub_intents=sub_intents
             )
         except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.warning(f"LLM意图解析失败: {e}")
+            logger.warning("LLM意图解析失败: %s", e)
             return None
 
-    def _call_llm(self, prompt: str) -> Optional[str]:
-        if not self.llm_service:
-            return None
+    def _fallback_to_external(self, user_input: str, goal: str) -> Optional[Dict[str, Any]]:
         try:
-            _llm_thread_semaphore.acquire(timeout=30)
-            try:
-                if hasattr(self.llm_service, 'generate'):
-                    return self.llm_service.generate(prompt, max_tokens=500, timeout=15)
-                elif hasattr(self.llm_service, '_call_llm_api'):
-                    return self.llm_service._call_llm_api(prompt)
-            finally:
-                _llm_thread_semaphore.release()
+            from opc_manager.user_profile import UserProfile
+            profile = UserProfile()
+            preferred = profile.get_preference(f"preferred_skill:{user_input[:20]}")
+            if preferred:
+                return {
+                    "goal": goal,
+                    "context": {"skill_id": preferred, "source": "user_preference"},
+                }
         except Exception as e:
-            logger.warning(f"LLM调用失败: {e}")
+            logger.debug("查询用户偏好失败: %s", e)
+
+        try:
+            from opc_manager.skill_marketplace import ExternalSkillMarketplace
+            marketplace = ExternalSkillMarketplace()
+            search_result = marketplace.search_skills(user_input)
+            if search_result.get("success") and search_result.get("results"):
+                best_match = search_result["results"][0]
+                return {
+                    "goal": goal,
+                    "context": {
+                        "skill_id": best_match.get("skill_id", ""),
+                        "source": "marketplace",
+                        "trust_level": best_match.get("trust_level", "unverified"),
+                    },
+                }
+        except Exception as e:
+            logger.debug("搜索外部技能市场失败: %s", e)
+
         return None
 
     def _detect_intent_type(self, user_input: str) -> IntentType:
@@ -391,7 +383,8 @@ class StrategistBrain:
             IntentType.SEARCH: "搜索任务",
             IntentType.NOTIFICATION: "通知任务",
             IntentType.COMBINED: "组合任务",
-            IntentType.UNKNOWN: "未知任务"
+            IntentType.UNKNOWN: "未知任务",
+            IntentType.EXTENDED_SKILL: "扩展技能任务"
         }
         
         return f"{type_descriptions[intent_type]}: {goal}"
@@ -423,17 +416,17 @@ class StrategistBrain:
         return confidence
 
     def plan(self, intent: Intent) -> ExecutionPlan:
-        logger.info(f"开始制定执行计划: {intent.goal[:50]}...")
+        logger.info("开始制定执行计划: %s...", intent.goal[:50])
         
         if self.llm_service:
             try:
                 plan = self._plan_with_llm(intent)
                 if plan and plan.steps:
-                    logger.info(f"LLM规划完成: {len(plan.steps)} 个步骤")
+                    logger.info("LLM规划完成: %s 个步骤", len(plan.steps))
                     return plan
                 logger.info("LLM规划失败，降级到规则规划")
             except Exception as e:
-                logger.warning(f"LLM规划异常，降级到规则规划: {e}")
+                logger.warning("LLM规划异常，降级到规则规划: %s", e)
         
         plan_id = f"plan_{uuid.uuid4().hex[:8]}"
         steps = self._generate_steps(intent)
@@ -446,17 +439,20 @@ class StrategistBrain:
             estimated_time=estimated_time
         )
         
-        logger.info(f"执行计划制定完成: {len(steps)} 个步骤")
+        logger.info("执行计划制定完成: %s 个步骤", len(steps))
         return plan
 
     def _plan_with_llm(self, intent: Intent) -> Optional[ExecutionPlan]:
         sub_goals = [si.goal for si in intent.sub_intents] if intent.sub_intents else []
         
+        safe_goal = sanitize_for_llm(intent.goal, 500)
+        safe_sub_goals = sanitize_for_llm(json.dumps(sub_goals, ensure_ascii=False), 500) if sub_goals else "无"
+
         prompt = f"""为以下任务制定执行计划，返回JSON格式。
 
-任务目标: {intent.goal}
+任务目标: {safe_goal}
 意图类型: {intent.type.value}
-子目标: {json.dumps(sub_goals, ensure_ascii=False) if sub_goals else "无"}
+子目标: {safe_sub_goals}
 
 可用技能: search(搜索), analysis(分析), content_generation(内容创作), execute_operation(执行操作), send_notification(发送通知), output_result(输出结果)
 
@@ -474,7 +470,7 @@ class StrategistBrain:
 3. 最后一步是output_result
 4. 复合意图需要多步骤"""
 
-        llm_response = self._call_llm(prompt)
+        llm_response = call_llm_service(self.llm_service, prompt)
         if not llm_response:
             return None
         
@@ -508,7 +504,7 @@ class StrategistBrain:
                 estimated_time=len(steps) * ESTIMATED_TIME_PER_STEP
             )
         except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.warning(f"LLM规划结果解析失败: {e}")
+            logger.warning("LLM规划结果解析失败: %s", e)
             return None
 
     def _generate_steps(self, intent: Intent) -> List[Step]:
@@ -551,7 +547,37 @@ class StrategistBrain:
         steps = []
         step_id = start_id
 
-        if intent.type in [IntentType.ANALYSIS, IntentType.COMBINED]:
+        if intent.type == IntentType.COMBINED:
+            if intent.sub_intents:
+                for sub in intent.sub_intents[:3]:
+                    sub_steps = self._generate_skill_steps(sub, step_id, dep_id if not steps else steps[-1].id)
+                    steps.extend(sub_steps)
+                    step_id += len(sub_steps)
+            else:
+                steps.append(Step(
+                    id=f"step_{step_id}",
+                    skill_id="search",
+                    description="搜索相关信息和数据",
+                    parameters={"query": intent.goal, "max_results": 10},
+                    dependencies=[dep_id]
+                ))
+                step_id += 1
+                steps.append(Step(
+                    id=f"step_{step_id}",
+                    skill_id="analysis",
+                    description="进行深度分析",
+                    parameters={"goal": intent.goal},
+                    dependencies=[steps[-1].id]
+                ))
+                step_id += 1
+                steps.append(Step(
+                    id=f"step_{step_id}",
+                    skill_id="content_generation",
+                    description="生成内容",
+                    parameters={"goal": intent.goal, "format": "markdown"},
+                    dependencies=[steps[-1].id]
+                ))
+        elif intent.type == IntentType.ANALYSIS:
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="search",
@@ -560,27 +586,14 @@ class StrategistBrain:
                 dependencies=[dep_id]
             ))
             step_id += 1
-
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="analysis",
                 description="进行深度分析",
                 parameters={"goal": intent.goal},
-                dependencies=[f"step_{step_id - 1}"]
+                dependencies=[steps[-1].id]
             ))
-            step_id += 1
-
-        if intent.type in [IntentType.CREATION, IntentType.COMBINED]:
-            steps.append(Step(
-                id=f"step_{step_id}",
-                skill_id="content_generation",
-                description="生成内容",
-                parameters={"goal": intent.goal, "format": "markdown"},
-                dependencies=[dep_id] if not steps else [steps[-1].id]
-            ))
-            step_id += 1
-
-        if intent.type == IntentType.SEARCH:
+        elif intent.type == IntentType.SEARCH:
             steps.append(Step(
                 id=f"step_{step_id}",
                 skill_id="search",
@@ -588,27 +601,21 @@ class StrategistBrain:
                 parameters={"query": intent.goal, "max_results": 15},
                 dependencies=[dep_id]
             ))
-            step_id += 1
-
-        if intent.type == IntentType.OPERATION:
-            steps.append(Step(
-                id=f"step_{step_id}",
-                skill_id="execute_operation",
-                description="执行操作",
-                parameters={"operation": intent.goal},
-                dependencies=[dep_id]
-            ))
-            step_id += 1
-
-        if intent.type == IntentType.NOTIFICATION:
-            steps.append(Step(
-                id=f"step_{step_id}",
-                skill_id="send_notification",
-                description="发送通知",
-                parameters={"message": intent.goal},
-                dependencies=[dep_id]
-            ))
-            step_id += 1
+        else:
+            mapping = INTENT_STEP_MAP.get(intent.type)
+            if mapping:
+                skill_id, desc = mapping
+                params = {"goal": intent.goal}
+                if intent.type == IntentType.EXTENDED_SKILL and intent.context:
+                    params["skill_id"] = intent.context.get("skill_id", "")
+                    params["source"] = intent.context.get("source", "")
+                steps.append(Step(
+                    id=f"step_{step_id}",
+                    skill_id=skill_id,
+                    description=desc,
+                    parameters=params,
+                    dependencies=[dep_id]
+                ))
 
         return steps
 
@@ -626,13 +633,19 @@ class StrategistBrain:
         }
 
     def from_dict(self, data: Dict[str, Any]) -> None:
-        """
-        从字典恢复策略脑状态
-        
-        Args:
-            data: 状态字典
-        """
         if "intent_keywords" in data:
             self.intent_keywords = {getattr(IntentType, k): v for k, v in data["intent_keywords"].items()}
         if "constraint_keywords" in data:
             self.constraint_keywords = {getattr(ConstraintType, k): v for k, v in data["constraint_keywords"].items()}
+
+    def express_opinion(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        intent = context.get("intent")
+        confidence = intent.confidence if intent else 0.5
+        opinion_type = "AGREE" if confidence > 0.5 else "CONDITIONAL"
+        reasoning = f"策略脑置信度: {confidence:.2f}" if intent else "无意图信息"
+        return {
+            "brain_type": "strategist",
+            "opinion_type": opinion_type,
+            "reasoning": reasoning,
+            "confidence": confidence,
+        }

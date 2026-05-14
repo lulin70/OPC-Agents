@@ -67,7 +67,7 @@ class ConsensusEngine:
     def __init__(self):
         self.veto_enabled = {
             "strategist": True,
-            "executor": False,
+            "executor": True,
             "reflector": True
         }
         self._decision_log: List[Dict[str, Any]] = []
@@ -82,7 +82,7 @@ class ConsensusEngine:
         Returns:
             Decision: 最终决策
         """
-        logger.info(f"开始处理 {len(opinions)} 个意见")
+        logger.info("开始处理 %s 个意见", len(opinions))
         
         if not opinions or len(opinions) == 0:
             decision = Decision(
@@ -96,7 +96,7 @@ class ConsensusEngine:
         
         veto_opinion = self._check_veto(opinions)
         if veto_opinion:
-            logger.info(f"检测到否决: {veto_opinion.brain_type}")
+            logger.info("检测到否决: %s", veto_opinion.brain_type)
             decision = Decision(
                 decision_type=DecisionType.VETOED,
                 approved=False,
@@ -110,7 +110,7 @@ class ConsensusEngine:
         disagree_count = sum(1 for o in opinions if o.opinion_type == OpinionType.DISAGREE)
         conditional_count = sum(1 for o in opinions if o.opinion_type == OpinionType.CONDITIONAL)
         
-        logger.info(f"意见统计: 同意={agree_count}, 不同意={disagree_count}, 有条件={conditional_count}")
+        logger.info("意见统计: 同意=%s, 不同意=%s, 有条件=%s", agree_count, disagree_count, conditional_count)
         
         total_voters = len(opinions)
         
@@ -203,7 +203,7 @@ class ConsensusEngine:
         
         # 分析冲突原因
         conflict_analysis = self._analyze_conflict(opinions)
-        logger.info(f"冲突分析: {conflict_analysis}")
+        logger.info("冲突分析: %s", conflict_analysis)
         
         # 尝试找到折中方案
         compromise = self._find_compromise(opinions)
@@ -262,7 +262,11 @@ class ConsensusEngine:
                 alternatives.append(opinion.alternative)
         
         if alternatives:
-            # 如果有多个替代方案，选择第一个作为折中
+            from collections import Counter
+            alt_counts = Counter(alternatives)
+            best_alt, count = alt_counts.most_common(1)[0]
+            if count > 1:
+                return best_alt
             return alternatives[0]
         
         # 尝试生成折中方案

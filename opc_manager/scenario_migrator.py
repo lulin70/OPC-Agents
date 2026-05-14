@@ -242,12 +242,12 @@ class ScenarioToSkillMigrator:
                 results[mapping.skill_id] = success
                 
                 if success:
-                    logger.info(f"场景 {mapping.scenario_id} 已成功迁移为技能 {mapping.skill_id}")
+                    logger.info("场景 %s 已成功迁移为技能 %s", mapping.scenario_id, mapping.skill_id)
                 else:
-                    logger.warning(f"场景 {mapping.scenario_id} 迁移失败")
+                    logger.warning("场景 %s 迁移失败", mapping.scenario_id)
                     
             except Exception as e:
-                logger.error(f"迁移场景 {mapping.scenario_id} 时出错: {str(e)}")
+                logger.error("迁移场景 %s 时出错: %s", mapping.scenario_id, str(e))
                 results[mapping.skill_id] = False
         
         return results
@@ -256,7 +256,7 @@ class ScenarioToSkillMigrator:
         """根据场景ID迁移单个场景"""
         mapping = next((m for m in self.MAPPINGS if m.scenario_id == scenario_id), None)
         if not mapping:
-            logger.error(f"未找到场景 {scenario_id} 的映射")
+            logger.error("未找到场景 %s 的映射", scenario_id)
             return False
         
         try:
@@ -272,10 +272,10 @@ class ScenarioToSkillMigrator:
             
             success = self.skill_registry.register_skill(skill)
             if success:
-                logger.info(f"场景 {scenario_id} 已成功迁移为技能")
+                logger.info("场景 %s 已成功迁移为技能", scenario_id)
             return success
         except Exception as e:
-            logger.error(f"迁移场景 {scenario_id} 时出错: {str(e)}")
+            logger.error("迁移场景 %s 时出错: %s", scenario_id, str(e))
             return False
 
     def get_migration_status(self) -> Dict[str, Any]:

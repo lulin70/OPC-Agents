@@ -64,7 +64,7 @@ def track_event(event_name: str, properties: dict = None):
         properties: Event properties
     """
     props_str = f" | {properties}" if properties else ""
-    _logger.info(f"[Event] {event_name}{props_str}")
+    _logger.info("[Event] %s%s", event_name, props_str)
 
     try:
         import sentry_sdk
@@ -86,7 +86,7 @@ def track_error(error: Exception, context: dict = None):
         error: Exception object
         context: Error context
     """
-    _logger.error(f"[Error] {type(error).__name__}: {error} | context={context}")
+    _logger.error("[Error] %s: %s | context=%s", type(error).__name__, error, context)
 
     try:
         import sentry_sdk

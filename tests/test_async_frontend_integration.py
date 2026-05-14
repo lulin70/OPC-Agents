@@ -7,7 +7,7 @@
 4. _async_execute_task包装函数正确性
 
 运行方式：
-    PYTHONPATH=/Users/lin/trae_projects/OPC-Agents python3 -m pytest tests/test_async_frontend_integration.py -v
+    PYTHONPATH=. python3 -m pytest tests/test_async_frontend_integration.py -v
 """
 
 import pytest

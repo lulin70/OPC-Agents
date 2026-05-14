@@ -4,6 +4,8 @@
 将重复定义的工具类提取到统一位置，避免代码重复。
 """
 
+import os
+
 import asyncio
 import json
 import re
@@ -52,6 +54,54 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
     return None
 
 
+def call_llm_service(llm_service, prompt: str, max_tokens: int = 500, timeout: int = 15) -> Optional[str]:
+    if not llm_service:
+        return None
+    try:
+        if hasattr(llm_service, 'complete'):
+            return llm_service.complete(prompt, max_tokens=max_tokens, timeout=timeout)
+        elif hasattr(llm_service, 'generate'):
+            return llm_service.generate(prompt, max_tokens=max_tokens, timeout=timeout)
+        elif hasattr(llm_service, '_call_llm_api'):
+            return llm_service._call_llm_api(prompt)
+    except Exception as e:
+        logger.warning("LLM调用失败: %s", e)
+    return None
+
+
+def parse_date_from_text(text: str, default: str = "") -> str:
+    from datetime import datetime, timedelta
+
+    today = time.strftime("%Y-%m-%d")
+    if "今天" in text or "今日" in text:
+        return today
+    if "明天" in text:
+        return (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    if "后天" in text:
+        return (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
+    if "下周一" in text:
+        d = datetime.now()
+        days_ahead = 7 - d.weekday()
+        return (d + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+    if "下周五" in text:
+        d = datetime.now()
+        days_ahead = (4 - d.weekday() + 7) % 7
+        if days_ahead == 0:
+            days_ahead = 7
+        return (d + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+    m = re.search(r'(\d{4})[年/\-](\d{1,2})[月/\-](\d{1,2})', text)
+    if m:
+        return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    return default if default else today
+
+
+def load_json_data(relative_path: str) -> Any:
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(base_dir, relative_path)
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def sanitize_for_llm(text: str, max_len: int = 800) -> str:
     sanitized = text[:max_len].replace("```", "").replace("---", "")
     for pattern in _INJECTION_PATTERNS:
@@ -65,49 +115,62 @@ class BoundedDict:
     基于 OrderedDict 实现 FIFO 淘汰策略：
     - 新增元素时自动检查容量
     - 超出 max_size 时移除最早插入的元素
-    - 线程安全由调用方保证（三贤者架构中 AgentContext 每任务独立）
+    - 线程安全：内置 threading.Lock 保护并发访问
     """
 
     def __init__(self, max_size: int = DEFAULT_MAX_SIZE):
         self._data: OrderedDict = OrderedDict()
+        self._lock = threading.Lock()
         self.max_size = max_size
 
     def __setitem__(self, key: str, value: Any) -> None:
-        self._data[key] = value
-        self._cleanup()
+        with self._lock:
+            self._data[key] = value
+            self._cleanup()
 
     def __getitem__(self, key: str) -> Any:
-        return self._data[key]
+        with self._lock:
+            return self._data[key]
 
     def __contains__(self, key: str) -> bool:
-        return key in self._data
+        with self._lock:
+            return key in self._data
 
     def __delitem__(self, key: str) -> None:
-        del self._data[key]
+        with self._lock:
+            del self._data[key]
 
     def __len__(self) -> int:
-        return len(self._data)
+        with self._lock:
+            return len(self._data)
 
     def __bool__(self) -> bool:
-        return bool(self._data)
+        with self._lock:
+            return bool(self._data)
 
     def __repr__(self) -> str:
-        return f"BoundedDict(max_size={self.max_size}, items={len(self._data)})"
+        with self._lock:
+            return f"BoundedDict(max_size={self.max_size}, items={len(self._data)})"
 
     def get(self, key: str, default: Any = None) -> Any:
-        return self._data.get(key, default)
+        with self._lock:
+            return self._data.get(key, default)
 
     def pop(self, key: str, default: Any = None) -> Any:
-        return self._data.pop(key, default)
+        with self._lock:
+            return self._data.pop(key, default)
 
     def items(self):
-        return self._data.items()
+        with self._lock:
+            return list(self._data.items())
 
     def values(self):
-        return self._data.values()
+        with self._lock:
+            return list(self._data.values())
 
     def keys(self):
-        return self._data.keys()
+        with self._lock:
+            return list(self._data.keys())
 
     def _cleanup(self) -> None:
         while len(self._data) > self.max_size:
@@ -160,8 +223,22 @@ class EventEmitter:
                 event = await queue.get()
                 yield event
         finally:
-            if queue in self._subscribers:
-                self._subscribers.remove(queue)
+            self.unsubscribe(queue)
+
+    def unsubscribe(self, queue: asyncio.Queue) -> None:
+        try:
+            self._subscribers.remove(queue)
+        except ValueError:
+            pass
+
+    def cleanup(self) -> None:
+        for queue in self._subscribers:
+            while not queue.empty():
+                try:
+                    queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+        self._subscribers.clear()
 
     @property
     def subscriber_count(self) -> int:

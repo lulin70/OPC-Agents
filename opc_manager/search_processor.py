@@ -26,8 +26,9 @@ Degradation condition: Insufficient effect → then consider Baidu/Google/Bing m
   v3.5.0: Initial version, implements keyword extraction/filtering/scoring/fallback four-step pipeline
 """
 
-import re
 import logging
+import os
+import re
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from collections import Counter
@@ -168,120 +169,20 @@ STOP_WORDS_EN = {
     "because",
 }
 
-KNOWLEDGE_BASE = {
-    "营销方案": [
-        {
-            "title": "SaaS产品季度增长策略框架",
-            "snippet": "从用户获取到留存的全链路增长方法论，包含AARRR漏斗模型...",
-            "href": "#kb-marketing-001",
-        },
-        {
-            "title": "B2B SaaS Q2营销计划模板",
-            "snippet": "第二季度市场推广预算分配、渠道策略、KPI设定指南...",
-            "href": "#kb-marketing-002",
-        },
-        {
-            "title": "一人公司低成本获客方法",
-            "snippet": "内容营销+社群运营+口碑推荐的组合策略，月成本<5000元...",
-            "href": "#kb-marketing-003",
-        },
-        {
-            "title": "内容日历规划方法论",
-            "snippet": "选题策划→排期管理→发布节奏→数据复盘的完整内容运营闭环...",
-            "href": "#kb-marketing-004",
-        },
-    ],
-    "税收政策": [
-        {
-            "title": "2026年小微企业税收优惠政策汇总",
-            "snippet": "一人公司可享受的增值税减免、所得税优惠、社保补贴政策详解...",
-            "href": "#kb-tax-001",
-        },
-        {
-            "title": "个体工商户vs一人公司税务对比",
-            "snippet": "税率对比、申报流程、可抵扣项目全面分析...",
-            "href": "#kb-tax-002",
-        },
-        {
-            "title": "一人公司财务合规自查清单",
-            "snippet": "发票管理、成本核算、年度审计、税务申报的关键节点提醒...",
-            "href": "#kb-tax-003",
-        },
-    ],
-    "AI Agent": [
-        {
-            "title": "AI Agent架构设计模式2026",
-            "snippet": "ReAct/Plan-and-Execute/Multi-Agent等主流架构对比与选型指南...",
-            "href": "#kb-agent-001",
-        },
-        {
-            "title": "大模型应用开发最佳实践",
-            "snippet": "Prompt Engineering、RAG、Function Calling等技术栈选型...",
-            "href": "#kb-agent-002",
-        },
-        {
-            "title": "AI产品定价策略与商业模式",
-            "snippet": "按调用量/订阅制/效果付费三种模式的ROI对比分析...",
-            "href": "#kb-agent-003",
-        },
-    ],
-    "产品发布": [
-        {
-            "title": "MVP到正式发布的检查清单",
-            "snippet": "功能冻结→灰度测试→数据监控→全量发布的标准流程...",
-            "href": "#kb-launch-001",
-        },
-        {
-            "title": "数字产品定价策略指南",
-            "snippet": "成本定价法、价值定价法、竞争定价法的适用场景与计算公式...",
-            "href": "#kb-launch-002",
-        },
-        {
-            "title": "产品发布推广渠道选择",
-            "snippet": "ProductHunt/V2EX/即刻/小红书等平台的发布策略与效果对比...",
-            "href": "#kb-launch-003",
-        },
-        {
-            "title": "SaaS产品免费到付费转化漏斗",
-            "snippet": "Freemium模型设计、付费墙设置、转化率优化的实战经验...",
-            "href": "#kb-launch-004",
-        },
-    ],
-    "数据分析": [
-        {
-            "title": "用户行为数据分析框架",
-            "snippet": "DAU/MAU/留存率/转化漏斗的核心指标定义与计算方法...",
-            "href": "#kb-data-001",
-        },
-        {
-            "title": "竞品分析报告模板",
-            "snippet": "功能对比/定价对比/市场份额/用户评价的四维分析框架...",
-            "href": "#kb-data-002",
-        },
-        {
-            "title": "SEO优化实战指南",
-            "snippet": "关键词研究→内容优化→外链建设→技术SEO的完整路线图...",
-            "href": "#kb-data-003",
-        },
-    ],
-    "项目管理": [
-        {
-            "title": "一人公司项目管理方法论",
-            "snippet": "看板管理+时间盒+周复盘的轻量级项目管理框架...",
-            "href": "#kb-pm-001",
-        },
-        {
-            "title": "咨询提案撰写模板",
-            "snippet": "问题定义→方案设计→实施路径→预期收益的专业提案结构...",
-            "href": "#kb-pm-002",
-        },
-        {
-            "title": "远程团队协作工具选型",
-            "snippet": "Notion/飞书/Slack/Lark等工具的功能对比与组合推荐...",
-            "href": "#kb-pm-003",
-        },
-    ],
-}
+_BUILTIN_KB_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "data", "knowledge", "builtin_knowledge.json"
+)
+
+
+def _load_builtin_knowledge() -> Dict[str, list]:
+    try:
+        with open(_BUILTIN_KB_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+KNOWLEDGE_BASE = _load_builtin_knowledge()
 
 
 @dataclass
@@ -299,6 +200,20 @@ class ProcessedResult:
     filtered_count: int = 0
     fallback_used: bool = False
     processing_time_ms: float = 0.0
+
+
+_jieba_initialized = False
+
+
+def _ensure_jieba():
+    global _jieba_initialized
+    if not _jieba_initialized:
+        try:
+            import jieba
+            jieba.setLogLevel(logging.WARNING)
+            _jieba_initialized = True
+        except ImportError:
+            pass
 
 
 class SearchResultProcessor:
@@ -377,7 +292,7 @@ class SearchResultProcessor:
 
         try:
             keywords = self._extract_keywords(query)
-            logger.debug(f"[SearchResultProcessor] Extracted keywords: {keywords}")
+            logger.debug("[SearchResultProcessor] Extracted keywords: %s", keywords)
 
             filtered = self._filter_irrelevant(keywords, raw_results)
             logger.debug(
@@ -410,7 +325,7 @@ class SearchResultProcessor:
             )
 
         except Exception as e:
-            logger.error(f"[SearchResultProcessor] Processing exception, degrading to original results: {e}")
+            logger.error("[SearchResultProcessor] Processing exception, degrading to original results: %s", e)
             processing_time = (time.time() - start_time) * 1000
             return ProcessedResult(
                 results=raw_results,
@@ -453,6 +368,7 @@ class SearchResultProcessor:
                 break
 
         try:
+            _ensure_jieba()
             import jieba
 
             jieba_tokens = list(jieba.cut(cleaned))
@@ -517,23 +433,11 @@ class SearchResultProcessor:
 
         return unique_keywords
 
+    MAX_SLIDING_WINDOW_INPUT_LEN = 50
+
     def _split_chinese_words(self, text: str) -> List[str]:
-        """Simple Chinese word segmentation: extract candidate words via 2-4 char sliding window
-
-        Strategy:
-        1. Try long words first (4 chars)
-        2. Then medium words (3 chars)
-        3. Finally short words (2 chars)
-        4. Deduplicate and return
-
-        Args:
-            text: Continuous Chinese character string
-
-        Returns:
-            Candidate Chinese word list
-        """
         candidates = []
-        n = len(text)
+        n = min(len(text), self.MAX_SLIDING_WINDOW_INPUT_LEN)
 
         for length in [4, 3, 2]:
             if length > n:
@@ -648,21 +552,11 @@ class SearchResultProcessor:
         return [item[1] for item in scored_results]
 
     def _fallback_to_knowledge_base(self, query: str) -> List[Dict]:
-        """When all search results are irrelevant, return knowledge base fallback entries
-
-        Matching strategy:
-        1. Iterate through predefined knowledge base categories
-        2. If query text contains category keyword, return entries under that category
-        3. Supports fuzzy matching (e.g. "营销" matches "营销方案" category)
-        4. Returns generic entries when no category is matched
-
-        Args:
-            query: User query (for matching knowledge base categories)
-
-        Returns:
-            Knowledge base entry list (with _kb_fallback flag added)
-        """
         fallback_entries = []
+
+        file_entries = self._search_file_knowledge_base(query)
+        if file_entries:
+            return file_entries
 
         CATEGORY_KEYWORDS = {
             "营销方案": ["营销", "推广", "获客", "增长", "内容日历"],
@@ -706,3 +600,47 @@ class SearchResultProcessor:
             logger.info("[SearchResultProcessor] Using generic KB fallback")
 
         return fallback_entries
+
+    def _search_file_knowledge_base(self, query: str) -> List[Dict]:
+        kb_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "knowledge")
+        if not os.path.isdir(kb_dir):
+            return []
+
+        entries = []
+        query_lower = query.lower()
+        keywords = set(query_lower.replace("的", " ").replace("了", " ").split())
+        keywords = {kw for kw in keywords if len(kw) >= 2}
+
+        for filename in sorted(os.listdir(kb_dir)):
+            if not filename.endswith((".md", ".txt", ".json")):
+                continue
+            filepath = os.path.join(kb_dir, filename)
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    content = f.read(2000)
+            except Exception:
+                continue
+
+            from opc_manager.utils import sanitize_for_llm
+            content = sanitize_for_llm(content, 1500)
+            content_lower = content.lower()
+            title = os.path.splitext(filename)[0]
+            match_count = sum(1 for kw in keywords if kw in content_lower)
+            title_match = sum(1 for kw in keywords if kw in title.lower())
+            total_score = match_count * 2 + title_match * 3
+
+            if match_count > 0 or title_match > 0:
+                snippet = content[:200].replace("\n", " ").strip()
+                entries.append({
+                    "title": title,
+                    "snippet": snippet,
+                    "href": f"file://knowledge/{filename}",
+                    "_kb_match_score": total_score,
+                })
+
+        entries.sort(key=lambda x: x.get("_kb_match_score", 0), reverse=True)
+        for entry in entries:
+            entry.pop("_kb_match_score", None)
+        if entries:
+            logger.info("[SearchResultProcessor] File KB matched %s entries for '%s'", len(entries), query)
+        return entries[:10]

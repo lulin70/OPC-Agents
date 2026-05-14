@@ -153,10 +153,10 @@ class SecureKeyStore:
                 data = self._load_storage()
                 data["keys"][name] = encrypted
                 self._save_storage(data)
-            logger.info(f"[SecureKeyStore] Stored: {name}")
+            logger.info("[SecureKeyStore] Stored: %s", name)
             return True
         except Exception as e:
-            logger.error(f"[SecureKeyStore] Failed to store {name}: {e}")
+            logger.error("[SecureKeyStore] Failed to store %s: %s", name, e)
             return False
 
     def get_key(self, name: str) -> Optional[str]:
@@ -171,7 +171,7 @@ class SecureKeyStore:
                 return None
             return self._fernet.decrypt(encrypted.encode()).decode()
         except Exception as e:
-            logger.error(f"[SecureKeyStore] Failed to decrypt {name}: {e}")
+            logger.error("[SecureKeyStore] Failed to decrypt %s: %s", name, e)
             return None
 
     def list_keys(self) -> List[str]:
@@ -185,7 +185,7 @@ class SecureKeyStore:
             if name in data.get("keys", {}):
                 del data["keys"][name]
                 self._save_storage(data)
-                logger.info(f"[SecureKeyStore] Removed: {name}")
+                logger.info("[SecureKeyStore] Removed: %s", name)
                 return True
         return False
 
@@ -204,14 +204,14 @@ class SecureKeyStore:
                     os.environ[name] = value
                     count += 1
                 except Exception as e:
-                    logger.error(f"[SecureKeyStore] Failed to decrypt {name}: {e}")
+                    logger.error("[SecureKeyStore] Failed to decrypt %s: %s", name, e)
 
             if count > 0:
-                logger.info(f"[SecureKeyStore] Loaded {count} encrypted keys to env")
+                logger.info("[SecureKeyStore] Loaded %s encrypted keys to env", count)
 
             return count
         except Exception as e:
-            logger.error(f"[SecureKeyStore] load_to_env failed: {e}")
+            logger.error("[SecureKeyStore] load_to_env failed: %s", e)
             return 0
 
     def _load_storage(self) -> Dict:
@@ -225,7 +225,7 @@ class SecureKeyStore:
                 logger.warning("[SecureKeyStore] Storage version mismatch")
             return data
         except Exception as e:
-            logger.error(f"[SecureKeyStore] Failed to load storage: {e}")
+            logger.error("[SecureKeyStore] Failed to load storage: %s", e)
             return {"version": self.VERSION, "keys": {}}
 
     def _save_storage(self, data: Dict):
@@ -253,7 +253,7 @@ def init_secure_storage():
         else:
             logger.debug("[SecureKeyStore] Not available, using .env only")
     except Exception as e:
-        logger.warning(f"[SecureKeyStore] Init failed, using .env only: {e}")
+        logger.warning("[SecureKeyStore] Init failed, using .env only: %s", e)
 
 
 if __name__ == "__main__":

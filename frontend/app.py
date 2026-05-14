@@ -74,6 +74,15 @@ init_monitoring()
 DELIVERABLES_DIR = os.path.join(_WORKSPACE_DIR, "deliverables")
 os.makedirs(DELIVERABLES_DIR, exist_ok=True)
 
+for _subdir in [
+    "data/knowledge", "data/notifications", "data/custom_skills",
+    "data/marketplace", "data/feedback", "data/consensus_logs",
+    "data/llm_cache", "data/schedules", "data/completions",
+    "data/context", "data/checkpoints", "data/loop_progress",
+    "data/workflows", "logs", "output",
+]:
+    os.makedirs(os.path.join(_WORKSPACE_DIR, _subdir), exist_ok=True)
+
 CHAT_HISTORY_FILE = os.path.join(_WORKSPACE_DIR, "data", "chat_history.json")
 
 
@@ -150,7 +159,7 @@ if "initialized" not in st.session_state:
         zombie_check_interval=30,
         persist_dir="data",
     )
-    print("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
+    logger.debug("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
 
     if os.path.exists(DELIVERABLES_DIR):
         disk_files = [f for f in os.listdir(DELIVERABLES_DIR) if f.endswith(".md")]
@@ -189,7 +198,7 @@ if "initialized" not in st.session_state:
                     }
                 )
         if disk_files:
-            print(f"[frontend] 从磁盘恢复了 {len(disk_files)} 个成果物记录")
+            logger.debug(f"[frontend] 从磁盘恢复了 {len(disk_files)} 个成果物记录")
 
 PERSONA_MAP = {
     """业务类型 → (显示名称, 风格描述) 映射表
@@ -338,7 +347,7 @@ def safe_detect(prompt_text):
             return result.business_type.value, result.confidence, result.method
         return "content_creator", 0.5, "default"
     except Exception as e:
-        print(f"[frontend] detect error: {e}")
+        logger.debug(f"[frontend] detect error: {e}")
         return "content_creator", 0.5, "fallback"
 
 
@@ -366,7 +375,7 @@ def safe_get_persona(type_value):
             return persona.display_name, persona.style_overrides.get("tone", "专业温暖")
         return "智能助手", "专业温暖"
     except Exception as e:
-        print(f"[frontend] persona error: {e}")
+        logger.debug(f"[frontend] persona error: {e}")
         name = PERSONA_MAP.get(type_value, ("智能助手", "专业"))[0]
         return name, "专业"
 
@@ -414,7 +423,7 @@ def safe_track_flywheel(type_value):
         st.session_state.flywheel_level = 3 if avg >= 60 else (2 if avg >= 35 else 1)
         return True
     except Exception as e:
-        print(f"[frontend] flywheel error: {e}")
+        logger.debug(f"[frontend] flywheel error: {e}")
         st.session_state.scenario_count += 1
         return False
 
@@ -462,7 +471,7 @@ def save_deliverable(
         "meta": meta or {},
     }
 
-    print(f"[frontend] 成果物已保存: {filepath} ({deliverable_record['size_kb']}KB)")
+    logger.debug(f"[frontend] 成果物已保存: {filepath} ({deliverable_record['size_kb']}KB)")
     return filepath, deliverable_record
 
 
@@ -488,11 +497,10 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
         if "agent_loop" not in st.session_state:
             adapter = TaskEngineAdapter(task_engine=task_engine_v3)
-            from opc_manager.llm_content import LLMEnhancedContentGenerator
-            llm_gen = LLMEnhancedContentGenerator()
+            from opc_manager.simple_llm_service import SimpleLLMService
+            simple_llm = SimpleLLMService()
             st.session_state.agent_loop = AgentLoop(
-                task_engine_adapter=adapter,
-                llm_service=llm_gen
+                task_engine_adapter=adapter, llm_service=simple_llm
             )
         agent_loop = st.session_state.agent_loop
 
@@ -584,7 +592,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         (content_with_meta, success, filepath, task_type_value, deliverable_record)
     """
     try:
-        print(f"[frontend] 开始执行任务: {prompt[:50]}")
+        logger.debug(f"[frontend] 开始执行任务: {prompt[:50]}")
         from opc_manager.task_engine_v3 import task_engine_v3, TaskType
 
         engine = task_engine_v3
@@ -594,20 +602,20 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
             session_ctx=session_ctx,
             business_type=business_type,
         )
-        print(
+        logger.debug(
             f"[frontend] 任务执行完成: success={result.success}, content_len={len(result.content) if result.content else 0}"
         )
 
         if not result.success:
-            print(f"[frontend] 任务标记为失败: {result.error}")
+            logger.debug(f"[frontend] 任务标记为失败: {result.error}")
             return None, False, None, None, None
 
         if not result.content:
-            print(f"[frontend] 内容为空!")
+            logger.debug(f"[frontend] 内容为空!")
             return None, False, None, None, None
 
         if result.task_type == TaskType.GENERAL_CHAT and len(result.content) < 300:
-            print(f"[frontend] 闲聊/短回复，不生成成果物文件")
+            logger.debug(f"[frontend] 闲聊/短回复，不生成成果物文件")
             return result.content, True, None, "general_chat", None
 
         meta_lines = []
@@ -633,10 +641,17 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         mode_tag = ""
         if not has_api_key:
             mode_tag = "\n\n> ⚠️ **当前为模板模式输出** — 配置API Key后可获得AI增强内容（质量提升5倍+）"
+        else:
+            from opc_manager.simple_llm_service import SimpleLLMService
+            svc = SimpleLLMService()
+            if svc.is_available():
+                mode_tag = "\n\n> 🟢 **AI增强模式** — 三贤者架构（策略脑+执行脑+反思脑）LLM驱动"
+            else:
+                mode_tag = "\n\n> 🟡 **规则引擎模式** — LLM服务不可用，使用关键词匹配+规则评分"
 
         content_with_meta = f"{result.content}{mode_tag}\n\n---\n*{meta_str}*"
 
-        print(f"[frontend] 准备保存文件...")
+        logger.debug(f"[frontend] 准备保存文件...")
         filepath, deliverable_record = save_deliverable(
             content=content_with_meta,
             prompt=prompt,
@@ -648,7 +663,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
                 "success": result.success,
             },
         )
-        print(f"[frontend] 文件已保存: {filepath}")
+        logger.debug(f"[frontend] 文件已保存: {filepath}")
 
         return content_with_meta, result.success, filepath, result.task_type.value, deliverable_record
 
@@ -656,7 +671,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         import traceback
 
         tb = traceback.format_exc()
-        print(f"[frontend] execute_task_and_deliver error: {e}\n{tb}")
+        logger.debug(f"[frontend] execute_task_and_deliver error: {e}\n{tb}")
         return None, False, None, None, None
 
 
@@ -678,11 +693,11 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
         dict with keys: content, success, filepath, task_type, error, deliverable_record
     """
     try:
-        print(f"[frontend-async] 开始后台执行: {prompt[:50]}")
+        logger.debug(f"[frontend-async] 开始后台执行: {prompt[:50]}")
         content, success, filepath, task_type, deliverable_record = execute_with_agent_loop(
             prompt, session_ctx=session_ctx, business_type=business_type
         )
-        print(
+        logger.debug(
             f"[frontend-async] 执行完成: success={success}, has_content={bool(content)}"
         )
 
@@ -709,7 +724,7 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
         import traceback
 
         tb = traceback.format_exc()
-        print(f"[frontend-async] 执行异常: {e}\n{tb}")
+        logger.debug(f"[frontend-async] 执行异常: {e}\n{tb}")
         return {
             "content": None,
             "success": False,
@@ -1044,7 +1059,7 @@ if page == "💬 对话":
             st.error("⚠️ 系统繁忙，请稍后再试（并发任务已达上限）")
             st.stop()
 
-        print(f"[frontend] 任务已提交: {task_id} (异步模式{'，追问模式' if is_follow_up else ''})")
+        logger.debug(f"[frontend] 任务已提交: {task_id} (异步模式{'，追问模式' if is_follow_up else ''})")
 
         with st.chat_message("assistant"):
             status_container = st.status(

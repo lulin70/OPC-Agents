@@ -143,7 +143,7 @@ class SessionContextManager:
         self._next_turn_id = 1
         self._lock = threading.RLock()
 
-        logger.info(f"[SessionContextManager] Initialized: " f"max_turns={max_turns}")
+        logger.info("[SessionContextManager] Initialized: " f"max_turns=%s", max_turns)
 
     def add_turn(
         self,
@@ -177,7 +177,7 @@ class SessionContextManager:
         with self._lock:
             if len(self._turns) >= self.max_turns * 2:
                 self._turns = self._turns[2:]
-                logger.info(f"[SessionContextManager] Auto-trimmed oldest turn to stay within limit")
+                logger.info("[SessionContextManager] Auto-trimmed oldest turn to stay within limit")
 
             user_turn = ConversationTurn(
                 turn_id=self._next_turn_id,
@@ -376,7 +376,7 @@ class SessionContextManager:
             self._turns.clear()
             self._next_turn_id = 1
 
-        logger.info(f"[SessionContextManager] Session cleared (removed {count // 2} turns)")
+        logger.info("[SessionContextManager] Session cleared (removed %s turns)", count // 2)
 
     def _group_by_turn_id(self) -> List[Dict[str, Any]]:
         """Group chronological turns list by turn_id"""
