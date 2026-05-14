@@ -20,7 +20,7 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ### Security
 
-- 加密强制密钥：`OPC_ENCRYPTION_KEY` 未设置时 `encrypt_field()` 抛出 `RuntimeError`，拒绝使用默认密钥加密
+- 加密自动降级：`OPC_ENCRYPTION_KEY` 未设置时自动生成会话密钥并输出CRITICAL警告（而非崩溃）
 - 外部技能沙箱隔离：UNVERIFIED信任等级技能禁止安装
 - 网络白名单：外部技能网络请求仅允许 `registry.opc-agents.dev`、`api.github.com`、`mcphub.io` 及其子域
 - SQL参数化：所有数据库操作使用参数化查询，防止SQL注入
@@ -36,6 +36,8 @@ All notable changes to OPC-Agents will be documented in this file.
 - SkillRegistry单例模式：`__new__` 实现全局唯一实例，线程安全
 - execute_goal委托：14个技能模块统一提供 `execute_goal(goal, _context, **kwargs)` 入口
 - BUSINESS_OPERATION TaskType：新增业务操作任务类型，email/finance/task/crm/invoice/calendar/tax_reminder路由至此
+- ExecutorBrain持有SkillRegistry：三贤者架构与21业务技能打通
+- 协作数据管道：_execute_collaborative 维护 context_data 字典，下游技能获得上游结果
 
 ### Performance
 
@@ -52,12 +54,27 @@ All notable changes to OPC-Agents will be documented in this file.
 - 定价基准外置为 `data/knowledge/pricing_benchmarks.json`
 - DATA_DIR统一由 `OPC_DATA_DIR` 环境变量控制，所有模块引用同一常量
 
-### Fixed
+### Fixed — 7维代码审查修复（58项）
 
 - social_skill不再写入email_history表（数据混淆）
 - competitor_skill不再写入customers表（数据污染）
 - 邮件同一收件人1小时频率限制
 - 邮件正文50KB大小限制
+
+### Fixed — 业务逻辑端到端审查修复（12项）
+
+- BL-1: CRM添加客户正确解析姓名/电话/邮箱/公司（不再把整句当名字）
+- BL-2/5: Email支持"给xxx发邮件"模式，自动从CRM查找邮箱
+- BL-3: output_result步骤不再因缺data参数而TypeError
+- BL-4: INTENT_KEYWORDS补充"成交/跟进/记一笔/合同/朋友圈"等缺失关键词
+- BL-5: 协作链双向打通（Email→CRM查找，不再仅CRM→Email单向）
+- BL-7: 报价单SERVICE_TEMPLATES增加参考价格（咨询2000/培训5000/设计8000等）
+- BL-8: 日历日程提取时间（支持"14:30"/"下午3点"等格式）
+- BL-9: 知识库创建不再生成占位内容，改为引导用户输入
+- BL-10: 社交发布未指定平台时给出可用平台列表和示例
+- BL-11: Dashboard与Report关键词冲突解决（"经营状况"归Report）
+- BL-12: 财务报表支持指定月份（"3月报表"/"2025年6月报表"）
+- AgentLoop._enrich_step_parameters自动注入前序步骤data到output_result
 
 ## [0.1.9-delta] - 2026-05-09
 

@@ -179,9 +179,26 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
 
     from opc_manager.utils import parse_date_from_text
     date = parse_date_from_text(goal)
+    time_str = ""
+    m = re.search(r'(\d{1,2})[：:点](\d{1,2})?分?', goal)
+    if m:
+        hour = int(m.group(1))
+        minute = int(m.group(2) or 0)
+        if 0 <= hour <= 23 and 0 <= minute <= 59:
+            time_str = f"{hour:02d}:{minute:02d}"
+    if not time_str:
+        m = re.search(r'(上午|下午|晚上|早上|中午)(\d{1,2})点?', goal)
+        if m:
+            hour = int(m.group(2))
+            if m.group(1) in ("下午", "晚上") and hour < 12:
+                hour += 12
+            if 0 <= hour <= 23:
+                time_str = f"{hour:02d}:00"
     title = goal
-    for kw in ["帮我安排", "帮我加", "日程", "提醒我", "安排", "今天", "明天", "后天", "下周"]:
+    for kw in ["帮我安排", "帮我加", "日程", "提醒我", "安排", "今天", "明天", "后天", "下周",
+                "上午", "下午", "晚上", "早上", "中午"]:
         title = title.replace(kw, "")
+    title = re.sub(r'\d{1,2}[：:点]\d{0,2}分?', '', title)
     title = title.strip().strip("，。、的") or goal
 
-    return add_event(title, date)
+    return add_event(title, date, time_str=time_str)

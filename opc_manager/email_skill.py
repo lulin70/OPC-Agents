@@ -231,11 +231,56 @@ def list_email_history(limit: int = 20) -> List[Dict[str, Any]]:
     )
 
 
+def _lookup_email_by_name(name: str) -> str:
+    if not name or len(name) > 50:
+        return ""
+    try:
+        from opc_manager.crm_skill import get_customer
+        result = get_customer(name=name)
+        if result.get("success") and result.get("customer", {}).get("email"):
+            email = result["customer"]["email"]
+            if email and email != "[DECRYPT_FAILED]":
+                return email
+    except Exception:
+        pass
+    return ""
+
+
 def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     to = kwargs.get("to", "")
     subject = kwargs.get("subject", "")
     body = kwargs.get("body", "")
+
+    if not to:
+        m = re.search(r"邮箱[：:]\s*(\S+)", goal)
+        if m:
+            to = m.group(1).strip()
+            goal = goal[:m.start()] + goal[m.end():]
+    if not to:
+        m = re.search(r"收件人[：:]\s*(\S+)", goal)
+        if m:
+            recipient = m.group(1).strip()
+            if _validate_email(recipient):
+                to = recipient
+            else:
+                looked_up = _lookup_email_by_name(recipient)
+                if looked_up:
+                    to = looked_up
+            goal = goal[:m.start()] + goal[m.end():]
+    if not to:
+        m = re.search(r"给(.+?)(发邮件|写信|发信|发一封|回邮件|邮件)", goal)
+        if m:
+            recipient = m.group(1).strip()
+            if _validate_email(recipient):
+                to = recipient
+            else:
+                looked_up = _lookup_email_by_name(recipient)
+                if looked_up:
+                    to = looked_up
+                    if not subject:
+                        subject = f"关于{recipient}"
+            goal = goal[:m.start()] + goal[m.end():]
 
     if to and subject and body:
         return send_email(to, subject, body)
@@ -249,4 +294,4 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         body = body or goal
         return send_email(to, subject, body)
 
-    return {"success": False, "error": "请提供收件人地址(to参数)，或说'帮我给xxx发邮件'"}
+    return {"success": False, "error": "请提供收件人地址或姓名（如：给张三发邮件），请先在CRM中录入客户邮箱"}

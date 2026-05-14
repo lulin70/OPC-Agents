@@ -248,7 +248,7 @@ class SkillRegistry:
             description="输出最终结果",
             category=SkillCategory.UTILITY,
             inputs=[
-                SkillInput(name="data", type="dict", description="结果数据"),
+                SkillInput(name="data", type="dict", required=False, description="结果数据"),
                 SkillInput(name="format", type="str", required=False, default="markdown", description="输出格式")
             ],
             outputs=[
@@ -659,30 +659,52 @@ class SkillRegistry:
     def _execute_collaborative(self, goal: str, _context: Optional[SkillContext] = None) -> Optional[Dict[str, Any]]:
         if self._collab_in_progress:
             return None
-        for collab_name, collab_def in SKILL_COLLABORATIONS.items():
-            if any(trigger in goal for trigger in collab_def["trigger"]):
-                self._collab_in_progress = True
+        collab = None
+        collab_name = None
+        for collab_id, cfg in SKILL_COLLABORATIONS.items():
+            if any(t in goal for t in cfg["trigger"]):
+                collab = cfg
+                collab_name = collab_id
+                break
+        if not collab:
+            return None
+        self._collab_in_progress = True
+        try:
+            results = []
+            context_data = {}
+            for skill_id in collab["skills"]:
+                skill = self.get_skill(skill_id)
+                if not skill or not skill.execute:
+                    continue
+
+                enriched_goal = goal
+                if skill_id == "email" and "crm" in context_data:
+                    crm_data = context_data["crm"]
+                    if isinstance(crm_data, dict) and crm_data.get("customer"):
+                        cust = crm_data["customer"]
+                        enriched_goal = f"{goal} 收件人:{cust.get('name','')} 邮箱:{cust.get('email','')}"
+                elif skill_id == "finance" and "crm" in context_data:
+                    crm_data = context_data["crm"]
+                    if isinstance(crm_data, dict) and crm_data.get("deal"):
+                        deal = crm_data["deal"]
+                        enriched_goal = f"{goal} 金额:{deal.get('amount',0)} 来源:{deal.get('description','')}"
+
                 try:
-                    results = []
-                    for skill_id in collab_def["skills"]:
-                        skill = self.get_skill(skill_id)
-                        if not skill or not skill.enabled:
-                            continue
-                        try:
-                            result = skill.execute(goal=goal, _context=_context)
-                            results.append({"skill": skill_id, "result": result})
-                        except Exception as e:
-                            logger.warning("collaborative skill %s failed: %s", skill_id, e)
-                            results.append({"skill": skill_id, "error": str(e)})
-                    if results:
-                        return {
-                            "success": True,
-                            "collaboration": collab_name,
-                            "results": results,
-                            "message": f"已执行协作链: {collab_name}",
-                        }
-                finally:
-                    self._collab_in_progress = False
+                    result = skill.execute(goal=enriched_goal, _context=_context)
+                    results.append({"skill_id": skill_id, "result": result})
+                    context_data[skill_id] = result
+                except Exception as e:
+                    results.append({"skill_id": skill_id, "result": {"success": False, "error": str(e)}})
+
+            if results:
+                return {
+                    "success": any(isinstance(r["result"], dict) and r["result"].get("success") for r in results),
+                    "collaboration": collab_name,
+                    "results": results,
+                    "message": f"协作执行完成: {' → '.join(collab['skills'])}",
+                }
+        finally:
+            self._collab_in_progress = False
         return None
 
     # 内置技能执行函数
@@ -966,7 +988,9 @@ class SkillRegistry:
             "error": "工具系统未初始化",
         }
 
-    def _execute_output(self, data: dict, format: str = "markdown", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_output(self, data: dict = None, format: str = "markdown", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+        if data is None:
+            data = {}
         return {
             "output": f"## 执行结果\n\n{json.dumps(data, indent=2, ensure_ascii=False)}",
             "format": format

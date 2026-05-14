@@ -179,6 +179,42 @@ def get_customer_stats() -> Dict[str, Any]:
     }
 
 
+def _parse_customer_from_text(text: str) -> Dict[str, Any]:
+    result = {"name": "", "company": "", "phone": "", "email": "", "source": "", "tags": ""}
+
+    m = re.search(r'1[3-9]\d{9}', text)
+    if m:
+        result["phone"] = m.group(0)
+        text = text[:m.start()] + text[m.end():]
+
+    m = re.search(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', text)
+    if m:
+        result["email"] = m.group(0)
+        text = text[:m.start()] + text[m.end():]
+
+    m = re.search(r'(?:公司|企业|机构|工作室)[：:]*\s*([^\s,，。、]+)', text)
+    if m:
+        result["company"] = m.group(1)
+        text = text[:m.start()] + text[m.end():]
+
+    m = re.search(r'(?:来源|渠道)[：:]*\s*([^\s,，。、]+)', text)
+    if m:
+        result["source"] = m.group(1)
+        text = text[:m.start()] + text[m.end():]
+
+    m = re.search(r'(?:标签|标记)[：:]*\s*([^\s,，。、]+)', text)
+    if m:
+        result["tags"] = m.group(1)
+        text = text[:m.start()] + text[m.end():]
+
+    for kw in ["帮我", "添加客户", "录入客户", "新建客户", "添加", "录入", "新建",
+                "客户", "的", "电话", "手机", "邮箱", "公司", "，", "。", "、", "：", ":"]:
+        text = text.replace(kw, "")
+    result["name"] = text.strip().strip("，。、的") or ""
+
+    return result
+
+
 def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["沉默", "没联系", "超过"]):
@@ -196,10 +232,31 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
             return get_customer(name=name)
         return {"success": False, "error": "请提供客户姓名"}
 
-    if any(kw in goal for kw in ["记", "录入", "添加客户", "新建客户"]):
-        return add_customer(name=goal)
-
     if any(kw in goal for kw in ["合作", "成交", "签约"]):
-        return {"success": False, "error": "请指定客户ID和合作详情"}
+        from opc_manager.finance_skill import parse_amount_from_text
+        amount = parse_amount_from_text(goal)
+        name = goal
+        for kw in ["合作", "成交", "签约", "了", "帮我", "的", "记录"] + ([str(amount)] if amount else []):
+            name = name.replace(kw, "")
+        name = name.strip().strip("，。、的")
+        if name:
+            result = get_customer(name=name)
+            if result.get("success") and result.get("customer"):
+                customer_id = result["customer"]["id"]
+                return add_deal(customer_id, description=name, amount=amount or 0, status="closed_won")
+        return {"success": False, "error": "请指定客户名称，如：张总成交了3000"}
+
+    if any(kw in goal for kw in ["记", "录入", "添加客户", "新建客户", "添加"]):
+        parsed = _parse_customer_from_text(goal)
+        if not parsed["name"]:
+            return {"success": False, "error": "请提供客户姓名，如：添加客户张三，电话13800138000"}
+        return add_customer(
+            name=parsed["name"],
+            company=parsed["company"],
+            phone=parsed["phone"],
+            email=parsed["email"],
+            source=parsed["source"],
+            tags=parsed["tags"],
+        )
 
     return search_customers()

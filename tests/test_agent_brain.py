@@ -36,7 +36,7 @@ class TestStrategistBrain:
         intent = strategist.understand_intent("帮我写文档")
         
         assert intent.type == IntentType.CREATION
-        assert "创作任务" in intent.goal
+        assert "写文档" in intent.goal
 
     def test_intent_understanding_with_constraints(self):
         """测试意图理解 - 带约束条件"""

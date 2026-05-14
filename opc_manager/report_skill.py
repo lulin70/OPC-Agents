@@ -157,9 +157,9 @@ def generate_annual_report(year: str = "") -> Dict[str, Any]:
 
 def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
-    if any(kw in goal for kw in ["年报", "年度", "年总结"]):
+    if any(kw in goal for kw in ["年报", "年度", "年总结", "年报告"]):
         return generate_annual_report()
-    if any(kw in goal for kw in ["月报", "月度", "月总结"]):
+    if any(kw in goal for kw in ["月报", "月度", "月总结", "月报告", "经营报告", "经营分析", "经营状况", "业务报告"]):
         return generate_monthly_report()
     return generate_weekly_report()
 

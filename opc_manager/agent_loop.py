@@ -97,10 +97,10 @@ class AgentLoop:
         self.task_engine_adapter = task_engine_adapter or TaskEngineAdapter()
         self.llm_service = llm_service
         self.strategist_brain = strategist_brain or StrategistBrain(llm_service=llm_service)
-        self.executor_brain = executor_brain or ExecutorBrain(task_engine_adapter=self.task_engine_adapter)
+        self.skill_registry = skill_registry or SkillRegistry()
+        self.executor_brain = executor_brain or ExecutorBrain(skill_registry=self.skill_registry, task_engine_adapter=self.task_engine_adapter)
         self.reflector_brain = reflector_brain or ReflectorBrain(llm_service=llm_service)
         self.consensus_engine = consensus_engine or ConsensusEngine()
-        self.skill_registry = skill_registry or SkillRegistry()
         self.tool_system = tool_system or ToolSystem()
         self.session_manager = session_manager or SessionContextManager()
         self.event_emitter = EventEmitter()
@@ -375,6 +375,9 @@ class AgentLoop:
                         enriched[key] = prev_data[:500]
                 else:
                     enriched[key] = ""
+
+        if "data" not in enriched and prev_data is not None:
+            enriched["data"] = prev_data
 
         if enriched.get("query") and len(str(enriched["query"])) > 200:
             enriched["query"] = str(enriched["query"])[:200]

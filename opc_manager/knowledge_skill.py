@@ -222,7 +222,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
             title = title.replace(kw, "")
         title = title.strip().strip("，。、的")
         if title:
-            return create_article(title, content=title + "的详细内容待补充")
+            return {"success": True, "message": f"请提供'{title}'的具体内容，我将为你保存到知识库", "title": title, "needs_content": True}
         return {"success": False, "error": "请指定文章标题"}
 
     return search_articles()

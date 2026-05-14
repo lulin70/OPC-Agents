@@ -147,6 +147,15 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     amount = parse_amount_from_text(goal)
 
+    if any(kw in goal for kw in ["记账", "记一笔", "入账"]):
+        if amount and amount > 0:
+            source = re.sub(r'[¥￥]?\s*\d+\.?\d*\s*[元块]?', '', goal)
+            for kw in ["记账", "记一笔", "入账", "收入", "帮我", "的"]:
+                source = source.replace(kw, "")
+            source = source.strip().strip("，。、的") or "未注明来源"
+            return record_income(amount, source)
+        return {"success": False, "error": "请指定记账金额，如：记账3000元咨询费"}
+
     if any(kw in goal for kw in ["收入", "赚", "收到", "到账", "付款"]):
         if amount:
             source = re.sub(r'[¥￥]?\s*\d+\.?\d*\s*[元块]?', '', goal)
@@ -166,7 +175,17 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         return {"success": False, "error": "未能识别金额"}
 
     if any(kw in goal for kw in ["报表", "月报", "赚了多少", "花了多少", "利润", "经营"]):
-        return get_monthly_report()
+        year_month = ""
+        m = re.search(r'(\d{4})年(\d{1,2})月', goal)
+        if m:
+            year_month = f"{m.group(1)}-{int(m.group(2)):02d}"
+        else:
+            m = re.search(r'(\d{1,2})月', goal)
+            if m:
+                month = int(m.group(1))
+                if 1 <= month <= 12:
+                    year_month = f"{time.strftime('%Y')}-{month:02d}"
+        return get_monthly_report(year_month)
 
     if any(kw in goal for kw in ["趋势", "走势", "近"]):
         return {"success": True, "trend": get_trend()}

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional
 
@@ -34,6 +35,43 @@ def _load_platforms() -> dict:
 PLATFORMS = _load_platforms()
 
 
+def _generate_with_llm(platform, topic, key_points, tone):
+    try:
+        from opc_manager.simple_llm_service import SimpleLLMService
+        svc = SimpleLLMService()
+        if not svc.is_available():
+            return None
+
+        platform_cfg = PLATFORMS.get(platform, {})
+        max_body = platform_cfg.get("max_body", 2000)
+        style = platform_cfg.get("style", "专业")
+
+        prompt = f"""你是一位资深社交媒体运营专家。请为{platform}平台生成一篇关于"{topic}"的内容。
+
+要求：
+- 平台风格：{style}
+- 字数限制：{max_body}字以内
+- {"关键要点：" + key_points if key_points else ""}
+- {"语调：" + tone if tone else "自然亲切"}
+- 标题要吸引眼球
+- 正文要有价值、有干货
+- 不要使用"待补充"、"请根据实际"等占位符
+
+请用JSON格式返回：{{"title": "标题", "body": "正文内容", "tags": ["标签1", "标签2"]}}"""
+
+        result = svc.complete(prompt, max_tokens=1500)
+        if result:
+            try:
+                parsed = json.loads(result)
+                if isinstance(parsed, dict) and "body" in parsed:
+                    return parsed
+            except (json.JSONDecodeError, ValueError):
+                pass
+    except Exception:
+        pass
+    return None
+
+
 def generate_content(platform: str, topic: str, key_points: str = "",
                      tone: str = "") -> Dict[str, Any]:
     platform = platform.strip()
@@ -43,9 +81,15 @@ def generate_content(platform: str, topic: str, key_points: str = "",
     cfg = PLATFORMS[platform]
     style = tone or cfg["style"]
 
-    title = _generate_title(platform, topic, cfg)
-    body = _generate_body(platform, topic, key_points, style, cfg)
-    tags = _generate_tags(platform, topic) if cfg["tags"] else []
+    llm_result = _generate_with_llm(platform, topic, key_points, tone)
+    if llm_result:
+        title = llm_result.get("title", _generate_title(platform, topic, cfg))
+        body = llm_result.get("body", _generate_body(platform, topic, key_points, style, cfg))
+        tags = llm_result.get("tags", _generate_tags(platform, topic)) if cfg["tags"] else []
+    else:
+        title = _generate_title(platform, topic, cfg)
+        body = _generate_body(platform, topic, key_points, style, cfg)
+        tags = _generate_tags(platform, topic) if cfg["tags"] else []
 
     content_id = gen_id()
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -198,6 +242,24 @@ def _get_publish_guide(platform: str) -> str:
     return guides.get(platform, "请手动发布到对应平台")
 
 
+def _extract_topic(goal, platform_name):
+    patterns = [
+        r"(?:发|写|生成|发布)(?:一篇|一个)?(?:关于|论)?[「「](.+?)[」」](?:的|内容|文章|帖子)?",
+        r"(?:发|写|生成|发布)(?:一篇|一个)?(?:关于|论)?[\"'](.+?)[\"'](?:的|内容|文章|帖子)?",
+        r"(?:关于|论)[「「](.+?)[」」](?:的|内容|文章|帖子)",
+        r"(?:关于|论)[\"'](.+?)[\"'](?:的|内容|文章|帖子)",
+    ]
+    for pat in patterns:
+        m = re.search(pat, goal)
+        if m:
+            return m.group(1).strip()
+
+    topic = goal
+    for kw in ["帮我发", "帮我写", "生成", "发布", "内容", platform_name, "的", "到", "上", "一篇", "一个"]:
+        topic = topic.replace(kw, "")
+    return topic.strip().strip("，。、") or "今日分享"
+
+
 def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     platform = ""
@@ -206,7 +268,13 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
             platform = p
             break
     if not platform:
-        return {"success": False, "error": "请指定平台（小红书/公众号/推特/微博/知乎）"}
+        if any(kw in goal for kw in ["发帖", "发布", "发一条", "写一篇", "内容"]):
+            return {
+                "success": False,
+                "error": "请指定发布平台",
+                "available_platforms": list(PLATFORMS.keys()),
+                "hint": "如：发一条小红书关于AI的内容",
+            }
 
     if any(kw in goal for kw in ["草稿", "列表", "有哪些"]):
         return list_drafts(platform=platform)
@@ -214,9 +282,6 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     if any(kw in goal for kw in ["已发", "发布完成"]):
         return {"success": False, "error": "请提供内容ID来标记发布"}
 
-    topic = goal
-    for kw in ["帮我发", "帮我写", "生成", "内容", platform, "的", "到", "上"]:
-        topic = topic.replace(kw, "")
-    topic = topic.strip().strip("，。、") or "今日分享"
+    topic = _extract_topic(goal, platform)
 
     return generate_content(platform, topic)

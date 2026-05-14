@@ -9,11 +9,11 @@ from opc_manager.tool_system import AuditLogger
 logger = logging.getLogger(__name__)
 
 SERVICE_TEMPLATES = {
-    "咨询": {"items": [{"name": "咨询诊断", "unit": "次"}, {"name": "方案交付", "unit": "份"}, {"name": "后续跟进", "unit": "月"}]},
-    "培训": {"items": [{"name": "培训课程", "unit": "天"}, {"name": "教材资料", "unit": "套"}, {"name": "答疑支持", "unit": "月"}]},
-    "设计": {"items": [{"name": "需求分析", "unit": "次"}, {"name": "设计交付", "unit": "稿"}, {"name": "修改迭代", "unit": "轮"}]},
-    "开发": {"items": [{"name": "需求梳理", "unit": "次"}, {"name": "开发实施", "unit": "人天"}, {"name": "测试上线", "unit": "次"}, {"name": "维护支持", "unit": "月"}]},
-    "通用": {"items": [{"name": "服务内容", "unit": "项"}]},
+    "咨询": {"items": [{"name": "咨询诊断", "unit": "次", "price": 2000}, {"name": "方案交付", "unit": "份", "price": 5000}, {"name": "后续跟进", "unit": "月", "price": 3000}]},
+    "培训": {"items": [{"name": "培训课程", "unit": "天", "price": 5000}, {"name": "教材资料", "unit": "套", "price": 500}, {"name": "答疑支持", "unit": "月", "price": 2000}]},
+    "设计": {"items": [{"name": "需求分析", "unit": "次", "price": 3000}, {"name": "设计交付", "unit": "稿", "price": 8000}, {"name": "修改迭代", "unit": "轮", "price": 2000}]},
+    "开发": {"items": [{"name": "需求梳理", "unit": "次", "price": 3000}, {"name": "开发实施", "unit": "人天", "price": 2000}, {"name": "测试上线", "unit": "次", "price": 5000}, {"name": "维护支持", "unit": "月", "price": 3000}]},
+    "通用": {"items": [{"name": "服务内容", "unit": "项", "price": 5000}]},
 }
 
 
@@ -26,7 +26,7 @@ def create_proposal(client_name: str, service_type: str = "通用",
 
     if items is None:
         tpl = SERVICE_TEMPLATES.get(service_type, SERVICE_TEMPLATES["通用"])
-        items = [{"name": it["name"], "quantity": 1, "unit": it["unit"], "price": 0} for it in tpl["items"]]
+        items = [{"name": it["name"], "quantity": 1, "unit": it["unit"], "price": it.get("price", 0)} for it in tpl["items"]]
 
     total = sum(it.get("quantity", 1) * it.get("price", 0) for it in items)
     proposal_id = gen_id()

@@ -23,23 +23,26 @@ _db_version = 3
 _db_initialized = False
 
 _ENCRYPTION_KEY_ENV = "OPC_ENCRYPTION_KEY"
+_fallback_key = None
 
 
 def _get_encryption_key() -> bytes:
+    global _fallback_key
     key_str = os.environ.get(_ENCRYPTION_KEY_ENV, "")
     if key_str:
         return hashlib.sha256(key_str.encode()).digest()
-    logger.critical("[SECURITY] OPC_ENCRYPTION_KEY not set! Using insecure default key. Set OPC_ENCRYPTION_KEY environment variable!")
-    return hashlib.sha256(b"opc-agents-default-key-change-in-production").digest()
+    if _fallback_key is None:
+        logger.critical("[SECURITY] OPC_ENCRYPTION_KEY not set! Using auto-generated session key. Data encrypted with this key cannot be decrypted after restart!")
+        _fallback_key = os.urandom(32)
+    return _fallback_key
 
 
 def encrypt_field(plaintext: str) -> str:
     if not plaintext:
         return ""
-    key_str = os.environ.get(_ENCRYPTION_KEY_ENV, "")
-    if not key_str:
-        raise RuntimeError("OPC_ENCRYPTION_KEY environment variable must be set for encryption. Refusing to encrypt with default key.")
     key = _get_encryption_key()
+    if not os.environ.get(_ENCRYPTION_KEY_ENV, ""):
+        logger.warning("[SECURITY] Encrypting with session key - data will not survive restart!")
     from cryptography.fernet import Fernet
     fernet_key = base64.urlsafe_b64encode(key)
     f = Fernet(fernet_key)

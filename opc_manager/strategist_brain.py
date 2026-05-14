@@ -375,19 +375,7 @@ class StrategistBrain:
                 goal = goal[len(prefix):].strip()
                 break
         
-        # 添加意图类型描述
-        type_descriptions = {
-            IntentType.ANALYSIS: "分析任务",
-            IntentType.CREATION: "创作任务",
-            IntentType.OPERATION: "操作任务",
-            IntentType.SEARCH: "搜索任务",
-            IntentType.NOTIFICATION: "通知任务",
-            IntentType.COMBINED: "组合任务",
-            IntentType.UNKNOWN: "未知任务",
-            IntentType.EXTENDED_SKILL: "扩展技能任务"
-        }
-        
-        return f"{type_descriptions[intent_type]}: {goal}"
+        return goal
 
     def _calculate_confidence(self, user_input: str, intent_type: IntentType) -> float:
         """
