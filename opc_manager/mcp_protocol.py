@@ -237,14 +237,48 @@ class MCPServer:
             if rp not in arguments:
                 return {"content": [{"type": "text", "text": f"Missing required parameter: {rp}"}], "isError": True}
 
-        if tool_name == "execute_task" and self.task_engine_adapter:
+        if tool_name == "execute_task":
             user_input = arguments.get("user_input", "")
-            result = self.task_engine_adapter.execute_skill(
-                skill_id="content_generation",
-                parameters={"query": user_input, "goal": user_input},
-            )
-            content = result.get("data", {}).get("content", "")
-            return {"content": [{"type": "text", "text": content or "No content generated"}]}
+            if self.skill_registry:
+                matched_skills = self.skill_registry.find_by_intent(user_input)
+                if matched_skills:
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            import concurrent.futures
+                            with concurrent.futures.ThreadPoolExecutor() as pool:
+                                future = pool.submit(
+                                    asyncio.run,
+                                    self.skill_registry.execute_skill(
+                                        matched_skills[0].skill_id,
+                                        context=None,
+                                        goal=user_input,
+                                    )
+                                )
+                                result = future.result(timeout=30)
+                        else:
+                            result = loop.run_until_complete(
+                                self.skill_registry.execute_skill(
+                                    matched_skills[0].skill_id,
+                                    context=None,
+                                    goal=user_input,
+                                )
+                            )
+                        if result.get("success") and result.get("data"):
+                            data = result["data"]
+                            content = data.get("content", "") if isinstance(data, dict) else str(data)
+                            if content:
+                                return {"content": [{"type": "text", "text": content}]}
+                    except Exception as e:
+                        logger.warning("SkillRegistry execute failed, falling back to task_engine_adapter: %s", e)
+            if self.task_engine_adapter:
+                result = self.task_engine_adapter.execute_skill(
+                    skill_id="content_generation",
+                    parameters={"query": user_input, "goal": user_input},
+                )
+                content = result.get("data", {}).get("content", "")
+                return {"content": [{"type": "text", "text": content or "No content generated"}]}
 
         if tool_name == "search_web" and self.task_engine_adapter:
             result = self.task_engine_adapter.execute_skill(

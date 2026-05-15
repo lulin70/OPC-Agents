@@ -40,8 +40,10 @@ from .mcp_protocol import MCPServer
 def create_mcp_server() -> MCPServer:
     from .task_engine_adapter import TaskEngineAdapter
     from .task_engine_v3 import task_engine_v3
+    from .skill_registry import SkillRegistry
     adapter = TaskEngineAdapter(task_engine=task_engine_v3)
-    return MCPServer(task_engine_adapter=adapter)
+    skill_registry = SkillRegistry()
+    return MCPServer(task_engine_adapter=adapter, skill_registry=skill_registry)
 
 
 if SSE_AVAILABLE:
@@ -59,6 +61,8 @@ if SSE_AVAILABLE:
                 if not hmac.compare_digest(token, MCP_API_KEY):
                     from fastapi.responses import JSONResponse
                     return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+            else:
+                logger.warning("MCP_API_KEY is empty — SSE endpoint is open without authentication (development mode only)")
 
             async def event_generator():
                 yield {"event": "endpoint", "data": json.dumps({"type": "endpoint", "url": "/messages"})}
@@ -78,6 +82,8 @@ if SSE_AVAILABLE:
                 if not hmac.compare_digest(token, MCP_API_KEY):
                     from fastapi.responses import JSONResponse
                     return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+            else:
+                logger.warning("MCP_API_KEY is empty — messages endpoint is open without authentication (development mode only)")
             body = await request.json()
             result = mcp_server.handle_request(body)
             return result
@@ -99,6 +105,9 @@ class StdioTransport:
         self._shutdown = True
 
     def run(self) -> None:
+        mcp_api_key = os.environ.get("MCP_API_KEY", "")
+        if not mcp_api_key:
+            logger.warning("MCP_API_KEY is empty — stdio endpoint is open without authentication (development mode only)")
         logger.info("MCP stdio transport started")
         while not self._shutdown:
             try:

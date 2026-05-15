@@ -204,9 +204,13 @@ def get_performance_monitor() -> PerformanceMonitor:
     global _default_monitor
     if _default_monitor is None:
         _default_monitor = PerformanceMonitor()
+        _default_monitor._load_metrics()
     return _default_monitor
 
 
 def _reset_performance_monitor() -> None:
     global _default_monitor
     _default_monitor = None
+
+
+performance_monitor = get_performance_monitor()

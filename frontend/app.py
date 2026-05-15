@@ -91,8 +91,8 @@ def _save_chat_history():
         os.makedirs(os.path.dirname(CHAT_HISTORY_FILE), exist_ok=True)
         with open(CHAT_HISTORY_FILE, "w", encoding="utf-8") as f:
             json.dump(st.session_state.messages, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Failed to save chat history: %s", e)
 
 
 def _load_chat_history():
@@ -159,6 +159,8 @@ if "initialized" not in st.session_state:
         zombie_check_interval=30,
         persist_dir="data",
     )
+    import atexit
+    atexit.register(lambda: st.session_state.async_executor.shutdown() if hasattr(st.session_state, 'async_executor') else None)
     logger.debug("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
 
     if os.path.exists(DELIVERABLES_DIR):
@@ -498,9 +500,11 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
         if "agent_loop" not in st.session_state:
             adapter = TaskEngineAdapter(task_engine=task_engine_v3)
             from opc_manager.simple_llm_service import SimpleLLMService
+            from opc_manager.skill_registry import SkillRegistry
             simple_llm = SimpleLLMService()
+            skill_registry = SkillRegistry()
             st.session_state.agent_loop = AgentLoop(
-                task_engine_adapter=adapter, llm_service=simple_llm
+                task_engine_adapter=adapter, llm_service=simple_llm, skill_registry=skill_registry
             )
         agent_loop = st.session_state.agent_loop
 
@@ -981,6 +985,7 @@ if page == "💬 对话":
                 real_path = os.path.realpath(msg["deliverable_path"])
                 if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
                     continue
+                file_content = None
                 if os.path.exists(real_path):
                     col_dl, col_info = st.columns([1, 3])
                     with col_dl:
@@ -994,11 +999,12 @@ if page == "💬 对话":
                         key=f"dl_{msg.get('deliverable_id', id(msg))}",
                         use_container_width=True,
                     )
-                with col_info:
-                    size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
-                    st.caption(
-                        f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
-                    )
+                if file_content is not None:
+                    with col_info:
+                        size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
+                        st.caption(
+                            f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
+                        )
 
     if len(st.session_state.messages) == 0:
         with st.container():
@@ -1085,7 +1091,7 @@ if page == "💬 对话":
                 (50, 60, "📦 交付准备", "生成可下载文件..."),
             ]
 
-            max_polls = 180
+            max_polls = 60
             poll_interval = 1.0
             start_time = time.time()
             progress_placeholder = st.empty()

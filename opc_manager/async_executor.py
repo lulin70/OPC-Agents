@@ -360,6 +360,7 @@ class AsyncTaskExecutor:
             task.cancel_event.set()
             task.status = TaskStatus.CANCELLED
             task.completed_at = time.time()
+            task.last_error = f"Cancelled at {time.strftime('%Y-%m-%dT%H:%M:%S')}"
 
         logger.info("[AsyncTaskExecutor] Cancel signal sent: %s", task_id)
 
@@ -442,6 +443,13 @@ class AsyncTaskExecutor:
                 task.started_at = time.time()
 
             logger.info("[AsyncTaskExecutor] Started execution: %s", task_id)
+
+            if task.cancel_event.is_set():
+                with self._lock:
+                    task.status = TaskStatus.CANCELLED
+                    task.completed_at = time.time()
+                logger.info("[AsyncTaskExecutor] Task cancelled before execution: %s", task_id)
+                return
 
             result = execute_func(
                 prompt=task.prompt, cancel_event=task.cancel_event, **kwargs
@@ -617,6 +625,18 @@ class AsyncTaskExecutor:
             with self._lock:
                 if task.status != TaskStatus.RETRYING:
                     return
+                running_count = sum(
+                    1 for t in self._tasks.values() if t.status == TaskStatus.RUNNING
+                )
+                if running_count >= self.max_concurrent:
+                    task.status = TaskStatus.PENDING
+                    task.completed_at = None
+                    task.error_message = None
+                    logger.info(
+                        "[AsyncTaskExecutor] Retry deferred for %s: concurrency limit reached (%d/%d)",
+                        task.task_id, running_count, self.max_concurrent,
+                    )
+                    return
                 task.status = TaskStatus.PENDING
                 task.completed_at = None
                 task.error_message = None
@@ -728,6 +748,7 @@ class AsyncTaskExecutor:
                     return
 
             active_count = 0
+            recovered_tasks = []
             for task_data in data.get("tasks", []):
                 status_str = task_data.get("status", "")
                 if status_str in ("pending", "running", "retrying"):
@@ -741,8 +762,11 @@ class AsyncTaskExecutor:
                         error_message="Recovered from crash (previous state: {})".format(status_str),
                     )
                     self._tasks[task.task_id] = task
-                    self._schedule_retry(task)
+                    recovered_tasks.append(task)
                     active_count += 1
+
+            for task in recovered_tasks:
+                self._schedule_retry(task)
 
             if active_count > 0:
                 logger.info(

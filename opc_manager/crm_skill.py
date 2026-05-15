@@ -24,10 +24,10 @@ def _decrypt_customer_fields(customer: Dict[str, Any]) -> Dict[str, Any]:
     result = dict(customer)
     if result.get("phone"):
         decrypted = decrypt_field(result["phone"])
-        result["phone"] = decrypted if decrypted is not None else "[DECRYPT_FAILED]"
+        result["phone"] = decrypted if decrypted is not None else "[PROTECTED]"
     if result.get("email"):
         decrypted = decrypt_field(result["email"])
-        result["email"] = decrypted if decrypted is not None else "[DECRYPT_FAILED]"
+        result["email"] = decrypted if decrypted is not None else "[PROTECTED]"
     return result
 
 
@@ -179,6 +179,40 @@ def get_customer_stats() -> Dict[str, Any]:
     }
 
 
+def add_follow_up(customer_id: str, content: str, follow_date: str = "") -> Dict[str, Any]:
+    if not customer_id.strip():
+        return {"success": False, "error": "客户ID不能为空"}
+    if not content.strip():
+        return {"success": False, "error": "跟进内容不能为空"}
+    if not follow_date:
+        follow_date = time.strftime("%Y-%m-%d")
+    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    follow_up_id = gen_id()
+    try:
+        execute_write(
+            "INSERT INTO follow_ups (id,customer_id,content,follow_date,created_at) VALUES (?,?,?,?,?)",
+            (follow_up_id, customer_id, content, follow_date, now),
+        )
+        execute_write(
+            "UPDATE customers SET last_contact=? WHERE id=?",
+            (now, customer_id),
+        )
+        AuditLogger.log("crm_follow_up_added", {"id": follow_up_id, "customer_id": customer_id})
+        return {"success": True, "id": follow_up_id, "message": f"跟进记录已添加: {content[:30]}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def get_follow_ups(customer_id: str) -> Dict[str, Any]:
+    if not customer_id.strip():
+        return {"success": False, "error": "客户ID不能为空"}
+    rows = execute_query(
+        "SELECT * FROM follow_ups WHERE customer_id=? ORDER BY follow_date DESC",
+        (customer_id,),
+    )
+    return {"success": True, "follow_ups": rows, "count": len(rows)}
+
+
 def _parse_customer_from_text(text: str) -> Dict[str, Any]:
     result = {"name": "", "company": "", "phone": "", "email": "", "source": "", "tags": ""}
 
@@ -217,6 +251,18 @@ def _parse_customer_from_text(text: str) -> Dict[str, Any]:
 
 def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
+    if any(kw in goal for kw in ["跟进"]):
+        name = goal
+        for kw in ["跟进", "帮我", "的", "客户"]:
+            name = name.replace(kw, "")
+        name = name.strip().strip("，。、的")
+        if name:
+            result = get_customer(name=name)
+            if result.get("success") and result.get("customer"):
+                customer_id = result["customer"]["id"]
+                return add_follow_up(customer_id, content=f"跟进{name}")
+        return {"success": False, "error": "请指定客户名称，如：跟进张总"}
+
     if any(kw in goal for kw in ["沉默", "没联系", "超过"]):
         return get_silent_customers()
 

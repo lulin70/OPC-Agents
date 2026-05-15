@@ -38,9 +38,7 @@ def add_competitor(name: str, url: str = "", keywords: str = "",
 def list_competitors() -> Dict[str, Any]:
     try:
         rows = execute_query(
-            "SELECT c.*, COUNT(cs.id) as snapshot_count, MAX(cs.created_at) as last_snapshot "
-            "FROM competitors c LEFT JOIN competitor_snapshots cs ON c.id=cs.competitor_id "
-            "GROUP BY c.id ORDER BY c.created_at DESC"
+            "SELECT * FROM competitors ORDER BY created_at DESC"
         )
     except Exception as e:
         logger.warning("competitor_skill.list_competitors query failed: %s", e)
@@ -51,6 +49,12 @@ def list_competitors() -> Dict[str, Any]:
         c = dict(row)
         keywords_str = c.get("keywords", "")
         c["keywords"] = keywords_str.split("、") if keywords_str else []
+        snapshots = execute_query(
+            "SELECT id, created_at FROM competitor_snapshots WHERE competitor_id=?",
+            (c["id"],),
+        )
+        c["snapshot_count"] = len(snapshots)
+        c["last_snapshot"] = snapshots[0]["created_at"] if snapshots else None
         competitors.append(c)
 
     return {"success": True, "competitors": competitors, "count": len(competitors)}
@@ -160,7 +164,15 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         return get_competitor_report()
 
     if any(kw in goal for kw in ["记录", "动态", "变化", "更新"]):
-        return {"success": False, "error": "请指定竞品ID来记录动态"}
+        name = goal
+        for kw in ["帮我记录", "记录竞品", "记录", "的动态", "的变化", "的更新", "动态", "变化", "更新"]:
+            name = name.replace(kw, "")
+        name = name.strip().strip("，。、的")
+        if name:
+            rows = execute_query("SELECT id FROM competitors WHERE name=?", (name,))
+            if rows:
+                return record_snapshot(rows[0]["id"], changes=goal)
+        return {"success": False, "error": "请指定竞品名称来记录动态（如：记录XX竞品的动态）"}
 
     if any(kw in goal for kw in ["删除", "移除"]):
         return {"success": False, "error": "请指定竞品ID来移除"}

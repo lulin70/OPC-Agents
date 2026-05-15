@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 ESTIMATED_TIME_PER_STEP = 30
 
+_cached_user_profile = None
+_cached_marketplace = None
+
 
 class ConstraintType(Enum):
     """约束类型枚举"""
@@ -213,7 +216,7 @@ class StrategistBrain:
             constraints = []
             for c_str in data.get("constraints", []):
                 constraints.append(Constraint(
-                    type=ConstraintType.SCOPE,
+                    type=self._infer_constraint_type(c_str),
                     value=None,
                     description=c_str
                 ))
@@ -232,10 +235,12 @@ class StrategistBrain:
             return None
 
     def _fallback_to_external(self, user_input: str, goal: str) -> Optional[Dict[str, Any]]:
+        global _cached_user_profile, _cached_marketplace
         try:
             from opc_manager.user_profile import UserProfile
-            profile = UserProfile()
-            preferred = profile.get_preference(f"preferred_skill:{user_input[:20]}")
+            if _cached_user_profile is None:
+                _cached_user_profile = UserProfile()
+            preferred = _cached_user_profile.get_preference(f"preferred_skill:{user_input[:20]}")
             if preferred:
                 return {
                     "goal": goal,
@@ -246,8 +251,9 @@ class StrategistBrain:
 
         try:
             from opc_manager.skill_marketplace import ExternalSkillMarketplace
-            marketplace = ExternalSkillMarketplace()
-            search_result = marketplace.search_skills(user_input)
+            if _cached_marketplace is None:
+                _cached_marketplace = ExternalSkillMarketplace()
+            search_result = _cached_marketplace.search_skills(user_input)
             if search_result.get("success") and search_result.get("results"):
                 best_match = search_result["results"][0]
                 return {
@@ -264,19 +270,10 @@ class StrategistBrain:
         return None
 
     def _detect_intent_type(self, user_input: str) -> IntentType:
-        """
-        检测意图类型
-        
-        Args:
-            user_input: 用户输入文本
-        
-        Returns:
-            IntentType: 意图类型
-        """
-        # 检查组合任务（包含多个类型关键词）
         matched_types = []
         for intent_type, keywords in self.intent_keywords.items():
-            for keyword in keywords:
+            sorted_keywords = sorted(keywords, key=len, reverse=True)
+            for keyword in sorted_keywords:
                 if keyword in user_input:
                     matched_types.append(intent_type)
                     break
@@ -318,10 +315,26 @@ class StrategistBrain:
 
     def _detect_single_intent_type(self, text: str) -> IntentType:
         for intent_type, keywords in self.intent_keywords.items():
-            for keyword in keywords:
+            sorted_keywords = sorted(keywords, key=len, reverse=True)
+            for keyword in sorted_keywords:
                 if keyword in text:
                     return intent_type
         return IntentType.UNKNOWN
+
+    def _infer_constraint_type(self, constraint_text: str) -> ConstraintType:
+        schedule_keywords = ["时间", "日期", "截止", "时限", "期限", "按时", "尽快", "今天", "本周", "明天"]
+        budget_keywords = ["预算", "费用", "成本", "花费", "金额", "价格", "开销"]
+        quality_keywords = ["质量", "标准", "要求", "规范", "精度", "准确", "可靠"]
+        for kw in schedule_keywords:
+            if kw in constraint_text:
+                return ConstraintType.TIME
+        for kw in budget_keywords:
+            if kw in constraint_text:
+                return ConstraintType.BUDGET
+        for kw in quality_keywords:
+            if kw in constraint_text:
+                return ConstraintType.SCOPE
+        return ConstraintType.SCOPE
 
     def _extract_constraints(self, user_input: str) -> List[Constraint]:
         """
@@ -368,13 +381,21 @@ class StrategistBrain:
         """
         # 简单的目标提取：移除常见前缀词
         prefixes_to_remove = ["帮我", "请帮我", "我想", "我需要", "能不能"]
-        
+        suffix_particles = ["吧", "呢", "吗", "啊", "呀", "哦"]
+        complex_patterns = [("能不能帮我", ""), ("请帮我", "")]
+
         goal = user_input.strip()
+        for pattern, replacement in complex_patterns:
+            if goal.startswith(pattern):
+                goal = replacement + goal[len(pattern):].strip()
+                break
         for prefix in prefixes_to_remove:
             if goal.startswith(prefix):
                 goal = goal[len(prefix):].strip()
                 break
-        
+        while goal and goal[-1] in suffix_particles:
+            goal = goal[:-1].strip()
+
         return goal
 
     def _calculate_confidence(self, user_input: str, intent_type: IntentType) -> float:
@@ -622,9 +643,19 @@ class StrategistBrain:
 
     def from_dict(self, data: Dict[str, Any]) -> None:
         if "intent_keywords" in data:
-            self.intent_keywords = {getattr(IntentType, k): v for k, v in data["intent_keywords"].items()}
+            parsed = {}
+            for k, v in data["intent_keywords"].items():
+                val = getattr(IntentType, k, None)
+                if val is not None:
+                    parsed[val] = v
+            self.intent_keywords = parsed
         if "constraint_keywords" in data:
-            self.constraint_keywords = {getattr(ConstraintType, k): v for k, v in data["constraint_keywords"].items()}
+            parsed = {}
+            for k, v in data["constraint_keywords"].items():
+                val = getattr(ConstraintType, k, None)
+                if val is not None:
+                    parsed[val] = v
+            self.constraint_keywords = parsed
 
     def express_opinion(self, context: Dict[str, Any]) -> Dict[str, Any]:
         intent = context.get("intent")

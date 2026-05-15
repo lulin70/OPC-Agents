@@ -109,6 +109,12 @@ def send_email(to: str, subject: str, body: str,
     if len(body.encode("utf-8")) > MAX_BODY_SIZE:
         return {"success": False, "error": f"邮件正文超过大小限制({MAX_BODY_SIZE // 1024}KB)"}
 
+    if template_name:
+        tpl = get_template(template_name)
+        if tpl:
+            subject = subject or tpl["subject"]
+            body = body or tpl["body"]
+
     config = _get_smtp_config()
     if not config:
         return {"success": False, "error": "邮件未配置，请先运行邮件配置向导"}
@@ -292,6 +298,13 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     if to:
         subject = subject or f"关于{goal}"
         body = body or goal
+        if body == goal:
+            cleaned = body
+            for pattern in [r'给.+?(发邮件|写信|发信|发一封|回邮件|邮件)', r'发一封邮件', r'发邮件', r'写信给.*?$', r'帮我']:
+                cleaned = re.sub(pattern, '', cleaned)
+            cleaned = cleaned.strip().strip("，。、的")
+            if cleaned:
+                body = cleaned
         return send_email(to, subject, body)
 
     return {"success": False, "error": "请提供收件人地址或姓名（如：给张三发邮件），请先在CRM中录入客户邮箱"}

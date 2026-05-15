@@ -176,7 +176,7 @@ def _generate_title(platform: str, topic: str, cfg: dict) -> str:
         return ""
     elif platform == "微博":
         return ""
-    return topic
+    return f"【{topic}】一人公司实战分享：请在此补充关于{topic}的核心观点、实操方法和注意事项。建议从以下角度展开：1) 为什么{topic}对一人公司重要；2) 具体执行步骤和工具推荐；3) 常见误区和避坑建议。"
 
 
 def _generate_body(platform: str, topic: str, key_points: str, style: str, cfg: dict) -> str:
@@ -279,8 +279,20 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     if any(kw in goal for kw in ["草稿", "列表", "有哪些"]):
         return list_drafts(platform=platform)
 
-    if any(kw in goal for kw in ["已发", "发布完成"]):
-        return {"success": False, "error": "请提供内容ID来标记发布"}
+    if any(kw in goal for kw in ["已发", "发布完成", "已发布"]):
+        platform_name = platform
+        name = goal
+        for kw in ["已发", "发布完成", "已发布", platform_name, "的", "内容", "帖子", "文章"]:
+            name = name.replace(kw, "")
+        name = name.strip().strip("，。、的")
+        if name:
+            rows = execute_query(
+                "SELECT id FROM social_content WHERE platform=? AND topic LIKE ? AND status='draft' ORDER BY created_at DESC LIMIT 1",
+                (platform_name, f"%{name}%"),
+            )
+            if rows:
+                return mark_published(rows[0]["id"])
+        return {"success": False, "error": "请提供内容ID来标记发布，或指定更明确的主题关键词"}
 
     topic = _extract_topic(goal, platform)
 

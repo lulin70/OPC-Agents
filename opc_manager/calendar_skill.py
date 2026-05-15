@@ -23,8 +23,8 @@ def add_event(title: str, date: str, time_str: str = "",
 
     try:
         execute_write(
-            "INSERT INTO calendar_events (id,title,event_date,event_time,reminder_min,status,created_at) VALUES (?,?,?,?,?,?,?)",
-            (event_id, title, date, time_str, reminder_min, "active", now),
+            "INSERT INTO calendar_events (id,title,event_date,event_time,duration_min,description,repeat,reminder_min,status,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (event_id, title, date, time_str, duration_min, description, repeat, reminder_min, "active", now),
         )
     except Exception as e:
         logger.warning("calendar_skill.add_event write failed: %s", e)
@@ -58,9 +58,9 @@ def get_day_schedule(date: str = "") -> Dict[str, Any]:
         e = dict(row)
         e["date"] = e["event_date"]
         e["time"] = e["event_time"]
-        e["duration_min"] = 60
-        e["description"] = ""
-        e["repeat"] = ""
+        e["duration_min"] = e.get("duration_min", 60)
+        e["description"] = e.get("description", "")
+        e["repeat"] = e.get("repeat", "")
         e["status"] = e.get("status", "active")
         events.append(e)
 
@@ -100,14 +100,68 @@ def get_week_schedule(start_date: str = "") -> Dict[str, Any]:
             e = dict(row)
             e["date"] = e["event_date"]
             e["time"] = e["event_time"]
-            e["duration_min"] = 60
-            e["description"] = ""
-            e["repeat"] = ""
+            e["duration_min"] = e.get("duration_min", 60)
+            e["description"] = e.get("description", "")
+            e["repeat"] = e.get("repeat", "")
             e["status"] = e.get("status", "active")
             events.append(e)
         days.append({"success": True, "date": day_str, "events": events, "count": len(events)})
 
     return {"success": True, "start_date": start_date, "days": days}
+
+
+def get_month_schedule(year_month: str = "") -> Dict[str, Any]:
+    from datetime import datetime, timedelta
+
+    if not year_month:
+        year_month = time.strftime("%Y-%m")
+
+    try:
+        start = datetime.strptime(year_month, "%Y-%m")
+    except ValueError:
+        return {"success": False, "error": f"月份格式无效: {year_month}，请用YYYY-MM"}
+
+    if start.month == 12:
+        end = datetime(start.year + 1, 1, 1)
+    else:
+        end = datetime(start.year, start.month + 1, 1)
+
+    start_str = start.strftime("%Y-%m-%d")
+    end_str = (end - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    try:
+        all_rows = execute_query(
+            "SELECT * FROM calendar_events WHERE event_date BETWEEN ? AND ? AND status!='cancelled' ORDER BY event_date, event_time",
+            (start_str, end_str),
+        )
+    except Exception as e:
+        logger.warning("calendar_skill.get_month_schedule query failed: %s", e)
+        return {"success": True, "year_month": year_month, "days": []}
+
+    rows_by_date: Dict[str, list] = {}
+    for row in all_rows:
+        d_key = row["event_date"]
+        rows_by_date.setdefault(d_key, []).append(row)
+
+    days = []
+    current = start
+    while current < end:
+        day_str = current.strftime("%Y-%m-%d")
+        day_rows = rows_by_date.get(day_str, [])
+        events = []
+        for row in day_rows:
+            e = dict(row)
+            e["date"] = e["event_date"]
+            e["time"] = e["event_time"]
+            e["duration_min"] = e.get("duration_min", 60)
+            e["description"] = e.get("description", "")
+            e["repeat"] = e.get("repeat", "")
+            e["status"] = e.get("status", "active")
+            events.append(e)
+        days.append({"date": day_str, "events": events, "count": len(events)})
+        current += timedelta(days=1)
+
+    return {"success": True, "year_month": year_month, "days": days, "total_events": len(all_rows)}
 
 
 def cancel_event(event_id: str) -> Dict[str, Any]:
@@ -155,9 +209,9 @@ def get_upcoming_reminders(minutes_ahead: int = 60) -> Dict[str, Any]:
             if 0 <= diff <= minutes_ahead + reminder_min:
                 e["date"] = e["event_date"]
                 e["time"] = e["event_time"]
-                e["duration_min"] = 60
-                e["description"] = ""
-                e["repeat"] = ""
+                e["duration_min"] = e.get("duration_min", 60)
+                e["description"] = e.get("description", "")
+                e["repeat"] = e.get("repeat", "")
                 reminders.append({**e, "minutes_until": diff})
         except (ValueError, AttributeError):
             continue
@@ -173,6 +227,9 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
 
     if any(kw in goal for kw in ["本周", "这周", "周安排"]):
         return get_week_schedule()
+
+    if any(kw in goal for kw in ["本月", "这个月", "月安排", "月视图"]):
+        return get_month_schedule()
 
     if any(kw in goal for kw in ["取消", "删除"]):
         return {"success": False, "error": "请提供日程ID来取消"}

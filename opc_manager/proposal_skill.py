@@ -98,7 +98,7 @@ def update_proposal_status(proposal_id: str, status: str) -> Dict[str, Any]:
     if status not in valid:
         return {"success": False, "error": f"无效状态: {status}"}
 
-    rows = execute_query("SELECT id FROM proposals WHERE id=?", (proposal_id,))
+    rows = execute_query("SELECT * FROM proposals WHERE id=?", (proposal_id,))
     if not rows:
         return {"success": False, "error": f"报价单不存在: {proposal_id}"}
 
@@ -112,6 +112,20 @@ def update_proposal_status(proposal_id: str, status: str) -> Dict[str, Any]:
         return {"success": False, "error": f"更新失败: {e}"}
 
     AuditLogger.log("proposal_status_changed", {"id": proposal_id, "status": status})
+
+    if status == "accepted":
+        try:
+            from opc_manager.invoice_skill import create_invoice
+            proposal = rows[0]
+            invoice_result = create_invoice(
+                client_name=proposal["client_name"],
+                amount=proposal["total"],
+                proposal_id=proposal_id,
+            )
+            logger.info("auto invoice created for accepted proposal %s: %s", proposal_id, invoice_result.get("id", ""))
+        except Exception as e:
+            logger.warning("auto create_invoice failed: %s", e)
+
     return {"success": True, "message": f"报价单状态已更新为: {status}"}
 
 

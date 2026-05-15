@@ -70,9 +70,10 @@ def calculate_pricing(method: str, service_type: str = "通用",
     elif method == "价值定价":
         if cost <= 0:
             return {"success": False, "error": "价值定价法需要提供cost参数(作为最低参考)"}
-        margin = cfg["default_margin"]
-        price = cost * (1 + margin)
-        result.update({"base_cost": cost, "value_multiplier": f"{1+margin:.1f}x", "price": round(price, 2)})
+        value_multiplier = cfg["default_margin"] + 1.0
+        perceived_value = cost * 2.5
+        price = perceived_value * value_multiplier
+        result.update({"base_cost": cost, "perceived_value": round(perceived_value, 2), "value_multiplier": f"{value_multiplier:.1f}x", "price": round(price, 2)})
 
     elif method == "竞争定价":
         if market_avg <= 0:

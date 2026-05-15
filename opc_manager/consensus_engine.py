@@ -20,6 +20,7 @@ COMPROMISE_CONFIDENCE_FACTOR = 0.8
 ESCALATED_CONFIDENCE = 0.5
 VETO_CONFIDENCE = 0.7
 NO_CONSENSUS_CONFIDENCE = 0.4
+VETO_MIN_CONFIDENCE = 0.5
 
 
 class OpinionType(Enum):
@@ -71,6 +72,7 @@ class ConsensusEngine:
             "reflector": True
         }
         self._decision_log: List[Dict[str, Any]] = []
+        self._load_decision_log_from_db()
 
     def collect_opinions(self, opinions: List[Opinion]) -> Decision:
         """
@@ -160,7 +162,8 @@ class ConsensusEngine:
         """
         for opinion in opinions:
             if (opinion.opinion_type == OpinionType.DISAGREE and
-                self.veto_enabled.get(opinion.brain_type, False)):
+                self.veto_enabled.get(opinion.brain_type, False) and
+                opinion.confidence >= VETO_MIN_CONFIDENCE):
                 return opinion
         return None
 
@@ -328,15 +331,49 @@ class ConsensusEngine:
 
     def _log_decision(self, opinions: List[Opinion], decision: Decision) -> None:
         import time as _time
-        self._decision_log.append({
+        import json as _json
+        entry = {
             "timestamp": _time.time(),
             "opinion_count": len(opinions),
             "decision_type": decision.decision_type.value,
             "approved": decision.approved,
             "confidence": decision.confidence,
-        })
+        }
+        self._decision_log.append(entry)
         if len(self._decision_log) > self.MAX_LOG_SIZE:
             self._decision_log = self._decision_log[-self.MAX_LOG_SIZE:]
+        try:
+            from opc_manager.data_manager import execute_write, init_db, gen_id
+            init_db()
+            execute_write(
+                "INSERT INTO consensus_decisions (id, timestamp, opinion_count, decision_type, approved, confidence, detail) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (gen_id(), entry["timestamp"], entry["opinion_count"], entry["decision_type"],
+                 int(entry["approved"]), entry["confidence"], _json.dumps(entry, ensure_ascii=False))
+            )
+        except Exception as e:
+            logger.warning("决策日志持久化失败: %s", e)
+
+    def _load_decision_log_from_db(self) -> None:
+        try:
+            from opc_manager.data_manager import execute_query, init_db
+            init_db()
+            rows = execute_query(
+                "SELECT timestamp, opinion_count, decision_type, approved, confidence FROM consensus_decisions ORDER BY timestamp DESC LIMIT ?",
+                (self.MAX_LOG_SIZE,)
+            )
+            if rows:
+                self._decision_log = [
+                    {
+                        "timestamp": row["timestamp"],
+                        "opinion_count": row["opinion_count"],
+                        "decision_type": row["decision_type"],
+                        "approved": bool(row["approved"]),
+                        "confidence": row["confidence"],
+                    }
+                    for row in reversed(rows)
+                ]
+        except Exception as e:
+            logger.debug("加载历史决策日志失败(表可能不存在): %s", e)
 
     def get_decision_log(self, limit: int = 100) -> List[Dict[str, Any]]:
         return self._decision_log[-limit:]

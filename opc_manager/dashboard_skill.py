@@ -23,7 +23,7 @@ def get_overview() -> Dict[str, Any]:
     finance = get_monthly_report(year_month)
     crm_stats = get_customer_stats()
     silent = get_silent_customers()
-    tasks_result = list_tasks()
+    tasks_result = list_tasks(status="all")
 
     pending_tasks = [t for t in tasks_result.get("tasks", []) if t.get("status") in ("pending", "in_progress")]
     overdue_tasks = [t for t in pending_tasks if t.get("due_date") and t["due_date"] < now]
@@ -96,7 +96,7 @@ def get_crm_dashboard() -> Dict[str, Any]:
 
 def get_task_dashboard() -> Dict[str, Any]:
     init_db()
-    tasks_result = list_tasks()
+    tasks_result = list_tasks(status="all")
     now = time.strftime("%Y-%m-%d")
 
     all_tasks = tasks_result.get("tasks", [])

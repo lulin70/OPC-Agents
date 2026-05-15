@@ -90,7 +90,7 @@ class TestPricingSkill(unittest.TestCase):
 
         result = calculate_pricing("价值定价", cost=5000)
         self.assertTrue(result["success"])
-        self.assertEqual(result["price"], 7500.0)
+        self.assertEqual(result["price"], 18750.0)
 
     def test_calculate_competition_pricing(self):
         from opc_manager.pricing_skill import calculate_pricing

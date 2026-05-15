@@ -5,35 +5,14 @@ from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
-from opc_manager.utils import load_json_data
+from opc_manager.tax_reminder_skill import get_tax_calendar, TAX_CALENDAR
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_TAX_CALENDAR = [
-    {"month": 1, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 2, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 3, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 4, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 4, "deadline": 30, "task": "企业所得税汇算清缴", "type": "企业所得税"},
-    {"month": 5, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 6, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 7, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 8, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 9, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 10, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 10, "deadline": 31, "task": "个人所得税汇算清缴", "type": "个人所得税"},
-    {"month": 11, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-    {"month": 12, "deadline": 15, "task": "增值税申报", "type": "增值税"},
-]
-
-try:
-    TAX_CALENDAR = load_json_data("data/knowledge/tax_calendar.json")
-except Exception:
-    TAX_CALENDAR = _DEFAULT_TAX_CALENDAR
-
 
 def create_invoice(client_name: str, amount: float, item: str = "服务费",
-                   tax_rate: float = 0.06, invoice_type: str = "增值税普通发票") -> Dict[str, Any]:
+                   tax_rate: float = 0.06, invoice_type: str = "增值税普通发票",
+                   proposal_id: str = "") -> Dict[str, Any]:
     if amount <= 0:
         return {"success": False, "error": "金额必须大于0"}
     if not client_name.strip():
@@ -43,7 +22,14 @@ def create_invoice(client_name: str, amount: float, item: str = "服务费",
     total_with_tax = round(amount + tax_amount, 2)
     invoice_id = gen_id()
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
-    invoice_no = f"OPC{time.strftime('%Y%m%d')}{invoice_id}"
+    today_str = time.strftime("%Y%m%d")
+    today_start = time.strftime("%Y-%m-%d")
+    existing = execute_query(
+        "SELECT invoice_no FROM invoices WHERE created_at >= ? AND created_at < ?",
+        (today_start, time.strftime("%Y-%m-%d", time.localtime(time.time() + 86400))),
+    )
+    seq = len(existing) + 1
+    invoice_no = f"OPC{today_str}{seq:04d}"
 
     invoice = {
         "id": invoice_id,
@@ -63,8 +49,8 @@ def create_invoice(client_name: str, amount: float, item: str = "服务费",
 
     try:
         execute_write(
-            "INSERT INTO invoices (id,invoice_no,client_name,amount,item,tax_rate,tax_amount,total_with_tax,status,markdown,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (invoice_id, invoice_no, client_name, amount, item, tax_rate, tax_amount, total_with_tax, "pending", markdown, now),
+            "INSERT INTO invoices (id,invoice_no,client_name,amount,item,tax_rate,tax_amount,total_with_tax,proposal_id,status,markdown,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (invoice_id, invoice_no, client_name, amount, item, tax_rate, tax_amount, total_with_tax, proposal_id, "pending", markdown, now),
         )
     except Exception as e:
         logger.warning("invoice_skill.create_invoice write failed: %s", e)
@@ -84,6 +70,26 @@ def create_invoice(client_name: str, amount: float, item: str = "服务费",
     }
 
 
+def update_invoice_status(invoice_id: str, status: str) -> Dict[str, Any]:
+    valid_statuses = {"issued", "paid", "cancelled"}
+    if status not in valid_statuses:
+        return {"success": False, "error": f"无效状态: {status}，支持: {', '.join(sorted(valid_statuses))}"}
+    rows = execute_query("SELECT * FROM invoices WHERE id=?", (invoice_id,))
+    if not rows:
+        return {"success": False, "error": f"发票不存在: {invoice_id}"}
+    try:
+        execute_write(
+            "UPDATE invoices SET status=? WHERE id=?",
+            (status, invoice_id),
+        )
+    except Exception as e:
+        logger.warning("invoice_skill.update_invoice_status update failed: %s", e)
+        return {"success": False, "error": f"更新失败: {e}"}
+    record = dict(rows[0])
+    AuditLogger.log("invoice_status_updated", {"id": invoice_id, "status": status})
+    return {"success": True, "message": f"发票 {record.get('invoice_no', invoice_id)} 状态已更新为: {status}"}
+
+
 def list_invoices(status: str = "") -> Dict[str, Any]:
     try:
         if status:
@@ -99,27 +105,6 @@ def list_invoices(status: str = "") -> Dict[str, Any]:
 
     invoices = [dict(row) for row in rows]
     return {"success": True, "invoices": invoices, "count": len(invoices)}
-
-
-def get_tax_calendar(month: int = 0) -> Dict[str, Any]:
-    if month == 0:
-        month = int(time.strftime("%m"))
-    entries = [e for e in TAX_CALENDAR if e["month"] == month]
-    upcoming = []
-    for e in entries:
-        deadline_str = f"{time.strftime('%Y')}-{month:02d}-{e['deadline']:02d}"
-        remaining = (time.strptime(deadline_str, "%Y-%m-%d").tm_yday - time.localtime().tm_yday)
-        upcoming.append({**e, "deadline_date": deadline_str, "days_remaining": remaining})
-
-    next_month = month + 1 if month < 12 else 1
-    next_entries = [e for e in TAX_CALENDAR if e["month"] == next_month]
-
-    return {
-        "success": True,
-        "current_month": month,
-        "this_month": upcoming,
-        "next_month": next_entries,
-    }
 
 
 def _render_invoice_md(invoice: dict) -> str:

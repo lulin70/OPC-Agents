@@ -139,6 +139,9 @@ def parse_amount_from_text(text: str) -> Optional[float]:
             return float(m.group(1))
     m = re.search(r'(\d+\.?\d*)', text)
     if m:
+        after = text[m.end():].lstrip()
+        if after and after[0] in '月年号日':
+            return None
         return float(m.group(1))
     return None
 
@@ -150,10 +153,17 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     if any(kw in goal for kw in ["记账", "记一笔", "入账"]):
         if amount and amount > 0:
             source = re.sub(r'[¥￥]?\s*\d+\.?\d*\s*[元块]?', '', goal)
-            for kw in ["记账", "记一笔", "入账", "收入", "帮我", "的"]:
-                source = source.replace(kw, "")
-            source = source.strip().strip("，。、的") or "未注明来源"
-            return record_income(amount, source)
+            is_expense = any(kw in goal for kw in ["支出", "花费", "开销", "成本", "费用"])
+            if is_expense:
+                for kw in ["记账", "记一笔", "入账", "支出", "花费", "开销", "成本", "费用", "帮我", "的"]:
+                    source = source.replace(kw, "")
+                source = source.strip().strip("，。、的") or "未注明用途"
+                return record_expense(amount, source)
+            else:
+                for kw in ["记账", "记一笔", "入账", "收入", "帮我", "的"]:
+                    source = source.replace(kw, "")
+                source = source.strip().strip("，。、的") or "未注明来源"
+                return record_income(amount, source)
         return {"success": False, "error": "请指定记账金额，如：记账3000元咨询费"}
 
     if any(kw in goal for kw in ["收入", "赚", "收到", "到账", "付款"]):

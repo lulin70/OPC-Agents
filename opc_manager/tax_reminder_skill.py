@@ -3,10 +3,53 @@ import time
 from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
-from opc_manager.invoice_skill import get_tax_calendar, TAX_CALENDAR
 from opc_manager.tool_system import AuditLogger
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_TAX_CALENDAR = [
+    {"month": 1, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 2, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 3, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 4, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 4, "deadline": 30, "task": "企业所得税汇算清缴", "type": "企业所得税"},
+    {"month": 5, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 6, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 7, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 8, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 9, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 10, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 10, "deadline": 31, "task": "个人所得税汇算清缴", "type": "个人所得税"},
+    {"month": 11, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+    {"month": 12, "deadline": 15, "task": "增值税申报", "type": "增值税"},
+]
+
+try:
+    from opc_manager.utils import load_json_data
+    TAX_CALENDAR = load_json_data("data/knowledge/tax_calendar.json")
+except Exception:
+    TAX_CALENDAR = _DEFAULT_TAX_CALENDAR
+
+
+def get_tax_calendar(month: int = 0) -> Dict[str, Any]:
+    if month == 0:
+        month = int(time.strftime("%m"))
+    entries = [e for e in TAX_CALENDAR if e["month"] == month]
+    upcoming = []
+    for e in entries:
+        deadline_str = f"{time.strftime('%Y')}-{month:02d}-{e['deadline']:02d}"
+        remaining = (time.strptime(deadline_str, "%Y-%m-%d").tm_yday - time.localtime().tm_yday)
+        upcoming.append({**e, "deadline_date": deadline_str, "days_remaining": remaining})
+
+    next_month = month + 1 if month < 12 else 1
+    next_entries = [e for e in TAX_CALENDAR if e["month"] == next_month]
+
+    return {
+        "success": True,
+        "current_month": month,
+        "this_month": upcoming,
+        "next_month": next_entries,
+    }
 
 
 def check_upcoming_deadlines(days_ahead: int = 30) -> Dict[str, Any]:

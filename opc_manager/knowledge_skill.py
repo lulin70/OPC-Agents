@@ -210,7 +210,9 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         query = goal
         for kw in ["帮我搜索", "帮我查找", "帮我找", "搜索", "查找"]:
             query = query.replace(kw, "")
-        query = query.strip().strip("，。、的") or goal
+        query = query.strip().strip("，。、的")
+        if not query:
+            query = goal
         return search_articles(query=query)
 
     if any(kw in goal for kw in ["删除"]):

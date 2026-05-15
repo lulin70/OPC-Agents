@@ -25,6 +25,12 @@ def create_task(title: str, description: str = "", priority: int = 2,
             (task_id, title, description, priority, "pending", due_date, tags, now),
         )
         AuditLogger.log("task_created", {"id": task_id, "title": title[:50]})
+        if due_date:
+            try:
+                from opc_manager.calendar_skill import add_event
+                add_event(title=f"任务截止: {title}", date=due_date, time_str="09:00")
+            except Exception as e:
+                logger.warning("auto sync calendar failed: %s", e)
         return {
             "success": True,
             "id": task_id,
@@ -64,14 +70,18 @@ def complete_task(task_id: str = "", title_keyword: str = "") -> Dict[str, Any]:
 _TASK_WHERE_COLUMNS = {"status", "due_date", "priority"}
 
 
-def list_tasks(status: str = "", due_date: str = "", priority_max: int = -1,
+def list_tasks(status: str = None, due_date: str = "", priority_max: int = -1,
                limit: int = 50) -> Dict[str, Any]:
     conditions = []
     params: list = []
-    if status:
+    if status == "all":
+        pass
+    elif status == "done":
+        conditions.append(("status", "=", "done"))
+    elif status:
         conditions.append(("status", "=", status))
     else:
-        conditions.append(("status", "IN", "('pending','in_progress')"))
+        conditions.append(("status", "NOT IN", "('done')"))
     if due_date:
         conditions.append(("due_date", "<=", due_date))
     if priority_max >= 0:
@@ -81,7 +91,7 @@ def list_tasks(status: str = "", due_date: str = "", priority_max: int = -1,
     for col, op, val in conditions:
         if col not in _TASK_WHERE_COLUMNS:
             continue
-        if op == "IN":
+        if op in ("IN", "NOT IN"):
             where_parts.append(f"{col} {op} {val}")
         else:
             where_parts.append(f"{col}{op}?")
@@ -119,7 +129,31 @@ def parse_priority_from_text(text: str) -> int:
 def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["完成", "做了", "搞定了", "交了"]):
-        return complete_task(title_keyword=goal)
+        keyword = goal
+        for kw in ["完成", "搞定了", "做完了", "帮我完成", "标记完成", "做了", "交了", "帮我", "的"]:
+            keyword = keyword.replace(kw, "")
+        keyword = keyword.strip().strip("，。、的") or goal
+        return complete_task(title_keyword=keyword)
+
+    if any(kw in goal for kw in ["完成率", "统计", "任务统计"]):
+        all_result = list_tasks(status="all")
+        done_result = list_tasks(status="done")
+        total = all_result.get("count", 0)
+        done_count = done_result.get("count", 0)
+        rate = round(done_count / total * 100, 1) if total > 0 else 0
+        overdue_rows = execute_query(
+            "SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('done','cancelled') AND due_date < ? AND due_date != ''",
+            (time.strftime("%Y-%m-%d"),),
+        )
+        overdue_count = overdue_rows[0]["cnt"] if overdue_rows else 0
+        return {
+            "success": True,
+            "total": total,
+            "done": done_count,
+            "overdue": overdue_count,
+            "completion_rate": rate,
+            "message": f"任务完成率: {done_count}/{total} ({rate}%)，逾期{overdue_count}项",
+        }
 
     if any(kw in goal for kw in ["今天", "今日", "待办列表", "要做什么", "还没做"]):
         return get_today_tasks()

@@ -18,7 +18,7 @@ import os
 import re
 import shlex
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class AuditLogger:
     @classmethod
     async def log_async(cls, event_type: str, details: Dict[str, Any]) -> None:
         record = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": event_type,
             "details": details,
         }
@@ -161,7 +161,7 @@ class AuditLogger:
     @classmethod
     def log(cls, event_type: str, details: Dict[str, Any]) -> None:
         record = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": event_type,
             "details": details,
         }

@@ -10,34 +10,48 @@ All notable changes to OPC-Agents will be documented in this file.
 - 外部技能市场（SkillMarketplace）：搜索、安装、管理第三方技能
 - MCP服务发现：搜索和连接MCP协议服务器
 - 用户画像（UserProfile）：偏好记录、使用模式分析、技能推荐
-- 技能间协作机制：CRM→Email、Finance→Tax、Deal→Income
+- 技能间协作机制：CRM→Email、Finance→Tax、Deal→Income、Deal→Email、Report→Calendar、Proposal→Email
 - AES加密：邮件密码、客户敏感字段加密存储
 - SQLite统一存储：所有数据迁移到SQLite，消除JSON双轨制
-- 数据库迁移机制：版本管理、安全升级
+- 数据库迁移机制：版本管理(v0→v5)，安全升级
 - 事务支持：execute_transaction() 原子操作
 - 用户偏好持久化：user_preferences表
 - 交互日志：interaction_log表
+- CRM跟进记录：follow_ups表，add_follow_up/get_follow_ups函数
+- 发票状态管理：update_invoice_status函数（issued/paid/cancelled）
+- 日历月视图：get_month_schedule函数
+- 任务完成率统计：execute_goal"完成率"分支
+- 任务到期日自动同步日历：create_task时due_date非空自动创建日程
+- 报价→发票自动转换：proposal accepted时自动创建invoice
+- 共识决策持久化：consensus_decisions表，决策日志写入SQLite
+- LLM Provider熔断降级：主provider失败自动切换备选provider，3次连续失败熔断
+- MCP路径接入SkillRegistry：MCP客户端可使用21个业务技能
 
 ### Security
 
 - 加密自动降级：`OPC_ENCRYPTION_KEY` 未设置时自动生成会话密钥并输出CRITICAL警告（而非崩溃）
+- CRM敏感字段加密：phone/email字段调用encrypt_field/decrypt_field
 - 外部技能沙箱隔离：UNVERIFIED信任等级技能禁止安装
 - 网络白名单：外部技能网络请求仅允许 `registry.opc-agents.dev`、`api.github.com`、`mcphub.io` 及其子域
 - SQL参数化：所有数据库操作使用参数化查询，防止SQL注入
 - STARTTLS强制：SMTP非SSL连接强制要求STARTTLS，不支持则拒绝发送
-- AES加密：邮件密码、客户手机号/邮箱加密存储
 - SQLite文件权限0600
 - MCP连接强制HTTPS
+- MCP空API_KEY安全警告
 - 信任等级体系（official/verified/community/unverified）
+- 否决权置信度阈值：VETO_MIN_CONFIDENCE=0.5，低置信度反对不再一票否决
 
 ### Architecture
 
 - intent_types.py独立模块：`IntentType`枚举、`INTENT_KEYWORDS`、`INTENT_STEP_MAP`、`SKILL_INTENT_MAP` 提取为SSOT
-- SkillRegistry单例模式：`__new__` 实现全局唯一实例，线程安全
+- SkillRegistry单例模式：双重检查锁定，线程安全
 - execute_goal委托：14个技能模块统一提供 `execute_goal(goal, _context, **kwargs)` 入口
-- BUSINESS_OPERATION TaskType：新增业务操作任务类型，email/finance/task/crm/invoice/calendar/tax_reminder路由至此
-- ExecutorBrain持有SkillRegistry：三贤者架构与21业务技能打通
+- BUSINESS_OPERATION TaskType：新增业务操作任务类型，TaskEngineV3路由到SkillRegistry
+- ExecutorBrain持有SkillRegistry：三贤者架构与21业务技能打通，skill_registry失败降级到task_engine_adapter
 - 协作数据管道：_execute_collaborative 维护 context_data 字典，下游技能获得上游结果
+- TaskEngineAdapter传递task_type_hint：映射后的task_type不再被忽略
+- data_manager线程安全：_db_init_lock保护初始化，threading.local()每线程独立连接
+- performance_monitor持久化：_load_metrics启动时加载，模块级变量导出
 
 ### Performance
 
@@ -45,14 +59,24 @@ All notable changes to OPC-Agents will be documented in this file.
 - get_week_schedule()：单查询BETWEEN替代7次逐日查询
 - generate_annual_report()：聚合查询 `GROUP BY ym, type` 替代逐月循环
 - send_email_async()：异步邮件发送，`run_in_executor` 非阻塞
+- AGENT_LOOP_TIMEOUT_SECONDS: 60→120秒，给搜索+LLM调用留足够时间
+- LLM总超时上限：LLM_TOTAL_TIMEOUT=90秒
+- LLM连接/读取超时分离：timeout=(10, timeout)元组形式
 
 ### Changed
 
-- gen_id()从12位扩展到16位（进一步降低碰撞风险）
+- gen_id()改用uuid.uuid4().hex[:16]，信息密度更高
 - 日志统一 `%s` 格式（loguru兼容）
 - 社媒平台配置外置为 `data/knowledge/social_platforms.json`
 - 定价基准外置为 `data/knowledge/pricing_benchmarks.json`
 - DATA_DIR统一由 `OPC_DATA_DIR` 环境变量控制，所有模块引用同一常量
+- backup_db保留数量从OPC_BACKUP_COUNT环境变量读取（默认7）
+- 税务日历数据从invoice_skill移到tax_reminder_skill（职责分离）
+- 价值定价法公式改为perceived_value * value_multiplier
+- 发票号格式改为OPC{YYYYMMDD}{4位序号}
+- datetime.utcnow()→datetime.now(timezone.utc)
+- SKILL_FALLBACK_MAP从3条扩展到19条
+- 反思脑TIMELY权重从0.1改为0.0（不再偏向快速低质量结果）
 
 ### Fixed — 7维代码审查修复（58项）
 
@@ -75,6 +99,47 @@ All notable changes to OPC-Agents will be documented in this file.
 - BL-11: Dashboard与Report关键词冲突解决（"经营状况"归Report）
 - BL-12: 财务报表支持指定月份（"3月报表"/"2025年6月报表"）
 - AgentLoop._enrich_step_parameters自动注入前序步骤data到output_result
+
+### Fixed — 技术债清零修复（66项）
+
+P0修复（12项）：
+- finance_skill"记账"区分收入/支出，parse_amount排除"3月/2024年"等非金额数字
+- task_skill complete_task剥离噪音关键词再匹配
+- report_skill周报/月报/年报正确获取done状态任务
+- calendar_events表添加duration_min/description/repeat列（DB v4迁移）
+- TaskEngineV3添加BUSINESS_OPERATION路由分支
+- reflector_brain中文关键词提取替代空格分词
+- consensus_engine否决权添加最低置信度阈值0.5
+- agent_loop重试保留成功步骤结果，skip_reflect添加质量检查
+- SkillRegistry单例双重检查锁定，data_manager加密字段实际调用
+- MCP路径接入SkillRegistry，frontend AgentLoop传入skill_registry
+- performance_monitor _load_metrics启动加载+模块级变量导出
+- LLM Provider熔断降级机制
+
+P1修复（34项）：
+- task→calendar到期日自动同步，list_tasks支持status过滤，完成率统计
+- proposal accepted→自动创建invoice，invoice添加proposal_id字段
+- CRM跟进记录功能（follow_ups表），report月报添加任务统计/年报添加成交统计
+- email模板渲染、body剥离指令性文字
+- agent_loop超时120秒、SKILL_FALLBACK_MAP扩展19条、降级标志处理、resume_task传递deadline
+- strategist_brain关键词长优先匹配、约束类型自动推断
+- executor_brain skill_registry失败降级到adapter
+- task_engine_adapter传递task_type_hint
+- data_manager线程安全（init锁+thread local连接）
+- LLM总超时+连接/读取超时分离
+- consensus决策日志持久化到SQLite
+- frontend atexit shutdown、save异常日志、file_content安全检查、轮询时间缩短
+- MCP空API_KEY警告、async_executor取消改进/重试并发检查/状态文件安全删除
+- competitor按名称查找、价值定价公式修正、税务日历职责分离、dashboard统计完整
+
+P2修复（20项）：
+- 删除死代码常量、共识日志改SQLite、_extract_goal处理后缀语气词和复杂句式
+- UserProfile/Marketplace缓存、from_dict安全getattr、execute_step超时控制
+- TIMELY权重中性、协作链扩展7条、register_skill允许版本升级覆盖
+- backup_db环境变量配置、gen_id改hex、task_engine_v3日志%s格式
+- datetime.utcnow弃用修复、competitor SQL简化、knowledge搜索词空回退
+- 发票号4位序号、发票状态更新、social fallback模板改进+发布标记自然语言
+- 日历月视图
 
 ## [0.1.9-delta] - 2026-05-09
 

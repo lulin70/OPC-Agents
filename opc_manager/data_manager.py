@@ -19,8 +19,9 @@ BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 
 _db_lock = threading.RLock()
 _local = threading.local()
-_db_version = 3
+_db_version = 5
 _db_initialized = False
+_db_init_lock = threading.Lock()
 
 _ENCRYPTION_KEY_ENV = "OPC_ENCRYPTION_KEY"
 _fallback_key = None
@@ -66,7 +67,7 @@ def decrypt_field(ciphertext: str) -> Optional[str]:
 def _get_conn() -> sqlite3.Connection:
     if not hasattr(_local, "conn") or _local.conn is None:
         os.makedirs(DATA_DIR, exist_ok=True)
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn = sqlite3.connect(DB_PATH)
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.row_factory = sqlite3.Row
@@ -92,10 +93,11 @@ def _ensure_db(func):
 
 def init_db() -> None:
     global _db_initialized
-    if _db_initialized:
-        return
-    conn = _get_conn()
-    conn.executescript("""
+    with _db_init_lock:
+        if _db_initialized:
+            return
+        conn = _get_conn()
+        conn.executescript("""
         CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT);
 
         CREATE TABLE IF NOT EXISTS finance_records (
@@ -205,9 +207,19 @@ def init_db() -> None:
             tax_rate REAL DEFAULT 0.06,
             tax_amount REAL DEFAULT 0,
             total_with_tax REAL DEFAULT 0,
+            proposal_id TEXT DEFAULT '',
             status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','paid','cancelled')),
             markdown TEXT DEFAULT '',
             created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS follow_ups (
+            id TEXT PRIMARY KEY,
+            customer_id TEXT NOT NULL,
+            content TEXT DEFAULT '',
+            follow_date TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS calendar_events (
@@ -296,13 +308,23 @@ def init_db() -> None:
             user_feedback TEXT DEFAULT '',
             created_at TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS consensus_decisions (
+            id TEXT PRIMARY KEY,
+            timestamp REAL NOT NULL,
+            opinion_count INTEGER DEFAULT 0,
+            decision_type TEXT NOT NULL,
+            approved INTEGER DEFAULT 0,
+            confidence REAL DEFAULT 0.0,
+            detail TEXT DEFAULT ''
+        );
     """)
-    _run_migrations(conn)
-    _seed_categories(conn)
-    _seed_templates(conn)
-    conn.commit()
-    _db_initialized = True
-    logger.info("[DataManager] Database initialized (v%d)", _db_version)
+        _run_migrations(conn)
+        _seed_categories(conn)
+        _seed_templates(conn)
+        conn.commit()
+        _db_initialized = True
+        logger.info("[DataManager] Database initialized (v%d)", _db_version)
 
 
 def _run_migrations(conn: sqlite3.Connection) -> None:
@@ -311,6 +333,10 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
     if current < _db_version:
         if current < 3:
             _migrate_v2_to_v3(conn)
+        if current < 4:
+            _migrate_v3_to_v4(conn)
+        if current < 5:
+            _migrate_v4_to_v5(conn)
         conn.execute("INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', ?)", (str(_db_version),))
         logger.info("[DataManager] Migrated DB from v%d to v%d", current, _db_version)
 
@@ -324,6 +350,26 @@ def _migrate_v2_to_v3(conn: sqlite3.Connection) -> None:
     _add_column_if_not_exists(conn, "interaction_log", "session_id", "TEXT DEFAULT ''")
     _add_column_if_not_exists(conn, "interaction_log", "duration_ms", "REAL DEFAULT 0.0")
     _add_column_if_not_exists(conn, "interaction_log", "error_message", "TEXT DEFAULT ''")
+
+
+def _migrate_v3_to_v4(conn: sqlite3.Connection) -> None:
+    _add_column_if_not_exists(conn, "calendar_events", "duration_min", "INTEGER DEFAULT 60")
+    _add_column_if_not_exists(conn, "calendar_events", "description", "TEXT DEFAULT ''")
+    _add_column_if_not_exists(conn, "calendar_events", "repeat", "TEXT DEFAULT ''")
+
+
+def _migrate_v4_to_v5(conn: sqlite3.Connection) -> None:
+    _add_column_if_not_exists(conn, "invoices", "proposal_id", "TEXT DEFAULT ''")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS follow_ups (
+            id TEXT PRIMARY KEY,
+            customer_id TEXT NOT NULL,
+            content TEXT DEFAULT '',
+            follow_date TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+        )
+    """)
 
 
 def _add_column_if_not_exists(conn: sqlite3.Connection, table: str, column: str, col_type: str) -> None:
@@ -420,13 +466,14 @@ def execute_write_returning(sql: str, params: tuple = ()) -> str:
 
 
 def backup_db() -> Optional[str]:
+    backup_count = int(os.environ.get("OPC_BACKUP_COUNT", "7"))
     os.makedirs(BACKUP_DIR, exist_ok=True)
     ts = time.strftime("%Y%m%d_%H%M%S")
     backup_path = os.path.join(BACKUP_DIR, f"opc_data_{ts}.db")
     try:
         import shutil
         shutil.copy2(DB_PATH, backup_path)
-        for old in sorted(Path(BACKUP_DIR).glob("opc_data_*.db"))[:-7]:
+        for old in sorted(Path(BACKUP_DIR).glob("opc_data_*.db"))[:-backup_count]:
             old.unlink()
         logger.info("[DataManager] Backup created: %s", backup_path)
         return backup_path
@@ -436,7 +483,7 @@ def backup_db() -> Optional[str]:
 
 
 def gen_id() -> str:
-    return str(uuid.uuid4())[:16]
+    return uuid.uuid4().hex[:16]
 
 
 def get_preference(key: str, default: str = "") -> str:

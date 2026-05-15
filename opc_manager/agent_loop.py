@@ -39,12 +39,10 @@ MAX_REFLECT_ROUNDS = int(os.environ.get("OPC_MAX_REFLECT_ROUNDS", "3"))
 RETRY_BACKOFF_BASE = 2
 RETRY_BACKOFF_CAP = 10
 PAUSE_TIMEOUT_SECONDS = int(os.environ.get("OPC_PAUSE_TIMEOUT_SECONDS", "1800"))
-AGENT_LOOP_TIMEOUT_SECONDS = int(os.environ.get("OPC_AGENT_LOOP_TIMEOUT_SECONDS", "60"))
+AGENT_LOOP_TIMEOUT_SECONDS = int(os.environ.get("OPC_AGENT_LOOP_TIMEOUT_SECONDS", "120"))
 
 QUALITY_THRESHOLD_CORRECTION = 0.6
 QUALITY_THRESHOLD_CONSENSUS = 0.7
-QUALITY_THRESHOLD_CONFIDENCE = 0.5
-QUALITY_THRESHOLD_LOW = 0.3
 MAX_CORRECTION_ATTEMPTS = 2
 
 
@@ -149,6 +147,11 @@ class AgentLoop:
             if skip_reflect:
                 agent_context.set_state(AgentState.EXECUTING)
                 await self._phase_execute(agent_context)
+                has_results = bool(agent_context.execution_results)
+                all_failed = has_results and all(not r.get("success", False) for r in agent_context.execution_results)
+                if not has_results or all_failed:
+                    agent_context.set_state(AgentState.FAILED)
+                    return self._build_result(agent_context)
                 agent_context.set_state(AgentState.COMPLETED)
                 return self._build_result(agent_context)
 
@@ -227,7 +230,7 @@ class AgentLoop:
                 }
             elif next_action.action_type in (NextActionType.RETRY, NextActionType.ADJUST_STRATEGY):
                 logger.info("反思轮次 %s: %s，重新执行", reflect_round + 1, next_action.action_type.name)
-                context.execution_results = []
+                context.execution_results = [r for r in context.execution_results if r.get("success", False)]
                 context.current_step = 0
                 if next_action.action_type == NextActionType.ADJUST_STRATEGY:
                     context.set_state(AgentState.PLANNING)
@@ -546,6 +549,22 @@ class AgentLoop:
         "analysis": "content_generation",
         "content_generation": "analysis",
         "search": "analysis",
+        "email": "send_notification",
+        "send_notification": "email",
+        "crm": "search",
+        "finance": "analysis",
+        "calendar": "task_manager",
+        "task_manager": "calendar",
+        "social_publish": "content_generation",
+        "proposal": "content_generation",
+        "invoice": "finance",
+        "report": "content_generation",
+        "competitor_watch": "search",
+        "pricing": "analysis",
+        "tax_reminder": "send_notification",
+        "dashboard": "analysis",
+        "knowledge_mgmt": "search",
+        "ext_skill": "output_result",
     }
 
     async def _apply_correction(self, context: AgentContext, strategy: CorrectionStrategy) -> bool:
@@ -693,7 +712,6 @@ class AgentLoop:
     async def _log_consensus_decision(self, context: AgentContext,
                                        evaluation: Evaluation,
                                        decision) -> None:
-        log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "consensus_logs")
         log_entry = {
             "task_id": context.task_id,
             "quality_score": evaluation.quality_score,
@@ -703,16 +721,15 @@ class AgentLoop:
             "reasoning": decision.reasoning,
             "timestamp": time.time(),
         }
-        log_file = os.path.join(log_dir, f"{context.task_id}.jsonl")
-
-        def _write_log():
-            os.makedirs(log_dir, exist_ok=True)
-            with open(log_file, "a") as f:
-                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
         try:
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, _write_log)
+            from opc_manager.data_manager import execute_write, init_db
+            init_db()
+            import json as _json
+            execute_write(
+                "INSERT INTO consensus_decisions (id, timestamp, opinion_count, decision_type, approved, confidence, detail) VALUES (?,?,?,?,?,?,?)",
+                (context.task_id, log_entry["timestamp"], 3, log_entry["decision_type"] or "", 1 if log_entry["confidence"] >= 0.5 else 0, log_entry["confidence"], _json.dumps(log_entry, ensure_ascii=False)),
+            )
         except Exception as e:
             logger.warning("共识日志写入失败: %s", e)
 
@@ -774,8 +791,11 @@ class AgentLoop:
         resume_step = context.current_step
         logger.info("任务已恢复: %s (从步骤 %s 继续)", task_id, resume_step)
 
+        remaining_timeout = AGENT_LOOP_TIMEOUT_SECONDS
+        deadline = time.time() + remaining_timeout
+
         try:
-            loop_result = await self._reflect_loop(context, start_step=resume_step)
+            loop_result = await self._reflect_loop(context, start_step=resume_step, deadline=deadline)
 
             if loop_result is not None:
                 if loop_result.get("cancelled"):

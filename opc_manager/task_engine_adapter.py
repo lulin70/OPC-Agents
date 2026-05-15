@@ -125,6 +125,7 @@ class TaskEngineAdapter:
                 user_input=user_input,
                 session_ctx=session_ctx,
                 business_type=business_type,
+                task_type_hint=task_type,
             )
             return self._task_result_to_dict(result, skill_id)
         except Exception as e:
@@ -165,6 +166,7 @@ class TaskEngineAdapter:
                 user_input=user_input,
                 session_ctx=session_ctx,
                 business_type=business_type,
+                task_type_hint=task_type,
             )
             return self._task_result_to_dict(result, intent_type.value)
         except Exception as e:

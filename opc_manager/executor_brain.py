@@ -79,7 +79,16 @@ class ExecutorBrain:
         start_time = asyncio.get_running_loop().time()
 
         try:
-            result = await self._execute_skill(skill_id, parameters, context)
+            if context and context.get("degrade"):
+                result = await asyncio.wait_for(
+                    self._execute_degraded(skill_id, parameters, context),
+                    timeout=COMMAND_TIMEOUT_SECONDS,
+                )
+            else:
+                result = await asyncio.wait_for(
+                    self._execute_skill(skill_id, parameters, context),
+                    timeout=COMMAND_TIMEOUT_SECONDS,
+                )
 
             execution_time = asyncio.get_running_loop().time() - start_time
 
@@ -119,12 +128,66 @@ class ExecutorBrain:
                 execution_time=execution_time
             )
 
+    async def _execute_degraded(self, skill_id: str, parameters: Dict[str, Any],
+                                context: Optional[Dict]) -> ExecutionResult:
+        if self.task_engine_adapter:
+            try:
+                result_dict = await self.task_engine_adapter.execute_skill_async(
+                    skill_id, parameters, context
+                )
+                return ExecutionResult(
+                    success=result_dict.get("success", False),
+                    data=result_dict.get("data", {}),
+                    error=result_dict.get("error"),
+                    execution_time=result_dict.get("execution_time", 0),
+                )
+            except Exception as e:
+                logger.warning("降级执行失败: %s", e)
+
+        if self.skill_registry:
+            skill = self.skill_registry.get_skill(skill_id)
+            if skill is not None and skill.enabled:
+                try:
+                    if asyncio.iscoroutinefunction(skill.execute):
+                        result = await skill.execute(**parameters)
+                    else:
+                        result = skill.execute(**parameters)
+                    if isinstance(result, dict):
+                        return ExecutionResult(
+                            success=result.get("success", True),
+                            data=result.get("data", result)
+                        )
+                    return ExecutionResult(success=True, data={"result": result})
+                except Exception as e:
+                    return ExecutionResult(
+                        success=False,
+                        error=f"降级技能执行异常: {str(e)}"
+                    )
+
+        return ExecutionResult(
+            success=False,
+            error=f"降级模式无可用执行器: {skill_id}"
+        )
+
     async def _execute_skill(self, skill_id: str, parameters: Dict[str, Any],
                             context: Optional[Dict]) -> ExecutionResult:
         if self.skill_registry:
             skill = self.skill_registry.get_skill(skill_id)
             if skill is not None:
                 if not skill.enabled:
+                    if self.task_engine_adapter:
+                        try:
+                            result_dict = await self.task_engine_adapter.execute_skill_async(
+                                skill_id, parameters, context
+                            )
+                            return ExecutionResult(
+                                success=result_dict.get("success", False),
+                                data=result_dict.get("data", {}),
+                                error=result_dict.get("error"),
+                                execution_time=result_dict.get("execution_time", 0),
+                            )
+                        except Exception as adapter_e:
+                            logger.warning("TaskEngineAdapter降级执行失败: %s", adapter_e)
                     return ExecutionResult(
                         success=False,
                         error=f"技能已禁用: {skill_id}"
@@ -136,12 +199,48 @@ class ExecutorBrain:
                         result = skill.execute(**parameters)
 
                     if isinstance(result, dict):
-                        return ExecutionResult(
+                        exec_result = ExecutionResult(
                             success=result.get("success", True),
                             data=result.get("data", result)
                         )
-                    return ExecutionResult(success=True, data={"result": result})
+                    else:
+                        exec_result = ExecutionResult(success=True, data={"result": result})
+
+                    if not exec_result.success and self.task_engine_adapter:
+                        try:
+                            result_dict = await self.task_engine_adapter.execute_skill_async(
+                                skill_id, parameters, context
+                            )
+                            fallback = ExecutionResult(
+                                success=result_dict.get("success", False),
+                                data=result_dict.get("data", {}),
+                                error=result_dict.get("error"),
+                                execution_time=result_dict.get("execution_time", 0),
+                            )
+                            if fallback.success:
+                                logger.info("skill_registry失败，task_engine_adapter降级成功: %s", skill_id)
+                                return fallback
+                        except Exception as adapter_e:
+                            logger.warning("TaskEngineAdapter降级执行失败: %s", adapter_e)
+
+                    return exec_result
                 except Exception as e:
+                    if self.task_engine_adapter:
+                        try:
+                            result_dict = await self.task_engine_adapter.execute_skill_async(
+                                skill_id, parameters, context
+                            )
+                            fallback = ExecutionResult(
+                                success=result_dict.get("success", False),
+                                data=result_dict.get("data", {}),
+                                error=result_dict.get("error"),
+                                execution_time=result_dict.get("execution_time", 0),
+                            )
+                            if fallback.success:
+                                logger.info("skill_registry异常，task_engine_adapter降级成功: %s", skill_id)
+                                return fallback
+                        except Exception as adapter_e:
+                            logger.warning("TaskEngineAdapter降级执行失败: %s", adapter_e)
                     return ExecutionResult(
                         success=False,
                         error=f"技能执行异常: {str(e)}"

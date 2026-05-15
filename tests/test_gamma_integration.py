@@ -401,7 +401,7 @@ class TestAgentLoopIntegration(unittest.TestCase):
 
     def test_agent_loop_timeout_constant(self):
         from opc_manager.agent_loop import AGENT_LOOP_TIMEOUT_SECONDS
-        self.assertEqual(AGENT_LOOP_TIMEOUT_SECONDS, 60)
+        self.assertEqual(AGENT_LOOP_TIMEOUT_SECONDS, 120)
 
     def test_skip_reflect_mode(self):
         os.environ["OPC_SKIP_REFLECT"] = "true"

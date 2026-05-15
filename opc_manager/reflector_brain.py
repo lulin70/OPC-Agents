@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 import json
+import re
 import logging
 
 from opc_manager.utils import extract_json_from_llm, sanitize_for_llm, _llm_thread_semaphore, call_llm_service
@@ -21,7 +22,7 @@ WEIGHT_SUCCESS = 0.3
 WEIGHT_DATA_COMPLETE_DICT = 0.3
 WEIGHT_DATA_COMPLETE_OTHER = 0.25
 WEIGHT_RELEVANCE = 0.2
-WEIGHT_TIMELY = 0.1
+WEIGHT_TIMELY = 0.0
 WEIGHT_ALL_STEPS_DONE = 0.1
 PENALTY_ERROR = 0.3
 MAX_RETRY_COUNT = 3
@@ -223,7 +224,12 @@ class ReflectorBrain:
         if goal and isinstance(data, dict):
             result_str = str(data).lower()
             goal_str = goal.lower()
-            if any(keyword in result_str for keyword in goal_str.split()[:5]):
+            cn_keywords = re.findall(r'[\u4e00-\u9fff]+', goal_str)
+            en_keywords = [w for w in goal_str.split() if re.match(r'[a-zA-Z]', w)]
+            keywords = cn_keywords[:5] + en_keywords[:5]
+            if not keywords:
+                keywords = [goal_str[:20]]
+            if any(kw in result_str for kw in keywords):
                 factors.append(("结果相关", WEIGHT_RELEVANCE))
         
         execution_time = actual.get("execution_time", 0)

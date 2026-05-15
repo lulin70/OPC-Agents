@@ -15,6 +15,7 @@ import asyncio
 import json
 import logging
 import re
+import threading
 
 from opc_manager.intent_types import IntentType, INTENT_KEYWORDS, INTENT_STEP_MAP, SKILL_INTENT_MAP
 from opc_manager.protocols import LLMServiceProtocol
@@ -26,6 +27,9 @@ SKILL_COLLABORATIONS = {
     "finance_to_tax": {"trigger": ["记账", "报税"], "skills": ["finance", "tax_reminder"]},
     "deal_to_income": {"trigger": ["成交", "收款"], "skills": ["crm", "finance"]},
     "report_full": {"trigger": ["经营报告", "全面报告"], "skills": ["finance", "crm", "task_manager", "report"]},
+    "deal_to_email": {"trigger": ["成交后发邮件", "成交通知"], "skills": ["crm", "email"]},
+    "report_to_calendar": {"trigger": ["报告截止", "报告日程"], "skills": ["report", "calendar"]},
+    "proposal_to_email": {"trigger": ["报价后发邮件", "报价通知"], "skills": ["proposal", "email"]},
 }
 
 
@@ -89,12 +93,14 @@ class SkillRegistry:
     """技能注册表 — 负责技能的注册、发现和调用"""
 
     _instance = None
-    _instance_lock = None
+    _instance_lock = threading.Lock()
+    _init_lock = threading.Lock()
 
     def __new__(cls, llm_service=None, search_processor=None, tool_system=None, register_builtins: bool = True, register_external: bool = True):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance_lock = __import__('threading').Lock()
+            with cls._instance_lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(
@@ -105,32 +111,33 @@ class SkillRegistry:
         register_builtins: bool = True,
         register_external: bool = True,
     ):
-        if hasattr(self, '_initialized') and self._initialized:
-            if llm_service is not None:
-                self.llm_service = llm_service
-            if search_processor is not None:
-                self.search_processor = search_processor
-            if tool_system is not None:
-                self.tool_system = tool_system
-            return
-        self._initialized = True
-        self.llm_service: Optional[LLMServiceProtocol] = llm_service
-        self.search_processor = search_processor
-        self.tool_system = tool_system
-        self.skills: Dict[str, Skill] = {}
-        self.category_index: Dict[str, List[str]] = {}
-        self.keyword_index: Dict[str, List[str]] = {}
-        self._collab_in_progress = False
-        self._external_marketplace = None
+        with self._init_lock:
+            if hasattr(self, '_initialized') and self._initialized:
+                if llm_service is not None:
+                    self.llm_service = llm_service
+                if search_processor is not None:
+                    self.search_processor = search_processor
+                if tool_system is not None:
+                    self.tool_system = tool_system
+                return
+            self._initialized = True
+            self.llm_service: Optional[LLMServiceProtocol] = llm_service
+            self.search_processor = search_processor
+            self.tool_system = tool_system
+            self.skills: Dict[str, Skill] = {}
+            self.category_index: Dict[str, List[str]] = {}
+            self.keyword_index: Dict[str, List[str]] = {}
+            self._collab_in_progress = False
+            self._external_marketplace = None
 
-        if register_builtins:
-            self._register_builtin_skills()
+            if register_builtins:
+                self._register_builtin_skills()
 
-        if register_external:
-            self._register_external_skills()
+            if register_external:
+                self._register_external_skills()
 
-        self._web_search = None
-        self._content_generator = None
+            self._web_search = None
+            self._content_generator = None
 
     def _register_builtin_skills(self):
         intent_analysis_skill = Skill(
@@ -529,6 +536,15 @@ class SkillRegistry:
             bool: 是否注册成功
         """
         if skill.skill_id in self.skills:
+            existing = self.skills[skill.skill_id]
+            try:
+                from packaging.version import Version
+                if Version(skill.version) > Version(existing.version):
+                    logger.info("技能版本升级: %s %s→%s", skill.skill_id, existing.version, skill.version)
+                    self.skills[skill.skill_id] = skill
+                    return True
+            except Exception:
+                pass
             logger.warning("技能已存在: %s", skill.skill_id)
             return False
         

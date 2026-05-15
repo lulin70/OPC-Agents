@@ -18,9 +18,10 @@ def generate_weekly_report(week_note: str = "") -> Dict[str, Any]:
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     today = time.strftime("%Y-%m-%d")
 
-    tasks_result = list_tasks()
-    done_tasks = [t for t in tasks_result.get("tasks", []) if t.get("status") == "done"]
-    pending_tasks = [t for t in tasks_result.get("tasks", []) if t.get("status") in ("pending", "in_progress")]
+    pending_result = list_tasks()
+    done_result = list_tasks(status="done")
+    done_tasks = done_result.get("tasks", [])
+    pending_tasks = pending_result.get("tasks", [])
 
     crm_stats = get_customer_stats()
     silent = get_silent_customers()
@@ -97,6 +98,18 @@ def generate_monthly_report(year_month: str = "") -> Dict[str, Any]:
     for t in trend:
         md += f"| {t.get('year_month', '')} | ¥{t.get('income', 0):.2f} | ¥{t.get('expense', 0):.2f} | ¥{t.get('profit', 0):.2f} |\n"
 
+    pending_tasks = list_tasks()
+    done_tasks = list_tasks(status="done")
+    pending_count = pending_tasks.get("count", 0)
+    done_count = done_tasks.get("count", 0)
+    overdue_tasks = [t for t in pending_tasks.get("tasks", []) if t.get("due_date") and t["due_date"] < time.strftime("%Y-%m-%d")]
+    overdue_count = len(overdue_tasks)
+
+    md += "\n## 任务概况\n\n"
+    md += f"- 待办数: {pending_count}\n"
+    md += f"- 完成数: {done_count}\n"
+    md += f"- 逾期数: {overdue_count}\n\n"
+
     md += f"\n---\n*由OPC-Agents自动生成 · {time.strftime('%Y-%m-%d')}*\n"
 
     return _save_report("monthly", year_month, md)
@@ -149,6 +162,23 @@ def generate_annual_report(year: str = "") -> Dict[str, Any]:
     md += f"## 客户概况\n\n"
     md += f"- 客户总数: {crm_stats.get('total', 0)}\n"
     md += f"- 活跃: {crm_stats.get('active', 0)} | 流失: {crm_stats.get('lost', 0)}\n\n"
+
+    deal_rows = execute_query(
+        "SELECT COUNT(*) as cnt, COALESCE(SUM(amount),0) as total_amount FROM deals WHERE status='closed_won' AND date LIKE ?",
+        (f"{year}%",),
+    )
+    deal_count = deal_rows[0]["cnt"] if deal_rows else 0
+    deal_total = deal_rows[0]["total_amount"] if deal_rows else 0
+    deal_customer_rows = execute_query(
+        "SELECT COUNT(DISTINCT customer_id) as cnt FROM deals WHERE status='closed_won' AND date LIKE ?",
+        (f"{year}%",),
+    )
+    deal_customer_count = deal_customer_rows[0]["cnt"] if deal_customer_rows else 0
+
+    md += "## 成交概况\n\n"
+    md += f"- 总成交额: ¥{deal_total:.2f}\n"
+    md += f"- 成交客户数: {deal_customer_count}\n"
+    md += f"- 成交笔数: {deal_count}\n\n"
 
     md += f"---\n*由OPC-Agents自动生成 · {time.strftime('%Y-%m-%d')}*\n"
 
