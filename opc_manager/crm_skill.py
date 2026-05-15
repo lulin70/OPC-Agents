@@ -306,3 +306,36 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         )
 
     return search_customers()
+
+
+def undo_add_customer(customer_id=None, **kwargs):
+    init_db()
+    if customer_id:
+        execute_write("DELETE FROM customers WHERE id=?", (customer_id,))
+    else:
+        latest = execute_query("SELECT id FROM customers ORDER BY created_at DESC LIMIT 1")
+        if latest:
+            execute_write("DELETE FROM customers WHERE id=?", (latest[0]["id"],))
+    return {"success": True, "message": "客户记录已撤销"}
+
+
+def undo_add_deal(deal_id=None, **kwargs):
+    init_db()
+    if deal_id:
+        execute_write("DELETE FROM deals WHERE id=?", (deal_id,))
+    else:
+        latest = execute_query("SELECT id FROM deals ORDER BY created_at DESC LIMIT 1")
+        if latest:
+            execute_write("DELETE FROM deals WHERE id=?", (latest[0]["id"],))
+    return {"success": True, "message": "合作记录已撤销"}
+
+
+def undo_add_follow_up(follow_up_id=None, **kwargs):
+    init_db()
+    if follow_up_id:
+        execute_write("DELETE FROM follow_ups WHERE id=?", (follow_up_id,))
+    else:
+        latest = execute_query("SELECT id FROM follow_ups ORDER BY created_at DESC LIMIT 1")
+        if latest:
+            execute_write("DELETE FROM follow_ups WHERE id=?", (latest[0]["id"],))
+    return {"success": True, "message": "跟进记录已撤销"}

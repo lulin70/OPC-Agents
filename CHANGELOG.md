@@ -2,6 +2,115 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.1.9] - 2026-05-14
+
+### P0: 核心体验升级（5项）
+
+#### Confirmer — 置信度确认机制
+- 4级风险分级：LOW(>70%直接执行) / MEDIUM(>85%) / HIGH(>95%) / CRITICAL(100%)
+- 信任累积：连续确认同类操作降低阈值2%，最低60%
+- 确认卡片生成：`get_confirmation_card()` 返回结构化确认信息
+- 集成到AgentLoop：`_phase_plan`后插入确认环节，新增`CONFIRMATION_NEEDED`状态
+- 11种IntentType→RiskLevel映射，覆盖全部业务技能
+
+#### ExportManager — 多格式成果物导出
+- MD作为中间输出保留，支持一键导出PDF/Word/Excel/Image
+- ExportManager单例 + 插件式Exporter注册机制
+- PDFExporter：weasyprint + Jinja2模板 + 中文CSS + markdown降级
+- ExcelExporter：openpyxl + Markdown表格自动解析 + 样式渲染
+- WordExporter：python-docx + 标题/列表/表格结构化
+- ImageExporter：Pillow + 中文字体 + 社交媒体尺寸适配
+- SKILL_EXPORT_CAPABILITIES：8个技能的格式能力注册表
+- 前端集成：结果区动态显示导出按钮(PDF/Word/Excel/PNG)
+
+#### ProgressEmitter — 过程透明化
+- 14种EventType：PLAN_START→INTENT_DETECTED→STEP_START→STEP_PROGRESS→STEP_COMPLETE→REFLECT_START→COMPLETE/ERROR/CANCELLED
+- ProgressEmitter单例：发布/订阅/历史回放
+- SSE端点 `/api/events?session_id=xxx`：心跳15s + 断线清理 + 历史回放
+- AgentLoop 8个关键节点发射事件，进度百分比0-100%
+- 前端EventSource消费，实时更新进度条和状态文本
+
+#### UndoManager — 撤销机制
+- 9种可撤销操作类型：email_send/record_income/record_expense/add_event/add_deal/create_proposal/create_invoice/add_customer/add_follow_up/social_publish
+- 分级撤销窗口：邮件5min / 记账30min / 日程1h / 报价单1h / 发帖1min
+- 每用户最多50条撤销记录，过期自动清理
+- 11个skill模块新增undo_*函数（soft_delete标记或实际删除）
+- `list_undoable(session_id)` 查看可撤销操作列表
+
+#### AuditLog — 审计日志系统
+- 异步批量写入（Queue+BackgroundThread，每10条一批）
+- 内存deque(max=1000) + SQLite audit_log表持久化(v6迁移)
+- 12字段记录：id/session_id/user_id/timestamp/operation_type/skill_id/input_hash/input_summary/output_summary/duration_ms/status/error_msg
+- query() 支持按session/operation_type/time过滤
+- get_stats() 统计成功率/平均耗时
+- 90天自动清理策略
+
+### P1: 企业微信接入（1项）
+
+#### WeChatGateway — 企业微信消息网关
+- SHA1签名验证（token+timestamp+nonce）
+- AES-CBC消息解密（PKCS7，EncodingAESKey）
+- XML消息解析：text/image/voice/event → WeChatMessage数据类
+- handle_callback() 完整流程：验签→解密→解析→路由→响应
+- build_confirmation_card() 企微确认卡片文本生成
+- WeChatAgentBridge桥接层：企微消息↔AgentLoop.run()
+- Confirmer.confirm_callback注入为企微卡片生成函数
+- 语音消息占位（Whisper预留接口）、图片消息占位（OCR预留接口）
+- 关注/取关事件处理
+- 9个单元测试全部通过
+
+### 新增文件清单（19个）
+
+**新模块（6个）：**
+- opc_manager/confirmer.py
+- opc_manager/undo_manager.py  
+- opc_manager/audit_log.py
+- opc_manager/progress_emitter.py
+- opc_manager/wechat_gateway.py
+- opc_manager/wechat_agent.py
+
+**Export子系统（8个）：**
+- opc_manager/export/__init__.py
+- opc_manager/export/models.py
+- opc_manager/export/manager.py
+- opc_manager/export/exporters/__init__.py
+- opc_manager/export/exporters/pdf_exporter.py
+- opc_manager/export/exporters/excel_exporter.py
+- opc_manager/export/exporters/word_exporter.py
+- opc_manager/export/exporters/image_exporter.py
+
+**API层（2个）：**
+- opc_manager/api/__init__.py
+- opc_manager/api/events.py
+
+**测试（1个）：**
+- tests/test_wechat_gateway.py
+
+### 修改文件清单（18个）
+
+| 文件 | 主要改动 |
+|------|---------|
+| version.py | 0.1.8→0.1.9 |
+| data_manager.py | _db_version 5→6, audit_log表, execute_write(many=True) |
+| agent_loop.py | Confirmer初始化+确认检查, ProgressEmitter 8节点事件发射 |
+| skill_registry.py | _exportable_formats字段, export_result()方法 |
+| async_executor.py | result_exportable_formats透传 |
+| frontend/app.py | 导出按钮渲染+下载逻辑 |
+| requirements.txt | +weasyprint/openpyxl/python-docx/Pillow/Jinja2/markdown |
+| finance_skill.py | +undo_record_income, undo_record_expense |
+| crm_skill.py | +undo_add_customer, undo_add_deal, undo_add_follow_up |
+| email_skill.py | +undo_send_email |
+| calendar_skill.py | +undo_add_event |
+| proposal_skill.py | +undo_create_proposal |
+| invoice_skill.py | +undo_create_invoice |
+| social_skill.py | +undo_publish_content |
+| task_skill.py | +undo_complete_task |
+
+### 测试结果
+- **612 passed, 21 skipped, 0 failed** (从603增至612，+9个WeChatGateway测试)
+
+---
+
 ## [0.1.8] - 2026-05-14
 
 ### Added

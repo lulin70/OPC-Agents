@@ -173,3 +173,16 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         return {"success": False, "error": "请指定客户名称（如：给张总出个报价）"}
 
     return create_proposal(client_name, service_type)
+
+
+def undo_create_proposal(proposal_id=None, **kwargs):
+    init_db()
+    if proposal_id:
+        rows = execute_query("SELECT * FROM proposals WHERE id=?", (proposal_id,))
+    else:
+        rows = execute_query("SELECT * FROM proposals ORDER BY created_at DESC LIMIT 1")
+    if not rows:
+        return {"success": False, "error": "未找到可撤销的报价单"}
+    target_id = proposal_id or rows[0]["id"]
+    execute_write("UPDATE proposals SET status='expired' WHERE id=?", (target_id,))
+    return {"success": True, "message": f"报价单已撤销: {rows[0].get('client_name', target_id)}"}

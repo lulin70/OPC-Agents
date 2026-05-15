@@ -28,6 +28,8 @@ from .session_context import SessionContextManager
 from .task_engine_adapter import TaskEngineAdapter
 from .utils import BoundedDict, EventEmitter
 from .performance_monitor import get_performance_monitor
+from .confirmer import Confirmer
+from .progress_emitter import ProgressEmitter, ProgressEvent, EventType
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +58,7 @@ class AgentState(Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
     PAUSED = "paused"
+    CONFIRMATION_NEEDED = "confirmation_needed"
 
 
 @dataclass
@@ -102,6 +105,8 @@ class AgentLoop:
         self.tool_system = tool_system or ToolSystem()
         self.session_manager = session_manager or SessionContextManager()
         self.event_emitter = EventEmitter()
+        self.confirmer = Confirmer()
+        self.progress = ProgressEmitter()
 
         self.max_reflect_rounds = max_reflect_rounds
         self.max_retry_per_step = max_retry_per_step
@@ -140,7 +145,37 @@ class AgentLoop:
 
             if agent_context.cancel_requested:
                 agent_context.set_state(AgentState.CANCELLED)
+                if self.progress:
+                    self.progress.emit(ProgressEvent(
+                        event_type=EventType.CANCELLED,
+                        session_id=task_id,
+                        message="任务已取消",
+                    ))
                 return self._build_result(agent_context, cancelled=True)
+
+            intent_type = agent_context.intent.type.name if agent_context.intent else "UNKNOWN"
+            goal = agent_context.intent.goal if agent_context.intent else ""
+            confidence = getattr(agent_context.intent, 'confidence', 0.85) if agent_context.intent else 0.85
+            confirm_result = await self.confirmer.check_confirmation(
+                session_id=agent_context.session_id,
+                intent_type=intent_type,
+                goal=goal,
+                confidence=confidence,
+                params={"user_input": user_input[:200]},
+            )
+            if not confirm_result.confirmed and confirm_result.method != "no_callback":
+                agent_context.set_state(AgentState.CONFIRMATION_NEEDED)
+                return {
+                    "success": False,
+                    "task_id": task_id,
+                    "session_id": agent_context.session_id,
+                    "confirmation_required": True,
+                    "intent_type": intent_type,
+                    "goal": goal,
+                    "confidence": confidence,
+                    "confirm_method": confirm_result.method,
+                    "message": "需要用户确认后才能执行",
+                }
 
             skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
 
@@ -151,8 +186,21 @@ class AgentLoop:
                 all_failed = has_results and all(not r.get("success", False) for r in agent_context.execution_results)
                 if not has_results or all_failed:
                     agent_context.set_state(AgentState.FAILED)
+                    if self.progress:
+                        self.progress.emit(ProgressEvent(
+                            event_type=EventType.ERROR,
+                            session_id=task_id,
+                            message="执行步骤全部失败",
+                        ))
                     return self._build_result(agent_context)
                 agent_context.set_state(AgentState.COMPLETED)
+                if self.progress:
+                    self.progress.emit(ProgressEvent(
+                        event_type=EventType.COMPLETE,
+                        session_id=task_id,
+                        message="全部完成!",
+                        progress_pct=100,
+                    ))
                 return self._build_result(agent_context)
 
             deadline = time.time() + AGENT_LOOP_TIMEOUT_SECONDS
@@ -173,6 +221,14 @@ class AgentLoop:
                 status="completed"
             )
 
+            if self.progress:
+                self.progress.emit(ProgressEvent(
+                    event_type=EventType.COMPLETE,
+                    session_id=task_id,
+                    message="全部完成!",
+                    progress_pct=100,
+                ))
+
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=True)
             return self._build_result(agent_context)
@@ -180,6 +236,15 @@ class AgentLoop:
         except Exception as e:
             agent_context.set_state(AgentState.FAILED)
             logger.error("AgentLoop 执行失败: %s", str(e))
+            
+            if self.progress:
+                self.progress.emit(ProgressEvent(
+                    event_type=EventType.ERROR,
+                    session_id=task_id,
+                    message=f"执行失败: {str(e)}",
+                    detail={"error": str(e)},
+                ))
+
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=False)
             return {
@@ -205,6 +270,12 @@ class AgentLoop:
 
             if context.cancel_requested:
                 context.set_state(AgentState.CANCELLED)
+                if self.progress:
+                    self.progress.emit(ProgressEvent(
+                        event_type=EventType.CANCELLED,
+                        session_id=context.task_id,
+                        message="任务已取消",
+                    ))
                 return {"cancelled": True}
 
             context.set_state(AgentState.OBSERVING)
@@ -279,6 +350,13 @@ class AgentLoop:
     async def _phase_plan(self, context: AgentContext, conversation_history: Optional[List[Dict]] = None) -> None:
         logger.info("Phase 1: 规划开始")
 
+        if self.progress:
+            self.progress.emit(ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=context.task_id,
+                message="正在分析你的需求..."
+            ))
+
         history = conversation_history or []
         loop = asyncio.get_running_loop()
 
@@ -291,6 +369,15 @@ class AgentLoop:
         )
         context.intent = intent
         logger.info("意图理解完成: %s - %s", intent.type.name, intent.goal)
+
+        if self.progress:
+            self.progress.emit(ProgressEvent(
+                event_type=EventType.INTENT_DETECTED,
+                session_id=context.task_id,
+                message=f"意图识别: {intent.type.name} - {intent.goal[:50]}",
+                detail={"intent_type": intent.type.name, "confidence": getattr(intent, 'confidence', None)},
+                progress_pct=10
+            ))
 
         plan = await loop.run_in_executor(
             None,
@@ -305,12 +392,14 @@ class AgentLoop:
         if not context.plan:
             raise ValueError("没有执行计划，无法执行")
 
-        for step in context.plan.steps[start_step:]:
+        total_steps = len(context.plan.steps)
+
+        for i, step in enumerate(context.plan.steps[start_step:]):
             if context.cancel_requested:
                 return
 
             context.current_step += 1
-            logger.info("执行步骤 %s/%s: %s", context.current_step, len(context.plan.steps), step.description)
+            logger.info("执行步骤 %s/%s: %s", context.current_step, total_steps, step.description)
 
             self.event_emitter.emit(
                 event_type="step_started",
@@ -318,6 +407,15 @@ class AgentLoop:
                 step_name=step.description,
                 status="running"
             )
+
+            if self.progress:
+                self.progress.emit(ProgressEvent(
+                    event_type=EventType.STEP_START,
+                    session_id=context.task_id,
+                    message=f"[执行脑] 执行步骤: {step.skill_id}",
+                    detail={"step_id": step.id, "skill_id": step.skill_id},
+                    progress_pct=int((i / total_steps) * 70) + 10,
+                ))
 
             step_start_time = time.time()
             enriched_params = self._enrich_step_parameters(step.parameters, context.execution_results)
@@ -342,6 +440,14 @@ class AgentLoop:
                     status="completed",
                     duration_ms=step_duration_ms
                 )
+
+                if self.progress:
+                    self.progress.emit(ProgressEvent(
+                        event_type=EventType.STEP_COMPLETE,
+                        session_id=context.task_id,
+                        message=f"✅ 步骤完成: {step.skill_id}",
+                        progress_pct=int(((i+1) / total_steps) * 70) + 10,
+                    ))
             else:
                 self.event_emitter.emit(
                     event_type="step_failed",
@@ -452,6 +558,14 @@ class AgentLoop:
 
     async def _phase_reflect(self, context: AgentContext) -> NextAction:
         logger.info("Phase 4: 反思开始")
+
+        if self.progress:
+            self.progress.emit(ProgressEvent(
+                event_type=EventType.REFLECT_START,
+                session_id=context.task_id,
+                message="[反思脑] 正在评估执行结果...",
+                progress_pct=85,
+            ))
 
         overall_result = self._build_overall_result(context)
 

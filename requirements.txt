@@ -36,3 +36,11 @@ pyyaml>=6.0
 
 # 安全存储（secure_storage依赖）
 cryptography>=41.0.0
+
+# 导出系统依赖
+weasyprint>=62.0
+openpyxl>=3.1.0
+python-docx>=1.1.0
+Pillow>=10.0.0
+Jinja2>=3.1.0
+markdown>=3.5.0

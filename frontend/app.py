@@ -114,6 +114,59 @@ def _has_api_key():
     )
 
 
+def _get_export_bytes(content: str, fmt: str) -> tuple:
+    try:
+        from opc_manager.export import ExportManager
+        from opc_manager.export.models import ResultData, ExportFormat
+
+        manager = ExportManager()
+        format_enum = ExportFormat(fmt)
+        data = ResultData(content=content, metadata={"title": "Export"})
+        file_bytes = manager.export_sync(data, format_enum)
+        mime_map = {
+            "pdf": "application/pdf",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "png": "image/png",
+            "html": "text/html",
+            "md": "text/markdown",
+        }
+        ext_map = {
+            "pdf": "pdf", "docx": "docx", "xlsx": "xlsx",
+            "png": "png", "html": "html", "md": "md",
+        }
+        return file_bytes, mime_map.get(fmt, "application/octet-stream"), ext_map.get(fmt, "bin")
+    except Exception as e:
+        logger.warning(f"[frontend] 导出失败 ({fmt}): {e}")
+        return None, None, None
+
+
+def _render_export_buttons(content: str, formats: list, key_prefix: str):
+    if not formats:
+        return
+    FORMAT_LABELS = {
+        "pdf": "📄 PDF", "docx": "📝 Word", "xlsx": "📊 Excel",
+        "png": "🖼️ 图片", "html": "🌐 HTML", "md": "📑 Markdown",
+    }
+    st.markdown("**导出为其他格式:**")
+    btn_cols = st.columns(min(len(formats), 4))
+    for i, fmt in enumerate(formats):
+        label = FORMAT_LABELS.get(fmt, fmt.upper())
+        with btn_cols[i % len(btn_cols)]:
+            file_bytes, mime, ext = _get_export_bytes(content, fmt)
+            if file_bytes:
+                st.download_button(
+                    label=label,
+                    data=file_bytes,
+                    file_name=f"export_{key_prefix}.{ext}",
+                    mime=mime,
+                    key=f"export_{fmt}_{key_prefix}",
+                    use_container_width=True,
+                )
+            else:
+                st.button(label, key=f"export_fail_{fmt}_{key_prefix}", disabled=True, help="导出依赖未安装")
+
+
 st.set_page_config(
     page_title="一人公司助手",
     page_icon="🚀",
@@ -706,6 +759,15 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
         )
 
         if content and success:
+            _export_formats = []
+            if task_type:
+                TYPE_EXPORT_MAP = {
+                    "content_generation": ["pdf", "docx", "md"],
+                    "data_analysis": ["pdf", "xlsx", "md"],
+                    "scenario_based": ["pdf", "docx", "xlsx", "md"],
+                    "info_collection": ["pdf", "md"],
+                }
+                _export_formats = TYPE_EXPORT_MAP.get(task_type, ["md"])
             return {
                 "content": content,
                 "success": True,
@@ -713,6 +775,7 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
                 "task_type": task_type,
                 "error": None,
                 "deliverable_record": deliverable_record,
+                "_exportable_formats": _export_formats,
             }
         else:
             return {
@@ -1174,6 +1237,12 @@ if page == "💬 对话":
                     if result_content:
                         st.markdown(result_content)
 
+                        _render_export_buttons(
+                            result_content,
+                            task_status.get("_exportable_formats", []),
+                            key_prefix=f"{int(time.time()*1000)}",
+                        )
+
                         feedback_key = f"fb_{task_id}"
                         safe_task_id = re.sub(r'[^\w-]', '', task_id)
                         if feedback_key not in st.session_state.quality_feedback:
@@ -1400,6 +1469,14 @@ elif page == "📁 成果物":
                             mime="text/markdown",
                             key=f"dl_lib_{i}",
                             use_container_width=True,
+                        )
+                    if os.path.exists(real_fp):
+                        with open(real_fp, "r", encoding="utf-8") as f:
+                            lib_content = f.read()
+                        _render_export_buttons(
+                            lib_content,
+                            ["pdf", "docx", "xlsx", "png"],
+                            key_prefix=f"lib_{d['filename'][:12]}",
                         )
                     if st.button("🗑️ 删除", key=f"del_lib_{d['filename']}"):
                         try:

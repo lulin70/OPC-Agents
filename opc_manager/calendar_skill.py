@@ -259,3 +259,14 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     title = title.strip().strip("，。、的") or goal
 
     return add_event(title, date, time_str=time_str)
+
+
+def undo_add_event(event_id=None, **kwargs):
+    init_db()
+    rows = execute_query("SELECT * FROM calendar_events WHERE id=? AND status='active'", (event_id,)) if event_id else \
+           execute_query("SELECT * FROM calendar_events WHERE status='active' ORDER BY created_at DESC LIMIT 1")
+    if not rows:
+        return {"success": False, "error": "未找到可撤销的日程"}
+    target_id = event_id or rows[0]["id"]
+    execute_write("UPDATE calendar_events SET status='cancelled' WHERE id=?", (target_id,))
+    return {"success": True, "message": f"日程已撤销: {rows[0].get('title', target_id)}"}

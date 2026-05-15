@@ -98,6 +98,7 @@ class AsyncTask:
     result_filepath: Optional[str] = None
     result_task_type: Optional[str] = None
     result_deliverable_record: Optional[dict] = None
+    result_exportable_formats: Optional[list] = None
     error_message: Optional[str] = None
     thread_ref: Optional[threading.Thread] = None
     execute_func: Optional[Any] = None
@@ -318,6 +319,7 @@ class AsyncTaskExecutor:
                 "result_filepath": task.result_filepath,
                 "result_task_type": task.result_task_type,
                 "result_deliverable_record": task.result_deliverable_record,
+                "_exportable_formats": task.result_exportable_formats,
                 "error_message": task.error_message,
                 "exists": True,
                 "created_at": task.created_at,
@@ -477,6 +479,7 @@ class AsyncTaskExecutor:
                     task.result_filepath = result.get("filepath")
                     task.result_task_type = result.get("task_type")
                     task.result_deliverable_record = result.get("deliverable_record")
+                    task.result_exportable_formats = result.get("_exportable_formats")
                     task.error_message = result.get("error", "")
             elif isinstance(result, tuple) and len(result) >= 2:
                 with self._lock:

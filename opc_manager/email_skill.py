@@ -308,3 +308,14 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         return send_email(to, subject, body)
 
     return {"success": False, "error": "请提供收件人地址或姓名（如：给张三发邮件），请先在CRM中录入客户邮箱"}
+
+
+def undo_send_email(record_id=None, **kwargs):
+    init_db()
+    if record_id:
+        execute_write("UPDATE email_history SET status='draft' WHERE id=? AND status='sent'", (record_id,))
+    else:
+        latest = execute_query("SELECT id FROM email_history WHERE status='sent' ORDER BY created_at DESC LIMIT 1")
+        if latest:
+            execute_write("UPDATE email_history SET status='draft' WHERE id=?", (latest[0]["id"],))
+    return {"success": True, "message": "邮件发送记录已标记为草稿"}

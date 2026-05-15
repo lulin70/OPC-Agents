@@ -642,11 +642,28 @@ class SkillRegistry:
             else:
                 result = skill.execute(**kwargs, _context=context)
 
+            from opc_manager.export.models import SKILL_EXPORT_CAPABILITIES, ExportFormat
+            supported = SKILL_EXPORT_CAPABILITIES.get(skill_id, [ExportFormat.MARKDOWN])
+            result["_exportable_formats"] = [f.value for f in supported]
+
             return {"success": True, "data": result}
 
         except Exception as e:
             logger.error("技能执行异常: %s, 错误: %s", skill_id, str(e))
             return {"success": False, "error": str(e)}
+
+    def export_result(self, skill_id: str, result_data: Dict[str, Any], fmt: str, **opts) -> bytes:
+        from opc_manager.export import ExportManager
+        from opc_manager.export.models import ResultData, ExportFormat
+
+        manager = ExportManager()
+        format_enum = ExportFormat(fmt)
+        content = result_data.get("content", result_data.get("output", ""))
+        data = ResultData(
+            content=content,
+            metadata=result_data.get("metadata", {"title": result_data.get("title", "Export")}),
+        )
+        return manager.export_sync(data, format_enum, **opts)
 
     def to_dict(self) -> Dict[str, Any]:
         """

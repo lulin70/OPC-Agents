@@ -127,6 +127,28 @@ def _prev_month(ym: str) -> str:
     return f"{y}-{m:02d}"
 
 
+def undo_record_income(record_id=None, **kwargs):
+    init_db()
+    if record_id:
+        execute_write("UPDATE finances SET status='voided' WHERE id=? AND type='income'", (record_id,))
+    else:
+        latest = execute_query("SELECT id FROM finances WHERE type='income' ORDER BY created_at DESC LIMIT 1")
+        if latest:
+            execute_write("UPDATE finances SET status='voided' WHERE id=?", (latest[0]["id"],))
+    return {"success": True, "message": "收入记录已撤销"}
+
+
+def undo_record_expense(record_id=None, **kwargs):
+    init_db()
+    if record_id:
+        execute_write("UPDATE finances SET status='voided' WHERE id=? AND type='expense'", (record_id,))
+    else:
+        latest = execute_query("SELECT id FROM finances WHERE type='expense' ORDER BY created_at DESC LIMIT 1")
+        if latest:
+            execute_write("UPDATE finances SET status='voided' WHERE id=?", (latest[0]["id"],))
+    return {"success": True, "message": "支出记录已撤销"}
+
+
 def parse_amount_from_text(text: str) -> Optional[float]:
     patterns = [
         r'[¥￥]\s*(\d+\.?\d*)',

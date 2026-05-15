@@ -142,3 +142,16 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         return {"success": False, "error": "请指定客户名称"}
 
     return create_invoice(client_name, amount)
+
+
+def undo_create_invoice(invoice_id=None, **kwargs):
+    init_db()
+    if invoice_id:
+        rows = execute_query("SELECT * FROM invoices WHERE id=?", (invoice_id,))
+    else:
+        rows = execute_query("SELECT * FROM invoices ORDER BY created_at DESC LIMIT 1")
+    if not rows:
+        return {"success": False, "error": "未找到可撤销的发票"}
+    target_id = invoice_id or rows[0]["id"]
+    execute_write("UPDATE invoices SET status='cancelled' WHERE id=?", (target_id,))
+    return {"success": True, "message": f"发票已撤销: {rows[0].get('invoice_no', target_id)}"}

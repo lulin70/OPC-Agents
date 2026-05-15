@@ -297,3 +297,16 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     topic = _extract_topic(goal, platform)
 
     return generate_content(platform, topic)
+
+
+def undo_publish_content(content_id=None, **kwargs):
+    init_db()
+    if content_id:
+        rows = execute_query("SELECT * FROM social_content WHERE id=? AND status='published'", (content_id,))
+    else:
+        rows = execute_query("SELECT * FROM social_content WHERE status='published' ORDER BY created_at DESC LIMIT 1")
+    if not rows:
+        return {"success": False, "error": "未找到可撤销的发布内容"}
+    target_id = content_id or rows[0]["id"]
+    execute_write("UPDATE social_content SET status='draft', published_at=NULL WHERE id=?", (target_id,))
+    return {"success": True, "message": f"发布内容已撤回: {rows[0].get('title', target_id)}"}

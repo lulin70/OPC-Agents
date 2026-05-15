@@ -168,3 +168,27 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         title = title.replace(kw, "")
     title = title.strip().strip("，。、的") or goal
     return create_task(title, priority=priority, due_date=due_date)
+
+
+def undo_complete_task(task_id=None, title_keyword=None, **kwargs):
+    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        if task_id:
+            rows = execute_query("SELECT id, title FROM tasks WHERE id=? AND status='done'", (task_id,))
+        elif title_keyword:
+            rows = execute_query(
+                "SELECT id, title FROM tasks WHERE title LIKE ? AND status='done'",
+                (f"%{title_keyword}%",),
+            )
+        else:
+            rows = execute_query("SELECT id, title FROM tasks WHERE status='done' ORDER BY completed_at DESC LIMIT 1")
+        if not rows:
+            return {"success": False, "error": "未找到可撤销的已完成任务"}
+        r = rows[0]
+        execute_write(
+            "UPDATE tasks SET status='pending', completed_at=NULL WHERE id=?",
+            (r["id"],),
+        )
+        return {"success": True, "message": f"任务已恢复为待办: {r['title']}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}

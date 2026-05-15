@@ -19,7 +19,7 @@ BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 
 _db_lock = threading.RLock()
 _local = threading.local()
-_db_version = 5
+_db_version = 6
 _db_initialized = False
 _db_init_lock = threading.Lock()
 
@@ -337,6 +337,8 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
             _migrate_v3_to_v4(conn)
         if current < 5:
             _migrate_v4_to_v5(conn)
+        if current < 6:
+            _migrate_v5_to_v6(conn)
         conn.execute("INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', ?)", (str(_db_version),))
         logger.info("[DataManager] Migrated DB from v%d to v%d", current, _db_version)
 
@@ -369,6 +371,27 @@ def _migrate_v4_to_v5(conn: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
         )
+    """)
+
+
+def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            user_id TEXT DEFAULT 'default',
+            timestamp REAL NOT NULL,
+            operation_type TEXT NOT NULL,
+            skill_id TEXT,
+            input_hash TEXT,
+            input_summary TEXT,
+            output_summary TEXT,
+            duration_ms INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'success',
+            error_msg TEXT DEFAULT ''
+        );
+        CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_log(session_id);
+        CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log(timestamp);
     """)
 
 
@@ -433,10 +456,13 @@ def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
 
 
 @_ensure_db
-def execute_write(sql: str, params: tuple = ()) -> int:
+def execute_write(sql: str, params: tuple = (), many: bool = False) -> int:
     with _db_lock:
         conn = _get_conn()
-        conn.execute(sql, params)
+        if many:
+            conn.executemany(sql, params)
+        else:
+            conn.execute(sql, params)
         conn.commit()
         return conn.total_changes
 
