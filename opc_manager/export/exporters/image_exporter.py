@@ -1,9 +1,32 @@
 import io
+import os
+from typing import List, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+FONT_FALLBACK_LIST: List[Tuple[str, int]] = [
+    ("/System/Library/Fonts/PingFang.ttc", 36),
+    ("/System/Library/Fonts/Helvetica.ttc", 36),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 36),
+]
+
+FONT_FALLBACK_NORMAL: List[Tuple[str, int]] = [
+    ("/System/Library/Fonts/PingFang.ttc", 24),
+    ("/System/Library/Fonts/Helvetica.ttc", 24),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24),
+]
+
 
 class ImageExporter:
+    def _load_font(self, font_list: List[Tuple[str, int]], default_size: int):
+        for font_path, size in font_list:
+            if os.path.exists(font_path):
+                try:
+                    return ImageFont.truetype(font_path, size)
+                except (OSError, IOError):
+                    continue
+        return ImageFont.load_default()
+
     def export(self, data, template=None, **opts) -> bytes:
         width = opts.get("width", 1080)
         height = opts.get("height", 1080)
@@ -13,12 +36,8 @@ class ImageExporter:
         img = Image.new('RGB', (width, height), bg_color)
         draw = ImageDraw.Draw(img)
 
-        try:
-            font_large = ImageFont.truetype("/System/Library/Fonts/PingFang.ttc", 36)
-            font_normal = ImageFont.truetype("/System/Library/Fonts/PingFang.ttc", 24)
-        except (OSError, IOError):
-            font_large = ImageFont.load_default()
-            font_normal = ImageFont.load_default()
+        font_large = self._load_font(FONT_FALLBACK_LIST, 36)
+        font_normal = self._load_font(FONT_FALLBACK_NORMAL, 24)
 
         title = data.metadata.get("title", "")
         if title:

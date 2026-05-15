@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from .wechat_gateway import WeChatGateway, WeChatMessage, WeChatResponse, WeChatMsgType
 from .agent_loop import AgentLoop
@@ -16,6 +16,8 @@ class WeChatAgentBridge:
                                      encoding_aes_key=encoding_aes_key,
                                      corp_id=corp_id)
         self.gateway.set_message_handler(self._on_message)
+        self._original_check_confirmation = None
+        self._confirm_callback_wrapper = None
 
     async def _on_message(self, msg: WeChatMessage) -> WeChatResponse:
         if msg.msg_type == WeChatMsgType.TEXT:
@@ -97,22 +99,8 @@ class WeChatAgentBridge:
                         request.session_id, card_content)
             return ConfirmationResult(confirmed=False, method="wechat_card")
 
-        original_check = self.agent_loop.confirmer.check_confirmation
-
-        async def wrapped_check(session_id: str, intent_type: str,
-                                goal: str, confidence: float,
-                                params: dict = None,
-                                confirm_callback=None) -> ConfirmationResult:
-            return await original_check(
-                session_id=session_id,
-                intent_type=intent_type,
-                goal=goal,
-                confidence=confidence,
-                params=params,
-                confirm_callback=wechat_confirm_callback,
-            )
-
-        self.agent_loop.confirmer.check_confirmation = wrapped_check
+        self._original_check_confirmation = self.agent_loop.confirmer.check_confirmation
+        self._confirm_callback_wrapper = wechat_confirm_callback
 
     async def handle_callback(self, query_params: dict, body: str) -> str:
         return await self.gateway.handle_callback(query_params, body)

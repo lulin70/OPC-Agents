@@ -76,8 +76,16 @@ mcp = [
     "uvicorn>=0.23.0",
     "sse-starlette>=1.6.0",
 ]
+export = [
+    "weasyprint>=62.0",
+    "openpyxl>=3.1.0",
+    "python-docx>=1.0.0",
+    "Pillow>=10.0.0",
+    "Jinja2>=3.1.0",
+    "markdown>=3.5.0",
+]
 all = [
-    "opc-agents[dev,marketplace,mcp]",
+    "opc-agents[dev,marketplace,mcp,export]",
 ]
 
 [project.scripts]

@@ -4,11 +4,30 @@ import asyncio
 from aiohttp import web
 from opc_manager.progress_emitter import ProgressEmitter, ProgressEvent, EventType
 
+MAX_SSE_CONNECTIONS = 100
+_active_sse_connections = 0
+_connection_lock = asyncio.Lock()
+
+def _validate_session_id(session_id: str) -> bool:
+    if not session_id or not isinstance(session_id, str):
+        return False
+    if len(session_id) < 32 or len(session_id) > 128:
+        return False
+    return True
+
 async def sse_handler(request: web.Request) -> web.StreamResponse:
+    global _active_sse_connections
     session_id = request.query.get("session_id", "")
-    if not session_id:
-        return web.Response(text="session_id required", status=400)
     
+    if not _validate_session_id(session_id):
+        return web.Response(text="Invalid session_id format", status=400)
+    
+    async with _connection_lock:
+        if _active_sse_connections >= MAX_SSE_CONNECTIONS:
+            return web.Response(text="Too many SSE connections", status=503)
+        _active_sse_connections += 1
+    
+    try:
     response = web.StreamResponse(
         status=200,
         reason='OK',
@@ -48,6 +67,8 @@ async def sse_handler(request: web.Request) -> web.StreamResponse:
         pass
     finally:
         emitter.unsubscribe(session_id)
+        async with _connection_lock:
+            _active_sse_connections -= 1
     
     return response
 

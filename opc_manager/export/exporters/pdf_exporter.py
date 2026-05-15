@@ -12,8 +12,10 @@ class PDFExporter:
 
     def _md_to_html(self, data, template):
         if template:
-            from jinja2 import Template
-            return Template(template).render(content=data.content, meta=data.metadata)
+            from jinja2 import SandboxedEnvironment
+            env = SandboxedEnvironment()
+            j_template = env.from_string(template)
+            return j_template.render(content=data.content, meta=data.metadata)
         try:
             import markdown
             return markdown.markdown(data.content, extensions=['tables', 'fenced_code'])

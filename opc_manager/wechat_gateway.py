@@ -42,15 +42,20 @@ class WeChatResponse:
     media_id: str = ""
     
     def to_xml(self, to_user: str, from_user: str) -> str:
+        escaped_content = self._escape_cdata(self.content)
         if self.msg_type == "text":
             return f"""<xml>
 <ToUserName><![CDATA[{to_user}]]></ToUserName>
 <FromUserName><![CDATA[{from_user}]]></FromUserName>
 <CreateTime>{int(time.time())}</CreateTime>
 <MsgType><![CDATA[text]]></MsgType>
-<Content><![CDATA[{self.content}]]></Content>
+<Content><![CDATA[{escaped_content}]]></Content>
 </xml>"""
-        return f"<xml><ToUserName><![CDATA[{to_user}]]></ToUserName><FromUserName><![CDATA[{from_user}]]></FromUserName><CreateTime>{int(time.time())}</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[{self.content}]]></Content></xml>"
+        return f"<xml><ToUserName><![CDATA[{to_user}]]></ToUserName><FromUserName><![CDATA[{from_user}]]></FromUserName><CreateTime>{int(time.time())}</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[{escaped_content}]]></Content></xml>"
+
+    @staticmethod
+    def _escape_cdata(text: str) -> str:
+        return text.replace(']]>', ']]&gt;')
 
 class WeChatGateway:
     def __init__(self, token: str = "", encoding_aes_key: str = "", corp_id: str = ""):
@@ -66,17 +71,24 @@ class WeChatGateway:
     def _init_aes_key(self):
         try:
             from Crypto.Cipher import AES
-            key = base64.b64decode(self.encoding_aes_key + "=")
+            try:
+                key = base64.b64decode(self.encoding_aes_key + "=")
+            except Exception:
+                key = base64.b64decode(self.encoding_aes_key)
             self._aes_key = key[:32]
             iv = key[32:48] if len(key) >= 48 else key[16:32]
             self._iv = iv
         except ImportError:
             logger.warning("pycryptodome not installed, encryption disabled")
             self._aes_key = None
+        except Exception as e:
+            logger.error("Failed to decode AES key: %s", e)
+            self._aes_key = None
     
     def verify_signature(self, signature: str, timestamp: str, nonce: str) -> bool:
         if not self.token:
-            return True
+            logger.warning("WeChatGateway: token is empty, signature verification rejected")
+            return False
         arr = sorted([self.token, timestamp, nonce])
         sha = hashlib.sha1("".join(arr).encode()).hexdigest()
         return sha == signature

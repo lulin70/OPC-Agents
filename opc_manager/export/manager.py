@@ -16,13 +16,11 @@ class ExportManager:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
+                    cls._instance._register_builtin_exporters()
         return cls._instance
 
     def __init__(self):
-        if not self._initialized:
-            self._register_builtin_exporters()
-            self._initialized = True
+        pass
 
     def register_exporter(self, format: ExportFormat, exporter):
         self._exporters[format] = exporter
@@ -49,8 +47,9 @@ class ExportManager:
             self.export_sync, data, fmt, template_id, opts)
 
     def _load_template(self, template_id: str, fmt: ExportFormat) -> str:
+        safe_template_id = os.path.basename(template_id)
         template_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'templates', fmt.value)
-        path = os.path.join(template_dir, f"{template_id}.j2")
+        path = os.path.join(template_dir, f"{safe_template_id}.j2")
         if os.path.exists(path):
             with open(path, 'r', encoding='utf-8') as f:
                 return f.read()

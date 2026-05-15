@@ -63,7 +63,7 @@ except ImportError:
     pass
 except Exception as e:
     import logging as _logging
-    _logging.getLogger(__name__).warning(f"Secure storage init failed: {e}")
+    _logging.getLogger(__name__).warning("Secure storage init failed: %s", e)
 
 from opc_manager.monitoring import init_monitoring, track_event, track_error
 
@@ -84,6 +84,14 @@ for _subdir in [
     os.makedirs(os.path.join(_WORKSPACE_DIR, _subdir), exist_ok=True)
 
 CHAT_HISTORY_FILE = os.path.join(_WORKSPACE_DIR, "data", "chat_history.json")
+
+# TODO(ST-01): 考虑将此文件拆分为以下模块：
+# - chat_history.py: _save_chat_history, _load_chat_history
+# - api_helpers.py: _has_api_key, _get_export_bytes
+# - ui_components.py: _render_export_buttons
+# - safe_wrappers.py: safe_detect, safe_get_persona, safe_track_flywheel
+# - task_executor.py: execute_with_agent_loop, execute_task_and_deliver, _async_execute_task
+# - page_tabs.py: 各个tab页面的渲染函数
 
 
 def _save_chat_history():
@@ -137,7 +145,7 @@ def _get_export_bytes(content: str, fmt: str) -> tuple:
         }
         return file_bytes, mime_map.get(fmt, "application/octet-stream"), ext_map.get(fmt, "bin")
     except Exception as e:
-        logger.warning(f"[frontend] 导出失败 ({fmt}): {e}")
+        logger.warning("[frontend] 导出失败 (%s): %s", fmt, e)
         return None, None, None
 
 
@@ -253,7 +261,7 @@ if "initialized" not in st.session_state:
                     }
                 )
         if disk_files:
-            logger.debug(f"[frontend] 从磁盘恢复了 {len(disk_files)} 个成果物记录")
+            logger.debug("[frontend] 从磁盘恢复了 %d 个成果物记录", len(disk_files))
 
 PERSONA_MAP = {
     """业务类型 → (显示名称, 风格描述) 映射表
@@ -402,7 +410,7 @@ def safe_detect(prompt_text):
             return result.business_type.value, result.confidence, result.method
         return "content_creator", 0.5, "default"
     except Exception as e:
-        logger.debug(f"[frontend] detect error: {e}")
+        logger.debug("[frontend] detect error: %s", e)
         return "content_creator", 0.5, "fallback"
 
 
@@ -430,7 +438,7 @@ def safe_get_persona(type_value):
             return persona.display_name, persona.style_overrides.get("tone", "专业温暖")
         return "智能助手", "专业温暖"
     except Exception as e:
-        logger.debug(f"[frontend] persona error: {e}")
+        logger.debug("[frontend] persona error: %s", e)
         name = PERSONA_MAP.get(type_value, ("智能助手", "专业"))[0]
         return name, "专业"
 
@@ -478,7 +486,7 @@ def safe_track_flywheel(type_value):
         st.session_state.flywheel_level = 3 if avg >= 60 else (2 if avg >= 35 else 1)
         return True
     except Exception as e:
-        logger.debug(f"[frontend] flywheel error: {e}")
+        logger.debug("[frontend] flywheel error: %s", e)
         st.session_state.scenario_count += 1
         return False
 
@@ -526,7 +534,7 @@ def save_deliverable(
         "meta": meta or {},
     }
 
-    logger.debug(f"[frontend] 成果物已保存: {filepath} ({deliverable_record['size_kb']}KB)")
+    logger.debug("[frontend] 成果物已保存: %s (%sKB)", filepath, deliverable_record['size_kb'])
     return filepath, deliverable_record
 
 
@@ -573,7 +581,7 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
             loop.close()
 
         if not result_dict.get("success"):
-            logger.warning(f"[frontend] AgentLoop执行失败，降级到TaskEngineV3")
+            logger.warning("[frontend] AgentLoop执行失败，降级到TaskEngineV3")
             return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
 
         from opc_manager.task_engine_adapter import TaskEngineAdapter as TEA
@@ -633,7 +641,7 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
-        logger.warning(f"[frontend] AgentLoop异常，降级到TaskEngineV3: {e}\n{tb}")
+        logger.warning("[frontend] AgentLoop异常，降级到TaskEngineV3: %s\n%s", e, tb)
         return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
 
 
@@ -649,7 +657,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         (content_with_meta, success, filepath, task_type_value, deliverable_record)
     """
     try:
-        logger.debug(f"[frontend] 开始执行任务: {prompt[:50]}")
+        logger.debug("[frontend] 开始执行任务: %s", prompt[:50])
         from opc_manager.task_engine_v3 import task_engine_v3, TaskType
 
         engine = task_engine_v3
@@ -664,15 +672,15 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         )
 
         if not result.success:
-            logger.debug(f"[frontend] 任务标记为失败: {result.error}")
+            logger.debug("[frontend] 任务标记为失败: %s", result.error)
             return None, False, None, None, None
 
         if not result.content:
-            logger.debug(f"[frontend] 内容为空!")
+            logger.debug("[frontend] 内容为空!")
             return None, False, None, None, None
 
         if result.task_type == TaskType.GENERAL_CHAT and len(result.content) < 300:
-            logger.debug(f"[frontend] 闲聊/短回复，不生成成果物文件")
+            logger.debug("[frontend] 闲聊/短回复，不生成成果物文件")
             return result.content, True, None, "general_chat", None
 
         meta_lines = []
@@ -708,7 +716,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
 
         content_with_meta = f"{result.content}{mode_tag}\n\n---\n*{meta_str}*"
 
-        logger.debug(f"[frontend] 准备保存文件...")
+        logger.debug("[frontend] 准备保存文件...")
         filepath, deliverable_record = save_deliverable(
             content=content_with_meta,
             prompt=prompt,
@@ -720,7 +728,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
                 "success": result.success,
             },
         )
-        logger.debug(f"[frontend] 文件已保存: {filepath}")
+        logger.debug("[frontend] 文件已保存: %s", filepath)
 
         return content_with_meta, result.success, filepath, result.task_type.value, deliverable_record
 
@@ -728,7 +736,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         import traceback
 
         tb = traceback.format_exc()
-        logger.debug(f"[frontend] execute_task_and_deliver error: {e}\n{tb}")
+        logger.debug("[frontend] execute_task_and_deliver error: %s\n%s", e, tb)
         return None, False, None, None, None
 
 
@@ -750,7 +758,7 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
         dict with keys: content, success, filepath, task_type, error, deliverable_record
     """
     try:
-        logger.debug(f"[frontend-async] 开始后台执行: {prompt[:50]}")
+        logger.debug("[frontend-async] 开始后台执行: %s", prompt[:50])
         content, success, filepath, task_type, deliverable_record = execute_with_agent_loop(
             prompt, session_ctx=session_ctx, business_type=business_type
         )
@@ -791,7 +799,7 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
         import traceback
 
         tb = traceback.format_exc()
-        logger.debug(f"[frontend-async] 执行异常: {e}\n{tb}")
+        logger.debug("[frontend-async] 执行异常: %s\n%s", e, tb)
         return {
             "content": None,
             "success": False,
@@ -1128,7 +1136,7 @@ if page == "💬 对话":
             st.error("⚠️ 系统繁忙，请稍后再试（并发任务已达上限）")
             st.stop()
 
-        logger.debug(f"[frontend] 任务已提交: {task_id} (异步模式{'，追问模式' if is_follow_up else ''})")
+        logger.debug("[frontend] 任务已提交: %s (异步模式%s)", task_id, "，追问模式" if is_follow_up else "")
 
         with st.chat_message("assistant"):
             status_container = st.status(

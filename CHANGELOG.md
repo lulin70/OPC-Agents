@@ -106,8 +106,46 @@ All notable changes to OPC-Agents will be documented in this file.
 | social_skill.py | +undo_publish_content |
 | task_skill.py | +undo_complete_task |
 
+### 7维代码走读修复（v0.1.9技术债清零）
+
+#### 🔒 P1-Security（16项修复）
+- **Confirmer**: S-01回调注入防护(callable校验), S-02信任分上限(MAX_TRUST_SCORE=10), S-03目标脱敏(12种敏感词过滤)
+- **UndoManager**: S-04会话隔离(256字符限制), S-05函数白名单(ALLOWED_FUNC_NAMES×11), S-06None崩溃明确报错
+- **AuditLog**: S-07完整64位hash+14种敏感字段脱敏, S-08 None输入防护, S-09优雅退出(_stop_event)+DB连接复用
+- **WeChatGateway**: S-10空token拒绝验证, S-11 AES key容错解码, S-12 XML CDATA转义(]]>→]]&gt;)
+- **Export**: S-14 Jinja2沙箱环境(SandboxedEnvironment), S-15路径穿越防护(os.path.basename)
+- **SSE**: S-18 session_id格式校验(UUID 32-128字符), S-20连接数限制(MAX=100, 超限503)
+
+#### 🏗️ P1-Architecture（4项修复）
+- **A-02 单例竞态**: 5个单例类(progress_emitter/export_manager/audit_log/confirmer/undo)初始化逻辑全部移入__new__锁内
+- **A-04 延迟导入**: UndoManager._resolve_inverse改为lazy import+异常隔离，单模块失败不影响其他undo
+- **A-05 DB复用**: AuditLog在__new__中一次性init_db()，writer线程复用连接
+- **A-06 组合模式**: WechatAgentBridge改用wrapper委托，不再monkey-patch Confirmer方法
+
+#### 📝 P2-CodeQuality（8项修复）
+- Magic Numbers常量化: MAX_GOAL_DISPLAY_CHARS=100, AUDIT_MAX_MEMORY_LOGS=1000等15个命名常量
+- 类型注解补全: confirmer.py Dict[str, ConfirmationRequest], wechat_agent.py完整注解
+- frontend/app.py: 18处f-string logger → %s格式化
+- 异常细化: bare except → (KeyError, TypeError)/(IOError, OSError)/Exception三级
+- 错误消息增强: 包含操作ID和上下文信息
+- 字体回退列表: image_exporter.py支持多平台字体路径
+
+#### ⚙️ P2-Infrastructure（3项修复）
+- .gitignore: +data/templates/, +data/reports/
+- pyproject.toml: 新增export可选依赖组(weasyprint/openpyxl/python-docx/Pillow/Jinja2/markdown)
+- Git清理: 移除5个runtime数据文件跟踪(knowledge/*.json, perf_metrics.json)
+
+#### 🎨 P3-Style（9项修复）
+- 边界检查增强: confidence[0,1], session_id非空, limit[1,1000], progress_pct[0,100]
+- Google-style Docstring: 4个核心模块(confirmer/undo/audit_log/progress_emitter)完整文档
+- Import顺序规范化: stdlib→third-party→local
+- 常量定义统一: 类级→模块级UPPER_CASE
+- app.py拆分TODO标记: 未来可拆为7个独立模块
+
 ### 测试结果
 - **612 passed, 21 skipped, 0 failed** (从603增至612，+9个WeChatGateway测试)
+- 安全测试19/19通过(注入/XSS/路径穿越/APIKey泄露/输出脱敏/安全存储)
+- WeChatGateway测试更新: test_verify_no_token_always_true → test_verify_no_token_rejected(符合新安全行为)
 
 ---
 

@@ -14,9 +14,9 @@ class TestWeChatGatewaySignature:
         gw = WeChatGateway(token="test_token")
         assert gw.verify_signature("wrong_sig", "123", "456") is False
     
-    def test_verify_no_token_always_true(self):
+    def test_verify_no_token_rejected(self):
         gw = WeChatGateway(token="")
-        assert gw.verify_signature("", "", "") is True
+        assert gw.verify_signature("", "", "") is False
 
 class TestWeChatMessageParsing:
     SAMPLE_TEXT_XML = """<xml>

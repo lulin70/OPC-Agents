@@ -1,14 +1,24 @@
-import time
-import threading
-import logging
+"""Undo management system for OPC-Agents.
+
+Provides operation undo functionality with time-windowed reversibility.
+Supports undo for various business operations like email sending,
+financial records, CRM actions, etc.
+"""
+
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+import logging
+import threading
+import time
+
 
 logger = logging.getLogger(__name__)
 
 
 class OperationType(Enum):
+    """Types of operations that can be undone."""
     EMAIL_SEND = "email_send"
     RECORD_INCOME = "record_income"
     RECORD_EXPENSE = "record_expense"
@@ -19,6 +29,7 @@ class OperationType(Enum):
     ADD_CUSTOMER = "add_customer"
     ADD_FOLLOW_UP = "add_follow_up"
     SOCIAL_PUBLISH = "social_publish"
+
 
 UNDO_WINDOWS_SECONDS = {
     OperationType.EMAIL_SEND: 300,
@@ -35,9 +46,42 @@ UNDO_WINDOWS_SECONDS = {
 
 UNDOABLE_TYPES = set(OperationType)
 
+UNDO_MAX_PER_SESSION = 50
+UNDO_CLEANUP_INTERVAL = 3600
+DEFAULT_UNDO_WINDOW = 3600
+ORIGINAL_SUMMARY_TRUNCATE = 100
+MAX_SESSION_ID_LENGTH = 256
+
+ALLOWED_FUNC_NAMES = {
+    "undo_record_income",
+    "undo_record_expense",
+    "undo_add_customer",
+    "undo_send_email",
+    "undo_add_event",
+    "undo_create_proposal",
+    "undo_create_invoice",
+    "undo_publish_content",
+    "undo_complete_task",
+    "undo_add_deal",
+    "undo_add_follow_up",
+}
+
 
 @dataclass
 class UndoRecord:
+    """Represents a single undo record.
+
+    Attributes:
+        operation_id: Unique identifier for this operation.
+        operation_type: Type of the operation.
+        session_id: Session this operation belongs to.
+        inverse_func_name: Name of the inverse function to call.
+        inverse_args: Arguments to pass to the inverse function.
+        original_result: Result of the original operation.
+        created_at: Timestamp when record was created.
+        expires_at: Timestamp when undo window expires.
+        status: Current status ('active', 'undone', 'expired').
+    """
     operation_id: str
     operation_type: OperationType
     session_id: str
@@ -50,16 +94,56 @@ class UndoRecord:
 
 
 class UndoManager:
-    MAX_PER_SESSION = 50
-    CLEANUP_INTERVAL = 3600
+    """Manages undo records for reversible operations.
+
+    Thread-safe implementation with per-session record limits and
+    automatic expiration based on operation type time windows.
+
+    Attributes:
+        _records: Dictionary mapping session_id to list of UndoRecord.
+        _lock: Threading lock for thread safety.
+        MAX_PER_SESSION: Maximum undo records per session (from UNDO_MAX_PER_SESSION).
+        CLEANUP_INTERVAL: Seconds between cleanup cycles (from UNDO_CLEANUP_INTERVAL).
+    """
 
     def __init__(self):
+        """Initialize UndoManager with empty records and lock."""
+        self.MAX_PER_SESSION = UNDO_MAX_PER_SESSION
+        self.CLEANUP_INTERVAL = UNDO_CLEANUP_INTERVAL
         self._records: Dict[str, List[UndoRecord]] = {}
         self._lock = threading.Lock()
+
+    @staticmethod
+    def _validate_session_id(session_id: str) -> None:
+        """Validate session_id format and length."""
+        if not session_id or not isinstance(session_id, str):
+            raise ValueError("session_id must be a non-empty string")
+        if len(session_id) > MAX_SESSION_ID_LENGTH:
+            raise ValueError(f"session_id exceeds maximum length of {MAX_SESSION_ID_LENGTH}")
 
     def push(self, session_id: str, op_type: OperationType,
              inverse_func: str, inverse_args: dict,
              original_result: dict) -> str:
+        """Push a new undo record.
+
+        Args:
+            session_id: Session identifier.
+            op_type: Type of operation being recorded.
+            inverse_func: Name of the inverse function.
+            inverse_args: Arguments for the inverse function.
+            original_result: Result of the original operation.
+
+        Returns:
+            The operation_id of the created record.
+
+        Raises:
+            ValueError: If session_id or inverse_func is invalid.
+        """
+        if not session_id or not isinstance(session_id, str):
+            raise ValueError("session_id must be a non-empty string")
+        if not isinstance(inverse_func, str) or not inverse_func:
+            raise ValueError("inverse_func must be a non-empty string")
+        self._validate_session_id(session_id)
         record = UndoRecord(
             operation_id=self._gen_id(),
             operation_type=op_type,
@@ -68,7 +152,7 @@ class UndoManager:
             inverse_args=inverse_args or {},
             original_result=original_result or {},
         )
-        window = UNDO_WINDOWS_SECONDS.get(op_type, 3600)
+        window = UNDO_WINDOWS_SECONDS.get(op_type, DEFAULT_UNDO_WINDOW)
         record.expires_at = time.time() + window
 
         with self._lock:
@@ -82,6 +166,16 @@ class UndoManager:
         return record.operation_id
 
     def can_undo(self, session_id: str, operation_id: str) -> tuple:
+        """Check if an operation can be undone.
+
+        Args:
+            session_id: Session identifier.
+            operation_id: Operation to check.
+
+        Returns:
+            Tuple of (can_undo: bool, reason: str).
+        """
+        self._validate_session_id(session_id)
         with self._lock:
             for r in self._records.get(session_id, []):
                 if r.operation_id == operation_id and r.status == "active":
@@ -89,10 +183,21 @@ class UndoManager:
                         return True, ""
                     else:
                         r.status = "expired"
-                        return False, "已过撤销窗口期"
-            return False, "记录不存在或已撤销"
+                        return False, "Undo window expired"
+                    return False, "Record not found or already undone"
+            return False, "Record not found or already undone"
 
     def undo(self, session_id: str, operation_id: str) -> dict:
+        """Execute undo for an operation.
+
+        Args:
+            session_id: Session identifier.
+            operation_id: Operation to undo.
+
+        Returns:
+            Dict with 'success' bool and optional 'error'/'result'.
+        """
+        self._validate_session_id(session_id)
         can, reason = self.can_undo(session_id, operation_id)
         if not can:
             return {"success": False, "error": reason}
@@ -106,18 +211,35 @@ class UndoManager:
                     break
 
         if record is None:
-            return {"success": False, "error": "记录不存在"}
+            return {"success": False, "error": "Record not found"}
 
         try:
             func = self._resolve_inverse(record.inverse_func_name)
+            if func is None:
+                return {"success": False, "error": f"Unknown inverse function: {record.inverse_func_name}"}
             result = func(**record.inverse_args)
             logger.info("Undo succeeded: %s (%s)", operation_id, record.inverse_func_name)
             return {"success": True, "operation_id": operation_id, "result": result}
+        except (KeyError, TypeError) as e:
+            logger.error("Undo parameter error: %s - %s", operation_id, e)
+            return {"success": False, "error": f"Invalid parameters: {e}"}
+        except (IOError, OSError) as e:
+            logger.error("Undo I/O error: %s - %s", operation_id, e)
+            return {"success": False, "error": f"I/O error: {e}"}
         except Exception as e:
-            logger.error("Undo failed: %s - %s", operation_id, e)
-            return {"success": False, "error": str(e)}
+            logger.error("Undo failed for operation %s (%s): %s", operation_id, record.inverse_func_name, e)
+            return {"success": False, "error": f"Undo failed for {operation_id}: {e}"}
 
     def list_undoable(self, session_id: str) -> List[dict]:
+        """List all undoable operations for a session.
+
+        Args:
+            session_id: Session identifier.
+
+        Returns:
+            List of dicts with operation details, sorted by creation time desc.
+        """
+        self._validate_session_id(session_id)
         now = time.time()
         results = []
         with self._lock:
@@ -129,11 +251,12 @@ class UndoManager:
                         "type": r.operation_type.value,
                         "created_at": r.created_at,
                         "remaining_seconds": remaining,
-                        "original_summary": str(r.original_result)[:100],
+                        "original_summary": str(r.original_result)[:ORIGINAL_SUMMARY_TRUNCATE],
                     })
         return sorted(results, key=lambda x: x["created_at"], reverse=True)
 
     def cleanup_expired(self):
+        """Remove all expired undo records."""
         now = time.time()
         with self._lock:
             for sid in list(self._records.keys()):
@@ -144,12 +267,29 @@ class UndoManager:
 
     @staticmethod
     def _gen_id() -> str:
+        """Generate a unique operation ID."""
         import uuid
         return uuid.uuid4().hex[:12]
 
     @staticmethod
     def _resolve_inverse(func_name: str):
-        from opc_manager import finance_skill, crm_skill, email_skill, calendar_skill, proposal_skill, invoice_skill, social_skill, task_skill
+        """Resolve inverse function name to callable.
+
+        Args:
+            func_name: Name of the inverse function.
+
+        Returns:
+            Callable or None if not found.
+
+        Raises:
+            ValueError: If function name is not in ALLOWED_FUNC_NAMES.
+        """
+        if func_name not in ALLOWED_FUNC_NAMES:
+            raise ValueError(f"Unauthorized inverse function: {func_name}")
+
+        from opc_manager import (finance_skill, crm_skill, email_skill,
+                                  calendar_skill, proposal_skill,
+                                  invoice_skill, social_skill, task_skill)
         mapping = {
             "undo_record_income": finance_skill.undo_record_income,
             "undo_record_expense": finance_skill.undo_record_expense,
@@ -163,4 +303,7 @@ class UndoManager:
             "undo_add_deal": crm_skill.undo_add_deal,
             "undo_add_follow_up": crm_skill.undo_add_follow_up,
         }
-        return mapping.get(func_name)
+        func = mapping.get(func_name)
+        if func is None:
+            raise ValueError(f"Inverse function not found: {func_name}")
+        return func

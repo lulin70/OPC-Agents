@@ -56,6 +56,8 @@ data/llm_cache/
 data/feedback/
 data/consensus_logs/
 data/dashboard/
+data/templates/
+data/reports/
 data/perf_metrics.json
 data/marketplace/
 data/backups/

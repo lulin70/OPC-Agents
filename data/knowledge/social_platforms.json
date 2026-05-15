@@ -1,7 +1,0 @@
-{
-  "小红书": {"max_title": 20, "max_body": 1000, "style": "种草风", "emoji": true, "tags": true},
-  "公众号": {"max_title": 64, "max_body": 20000, "style": "专业深度", "emoji": false, "tags": false},
-  "推特": {"max_title": 0, "max_body": 280, "style": "简洁有力", "emoji": true, "tags": true},
-  "微博": {"max_title": 0, "max_body": 2000, "style": "话题互动", "emoji": true, "tags": true},
-  "知乎": {"max_title": 50, "max_body": 50000, "style": "干货长文", "emoji": false, "tags": false}
-}
