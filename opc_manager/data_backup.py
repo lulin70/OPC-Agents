@@ -139,15 +139,25 @@ class DataBackupManager:
         try:
             data_dir = self._base_dir / "data"
 
-            # Read manifest first if available
+            # Read manifest and extract all files safely — prevent Zip Slip
             with zipfile.ZipFile(bp, 'r') as zf:
                 if "manifest.json" in zf.namelist():
                     manifest_data = json.loads(zf.read("manifest.json"))
                     logger.info("Restoring from backup: v%s, %d files",
                                manifest_data.get("version"), manifest_data.get("total_files", "?"))
 
-                # Extract all files (overwrite existing)
-                zf.extractall(data_dir)
+                for zip_info in zf.infolist():
+                    arcname = zip_info.filename
+                    if arcname.startswith("/") or ".." in arcname:
+                        logger.warning("Skipping unsafe ZIP entry: %s", arcname)
+                        continue
+                    target_path = data_dir / arcname
+                    try:
+                        target_path.resolve().relative_to(data_dir.resolve())
+                    except ValueError:
+                        logger.warning("Skipping path-traversal entry: %s", arcname)
+                        continue
+                    zf.extract(zip_info, data_dir)
 
             return {
                 "success": True,

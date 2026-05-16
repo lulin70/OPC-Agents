@@ -276,7 +276,7 @@ class SettingsManager:
         self._security.encryption_key = key
         self._security.auto_generated = True
 
-        env_local = Path(".env.local")
+        env_local = self._base_dir / ".env.local"
         lines = []
         if env_local.exists():
             lines = env_local.read_text(encoding='utf-8').splitlines()

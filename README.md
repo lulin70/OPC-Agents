@@ -3,7 +3,7 @@
 > **版本**: v0.2.0 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI](https://img.shields.io/pypi/v/opc-agents)](https://pypi.org/project/opc-agents/)
 
@@ -58,7 +58,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **知识库兜底** — 6类20条专业知识，搜索失败时自动兜底
 - ✅ **文件交付** — 自动生成`.md`文件，提供下载按钮
 - ✅ **安全防护** — 命令白名单+路径校验+输入长度限制+审计日志+输入验证+Prompt注入防护+URL安全+错误脱敏+API Key加密存储
-- ✅ **测试覆盖** — 470个测试用例，100%通过率，CI自动验证
+- ✅ **测试覆盖** — **813**个测试用例，100%通过率，CI自动验证
 - ✅ **技能市场API** — 外部技能注册/发现/调用，API Key认证+权限分级
 - ✅ **MCP协议兼容** — 兼容微软Model Context Protocol标准，支持工具/资源/提示词
   > MCP SSE模式需要额外依赖：`pip install opc-agents[mcp]`，stdio模式无需额外安装。
@@ -115,7 +115,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 
 ### 前提条件
 
-- Python 3.9+
+- Python 3.10+
 - 至少一个LLM API Key
 
 ### 方式一：pip 安装
@@ -205,7 +205,7 @@ docker compose up -d
 |------|---------|
 | 页面显示"模板模式" | 检查 `.env` 文件中 API Key 是否已填入 |
 | 端口被占用 | `opc-agents -- --server.port 8502` |
-| Python版本不对 | 需要 Python 3.9+，运行 `python3 --version` 检查 |
+| Python版本不对 | 需要 Python 3.10+，运行 `python3 --version` 检查 |
 | 安装依赖失败 | 尝试 `pip install --upgrade pip` 后重试 |
 | 加密功能不可用 | 运行 `pip install cryptography` 安装加密依赖 |
 

@@ -3003,10 +3003,12 @@ def _render_restore_data_tab():
     if uploaded_file:
         st.info(f"📄 已选择文件: {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
 
-        # Save uploaded file to temp location
+        # Save uploaded file to temp location (sanitize filename)
+        import re
+        safe_name = re.sub(r'[^\w\-.]', '_', uploaded_file.name)[:100]
         temp_dir = Path(_WORKSPACE_DIR) / "data" / "temp"
         temp_dir.mkdir(parents=True, exist_ok=True)
-        temp_path = temp_dir / uploaded_file.name
+        temp_path = temp_dir / f"restore_{safe_name}"
 
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())

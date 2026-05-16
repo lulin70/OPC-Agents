@@ -12,6 +12,19 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+try:
+    from openai import APIError as _OpenAIAPIError, APIConnectionError, RateLimitError, APITimeoutError
+except ImportError:
+    _OpenAIAPIError = Exception
+    APIConnectionError = Exception
+    RateLimitError = Exception
+    APITimeoutError = Exception
+
+try:
+    from sqlite3 import DatabaseError as _SQLiteDBError
+except ImportError:
+    _SQLiteDBError = Exception
+
 
 class ErrorCategory(Enum):
     NETWORK = "network"
@@ -33,43 +46,37 @@ class ErrorSeverity(Enum):
 
 
 ERROR_MAP: Dict[Tuple[Type, ...], Dict[str, Any]] = {
-    # Permission errors (must come before network errors since PermissionError is OSError subclass)
     (PermissionError,): {
         "category": ErrorCategory.PERMISSION,
         "user_message": "权限不足，无法完成此操作",
         "suggestion": "请检查文件或目录的访问权限",
         "severity": ErrorSeverity.ERROR,
     },
-    # Network errors
     (ConnectionError, TimeoutError, OSError): {
         "category": ErrorCategory.NETWORK,
         "user_message": "网络连接失败，请检查网络后重试",
         "suggestion": "检查网络连接是否正常，或稍后再试",
         "severity": ErrorSeverity.WARNING,
     },
-    # Configuration errors
     (KeyError, ValueError): {
         "category": ErrorCategory.CONFIGURATION,
         "user_message": "配置信息不完整或有误",
         "suggestion": "请在设置页面检查相关配置项",
         "severity": ErrorSeverity.WARNING,
     },
-    # Validation errors
     (AttributeError, TypeError): {
         "category": ErrorCategory.VALIDATION,
         "user_message": "输入数据格式有误",
         "suggestion": "请检查输入内容是否符合要求",
         "severity": ErrorSeverity.WARNING,
     },
-    # LLM errors
-    ("LLMError",): {
+    (_OpenAIAPIError, APIConnectionError, RateLimitError, APITimeoutError): {
         "category": ErrorCategory.LLM,
         "user_message": "AI服务暂时不可用",
         "suggestion": "AI服务可能正在维护中，请稍后重试",
         "severity": ErrorSeverity.ERROR,
     },
-    # Database errors
-    ("DatabaseError",): {
+    (_SQLiteDBError,): {
         "category": ErrorCategory.DATABASE,
         "user_message": "数据存储出错",
         "suggestion": "数据可能未保存成功，建议重试操作",
@@ -79,8 +86,6 @@ ERROR_MAP: Dict[Tuple[Type, ...], Dict[str, Any]] = {
 
 
 class UserFriendlyError(Exception):
-    """Wraps an exception with user-friendly metadata."""
-
     def __init__(self, original_exception: Exception,
                  user_message: str = "",
                  suggestion: str = "",
@@ -99,19 +104,8 @@ class UserFriendlyError(Exception):
 
 
 class ErrorHandler:
-    """Central error handler for translating tech errors to user messages."""
-
     @staticmethod
     def translate(exception: Exception, context: str = "") -> UserFriendlyError:
-        """Translate any exception into a user-friendly error.
-
-        Args:
-            exception: The caught exception
-            context: Optional context string (e.g., "发送邮件时", "保存设置时")
-
-        Returns:
-            UserFriendlyError with translated message
-        """
         exc_type = type(exception)
 
         for exc_types, mapping in ERROR_MAP.items():
@@ -153,16 +147,6 @@ class ErrorHandler:
 
     @staticmethod
     def safe_execute(func, *args, on_error=None, context="", **kwargs):
-        """Execute a function with automatic error translation.
-
-        Args:
-            func: Function to execute
-            on_error: Callback receiving UserFriendlyError on failure
-            context: Context description for error messages
-
-        Returns:
-            Function result or None if failed
-        """
         try:
             return func(*args, **kwargs)
         except Exception as e:
@@ -174,7 +158,6 @@ class ErrorHandler:
 
     @staticmethod
     def get_severity_color(severity: ErrorSeverity) -> str:
-        """Return Streamlit-compatible color name."""
         return {
             ErrorSeverity.INFO: "blue",
             ErrorSeverity.WARNING: "orange",
