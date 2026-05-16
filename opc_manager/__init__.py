@@ -68,6 +68,15 @@ from .skill_marketplace import (
     TrustLevel
 )
 from .user_profile import UserProfile
+from .settings import (
+    SettingsManager,
+    SettingsCategory,
+    LLMSettings,
+    SMTPSettings,
+    SecuritySettings,
+    ProfileSettings,
+    get_settings,
+)
 
 __all__ = [
     # 版本信息
@@ -146,4 +155,13 @@ __all__ = [
 
     # 用户画像
     "UserProfile",
+
+    # 设置管理器 (v0.2.0)
+    "SettingsManager",
+    "SettingsCategory",
+    "LLMSettings",
+    "SMTPSettings",
+    "SecuritySettings",
+    "ProfileSettings",
+    "get_settings",
 ]

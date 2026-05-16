@@ -61,6 +61,8 @@ data/reports/
 data/perf_metrics.json
 data/marketplace/
 data/backups/
+data/settings.json
+data/onboarding.json
 data/*.db
 data/*.db-wal
 data/*.db-shm

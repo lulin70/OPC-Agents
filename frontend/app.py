@@ -263,6 +263,17 @@ if "initialized" not in st.session_state:
         if disk_files:
             logger.debug("[frontend] 从磁盘恢复了 %d 个成果物记录", len(disk_files))
 
+# v0.2.0: Onboarding detection for first-time users
+try:
+    from opc_manager.onboarding import get_onboarding
+    onboard = get_onboarding()
+    if not onboard.is_completed:
+        _show_onboarding_overlay()
+except ImportError:
+    pass
+except Exception as e:
+    logger.warning("[frontend] Onboarding check failed: %s", e)
+
 PERSONA_MAP = {
     """业务类型 → (显示名称, 风格描述) 映射表
     
@@ -814,7 +825,7 @@ with st.sidebar:
     """侧边栏 — 导航+状态展示"""
     st.markdown("### 🚀 一人公司助手")
     page = st.radio(
-        "", ["💬 对话", "📁 成果物", "📊 成长", "⚙️ 设置"], label_visibility="collapsed"
+        "", ["💬 对话", "📁 成果物", "📊 成长", "🏪 技能市场", "⚙️ 设置"], label_visibility="collapsed"
     )
 
     if st.session_state.detected_type:
@@ -1576,101 +1587,531 @@ elif page == "📊 成长":
         st.success(f"🎯 继续互动可以升级到 **{ni[0]}**！")
 
 
-elif page == "⚙️ 设置":
-    """设置页面 — 用户偏好和系统配置
+elif page == "🏪 技能市场":
+    """技能市场页面 — 即将推出（Sprint 2）
 
-    功能分区：
-    1. AI模式: 显示当前模式（模板/AI增强）
-    2. 成果物设置: 显示保存路径 + 删除功能
-    3. 数据: 重置所有数据（含磁盘文件选项）
-    4. 开发者: API Key 状态检查
+    v0.2.0 占位: 显示"即将推出"提示
     """
-    st.markdown("## ⚙️ 设置")
+    st.markdown("## 🏪 技能市场")
 
-    has_api_key = _has_api_key()
-    mode_label = "🤖 AI增强模式" if has_api_key else "📝 模板模式"
-    mode_desc = (
-        "已检测到API Key，LLM将生成高质量专业内容"
-        if has_api_key
-        else "未检测到API Key，输出为模板填充。配置MOKA_API_KEY可提升5倍+质量"
-    )
-    st.markdown(f"### {mode_label}")
-    st.caption(mode_desc)
-    if not has_api_key:
-        st.info(
-            "💡 **快速配置**：在项目根目录的 `.env` 文件中添加 `MOKA_API_KEY=sk-xxx`，重启即可"
+    st.markdown("""
+    ### 🚀 即将推出
+
+    技能市场正在开发中，即将在 v0.3.0 版本上线！
+
+    **计划功能：**
+    - 📦 浏览和安装社区技能
+    - ⭐ 技能评分和评价系统
+    - 🔍 智能推荐适合你的技能
+    - 🛒 一键安装和使用
+
+    **敬请期待！**
+    """)
+
+    st.info("💡 提示: 你可以在侧边栏使用「技能编辑器」创建自定义技能")
+
+
+# === Settings Page Functions (v0.2.0 Sprint 1) ===
+
+def _create_settings_page():
+    """Create the unified Settings page with 5 tabs.
+
+    Tabs:
+    1. 🧠 LLM Configuration — Provider selection, API key input, connection test
+    2. 📧 SMTP Configuration — Email server setup, preset providers, test connection
+    3. 🔑 API Keys — All API keys management with masking
+    4. 🔒 Security — Encryption key status, regenerate option
+    5. 👤 Profile — User info, company, timezone, language
+    """
+    try:
+        from opc_manager.settings import get_settings
+        settings = get_settings()
+    except ImportError:
+        st.error("⚠️ 设置模块未就绪，请稍后再试")
+        return
+
+    st.markdown("## ⚙️ 系统设置")
+
+    settings_tabs = st.tabs(["🧠 LLM配置", "📧 SMTP配置", "🔑 API密钥", "🔒 安全设置", "👤 个人信息"])
+
+    with settings_tabs[0]:
+        _render_llm_settings(settings)
+
+    with settings_tabs[1]:
+        _render_smtp_settings(settings)
+
+    with settings_tabs[2]:
+        _render_api_keys_settings(settings)
+
+    with settings_tabs[3]:
+        _render_security_settings(settings)
+
+    with settings_tabs[4]:
+        _render_profile_settings(settings)
+
+
+def _render_llm_settings(settings):
+    """Render LLM configuration tab"""
+    st.markdown("### 🧠 LLM 配置")
+
+    llm_config = settings.llm.__dict__
+
+    with st.form("llm_config_form"):
+        provider = st.radio(
+            "LLM 服务商",
+            ["MokaAI", "OpenAI", "智谱GLM", "Ollama"],
+            index=["MokaAI", "OpenAI", "智谱GLM", "Ollama"].index(llm_config.get("provider", "MokaAI")) if llm_config.get("provider", "MokaAI") in ["MokaAI", "OpenAI", "智谱GLM", "Ollama"] else 0,
+            help="选择你要使用的LLM服务提供商",
         )
 
-    st.markdown("### 📦 成果物设置")
-    st.text_input("成果物保存路径", value=DELIVERABLES_DIR, disabled=True)
-    st.caption("所有生成的文件都保存在此目录下")
+        col_key, col_url = st.columns(2)
+        with col_key:
+            api_key = st.text_input(
+                "API Key",
+                value=llm_config.get("api_key", ""),
+                type="password",
+                help="输入你的API密钥",
+                placeholder="sk-...",
+            )
+        with col_url:
+            base_url = st.text_input(
+                "Base URL",
+                value=llm_config.get("base_url", ""),
+                help="API端点地址（可选，留空使用默认值）",
+                placeholder="https://api.example.com/v1",
+            )
 
-    st.markdown("### 📊 数据管理")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔄 重置会话数据"):
-            st.session_state.messages = []
-            st.session_state.deliverables = []
-            st.session_state.scenario_count = 0
-            st.session_state.detected_type = None
-            st.session_state.detected_name = None
-            st.session_state.flywheel_scores = {
-                d: 0
-                for d in ["内容质量", "受众增长", "变现能力", "跨域推广", "生态协同"]
-            }
-            st.session_state.flywheel_level = 1
-            st.session_state.achievements = []
-            if "session_ctx" in st.session_state:
-                st.session_state.session_ctx.clear()
-            _save_chat_history()
-            st.success("✅ 已重置会话数据")
-            st.rerun()
-    with col2:
-        if st.button("🗑️ 清空成果物文件"):
-            deleted = 0
-            if os.path.exists(DELIVERABLES_DIR):
-                for f in os.listdir(DELIVERABLES_DIR):
-                    if f.endswith(".md"):
-                        try:
-                            os.remove(os.path.join(DELIVERABLES_DIR, f))
-                            deleted += 1
-                        except OSError:
-                            pass
-            st.session_state.deliverables = []
-            st.success(f"✅ 已删除 {deleted} 个成果物文件")
-            st.rerun()
+        model = st.text_input(
+            "模型名称",
+            value=llm_config.get("model", ""),
+            help="指定使用的模型名称（可选）",
+            placeholder="gpt-4 / chatglm-turbo 等",
+        )
 
-    with st.expander("🔧 开发者选项"):
-        st.markdown("**API Key 状态**")
-        for key_name, env_var in [
-            ("MOKA", "MOKA_API_KEY"),
-            ("GLM", "GLM_API_KEY"),
-            ("OpenAI", "OPENAI_API_KEY"),
-        ]:
-            val = os.environ.get(env_var, "")
-            if val and val.strip():
-                st.markdown(f"- {key_name}: ✅ 已配置")
+        col_tokens, col_temp = st.columns(2)
+        with col_tokens:
+            max_tokens = st.slider(
+                "Max Tokens",
+                min_value=1000,
+                max_value=16000,
+                value=int(llm_config.get("max_tokens", 4000)),
+                step=1000,
+                help="最大生成token数",
+            )
+        with col_temp:
+            temperature = st.slider(
+                "Temperature",
+                min_value=0.0,
+                max_value=2.0,
+                value=float(llm_config.get("temperature", 0.7)),
+                step=0.1,
+                help="控制输出的随机性（越高越随机）",
+            )
+
+        col_test, col_save = st.columns([1, 1])
+        with col_test:
+            test_clicked = st.form_submit_button("🔗 测试连接", type="secondary")
+        with col_save:
+            save_clicked = st.form_submit_button("💾 保存配置", type="primary")
+
+        if test_clicked:
+            if api_key and api_key.strip():
+                st.success("✅ API Key 已配置（实际连接将在使用时验证）")
             else:
-                st.markdown(f"- {key_name}: ❌ 未配置")
-        st.caption("通过 `.env` 文件配置 API Key，修改后需重启应用")
+                st.error("❌ 请先输入有效的 API Key")
+
+        if save_clicked:
+            new_config = {
+                "provider": provider,
+                "api_key": api_key,
+                "base_url": base_url,
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            }
+            if settings.update_llm(**new_config):
+                st.success("✅ LLM配置已保存")
+                st.rerun()
+            else:
+                st.error("❌ 保存失败，请重试")
+
+
+def _render_smtp_settings(settings):
+    """Render SMTP configuration tab"""
+    st.markdown("### 📧 SMTP 邮件配置")
+
+    smtp_config = settings.smtp.__dict__
+
+    SMTP_PRESETS = {
+        "自定义": {},
+        "QQ邮箱": {"host": "smtp.qq.com", "port": 587, "tls": True},
+        "163邮箱": {"host": "smtp.163.com", "port": 465, "tls": True},
+        "Gmail": {"host": "smtp.gmail.com", "port": 587, "tls": True},
+        "Outlook": {"host": "smtp.office365.com", "port": 587, "tls": True},
+    }
+
+    with st.form("smtp_config_form"):
+        preset = st.selectbox(
+            "预设服务商",
+            list(SMTP_PRESETS.keys()),
+            help="选择邮件服务商后自动填充常用配置",
+        )
+
+        preset_config = SMTP_PRESETS.get(preset, {})
+
+        host = st.text_input(
+            "SMTP 服务器",
+            value=preset_config.get("host", smtp_config.get("host", "")),
+            help="邮件服务器地址",
+            placeholder="smtp.example.com",
+        )
+
+        port = st.number_input(
+            "端口",
+            min_value=1,
+            max_value=65535,
+            value=int(preset_config.get("port", smtp_config.get("port", 587))),
+            help="常用端口: 25(普通), 465(SSL), 587(TLS)",
+        )
+
+        col_user, col_pass = st.columns(2)
+        with col_user:
+            username = st.text_input(
+                "用户名",
+                value=smtp_config.get("username", ""),
+                help="邮箱登录用户名",
+                placeholder="your@email.com",
+            )
+        with col_pass:
+            password = st.text_input(
+                "密码/授权码",
+                value=smtp_config.get("password", ""),
+                type="password",
+                help="邮箱密码或应用专用授权码",
+                placeholder="••••••••",
+            )
+
+        tls_enabled = st.checkbox(
+            "启用 TLS 加密",
+            value=bool(preset_config.get("tls", smtp_config.get("tls", True))),
+            help="推荐开启TLS加密保护邮件传输安全",
+        )
+
+        from_email = st.text_input(
+            "发件人邮箱",
+            value=smtp_config.get("from_email", ""),
+            help="发送邮件时显示的发件人地址",
+            placeholder="noreply@example.com",
+        )
+
+        col_test, col_save = st.columns([1, 1])
+        with col_test:
+            test_clicked = st.form_submit_button("🔗 测试连接", type="secondary")
+        with col_save:
+            save_clicked = st.form_submit_button("💾 保存配置", type="primary")
+
+        if test_clicked:
+            new_config = {
+                "host": host,
+                "port": port,
+                "username": username,
+                "password": password,
+                "tls": tls_enabled,
+                "from_email": from_email,
+            }
+            settings.update_smtp(**new_config)
+            with st.spinner("正在测试SMTP连接..."):
+                test_result = settings.test_smtp_connection()
+                if test_result["success"]:
+                    st.success(f"✅ SMTP连接成功！延迟: {test_result['latency_ms']}ms")
+                    st.info(f"服务器响应: {test_result['message']}")
+                else:
+                    st.error(f"❌ 连接失败: {test_result['message']}")
+
+        if save_clicked:
+            new_config = {
+                "host": host,
+                "port": port,
+                "username": username,
+                "password": password,
+                "tls": tls_enabled,
+                "from_email": from_email,
+            }
+            if settings.update_smtp(**new_config):
+                st.success("✅ SMTP配置已保存")
+                st.rerun()
+            else:
+                st.error("❌ 保存失败，请重试")
+
+
+def _render_api_keys_settings(settings):
+    """Render API Keys management tab"""
+    st.markdown("### 🔑 API 密钥管理")
+
+    st.info("💡 当前显示已配置的服务密钥。完整的API密钥管理功能即将支持。")
+
+    st.markdown("**已配置的密钥：**")
+
+    llm_key = settings.llm.api_key
+    smtp_pass = settings.smtp.password
+
+    with st.expander("🧠 LLM API Key", expanded=bool(llm_key)):
+        if llm_key:
+            masked = "****" + llm_key[-4:] if len(llm_key) > 4 else "****"
+            col_val, col_copy = st.columns([3, 1])
+            with col_val:
+                st.text_input("密钥值（掩码）", value=masked, disabled=True)
+                st.caption(f"最后4位: `{llm_key[-4:]}`" if len(llm_key) >= 4 else "未显示")
+            with col_copy:
+                if st.button("📋 复制完整密钥", key="copy_llm_key"):
+                    st.clipboard_text(llm_key)
+                    st.success("✅ 已复制到剪贴板")
+        else:
+            st.warning("⚠️ 未配置 LLM API Key")
+            st.caption("请前往「LLM 配置」标签页设置")
+
+    with st.expander("📧 SMTP 密码/授权码", expanded=bool(smtp_pass)):
+        if smtp_pass:
+            masked = "****" + smtp_pass[-4:] if len(smtp_pass) > 4 else "****"
+            col_val, col_copy = st.columns([3, 1])
+            with col_val:
+                st.text_input("密码值（掩码）", value=masked, disabled=True)
+                st.caption(f"最后4位: `{smtp_pass[-4:]}`" if len(smtp_pass) >= 4 else "未显示")
+            with col_copy:
+                if st.button("📋 复制完整密码", key="copy_smtp_pass"):
+                    st.clipboard_text(smtp_pass)
+                    st.success("✅ 已复制到剪贴板")
+        else:
+            st.warning("⚠️ 未配置 SMTP 密码")
+            st.caption("请前往「SMTP 邮件配置」标签页设置")
 
     st.divider()
 
-    existing_files = (
-        [f for f in os.listdir(DELIVERABLES_DIR) if f.endswith(".md")]
-        if os.path.exists(DELIVERABLES_DIR)
-        else []
-    )
-    if existing_files:
-        st.markdown(f"### 📂 成果物目录中的文件 ({len(existing_files)} 个)")
-        for f in sorted(existing_files)[-5:]:
-            fp = os.path.join(DELIVERABLES_DIR, f)
-            size = round(os.path.getsize(fp) / 1024, 1)
-            st.caption(f"📄 {f} ({size}KB)")
+    st.markdown("**➕ 添加新密钥**")
+    st.info("🚧 即将支持：多API密钥管理、自动轮换、权限控制等功能")
+    st.caption("当前版本请在对应的配置标签页中直接输入密钥")
 
-    from opc_manager.version import get_version
 
-    st.caption(f"OPC-Agents v{get_version()} | 成果物交付版")
+def _render_security_settings(settings):
+    """Render Security settings tab"""
+    st.markdown("### 🔒 安全设置")
+
+    security = settings.security
+
+    if security.encryption_key:
+        if security.auto_generated:
+            status_text = "✅ 已自动生成"
+            status_color = "green"
+        else:
+            status_text = "🔐 手动设置"
+            status_color = "blue"
+    else:
+        status_text = "⚠️ 未设置"
+        status_color = "orange"
+
+    st.markdown("**加密密钥状态**")
+    st.markdown(f"- 状态: :{status_color}[{status_text}]")
+    if security.auto_generated:
+        st.markdown("- 生成方式: 系统自动生成（CSPRNG安全随机数）")
+    st.markdown(f"- 存储位置: `.env.local` 文件（已加入 .gitignore）")
+    st.markdown("- 密钥长度: 256位（64个十六进制字符）")
+
+    st.divider()
+
+    st.info("💡 **安全提示：**")
+    st.caption("• 加密密钥用于保护敏感配置数据（API密钥、密码等）")
+    st.caption("• 密钥丢失将导致无法解密已加密的数据")
+    st.caption("• 请定期备份 `.env.local` 文件到安全位置")
+
+    st.divider()
+
+    col_regenerate, _ = st.columns([1, 3])
+    with col_regenerate:
+        if st.button("🔄 重新生成密钥", type="secondary", disabled=True):
+            pass
+    st.caption("⚠️ 重新生成功能为高级操作，请联系管理员执行（需手动删除 .env.local 后重启系统）")
+
+
+def _render_profile_settings(settings):
+    """Render Profile settings tab"""
+    st.markdown("### 👤 个人信息")
+
+    profile = settings.profile.__dict__
+
+    TIMEZONES = [
+        "Asia/Shanghai",
+        "Asia/Tokyo",
+        "Asia/Singapore",
+        "Asia/Dubai",
+        "Europe/London",
+        "Europe/Berlin",
+        "Europe/Paris",
+        "America/New_York",
+        "America/Los_Angeles",
+        "America/Chicago",
+        "Pacific/Auckland",
+        "Australia/Sydney",
+    ]
+
+    LANGUAGES = ["中文", "English"]
+
+    with st.form("profile_form"):
+        username = st.text_input(
+            "用户名",
+            value=profile.get("user_name", ""),
+            placeholder="输入你的名字",
+            help="用于个性化显示",
+        )
+
+        company = st.text_input(
+            "公司名称",
+            value=profile.get("company_name", ""),
+            placeholder="输入公司或组织名称（可选）",
+            help="用于生成文档的公司信息",
+        )
+
+        col_tz, col_lang = st.columns(2)
+        with col_tz:
+            timezone = st.selectbox(
+                "时区",
+                TIMEZONES,
+                index=TIMEZONES.index(profile.get("timezone", "Asia/Shanghai")) if profile.get("timezone", "Asia/Shanghai") in TIMEZONES else 0,
+                help="选择你所在的时区",
+            )
+        with col_lang:
+            language = st.selectbox(
+                "语言",
+                LANGUAGES,
+                index=LANGUAGES.index(profile.get("language", "zh_CN")) if profile.get("language", "zh_CN") in ["中文", "English"] else 0,
+                help="界面语言设置（即将支持多语言切换）",
+            )
+
+        submitted = st.form_submit_button("💾 保存个人信息")
+        if submitted:
+            new_profile = {
+                "user_name": username,
+                "company_name": company,
+                "timezone": timezone,
+                "language": language,
+            }
+            if settings.update_profile(**new_profile):
+                st.success("✅ 个人信息已保存")
+                st.rerun()
+            else:
+                st.error("❌ 保存失败，请重试")
+
+
+def _show_onboarding_overlay():
+    """Show onboarding overlay for first-time users.
+
+    If onboarding not completed, shows a modal/dialog overlay
+    with the OnboardingManager step content.
+    """
+    try:
+        from opc_manager.onboarding import get_onboarding, OnboardingStep
+        onboard = get_onboarding()
+
+        current = onboard.get_current_step()
+        step_content = onboard.get_step_content(current)
+        current_step_value = current.value
+        total_steps = onboard.TOTAL_STEPS
+
+        st.markdown("""
+        <style>
+        .onboarding-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .onboarding-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown(f"# {step_content.get('icon', '🎉')} {step_content.get('title', '欢迎使用')}")
+
+        step_order = [OnboardingStep.WELCOME, OnboardingStep.LLM_CONFIG, OnboardingStep.SAMPLE_TASK]
+        try:
+            current_index = step_order.index(current)
+            progress_dots = " ".join([
+                "●" if i == current_index else "○"
+                for i in range(total_steps)
+            ])
+        except ValueError:
+            progress_dots = "●" + " ○" * (total_steps - 1)
+        st.markdown(f"<center>{progress_dots}</center>", unsafe_allow_html=True)
+
+        if step_content.get('description'):
+            st.markdown(f"\n{step_content['description']}\n")
+
+        col_prev, col_next, col_skip = st.columns([1, 1, 1])
+
+        with col_prev:
+            if current != OnboardingStep.WELCOME:
+                if st.button("← 上一步"):
+                    try:
+                        prev_index = step_order.index(current) - 1
+                        if prev_index >= 0:
+                            onboard.advance_to_step(step_order[prev_index])
+                            st.rerun()
+                    except ValueError:
+                        pass
+
+        with col_next:
+            is_last = (current == OnboardingStep.SAMPLE_TASK)
+            btn_label = "🎉 完成！" if is_last else "下一步 →"
+            if st.button(btn_label, type="primary", use_container_width=True):
+                if is_last:
+                    onboard.complete_onboarding()
+                    st.success("✅ 欢迎使用 OPC-Agents！")
+                    st.rerun()
+                else:
+                    try:
+                        next_index = step_order.index(current) + 1
+                        if next_index < len(step_order):
+                            onboard.advance_to_step(step_order[next_index])
+                            st.rerun()
+                    except ValueError:
+                        pass
+
+        with col_skip:
+            if st.button("跳过引导"):
+                onboard.skip_onboarding()
+                st.info("已跳过引导，你可以随时在设置中重新查看")
+                st.rerun()
+
+    except ImportError:
+        st.warning("引导模块加载失败，请刷新页面重试")
+    except Exception as e:
+        logger.error("[frontend] Onboarding error: %s", e)
+        st.error("引导程序出现错误")
+
+
+if page == "⚙️ 设置":
+    """设置页面 — 用户偏好和系统配置
+
+    v0.2.0 升级: 完整的5Tab设置系统
+    - 🧠 LLM配置: Provider/API Key/模型参数/测试连接
+    - 📧 SMTP配置: 邮件服务器/预设服务商/测试连接
+    - 🔑 API密钥: 统一管理所有API密钥
+    - 🔒 安全设置: 加密密钥状态/重新生成
+    - 👤 个人信息: 用户资料/时区/语言
+    """
+    _create_settings_page()
 
 
 if st.query_params.get("_stcore_health") == "1":
