@@ -66,6 +66,7 @@ except Exception as e:
     _logging.getLogger(__name__).warning("Secure storage init failed: %s", e)
 
 from opc_manager.monitoring import init_monitoring, track_event, track_error
+from opc_manager.error_handler import ErrorHandler, UserFriendlyError
 
 logger = logging.getLogger(__name__)
 
@@ -124,29 +125,328 @@ def _has_api_key():
 
 def _get_export_bytes(content: str, fmt: str) -> tuple:
     try:
-        from opc_manager.export import ExportManager
-        from opc_manager.export.models import ResultData, ExportFormat
-
-        manager = ExportManager()
-        format_enum = ExportFormat(fmt)
-        data = ResultData(content=content, metadata={"title": "Export"})
-        file_bytes = manager.export_sync(data, format_enum)
-        mime_map = {
-            "pdf": "application/pdf",
-            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "png": "image/png",
-            "html": "text/html",
-            "md": "text/markdown",
-        }
-        ext_map = {
-            "pdf": "pdf", "docx": "docx", "xlsx": "xlsx",
-            "png": "png", "html": "html", "md": "md",
-        }
-        return file_bytes, mime_map.get(fmt, "application/octet-stream"), ext_map.get(fmt, "bin")
-    except Exception as e:
-        logger.warning("[frontend] 导出失败 (%s): %s", fmt, e)
+        return ErrorHandler.safe_execute(
+            _do_get_export_bytes, content, fmt,
+            context=f"导出{fmt}格式时"
+        )
+    except UserFriendlyError as e:
+        logger.warning("[frontend] 导出失败 (%s): %s", fmt, e.user_message)
         return None, None, None
+
+
+def _do_get_export_bytes(content: str, fmt: str) -> tuple:
+    from opc_manager.export import ExportManager
+    from opc_manager.export.models import ResultData, ExportFormat
+
+    manager = ExportManager()
+    format_enum = ExportFormat(fmt)
+    data = ResultData(content=content, metadata={"title": "Export"})
+    file_bytes = manager.export_sync(data, format_enum)
+    mime_map = {
+        "pdf": "application/pdf",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "png": "image/png",
+        "html": "text/html",
+        "md": "text/markdown",
+    }
+    ext_map = {
+        "pdf": "pdf", "docx": "docx", "xlsx": "xlsx",
+        "png": "png", "html": "html", "md": "md",
+    }
+    return file_bytes, mime_map.get(fmt, "application/octet-stream"), ext_map.get(fmt, "bin")
+
+
+def _get_mime_type(filepath: str) -> str:
+    """根据文件扩展名获取MIME类型"""
+    ext = os.path.splitext(filepath)[1].lower()
+    return {
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".md": "text/markdown",
+        ".txt": "text/plain",
+        ".zip": "application/zip",
+    }.get(ext, "application/octet-stream")
+
+
+def _render_batch_export_section():
+    """在成果物Tab中渲染批量导出区域"""
+    st.markdown("### 📤 批量导出")
+
+    col_fmt, col_btn = st.columns([3, 1])
+    with col_fmt:
+        export_format = st.selectbox(
+            "选择导出格式",
+            options=["PDF文档包", "Word文档包", "Excel表格", "Markdown归档"],
+            help="将所有成果物打包为选定格式"
+        )
+    with col_btn:
+        if st.button("批量导出", type="primary", use_container_width=True):
+            _execute_batch_export(export_format)
+
+
+def _execute_batch_export(format_name: str):
+    """执行批量导出所有成果物"""
+    from opc_manager.export.manager import ExportManager
+    from opc_manager.export.models import ResultData, ExportFormat
+
+    em = ExportManager()
+
+    progress_bar = st.progress(0, text="准备导出...")
+
+    deliverables = st.session_state.get("deliverables", [])
+
+    if not deliverables:
+        st.warning("暂无成果物可导出")
+        return
+
+    fmt_map = {
+        "PDF文档包": ExportFormat.PDF,
+        "Word文档包": ExportFormat.WORD,
+        "Excel表格": ExportFormat.EXCEL,
+        "Markdown归档": ExportFormat.MD,
+    }
+
+    target_fmt = fmt_map.get(format_name, ExportFormat.MD)
+    results = []
+
+    for i, item in enumerate(deliverables):
+        progress = int((i + 1) / len(deliverables) * 100)
+        progress_bar.progress(progress, text=f"正在导出 ({i+1}/{len(deliverables)})...")
+
+        try:
+            filepath = item.get("filepath", "")
+            if not filepath or not os.path.exists(filepath):
+                continue
+
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            rd = ResultData(
+                content=content,
+                metadata=item.get("metadata", item.get("meta", {})),
+                attachments=item.get("attachments", []),
+            )
+            file_bytes = em.export_sync(rd, target_fmt)
+
+            if file_bytes:
+                ext = target_fmt.value
+                output_filename = f"batch_{os.path.splitext(item.get('filename', f'item_{i}'))[0]}.{ext}"
+                output_path = os.path.join(DELIVERABLES_DIR, f"batch_export_{output_filename}")
+                with open(output_path, "wb") as f:
+                    f.write(file_bytes)
+                results.append(output_path)
+        except Exception as e:
+            st.warning(f"导出第{i+1}项失败: {e}")
+
+    progress_bar.progress(100, text="✅ 导出完成!")
+
+    if results:
+        st.success(f"成功导出 {len(results)} 个文件")
+        for fp in results:
+            if os.path.exists(fp):
+                with open(fp, "rb") as f:
+                    st.download_button(
+                        label=f"⬇️ 下载 {os.path.basename(fp)}",
+                        data=f,
+                        file_name=os.path.basename(fp),
+                        mime=_get_mime_type(fp),
+                        key=f"dl_{fp}",
+                    )
+
+
+def _render_single_export_buttons(item: dict, item_id: str):
+    """渲染单个成果物的4图标导出按钮组"""
+    col_pdf, col_word, col_excel, col_png = st.columns(4)
+    with col_pdf:
+        if st.button("📄 PDF", key=f"pdf_{item_id}", help="导出为PDF"):
+            _export_single(item, "pdf")
+    with col_word:
+        if st.button("📝 Word", key=f"word_{item_id}", help="导出为Word"):
+            _export_single(item, "word")
+    with col_excel:
+        if st.button("📊 Excel", key=f"excel_{item_id}", help="导出为Excel"):
+            _export_single(item, "excel")
+    with col_png:
+        if st.button("🖼️ 图片", key=f"png_{item_id}", help="导出为PNG图片"):
+            _export_single(item, "png")
+
+
+def _export_single(item: dict, fmt: str):
+    """执行单个成果物的格式导出"""
+    from opc_manager.export.manager import ExportManager
+    from opc_manager.export.models import ResultData, ExportFormat
+
+    filepath = item.get("filepath", "")
+    if not filepath or not os.path.exists(filepath):
+        st.error("文件不存在")
+        return
+
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        em = ExportManager()
+        fmt_map = {
+            "pdf": ExportFormat.PDF,
+            "word": ExportFormat.WORD,
+            "excel": ExportFormat.EXCEL,
+            "png": ExportFormat.IMAGE,
+        }
+        target_fmt = fmt_map.get(fmt, ExportFormat.MD)
+
+        rd = ResultData(
+            content=content,
+            metadata=item.get("metadata", item.get("meta", {})),
+            attachments=item.get("attachments", []),
+        )
+        file_bytes = em.export_sync(rd, target_fmt)
+
+        if file_bytes:
+            ext = target_fmt.value
+            filename = f"{os.path.splitext(item.get('filename', 'export'))[0]}.{ext}"
+            st.download_button(
+                label=f"⬇️ 下载 {filename}",
+                data=file_bytes,
+                file_name=filename,
+                mime=_get_mime_type(f".{ext}"),
+                key=f"dl_single_{fmt}_{item_id}",
+            )
+        else:
+            st.warning(f"导出{fmt.upper()}失败")
+    except Exception as e:
+        st.error(f"导出失败: {e}")
+
+
+def _event_type_label(event_type: str) -> str:
+    """将事件类型转换为中文标签"""
+    labels = {
+        "PLAN_START": "🎯 规划中...",
+        "INTENT_DETECTED": "🔍 分析意图...",
+        "CONFIRM_REQUESTED": "❓ 等待确认...",
+        "CONFIRMED": "✅ 已确认",
+        "STEP_START": "⚙️ 执行步骤...",
+        "STEP_PROGRESS": "🔄 进行中...",
+        "STEP_COMPLETE": "✅ 步骤完成",
+        "COLLAB_START": "🤝 协作处理...",
+        "REFLECT_START": "💭 反思评估...",
+        "COMPLETE": "🎉 全部完成!",
+        "ERROR": "❌ 出现错误",
+        "CANCELLED": "⏹️ 已取消",
+        "plan_start": "🎯 规划中...",
+        "intent_detected": "🔍 分析意图...",
+        "confirm_requested": "❓ 等待确认...",
+        "confirmed": "✅ 已确认",
+        "step_start": "⚙️ 执行步骤...",
+        "step_progress": "🔄 进行中...",
+        "step_complete": "✅ 步骤完成",
+        "collab_start": "🤝 协作处理...",
+        "reflect_start": "💭 反思评估...",
+        "complete": "🎉 全部完成!",
+        "error": "❌ 出现错误",
+        "cancelled": "⏹️ 已取消",
+    }
+    return labels.get(event_type, event_type.replace("_", " ").title())
+
+
+def _event_emoji(event_type: str) -> str:
+    """获取事件类型对应的emoji"""
+    emojis = {
+        "PLAN_START": "🎯", "INTENT_DETECTED": "🔍",
+        "CONFIRM_REQUESTED": "❓", "CONFIRMED": "✅",
+        "STEP_START": "⚙️", "STEP_PROGRESS": "🔄",
+        "STEP_COMPLETE": "✅", "COLLAB_START": "🤝",
+        "REFLECT_START": "💭", "COMPLETE": "🎉",
+        "ERROR": "❌", "CANCELLED": "⏹️",
+        "plan_start": "🎯", "intent_detected": "🔍",
+        "confirm_requested": "❓", "confirmed": "✅",
+        "step_start": "⚙️", "step_progress": "🔄",
+        "step_complete": "✅", "collab_start": "🤝",
+        "reflect_start": "💭", "complete": "🎉",
+        "error": "❌", "cancelled": "⏹️",
+    }
+    return emojis.get(event_type, "📌")
+
+
+def _render_progress_indicator(session_id: str):
+    """渲染基于SSE的实时进度指示器
+
+    显示一个动画进度条，通过Server-Sent Events更新。
+    如果SSE不可用则回退到静态进度显示。
+    """
+    try:
+        from opc_manager.progress_emitter import ProgressEmitter, get_progress_emitter
+    except ImportError:
+        return
+
+    try:
+        emitter = get_progress_emitter()
+        history = emitter.get_history(session_id)
+    except Exception as e:
+        logger.debug("[frontend] 获取进度历史失败: %s", e)
+        return
+
+    if not history:
+        return
+
+    latest = history[-1]
+    event_type = latest.get("event", latest.get("event_type", ""))
+    progress_pct = latest.get("progress", latest.get("progress_pct", 0))
+    message = latest.get("message", "")
+
+    st.markdown(f"#### ⚡ 当前状态: {_event_type_label(event_type)}")
+
+    bar = st.progress(min(progress_pct / 100.0, 1.0))
+
+    cols_info = st.columns(3)
+    with cols_info[0]:
+        st.metric("进度", f"{progress_pct}%")
+    with cols_info[1]:
+        st.metric("阶段", event_type.replace("_", " ").title() if event_type else "-")
+    with cols_info[2]:
+        display_msg = message[:50] + "..." if len(message) > 50 else (message or "-")
+        st.metric("消息", display_msg)
+
+    if len(history) > 1:
+        with st.expander("📋 操作日志详情", expanded=False):
+            for evt in reversed(history[-10:]):
+                etype = evt.get("event", evt.get("event_type", "UNKNOWN"))
+                epct = evt.get("progress", evt.get("progress_pct", 0))
+                emsg = evt.get("message", "")
+                etime = evt.get("timestamp", "")
+                emoji = _event_emoji(etype)
+
+                if etime:
+                    try:
+                        time_str = datetime.fromtimestamp(etime).strftime("%H:%M:%S")
+                    except (TypeError, ValueError):
+                        time_str = str(etime)
+                else:
+                    time_str = ""
+
+                st.markdown(f"{emoji} `{time_str}` **{etype}** ({epct}%) - {emsg}")
+
+
+def _auto_refresh_progress(session_id: str, interval_sec: int = 2):
+    """为进度更新添加自动刷新机制
+
+    注意：Streamlit不支持真正的推送更新。
+    此函数使用st.empty() + 刷新按钮模式作为变通方案。
+    """
+    placeholder = st.empty()
+
+    with placeholder.container():
+        _render_progress_indicator(session_id)
+
+    col_refresh, col_close = st.columns([1, 3])
+    with col_refresh:
+        if st.button("🔄 刷新进度", key="refresh_prog"):
+            st.rerun()
+    with col_close:
+        st.caption("点击刷新查看最新进度")
 
 
 def _render_export_buttons(content: str, formats: list, key_prefix: str):
@@ -173,6 +473,276 @@ def _render_export_buttons(content: str, formats: list, key_prefix: str):
                 )
             else:
                 st.button(label, key=f"export_fail_{fmt}_{key_prefix}", disabled=True, help="导出依赖未安装")
+
+
+def _get_undo_manager():
+    """Safe wrapper to get UndoManager instance."""
+    try:
+        from opc_manager.undo_manager import get_undo_manager
+        return get_undo_manager()
+    except ImportError:
+        return None
+    except Exception as e:
+        logger.warning("[frontend] UndoManager init failed: %s", e)
+        return None
+
+
+@st.cache_data(ttl=5)
+def _cached_list_undoable(session_id: str) -> list:
+    """Cached version of list_undoable to avoid repeated calls.
+
+    Args:
+        session_id: Current session identifier
+
+    Returns:
+        List of undoable operation records
+    """
+    um = _get_undo_manager()
+    if not um:
+        return []
+    try:
+        return um.list_undoable(session_id)
+    except Exception as e:
+        logger.warning("[frontend] list_undoable error: %s", e)
+        return []
+
+
+def _render_undo_panel():
+    """Render the Undo operation panel in sidebar.
+
+    Displays a collapsible panel showing all undoable operations
+    for the current session with action buttons and status indicators.
+    """
+    um = _get_undo_manager()
+    if not um:
+        return
+
+    st.divider()
+
+    if st.button("↩️ 撤销操作", use_container_width=True, help="查看和管理可撤销的操作"):
+        st.session_state.show_undo = not st.session_state.get("show_undo", False)
+
+    if st.session_state.get("show_undo", False):
+        st.markdown("#### ↩️ 可撤销的操作")
+
+        session_id = _get_current_session_id()
+        if not session_id:
+            st.warning("⚠️ 无法获取当前会话ID")
+            return
+
+        undoable = _cached_list_undoable(session_id)
+
+        if not undoable:
+            st.info("没有可撤销的操作")
+            return
+
+        st.caption(f"共 {len(undoable)} 个可撤销操作")
+
+        for record in undoable[-10:]:
+            op_type = record.get("operation_type", "unknown")
+            created_at = record.get("created_at", "")
+            op_id = record.get("operation_id", "")
+
+            can_undo, reason = um.can_undo(session_id, op_id)
+
+            with st.expander(f"↩️ {op_type} — {created_at}"):
+                col_info, col_action = st.columns([3, 1])
+
+                with col_info:
+                    st.json({
+                        "类型": op_type,
+                        "时间": created_at,
+                        "状态": "可撤销" if can_undo else f"不可撤: {reason}",
+                        "ID": op_id[:12] if op_id else "",
+                    })
+
+                with col_action:
+                    if can_undo:
+                        confirmed = st.checkbox(
+                            "确认撤销",
+                            key=f"undo_confirm_{op_id}",
+                            help="勾选此项以确认执行撤销操作"
+                        )
+
+                        if confirmed:
+                            if st.button(
+                                "撤销",
+                                key=f"undo_{op_id}",
+                                type="secondary",
+                                help="此操作将执行逆操作，请谨慎"
+                            ):
+                                with st.spinner("正在撤销..."):
+                                    result = um.undo(session_id, op_id)
+                                    if result.get("success"):
+                                        st.success(f"✅ 已撤销: {result.get('message', '')}")
+                                        st.balloons()
+                                        _cached_list_undoable.clear()
+                                        time.sleep(1)
+                                        st.rerun()
+                                    else:
+                                        st.error(f"❌ 撤销失败: {result.get('error', '未知错误')}")
+                    else:
+                        st.caption(f"❌ {reason}")
+
+                        expires_at = record.get("expires_at", 0)
+                        if expires_at and not can_undo:
+                            remaining = max(0, expires_at - time.time())
+                            if remaining > 0:
+                                mins, secs = divmod(int(remaining), 60)
+                                st.caption(f"⏰ 剩余时间: {mins}分{secs}秒")
+                            else:
+                                st.caption("⏰ 已过撤销窗口期")
+
+
+def _render_theme_selector():
+    """Render theme selector in sidebar."""
+    themes = {
+        "light": "☀️ 浅色",
+        "dark": "🌙 深色",
+        "sunset": "🌅 日落橙",
+        "forest": "🌲 森林绿",
+        "ocean": "🌊 海洋蓝",
+    }
+
+    current = st.session_state.get("theme", "light")
+    selected = st.selectbox(
+        "🎨 主题",
+        options=list(themes.keys()),
+        format_func=lambda x: themes[x],
+        index=list(themes.keys()).index(current) if current in themes else 0,
+        key="theme_selector"
+    )
+
+    if selected != current:
+        st.session_state.theme = selected
+        if selected == "dark":
+            st.config.set_option("theme.base", "dark")
+        elif selected == "light":
+            st.config.set_option("theme.base", "light")
+        elif selected == "sunset":
+            st.config.set_option("theme.primaryColor", "#FF6B35")
+            st.config.set_option("theme.backgroundColor", "#1E1E1E")
+            st.config.set_option("theme.secondaryBackgroundColor", "#2D2D2D")
+        elif selected == "forest":
+            st.config.set_option("theme.primaryColor", "#2E7D32")
+            st.config.set_option("theme.backgroundColor", "#1B3A1B")
+            st.config.set_option("theme.secondaryBackgroundColor", "#263D26")
+        elif selected == "ocean":
+            st.config.set_option("theme.primaryColor", "#1976D2")
+            st.config.set_option("theme.backgroundColor", "#0D1F2C")
+            st.config.set_option("theme.secondaryBackgroundColor", "#152938")
+
+
+def _render_language_selector():
+    """Render language selector in sidebar."""
+    from opc_manager.i18n import get_i18n
+    i18n = get_i18n()
+    locales = i18n.get_available_locales()
+    current = i18n.locale
+    selected = st.selectbox(
+        "🌐 Language / 语言",
+        options=[l["code"] for l in locales],
+        format_func=lambda x: next(l["name"] for l in locales if l["code"] == x),
+        index=[l["code"] for l in locales].index(current),
+        key="lang_selector"
+    )
+    if selected != current:
+        i18n.locale = selected
+        st.rerun()
+
+
+def _render_shortcuts_help():
+    """Render keyboard shortcuts help panel."""
+    from opc_manager.i18n import t as _t
+    with st.expander("⌨️ Keyboard Shortcuts / 快捷键"):
+        shortcuts = [
+            ("Ctrl + Enter", _t("Send message") if 't' in dir() else "发送消息"),
+            ("Ctrl + N", "New chat / 新对话"),
+            ("Ctrl + E", "Export / 导出"),
+            ("Ctrl + D", "Dashboard / 仪表板"),
+            ("Ctrl + S", "Settings / 设置"),
+            ("?", "Show help / 显示帮助"),
+            ("Esc", "Close dialog / 关闭对话框"),
+        ]
+        for keys, desc in shortcuts:
+            st.code(f"{keys:20s} → {desc}")
+
+
+def _get_current_session_id() -> str:
+    """Get current session ID from session context.
+
+    Returns:
+        Session ID string or 'default' fallback
+    """
+    try:
+        session_ctx = st.session_state.get("session_ctx")
+        if session_ctx and hasattr(session_ctx, '_session_id'):
+            return session_ctx._session_id
+        elif session_ctx and hasattr(session_ctx, 'session_id'):
+            return session_ctx.session_id
+    except Exception:
+        pass
+
+    return st.session_state.get("session_id", "default")
+
+
+def _render_quick_undo_button(task_id: str, operation_type: str = None):
+    """Render a quick undo button in chat response area.
+
+    Args:
+        task_id: Unique identifier for the task/operation
+        operation_type: Type of operation (optional, for display)
+    """
+    um = _get_undo_manager()
+    if not um:
+        return
+
+    session_id = _get_current_session_id()
+    if not session_id:
+        return
+
+    try:
+        undoable = um.list_undoable(session_id)
+        if not undoable:
+            return
+
+        last_record = undoable[-1] if undoable else None
+        if not last_record:
+            return
+
+        op_id = last_record.get("operation_id", "")
+        can_undo, reason = um.can_undo(session_id, op_id)
+
+        if not can_undo:
+            return
+
+        st.divider()
+
+        col_undo, col_space = st.columns([1, 4])
+        with col_undo:
+            label = f"↩️ 撤销上一步 ({operation_type or last_record.get('operation_type', '操作')})"
+
+            if st.button(label, key=f"quick_undo_{task_id}", type="secondary"):
+                confirmed = st.checkbox(
+                    "✅ 我确认要撤销此操作",
+                    key=f"quick_undo_confirm_{task_id}",
+                    help="撤销是破坏性操作，将执行逆操作恢复原始状态"
+                )
+
+                if confirmed:
+                    with st.spinner("正在撤销..."):
+                        result = um.undo(session_id, op_id)
+                        if result.get("success"):
+                            st.success(f"✅ 已撤销: {result.get('message', '')}")
+                            st.balloons()
+                            _cached_list_undoable.clear()
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error(f"❌ 撤销失败: {result.get('error', '未知错误')}")
+
+    except Exception as e:
+        logger.warning("[frontend] Quick undo button error: %s", e)
 
 
 st.set_page_config(
@@ -823,9 +1393,26 @@ def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_ty
 
 with st.sidebar:
     """侧边栏 — 导航+状态展示"""
+    st.text_input("🔍 Cmd+K 搜索...", key="sidebar_global_search", label_visibility="collapsed")
+
+    if st.session_state.get("sidebar_global_search", "").strip():
+        query = st.session_state.sidebar_global_search.strip()
+        if len(query) >= 2:
+            with st.expander(f"🔍 搜索结果 ({query})", expanded=True):
+                results = _execute_global_search(query)
+                if results:
+                    st.success(f"找到 {len(results)} 条结果")
+                    for r in results[:8]:
+                        st.markdown(f"**{r.get('title', '-')}**")
+                        st.caption(r.get("summary", "")[:80])
+                        st.divider()
+                else:
+                    st.info("未找到相关内容")
+
     st.markdown("### 🚀 一人公司助手")
+    from opc_manager.i18n import t as _t
     page = st.radio(
-        "", ["💬 对话", "📁 成果物", "📊 成长", "🏪 技能市场", "⚙️ 设置"], label_visibility="collapsed"
+        "", [_t("nav_chat"), _t("nav_deliverables"), "📈 Dashboard", _t("nav_growth"), _t("nav_marketplace"), _t("nav_settings")], label_visibility="collapsed"
     )
 
     if st.session_state.detected_type:
@@ -930,6 +1517,16 @@ with st.sidebar:
         if ops:
             for op, op_stats in ops.items():
                 st.caption(f"  {op}: 平均{op_stats['avg_ms']:.0f}ms | P95 {op_stats.get('p95_ms', 0):.0f}ms")
+
+    st.divider()
+
+    _render_undo_panel()
+
+    st.divider()
+
+    _render_theme_selector()
+    _render_language_selector()
+    _render_shortcuts_help()
 
     st.divider()
     from opc_manager.version import get_version
@@ -1232,6 +1829,12 @@ if page == "💬 对话":
                         progress_pct / 100.0,
                         text=f"预估进度 {progress_pct}% — {phase_hint} — 已耗时 {elapsed:.0f}s",
                     )
+
+                    session_id = _get_current_session_id()
+                    if session_id and session_id != "default":
+                        with st.expander("📊 实时执行详情", expanded=False):
+                            _render_progress_indicator(session_id)
+
                     time.sleep(poll_interval)
                     continue
 
@@ -1292,6 +1895,8 @@ if page == "💬 对话":
                             st.caption("👍 你觉得这次输出有用")
                         elif st.session_state.quality_feedback.get(feedback_key) == "bad":
                             st.caption("👎 你觉得这次输出需要改进")
+
+                        _render_quick_undo_button(task_id, result_deliverable_record.get("task_type") if result_deliverable_record else None)
 
                         if result_filepath and os.path.exists(result_filepath):
                             col_dl, col_info = st.columns([1, 3])
@@ -1438,86 +2043,21 @@ if page == "💬 对话":
 
 
 elif page == "📁 成果物":
-    """成果物库页面 — 历史文件的管理中心
+    """成果物库页面 — 历史文件的管理中心 + 操作日志查看
 
-    功能：
-    - 空状态提示引导用户去对话页执行任务
-    - 列表展示每个成果物的元数据（任务/类型/时间/大小）
-    - 每个文件独立下载按钮
-    - 前500字Markdown预览（使用st.code语法高亮）
+    v0.2.0 升级: 添加双Tab布局
+    - Tab 1: 成果物文件（原有功能）
+    - Tab 2: 操作日志（新增审计日志展示）
     """
     st.markdown("## 📁 我的成果物")
 
-    if not st.session_state.deliverables:
-        st.info("💡 还没有生成任何成果物。去「对话」页面执行一个任务吧！")
-    else:
-        search_query = st.text_input("🔍 搜索成果物", placeholder="输入关键词搜索...", key="deliverable_search")
-        
-        filtered_deliverables = st.session_state.deliverables
-        if search_query:
-            search_lower = search_query.lower()
-            filtered_deliverables = [
-                d for d in st.session_state.deliverables
-                if search_lower in d.get("prompt", "").lower()
-                or search_lower in d.get("filename", "").lower()
-                or search_lower in d.get("task_type", "").lower()
-            ]
-        
-        st.caption(f"共 {len(st.session_state.deliverables)} 个成果物" + (f"，匹配 {len(filtered_deliverables)} 个" if search_query else ""))
-        
-        for i, d in enumerate(filtered_deliverables):
-            with st.expander(f"📄 {d['filename']}", expanded=(i == 0)):
-                col1, col2, col3 = st.columns([2, 1, 1])
-                with col1:
-                    st.markdown(f"**任务**: `{d['prompt']}`")
-                    st.markdown(f"**类型**: {d['task_type']}")
-                    st.markdown(f"**时间**: {d['created_at']}")
-                with col2:
-                    st.metric("大小", f"{d['size_kb']} KB")
-                with col3:
-                    real_fp = os.path.realpath(d["filepath"])
-                    if not real_fp.startswith(os.path.realpath(DELIVERABLES_DIR)):
-                        continue
-                    if os.path.exists(real_fp):
-                        with open(real_fp, "r", encoding="utf-8") as f:
-                            content = f.read()
-                        st.download_button(
-                            "📥 下载",
-                            data=content,
-                            file_name=d["filename"],
-                            mime="text/markdown",
-                            key=f"dl_lib_{i}",
-                            use_container_width=True,
-                        )
-                    if os.path.exists(real_fp):
-                        with open(real_fp, "r", encoding="utf-8") as f:
-                            lib_content = f.read()
-                        _render_export_buttons(
-                            lib_content,
-                            ["pdf", "docx", "xlsx", "png"],
-                            key_prefix=f"lib_{d['filename'][:12]}",
-                        )
-                    if st.button("🗑️ 删除", key=f"del_lib_{d['filename']}"):
-                        try:
-                            real_path = os.path.realpath(d["filepath"])
-                            if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
-                                st.error("非法文件路径")
-                            elif os.path.exists(real_path):
-                                os.remove(real_path)
-                        except OSError:
-                            pass
-                        st.session_state.deliverables = [
-                            item
-                            for item in st.session_state.deliverables
-                            if item.get("filename") != d["filename"]
-                        ]
-                        st.rerun()
+    deliverable_tabs = st.tabs(["📄 成果物文件", "📋 操作日志"])
 
-                st.markdown("**预览（前500字）**:")
-                if os.path.exists(d["filepath"]):
-                    with open(d["filepath"], "r", encoding="utf-8") as f:
-                        preview = f.read()[:500]
-                    st.code(preview, language="markdown")
+    with deliverable_tabs[0]:
+        _render_deliverables_list()
+
+    with deliverable_tabs[1]:
+        _render_audit_log_page()
 
 
 elif page == "📊 成长":
@@ -1588,27 +2128,280 @@ elif page == "📊 成长":
 
 
 elif page == "🏪 技能市场":
-    """技能市场页面 — 即将推出（Sprint 2）
+    _render_skill_marketplace_page()
 
-    v0.2.0 占位: 显示"即将推出"提示
+
+def _render_skill_marketplace_page():
+    """Render the Skill Marketplace MVP page.
+
+    Features:
+    1. Browse tab: Search + category filter + skill cards grid
+    2. My Skills tab: Installed skills list with status
+    3. Detail view: Click card to see full info + install button
     """
+    try:
+        from opc_manager.skill_marketplace import SkillMarketplace, ExternalSkillMarketplace
+    except ImportError:
+        st.warning("技能市场模块暂未加载")
+        return
+
     st.markdown("## 🏪 技能市场")
 
-    st.markdown("""
-    ### 🚀 即将推出
+    marketplace = SkillMarketplace()
+    external_mp = ExternalSkillMarketplace()
 
-    技能市场正在开发中，即将在 v0.3.0 版本上线！
+    sub_tab = st.tabs(["🔍 浏览发现", "📦 我的技能"])
 
-    **计划功能：**
-    - 📦 浏览和安装社区技能
-    - ⭐ 技能评分和评价系统
-    - 🔍 智能推荐适合你的技能
-    - 🛒 一键安装和使用
+    with sub_tab[0]:
+        _render_marketplace_browse(marketplace, external_mp)
 
-    **敬请期待！**
-    """)
+    with sub_tab[1]:
+        _render_my_skills(marketplace, external_mp)
 
-    st.info("💡 提示: 你可以在侧边栏使用「技能编辑器」创建自定义技能")
+
+def _render_marketplace_browse(marketplace, external_mp):
+    """Browse and discover skills."""
+    col_search, col_cat = st.columns([3, 1])
+    with col_search:
+        search_query = st.text_input(
+            "🔍 搜索技能...",
+            placeholder="搜索名称、描述或作者...",
+        )
+    with col_cat:
+        categories = ["全部", "分析", "创作", "搜索", "运营", "财务", "沟通"]
+        cat_filter = st.selectbox("分类", categories)
+
+    try:
+        stats = marketplace.get_stats()
+        total_skills = stats.get("total_skills", 0)
+        approved = stats.get("approved_skills", 0)
+
+        st.caption(f"共 {total_skills} 个技能 | 已审核 {approved} 个")
+
+        skills = marketplace.discover_skills(
+            keyword=search_query if search_query else None,
+            category=cat_filter if cat_filter != "全部" else None
+        )
+
+        if not skills:
+            st.info("没有找到匹配的技能")
+            return
+
+        cols = st.columns(3)
+        for i, skill in enumerate(skills[:12]):
+            with cols[i % 3]:
+                _render_skill_card(skill, marketplace)
+
+    except Exception as e:
+        st.error(f"加载技能列表失败: {e}")
+
+
+def _render_skill_card(skill: dict, marketplace):
+    """Render a single skill card."""
+    name = skill.get("name", "未知技能")
+    version = skill.get("version", "0.0.0")
+    desc = skill.get("description", "")
+    author = skill.get("author", "unknown")
+    category = skill.get("category", "general")
+    status = skill.get("status", "pending")
+    skill_id = skill.get("skill_id", "")
+
+    trust_colors = {
+        "official": "blue",
+        "verified": "green",
+        "community": "orange",
+        "unverified": "gray",
+    }
+    trust_labels = {
+        "official": "官方",
+        "verified": "已验证",
+        "community": "社区",
+        "unverified": "未验证",
+    }
+
+    color = trust_colors.get("gray", "gray")
+    label = trust_labels.get("unverified", "未验证")
+
+    with st.container(border=True):
+        st.markdown(f"**{label}** `{name}` v{version}")
+        st.caption(desc[:80] + "..." if len(desc) > 80 else desc)
+        st.markdown(f"*{category}* · {author}")
+
+        if st.button(f"查看详情 →", key=f"skill_detail_{skill_id}_{id(skill)}", use_container_width=True):
+            st.session_state[f"selected_skill"] = skill
+
+
+def _render_my_skills(marketplace, external_mp):
+    """Render installed/manageable skills list."""
+    try:
+        installed_result = external_mp.list_installed()
+        installed = installed_result.get("skills", []) if isinstance(installed_result, dict) else []
+    except Exception:
+        installed = []
+
+    if not installed:
+        st.info("暂未安装任何额外技能")
+        st.markdown("""
+        前往「浏览发现」页面试试安装新技能！
+
+        💡 **提示**: 内置21个核心技能始终可用，无需安装。
+        """)
+        return
+
+    st.caption(f"已安装 {len(installed)} 个技能")
+
+    for skill in installed:
+        with st.expander(f"📦 {skill.get('name', 'Unknown')} v{skill.get('version', '?')}"):
+            col_info, col_action = st.columns([3, 1])
+            with col_info:
+                st.json({
+                    "名称": skill.get("name"),
+                    "版本": skill.get("version"),
+                    "状态": skill.get("status"),
+                    "安装时间": skill.get("installed_at", "-"),
+                })
+            with col_action:
+                if st.button("卸载", key=f"uninstall_{skill.get('skill_id', id(skill))}"):
+                    try:
+                        result = external_mp.uninstall_skill(skill.get("skill_id"))
+                        if result.get("success"):
+                            st.success("已卸载")
+                            st.rerun()
+                        else:
+                            st.error(result.get("error", "卸载失败"))
+                    except Exception as e:
+                        st.error(f"卸载失败: {e}")
+
+
+def _render_global_search():
+    """Render global search across all modules.
+
+    Searches across:
+    - Chat history / conversation logs
+    - Deliverables files
+    - Client records (CRM data)
+    - Financial records
+    - Tasks
+    - Audit log entries
+    """
+    search_query = st.text_input(
+        "🔍 全局搜索...",
+        value="",
+        key="global_search_input",
+        label_visibility="collapsed",
+    )
+
+    if not search_query or len(search_query.strip()) < 2:
+        st.caption("输入至少2个字符开始搜索...")
+        return
+
+    results = _execute_global_search(search_query.strip())
+
+    if not results:
+        st.info(f"未找到与「{search_query}」相关的内容")
+        return
+
+    st.success(f"找到 {len(results)} 条结果")
+
+    grouped = {}
+    for r in results:
+        rtype = r.get("type", "other")
+        grouped.setdefault(rtype, []).append(r)
+
+    for rtype, items in grouped.items():
+        type_icons = {
+            "chat": "💬",
+            "deliverable": "📁",
+            "client": "👥",
+            "finance": "💰",
+            "task": "✅",
+            "audit": "📋",
+            "skill": "🔧",
+            "other": "📌",
+        }
+        icon = type_icons.get(rtype, "📌")
+
+        with st.expander(f"{icon} {rtype} ({len(items)})"):
+            for item in items[:10]:
+                title = item.get("title", item.get("name", "-"))
+                summary = item.get("summary", "")[:100]
+                link = item.get("link", "")
+                score = item.get("score", 0)
+
+                col_t, col_s = st.columns([4, 1])
+                with col_t:
+                    if link:
+                        st.markdown(f"**{title}**")
+                        st.caption(summary)
+                        st.link_button(
+                            "查看详情",
+                            url="#" if link.startswith("#") else link,
+                        )
+                    else:
+                        st.markdown(f"**{title}**")
+                        st.caption(summary)
+                with col_s:
+                    st.metric("匹配度", f"{int(score * 100)}%")
+
+
+def _execute_global_search(query: str) -> list:
+    """Execute global search across data sources."""
+    results = []
+    q_lower = query.lower()
+
+    deliverables = st.session_state.get("deliverables", [])
+    for d in deliverables:
+        content = str(d.get("content", "")) + str(d.get("metadata", ""))
+        if q_lower in content.lower():
+            results.append({
+                "type": "deliverable",
+                "title": d.get("title", "成果物"),
+                "summary": content[:150],
+                "score": _simple_match_score(q_lower, content),
+                "link": None,
+            })
+
+    try:
+        from opc_manager.audit_log import get_audit_log
+        audit = get_audit_log()
+        logs = audit.query(limit=50)
+        for log in logs:
+            combined = f"{log.get('operation_type', '')} {log.get('input_summary', '')} {log.get('output_summary', '')}"
+            if q_lower in combined.lower():
+                results.append({
+                    "type": "audit",
+                    "title": f"[{log.get('operation_type', 'operation')}]",
+                    "summary": log.get("input_summary", "")[:100],
+                    "score": _simple_match_score(q_lower, combined),
+                    "link": None,
+                })
+    except Exception:
+        pass
+
+    messages = st.session_state.get("messages", [])
+    for msg in messages[-50:]:
+        content = str(msg.get("content", ""))
+        if q_lower in content.lower():
+            results.append({
+                "type": "chat",
+                "title": content[:60] + "..." if len(content) > 60 else content,
+                "summary": "",
+                "score": _simple_match_score(q_lower, content),
+                "link": None,
+            })
+
+    results.sort(key=lambda x: x.get("score", 0), reverse=True)
+    return results[:30]
+
+
+def _simple_match_score(query: str, text: str) -> float:
+    """Calculate simple text match score (0.0 to 1.0)."""
+    if not query or not text:
+        return 0.0
+    text_lower = text.lower()
+    words = query.split()
+    matches = sum(1 for w in words if w in text_lower)
+    return min(matches / len(words), 1.0) if words else 0.0
 
 
 # === Settings Page Functions (v0.2.0 Sprint 1) ===
@@ -1632,7 +2425,8 @@ def _create_settings_page():
 
     st.markdown("## ⚙️ 系统设置")
 
-    settings_tabs = st.tabs(["🧠 LLM配置", "📧 SMTP配置", "🔑 API密钥", "🔒 安全设置", "👤 个人信息"])
+    from opc_manager.i18n import t as _t
+    settings_tabs = st.tabs([_t("settings_llm"), _t("settings_smtp"), _t("settings_api_keys"), _t("settings_security"), _t("settings_profile"), _t("settings_backup")])
 
     with settings_tabs[0]:
         _render_llm_settings(settings)
@@ -1649,16 +2443,20 @@ def _create_settings_page():
     with settings_tabs[4]:
         _render_profile_settings(settings)
 
+    with settings_tabs[5]:
+        _render_data_backup_settings()
+
 
 def _render_llm_settings(settings):
     """Render LLM configuration tab"""
+    from opc_manager.i18n import t as _t
     st.markdown("### 🧠 LLM 配置")
 
     llm_config = settings.llm.__dict__
 
     with st.form("llm_config_form"):
         provider = st.radio(
-            "LLM 服务商",
+            _t("llm_provider"),
             ["MokaAI", "OpenAI", "智谱GLM", "Ollama"],
             index=["MokaAI", "OpenAI", "智谱GLM", "Ollama"].index(llm_config.get("provider", "MokaAI")) if llm_config.get("provider", "MokaAI") in ["MokaAI", "OpenAI", "智谱GLM", "Ollama"] else 0,
             help="选择你要使用的LLM服务提供商",
@@ -1667,7 +2465,7 @@ def _render_llm_settings(settings):
         col_key, col_url = st.columns(2)
         with col_key:
             api_key = st.text_input(
-                "API Key",
+                _t("llm_api_key"),
                 value=llm_config.get("api_key", ""),
                 type="password",
                 help="输入你的API密钥",
@@ -1675,14 +2473,14 @@ def _render_llm_settings(settings):
             )
         with col_url:
             base_url = st.text_input(
-                "Base URL",
+                _t("llm_base_url"),
                 value=llm_config.get("base_url", ""),
                 help="API端点地址（可选，留空使用默认值）",
                 placeholder="https://api.example.com/v1",
             )
 
         model = st.text_input(
-            "模型名称",
+            _t("llm_model"),
             value=llm_config.get("model", ""),
             help="指定使用的模型名称（可选）",
             placeholder="gpt-4 / chatglm-turbo 等",
@@ -1999,6 +2797,921 @@ def _render_profile_settings(settings):
                 st.rerun()
             else:
                 st.error("❌ 保存失败，请重试")
+
+
+def _render_data_backup_settings():
+    """Render Data Backup settings tab.
+
+    Features:
+    - Create backup button with progress indicator
+    - List existing backups with download/delete options
+    - Restore from backup with confirmation
+    - Export data in JSON/CSV/ZIP formats
+    """
+    st.markdown("### 💾 数据备份与恢复")
+
+    st.info("💡 **数据安全提示：** 定期备份你的数据，防止意外丢失。备份文件包含所有客户记录、财务数据和任务信息。")
+
+    backup_tabs = st.tabs(["📦 创建备份", "📋 备份列表", "📥 导出数据", "🔄 恢复数据"])
+
+    with backup_tabs[0]:
+        _render_create_backup_tab()
+
+    with backup_tabs[1]:
+        _render_backup_list_tab()
+
+    with backup_tabs[2]:
+        _render_export_data_tab()
+
+    with backup_tabs[3]:
+        _render_restore_data_tab()
+
+
+def _render_create_backup_tab():
+    """Render the create backup tab."""
+    st.markdown("#### 📦 创建新备份")
+
+    include_attachments = st.checkbox(
+        "包含附件文件",
+        value=False,
+        help="勾选后备份将包含附件（会增大备份文件大小）",
+    )
+
+    col_create, _ = st.columns([1, 2])
+    with col_create:
+        if st.button("🚀 立即创建备份", type="primary", use_container_width=True):
+            with st.spinner("正在创建备份，请稍候..."):
+                try:
+                    from opc_manager.data_backup import get_backup_manager
+                    manager = get_backup_manager()
+                    backup_path, manifest = manager.create_backup(
+                        include_attachments=include_attachments
+                    )
+
+                    st.success(f"✅ 备份创建成功！")
+                    st.json({
+                        "文件名": backup_path.name,
+                        "大小": f"{manifest.total_size_bytes / (1024*1024):.2f} MB",
+                        "文件数": manifest.total_files,
+                        "版本": manifest.version,
+                        "校验和": f"{manifest.checksum_sha256[:16]}...",
+                        "创建时间": manifest.created_at,
+                    })
+                    st.balloons()
+                except Exception as e:
+                    logger.error("[frontend] Create backup error: %s", e)
+                    st.error(f"❌ 备份创建失败: {str(e)}")
+
+
+def _render_backup_list_tab():
+    """Render the backup list tab."""
+    st.markdown("#### 📋 已有备份")
+
+    try:
+        from opc_manager.data_backup import get_backup_manager
+        manager = get_backup_manager()
+        backups = manager.list_backups()
+
+        if not backups:
+            st.info("💡 暂无备份。点击「创建备份」生成第一个备份")
+            return
+
+        st.caption(f"共 {len(backups)} 个备份")
+
+        for idx, backup in enumerate(backups):
+            with st.expander(
+                f"📄 {backup['filename']} — {backup['size_mb']} MB ({backup['created_at'][:10]})",
+                expanded=(idx == 0)
+            ):
+                col_dl, col_del, _ = st.columns([1, 1, 2])
+
+                with col_dl:
+                    backup_file_path = Path(backup["path"])
+                    if backup_file_path.exists():
+                        with open(backup_file_path, "rb") as f:
+                            zip_bytes = f.read()
+                        st.download_button(
+                            label="⬇️ 下载",
+                            data=zip_bytes,
+                            file_name=backup["filename"],
+                            mime="application/zip",
+                            key=f"dl_backup_{idx}",
+                            use_container_width=True,
+                        )
+
+                with col_del:
+                    if st.button("🗑️ 删除", key=f"del_backup_{idx}", use_container_width=True):
+                        if manager.delete_backup(backup["path"]):
+                            st.success("✅ 已删除")
+                            st.rerun()
+                        else:
+                            st.error("❌ 删除失败")
+
+                st.caption(f"完整路径: `{backup['path']}`")
+
+    except ImportError:
+        st.warning("⚠️ 备份模块未就绪")
+    except Exception as e:
+        logger.error("[frontend] Backup list error: %s", e)
+        st.error(f"⚠️ 加载备份列表失败: {str(e)}")
+
+
+def _render_export_data_tab():
+    """Render the export data tab."""
+    st.markdown("#### 📥 导出数据")
+
+    st.markdown("**选择导出格式：**")
+
+    format_col1, format_col2, format_col3 = st.columns(3)
+
+    with format_col1:
+        if st.button("📄 导出为 JSON", use_container_width=True, help="结构化JSON格式，适合程序处理"):
+            with st.spinner("正在导出..."):
+                try:
+                    from opc_manager.data_backup import get_backup_manager
+                    manager = get_backup_manager()
+                    json_data = manager.export_data(format_type="json")
+                    st.download_button(
+                        label="⬇️ 下载 JSON 文件",
+                        data=json_data,
+                        file_name=f"opc_agents_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                        mime="application/json",
+                        key="dl_export_json",
+                        use_container_width=True,
+                    )
+                    st.success("✅ JSON导出完成")
+                except Exception as e:
+                    logger.error("[frontend] Export JSON error: %s", e)
+                    st.error(f"❌ 导出失败: {str(e)}")
+
+    with format_col2:
+        if st.button("📊 导出为 CSV", use_container_width=True, help="表格格式，适合Excel打开"):
+            with st.spinner("正在导出..."):
+                try:
+                    from opc_manager.data_backup import get_backup_manager
+                    manager = get_backup_manager()
+                    csv_data = manager.export_data(format_type="csv")
+                    st.download_button(
+                        label="⬇️ 下载 CSV 文件",
+                        data=csv_data,
+                        file_name=f"opc_agents_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv",
+                        key="dl_export_csv",
+                        use_container_width=True,
+                    )
+                    st.success("✅ CSV导出完成")
+                except Exception as e:
+                    logger.error("[frontend] Export CSV error: %s", e)
+                    st.error(f"❌ 导出失败: {str(e)}")
+
+    with format_col3:
+        if st.button("📦 导出为 ZIP", use_container_width=True, help="完整备份包（含清单文件）"):
+            with st.spinner("正在导出..."):
+                try:
+                    from opc_manager.data_backup import get_backup_manager
+                    manager = get_backup_manager()
+                    zip_data = manager.export_data(format_type="zip")
+                    st.download_button(
+                        label="⬇️ 下载 ZIP 文件",
+                        data=zip_data,
+                        file_name=f"opc_agents_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
+                        mime="application/zip",
+                        key="dl_export_zip",
+                        use_container_width=True,
+                    )
+                    st.success("✅ ZIP导出完成")
+                except Exception as e:
+                    logger.error("[frontend] Export ZIP error: %s", e)
+                    st.error(f"❌ 导出失败: {str(e)}")
+
+    st.divider()
+    st.caption("💡 提示：JSON格式适合数据迁移，CSV适合表格分析，ZIP是完整备份")
+
+
+def _render_restore_data_tab():
+    """Render the restore data tab."""
+    st.markdown("#### 🔄 从备份恢复")
+
+    st.warning("⚠️ **注意：** 恢复操作将覆盖当前所有数据，请确保已做好当前数据的备份！")
+
+    uploaded_file = st.file_uploader(
+        "选择备份文件 (ZIP格式)",
+        type=["zip"],
+        help="选择之前下载的 .zip 备份文件",
+    )
+
+    if uploaded_file:
+        st.info(f"📄 已选择文件: {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
+
+        # Save uploaded file to temp location
+        temp_dir = Path(_WORKSPACE_DIR) / "data" / "temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_path = temp_dir / uploaded_file.name
+
+        with open(temp_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        confirm_restore = st.checkbox(
+            "✅ 我确认要从此备份恢复数据（这将覆盖当前数据）",
+            key="confirm_restore_checkbox",
+        )
+
+        col_restore, _ = st.columns([1, 2])
+        with col_restore:
+            if st.button(
+                "🔄 开始恢复",
+                type="primary",
+                use_container_width=True,
+                disabled=not confirm_restore,
+                help="必须先勾选确认框才能执行恢复操作"
+            ):
+                with st.spinner("正在从备份恢复数据，请勿关闭页面..."):
+                    try:
+                        from opc_manager.data_backup import get_backup_manager
+                        manager = get_backup_manager()
+                        result = manager.restore_backup(str(temp_path), confirm=True)
+
+                        if result["success"]:
+                            st.success(f"✅ {result.get('message', '恢复成功')}")
+                            st.json({
+                                "恢复文件数": result.get("restored_files", 0),
+                            })
+                            st.balloons()
+                            st.warning("⚠️ 建议刷新页面以确保所有数据正确加载")
+                        else:
+                            st.error(f"❌ 恢复失败: {result.get('error', '未知错误')}")
+
+                        # Cleanup temp file
+                        if temp_path.exists():
+                            temp_path.unlink()
+
+                    except Exception as e:
+                        logger.error("[frontend] Restore error: %s", e)
+                        st.error(f"❌ 恢复过程出错: {str(e)}")
+
+
+# === Dashboard Page Functions (v0.2.0 Sprint 3) ===
+
+def _render_dashboard_page():
+    """Render modular Dashboard with selectable panels.
+
+    Available panels (user can toggle on/off):
+    1. 📈 Income Trend Chart (收入趋势图)
+    2. 👥 Client Health Score (客户健康度)
+    3. ✅ Task Completion Rate (任务完成率)
+    4. 💰 Monthly Financial Summary (月度财务汇总)
+    5. 📅 Recent Activity Timeline (近期活动时间线)
+    6. ⏱️ Skill Usage Stats (技能使用统计)
+
+    Default: Show Top 3 most useful panels
+    """
+    st.markdown("## 📈 数据仪表盘")
+
+    # Panel selector at top
+    ALL_PANELS = [
+        ("income_trend", "📈 收入趋势图", "显示最近30天/按月的收入变化趋势"),
+        ("client_health", "👥 客户健康度", "客户活跃度和互动频率分析"),
+        ("task_completion", "✅ 任务完成率", "任务进度和完成情况统计"),
+        ("financial_summary", "💰 月度财务汇总", "本月收入/支出/净利润概览"),
+        ("activity_timeline", "📅 近期活动时间线", "最近20条操作记录时间线"),
+        ("skill_usage", "⏱️ 技能使用统计", "各技能调用次数和使用频率"),
+    ]
+
+    DEFAULT_PANELS = ["income_trend", "client_health", "task_completion"]
+
+    if "dashboard_selected_panels" not in st.session_state:
+        st.session_state.dashboard_selected_panels = DEFAULT_PANELS
+
+    with st.expander("⚙️ 面板设置（选择要显示的数据面板）", expanded=False):
+        selected = []
+        for panel_id, title, desc in ALL_PANELS:
+            is_checked = st.checkbox(
+                f"{title}",
+                value=panel_id in st.session_state.dashboard_selected_panels,
+                help=desc,
+                key=f"dashboard_panel_{panel_id}",
+            )
+            if is_checked:
+                selected.append(panel_id)
+
+        if selected != st.session_state.dashboard_selected_panels:
+            st.session_state.dashboard_selected_panels = selected
+            st.rerun()
+
+        col_select_all, col_deselect, _ = st.columns([1, 1, 2])
+        with col_select_all:
+            if st.button("全选", use_container_width=True):
+                st.session_state.dashboard_selected_panels = [p[0] for p in ALL_PANELS]
+                st.rerun()
+        with col_deselect:
+            if st.button("默认(Top 3)", use_container_width=True):
+                st.session_state.dashboard_selected_panels = DEFAULT_PANELS
+                st.rerun()
+
+    st.divider()
+
+    selected_panels = st.session_state.dashboard_selected_panels
+
+    if not selected_panels:
+        st.info("💡 请在上方选择至少一个数据面板")
+        return
+
+    # Render selected panels in grid layout (2-3 columns)
+    panels_to_render = [(pid, title, desc) for pid, title, desc in ALL_PANELS if pid in selected_panels]
+
+    for i in range(0, len(panels_to_render), 2):
+        row_panels = panels_to_render[i:i+2]
+        cols = st.columns(len(row_panels))
+
+        for idx, (panel_id, panel_title, _) in enumerate(row_panels):
+            with cols[idx]:
+                try:
+                    if panel_id == "income_trend":
+                        _render_income_trend_panel()
+                    elif panel_id == "client_health":
+                        _render_client_health_panel()
+                    elif panel_id == "task_completion":
+                        _render_task_completion_panel()
+                    elif panel_id == "financial_summary":
+                        _render_financial_summary_panel()
+                    elif panel_id == "activity_timeline":
+                        _render_activity_timeline_panel()
+                    elif panel_id == "skill_usage":
+                        _render_skill_usage_panel()
+                except Exception as e:
+                    logger.error("[frontend] Dashboard panel %s error: %s", panel_id, e)
+                    st.error(f"⚠️ 面板加载失败: {panel_title}")
+
+
+def _get_dashboard_data():
+    """Safe wrapper to get dashboard data from backend modules.
+
+    Returns:
+        dict with keys: finance, crm, tasks, audit_log
+    """
+    data = {
+        "finance": {"trend": [], "monthly": {}},
+        "crm": {"customers": [], "stats": {}},
+        "tasks": {"list": [], "by_status": {}},
+        "audit_log": [],
+        "skills_usage": {},
+    }
+
+    try:
+        from opc_manager.finance_skill import get_trend, get_monthly_report
+        import time as _time
+        year_month = _time.strftime("%Y-%m")
+        data["finance"]["trend"] = get_trend(6)
+        data["finance"]["monthly"] = get_monthly_report(year_month)
+    except Exception as e:
+        logger.debug("[frontend] Finance data error: %s", e)
+
+    try:
+        from opc_manager.crm_skill import get_customer_stats, get_silent_customers, list_customers
+        data["crm"]["stats"] = get_customer_stats()
+        data["crm"]["silent"] = get_silent_customers()
+        try:
+            data["crm"]["customers"] = list_customers(limit=10).get("customers", [])
+        except Exception:
+            pass
+    except Exception as e:
+        logger.debug("[frontend] CRM data error: %s", e)
+
+    try:
+        from opc_manager.task_skill import list_tasks
+        tasks_result = list_tasks(status="all")
+        data["tasks"]["list"] = tasks_result.get("tasks", [])
+        by_status = {}
+        for t in data["tasks"]["list"]:
+            status = t.get("status", "pending")
+            by_status[status] = by_status.get(status, 0) + 1
+        data["tasks"]["by_status"] = by_status
+    except Exception as e:
+        logger.debug("[frontend] Tasks data error: %s", e)
+
+    try:
+        from opc_manager.audit_log import AuditLog
+        audit = AuditLog()
+        data["audit_log"] = audit.query(limit=20)
+    except Exception as e:
+        logger.debug("[frontend] Audit log error: %s", e)
+
+    return data
+
+
+def _render_income_trend_panel():
+    """Panel 1: 收入趋势图 - Income trend chart."""
+    st.markdown("### 📈 收入趋势图")
+
+    data = _get_dashboard_data()
+    trend = data.get("finance", {}).get("trend", [])
+
+    if not trend:
+        st.info("💡 暂无财务数据。开始记录收入后这里会展示趋势图")
+        return
+
+    import pandas as pd
+
+    df = pd.DataFrame(trend)
+    chart_data = pd.DataFrame({
+        "月份": [t.get("year_month", "") for t in trend],
+        "收入": [t.get("income", 0) for t in trend],
+        "支出": [t.get("expense", 0) for t in trend],
+        "利润": [t.get("profit", 0) for t in trend],
+    })
+
+    st.line_chart(chart_data.set_index("月份"), use_container_width=True)
+
+    if len(trend) >= 2:
+        latest = trend[-1].get("profit", 0)
+        previous = trend[-2].get("profit", 0)
+        change_pct = ((latest - previous) / abs(previous) * 100) if previous != 0 else 0
+        delta_color = "normal" if change_pct >= 0 else "inverse"
+        st.metric(
+            "本月利润",
+            f"¥{latest:,.2f}",
+            f"{change_pct:+.1f}%" if change_pct != 0 else None,
+            delta_color=delta_color,
+        )
+
+
+def _render_client_health_panel():
+    """Panel 2: 客户健康度 - Client health score."""
+    st.markdown("### 👥 客户健康度")
+
+    data = _get_dashboard_data()
+    customers = data.get("crm", {}).get("customers", [])
+    stats = data.get("crm", {}).get("stats", {})
+    silent = data.get("crm", {}).get("silent", {})
+
+    total = stats.get("total", 0)
+    active = stats.get("active", 0)
+    silent_count = silent.get("count", 0)
+
+    if total == 0 and not customers:
+        st.info("💡 暂无客户数据。添加客户后这里会展示健康度分析")
+        return
+
+    col_total, col_active, col_silent = st.columns(3)
+    with col_total:
+        st.metric("客户总数", total)
+    with col_active:
+        st.metric("活跃客户", active)
+    with col_silent:
+        st.metric("沉默客户", silent_count, delta_color="inverse")
+
+    if customers:
+        import pandas as pd
+        customer_data = []
+        for c in customers[:10]:
+            name = c.get("name", "Unknown")
+            status = c.get("status", "unknown")
+            last_contact = c.get("last_contact", "")
+            interactions = c.get("interactions", 0)
+
+            # Health score logic
+            from datetime import datetime as _dt, timedelta
+            now = _dt.now()
+            health_status = "🟢 健康"
+            if last_contact:
+                try:
+                    last_date = _dt.strptime(last_contact[:10], "%Y-%m-%d") if len(last_contact) >= 10 else now
+                    days_since = (now - last_date).days
+                    if days_since > 30:
+                        health_status = "🔴 需关注"
+                    elif days_since > 14:
+                        health_status = "🟡 一般"
+                except Exception:
+                    pass
+
+            customer_data.append({
+                "客户名称": name,
+                "状态": status,
+                "互动次数": interactions,
+                "最近联系": last_contact[:10] if last_contact else "-",
+                "健康度": health_status,
+            })
+
+        if customer_data:
+            df = pd.DataFrame(customer_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+
+def _render_task_completion_panel():
+    """Panel 3: 任务完成率 - Task completion rate."""
+    st.markdown("### ✅ 任务完成率")
+
+    data = _get_dashboard_data()
+    tasks = data.get("tasks", {}).get("list", [])
+    by_status = data.get("tasks", {}).get("by_status", {})
+
+    total = len(tasks)
+    completed = by_status.get("completed", 0)
+    in_progress = by_status.get("in_progress", 0)
+    pending = by_status.get("pending", 0)
+
+    if total == 0:
+        st.info("💡 暂无任务数据。创建任务后这里会展示完成率")
+        return
+
+    completion_rate = (completed / total * 100) if total > 0 else 0
+
+    col_total, col_done, col_rate = st.columns(3)
+    with col_total:
+        st.metric("总任务", total)
+    with col_done:
+        st.metric("已完成", completed)
+    with col_rate:
+        st.metric("完成率", f"{completion_rate:.1f}%")
+
+    st.progress(completion_rate / 100, text=f"完成率 {completion_rate:.1f}%")
+
+    # Status breakdown
+    if by_status:
+        import pandas as pd
+        status_df = pd.DataFrame([
+            {"状态": "已完成", "数量": completed, "占比": f"{completed/total*100:.1f}%"},
+            {"状态": "进行中", "数量": in_progress, "占比": f"{in_progress/total*100:.1f}%" if total > 0 else "0%"},
+            {"状态": "待处理", "数量": pending, "占比": f"{pending/total*100:.1f}%" if total > 0 else "0%"},
+        ])
+        st.dataframe(status_df, use_container_width=True, hide_index=True)
+
+
+def _render_financial_summary_panel():
+    """Panel 4: 月度财务汇总 - Monthly financial summary."""
+    st.markdown("### 💰 月度财务汇总")
+
+    data = _get_dashboard_data()
+    monthly = data.get("finance", {}).get("monthly", {})
+    trend = data.get("finance", {}).get("trend", [])
+
+    income = monthly.get("income", 0)
+    expense = monthly.get("expense", 0)
+    profit = monthly.get("profit", 0)
+
+    if income == 0 and expense == 0:
+        st.info("💡 暂无本月财务数据。记录收支后这里会展示汇总")
+        return
+
+    col_inc, col_exp, col_profit = st.columns(3)
+    with col_inc:
+        st.metric("本月收入", f"¥{income:,.2f}")
+    with col_exp:
+        st.metric("本月支出", f"¥{expense:,.2f}", delta_color="inverse")
+    with col_profit:
+        profit_delta = None
+        if len(trend) >= 2:
+            prev_profit = trend[-2].get("profit", 0)
+            profit_delta = f"{profit - prev_profit:+,.2f}" if prev_profit != 0 else None
+        st.metric("净利润", f"¥{profit:,.2f}", profit_delta)
+
+    # Simple bar chart comparing income vs expense
+    if income > 0 or expense > 0:
+        import pandas as pd
+        comparison = pd.DataFrame({
+            "类别": ["收入", "支出"],
+            "金额": [income, expense],
+        })
+        st.bar_chart(comparison.set_index("类别"), use_container_width=True)
+
+
+def _render_activity_timeline_panel():
+    """Panel 5: 近期活动时间线 - Recent activity timeline."""
+    st.markdown("### 📅 近期活动时间线")
+
+    data = _get_dashboard_data()
+    logs = data.get("audit_log", [])
+
+    if not logs:
+        st.info("💡 暂无操作记录。执行任务后日志会自动记录在这里")
+        return
+
+    from datetime import datetime as _dt
+
+    for idx, record in enumerate(logs[:20]):
+        timestamp = record.get("timestamp", 0)
+        op_type = record.get("operation_type", "unknown")
+        skill_id = record.get("skill_id", "")
+        status = record.get("status", "unknown")
+        duration = record.get("duration_ms", 0)
+
+        time_str = _dt.fromtimestamp(timestamp).strftime("%m-%d %H:%M:%S") if timestamp else ""
+
+        status_emoji = {
+            "success": "✅",
+            "failed": "❌",
+            "cancelled": "⚪",
+        }.get(status, "📌")
+
+        with st.expander(f"{status_emoji} **{op_type}** — {time_str} ({duration}ms)", expanded=(idx < 3)):
+            col_meta, col_detail = st.columns([1, 2])
+            with col_meta:
+                st.caption(f"**技能**: `{skill_id}`")
+                st.caption(f"**状态**: `{status}`")
+                st.caption(f"**耗时**: {duration}ms")
+            with col_detail:
+                input_sum = record.get("input_summary", "")
+                output_sum = record.get("output_summary", "")
+                if input_sum:
+                    st.text(input_sum[:150])
+                if output_sum:
+                    st.text(output_sum[:200])
+
+    if len(logs) > 20:
+        st.caption(f"显示最近20条，共{len(logs)}条记录")
+
+
+def _render_skill_usage_panel():
+    """Panel 6: 技能使用统计 - Skill usage statistics."""
+    st.markdown("### ⏱️ 技能使用统计")
+
+    data = _get_dashboard_data()
+    logs = data.get("audit_log", [])
+
+    if not logs:
+        st.info("💡 暂无技能使用数据。使用各功能后统计会自动更新")
+        return
+
+    from collections import Counter
+    skill_counts = Counter()
+    for log in logs:
+        skill_id = log.get("skill_id", "unknown")
+        if skill_id:
+            skill_counts[skill_id] += 1
+
+    if not skill_counts:
+        st.info("💡 暂无技能使用记录")
+        return
+
+    total_calls = sum(skill_counts.values())
+    top_skills = skill_counts.most_common(10)
+
+    st.metric("总调用次数", total_calls)
+
+    import pandas as pd
+    skill_data = []
+    for skill_name, count in top_skills:
+        pct = count / total_calls * 100 if total_calls > 0 else 0
+        skill_data.append({
+            "技能": skill_name,
+            "调用次数": count,
+            "占比": f"{pct:.1f}%",
+        })
+
+    if skill_data:
+        df = pd.DataFrame(skill_data)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+        # Horizontal bar chart
+        chart_df = pd.DataFrame({
+            "技能": [s[0] for s in top_skills],
+            "调用次数": [s[1] for s in top_skills],
+        })
+        st.bar_chart(chart_df.set_index("技能"), use_container_width=True, horizontal=True)
+
+
+def _render_deliverables_list():
+    """Render the deliverables file list (original functionality)."""
+    if not st.session_state.deliverables:
+        st.info("💡 还没有生成任何成果物。去「对话」页面执行一个任务吧！")
+    else:
+        st.caption(f"共 {len(st.session_state.deliverables)} 个成果物")
+
+        st.divider()
+
+        _render_batch_export_section()
+
+        st.divider()
+
+        search_query = st.text_input("🔍 搜索成果物", placeholder="输入关键词搜索...", key="deliverable_search")
+
+        filtered_deliverables = st.session_state.deliverables
+        if search_query:
+            search_lower = search_query.lower()
+            filtered_deliverables = [
+                d for d in st.session_state.deliverables
+                if search_lower in d.get("prompt", "").lower()
+                or search_lower in d.get("filename", "").lower()
+                or search_lower in d.get("task_type", "").lower()
+            ]
+
+        st.caption(f"共 {len(st.session_state.deliverables)} 个成果物" + (f"，匹配 {len(filtered_deliverables)} 个" if search_query else ""))
+
+        for i, d in enumerate(filtered_deliverables):
+            with st.expander(f"📄 {d['filename']}", expanded=(i == 0)):
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.markdown(f"**任务**: `{d['prompt']}`")
+                    st.markdown(f"**类型**: {d['task_type']}")
+                    st.markdown(f"**时间**: {d['created_at']}")
+                with col2:
+                    st.metric("大小", f"{d['size_kb']} KB")
+                with col3:
+                    real_fp = os.path.realpath(d["filepath"])
+                    if not real_fp.startswith(os.path.realpath(DELIVERABLES_DIR)):
+                        continue
+                    if os.path.exists(real_fp):
+                        with open(real_fp, "r", encoding="utf-8") as f:
+                            content = f.read()
+                        st.download_button(
+                            "📥 下载",
+                            data=content,
+                            file_name=d["filename"],
+                            mime="text/markdown",
+                            key=f"dl_lib_{i}",
+                            use_container_width=True,
+                        )
+                    if os.path.exists(real_fp):
+                        with open(real_fp, "r", encoding="utf-8") as f:
+                            lib_content = f.read()
+                        st.markdown("**快速导出:**")
+                        _render_single_export_buttons(d, item_id=f"lib_{d['filename'][:12]}")
+                    if st.button("🗑️ 删除", key=f"del_lib_{d['filename']}"):
+                        try:
+                            real_path = os.path.realpath(d["filepath"])
+                            if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
+                                st.error("非法文件路径")
+                            elif os.path.exists(real_path):
+                                os.remove(real_path)
+                        except OSError:
+                            pass
+                        st.session_state.deliverables = [
+                            item
+                            for item in st.session_state.deliverables
+                            if item.get("filename") != d["filename"]
+                        ]
+                        st.rerun()
+
+                st.markdown("**预览（前500字）**:")
+                if os.path.exists(d["filepath"]):
+                    with open(d["filepath"], "r", encoding="utf-8") as f:
+                        preview = f.read()[:500]
+                    st.code(preview, language="markdown")
+
+
+def _render_audit_log_page():
+    """Render the Audit Log viewer page.
+
+    Features:
+    - Timeline-style display of recent operations
+    - Filter by operation type / status / date range
+    - Search by session_id or skill_id
+    - Stats summary at top (total/success/failed rate)
+    - Expandable detail view per record
+    """
+    try:
+        from opc_manager.audit_log import AuditLog
+
+        audit_log = AuditLog()
+
+        st.markdown("### 📋 操作日志")
+
+        stats = audit_log.get_stats()
+        total_ops = stats.get("total", 0)
+        success_rate = stats.get("success_rate", "0%")
+        avg_duration = stats.get("avg_duration_ms", 0)
+
+        col_total, col_success, col_avg = st.columns(3)
+        with col_total:
+            st.metric("总操作数", total_ops)
+        with col_success:
+            st.metric("成功率", success_rate)
+        with col_avg:
+            st.metric("平均耗时", f"{avg_duration}ms")
+
+        if total_ops == 0:
+            st.info("💡 暂无操作记录。执行任务后日志会自动记录在这里。")
+            return
+
+        st.divider()
+
+        filter_col1, filter_col2, filter_col3, filter_col4 = st.columns([2, 2, 2, 2])
+
+        with filter_col1:
+            op_types = ["全部"] + list(set(
+                r.get("operation_type", "") for r in audit_log.query(limit=200) if r.get("operation_type")
+            ))
+            selected_type = st.selectbox(
+                "操作类型",
+                op_types,
+                key="audit_op_type",
+                help="筛选特定类型的操作"
+            )
+
+        with filter_col2:
+            status_options = ["全部", "success", "failed", "cancelled"]
+            selected_status = st.selectbox(
+                "状态",
+                status_options,
+                key="audit_status",
+                help="按执行状态筛选"
+            )
+
+        with filter_col3:
+            session_search = st.text_input(
+                "Session ID",
+                placeholder="输入Session ID搜索...",
+                key="audit_session_search",
+                help="留空显示所有会话"
+            )
+
+        with filter_col4:
+            time_range_options = ["全部", "今天", "最近7天", "最近30天"]
+            selected_time_range = st.selectbox(
+                "时间范围",
+                time_range_options,
+                key="audit_time_range",
+                help="选择时间范围"
+            )
+
+        import time as _time
+        since_timestamp = None
+        if selected_time_range == "今天":
+            since_timestamp = _time.time() - 86400
+        elif selected_time_range == "最近7天":
+            since_timestamp = _time.time() - 7 * 86400
+        elif selected_time_range == "最近30天":
+            since_timestamp = _time.time() - 30 * 86400
+
+        query_params = {
+            "limit": 50,
+            "since": since_timestamp,
+        }
+        if selected_type != "全部":
+            query_params["operation_type"] = selected_type
+        if session_search.strip():
+            query_params["session_id"] = session_search.strip()
+
+        try:
+            records = audit_log.query(**query_params)
+        except Exception as e:
+            logger.warning("[frontend] 审计日志查询失败: %s", e)
+            st.error("⚠️ 日志查询失败，请稍后重试")
+            return
+
+        if selected_status != "全部":
+            records = [r for r in records if r.get("status") == selected_status]
+
+        st.caption(f"显示 {len(records)} 条记录" + (f"（已筛选）" if (selected_type != "全部" or selected_status != "全部" or session_search or selected_time_range != "全部") else ""))
+
+        if not records:
+            st.info("💡 没有匹配的操作记录。尝试调整筛选条件。")
+            return
+
+        for idx, record in enumerate(records):
+            timestamp_str = datetime.fromtimestamp(record.get("timestamp", 0)).strftime("%H:%M:%S")
+            op_type = record.get("operation_type", "unknown")
+            skill_id = record.get("skill_id", "unknown")
+            status = record.get("status", "unknown")
+            duration = record.get("duration_ms", 0)
+            session_id = record.get("id", "")[:12]
+            input_summary = record.get("input_summary", "")
+            output_summary = record.get("output_summary", "")
+
+            status_emoji = {
+                "success": "✅",
+                "failed": "❌",
+                "cancelled": "⚪",
+            }.get(status, "❓")
+
+            status_color = {
+                "success": "green",
+                "failed": "red",
+                "cancelled": "gray",
+            }.get(status, "gray")
+
+            with st.expander(
+                f"{status_emoji} **{op_type}** | {skill_id} | {timestamp_str} ({duration}ms)",
+                expanded=(idx == 0)
+            ):
+                col_meta, col_detail = st.columns([1, 2])
+
+                with col_meta:
+                    st.markdown(f"**状态**: :{status_color}[{status.upper()}]")
+                    st.markdown(f"**Session**: `{session_id}`")
+                    st.markdown(f"**耗时**: {duration}ms")
+                    st.markdown(f"**技能**: `{skill_id}`")
+
+                with col_detail:
+                    if input_summary:
+                        st.markdown("**输入摘要**:")
+                        st.text(input_summary[:200])
+                    if output_summary:
+                        st.markdown("**输出摘要**:")
+                        st.text(output_summary[:300])
+
+        if len(records) >= 50:
+            if st.button("📄 加载更多", key="audit_load_more"):
+                st.info("💡 当前最多显示50条记录。如需查看更多，请缩小时间范围。")
+
+    except ImportError:
+        st.warning("⚠️ 审计日志模块未就绪，此功能需要完整安装")
+    except Exception as e:
+        friendly_error = ErrorHandler.translate(e, context="加载操作日志时")
+        st.error(friendly_error.user_message)
+        if friendly_error.suggestion:
+            st.info(friendly_error.suggestion)
+        logger.error("[frontend] 操作日志页面错误: %s", friendly_error.traceback_str)
 
 
 def _show_onboarding_overlay():

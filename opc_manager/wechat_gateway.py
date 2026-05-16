@@ -43,15 +43,13 @@ class WeChatResponse:
     
     def to_xml(self, to_user: str, from_user: str) -> str:
         escaped_content = self._escape_cdata(self.content)
-        if self.msg_type == "text":
-            return f"""<xml>
+        return f"""<xml>
 <ToUserName><![CDATA[{to_user}]]></ToUserName>
 <FromUserName><![CDATA[{from_user}]]></FromUserName>
 <CreateTime>{int(time.time())}</CreateTime>
 <MsgType><![CDATA[text]]></MsgType>
 <Content><![CDATA[{escaped_content}]]></Content>
 </xml>"""
-        return f"<xml><ToUserName><![CDATA[{to_user}]]></ToUserName><FromUserName><![CDATA[{from_user}]]></FromUserName><CreateTime>{int(time.time())}</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[{escaped_content}]]></Content></xml>"
 
     @staticmethod
     def _escape_cdata(text: str) -> str:

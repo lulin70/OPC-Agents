@@ -34,7 +34,8 @@ except ImportError:
 
 if FASTAPI_AVAILABLE:
     from .skill_marketplace import (
-        SkillMarketplace, MarketplaceSkill, PermissionLevel, SkillStatus
+        SkillMarketplace, MarketplaceSkill, PermissionLevel, SkillStatus,
+        ExternalSkillMarketplace,
     )
 
     app = FastAPI(
@@ -53,6 +54,7 @@ if FASTAPI_AVAILABLE:
     )
 
     marketplace = SkillMarketplace()
+    external_marketplace = ExternalSkillMarketplace()
     _rate_limit_store: Dict[str, List[float]] = {}
     MAX_REQUEST_BODY_BYTES = 1_000_000
 
@@ -160,6 +162,41 @@ if FASTAPI_AVAILABLE:
     @app.get("/api/v1/categories")
     async def list_categories():
         return {"categories": marketplace.list_categories()}
+
+    @app.get("/api/v1/marketplace/skills")
+    async def list_marketplace_skills(
+        query: Optional[str] = Query(None),
+        category: Optional[str] = Query(None),
+    ):
+        result = external_marketplace.search_skills(query or "", category or "")
+        return result
+
+    @app.get("/api/v1/marketplace/stats")
+    async def get_marketplace_stats():
+        internal_stats = marketplace.get_stats()
+        external_installed = external_marketplace.list_installed()
+        return {
+            **internal_stats,
+            "external_skills": external_installed.get("total", 0),
+        }
+
+    @app.post("/api/v1/marketplace/{skill_id}/install")
+    async def install_skill(skill_id: str, source: str = "opc_official"):
+        result = external_marketplace.install_skill(skill_id, source)
+        if not result.get("success") and not result.get("requires_confirmation"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Installation failed"))
+        return result
+
+    @app.delete("/api/v1/marketplace/{skill_id}/uninstall")
+    async def uninstall_skill(skill_id: str):
+        result = external_marketplace.uninstall_skill(skill_id)
+        if not result.get("success"):
+            raise HTTPException(status_code=404, detail=result.get("error", "Skill not found"))
+        return result
+
+    @app.get("/api/v1/marketplace/installed")
+    async def list_installed_skills():
+        return external_marketplace.list_installed()
 
     @app.get("/health")
     async def health_check():

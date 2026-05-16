@@ -2,6 +2,52 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.2.0] - 2026-05-15 🎉 **产品化升级里程碑**
+
+### 重大变更：从"技术demo"升级为"真正可用的产品"
+
+#### Sprint 1: 零配置启动 (P0×3 + P1×1)
+- **SettingsManager** — 统一设置中心(5Tab): LLM/SMTP/API密钥/安全/个人信息
+- **加密Key自动生成** — secrets.token_hex(32)→.env.local，首次启动零配置
+- **SMTP配置UI** — 预设服务商(QQ/163/Gmail/Outlook)+5秒超时测试+错误分类
+- **Onboarding新手引导** — 3步引导(欢迎→LLM配置→示例任务)+进度指示器
+- 新增文件: settings.py, onboarding.py, test_settings.py(49), test_onboarding.py(44)
+
+#### Sprint 2: 企业微信 + 体验升级 (P0×1 + P1×2 + P2×1)
+- **企业微信全链路可用** — 37个E2E测试覆盖Gateway/Bridge/集成/全链路
+  - Bug修复: 错误信息泄露→友好提示 / 委托模式实现 / 冗余代码清理
+- **ErrorHandler统一错误中间件** — 9种异常分类+5级严重度+上下文感知翻译
+- **操作日志前端展示** — 成果物双Tab(文件|日志)+统计栏+4维筛选+时间线
+- **Undo撤销前端入口** — 侧边栏面板(最近10条+二次确认)+对话区快捷按钮
+- 新增文件: error_handler.py, test_error_handler.py(29), test_wechat_e2e.py(37)
+
+#### Sprint 3: 数据价值可视化 (P1×2 + P2×2)
+- **DataBackupManager** — ZIP备份/JSON导出/CSV导出/SHA256校验/安全恢复
+- **Dashboard模板化(6面板)** — 收入趋势图📈/客户健康度👥/任务完成率✅/月度财务💰/活动时间线📅/技能统计⏱️
+- **批量导出入口优化** — 4格式选择+进度条+4图标按钮替代下拉框
+- **SSE实时进度条增强** — 状态标签+进度条+指标卡+事件日志详情
+- 新增文件: data_backup.py, test_data_backup.py(16)
+
+#### Sprint 4: 打磨 + 国际化 (P2×5)
+- **暗色模式/主题切换** — 5主题(浅色/深色/日落橙/森林绿/海洋蓝)
+- **i18n中英文切换** — 轻量国际化系统(zh_CN/en_US) 50+翻译键+预留日语接口
+- **Keyboard Shortcuts** — 7个快捷键(Ctrl+Enter/N/E/D/S/?/Esc)
+- **技能市场前端MVP** — 浏览发现(搜索+筛选+卡片网格)+我的技能(列表+卸载)+5个新API端点
+- **全局搜索** — 跨成果物/审计日志/聊天记录搜索+匹配度评分
+- 新增文件: i18n.py, test_i18n.py(26)
+
+### 测试统计
+- **813 passed (+201 from v0.1.9)**, 21 skipped, 0 failed
+- 新增测试文件: test_settings, test_onboarding, test_error_handler, test_data_backup, test_i18n, test_wechat_e2e
+- 安全测试: 19/19通过 (注入/XSS/路径穿越/APIKey/输出脱敏)
+
+### 文档
+- DevSquad 7角色协作PRD+架构设计报告 (2144行)
+- Sprint Plan (62任务/4阶段)
+- 版本同步: 所有活跃文档更新到v0.2.0
+
+---
+
 ## [0.1.9] - 2026-05-14
 
 ### P0: 核心体验升级（5项）

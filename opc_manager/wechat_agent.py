@@ -53,7 +53,7 @@ class WeChatAgentBridge:
             return self._format_response(loop_result)
         except Exception as e:
             logger.error("AgentLoop execution error for wechat user %s: %s", session_id, e)
-            return WeChatResponse(content=f"处理出错: {str(e)[:100]}")
+            return WeChatResponse(content="抱歉，处理您的请求时出现了错误，请稍后重试。")
 
     def _format_response(self, result: dict) -> WeChatResponse:
         if not result.get("success"):
@@ -101,6 +101,18 @@ class WeChatAgentBridge:
 
         self._original_check_confirmation = self.agent_loop.confirmer.check_confirmation
         self._confirm_callback_wrapper = wechat_confirm_callback
+
+        async def wrapped_check_confirmation(session_id: str, intent_type: str,
+                                              goal: str, confidence: float,
+                                              params: dict = None,
+                                              confirm_callback=None):
+            if confirm_callback is None:
+                confirm_callback = self._confirm_callback_wrapper
+            return await self._original_check_confirmation(
+                session_id, intent_type, goal, confidence, params, confirm_callback
+            )
+
+        self.agent_loop.confirmer.check_confirmation = wrapped_check_confirmation
 
     async def handle_callback(self, query_params: dict, body: str) -> str:
         return await self.gateway.handle_callback(query_params, body)
