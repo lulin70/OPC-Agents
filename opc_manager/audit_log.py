@@ -82,6 +82,7 @@ class AuditLog:
                     cls._instance._logs = deque(maxlen=AUDIT_MAX_MEMORY_LOGS)
                     cls._instance._write_queue = Queue()
                     cls._instance._started = False
+                    cls._instance._stop_event = threading.Event()
         return cls._instance
 
     @staticmethod
@@ -191,11 +192,10 @@ class AuditLog:
 
         def writer():
             from opc_manager.data_manager import init_db, execute_write
-            if self._db_connection is None:
-                try:
-                    init_db()
-                except Exception as e:
-                    logger.warning("AuditLog DB init failed: %s", e)
+            try:
+                init_db()
+            except Exception as e:
+                logger.warning("AuditLog DB init failed: %s", e)
 
             batch = []
             while not self._stop_event.is_set():
