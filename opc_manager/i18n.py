@@ -2,11 +2,12 @@
 Internationalization (i18n) Manager — v0.2.0
 
 Lightweight, self-built i18n system for OPC-Agents.
-Supports Chinese (zh_CN) and English (en_US), with Japanese extension point.
+Supports Chinese (zh_CN), English (en_US), and Japanese (ja_JP).
 """
 
 import json
 import logging
+from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -123,13 +124,68 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "common_success": "Success",
         "common_failed": "Failed",
     },
+    "ja_JP": {
+        "nav_chat": "💬 チャット",
+        "nav_deliverables": "📁 成果物",
+        "nav_growth": "📊 成長",
+        "nav_marketplace": "🏪 スキルマーケット",
+        "nav_settings": "⚙️ 設定",
+        "settings_llm": "🧠 LLM設定",
+        "settings_smtp": "📧 SMTP設定",
+        "settings_api_keys": "🔑 APIキー",
+        "settings_security": "🔒 セキュリティ設定",
+        "settings_profile": "👤 プロフィール",
+        "settings_backup": "💾 データバックアップ",
+        "llm_provider": "LLMプロバイダー",
+        "llm_api_key": "APIキー",
+        "llm_base_url": "Base URL",
+        "llm_model": "モデル名",
+        "llm_test_connection": "接続テスト",
+        "llm_save": "設定を保存",
+        "smtp_host": "SMTPサーバー",
+        "smtp_port": "ポート番号",
+        "smtp_username": "ユーザー名",
+        "smtp_password": "パスワード",
+        "smtp_test": "接続テスト",
+        "profile_name": "お名前",
+        "profile_company": "会社名",
+        "profile_timezone": "タイムゾーン",
+        "profile_language": "言語",
+        "onboarding_welcome_title": "👋 OPC-Agentsへようこそ",
+        "onboarding_welcome_desc": "一人会社向けAIタスク実行システムです",
+        "onboarding_llm_title": "🧠 AIモデルを設定",
+        "onboarding_sample_title": "🎯 最初のタスクをお試し",
+        "onboarding_complete_title": "🎉 準備完了！",
+        "onboarding_next": "次へ →",
+        "onboarding_skip": "ガイドをスキップ",
+        "onboarding_start": "始める",
+        "dashboard_income_trend": "📈 収入トレンド",
+        "dashboard_client_health": "👥 顧客ヘルス",
+        "dashboard_task_completion": "✅ タスク完了率",
+        "dashboard_monthly_finance": "💰 月間財務サマリー",
+        "dashboard_activity_timeline": "📅 最近のアクティビティ",
+        "dashboard_skill_stats": "⏱️ スキル使用統計",
+        "error_network": "ネットワーク接続に失敗しました。ネットワークを確認の上、再度お試しください。",
+        "error_permission": "権限が不足しているため、この操作を実行できません。",
+        "error_config": "設定情報が不完全、または無効です。",
+        "error_unknown": "予期しないエラーが発生しました。",
+        "common_save": "保存",
+        "common_cancel": "キャンセル",
+        "common_confirm": "確認",
+        "common_delete": "削除",
+        "common_search": "検索...",
+        "common_loading": "読み込み中...",
+        "common_no_data": "データがありません",
+        "common_success": "操作成功",
+        "common_failed": "操作失敗",
+    },
 }
 
 
 class I18nManager:
     """Lightweight internationalization manager."""
 
-    SUPPORTED_LOCALES = ["zh_CN", "en_US"]
+    SUPPORTED_LOCALES = ["zh_CN", "en_US", "ja_JP"]
     DEFAULT_LOCALE = "zh_CN"
 
     def __init__(self):
@@ -161,7 +217,21 @@ class I18nManager:
         return [
             {"code": "zh_CN", "name": "中文 🇨🇳"},
             {"code": "en_US", "name": "English 🇺🇸"},
+            {"code": "ja_JP", "name": "日本語 🇯🇵"},
         ]
+
+    @staticmethod
+    def format_date(locale: str, date_obj) -> str:
+        if locale == "ja_JP":
+            return date_obj.strftime("%Y年%m月%d日")
+        elif locale == "zh_CN":
+            return date_obj.strftime("%Y年%m月%d日")
+        else:
+            return date_obj.strftime("%Y-%m-%d")
+
+    @staticmethod
+    def format_number(locale: str, number) -> str:
+        return f"{number:,}"
 
 
 _i18n_instance: Optional[I18nManager] = None

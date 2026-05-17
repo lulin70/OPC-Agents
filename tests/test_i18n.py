@@ -1,6 +1,7 @@
 """Tests for i18n module — v0.2.0 Sprint 4"""
 
 import pytest
+from datetime import date
 from opc_manager.i18n import I18nManager, I18N_STRINGS, get_i18n, t
 
 
@@ -11,9 +12,10 @@ class TestI18nManagerInit:
         manager = I18nManager()
         assert manager.locale == "zh_CN"
 
-    def test_supported_locales_contains_zh_cn_and_en_us(self):
+    def test_supported_locales_contains_all_three(self):
         assert "zh_CN" in I18nManager.SUPPORTED_LOCALES
         assert "en_US" in I18nManager.SUPPORTED_LOCALES
+        assert "ja_JP" in I18nManager.SUPPORTED_LOCALES
 
     def test_default_locale_constant(self):
         assert I18nManager.DEFAULT_LOCALE == "zh_CN"
@@ -33,9 +35,14 @@ class TestLocaleSwitching:
         manager.locale = "zh_CN"
         assert manager.locale == "zh_CN"
 
-    def test_unsupported_locale_falls_back(self):
+    def test_switch_to_japanese(self):
         manager = I18nManager()
         manager.locale = "ja_JP"
+        assert manager.locale == "ja_JP"
+
+    def test_unsupported_locale_falls_back(self):
+        manager = I18nManager()
+        manager.locale = "ko_KR"
         assert manager.locale == "zh_CN"
 
     def test_empty_locale_falls_back(self):
@@ -105,10 +112,10 @@ class TestMissingKeys:
 class TestGetAvailableLocales:
     """Test get_available_locales method."""
 
-    def test_returns_two_locales(self):
+    def test_returns_three_locales(self):
         manager = I18nManager()
         locales = manager.get_available_locales()
-        assert len(locales) == 2
+        assert len(locales) == 3
 
     def test_zh_cn_locale_info(self):
         manager = I18nManager()
@@ -123,6 +130,13 @@ class TestGetAvailableLocales:
         en = next((l for l in locales if l["code"] == "en_US"), None)
         assert en is not None
         assert "English" in en["name"]
+
+    def test_ja_jp_locale_info(self):
+        manager = I18nManager()
+        locales = manager.get_available_locales()
+        ja = next((l for l in locales if l["code"] == "ja_JP"), None)
+        assert ja is not None
+        assert "日本語" in ja["name"]
 
 
 class TestSingleton:
@@ -154,12 +168,13 @@ class TestShorthandFunction:
 
 
 class TestI18NStringsCompleteness:
-    """Test that both locales have the same keys."""
+    """Test that all locales have the same keys."""
 
-    def test_both_locales_have_same_keys(self):
+    def test_all_locales_have_same_keys(self):
         zh_keys = set(I18N_STRINGS["zh_CN"].keys())
         en_keys = set(I18N_STRINGS["en_US"].keys())
-        assert zh_keys == en_keys
+        ja_keys = set(I18N_STRINGS["ja_JP"].keys())
+        assert zh_keys == en_keys == ja_keys
 
     def test_zh_cn_has_minimum_keys(self):
         required_keys = [
@@ -168,3 +183,66 @@ class TestI18NStringsCompleteness:
         ]
         for key in required_keys:
             assert key in I18N_STRINGS["zh_CN"]
+
+
+class TestTranslationJapanese:
+    """Test Japanese translations."""
+
+    def test_nav_chat_japanese(self):
+        manager = I18nManager()
+        manager.locale = "ja_JP"
+        assert manager.t("nav_chat") == "💬 チャット"
+
+    def test_settings_llm_japanese(self):
+        manager = I18nManager()
+        manager.locale = "ja_JP"
+        assert manager.t("settings_llm") == "🧠 LLM設定"
+
+    def test_common_save_japanese(self):
+        manager = I18nManager()
+        manager.locale = "ja_JP"
+        assert manager.t("common_save") == "保存"
+
+    def test_error_network_japanese(self):
+        manager = I18nManager()
+        manager.locale = "ja_JP"
+        assert "ネットワーク" in manager.t("error_network")
+
+    def test_onboarding_welcome_title_japanese(self):
+        manager = I18nManager()
+        manager.locale = "ja_JP"
+        assert "ようこそ" in manager.t("onboarding_welcome_title")
+
+
+class TestFormattingHelpers:
+    """Test locale-aware date/number formatting."""
+
+    def test_format_date_japanese(self):
+        result = I18nManager.format_date("ja_JP", date(2025, 6, 15))
+        assert result == "2025年06月15日"
+
+    def test_format_date_chinese(self):
+        result = I18nManager.format_date("zh_CN", date(2025, 6, 15))
+        assert result == "2025年06月15日"
+
+    def test_format_date_english(self):
+        result = I18nManager.format_date("en_US", date(2025, 6, 15))
+        assert result == "2025-06-15"
+
+    def test_format_number_japanese(self):
+        result = I18nManager.format_number("ja_JP", 1234567)
+        assert result == "1,234,567"
+
+    def test_format_number_english(self):
+        result = I18nManager.format_number("en_US", 1234567)
+        assert result == "1,234,567"
+
+
+class TestFallbackBehavior:
+    """Test fallback to zh_CN when ja_JP missing a key (future-proofing)."""
+
+    def test_fallback_for_missing_key_returns_key_itself(self):
+        manager = I18nManager()
+        manager.locale = "ja_JP"
+        result = manager.t("totally_nonexistent_key")
+        assert result == "totally_nonexistent_key"
