@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 BACKUP_DIR = "data/backups"
 EXPORT_FORMATS = ["json", "csv", "zip"]
 BACKUP_VERSION = "1.0"
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB — 超过此大小的文件跳过并记录警告
 
 
 @dataclass
@@ -80,8 +81,13 @@ class DataBackupManager:
                     if any(p in fname for p in skip_patterns):
                         continue
 
+                    fsize = f.stat().st_size
+                    if fsize > MAX_FILE_SIZE:
+                        logger.warning("跳过超大文件 %s (%.1fMB > 50MB限制)", fname, fsize / (1024 * 1024))
+                        continue
+
                     files_to_backup.append((f, rel_path))
-                    total_size += f.stat().st_size
+                    total_size += fsize
 
                     if fname.endswith(".json") or fname.endswith(".db"):
                         if fname not in manifest.tables:
@@ -95,9 +101,11 @@ class DataBackupManager:
             for file_path, rel_path in files_to_backup:
                 zf.write(file_path, arcname=str(rel_path))
 
-        # Calculate checksum
+        # Calculate checksum — 流式读取避免大文件OOM
         sha256 = hashlib.sha256()
-        sha256.update(backup_path.read_bytes())
+        with open(backup_path, 'rb') as f:
+            for chunk in iter(lambda: f.read(65536), b''):
+                sha256.update(chunk)
         manifest.checksum_sha256 = sha256.hexdigest()
 
         # Save manifest inside zip
@@ -188,7 +196,8 @@ class DataBackupManager:
         """
         if format_type == "zip":
             path, _ = self.create_backup(include_attachments=False)
-            return path.read_bytes()
+            with open(path, 'rb') as f:
+                return f.read()
 
         elif format_type == "json":
             data = {}

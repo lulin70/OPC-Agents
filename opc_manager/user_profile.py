@@ -7,6 +7,16 @@ from collections import Counter
 
 logger = logging.getLogger(__name__)
 
+_data_manager = None
+
+
+def _get_dm():
+    global _data_manager
+    if _data_manager is None:
+        from opc_manager import data_manager
+        _data_manager = data_manager
+    return _data_manager
+
 
 class UserProfile:
 
@@ -14,44 +24,42 @@ class UserProfile:
 
     def __init__(self):
         if not UserProfile._initialized:
-            from opc_manager.data_manager import init_db
-            init_db()
+            _get_dm().init_db()
             UserProfile._initialized = True
 
     def record_interaction(self, intent_type: str, goal: str, skill_used: str,
                            result_success: bool, user_feedback: str = "") -> None:
-        from opc_manager.data_manager import execute_write, gen_id
-        interaction_id = gen_id()
+        dm = _get_dm()
+        interaction_id = dm.gen_id()
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
-        execute_write(
+        dm.execute_write(
             "INSERT INTO interaction_log (id, intent_type, goal, skill_used, success, user_feedback, created_at) VALUES (?,?,?,?,?,?,?)",
             (interaction_id, intent_type, goal, skill_used, 1 if result_success else 0, user_feedback, now)
         )
 
     def get_preferred_skills(self, intent_type: str) -> List[str]:
-        from opc_manager.data_manager import execute_query
-        rows = execute_query(
+        rows = _get_dm().execute_query(
             "SELECT skill_used, COUNT(*) as cnt FROM interaction_log WHERE intent_type=? AND success=1 GROUP BY skill_used ORDER BY cnt DESC LIMIT 10",
             (intent_type,)
         )
         return [row["skill_used"] for row in rows]
 
     def get_usage_patterns(self) -> Dict[str, Any]:
-        from opc_manager.data_manager import execute_query
-        total_rows = execute_query("SELECT COUNT(*) as cnt FROM interaction_log")
+        dm = _get_dm()
+        total_rows = dm.execute_query("SELECT COUNT(*) as cnt FROM interaction_log")
         total = total_rows[0]["cnt"] if total_rows else 0
 
-        skill_rows = execute_query(
+        skill_rows = dm.execute_query(
             "SELECT skill_used, COUNT(*) as cnt FROM interaction_log GROUP BY skill_used ORDER BY cnt DESC LIMIT 10"
         )
         top_skills = [{"skill": row["skill_used"], "count": row["cnt"]} for row in skill_rows]
 
-        intent_rows = execute_query(
+        intent_rows = dm.execute_query(
             "SELECT intent_type, COUNT(*) as cnt FROM interaction_log GROUP BY intent_type ORDER BY cnt DESC LIMIT 10"
         )
         top_intents = [{"intent": row["intent_type"], "count": row["cnt"]} for row in intent_rows]
 
-        success_rows = execute_query(
+        success_rows = dm.execute_query(
             "SELECT success, COUNT(*) as cnt FROM interaction_log GROUP BY success"
         )
         success_rate = 0.0
@@ -62,7 +70,7 @@ class UserProfile:
         if total > 0:
             success_rate = round(success_count / total, 2)
 
-        time_rows = execute_query(
+        time_rows = dm.execute_query(
             "SELECT created_at FROM interaction_log ORDER BY created_at DESC LIMIT 100"
         )
         active_hours = []
@@ -84,14 +92,14 @@ class UserProfile:
         }
 
     def get_skill_recommendations(self) -> List[Dict[str, Any]]:
-        from opc_manager.data_manager import execute_query
+        dm = _get_dm()
         recommendations = []
 
-        failed_rows = execute_query(
+        failed_rows = dm.execute_query(
             "SELECT intent_type, goal, COUNT(*) as cnt FROM interaction_log WHERE success=0 GROUP BY intent_type ORDER BY cnt DESC LIMIT 5"
         )
         for row in failed_rows:
-            top_skill_rows = execute_query(
+            top_skill_rows = dm.execute_query(
                 "SELECT skill_used, COUNT(*) as cnt FROM interaction_log WHERE intent_type=? AND success=1 GROUP BY skill_used ORDER BY cnt DESC LIMIT 1",
                 (row["intent_type"],),
             )
@@ -108,7 +116,7 @@ class UserProfile:
                 "suggestion": reason,
             })
 
-        unknown_rows = execute_query(
+        unknown_rows = dm.execute_query(
             "SELECT goal, COUNT(*) as cnt FROM interaction_log WHERE intent_type='unknown' GROUP BY goal ORDER BY cnt DESC LIMIT 5"
         )
         for row in unknown_rows:
@@ -122,16 +130,13 @@ class UserProfile:
         return recommendations
 
     def record_preference(self, key: str, value: str) -> None:
-        from opc_manager.data_manager import set_preference
-        set_preference(key, value)
+        _get_dm().set_preference(key, value)
 
     def get_preference(self, key: str, default: str = "") -> str:
-        from opc_manager.data_manager import get_preference
-        return get_preference(key, default)
+        return _get_dm().get_preference(key, default)
 
     def get_decision_history(self, limit: int = 20) -> List[Dict[str, Any]]:
-        from opc_manager.data_manager import execute_query
-        rows = execute_query(
+        rows = _get_dm().execute_query(
             "SELECT * FROM interaction_log ORDER BY created_at DESC LIMIT ?",
             (limit,)
         )
@@ -149,8 +154,8 @@ class UserProfile:
         ]
 
     def update_interaction(self, interaction_id: str, **kwargs) -> bool:
-        from opc_manager.data_manager import execute_write, execute_query
-        rows = execute_query("SELECT id FROM interaction_log WHERE id=?", (interaction_id,))
+        dm = _get_dm()
+        rows = dm.execute_query("SELECT id FROM interaction_log WHERE id=?", (interaction_id,))
         if not rows:
             return False
         allowed = {"intent_type", "goal", "skill_used", "success", "user_feedback"}
@@ -163,7 +168,7 @@ class UserProfile:
         if not updates:
             return False
         params.append(interaction_id)
-        execute_write(
+        dm.execute_write(
             f"UPDATE interaction_log SET {', '.join(updates)} WHERE id=?",
             tuple(params),
         )

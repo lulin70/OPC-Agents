@@ -1,8 +1,9 @@
 """Dashboard page module for OPC-Agents frontend.
 
 Contains all dashboard-related UI rendering functions:
-- Main dashboard page with panel selector
-- Data aggregation from backend modules
+- Template-based layout system (Compact / Focused / Minimal)
+- Density levels (Detailed / Standard / Compact)
+- Per-panel enable/disable toggles with persistence
 - 6 dashboard panels (income, client health, tasks, finance, timeline, skills)
 """
 
@@ -11,98 +12,202 @@ import logging
 from datetime import datetime
 from collections import Counter
 
+from opc_manager.dashboard_config import (
+    DashboardConfig,
+    LayoutType,
+    DensityLevel,
+    PanelConfig,
+    ALL_PANEL_IDS,
+)
+
 logger = logging.getLogger(__name__)
+
+ALL_PANELS_META = [
+    ("income_trend", "📈 收入趋势图", "显示最近30天/按月的收入变化趋势"),
+    ("client_health", "👥 客户健康度", "客户活跃度和互动频率分析"),
+    ("task_completion", "✅ 任务完成率", "任务进度和完成情况统计"),
+    ("financial_summary", "💰 月度财务汇总", "本月收入/支出/净利润概览"),
+    ("activity_timeline", "📅 近期活动时间线", "最近20条操作记录时间线"),
+    ("skill_usage", "⏱️ 技能使用统计", "各技能调用次数和使用频率"),
+]
+
+LAYOUT_LABELS = {
+    LayoutType.COMPACT: "A — 紧凑 (2列密集)",
+    LayoutType.FOCUSED: "B — 聚焦 (主栏+侧栏)",
+    LayoutType.MINIMAL: "C — 极简 (单列堆叠)",
+}
+
+DENSITY_LABELS = {
+    DensityLevel.COMPACT: "紧凑 (关键数字)",
+    DensityLevel.STANDARD: "标准 (图表+指标)",
+    DensityLevel.DETAILED: "详细 (完整数据)",
+}
 
 
 def _render_dashboard_page():
-    """Render modular Dashboard with selectable panels.
+    """Render modular Dashboard with template-based layout system.
 
-    Available panels (user can toggle on/off):
-    1. 📈 Income Trend Chart (收入趋势图)
-    2. 👥 Client Health Score (客户健康度)
-    3. ✅ Task Completion Rate (任务完成率)
-    4. 💰 Monthly Financial Summary (月度财务汇总)
-    5. 📅 Recent Activity Timeline (近期活动时间线)
-    6. ⏱️ Skill Usage Stats (技能使用统计)
-
-    Default: Show Top 3 most useful panels
+    Features:
+    - 3 layout presets: Compact(2-col), Focused(main+side), Minimal(1-col)
+    - 3 density levels: Compact, Standard, Detailed
+    - Per-panel enable/disable toggles
+    - Persistence via DashboardConfig JSON file
     """
     st.markdown("## 📈 数据仪表盘")
 
-    # Panel selector at top
-    ALL_PANELS = [
-        ("income_trend", "📈 收入趋势图", "显示最近30天/按月的收入变化趋势"),
-        ("client_health", "👥 客户健康度", "客户活跃度和互动频率分析"),
-        ("task_completion", "✅ 任务完成率", "任务进度和完成情况统计"),
-        ("financial_summary", "💰 月度财务汇总", "本月收入/支出/净利润概览"),
-        ("activity_timeline", "📅 近期活动时间线", "最近20条操作记录时间线"),
-        ("skill_usage", "⏱️ 技能使用统计", "各技能调用次数和使用频率"),
-    ]
+    config = _load_or_init_config()
 
-    DEFAULT_PANELS = ["income_trend", "client_health", "task_completion"]
-
-    if "dashboard_selected_panels" not in st.session_state:
-        st.session_state.dashboard_selected_panels = DEFAULT_PANELS
-
-    with st.expander("⚙️ 面板设置（选择要显示的数据面板）", expanded=False):
-        selected = []
-        for panel_id, title, desc in ALL_PANELS:
-            is_checked = st.checkbox(
-                f"{title}",
-                value=panel_id in st.session_state.dashboard_selected_panels,
-                help=desc,
-                key=f"dashboard_panel_{panel_id}",
-            )
-            if is_checked:
-                selected.append(panel_id)
-
-        if selected != st.session_state.dashboard_selected_panels:
-            st.session_state.dashboard_selected_panels = selected
-            st.rerun()
-
-        col_select_all, col_deselect, _ = st.columns([1, 1, 2])
-        with col_select_all:
-            if st.button("全选", use_container_width=True):
-                st.session_state.dashboard_selected_panels = [p[0] for p in ALL_PANELS]
-                st.rerun()
-        with col_deselect:
-            if st.button("默认(Top 3)", use_container_width=True):
-                st.session_state.dashboard_selected_panels = DEFAULT_PANELS
-                st.rerun()
+    _render_template_controls(config)
 
     st.divider()
 
-    selected_panels = st.session_state.dashboard_selected_panels
-
-    if not selected_panels:
-        st.info("💡 请在上方选择至少一个数据面板")
+    enabled_panels = config.get_enabled_panels()
+    if not enabled_panels:
+        st.info("💡 请在上方设置中启用至少一个数据面板")
         return
 
-    # Render selected panels in grid layout (2-3 columns)
-    panels_to_render = [(pid, title, desc) for pid, title, desc in ALL_PANELS if pid in selected_panels]
+    _render_layout(config, enabled_panels)
 
-    for i in range(0, len(panels_to_render), 2):
-        row_panels = panels_to_render[i:i+2]
-        cols = st.columns(len(row_panels))
 
-        for idx, (panel_id, panel_title, _) in enumerate(row_panels):
+def _load_or_init_config() -> DashboardConfig:
+    if "dashboard_config" not in st.session_state:
+        st.session_state.dashboard_config = DashboardConfig.load()
+    return st.session_state.dashboard_config
+
+
+def _render_template_controls(config: DashboardConfig):
+    with st.expander("⚙️ 仪表盘模板设置", expanded=False):
+        col_layout, col_density = st.columns(2)
+        with col_layout:
+            layout_key = "dashboard_layout_sel"
+            current_layout = st.session_state.get(layout_key, config.layout)
+            selected_layout_label = st.selectbox(
+                "布局模板",
+                options=list(LAYOUT_LABELS.keys()),
+                format_func=lambda x: LAYOUT_LABELS.get(x, x.value),
+                index=list(LAYOUT_LABELS.keys()).index(current_layout) if current_layout in LAYOUT_LABELS else 1,
+                key=layout_key,
+                help="选择面板排列方式",
+            )
+        with col_density:
+            density_key = "dashboard_density_sel"
+            current_density = st.session_state.get(density_key, config.density)
+            selected_density_label = st.selectbox(
+                "信息密度",
+                options=list(DENSITY_LABELS.keys()),
+                format_func=lambda x: DENSITY_LABELS.get(x, x.value),
+                index=list(DENSITY_LABELS.keys()).index(current_density) if current_density in DENSITY_LABELS else 1,
+                key=density_key,
+                help="控制每个面板显示的信息详细程度",
+            )
+
+        st.markdown("**面板开关:**")
+        panel_toggles_cols = st.columns(3)
+        toggle_states = {}
+        for idx, (panel_id, title, desc) in enumerate(ALL_PANELS_META):
+            with panel_toggles_cols[idx % 3]:
+                is_checked = st.checkbox(
+                    f"{title}",
+                    value=config.panels[panel_id].enabled if panel_id in config.panels else True,
+                    help=desc,
+                    key=f"dashboard_toggle_{panel_id}",
+                )
+                toggle_states[panel_id] = is_checked
+
+        col_apply, col_reset, _ = st.columns([1, 1, 2])
+        with col_apply:
+            if st.button("✅ 应用设置", type="primary", use_container_width=True):
+                _apply_settings(config, selected_layout_label, selected_density_label, toggle_states)
+        with col_reset:
+            if st.button("🔄 恢复默认", use_container_width=True):
+                st.session_state.dashboard_config = DashboardConfig()
+                st.rerun()
+
+
+def _apply_settings(
+    config: DashboardConfig,
+    layout: LayoutType,
+    density: DensityLevel,
+    toggle_states: dict,
+):
+    config.layout = layout
+    config.density = density
+    for panel_id, enabled in toggle_states.items():
+        config.set_panel_enabled(panel_id, enabled)
+    config.save()
+    st.session_state.dashboard_config = config
+    st.success("✅ 仪表盘设置已保存并应用")
+    st.rerun()
+
+
+def _render_layout(config: DashboardConfig, enabled_panels: list):
+    density = config.density
+    renderers = {
+        "income_trend": lambda **kw: _render_income_trend_panel(density=density, **kw),
+        "client_health": lambda **kw: _render_client_health_panel(density=density, **kw),
+        "task_completion": lambda **kw: _render_task_completion_panel(density=density, **kw),
+        "financial_summary": lambda **kw: _render_financial_summary_panel(density=density, **kw),
+        "activity_timeline": lambda **kw: _render_activity_timeline_panel(density=density, **kw),
+        "skill_usage": lambda **kw: _render_skill_usage_panel(density=density, **kw),
+    }
+
+    if config.layout == LayoutType.COMPACT:
+        _render_compact_layout(enabled_panels, renderers, density)
+    elif config.layout == LayoutType.FOCUSED:
+        _render_focused_layout(enabled_panels, renderers, density)
+    else:
+        _render_minimal_layout(enabled_panels, renderers, density)
+
+
+def _render_compact_layout(enabled: list, renderers: dict, density: DensityLevel):
+    for i in range(0, len(enabled), 2):
+        row = enabled[i:i + 2]
+        cols = st.columns(len(row))
+        for idx, panel_id in enumerate(row):
             with cols[idx]:
                 try:
-                    if panel_id == "income_trend":
-                        _render_income_trend_panel()
-                    elif panel_id == "client_health":
-                        _render_client_health_panel()
-                    elif panel_id == "task_completion":
-                        _render_task_completion_panel()
-                    elif panel_id == "financial_summary":
-                        _render_financial_summary_panel()
-                    elif panel_id == "activity_timeline":
-                        _render_activity_timeline_panel()
-                    elif panel_id == "skill_usage":
-                        _render_skill_usage_panel()
+                    renderers[panel_id]()
                 except Exception as e:
-                    logger.error("[frontend] Dashboard panel %s error: %s", panel_id, e)
-                    st.error(f"⚠️ 面板加载失败: {panel_title}")
+                    logger.error("[dashboard] Panel %s error: %s", panel_id, e)
+                    st.error(f"⚠️ 面板加载失败: {panel_id}")
+
+
+def _render_focused_layout(enabled: list, renderers: dict, density: DensityLevel):
+    if not enabled:
+        return
+    try:
+        renderers[enabled[0]](full_width=True)
+    except Exception as e:
+        logger.error("[dashboard] Panel %s error: %s", enabled[0], e)
+        st.error(f"⚠️ 面板加载失败: {enabled[0]}")
+    remaining = enabled[1:]
+    for i in range(0, len(remaining), 2):
+        row = remaining[i:i + 2]
+        cols = st.columns(len(row))
+        for idx, panel_id in enumerate(row):
+            with cols[idx]:
+                try:
+                    renderers[panel_id]()
+                except Exception as e:
+                    logger.error("[dashboard] Panel %s error: %s", panel_id, e)
+                    st.error(f"⚠️ 面板加载失败: {panel_id}")
+    if len(enabled) > 3:
+        last_full = enabled[-1] if (len(enabled) - 1) % 2 == 0 and len(enabled) > 1 else None
+        if last_full:
+            try:
+                renderers[last_full](full_width=True)
+            except Exception as e:
+                logger.error("[dashboard] Panel %s error: %s", last_full, e)
+                st.error(f"⚠️ 面板加载失败: {last_full}")
+
+
+def _render_minimal_layout(enabled: list, renderers: dict, density: DensityLevel):
+    for panel_id in enabled:
+        try:
+            renderers[panel_id](full_width=True)
+        except Exception as e:
+            logger.error("[dashboard] Panel %s error: %s", panel_id, e)
+            st.error(f"⚠️ 面板加载失败: {panel_id}")
 
 
 def _get_dashboard_data():
@@ -161,7 +266,7 @@ def _get_dashboard_data():
     return data
 
 
-def _render_income_trend_panel():
+def _render_income_trend_panel(density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False):
     """Panel 1: 收入趋势图 - Income trend chart."""
     st.markdown("### 📈 收入趋势图")
 
@@ -182,9 +287,18 @@ def _render_income_trend_panel():
         "利润": [t.get("profit", 0) for t in trend],
     })
 
-    st.line_chart(chart_data.set_index("月份"), use_container_width=True)
+    if density == DensityLevel.DETAILED:
+        st.line_chart(chart_data.set_index("月份"), use_container_width=True)
+    elif density == DensityLevel.STANDARD:
+        st.line_chart(chart_data.set_index("月份"), use_container_width=True)
+    else:
+        latest = trend[-1].get("profit", 0) if trend else 0
+        prev = trend[-2].get("profit", 0) if len(trend) >= 2 else 0
+        change = ((latest - prev) / abs(prev) * 100) if prev != 0 else 0
+        arrow = "📈" if change >= 0 else "📉"
+        st.markdown(f"**{arrow} 本月利润 ¥{latest:,.2f}** ({change:+.1f}%)")
 
-    if len(trend) >= 2:
+    if density != DensityLevel.COMPACT and len(trend) >= 2:
         latest = trend[-1].get("profit", 0)
         previous = trend[-2].get("profit", 0)
         change_pct = ((latest - previous) / abs(previous) * 100) if previous != 0 else 0
@@ -197,7 +311,7 @@ def _render_income_trend_panel():
         )
 
 
-def _render_client_health_panel():
+def _render_client_health_panel(density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False):
     """Panel 2: 客户健康度 - Client health score."""
     st.markdown("### 👥 客户健康度")
 
@@ -214,6 +328,10 @@ def _render_client_health_panel():
         st.info("💡 暂无客户数据。添加客户后这里会展示健康度分析")
         return
 
+    if density == DensityLevel.COMPACT:
+        st.markdown(f"**总计 {total} | 活跃 {active} | 沉默 {silent_count}**")
+        return
+
     col_total, col_active, col_silent = st.columns(3)
     with col_total:
         st.metric("客户总数", total)
@@ -222,7 +340,7 @@ def _render_client_health_panel():
     with col_silent:
         st.metric("沉默客户", silent_count, delta_color="inverse")
 
-    if customers:
+    if density == DensityLevel.DETAILED and customers:
         import pandas as pd
         customer_data = []
         for c in customers[:10]:
@@ -231,7 +349,6 @@ def _render_client_health_panel():
             last_contact = c.get("last_contact", "")
             interactions = c.get("interactions", 0)
 
-            # Health score logic
             from datetime import datetime as _dt, timedelta
             now = _dt.now()
             health_status = "🟢 健康"
@@ -257,9 +374,19 @@ def _render_client_health_panel():
         if customer_data:
             df = pd.DataFrame(customer_data)
             st.dataframe(df, use_container_width=True, hide_index=True)
+    elif density == DensityLevel.STANDARD and customers:
+        import pandas as pd
+        customer_data = []
+        for c in customers[:5]:
+            name = c.get("name", "Unknown")
+            interactions = c.get("interactions", 0)
+            customer_data.append({"客户名称": name, "互动次数": interactions})
+        if customer_data:
+            df = pd.DataFrame(customer_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-def _render_task_completion_panel():
+def _render_task_completion_panel(density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False):
     """Panel 3: 任务完成率 - Task completion rate."""
     st.markdown("### ✅ 任务完成率")
 
@@ -278,6 +405,11 @@ def _render_task_completion_panel():
 
     completion_rate = (completed / total * 100) if total > 0 else 0
 
+    if density == DensityLevel.COMPACT:
+        emoji = "🟢" if completion_rate >= 70 else ("🟡" if completion_rate >= 40 else "🔴")
+        st.markdown(f"**{emoji} 完成率 {completion_rate:.1f}%** ({completed}/{total})")
+        return
+
     col_total, col_done, col_rate = st.columns(3)
     with col_total:
         st.metric("总任务", total)
@@ -288,8 +420,7 @@ def _render_task_completion_panel():
 
     st.progress(completion_rate / 100, text=f"完成率 {completion_rate:.1f}%")
 
-    # Status breakdown
-    if by_status:
+    if density == DensityLevel.DETAILED and by_status:
         import pandas as pd
         status_df = pd.DataFrame([
             {"状态": "已完成", "数量": completed, "占比": f"{completed/total*100:.1f}%"},
@@ -299,7 +430,7 @@ def _render_task_completion_panel():
         st.dataframe(status_df, use_container_width=True, hide_index=True)
 
 
-def _render_financial_summary_panel():
+def _render_financial_summary_panel(density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False):
     """Panel 4: 月度财务汇总 - Monthly financial summary."""
     st.markdown("### 💰 月度财务汇总")
 
@@ -315,6 +446,10 @@ def _render_financial_summary_panel():
         st.info("💡 暂无本月财务数据。记录收支后这里会展示汇总")
         return
 
+    if density == DensityLevel.COMPACT:
+        st.markdown(f"**收入 ¥{income:,.2f} | 支出 ¥{expense:,.2f} | 利润 ¥{profit:,.2f}**")
+        return
+
     col_inc, col_exp, col_profit = st.columns(3)
     with col_inc:
         st.metric("本月收入", f"¥{income:,.2f}")
@@ -327,8 +462,7 @@ def _render_financial_summary_panel():
             profit_delta = f"{profit - prev_profit:+,.2f}" if prev_profit != 0 else None
         st.metric("净利润", f"¥{profit:,.2f}", profit_delta)
 
-    # Simple bar chart comparing income vs expense
-    if income > 0 or expense > 0:
+    if density == DensityLevel.DETAILED and (income > 0 or expense > 0):
         import pandas as pd
         comparison = pd.DataFrame({
             "类别": ["收入", "支出"],
@@ -337,7 +471,7 @@ def _render_financial_summary_panel():
         st.bar_chart(comparison.set_index("类别"), use_container_width=True)
 
 
-def _render_activity_timeline_panel():
+def _render_activity_timeline_panel(density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False):
     """Panel 5: 近期活动时间线 - Recent activity timeline."""
     st.markdown("### 📅 近期活动时间线")
 
@@ -348,9 +482,12 @@ def _render_activity_timeline_panel():
         st.info("💡 暂无操作记录。执行任务后日志会自动记录在这里")
         return
 
+    display_limit = 20 if density == DensityLevel.DETAILED else (10 if density == DensityLevel.STANDARD else 5)
+    expanded_count = 5 if density == DensityLevel.DETAILED else (3 if density == DensityLevel.STANDARD else 1)
+
     from datetime import datetime as _dt
 
-    for idx, record in enumerate(logs[:20]):
+    for idx, record in enumerate(logs[:display_limit]):
         timestamp = record.get("timestamp", 0)
         op_type = record.get("operation_type", "unknown")
         skill_id = record.get("skill_id", "")
@@ -365,25 +502,28 @@ def _render_activity_timeline_panel():
             "cancelled": "⚪",
         }.get(status, "📌")
 
-        with st.expander(f"{status_emoji} **{op_type}** — {time_str} ({duration}ms)", expanded=(idx < 3)):
-            col_meta, col_detail = st.columns([1, 2])
-            with col_meta:
-                st.caption(f"**技能**: `{skill_id}`")
-                st.caption(f"**状态**: `{status}`")
-                st.caption(f"**耗时**: {duration}ms")
-            with col_detail:
-                input_sum = record.get("input_summary", "")
-                output_sum = record.get("output_summary", "")
-                if input_sum:
-                    st.text(input_sum[:150])
-                if output_sum:
-                    st.text(output_sum[:200])
+        if density == DensityLevel.COMPACT:
+            st.markdown(f"{status_emoji} `{op_type}` — {time_str} ({duration}ms)")
+        else:
+            with st.expander(f"{status_emoji} **{op_type}** — {time_str} ({duration}ms)", expanded=(idx < expanded_count)):
+                col_meta, col_detail = st.columns([1, 2])
+                with col_meta:
+                    st.caption(f"**技能**: `{skill_id}`")
+                    st.caption(f"**状态**: `{status}`")
+                    st.caption(f"**耗时**: {duration}ms")
+                with col_detail:
+                    input_sum = record.get("input_summary", "")
+                    output_sum = record.get("output_summary", "")
+                    if input_sum:
+                        st.text(input_sum[:150])
+                    if output_sum:
+                        st.text(output_sum[:200])
 
-    if len(logs) > 20:
-        st.caption(f"显示最近20条，共{len(logs)}条记录")
+    if len(logs) > display_limit:
+        st.caption(f"显示最近{display_limit}条，共{len(logs)}条记录")
 
 
-def _render_skill_usage_panel():
+def _render_skill_usage_panel(density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False):
     """Panel 6: 技能使用统计 - Skill usage statistics."""
     st.markdown("### ⏱️ 技能使用统计")
 
@@ -405,7 +545,13 @@ def _render_skill_usage_panel():
         return
 
     total_calls = sum(skill_counts.values())
-    top_skills = skill_counts.most_common(10)
+    top_skills = skill_counts.most_common(10 if density == DensityLevel.DETAILED else 5)
+
+    if density == DensityLevel.COMPACT:
+        top_name, top_count = top_skills[0] if top_skills else ("-", 0)
+        pct = top_count / total_calls * 100 if total_calls > 0 else 0
+        st.markdown(f"**总调用 {total_calls}次 | 最常用: {top_name} ({pct:.0f}%)**")
+        return
 
     st.metric("总调用次数", total_calls)
 
@@ -423,9 +569,9 @@ def _render_skill_usage_panel():
         df = pd.DataFrame(skill_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
 
-        # Horizontal bar chart
-        chart_df = pd.DataFrame({
-            "技能": [s[0] for s in top_skills],
-            "调用次数": [s[1] for s in top_skills],
-        })
-        st.bar_chart(chart_df.set_index("技能"), use_container_width=True, horizontal=True)
+        if density == DensityLevel.DETAILED:
+            chart_df = pd.DataFrame({
+                "技能": [s[0] for s in top_skills],
+                "调用次数": [s[1] for s in top_skills],
+            })
+            st.bar_chart(chart_df.set_index("技能"), use_container_width=True, horizontal=True)
