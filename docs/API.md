@@ -1,6 +1,6 @@
 # OPC-Agents API 文档
 
-> 版本: v0.2.0 | 最后更新: 2026-05-16
+> 版本: v0.2.0 FINAL | 最后更新: 2026-05-17 | 测试: 1126 passed, 0 failed, 21 skipped
 
 本文档列出 OPC-Agents 所有公开API，按模块分组。每个API包含函数签名、参数说明和返回值格式。
 
@@ -11,6 +11,13 @@
 - [data_manager — 数据管理](#data_manager--数据管理)
 - [intent_types — 意图类型](#intent_types--意图类型)
 - [protocols — Protocol接口](#protocols--protocol接口)
+- [settings — 设置管理（v0.2.0 新增）](#settings--设置管理)
+- [onboarding — 首次引导（v0.2.0 新增）](#onboarding--首次引导)
+- [error_handler — 错误处理（v0.2.0 新增）](#error_handler--错误处理)
+- [data_backup — 数据备份（v0.2.0 新增）](#data_backup--数据备份)
+- [i18n — 国际化（v0.2.0 新增）](#i18n--国际化)
+- [dashboard_config — 仪表盘配置（v0.2.0 新增）](#dashboard_config--仪表盘配置)
+- [shortcuts_handler — Apple Shortcuts（v0.2.0 新增）](#shortcuts_handler--apple-shortcuts)
 - [email_skill — 邮件技能](#email_skill--邮件技能)
 - [finance_skill — 财务技能](#finance_skill--财务技能)
 - [task_skill — 待办技能](#task_skill--待办技能)
@@ -333,6 +340,545 @@ LLM不可用时的降级提供者，`is_available()` 返回 `False`，`generate(
 | `get_search_provider()` | `SearchProvider` | 获取搜索提供者 |
 | `get_secure_provider()` | `SecureProvider` | 获取安全存储提供者 |
 | `get_monitor_provider()` | `MonitorProvider` | 获取监控提供者 |
+
+---
+
+## settings — 设置管理
+
+> 模块路径: `opc_manager.settings`
+
+v0.2.0 新增。SettingsManager 单例模式，提供 5 标签页统一设置管理（LLM/SMTP/API Keys/Security/Profile）。
+
+### `SettingsManager.get_instance()`
+
+获取 SettingsManager 单例实例。
+
+```python
+@staticmethod
+def get_instance() -> "SettingsManager"
+```
+
+**返回值**: `SettingsManager` — 全局单例实例
+
+---
+
+### `SettingsManager.get_all_settings()`
+
+获取所有设置项。
+
+```python
+def get_all_settings() -> Dict[str, Any]
+```
+
+**返回值**: `Dict[str, Any]` — 包含所有5个标签页的设置数据
+
+---
+
+### `SettingsManager.get_settings(tab: str)`
+
+获取指定标签页的设置。
+
+```python
+def get_settings(tab: str) -> Dict[str, Any]
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `tab` | `str` | 标签页名称（`llm`/`smtp`/`api_keys`/`security`/`profile`） |
+
+**返回值**: `Dict[str, Any]` — 指定标签页的设置数据
+
+---
+
+### `SettingsManager.update_settings(tab: str, settings: Dict)`
+
+更新指定标签页的设置。
+
+```python
+def update_settings(tab: str, settings: Dict[str, Any]) -> Dict[str, Any]
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `tab` | `str` | 标签页名称 |
+| `settings` | `Dict[str, Any]` | 要更新的设置键值对 |
+
+**返回值**: `{"success": bool, "message": str}`
+
+---
+
+### `SettingsManager.reset_tab(tab: str)`
+
+重置指定标签页为默认值。
+
+```python
+def reset_tab(tab: str) -> Dict[str, Any]
+```
+
+---
+
+### `SettingsManager.export_settings()`
+
+导出所有设置为加密JSON文件。
+
+```python
+def export_settings() -> Dict[str, Any]
+```
+
+**返回值**: `{"success": bool, "filepath": str, "message": str}`
+
+---
+
+## onboarding — 首次引导
+
+> 模块路径: `opc_manager.onboarding`
+
+v0.2.0 新增。OnboardingManager 管理 3 步首次运行向导。
+
+### `OnboardingManager.get_instance()`
+
+获取 OnboardingManager 单例实例。
+
+```python
+@staticmethod
+def get_instance() -> "OnboardingManager"
+```
+
+---
+
+### `OnboardingManager.is_completed()`
+
+检查是否已完成首次引导。
+
+```python
+def is_completed() -> bool
+```
+
+**返回值**: `bool` — 是否已完成
+
+---
+
+### `OnboardingManager.get_current_step()`
+
+获取当前引导步骤。
+
+```python
+def get_current_step() -> int
+```
+
+**返回值**: `int` — 当前步骤（1-3），0 表示未开始或已完成
+
+---
+
+### `OnboardingManager.advance_step()`
+
+前进一步到下一个引导步骤。
+
+```python
+def advance_step() -> Dict[str, Any]
+```
+
+**返回值**: `{"success": bool, "current_step": int, "next_step_content": Dict}`
+
+---
+
+### `OnboardingManager.complete_onboarding()`
+
+完成引导流程。
+
+```python
+def complete_onboarding() -> Dict[str, Any]
+```
+
+**返回值**: `{"success": bool, "message": str}`
+
+---
+
+### `OnboardingManager.reset_onboarding()`
+
+重置引导状态（用于重新触发）。
+
+```python
+def reset_onboarding() -> Dict[str, Any]
+```
+
+---
+
+## error_handler — 错误处理
+
+> 模块路径: `opc_manager.error_handler`
+
+v0.2.0 新增。ErrorHandler 提供 9 种异常类型到中文友好消息的统一转换。
+
+### `ErrorHandler.get_instance()`
+
+获取 ErrorHandler 单例实例。
+
+```python
+@staticmethod
+def get_instance() -> "ErrorHandler"
+```
+
+---
+
+### `ErrorHandler.handle(exception: Exception)`
+
+处理异常并返回用户友好的错误信息。
+
+```python
+def handle(exception: Exception) -> Dict[str, Any]
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `exception` | `Exception` | 捕获到的异常对象 |
+
+**返回值**:
+```json
+{
+  "success": false,
+  "error_code": "ERR_001",
+  "error_message": "用户友好的中文错误描述",
+  "suggestion": "建议的解决方案",
+  "original_error": "原始异常信息（仅开发模式显示）"
+}
+```
+
+**支持的异常类型**:
+
+| 异常类 | 错误码 | 中文消息示例 |
+|--------|--------|-------------|
+| `ValueError` | ERR_001 | 输入参数无效 |
+| `KeyError` | ERR_002 | 配置项缺失 |
+| `ConnectionError` | ERR_003 | 网络连接失败 |
+| `TimeoutError` | ERR_004 | 操作超时 |
+| `PermissionError` | ERR_005 | 权限不足 |
+| `RuntimeError(ERR_ENCRYPTION)` | ERR_006 | 加密密钥未配置 |
+| `FileNotFoundError` | ERR_007 | 文件未找到 |
+| `ValidationError` | ERR_008 | 数据验证失败 |
+| `UnknownError` | ERR_999 | 未知错误 |
+
+---
+
+### `ErrorHandler.register_handler(error_type: str, handler: Callable)`
+
+注册自定义错误处理器。
+
+```python
+def register_handler(error_type: str, handler: Callable) -> None
+```
+
+---
+
+## data_backup — 数据备份
+
+> 模块路径: `opc_manager.data_backup`
+
+v0.2.0 新增。DataBackupManager 提供多格式数据导出，支持 ZIP/JSON/CSV 格式，SHA256 校验和 Zip Slip 防护。
+
+### `DataBackupManager.get_instance()`
+
+获取 DataBackupManager 单例实例。
+
+```python
+@staticmethod
+def get_instance() -> "DataBackupManager"
+```
+
+---
+
+### `DataBackupManager.create_backup(backup_type: str, output_dir: str)`
+
+创建数据备份。
+
+```python
+def create_backup(backup_type: str = "zip", output_dir: str = "") -> Dict[str, Any]
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `backup_type` | `str` | 备份类型（`zip`/`json`/`csv`） |
+| `output_dir` | `str` | 输出目录（空=默认目录） |
+
+**返回值**:
+```json
+{
+  "success": true,
+  "filepath": "/path/to/backup_opc_20260517.zip",
+  "sha256": "abc123...",
+  "size_bytes": 102400,
+  "tables_backed_up": ["tasks", "customers", "finance", ...],
+  "created_at": "2026-05-17T10:30:00"
+}
+```
+
+**安全特性**:
+- Zip Slip 路径遍历防护
+- 敏感字段自动脱敏（API Key、密码等）
+- SHA256 完整性校验
+
+---
+
+### `DataBackupManager.restore_backup(filepath: str)`
+
+从备份文件恢复数据。
+
+```python
+def restore_backup(filepath: str) -> Dict[str, Any]
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `filepath` | `str` | 备份文件路径 |
+
+**返回值**: `{"success": bool, "restored_tables": List[str], "message": str}`
+
+---
+
+### `DataBackupManager.list_backups()`
+
+列出所有可用的备份文件。
+
+```python
+def list_backups() -> Dict[str, Any]
+```
+
+**返回值**: `{"success": bool, "backups": List[Dict], "count": int}`
+
+---
+
+### `DataBackupManager.verify_backup(filepath: str)`
+
+验证备份文件完整性（SHA256 校验）。
+
+```python
+def verify_backup(filepath: str) -> Dict[str, Any]
+```
+
+**返回值**: `{"success": bool, "valid": bool, "sha256": str, "message": str}`
+
+---
+
+## i18n — 国际化
+
+> 模块路径: `opc_manager.i18n`
+
+v0.2.0 新增。I18nManager 支持三语切换：zh_CN / en_US / ja_JP，包含 58+ 翻译键。
+
+### `I18nManager.get_instance()`
+
+获取 I18nManager 单例实例。
+
+```python
+@staticmethod
+def get_instance() -> "I18nManager"
+```
+
+---
+
+### `I18nManager.set_locale(locale: str)`
+
+设置当前语言环境。
+
+```python
+def set_locale(locale: str) -> None
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `locale` | `str` | 语言代码（`zh_CN`/`en_US`/`ja_JP`） |
+
+**支持的语言**:
+
+| 语言代码 | 语言 | 覆盖范围 |
+|----------|------|---------|
+| `zh_CN` | 简体中文 | 默认，全部 UI + 错误消息 + 技能描述 |
+| `en_US` | English | 全部 UI + 错误消息 + 技能描述 |
+| `ja_JP` | 日本語 | 全部 UI + エラーメッセージ + スキル説明 |
+
+---
+
+### `I18nManager.get_locale() -> str`
+
+获取当前语言环境。
+
+**返回值**: `str` — 当前语言代码
+
+---
+
+### `I18nManager.t(key: str, **kwargs) -> str`
+
+翻译指定键。
+
+```python
+def t(key: str, **kwargs) -> str
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `key` | `str` | 翻译键（如 `welcome.title`, `error.network`） |
+| `**kwargs` | `dict` | 变量插值参数 |
+
+**示例**:
+```python
+i18n.t("welcome.title")  # → "欢迎使用 OPC-Agents" (zh_CN)
+i18n.t("welcome.title")  # → "Welcome to OPC-Agents" (en_US)
+i18n.t("error.network", service="LLM")  # → "LLM服务连接失败"
+```
+
+---
+
+### `I18nManager.get_available_locales() -> List[Dict]`
+
+获取所有可用语言列表。
+
+**返回值**: `[{"code": "zh_CN", "name": "简体中文"}, {"code": "en_US", "name": "English"}, {"code": "ja_JP", "name": "日本語"}]`
+
+---
+
+## dashboard_config — 仪表盘配置
+
+> 模块路径: `opc_manager.dashboard_config`
+
+v0.2.0 新增。DashboardConfig 提供 3 种布局 × 3 种密度 × 6 个面板 = 9 种组合的仪表盘模板系统。
+
+### `DashboardConfig.get_instance()`
+
+获取 DashboardConfig 单例实例。
+
+```python
+@staticmethod
+def get_instance() -> "DashboardConfig"
+```
+
+---
+
+### `DashboardConfig.get_layouts() -> List[Dict]`
+
+获取所有可用布局。
+
+**返回值**:
+```json
+[
+  {"id": "compact", "name": "紧凑布局", "columns": 2},
+  {"id": "standard", "name": "标准布局", "columns": 3},
+  {"id": "expanded", "name": "扩展布局", "columns": 4}
+]
+```
+
+---
+
+### `DashboardConfig.get_densities() -> List[Dict]`
+
+获取所有可用密度选项。
+
+**返回值**: `[{"id": "comfortable", "name": "舒适"}, {"id": "compact", "name": "紧凑"}, {"id": "minimal", "name": "极简"}]`
+
+---
+
+### `DashboardConfig.get_panels() -> List[Dict]`
+
+获取所有可用面板。
+
+**返回值**:
+```json
+[
+  {"id": "overview", "name": "经营概览"},
+  {"id": "finance", "name": "财务面板"},
+  {"id": "crm", "name": "客户面板"},
+  {"id": "tasks", "name": "待办面板"},
+  {"id": "recent", "name": "最近活动"},
+  {"id": "quick_actions", "name": "快捷操作"}
+]
+```
+
+---
+
+### `DashboardConfig.set_config(layout: str, density: str, panels: List[str])`
+
+设置仪表盘配置。
+
+```python
+def set_config(layout: str = "standard", density: str = "comfortable", panels: List[str] = None) -> Dict[str, Any]
+```
+
+**返回值**: `{"success": bool, "config": Dict, "message": str}`
+
+---
+
+### `DashboardConfig.get_config() -> Dict`
+
+获取当前仪表盘配置。
+
+**返回值**: 包含 layout/density/panels 的完整配置字典
+
+---
+
+## shortcuts_handler — Apple Shortcuts
+
+> 模块路径: `opc_manager.shortcuts_handler`
+
+v0.2.0 新增。Apple Shortcuts 集成，通过 CLI 提供 5 个预定义快捷动作。
+
+### `ShortcutsHandler.get_instance()`
+
+获取 ShortcutsHandler 单例实例。
+
+```python
+@staticmethod
+def get_instance() -> "ShortcutsHandler"
+```
+
+---
+
+### `ShortcutsHandler.execute_shortcut(action: str, **params) -> Dict[str, Any]`
+
+执行快捷动作。
+
+```python
+def execute_shortcut(action: str, **params) -> Dict[str, Any]
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `action` | `str` | 动作名称 |
+| `**params` | `dict` | 动作参数 |
+
+**支持的快捷动作**:
+
+| 动作 | CLI 参数 | 说明 | 必需参数 |
+|------|---------|------|---------|
+| `quick_task` | `--goal` | 快速创建任务 | `goal`: 任务目标文本 |
+| `query_status` | 无 | 查询当前任务状态 | 无 |
+| `create_deliverable` | `--type` | 创建交付物 | `type`: report/proposal/invoice |
+| `record_income` | `--amount --source` | 记录收入 | `amount`: 金额, `source`: 来源 |
+| `daily_report` | 无 | 生成今日工作日报 | 无 |
+
+**CLI 使用示例**:
+```bash
+# 快速创建任务
+opc-agents --shortcut quick_task --goal "完成Q2报告"
+
+# 查询状态
+opc-agents --shortcut query_status
+
+# 创建交付物
+opc-agents --shortcut create_deliverable --type report
+
+# 记录收入
+opc-agents --shortcut record_income --amount 5000 --source "咨询费"
+
+# 生成日报
+opc-agents --shortcut daily_report
+```
+
+---
+
+### `ShortcutsHandler.list_shortcuts() -> List[Dict]`
+
+列出所有可用的快捷动作。
+
+**返回值**: 包含每个动作的 name/description/parameters 信息
 
 ---
 

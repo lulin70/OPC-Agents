@@ -14,8 +14,8 @@
 
 Thank you for participating in the OPC-Agents Beta test! This guide will help you get started quickly.
 
-**Latest Updates (2026-05-16)**:
-- ✅ v0.2.0: Product Release — Unified settings + onboarding + data backup/restore + error handling + WeChat E2E + dashboard + i18n zh/en + skill marketplace MVP + global search (17 features, 813 tests)
+**Latest Updates (2026-05-17)**:
+- ✅ **v0.2.0 FINAL**: Product Release Final — Unified settings (5-tab) + first-run onboarding (3-step) + data backup/restore (ZIP/JSON/CSV+SHA256) + friendly error handling (9 exceptions→friendly messages) + WeChat E2E integration + modular dashboard (3×3×6=9 combos) + tri-lingual i18n (zh/en/ja 58+ keys) + Skill Marketplace V2 (detail/filter/version pinning) + global search + Apple Shortcuts (5 actions) + API Key encryption (Fernet) + code modularization refactor (frontend 8 modules / backend 84 modules / 1126 tests / 39 test files)
 - ✅ v0.1.9-delta: Real-run verification — Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring
 - ✅ v0.1.9-gamma: Refactoring — Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor
 - ✅ v0.1.9: End-to-end closed loop — auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context
@@ -113,6 +113,71 @@ Output: Complete execution plan with goals/timeline/resources/risks/acceptance c
 ```
 Input: "Analyze my current business situation"
 Output: SWOT analysis + specific action items
+```
+
+#### Scenario 4: Unified Settings Management (v0.2.0 New)
+```
+1. Click "⚙️ Settings" in sidebar or top navigation bar
+2. 5 tabs available:
+   - 🤖 LLM Config: Manage multiple API Keys, model selection, parameter tuning
+   - 📧 SMTP Email: Configure mail server, sender info
+   - 🔑 API Keys: View/manage all configured API Keys (encrypted storage)
+   - 🛡️ Security: Data encryption, access control, audit log settings
+   - 👤 Profile: Business type, preferences, language selection
+3. All changes take effect immediately, no restart needed
+```
+
+#### Scenario 5: First-Run Onboarding
+```
+Auto-triggered 3-step wizard on first launch:
+Step 1: 🎉 Welcome — Learn about OPC-Agents core capabilities
+Step 2: 🔑 API Key Setup — Quick LLM service config (can skip)
+Step 3: ✨ Feature Intro — Discover 21 built-in skills and key features
+```
+
+#### Scenario 6: Data Backup & Restore
+```
+Location: Settings → Data Backup tab
+Export formats supported:
+- ZIP archive (full backup with SHA256 verification)
+- JSON format (data exchange)
+- CSV format (finance/CRM data in spreadsheets)
+
+Security features:
+- Zip Slip path traversal protection
+- Sensitive field auto-redaction
+- Encrypted backup storage
+```
+
+#### Scenario 7: Internationalization (i18n)
+```
+3 languages with instant switching (no restart):
+- 🇨🇳 中文 (zh_CN) — Default
+- 🇺🇸 English (en_US)
+- 🇯🇵 日本語 (ja_JP)
+
+Switch via: Settings → Profile → Language Selection
+Coverage: All UI text + error messages + skill descriptions
+```
+
+#### Scenario 8: Apple Shortcuts Integration
+```
+5 predefined shortcut actions via CLI:
+
+# Quick task creation
+opc-agents --shortcut quick_task --goal "Finish Q2 report"
+
+# Query task status
+opc-agents --shortcut query_status
+
+# Create deliverable
+opc-agents --shortcut create_deliverable --type report
+
+# Record income
+opc-agents --shortcut record_income --amount 5000 --source "Consulting"
+
+# Generate daily report
+opc-agents --shortcut daily_report
 ```
 
 ---
@@ -298,5 +363,5 @@ Thank you for your participation! We value your feedback:
 
 ---
 
-*Last updated: 2026-05-14*  
-*Version: v0.1.8*
+*Last updated: 2026-05-17*
+*Version: v0.2.0 FINAL*

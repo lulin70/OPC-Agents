@@ -3,7 +3,7 @@
 > **バージョン**: v0.2.0 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI](https://img.shields.io/pypi/v/opc-agents)](https://pypi.org/project/opc-agents/)
 
@@ -48,12 +48,24 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 - ✅ **ナレッジベースフォールバック** — 6カテゴリ20件の専門知識、検索失敗時の自動フォールバック
 - ✅ **ファイル納品** — `.md`ファイルを自動生成、ダウンロードボタン付き
 - ✅ **セキュリティ保護** — コマンドホワイトリスト+パス検証+入力長制限+監査ログ+入力検証+プロンプトインジェクション防御+URL安全性+エラー秘匿化+APIキー暗号化ストレージ
-- ✅ **テストカバレッジ** — 470テストケース、100%合格率、CI自動検証
+- ✅ **テストカバレッジ** — 1126テストケース、100%合格率、CI自動検証（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全モジュールをカバー）
 - ✅ **スキルマーケットAPI** — 外部スキル登録/発見/呼び出し、APIキー認証+権限レベル
 - ✅ **MCPプロトコル互換** — Microsoft Model Context Protocol標準互換、ツール/リソース/プロンプト対応
 - ✅ **プラグインシステム** — コミュニティプラグインのホットロード+サンドボックス隔離+ライフサイクル管理
 - ✅ **カスタムスキルエディタ** — フォーム式スキル作成/テスト/プレビュー/公開
 - ✅ **品質/クイックモード** — ユーザー選択可能な三賢者フルクローズドループまたはリフレクションスキップ高速実行
+- ✅ **📋 統一設定管理** — 5タブ設定センター（LLM/SMTP/API Keys/Security/Profile）、SettingsManagerシングルトン
+- ✅ **🚶 初回実行オンボーディング** — 3ステップOnboardingウィザード（ウェルカム→API Key設定→機能紹介）
+- ✅ **💾 データバックアップ/リストア** — ZIP/JSON/CSVマルチフォーマットエクスポート、SHA256検証、Zip Slip保護、DataBackupManager
+- ✅ **🛡️ フレンドリーエラーハンドリング** — 9種例外タイプ→日本語フレンドリーメッセージ、ErrorHandler統一例外変換
+- ✅ **💬 WeChat E2E統合** — WeChatAgent + WeChatGateway、WeChat経由のタスク対話対応
+- ✅ **📊 モジュラー ダッシュボード** — DashboardConfig（3レイアウト×3密度×6パネル=9組合せ）、テンプレートシステム
+- ✅ **🌐 3言語i18n** — I18nManagerがzh_CN/en_US/ja_JPをサポート、58+翻訳キー
+- ✅ **🛒 スキルマーケットV2** — 詳細パネル+16カテゴリフィルター+バージョンピンニング、新UI体験
+- ✅ **🔍 グローバル検索** — クロスモジュール統一検索、スキル/顧客/記事/TODOを一括検索
+- ✅ **⌨️ Apple Shortcuts統合** — 5つのショートカットアクション（quick_task/query_status/create_deliverable/record_income/daily_report）
+- ✅ **🔐 API Key暗号化保存** — Fernet対称暗号化、自動生成キー（.env.local）、secure_storage強化
+- ✅ **🧩 コードモジュラー化リファクター** — フロントエンドを3834行モノリシックから8モジュールに分割、バックエンドからskill_models/skill_builtin/skill_executors/task_types/task_content_generators/scenario_definitions等を独立モジュールとして抽出
 
 ## クイックスタート
 
@@ -121,33 +133,60 @@ cp .env.example .env
 
 ```
 OPC-Agents/
-├── frontend/              # Streamlitフロントエンド
-│   └── app.py             # メインUI（非同期実行+進捗+成果物管理）
-├── opc_manager/           # コアビジネスロジック
-│   ├── cli.py             # CLIエントリポイント（pip install後opc-agentsコマンド）
-│   ├── agent_loop.py      # 実行ループ（Plan→Act→Observe→Reflect 4フェーズクローズドループ）
-│   ├── strategist_brain.py# 戦略脳（意図理解+タスク計画+複合意図分解）
-│   ├── executor_brain.py  # 実行脳（スキル実行+ツール呼び出し+リソース管理）
-│   ├── reflector_brain.py # 反省脳（結果評価+自動修正戦略提案）
-│   ├── consensus_engine.py# コンセンサスエンジン（三賢者意見調整+紛争解決）
-│   ├── skill_registry.py  # スキルレジストリ（6コアスキル+シナリオ移行+DI）
-│   ├── tool_system.py     # ツールフレームワーク（権限制御+セキュリティ保護+監査ログ）
-│   ├── utils.py           # ユーティリティ（BoundedDict+EventEmitter）
-│   ├── scenario_migrator.py# シナリオ移行ツール（9シナリオ→スキルマッピング）
-│   ├── task_engine_adapter.py# TaskEngineアダプタ（三賢者↔TaskEngineV3ブリッジ）
-│   ├── skill_marketplace.py # スキルマーケットAPI（登録/発見/呼び出し+認証+権限）
-│   ├── mcp_protocol.py      # MCPプロトコルサポート（Model Context Protocol互換）
-│   ├── mcp_transport.py     # MCP転送層（SSE + stdio）
-│   ├── plugin_system.py     # プラグインシステム（サンドボックス隔離+ライフサイクル管理）
-│   ├── skill_editor.py      # スキルエディタ（カスタムスキル作成/テスト/公開）
-│   ├── performance_monitor.py# パフォーマンス監視（SLA管理+LLMキャッシュ+メトリクス）
+├── frontend/              # Streamlitフロントエンド（モジュラー化）
+│   ├── app.py             # メインUIルーター（1687行、ルーティングのみ）
+│   ├── components/        # 共有コンポーネント
+│   │   └── shared.py      # 16個のUIヘルパー関数（639行）
+│   └── pages/             # ページモジュール
+│       ├── dashboard_page.py   # ダッシュボードページ（578行+テンプレート）
+│       ├── marketplace_page.py # スキルマーケットV2（547行）
+│       └── settings_page.py    # 設定管理ページ（666行）
+├── opc_manager/           # コアビジネスロジック（84個の.pyモジュール）
+│   ├── cli.py             # CLIエントリポイント
+│   ├── agent_loop.py      # 実行ループ
+│   ├── strategist_brain.py# 戦略脳
+│   ├── executor_brain.py  # 実行脳
+│   ├── reflector_brain.py # 反省脳
+│   ├── consensus_engine.py# コンセンサスエンジン
+│   ├── skill_registry.py  # スキルレジストリ（21ビルトインスキル+DI）
+│   ├── tool_system.py     # ツールフレームワーク
+│   ├── utils.py           # ユーティリティ
+│   │
+│   ├── # === v0.2.0 新コアモジュール ===
+│   ├── settings.py        # 📋 SettingsManagerシングルトン（5タブ：LLM/SMTP/API Keys/Security/Profile）
+│   ├── onboarding.py      # 🚶 OnboardingManager（3ステップ初回実行ウィザード）
+│   ├── error_handler.py   # 🛡️ ErrorHandler（9種例外タイプ→フレンドリーメッセージ）
+│   ├── data_backup.py     # 💾 DataBackupManager（ZIP/JSON/CSVエクスポート、SHA256、Zip Slip保護）
+│   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP、58+翻訳キー）
+│   ├── dashboard_config.py# 📊 DashboardConfig（3レイアウト×3密度×6パネル=9組合せ）
+│   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts統合（5つのCLIアクション）
+│   ├── wechat_agent.py    # 💬 WeChat E2Eエージェント
+│   ├── wechat_gateway.py  # 💬 WeChatゲートウェイ
+│   │
+│   ├── # === v0.2.0 モジュラー抽出 ===
+│   ├── task_types.py              # task_engine_v3から抽出したタスクタイプ定義
+│   ├── task_content_generators.py # task_engine_v3から抽出したコンテンツジェネレータ
+│   ├── skill_models.py            # skill_registryから抽出したスキルモデル
+│   ├── skill_builtin.py           # 21個のビルトインスキル定義（スタンドアロンモジュール）
+│   ├── skill_executors.py         # SkillExecutorMixin（20個のexecuteメソッド）
+│   ├── scenario_definitions.py    # 9個のシナリオ定義+dataclasses
+│   │
+│   ├── scenario_migrator.py# シナリオ移行ツール
+│   ├── task_engine_adapter.py# TaskEngineアダプタ
+│   ├── skill_marketplace.py # スキルマーケットV2（検索/インストール/詳細/フィルター/バージョンピンニング）
+│   ├── skill_marketplace_api.py # スキルマーケットAPIサーバー
+│   ├── mcp_protocol.py      # MCPプロトコルサポート
+│   ├── mcp_transport.py     # MCP転送層
+│   ├── plugin_system.py     # プラグインシステム
+│   ├── skill_editor.py      # スキルエディタ
+│   ├── performance_monitor.py# パフォーマンス監視
 │   ├── task_engine_v3.py  # タスク実行エンジン
-│   ├── llm_content.py     # LLM拡張コンテンツ生成（RAGハイブリッドモード）
-│   ├── llm_service.py     # LLMサービス層（MOKA/GLM/OpenAI/Ollama）
-│   ├── search_processor.py# 検索結果後処理（TF-IDF+KBフォールバック）
+│   ├── llm_content.py     # LLM拡張コンテンツ生成
+│   ├── llm_service.py     # LLMサービス層
+│   ├── search_processor.py# 検索結果後処理
 │   ├── async_executor.py  # 非同期タスク実行器
 │   ├── session_context.py # マルチターン会話コンテキスト管理
-│   ├── validators.py      # 入力検証層（Pydanticモデル）
+│   ├── validators.py      # 入力検証層
 │   ├── business_type_detector_v2.py  # ビジネスタイプ検出
 │   ├── business_types.py             # ビジネスタイプ列挙定義
 │   ├── scenario_engine_v2.py         # シナリオマッチングエンジン
@@ -157,15 +196,36 @@ OPC-Agents/
 │   ├── monitoring.py                 # モニタリング＆ロギング
 │   ├── config.py                     # 設定管理
 │   ├── protocols.py                  # Protocolインターフェース+NullProvider降格
-│   ├── secure_storage.py             # APIキー暗号化ストレージ
+│   ├── secure_storage.py             # APIキー暗号化ストレージ（Fernet）
+│   ├── undo_manager.py               # アンドゥマネージャー
+│   ├── audit_log.py                  # 監査ログ
+│   ├── confirmer.py                  # 確認メカニズム
+│   ├── progress_emitter.py           # 進捗イベントエミッター
 │   └── version.py         # バージョン管理（SSOT）
+├── opc_manager/api/        # APIイベントモジュール
+│   └── events.py          # イベント定義
+├── opc_manager/export/     # エクスポートモジュール
+│   ├── manager.py          # エクスポートマネージャー
+│   ├── models.py           # エクスポートモデル
+│   └── exporters/          # フォーマットエクスポーター
+│       ├── excel_exporter.py
+│       ├── pdf_exporter.py
+│       ├── word_exporter.py
+│       └── image_exporter.py
 ├── opc_hr/                # 検索＆ナレッジベース
 │   └── web_search.py      # DuckDuckGo Web検索
-├── tests/                 # テストスイート（470テスト、100%合格）
+├── plugins/               # コミュニティプラグイン
+│   ├── plugin_config.json
+│   ├── data_converter.py
+│   └── text_summarizer.py
+├── tests/                 # テストスイート（39テストファイル、1126テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
+│   ├── API.md             # APIドキュメント
+│   └── guides/            # クイックスタートガイド（中/英/日）
 ├── requirements.txt       # コア依存パッケージ
-├── requirements-dev.txt   # 開発依存パッケージ（black/flake8/pytest）
+├── requirements-dev.txt   # 開発依存パッケージ
 ├── .env.example           # 環境変数テンプレート
+├── .env.local             # 自動生成暗号化キー（gitignore保護）
 ├── install.sh             # ワンクリックインストールスクリプト
 ├── start.sh               # ワンクリック起動スクリプト
 └── VERSION                # バージョンファイル
@@ -177,17 +237,23 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行
+# 全テストを実行（1126テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行
 PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
+
+# 特定モジュールテストを実行
+PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
+
+> **テストカバレッジ範囲**：全84個のopc_managerモジュール + フロントエンド8モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## バージョン履歴
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| **0.2.0** | **2026-05-17** | **FINAL** — 製品リリース：統一設定管理+初回ガイド+データバックアップ/リストア+エラー処理+WeChat E2E+モジュラーダッシュボード+i18n 3言語+スキルマーケットV2+グローバル検索+Apple Shortcuts+API Key暗号化(Fernet)+コードモジュラー化リファクター（84モジュール/39テストファイル/1126テスト） |
 | 0.1.9-delta | 2026-05-09 | 実動作検証：三賢者LLM駆動+スキルマーケットFastAPI+MCP転送+プラグイン例+エディタUI+パフォーマンス監視 |
 | 0.1.9-gamma | 2026-05-09 | リファクタリング：三賢者統合+スキルマーケットAPI+MCPプロトコル+プラグインシステム+スキルエディタ |
 | 0.1.9 | 2026-05-09 | エンドツーエンドクローズドループ：自動修正+マルチスキルオーケストレーション+タスク一時停止/再開+進捗可視化+長セッションコンテキスト |

@@ -58,13 +58,26 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **知识库兜底** — 6类20条专业知识，搜索失败时自动兜底
 - ✅ **文件交付** — 自动生成`.md`文件，提供下载按钮
 - ✅ **安全防护** — 命令白名单+路径校验+输入长度限制+审计日志+输入验证+Prompt注入防护+URL安全+错误脱敏+API Key加密存储
-- ✅ **测试覆盖** — **813**个测试用例，100%通过率，CI自动验证
+- ✅ **测试覆盖** — **1126**个测试用例，100%通过率，CI自动验证（覆盖settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全部新模块）
 - ✅ **技能市场API** — 外部技能注册/发现/调用，API Key认证+权限分级
 - ✅ **MCP协议兼容** — 兼容微软Model Context Protocol标准，支持工具/资源/提示词
   > MCP SSE模式需要额外依赖：`pip install opc-agents[mcp]`，stdio模式无需额外安装。
 - ✅ **插件系统** — 社区插件热加载+沙箱隔离+生命周期管理
 - ✅ **自定义技能编辑器** — 表单式技能创建/测试/预览/发布
 - ✅ **质量/快速模式** — 用户可选三贤者完整闭环或跳过反思快速执行
+- ✅ **📋 统一设置管理** — 5标签页设置中心（LLM配置/SMTP邮件/API密钥/安全策略/个人资料），SettingsManager单例
+- ✅ **🚶 首次运行引导** — 3步Onboarding向导（欢迎页→API Key配置→功能介绍），新用户体验优化
+- ✅ **💾 数据备份恢复** — ZIP/JSON/CSV多格式导出，SHA256校验，Zip Slip防护，DataBackupManager
+- ✅ **🛡️ 友好错误处理** — 9种异常类型→中文友好消息，ErrorHandler统一异常转换
+- ✅ **💬 微信E2E集成** — WeChatAgent + WeChatGateway，支持微信端任务交互
+- ✅ **📊 模块化仪表盘** — DashboardConfig（3布局×3密度×6面板），模板系统支持9种组合
+- ✅ **🌐 三语国际化** — I18nManager支持中文(zh_CN)/英文(en_US)/日文(ja_JP)，58+翻译键
+- ✅ **🛒 技能市场V2** — 详情面板+16分类筛选+版本锁定，全新UI体验
+- ✅ **🔍 全局搜索** — 跨模块统一搜索，技能/客户/文章/待办一站式查找
+- ✅ **⌨️ Apple Shortcuts集成** — 5个快捷动作（quick_task/query_status/create_deliverable/record_income/daily_report）
+- ✅ **🔐 API Key加密存储** — Fernet对称加密，密钥自动生成（.env.local），secure_storage增强
+- ✅ **🧩 代码模块化重构** — 前端从3834行monolithic拆分为8模块，后端提取skill_models/skill_builtin/skill_executors/task_types/task_content_generators/scenario_definitions等独立模块
+- ✅ **WeChat E2E集成** — 微信端到端任务执行支持
 
 ## 架构概览
 
@@ -133,6 +146,10 @@ echo "MOKA_API_KEY=your-key-here" > .env
 
 # （可选）使用加密存储代替明文.env
 # python -m opc_manager.secure_storage set MOKA_API_KEY your-key-here
+
+# 首次启动会自动生成 .env.local（含加密密钥，已加入gitignore保护）
+# 如需手动设置加密密钥：
+# echo "OPC_ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> .env.local
 
 # 4. 启动
 opc-agents
@@ -213,9 +230,15 @@ docker compose up -d
 
 ```
 OPC-Agents/
-├── frontend/              # Streamlit前端
-│   └── app.py             # 主界面（异步执行+进度指示+成果物管理）
-├── opc_manager/           # 核心业务逻辑
+├── frontend/              # Streamlit前端（模块化重构）
+│   ├── app.py             # 主界面路由（1687行，仅路由逻辑）
+│   ├── components/        # 共享组件
+│   │   └── shared.py      # 16个UI辅助函数（639行）
+│   └── pages/             # 页面模块
+│       ├── dashboard_page.py   # 仪表盘页面（578行+模板）
+│       ├── marketplace_page.py # 技能市场V2（547行）
+│       └── settings_page.py    # 设置管理页（666行）
+├── opc_manager/           # 核心业务逻辑（84个.py模块）
 │   ├── cli.py             # CLI入口（pip install后opc-agents命令）
 │   ├── agent_loop.py      # 执行循环（Plan→Act→Observe→Reflect四阶段闭环）
 │   ├── strategist_brain.py# 策略脑（意图理解+任务规划+复合意图拆解）
@@ -226,6 +249,26 @@ OPC-Agents/
 │   ├── intent_types.py    # 意图类型SSOT（IntentType枚举+INTENT_KEYWORDS+INTENT_STEP_MAP+SKILL_INTENT_MAP）
 │   ├── tool_system.py     # 工具调用框架（权限控制+安全防护+审计日志）
 │   ├── utils.py           # 公共工具（BoundedDict+EventEmitter+日期解析）
+│   │
+│   ├── # === v0.2.0 新增核心模块 ===
+│   ├── settings.py        # 📋 SettingsManager单例（5标签页：LLM/SMTP/API Keys/Security/Profile）
+│   ├── onboarding.py      # 🚶 OnboardingManager（3步首次运行引导向导）
+│   ├── error_handler.py   # 🛡️ ErrorHandler（9种异常类型→中文友好消息）
+│   ├── data_backup.py     # 💾 DataBackupManager（ZIP/JSON/CSV导出，SHA256，Zip Slip防护）
+│   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP，58+翻译键）
+│   ├── dashboard_config.py# 📊 DashboardConfig（3布局×3密度×6面板=9种组合）
+│   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts集成（5个CLI动作）
+│   ├── wechat_agent.py    # 💬 微信E2E智能体
+│   ├── wechat_gateway.py  # 💬 微信网关
+│   │
+│   ├── # === v0.2.0 模块化提取 ===
+│   ├── task_types.py              # 从task_engine_v3提取的任务类型定义
+│   ├── task_content_generators.py # 从task_engine_v3提取的内容生成器
+│   ├── skill_models.py            # 从skill_registry提取的技能模型
+│   ├── skill_builtin.py           # 21个内置技能定义（独立模块）
+│   ├── skill_executors.py         # SkillExecutorMixin（20个execute方法）
+│   ├── scenario_definitions.py    # 9个场景定义+dataclasses
+│   │
 │   ├── scenario_migrator.py# 场景迁移器（9场景→技能映射）
 │   ├── task_engine_adapter.py# TaskEngine适配器（三贤者↔TaskEngineV3桥接）
 │   ├── data_manager.py    # 数据管理（SQLite统一存储+AES加密+事务+迁移）
@@ -243,7 +286,7 @@ OPC-Agents/
 │   ├── tax_reminder_skill.py# 🧾 税务提醒技能（截止日+清单+完成跟踪）
 │   ├── dashboard_skill.py # 📈 看板技能（概览+财务+CRM+待办仪表盘）
 │   ├── knowledge_skill.py # 📚 知识库技能（文章CRUD+分类+搜索+统计）
-│   ├── skill_marketplace.py # 🔌 技能市场（搜索/安装/管理+MCP发现）
+│   ├── skill_marketplace.py # 🔌 技能市场V2（搜索/安装/详情/筛选/版本锁定+MCP发现）
 │   ├── user_profile.py    # 👤 用户画像（交互记录+偏好+推荐）
 │   ├── skill_marketplace_api.py # 技能市场API服务（FastAPI服务端）
 │   ├── mcp_protocol.py      # MCP协议支持（Model Context Protocol兼容）
@@ -268,15 +311,36 @@ OPC-Agents/
 │   ├── monitoring.py                 # 监控与日志
 │   ├── config.py                     # 配置管理
 │   ├── protocols.py                  # Protocol接口+NullProvider降级模式
-│   ├── secure_storage.py             # API密钥加密存储
+│   ├── secure_storage.py             # API密钥加密存储（Fernet）
+│   ├── undo_manager.py               # 撤销管理器
+│   ├── audit_log.py                  # 审计日志
+│   ├── confirmer.py                  # 确认机制
+│   ├── progress_emitter.py           # 进度事件发射器
 │   └── version.py         # 版本号管理（SSOT）
+├── opc_manager/api/        # API事件模块
+│   └── events.py          # 事件定义
+├── opc_manager/export/     # 导出模块
+│   ├── manager.py          # 导出管理器
+│   ├── models.py           # 导出模型
+│   └── exporters/          # 格式导出器
+│       ├── excel_exporter.py
+│       ├── pdf_exporter.py
+│       ├── word_exporter.py
+│       └── image_exporter.py
 ├── opc_hr/                # 搜索与知识库
 │   └── web_search.py      # DuckDuckGo网络搜索
-├── tests/                 # 测试套件（470个测试，100%通过）
+├── plugins/               # 社区插件
+│   ├── plugin_config.json
+│   ├── data_converter.py
+│   └── text_summarizer.py
+├── tests/                 # 测试套件（39个测试文件，1126测试用例，100%通过）
 ├── docs/                  # 项目文档
+│   ├── API.md             # API文档
+│   └── guides/            # 快速开始指南（中/英/日三语）
 ├── requirements.txt       # 核心依赖
 ├── requirements-dev.txt   # 开发依赖（含black/flake8/pytest）
 ├── .env.example           # 环境变量模板
+├── .env.local             # 加密密钥自动生成（gitignore保护）
 ├── install.sh             # 一键安装脚本
 ├── start.sh               # 一键启动脚本
 └── VERSION                # 版本号文件
@@ -288,17 +352,23 @@ OPC-Agents/
 # 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 运行全部测试
+# 运行全部测试（1126个用例）
 PYTHONPATH=. pytest tests/ -v
 
 # 运行并生成覆盖率报告
 PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
+
+# 运行特定模块测试
+PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
+
+> **测试覆盖范围**：全部84个opc_manager模块 + 前端8模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## 版本历史
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| **0.2.0** | **2026-05-17** | **FINAL** — 产品化发布：统一设置管理+首次引导+数据备份恢复+错误处理+微信E2E+模块化仪表盘+i18n三语+技能市场V2+全局搜索+Apple Shortcuts+API Key加密(Fernet)+代码模块化重构（84模块/39测试文件/1126测试） |
 | 0.1.8 | 2026-05-14 | 21内置技能+外部技能市场+MCP服务发现+用户画像+数据安全+SQLite统一存储 |
 | 0.1.9-delta | 2026-05-09 | 真实运行验证：三贤者LLM驱动+技能市场FastAPI+MCP传输+插件示例+编辑器UI+性能监控 |
 | 0.1.9-gamma | 2026-05-09 | 整改优化：三贤者接入主流程+技能市场API+MCP协议+插件系统+技能编辑器 |

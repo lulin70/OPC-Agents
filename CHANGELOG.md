@@ -2,7 +2,48 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
-## [0.2.0] - 2026-05-15 🎉 **产品化升级里程碑**
+## [0.2.0] - 2026-05-16 to 2026-05-17
+
+### Initial Release (commit 0b43f32)
+- 17 features: Settings Manager, Onboarding, Data Backup, Error Handler,
+  WeChat E2E, Dashboard, i18n, Skill Marketplace MVP, Global Search...
+
+### Post-Release Security Patch (commit 849efc4)
+- P0: Zip Slip path traversal fix
+- P0: Upload filename sanitization
+- P0: Encryption key absolute path
+- P1: ERROR_MAP dead code fix
+- Doc sync: README 470→813 tests, Python 3.9→3.10+
+
+### Iteration 1: Test Coverage + Frontend Split (commit 678d7a9)
+- +187 tests (5 new test files: confirmer, undo_manager, audit_log, progress_emitter, data_manager)
+- Frontend: app.py 3834→1687 lines (-56%)
+- 7 new module files (pages×3 + components/shared + __init__×3)
+- AuditLog bugfix (_db_connection + _stop_event)
+
+### Iteration 2: Security + Refactor (commit 9b4bbd3)
+- API Key Fernet encryption at rest (+8 tests)
+- task_engine_v3.py: 1857→1311 lines (-29%), extracted task_types + content_generators
+- skill_registry.py: 1105→376 lines (-66%), extracted models + builtin + executors
+
+### Iteration 3: UX + Performance (commit fd2b68d)
+- Dashboard Template System: 3 layouts × 3 densities × 6 panel toggles (+30 tests)
+- scenario_engine_v2.py: 1150→275 lines (-76%), extracted definitions
+- Performance: user_profile lazy import cache, ZIP streaming checksum (64KB peak), 50MB cap
+
+### Iteration 4: Final Features (commit 641c6ab)
+- Apple Shortcuts: 5 CLI actions (+35 tests)
+- i18n ja_JP: 58 translation keys (+11 tests)
+- Skill Marketplace V2: detail panel, 16-category filter, version pinning (+42 tests)
+
+### Summary
+- Total: 1126 tests (from 813, +39%)
+- 20+ new source modules
+- Frontend fully modularized
+- All large modules refactored to <400 lines
+- Zero security issues open
+
+---
 
 ### 重大变更：从"技术demo"升级为"真正可用的产品"
 
@@ -37,9 +78,10 @@ All notable changes to OPC-Agents will be documented in this file.
 - 新增文件: i18n.py, test_i18n.py(26)
 
 ### 测试统计
-- **813 passed (+201 from v0.1.9)**, 21 skipped, 0 failed
-- 新增测试文件: test_settings, test_onboarding, test_error_handler, test_data_backup, test_i18n, test_wechat_e2e
-- 安全测试: 19/19通过 (注入/XSS/路径穿越/APIKey/输出脱敏)
+- **1126 passed (+313 from v0.1.9, +39% within v0.2.0 iterations)**, 21 skipped, 0 failed
+- 新增测试文件: test_settings, test_onboarding, test_error_handler, test_data_backup, test_i18n, test_wechat_e2e, test_confirmer, test_undo_manager, test_audit_log, test_progress_emitter, test_data_manager, test_dashboard_config, test_marketplace_v2, test_shortcuts_handler, test_multilingual, test_validators, test_search_processor
+- 安全测试: 19/19通过 (注入/XSS/路径穿越/APIKey/输出脱敏) + API Key Fernet加密测试(8/8)
+- 迭代覆盖: Iteration1(+187), Iteration2(+38), Iteration3(+30), Iteration4(+88)
 
 ### 文档
 - DevSquad 7角色协作PRD+架构设计报告 (2144行)

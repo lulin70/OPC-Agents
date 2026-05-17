@@ -52,6 +52,7 @@ class AuditRecord:
 AUDIT_MAX_MEMORY_LOGS = 1000
 AUDIT_WRITE_BATCH_SIZE = 10
 AUDIT_RETENTION_DAYS = 90
+AUDIT_MAX_QUERY_OUTPUT_LENGTH = 500
 
 AUDIT_SENSITIVE_PATTERNS = [
     'password', 'passwd', 'pwd', 'secret', 'api_key', 'apikey',

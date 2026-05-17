@@ -3,7 +3,7 @@
 > **Version**: v0.2.0 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI](https://img.shields.io/pypi/v/opc-agents)](https://pypi.org/project/opc-agents/)
 
@@ -48,12 +48,24 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - ✅ **Knowledge Base Fallback** — 6 categories, 20 professional knowledge entries, auto-fallback when search fails
 - ✅ **File Delivery** — Auto-generates `.md` files with download button
 - ✅ **Security Protection** — Command whitelist + path validation + input length limit + audit log + input validation + Prompt injection defense + URL safety + error sanitization + encrypted API key storage
-- ✅ **Test Coverage** — 470 test cases, 100% pass rate, CI auto-verification
+- ✅ **Test Coverage** — 1126 test cases, 100% pass rate, CI auto-verification (covers settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler and all new modules)
 - ✅ **Skill Marketplace API** — External skill registration/discovery/invocation, API Key auth + permission levels
 - ✅ **MCP Protocol Compatible** — Compatible with Microsoft Model Context Protocol standard, supports tools/resources/prompts
 - ✅ **Plugin System** — Community plugin hot-loading + sandbox isolation + lifecycle management
 - ✅ **Custom Skill Editor** — Form-based skill creation/testing/preview/publishing
 - ✅ **Quality/Fast Mode** — User-selectable three-sage full closed loop or skip-reflection fast execution
+- ✅ **📋 Unified Settings Management** — 5-tab settings center (LLM/SMTP/API Keys/Security/Profile), SettingsManager singleton
+- ✅ **🚶 First-Run Onboarding** — 3-step onboarding wizard (Welcome → API Key Config → Feature Intro)
+- ✅ **💾 Data Backup & Restore** — ZIP/JSON/CSV export, SHA256 verification, Zip Slip protection, DataBackupManager
+- ✅ **🛡️ User-Friendly Error Handling** — 9 exception types → Chinese-friendly messages, ErrorHandler unified exception translation
+- ✅ **💬 WeChat E2E Integration** — WeChatAgent + WeChatGateway for WeChat-based task interaction
+- ✅ **📊 Modular Dashboard** — DashboardConfig (3 layouts × 3 densities × 6 panels), template system supports 9 combinations
+- ✅ **🌐 Tri-Lingual i18n** — I18nManager supports zh_CN/en_US/ja_JP, 58+ translation keys
+- ✅ **🛒 Skill Marketplace V2** — Detail panel + 16-category filter + version pinning,全新 UI experience
+- ✅ **🔍 Global Search** — Cross-module unified search for skills/customers/articles/tasks in one place
+- ✅ **⌨️ Apple Shortcuts Integration** — 5 shortcut actions (quick_task/query_status/create_deliverable/record_income/daily_report)
+- ✅ **🔐 API Key Encryption at Rest** — Fernet symmetric encryption, auto-generated key (.env.local), enhanced secure_storage
+- ✅ **🧩 Code Modularization Refactor** — Frontend split from 3834-line monolithic into 8 modules; backend extracted skill_models/skill_builtin/skill_executors/task_types/task_content_generators/scenario_definitions as independent modules
 
 ## Quick Start
 
@@ -135,25 +147,50 @@ docker compose up -d
 
 ```
 OPC-Agents/
-├── frontend/              # Streamlit frontend
-│   └── app.py             # Main UI (async execution + progress + deliverable management)
-├── opc_manager/           # Core business logic
+├── frontend/              # Streamlit frontend (modularized)
+│   ├── app.py             # Main UI router (1687 lines, routing only)
+│   ├── components/        # Shared components
+│   │   └── shared.py      # 16 UI helper functions (639 lines)
+│   └── pages/             # Page modules
+│       ├── dashboard_page.py   # Dashboard page (578 lines + templates)
+│       ├── marketplace_page.py # Skill Marketplace V2 (547 lines)
+│       └── settings_page.py    # Settings management (666 lines)
+├── opc_manager/           # Core business logic (84 .py modules)
 │   ├── cli.py             # CLI entry point (opc-agents command after pip install)
 │   ├── agent_loop.py      # Execution loop (Plan→Act→Observe→Reflect 4-phase closed loop)
 │   ├── strategist_brain.py# Strategist Brain (intent understanding + task planning + composite intent decomposition)
 │   ├── executor_brain.py  # Executor Brain (skill execution + tool invocation + resource management)
 │   ├── reflector_brain.py # Reflector Brain (result evaluation + auto-correction strategy)
 │   ├── consensus_engine.py# Consensus Engine (three-sage opinion coordination + conflict resolution)
-│   ├── skill_registry.py  # Skill Registry (6 core skills + scenario migration + dependency injection)
+│   ├── skill_registry.py  # Skill Registry (21 built-in skills + scenario migration + DI)
 │   ├── tool_system.py     # Tool Framework (permission control + security protection + audit log)
 │   ├── utils.py           # Utilities (BoundedDict + EventEmitter)
+│   │
+│   ├── # === v0.2.0 New Core Modules ===
+│   ├── settings.py        # 📋 SettingsManager singleton (5 tabs: LLM/SMTP/API Keys/Security/Profile)
+│   ├── onboarding.py      # 🚶 OnboardingManager (3-step first-run wizard)
+│   ├── error_handler.py   # 🛡️ ErrorHandler (9 exception types → friendly messages)
+│   ├── data_backup.py     # 💾 DataBackupManager (ZIP/JSON/CSV export, SHA256, Zip Slip protection)
+│   ├── i18n.py            # 🌐 I18nManager (zh_CN/en_US/ja_JP, 58+ keys)
+│   ├── dashboard_config.py# 📊 DashboardConfig (3 layouts × 3 densities × 6 panels = 9 combos)
+│   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts integration (5 CLI actions)
+│   ├── wechat_agent.py    # 💬 WeChat E2E agent
+│   ├── wechat_gateway.py  # 💬 WeChat gateway
+│   │
+│   ├── # === v0.2.0 Modular Extraction ===
+│   ├── task_types.py              # Task type definitions extracted from task_engine_v3
+│   ├── task_content_generators.py # Content generators extracted from task_engine_v3
+│   ├── skill_models.py            # Skill models extracted from skill_registry
+│   ├── skill_builtin.py           # 21 built-in skill definitions (standalone module)
+│   ├── skill_executors.py         # SkillExecutorMixin (20 execute methods)
+│   ├── scenario_definitions.py    # 9 scenario definitions + dataclasses
+│   │
 │   ├── scenario_migrator.py# Scenario Migrator (9 scenarios → skill mapping)
 │   ├── task_engine_adapter.py# TaskEngine adapter (Three-Sage ↔ TaskEngineV3 bridge)
-│   ├── skill_marketplace.py # Skill Marketplace (register/discover/invoke + auth + permissions)
+│   ├── skill_marketplace.py # Skill Marketplace V2 (search/install/detail/filter/version pinning + MCP discovery)
 │   ├── skill_marketplace_api.py # Skill Marketplace API server (FastAPI server)
 │   ├── mcp_protocol.py      # MCP protocol support (Model Context Protocol compatible)
 │   ├── mcp_transport.py     # MCP transport layer (SSE + stdio)
-│   ├── simple_llm_service.py # Simplified LLM service (lightweight invocation interface)
 │   ├── plugin_system.py     # Plugin system (sandbox isolation + lifecycle management)
 │   ├── skill_editor.py      # Skill editor (custom skill creation/testing/publishing)
 │   ├── performance_monitor.py# Performance monitoring (SLA management + LLM cache + metrics)
@@ -173,15 +210,36 @@ OPC-Agents/
 │   ├── monitoring.py                 # Monitoring & logging
 │   ├── config.py                     # Configuration management
 │   ├── protocols.py                  # Protocol interface + NullProvider degradation
-│   ├── secure_storage.py             # Encrypted API key storage
+│   ├── secure_storage.py             # Encrypted API key storage (Fernet)
+│   ├── undo_manager.py               # Undo manager
+│   ├── audit_log.py                  # Audit log
+│   ├── confirmer.py                  # Confirmation mechanism
+│   ├── progress_emitter.py           # Progress event emitter
 │   └── version.py         # Version management (SSOT)
+├── opc_manager/api/        # API events module
+│   └── events.py          # Event definitions
+├── opc_manager/export/     # Export module
+│   ├── manager.py          # Export manager
+│   ├── models.py           # Export models
+│   └── exporters/          # Format exporters
+│       ├── excel_exporter.py
+│       ├── pdf_exporter.py
+│       ├── word_exporter.py
+│       └── image_exporter.py
 ├── opc_hr/                # Search & knowledge base
 │   └── web_search.py      # DuckDuckGo web search
-├── tests/                 # Test suite (470 tests, 100% pass)
+├── plugins/               # Community plugins
+│   ├── plugin_config.json
+│   ├── data_converter.py
+│   └── text_summarizer.py
+├── tests/                 # Test suite (39 test files, 1126 tests, 100% pass)
 ├── docs/                  # Project documentation
+│   ├── API.md             # API documentation
+│   └── guides/            # Quick start guides (zh/en/jp)
 ├── requirements.txt       # Core dependencies
 ├── requirements-dev.txt   # Dev dependencies (black/flake8/pytest)
 ├── .env.example           # Environment variable template
+├── .env.local             # Auto-generated encryption key (gitignore protected)
 ├── install.sh             # One-click install script
 ├── start.sh               # One-click launch script
 └── VERSION                # Version file
@@ -193,17 +251,23 @@ OPC-Agents/
 # Install dev dependencies
 pip install -r requirements-dev.txt
 
-# Run all tests
+# Run all tests (1126 test cases)
 PYTHONPATH=. pytest tests/ -v
 
 # Run with coverage report
 PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
+
+# Run specific module tests
+PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
+
+> **Test Coverage**: All 84 opc_manager modules + 8 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)
 
 ## Version History
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.2.0** | **2026-05-17** | **FINAL** — Product Release: Unified settings + onboarding + data backup/restore + error handling + WeChat E2E + modular dashboard + i18n tri-lingual + Skill Marketplace V2 + global search + Apple Shortcuts + API Key encryption (Fernet) + code modularization refactor (84 modules / 39 test files / 1126 tests) |
 | 0.1.9-delta | 2026-05-09 | Real-run verification: Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring |
 | 0.1.9-gamma | 2026-05-09 | Refactoring: Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor |
 | 0.1.9 | 2026-05-09 | End-to-end closed loop: auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context |

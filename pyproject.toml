@@ -31,7 +31,6 @@ classifiers = [
     "Intended Audience :: Information Technology",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -99,7 +98,7 @@ Issues = "https://github.com/lulin70/OPC-Agents/issues"
 Changelog = "https://github.com/lulin70/OPC-Agents/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-include = ["opc_manager*", "opc_hr*", "frontend*"]
+include = ["opc_manager*", "opc_hr*", "frontend*", "plugins*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "opc_manager.version.__version__"}
