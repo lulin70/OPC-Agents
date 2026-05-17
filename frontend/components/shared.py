@@ -13,6 +13,177 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+
+def show_success(message: str, icon: str = "✅", duration: int = 3):
+    """Show a success toast notification that auto-dismisses."""
+    placeholder = st.empty()
+    with placeholder.container():
+        st.markdown(f"""
+        <div style="
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 999;
+            font-size: 15px;
+            animation: slideIn 0.3s ease-out;
+        ">
+            {icon} {message}
+        </div>
+        <style>
+        @keyframes slideIn {{
+            from {{ transform: translateX(100%); opacity: 0; }}
+            to {{ transform: translateX(0); opacity: 1; }}
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+
+    import time as _time
+    _time.sleep(min(duration, 2))
+    placeholder.empty()
+    return True
+
+
+def show_error(message: str, icon: str = "❌"):
+    """Show an error toast notification."""
+    placeholder = st.empty()
+    with placeholder.container():
+        st.markdown(f"""
+        <div style="
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 999;
+            font-size: 15px;
+        ">
+            {icon} {message}
+        </div>
+        """, unsafe_allow_html=True)
+    import time as _time
+    _time.sleep(2)
+    placeholder.empty()
+
+
+def show_info(message: str, icon: str = "ℹ️"):
+    """Show an info toast notification."""
+    placeholder = st.empty()
+    with placeholder.container():
+        st.markdown(f"""
+        <div style="
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 999;
+            font-size: 15px;
+        ">
+            {icon} {message}
+        </div>
+        """, unsafe_allow_html=True)
+    import time as _time
+    _time.sleep(2)
+    placeholder.empty()
+
+THEME_CONFIGS = {
+    "light": {
+        "backgroundColor": "#FFFFFF",
+        "secondaryBackgroundColor": "#F0F2F6",
+        "textColor": "#1F2937",
+        "font": "sans-serif",
+        "primaryColor": "#3B82F6",
+    },
+    "dark": {
+        "backgroundColor": "#111827",
+        "secondaryBackgroundColor": "#1F2937",
+        "textColor": "#F9FAFB",
+        "font": "sans-serif",
+        "primaryColor": "#60A5FA",
+    },
+    "sunset": {
+        "backgroundColor": "#1a1423",
+        "secondaryBackgroundColor": "#261a2e",
+        "textColor": "#fef3c7",
+        "font": "sans-serif",
+        "primaryColor": "#F59E0B",
+    },
+    "forest": {
+        "backgroundColor": "#0d1f17",
+        "secondaryBackgroundColor": "#152920",
+        "textColor": "#D1FAE5",
+        "font": "sans-serif",
+        "primaryColor": "#34D399",
+    },
+    "ocean": {
+        "backgroundColor": "#0c1929",
+        "secondaryBackgroundColor": "#162d4a",
+        "textColor": "#E0F2FE",
+        "font": "sans-serif",
+        "primaryColor": "#38BDF8",
+    },
+}
+
+
+def apply_theme(theme_name: str):
+    """Apply complete theme via Streamlit config."""
+    config = THEME_CONFIGS.get(theme_name, THEME_CONFIGS["light"])
+    import streamlit as st
+    try:
+        st.config.set_option("theme.primaryColor", config["primaryColor"])
+        st.config.set_option("theme.backgroundColor", config["backgroundColor"])
+        st.config.set_option("theme.secondaryBackgroundColor", config["secondaryBackgroundColor"])
+        st.config.set_option("theme.textColor", config["textColor"])
+        st.config.set_option("theme.font", config["font"])
+        if theme_name == "dark":
+            st.config.set_option("theme.base", "dark")
+        elif theme_name == "light":
+            st.config.set_option("theme.base", "light")
+    except Exception:
+        pass
+
+
+def _get_theme_css(theme_name: str) -> str:
+    """Return custom CSS for enhanced theme support."""
+    themes = {
+        "dark": """
+            .stApp { background-color: #111827 !important; }
+            .stMarkdown { color: #F9FAFB !important; }
+            .stDataFrame { background-color: #1F2937 !important; }
+            [data-testid="stMetric"] { background-color: #1F2937 !important; }
+            [data-testid="stCheckbox"] label { color: #F9FAFB !important; }
+            .stSelectbox > div > div { background-color: #1F2937 !important; }
+            .stTextInput > div > div { background-color: #1F2937 !important; }
+            """,
+        "sunset": """
+            .stApp { background-color: #1a1423 !important; }
+            .stMarkdown { color: #fef3c7 !important; }
+            [data-testid="stMetric"] { background-color: #261a2e !important; }
+            """,
+        "forest": """
+            .stApp { background-color: #0d1f17 !important; }
+            .stMarkdown { color: #D1FAE5 !important; }
+            [data-testid="stMetric"] { background-color: #152920 !important; }
+            """,
+        "ocean": """
+            .stApp { background-color: #0c1929 !important; }
+            .stMarkdown { color: #E0F2FE !important; }
+            [data-testid="stMetric"] { background-color: #162d4a !important; }
+            """,
+    }
+    return themes.get(theme_name, "")
+
 # Import DELIVERABLES_DIR from parent module (set in app.py before import)
 # We'll get it from the module-level config or pass it as needed
 
@@ -157,16 +328,80 @@ def _render_single_export_buttons(item: dict, item_id: str):
     col_pdf, col_word, col_excel, col_png = st.columns(4)
     with col_pdf:
         if st.button("📄 PDF", key=f"pdf_{item_id}", help="导出为PDF"):
-            _export_single(item, "pdf")
+            _export_single_with_preview(item, "pdf", item_id)
     with col_word:
         if st.button("📝 Word", key=f"word_{item_id}", help="导出为Word"):
-            _export_single(item, "word")
+            _export_single_with_preview(item, "word", item_id)
     with col_excel:
         if st.button("📊 Excel", key=f"excel_{item_id}", help="导出为Excel"):
-            _export_single(item, "excel")
+            _export_single_with_preview(item, "excel", item_id)
     with col_png:
         if st.button("🖼️ 图片", key=f"png_{item_id}", help="导出为PNG图片"):
-            _export_single(item, "png")
+            _export_single_with_preview(item, "png", item_id)
+
+
+def _render_export_preview(item_data: dict, format_type: str):
+    """Show preview of export content before actual export."""
+    st.subheader("📋 导出预览")
+
+    col_info, col_preview = st.columns([1, 2])
+    with col_info:
+        st.markdown(f"**格式**: `{format_type.upper()}`")
+        content_str = str(item_data) if not isinstance(item_data, str) else item_data
+        size_kb = len(content_str.encode("utf-8")) // 1024
+        st.markdown(f"**大小**: ~{size_kb} KB (预估)")
+        keys = list(item_data.keys()) if isinstance(item_data, dict) else []
+        st.markdown(f"**包含字段**: {', '.join(keys[:5])}{'...' if len(keys) > 5 else ''}" if keys else "**内容类型**: 文本")
+
+        format_hints = {
+            "pdf": "📄 PDF 文档，支持中文排版",
+            "word": "📝 Word 文档，可编辑格式",
+            "excel": "📊 Excel 表格，含数据表",
+            "image": "🖼️ PNG 图片，适合分享",
+            "png": "🖼️ PNG 图片，适合分享",
+        }
+        st.caption(format_hints.get(format_type.lower(), f"导出为 {format_type.upper()} 格式"))
+
+    with col_preview:
+        content_preview = str(item_data)[:500] + ("..." if len(str(item_data)) > 500 else "")
+        st.text_area("内容预览", value=content_preview, height=200, disabled=True)
+
+    col_confirm, col_cancel = st.columns([1, 1])
+    with col_confirm:
+        if st.button("✅ 确认导出", type="primary", key=f"confirm_export_{format_type}"):
+            return True
+    with col_cancel:
+        if st.button("取消", key=f"cancel_export_{format_type}"):
+            return False
+
+    return None
+
+
+def _export_single_with_preview(item: dict, fmt: str, item_id: str):
+    """Execute single export with preview step."""
+    filepath = item.get("filepath", "")
+    if not filepath or not os.path.exists(filepath):
+        st.error("文件不存在")
+        return
+
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        item_data = {
+            "content": content[:2000],
+            "filename": item.get("filename", ""),
+            "metadata": item.get("metadata", item.get("meta", {})),
+        }
+
+        preview_result = _render_export_preview(item_data, fmt)
+
+        if preview_result is True:
+            _export_single(item, fmt)
+        elif preview_result is False:
+            st.info("导出已取消")
+    except Exception as e:
+        st.error(f"预览失败: {e}")
 
 
 def _export_single(item: dict, fmt: str):
@@ -509,22 +744,7 @@ def _render_theme_selector():
 
     if selected != current:
         st.session_state.theme = selected
-        if selected == "dark":
-            st.config.set_option("theme.base", "dark")
-        elif selected == "light":
-            st.config.set_option("theme.base", "light")
-        elif selected == "sunset":
-            st.config.set_option("theme.primaryColor", "#FF6B35")
-            st.config.set_option("theme.backgroundColor", "#1E1E1E")
-            st.config.set_option("theme.secondaryBackgroundColor", "#2D2D2D")
-        elif selected == "forest":
-            st.config.set_option("theme.primaryColor", "#2E7D32")
-            st.config.set_option("theme.backgroundColor", "#1B3A1B")
-            st.config.set_option("theme.secondaryBackgroundColor", "#263D26")
-        elif selected == "ocean":
-            st.config.set_option("theme.primaryColor", "#1976D2")
-            st.config.set_option("theme.backgroundColor", "#0D1F2C")
-            st.config.set_option("theme.secondaryBackgroundColor", "#152938")
+        apply_theme(selected)
 
 
 def _render_language_selector():
@@ -546,20 +766,68 @@ def _render_language_selector():
 
 
 def _render_shortcuts_help():
-    """Render keyboard shortcuts help panel."""
+    """Render keyboard shortcuts help panel with enhanced content."""
     from opc_manager.i18n import t as _t
     with st.expander("⌨️ Keyboard Shortcuts / 快捷键"):
         shortcuts = [
-            ("Ctrl + Enter", _t("Send message") if 't' in dir() else "发送消息"),
+            ("Enter", "发送消息 / Send message"),
+            ("Esc", "取消当前操作 / Close dialog"),
+            ("Ctrl+Z", "撤销上一步 / Undo last step"),
+            ("/", "打开命令面板 / Command palette"),
+            ("?", "显示帮助 / Show help"),
             ("Ctrl + N", "New chat / 新对话"),
             ("Ctrl + E", "Export / 导出"),
             ("Ctrl + D", "Dashboard / 仪表板"),
             ("Ctrl + S", "Settings / 设置"),
-            ("?", "Show help / 显示帮助"),
-            ("Esc", "Close dialog / 关闭对话框"),
         ]
         for keys, desc in shortcuts:
             st.code(f"{keys:20s} → {desc}")
+        st.caption("💡 *提示：按 `?` 随时查看此列表*")
+
+
+def _maybe_show_shortcut_hints():
+    """Show keyboard shortcuts hint bubble on first visit to chat page."""
+    if "shortcuts_shown" not in st.session_state:
+        st.session_state.shortcuts_shown = False
+
+    if not st.session_state.shortcuts_shown:
+        with st.expander("⌨️ 键盘快捷键提示 (点击收起)", expanded=True):
+            st.markdown("""
+            | 快捷键 | 功能 |
+            |--------|------|
+            | `Enter` | 发送消息 |
+            | `Esc` | 取消当前操作 |
+            | `Ctrl+Z` | 撤销上一步 |
+            | `/` | 打开命令面板 |
+            | `?` | 显示帮助 |
+
+            💡 *提示：按 `?` 随时查看此列表*
+            """)
+
+        col_dismiss, col_later = st.columns([1, 1])
+        with col_dismiss:
+            if st.button("知道了，不再显示", key="dismiss_shortcuts"):
+                st.session_state.shortcuts_shown = True
+                st.rerun()
+        with col_later:
+            if st.button("下次再说", key="shortcuts_later"):
+                st.session_state.shortcuts_shown = True
+
+
+def _render_floating_help_button():
+    """Render a small floating '?' button that re-shows shortcut hints."""
+    st.markdown("""
+    <div style="
+        position: fixed;
+        bottom: 80px;
+        right: 24px;
+        z-index: 998;
+    >
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("❓ 快捷键帮助", key="floating_help_btn", help="点击查看键盘快捷键"):
+        st.session_state.shortcuts_shown = False
+        st.rerun()
 
 
 def _get_current_session_id() -> str:

@@ -1,46 +1,68 @@
-# OPC-Agents 核心依赖
-# 版本: 0.2.0
-# 最后更新: 2026-05-16
+# ============================================
+# OPC-Agents v0.2.0 — Layered Dependencies
+# ============================================
+#
+# Installation:
+#   Core (always):     pip install -r requirements.txt
+#   Dev only:          pip install -r requirements-dev.txt
+# ============================================
 
-# Web框架
-streamlit>=1.28.0
+# ---- Core (REQUIRED) ----
+# Web Framework
+streamlit>=1.30.0
 
-# HTTP & 搜索
+# LLM Integration
+openai>=1.10.0
+
+# Security / Encryption
+cryptography>=41.0.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# JWT Authentication
+PyJWT>=2.8.0
+
+# ---- HTTP & Search ----
 requests>=2.31.0
 ddgs>=5.0.0
 httpx>=0.24.0
 
-# HTML解析
+# ---- HTML Parsing ----
 beautifulsoup4>=4.12.0
 
-# 中文分词（可选，未安装时自动降级为正则分词）
+# ---- Text Processing ----
 jieba>=0.42.1
 
-# 配置管理
-python-dotenv>=1.0.0
-
-# 日志
+# ---- Logging ----
 loguru>=0.7.0
 
-# 数据处理
+# ---- Data Processing ----
 pandas>=2.0.0
 
-# LLM集成
-openai>=1.0.0
-
-# 数据验证
+# ---- Data Validation ----
 pydantic>=2.0.0
 
-# YAML配置解析（persona_manager依赖）
+# ---- YAML Config ----
 pyyaml>=6.0
 
-# 安全存储（secure_storage依赖）
-cryptography>=41.0.0
-
-# 导出系统依赖
+# ---- Export System (Document Generation) ----
 weasyprint>=62.0
 openpyxl>=3.1.0
 python-docx>=1.1.0
 Pillow>=10.0.0
 Jinja2>=3.1.0
 markdown>=3.5.0
+
+# ---- Optional: WeChat Integration ----
+# xmltodict>=0.13.0         # WeChat XML parsing (uncomment if needed)
+
+# ---- Optional: Web Search Enhancements ----
+# beautifulsoup4>=4.12.0    # Already included in core above
+# requests>=2.31.0          # Already included in core above
+
+# ---- Dev Only (NOT needed for users) ----
+# See requirements-dev.txt for:
+#   pytest>=7.4.0
+#   pytest-asyncio>=0.23.0
+#   coverage>=7.3.0

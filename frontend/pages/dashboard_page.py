@@ -22,6 +22,36 @@ from opc_manager.dashboard_config import (
 
 logger = logging.getLogger(__name__)
 
+_DEMO_DATA = {
+    "income_months": ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05"],
+    "income_values": [28000, 32000, 29500, 38000, 45000],
+    "clients": [
+        {"name": "字节跳动", "contact": "张总", "projects": 3, "revenue": 85000, "health": 95, "last_contact": "2天前"},
+        {"name": "美团点评", "contact": "李经理", "projects": 2, "revenue": 52000, "health": 88, "last_contact": "5天前"},
+        {"name": "京东零售", "contact": "王总监", "projects": 1, "revenue": 35000, "health": 72, "last_contact": "1周前"},
+        {"name": "滴滴出行", "contact": "陈PM", "projects": 2, "revenue": 48000, "health": 82, "last_contact": "3天前"},
+        {"name": "网易游戏", "contact": "刘制作人", "projects": 1, "revenue": 28000, "health": 90, "last_contact": "4天前"},
+    ],
+    "tasks": {"total": 28, "done": 22, "in_progress": 4, "blocked": 2},
+    "finance": {"income": 172500, "expense": 28600, "tax_estimate": 25875, "net_profit": 118025},
+    "timeline": [
+        {"time": "09:15", "icon": "📄", "text": "完成《Q1咨询项目总结报告》", "tag": "成果物", "color": "green"},
+        {"time": "10:30", "icon": "💰", "text": "记录收入 ¥35,000（字节跳动-Phase2）", "tag": "财务", "color": "blue"},
+        {"time": "13:00", "icon": "🤝", "text": "客户会议：美团点评 Q2规划讨论", "tag": "会议", "color": "purple"},
+        {"time": "15:30", "icon": "📊", "text": "Dashboard 数据分析完成", "tag": "系统", "color": "gray"},
+        {"time": "16:45", "icon": "📝", "text": "提交《数字化转型方案》初稿", "tag": "提案", "color": "orange"},
+        {"time": "17:30", "icon": "✅", "text": "完成日报自动生成", "tag": "任务", "color": "green"},
+    ],
+    "skills": [
+        {"name": "CRM 客户管理", "usage": 56, "trend": "↑ 12%"},
+        {"name": "智能报告生成", "usage": 43, "trend": "↑ 8%"},
+        {"name": "财务记账", "usage": 38, "trend": "↑ 15%"},
+        {"name": "邮件助手", "usage": 27, "trend": "-3%"},
+        {"name": "日历管理", "usage": 21, "trend": "↑ 5%"},
+        {"name": "竞品分析", "usage": 18, "trend": "↑ 22%"},
+    ]
+}
+
 ALL_PANELS_META = [
     ("income_trend", "📈 收入趋势图", "显示最近30天/按月的收入变化趋势"),
     ("client_health", "👥 客户健康度", "客户活跃度和互动频率分析"),
@@ -44,7 +74,32 @@ DENSITY_LABELS = {
 }
 
 
-def _render_dashboard_page():
+def _is_demo_mode() -> bool:
+    data = _get_dashboard_data()
+    trend = data.get("finance", {}).get("trend", [])
+    customers = data.get("crm", {}).get("customers", [])
+    tasks_list = data.get("tasks", {}).get("list", [])
+    logs = data.get("audit_log", [])
+    return len(trend) == 0 and len(customers) == 0 and len(tasks_list) == 0 and len(logs) == 0
+
+
+def _render_demo_badge():
+    st.markdown("""
+    <div style="
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        opacity: 0.85;
+        margin-bottom: 8px;
+    ">🎮 Demo Data</div>
+    """, unsafe_allow_html=True)
+
+
+def _render_dashboard_page(demo_mode: bool = False):
     """Render modular Dashboard with template-based layout system.
 
     Features:
@@ -52,8 +107,14 @@ def _render_dashboard_page():
     - 3 density levels: Compact, Standard, Detailed
     - Per-panel enable/disable toggles
     - Persistence via DashboardConfig JSON file
+    - Demo mode with sample data when no API key configured
     """
     st.markdown("## 📈 数据仪表盘")
+
+    if demo_mode:
+        st.info("📊 当前显示**演示数据** — 配置 API Key 后将显示真实数据")
+        _render_demo_dashboard()
+        return
 
     config = _load_or_init_config()
 
@@ -266,12 +327,102 @@ def _get_dashboard_data():
     return data
 
 
+def _render_demo_dashboard():
+    """Render dashboard with sample/demo data for no-LLM mode."""
+    from frontend.app import _get_demo_dashboard_data
+
+    demo = _get_demo_dashboard_data()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### 📈 收入趋势（演示）")
+        trend = demo["income_trend"]
+        st.metric("累计收入", f"¥{trend['total']:,}", delta=trend['growth'])
+        labels = trend["labels"]
+        values = trend["values"]
+        import pandas as pd
+        df = pd.DataFrame({"月份": labels, "收入": values})
+        st.line_chart(df.set_index("月份"), use_container_width=True)
+
+    with col2:
+        st.markdown("### 💰 财务汇总（演示）")
+        fs = demo["financial_summary"]
+        fin_col1, fin_col2, fin_col3 = st.columns(3)
+        with fin_col1:
+            st.metric("收入", f"¥{fs['income']:,}")
+        with fin_col2:
+            st.metric("支出", f"¥{fs['expenses']:,}", delta_color="inverse")
+        with fin_col3:
+            st.metric("利润", f"¥{fs['profit']:,}")
+
+    st.divider()
+
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown("### 👥 客户健康度（演示）")
+        for client in demo["client_health"]:
+            arrow = "📈" if client["trend"] == "up" else "➡️"
+            st.markdown(f"**{client['name']}** — {arrow} 评分 {client['score']} | 项目 {client['projects']}")
+
+    with col4:
+        st.markdown("### ✅ 任务完成率（演示）")
+        tc = demo["task_completion"]
+        st.metric("完成率", tc["rate"], f"{tc['done']}/{tc['total']}")
+        done_pct = int(tc["rate"].replace("%", "")) / 100
+        st.progress(done_pct)
+
+    st.divider()
+
+    col5, col6 = st.columns(2)
+    with col5:
+        st.markdown("### 📅 近期活动时间线（演示）")
+        for event in demo["timeline"]:
+            type_emoji = {
+                "deliverable": "📄",
+                "finance": "💰",
+                "meeting": "🤝",
+                "proposal": "📝",
+            }.get(event["type"], "📌")
+            st.markdown(f"{type_emoji} **{event['time']}** — {event['event']}")
+
+    with col6:
+        st.markdown("### ⏱️ 技能使用统计（演示）")
+        for skill in demo["skill_usage"]:
+            st.markdown(f"**{skill['name']}** — 调用 {skill['count']} 次")
+
+
 def _render_income_trend_panel(density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False):
     """Panel 1: 收入趋势图 - Income trend chart."""
     st.markdown("### 📈 收入趋势图")
 
     data = _get_dashboard_data()
     trend = data.get("finance", {}).get("trend", [])
+
+    if _is_demo_mode():
+        _render_demo_badge()
+        import pandas as pd
+        demo_months = _DEMO_DATA["income_months"]
+        demo_values = _DEMO_DATA["income_values"]
+        expense_vals = [int(v * (0.12 + (i * 0.02))) for i, v in enumerate(demo_values)]
+        profit_vals = [demo_values[i] - expense_vals[i] for i in range(len(demo_values))]
+        chart_data = pd.DataFrame({
+            "月份": demo_months,
+            "收入": demo_values,
+            "支出": expense_vals,
+            "利润": profit_vals,
+        })
+        st.line_chart(chart_data.set_index("月份"), use_container_width=True)
+        latest_profit = profit_vals[-1]
+        prev_profit = profit_vals[-2]
+        change_pct = ((latest_profit - prev_profit) / abs(prev_profit) * 100) if prev_profit != 0 else 0
+        delta_color = "normal" if change_pct >= 0 else "inverse"
+        st.metric(
+            "本月利润（Demo）",
+            f"¥{latest_profit:,.0f}",
+            f"{change_pct:+.1f}%" if change_pct != 0 else None,
+            delta_color=delta_color,
+        )
+        return
 
     if not trend:
         st.info("💡 暂无财务数据。开始记录收入后这里会展示趋势图")
@@ -319,6 +470,34 @@ def _render_client_health_panel(density: DensityLevel = DensityLevel.STANDARD, f
     customers = data.get("crm", {}).get("customers", [])
     stats = data.get("crm", {}).get("stats", {})
     silent = data.get("crm", {}).get("silent", {})
+
+    if _is_demo_mode():
+        _render_demo_badge()
+        demo_clients = _DEMO_DATA["clients"]
+        col_total, col_active, col_silent = st.columns(3)
+        with col_total:
+            st.metric("客户总数（Demo）", len(demo_clients))
+        with col_active:
+            active_count = sum(1 for c in demo_clients if c.get("health", 0) >= 80)
+            st.metric("活跃客户", active_count)
+        with col_silent:
+            silent_count = sum(1 for c in demo_clients if c.get("health", 0) < 75)
+            st.metric("需关注", silent_count, delta_color="inverse")
+        import pandas as pd
+        client_data = []
+        for c in demo_clients:
+            health_emoji = "🟢" if c.get("health", 0) >= 85 else ("🟡" if c.get("health", 0) >= 70 else "🔴")
+            client_data.append({
+                "客户名称": c["name"],
+                "联系人": c["contact"],
+                "项目数": c["projects"],
+                "累计收入": f"¥{c['revenue']:,}",
+                "健康度": f"{health_emoji} {c['health']}%",
+                "最近联系": c["last_contact"],
+            })
+        df = pd.DataFrame(client_data)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        return
 
     total = stats.get("total", 0)
     active = stats.get("active", 0)
@@ -394,6 +573,35 @@ def _render_task_completion_panel(density: DensityLevel = DensityLevel.STANDARD,
     tasks = data.get("tasks", {}).get("list", [])
     by_status = data.get("tasks", {}).get("by_status", {})
 
+    if _is_demo_mode():
+        _render_demo_badge()
+        demo_tasks = _DEMO_DATA["tasks"]
+        total = demo_tasks["total"]
+        done = demo_tasks["done"]
+        in_progress = demo_tasks["in_progress"]
+        blocked = demo_tasks["blocked"]
+        completion_rate = (done / total * 100) if total > 0 else 0
+        emoji = "🟢" if completion_rate >= 70 else ("🟡" if completion_rate >= 40 else "🔴")
+        if density == DensityLevel.COMPACT:
+            st.markdown(f"**{emoji} 完成率 {completion_rate:.1f}%（Demo）** ({done}/{total})")
+            return
+        col_total, col_done, col_rate = st.columns(3)
+        with col_total:
+            st.metric("总任务（Demo）", total)
+        with col_done:
+            st.metric("已完成", done)
+        with col_rate:
+            st.metric("完成率", f"{completion_rate:.1f}%")
+        st.progress(completion_rate / 100, text=f"完成率 {completion_rate:.1f}% (Demo)")
+        import pandas as pd
+        status_df = pd.DataFrame([
+            {"状态": "✅ 已完成", "数量": done, "占比": f"{done/total*100:.1f}%", "color": "green"},
+            {"状态": "🔄 进行中", "数量": in_progress, "占比": f"{in_progress/total*100:.1f}%", "color": "orange"},
+            {"状态": "🚫 已阻塞", "数量": blocked, "占比": f"{blocked/total*100:.1f}%", "color": "red"},
+        ])
+        st.dataframe(status_df, use_container_width=True, hide_index=True)
+        return
+
     total = len(tasks)
     completed = by_status.get("completed", 0)
     in_progress = by_status.get("in_progress", 0)
@@ -438,6 +646,33 @@ def _render_financial_summary_panel(density: DensityLevel = DensityLevel.STANDAR
     monthly = data.get("finance", {}).get("monthly", {})
     trend = data.get("finance", {}).get("trend", [])
 
+    if _is_demo_mode():
+        _render_demo_badge()
+        demo_finance = _DEMO_DATA["finance"]
+        income = demo_finance["income"]
+        expense = demo_finance["expense"]
+        net_profit = demo_finance["net_profit"]
+        tax_est = demo_finance["tax_estimate"]
+        if density == DensityLevel.COMPACT:
+            st.markdown(f"**收入 ¥{income:,} | 支出 ¥{expense:,} | 净利润 ¥{net_profit:,}（Demo）**")
+            return
+        col_inc, col_exp, col_profit = st.columns(3)
+        with col_inc:
+            st.metric("累计收入（Demo）", f"¥{income:,}")
+        with col_exp:
+            st.metric("总支出（Demo）", f"¥{expense:,}", delta_color="inverse")
+        with col_profit:
+            st.metric("净利润（Demo）", f"¥{net_profit:,}", delta=f"¥+{(net_profit - income * 0.75):,}")
+        if density != DensityLevel.COMPACT:
+            st.caption(f"💡 预估税费: ¥{tax_est:,} | 利润率: {(net_profit/income*100):.1f}%")
+            import pandas as pd
+            comparison = pd.DataFrame({
+                "类别": ["收入", "支出", "净利润"],
+                "金额": [income, expense, net_profit],
+            })
+            st.bar_chart(comparison.set_index("类别"), use_container_width=True)
+        return
+
     income = monthly.get("income", 0)
     expense = monthly.get("expense", 0)
     profit = monthly.get("profit", 0)
@@ -477,6 +712,25 @@ def _render_activity_timeline_panel(density: DensityLevel = DensityLevel.STANDAR
 
     data = _get_dashboard_data()
     logs = data.get("audit_log", [])
+
+    if _is_demo_mode():
+        _render_demo_badge()
+        demo_events = _DEMO_DATA["timeline"]
+        display_limit = len(demo_events)
+        for idx, event in enumerate(demo_events):
+            tag_color_map = {
+                "green": "🟢", "blue": "🔵", "purple": "🟣",
+                "gray": "⚪", "orange": "🟠", "red": "🔴",
+            }
+            color_dot = tag_color_map.get(event.get("color", "gray"), "⚪")
+            if density == DensityLevel.COMPACT:
+                st.markdown(f"{event['icon']} `{event['time']}` — **{event['text'][:30]}** `[{event['tag']}]`")
+            else:
+                st.markdown(
+                    f"**{color_dot} {event['time']}** `{event['tag']}`  "
+                    f"{event['text']}"
+                )
+        return
 
     if not logs:
         st.info("💡 暂无操作记录。执行任务后日志会自动记录在这里")
@@ -529,6 +783,36 @@ def _render_skill_usage_panel(density: DensityLevel = DensityLevel.STANDARD, ful
 
     data = _get_dashboard_data()
     logs = data.get("audit_log", [])
+
+    if _is_demo_mode():
+        _render_demo_badge()
+        demo_skills = _DEMO_DATA["skills"]
+        total_calls = sum(s["usage"] for s in demo_skills)
+        if density == DensityLevel.COMPACT:
+            top_skill = max(demo_skills, key=lambda x: x["usage"])
+            st.markdown(f"**总调用 {total_calls}次（Demo）| 最常用: {top_skill['name']} ({top_skill['usage']/total_calls*100:.0f}%)**")
+            return
+        st.metric("总调用次数（Demo）", total_calls)
+        import pandas as pd
+        skill_data = []
+        for sk in demo_skills:
+            pct = sk["usage"] / total_calls * 100 if total_calls > 0 else 0
+            trend_emoji = "📈" if "↑" in sk["trend"] else ("📉" if "↓" in sk["trend"] else "➡️")
+            skill_data.append({
+                "技能": sk["name"],
+                "调用次数": sk["usage"],
+                "占比": f"{pct:.1f}%",
+                "趋势": f"{trend_emoji} {sk['trend']}",
+            })
+        df = pd.DataFrame(skill_data)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        if density == DensityLevel.DETAILED:
+            chart_df = pd.DataFrame({
+                "技能": [s["name"] for s in demo_skills],
+                "调用次数": [s["usage"] for s in demo_skills],
+            })
+            st.bar_chart(chart_df.set_index("技能"), use_container_width=True, horizontal=True)
+        return
 
     if not logs:
         st.info("💡 暂无技能使用数据。使用各功能后统计会自动更新")

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  opc-agents:
+    build: .
+    container_name: opc-agents-dev
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./:/app           # Mount source code for live editing
+      - opc-data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - OPC_LOCALE=zh_CN
+      - STREAMLIT_SERVER_RUN_ON_SAVE=true  # Auto-reload on file change
+    restart: unless-stopped
+
+volumes:
+  opc-data:

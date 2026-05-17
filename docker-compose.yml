@@ -1,52 +1,33 @@
+version: '3.8'
+
 services:
   opc-agents:
     build: .
+    container_name: opc-agents
     ports:
       - "8501:8501"
     volumes:
-      - ./data:/app/data
-      - ./deliverables:/app/deliverables
-      - ./plugins:/app/plugins
-    env_file:
-      - .env
+      # Persist data across container restarts
+      - opc-data:/app/data
+      # Config file (create from example if not exists)
+      - ./.env:/app/.env
     environment:
-      - OPC_WORKSPACE=/app
+      - OPC_LOCALE=zh_CN
+      - OPC_ENCRYPTION_KEY=${OPC_ENCRYPTION_KEY:-auto-generate}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 15s
+    networks:
+      - opc-network
 
-  skill-marketplace:
-    build: .
-    command: ["uvicorn", "opc_manager.skill_marketplace_api:app", "--host", "0.0.0.0", "--port", "8900"]
-    ports:
-      - "8900:8900"
-    volumes:
-      - ./data:/app/data
-      - ./plugins:/app/plugins
-    env_file:
-      - .env
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8900/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+volumes:
+  opc-data:
+    driver: local
 
-  mcp-sse:
-    build: .
-    command: ["uvicorn", "opc_manager.mcp_transport:create_sse_app", "--host", "0.0.0.0", "--port", "8901"]
-    ports:
-      - "8901:8901"
-    volumes:
-      - ./data:/app/data
-    env_file:
-      - .env
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8901/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+networks:
+  opc-network:
+    driver: bridge

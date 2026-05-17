@@ -111,6 +111,46 @@ def _has_api_key():
     )
 
 
+def _is_demo_mode():
+    """判断是否处于演示模式（无API Key配置）"""
+    return not _has_api_key()
+
+
+def _get_demo_dashboard_data():
+    """Return sample dashboard data for demo/no-LLM mode."""
+    return {
+        "income_trend": {
+            "labels": ["1月", "2月", "3月", "4月", "5月"],
+            "values": [12000, 15000, 13500, 18000, 22000],
+            "total": 80500,
+            "growth": "+63%"
+        },
+        "client_health": [
+            {"name": "张三科技", "score": 92, "trend": "up", "projects": 3},
+            {"name": "李四咨询", "score": 78, "trend": "stable", "projects": 2},
+            {"name": "王五集团", "score": 85, "trend": "up", "projects": 1},
+        ],
+        "task_completion": {"total": 24, "done": 18, "rate": "75%"},
+        "financial_summary": {"income": 80500, "expenses": 12500, "profit": 68000},
+        "timeline": [
+            {"time": "09:00", "event": "完成周报", "type": "deliverable"},
+            {"time": "11:00", "event": "收入记录 ¥5000", "type": "finance"},
+            {"time": "14:00", "event": "客户会议", "type": "meeting"},
+            {"time": "16:00", "event": "方案提交", "type": "proposal"},
+        ],
+        "skill_usage": [
+            {"name": "CRM技能", "count": 45},
+            {"name": "财务技能", "count": 32},
+            {"name": "报告生成", "count": 28},
+        ]
+    }
+
+
+def _show_success_toast(message: str):
+    """Display a visible success confirmation after user actions."""
+    st.success(f"✅ {message}")
+
+
 # Import shared components and page modules
 from frontend.components.shared import (
     _get_export_bytes, _get_mime_type, _render_batch_export_section,
@@ -119,6 +159,8 @@ from frontend.components.shared import (
     _render_export_buttons, _get_undo_manager, _cached_list_undoable,
     _render_undo_panel, _render_theme_selector, _render_language_selector,
     _render_shortcuts_help, _get_current_session_id, _render_quick_undo_button,
+    show_success, show_error, show_info,
+    _maybe_show_shortcut_hints, _render_floating_help_button,
 )
 
 from frontend.pages.settings_page import (
@@ -558,6 +600,23 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+DEMO_MODE = _is_demo_mode()
+if DEMO_MODE:
+    st.markdown("""
+    <div style="
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 16px;
+        font-size: 15px;
+    ">
+        🎮 <strong>演示模式</strong> — 配置 AI Key 后解锁完整功能 &nbsp;|&nbsp;
+        前往 ⚙️ 设置 → LLM配置 填入 API Key 开始使用
+    </div>
+    """, unsafe_allow_html=True)
+
 if "initialized" not in st.session_state:
     """首次访问初始化所有session_state变量"""
     st.session_state.initialized = True
@@ -796,6 +855,33 @@ with st.sidebar:
 
 if page == "💬 对话":
     """主对话页面 — 用户交互的核心界面"""
+    _maybe_show_shortcut_hints()
+    if DEMO_MODE:
+        st.markdown("## 🎮 演示模式")
+        st.info("""
+**当前为演示模式** — 以下功能在演示模式下受限：
+
+| 功能 | 状态 |
+|------|------|
+| 📈 Dashboard 查看 | ✅ 可用（示例数据） |
+| ⚙️ 设置页面 | ✅ 可用（可配置 API Key） |
+| 🏪 技能市场浏览 | ✅ 可用 |
+| 💬 AI 对话 / 任务执行 | 🔒 需要配置 API Key |
+
+👉 **前往 ⚙️ 设置 → LLM配置 填入 API Key 即可解锁完整功能**
+""")
+        st.markdown("### 📊 演示数据预览")
+        demo = _get_demo_dashboard_data()
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("本月收入", f"¥{demo['financial_summary']['income']:,}")
+        with col2:
+            st.metric("任务完成率", demo['task_completion']['rate'])
+        with col3:
+            st.metric("收入增长", demo['income_trend']['growth'])
+        st.markdown("---")
+        st.caption("💡 配置 API Key 后，所有 AI 功能将立即解锁。请前往「⚙️ 设置」页面进行配置。")
+        st.stop()
     if len(st.session_state.messages) > 0:
         st.caption(
             "💡 对话历史已自动保存 · 成果物文件可在「📁 成果物」标签页查看和下载"
@@ -1108,6 +1194,7 @@ if page == "💬 对话":
 
                     if result_content:
                         st.markdown(result_content)
+                        show_success(f"成果物已创建: {os.path.basename(result_filepath) if result_filepath else '任务完成'}")
 
                         _render_export_buttons(
                             result_content,
@@ -1169,6 +1256,7 @@ if page == "💬 对话":
                                 st.success(
                                     f"✅ 已生成: {os.path.basename(result_filepath)} ({size_kb}KB)"
                                 )
+                                show_success(f"成果物已生成: {os.path.basename(result_filepath)}")
 
                         msg_record = {
                             "role": "assistant",
@@ -1218,6 +1306,7 @@ if page == "💬 对话":
                     safe_error = html.escape(error_msg[:300])
 
                     st.error(friendly_title)
+                    show_error(f"操作失败: {friendly_title}")
                     st.caption(f"关于「{prompt_short}」")
                     st.info(friendly_hint)
                     with st.expander("技术详情"):
@@ -1332,7 +1421,7 @@ elif page == "🏪 技能市场":
 # === Dashboard Page ===
 
 elif page == "📈 Dashboard":
-    _render_dashboard_page()
+    _render_dashboard_page(demo_mode=DEMO_MODE)
 
 
 # === Settings Page ===

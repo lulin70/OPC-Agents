@@ -143,7 +143,7 @@ def _render_llm_settings(settings):
                 "temperature": temperature,
             }
             if settings.update_llm(**new_config):
-                st.success("✅ LLM配置已保存")
+                st.success("✅ LLM配置已保存并生效")
                 st.rerun()
             else:
                 st.error("❌ 保存失败，请重试")
@@ -251,7 +251,7 @@ def _render_smtp_settings(settings):
                 "from_email": from_email,
             }
             if settings.update_smtp(**new_config):
-                st.success("✅ SMTP配置已保存")
+                st.success("✅ SMTP配置已保存并生效")
                 st.rerun()
             else:
                 st.error("❌ 保存失败，请重试")
@@ -408,7 +408,7 @@ def _render_profile_settings(settings):
                 "language": language,
             }
             if settings.update_profile(**new_profile):
-                st.success("✅ 个人信息已保存")
+                st.success("✅ 个人信息已保存并生效")
                 st.rerun()
             else:
                 st.error("❌ 保存失败，请重试")
@@ -463,7 +463,7 @@ def _render_create_backup_tab():
                         include_attachments=include_attachments
                     )
 
-                    st.success(f"✅ 备份创建成功！")
+                    st.success(f"✅ 备份创建成功！文件: {backup_path.name}")
                     st.json({
                         "文件名": backup_path.name,
                         "大小": f"{manifest.total_size_bytes / (1024*1024):.2f} MB",
@@ -648,7 +648,7 @@ def _render_restore_data_tab():
                         result = manager.restore_backup(str(temp_path), confirm=True)
 
                         if result["success"]:
-                            st.success(f"✅ {result.get('message', '恢复成功')}")
+                            st.success(f"✅ 数据恢复成功！已恢复 {result.get('restored_files', 0)} 个文件")
                             st.json({
                                 "恢复文件数": result.get("restored_files", 0),
                             })
