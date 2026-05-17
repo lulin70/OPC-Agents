@@ -24,6 +24,7 @@ import secrets
 import threading
 import time
 import logging
+import base64
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable, List
 from dataclasses import dataclass, field
@@ -171,15 +172,87 @@ class SettingsManager:
             self._smtp = SMTPSettings()
             self._security = SecuritySettings()
             self._profile = ProfileSettings()
-            self._load_from_disk()
+            self._fernet = None
             self._ensure_encryption_key()
+            self._init_fernet()
+            self._load_from_disk()
             self._initialized = True
+
+    def _init_fernet(self) -> None:
+        """Initialize Fernet cipher using OPC_ENCRYPTION_KEY.
+
+        Uses the encryption key from security settings or environment.
+        If key is unavailable, encryption is disabled (plaintext mode).
+        """
+        try:
+            from cryptography.fernet import Fernet
+
+            key = self._security.encryption_key or os.environ.get("OPC_ENCRYPTION_KEY", "")
+            if not key:
+                logger.warning("[SettingsManager] No encryption key available, sensitive fields stored as plaintext")
+                return
+
+            key_bytes = key.encode()[:32].ljust(32, b'\0')
+            fernet_key = base64.urlsafe_b64encode(key_bytes)
+            self._fernet = Fernet(fernet_key)
+            logger.debug("[SettingsManager] Fernet cipher initialized successfully")
+
+        except ImportError:
+            logger.warning(
+                "[SettingsManager] cryptography package not installed. "
+                "Install with: pip install cryptography. "
+                "Sensitive fields will be stored as plaintext."
+            )
+            self._fernet = None
+        except Exception as e:
+            logger.error("[SettingsManager] Failed to initialize Fernet: %s", e)
+            self._fernet = None
+
+    def _encrypt_value(self, plaintext: str) -> str:
+        """Encrypt a sensitive value using Fernet.
+
+        Args:
+            plaintext: Plain text value to encrypt (e.g., API key, password)
+
+        Returns:
+            Encrypted string (base64-encoded), or original plaintext if encryption unavailable
+        """
+        if not plaintext or not self._fernet:
+            return plaintext
+
+        try:
+            encrypted = self._fernet.encrypt(plaintext.encode('utf-8'))
+            return encrypted.decode('utf-8')
+        except Exception as e:
+            logger.error("[SettingsManager] Failed to encrypt value: %s", e)
+            return plaintext
+
+    def _decrypt_value(self, ciphertext: str) -> Optional[str]:
+        """Decrypt a previously encrypted value.
+
+        Args:
+            ciphertext: Encrypted string (base64-encoded Fernet token)
+
+        Returns:
+            Decrypted plain text, None if decryption fails (corrupt/invalid token)
+        """
+        if not ciphertext or not self._fernet:
+            return ciphertext if ciphertext else None
+
+        try:
+            decrypted = self._fernet.decrypt(ciphertext.encode('utf-8'))
+            return decrypted.decode('utf-8')
+        except Exception:
+            logger.debug("[SettingsManager] Decryption failed, treating as potential plaintext")
+            return None
 
     def _load_from_disk(self) -> None:
         """Load settings from JSON file if exists.
 
         Silently handles missing/corrupt files by using defaults.
         Each category is loaded independently to prevent cascading failures.
+        Sensitive fields (api_key, password) are decrypted after loading.
+        Auto-migration: Detects plaintext keys and re-encrypts them.
         """
         if not self._settings_file.exists():
             logger.debug("Settings file not found at %s, using defaults", self._settings_file)
@@ -204,6 +277,9 @@ class SettingsManager:
                             continue
                         setattr(obj, k, v)
 
+            self._decrypt_sensitive_fields()
+            self._migrate_plaintext_to_encrypted()
+
             logger.info("Settings loaded from %s", self._settings_file)
 
         except json.JSONDecodeError as e:
@@ -211,18 +287,149 @@ class SettingsManager:
         except Exception as e:
             logger.error("Failed to load settings: %s", e)
 
+    def _decrypt_sensitive_fields(self) -> None:
+        """Decrypt sensitive fields after loading from disk.
+
+        Attempts to decrypt api_key and password fields.
+        - If value looks like valid Fernet token: try to decrypt
+        - If value looks like base64 (potentially corrupt): try decrypt, fail → empty string
+        - If value looks like plaintext: keep as-is (migration will handle)
+        - If Fernet unavailable: keep original value
+        """
+        try:
+            if self._llm.api_key:
+                if self._fernet:
+                    if self._looks_like_encrypted(self._llm.api_key) or \
+                       self._looks_like_base64(self._llm.api_key):
+                        decrypted = self._decrypt_value(self._llm.api_key)
+                        if decrypted is not None:
+                            self._llm.api_key = decrypted
+                        else:
+                            logger.warning(
+                                "[SettingsManager] Failed to decrypt LLM api_key, "
+                                "setting to empty string"
+                            )
+                            self._llm.api_key = ""
+
+            if self._smtp.password:
+                if self._fernet:
+                    if self._looks_like_encrypted(self._smtp.password) or \
+                       self._looks_like_base64(self._smtp.password):
+                        decrypted = self._decrypt_value(self._smtp.password)
+                        if decrypted is not None:
+                            self._smtp.password = decrypted
+                        else:
+                            logger.warning(
+                                "[SettingsManager] Failed to decrypt SMTP password, "
+                                "setting to empty string"
+                            )
+                            self._smtp.password = ""
+
+        except Exception as e:
+            logger.error("[SettingsManager] Error decrypting sensitive fields: %s", e)
+
+    def _migrate_plaintext_to_encrypted(self) -> None:
+        """Auto-migrate plaintext sensitive fields to encrypted format.
+
+        After loading, checks if sensitive fields appear to be plaintext
+        (not valid Fernet tokens). If so, re-encrypts and saves to disk.
+        This ensures one-time migration from v0.1.x (plaintext) to v0.2.0+ (encrypted).
+
+        After migration, in-memory values are kept as plaintext for application use.
+        Only the on-disk representation is encrypted.
+        """
+        if not self._fernet:
+            return
+
+        migrated = False
+        llm_plaintext = None
+        smtp_plaintext = None
+
+        try:
+            if self._llm.api_key and not self._looks_like_encrypted(self._llm.api_key):
+                llm_plaintext = self._llm.api_key
+                self._llm.api_key = self._encrypt_value(llm_plaintext)
+                migrated = True
+                logger.info("[SettingsManager] Migrating LLM api_key to encrypted storage")
+
+            if self._smtp.password and not self._looks_like_encrypted(self._smtp.password):
+                smtp_plaintext = self._smtp.password
+                self._smtp.password = self._encrypt_value(smtp_plaintext)
+                migrated = True
+                logger.info("[SettingsManager] Migrating SMTP password to encrypted storage")
+
+            if migrated:
+                self._save_to_disk()
+
+            if llm_plaintext is not None:
+                self._llm.api_key = llm_plaintext
+            if smtp_plaintext is not None:
+                self._smtp.password = smtp_plaintext
+
+        except Exception as e:
+            logger.error("[SettingsManager] Failed to migrate plaintext keys: %s", e)
+
+    def _looks_like_encrypted(self, value: str) -> bool:
+        """Check if a value appears to be a Fernet-encrypted token.
+
+        Fernet tokens are base64-encoded and typically 44+ characters long
+        (for short plaintext inputs). This is a heuristic check.
+
+        Args:
+            value: String to check
+
+        Returns:
+            True if value looks like encrypted token, False otherwise
+        """
+        if not value or len(value) < 44:
+            return False
+
+        try:
+            decoded = base64.urlsafe_b64decode(value)
+            return len(decoded) >= 32
+        except Exception:
+            return False
+
+    def _looks_like_base64(self, value: str) -> bool:
+        """Check if a value appears to be base64-encoded (potential corrupt token).
+
+        Used to distinguish between obvious plaintext and potentially
+        corrupted encrypted tokens that should result in empty string.
+
+        Args:
+            value: String to check
+
+        Returns:
+            True if value looks like base64, False otherwise
+        """
+        if not value or len(value) < 20:
+            return False
+
+        try:
+            decoded = base64.urlsafe_b64decode(value)
+            return len(decoded) >= 16
+        except Exception:
+            return False
+
     def _save_to_disk(self) -> None:
         """Persist current settings to JSON file with atomic write.
 
         Uses write-to-temp + rename pattern to prevent corruption
         if process crashes during write.
+        Sensitive fields (api_key, password) are encrypted before saving.
         """
         try:
             self._settings_file.parent.mkdir(parents=True, exist_ok=True)
 
+            llm_dict = self._llm.__dict__.copy()
+            smtp_dict = self._smtp.__dict__.copy()
+
+            llm_dict['api_key'] = self._encrypt_value(llm_dict.get('api_key', ''))
+            smtp_dict['password'] = self._encrypt_value(smtp_dict.get('password', ''))
+
             data = {
-                "llm": self._llm.__dict__.copy(),
-                "smtp": self._smtp.__dict__.copy(),
+                "llm": llm_dict,
+                "smtp": smtp_dict,
                 "security": {
                     "auto_generated": self._security.auto_generated,
                 },

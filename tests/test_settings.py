@@ -917,5 +917,220 @@ class TestThreadSafety:
             assert isinstance(result["llm"]["max_tokens"], int)
 
 
+class TestEncryptedStorage:
+    """Test suite for API key encryption at rest (v0.2.0 security feature).
+
+    Validates that sensitive fields (api_key, password) are encrypted
+    before persisting to disk and correctly decrypted on load.
+    """
+
+    def test_api_key_encrypted_in_json_file(self, temp_settings_dir):
+        """Verify: API key is NOT stored as plaintext in settings.json
+        Scenario: Set LLM api_key and save to disk
+        Expected: JSON file contains encrypted token, not original plaintext
+        """
+        settings = get_settings()
+        plaintext_key = "sk-plaintext-test-key-12345"
+        settings.update_llm(api_key=plaintext_key)
+
+        settings_file = Path(SettingsManager.SETTINGS_FILE)
+        with open(settings_file, 'r') as f:
+            saved_data = json.load(f)
+
+        stored_value = saved_data['llm']['api_key']
+        assert plaintext_key not in stored_value, \
+            "API key should not be stored as plaintext in JSON file"
+        assert len(stored_value) > len(plaintext_key), \
+            "Encrypted value should be longer than plaintext"
+
+    def test_api_key_decrypted_on_load(self, temp_settings_dir):
+        """Verify: Encrypted API key is correctly decrypted when loaded
+        Scenario: Save encrypted API key, reload from disk
+        Expected: Reloaded instance returns original plaintext value
+        """
+        settings = get_settings()
+        plaintext_key = "sk-decrypt-test-key-67890"
+        settings.update_llm(api_key=plaintext_key)
+
+        SettingsManager._instance = None
+        reloaded = get_settings()
+
+        assert reloaded.llm.api_key == plaintext_key, \
+            f"Decrypted key should match original (got '{reloaded.llm.api_key}')"
+
+    def test_smtp_password_encrypted_in_json(self, temp_settings_dir):
+        """Verify: SMTP password is encrypted in JSON file
+        Scenario: Set SMTP password and save
+        Expected: JSON contains encrypted token, not plaintext password
+        """
+        settings = get_settings()
+        plaintext_pass = "my-secret-smtp-password"
+        settings.update_smtp(password=plaintext_pass)
+
+        settings_file = Path(SettingsManager.SETTINGS_FILE)
+        with open(settings_file, 'r') as f:
+            saved_data = json.load(f)
+
+        stored_value = saved_data['smtp']['password']
+        assert plaintext_pass not in stored_value, \
+            "Password should not be stored as plaintext in JSON file"
+
+    def test_smtp_password_decrypted_on_load(self, temp_settings_dir):
+        """Verify: SMTP password correctly decrypted on load
+        Scenario: Save encrypted password, reload from disk
+        Expected: Reloaded instance returns original password
+        """
+        settings = get_settings()
+        plaintext_pass = "smtp-pass-decrypt-test"
+        settings.update_smtp(password=plaintext_pass)
+
+        SettingsManager._instance = None
+        reloaded = get_settings()
+
+        assert reloaded.smtp.password == plaintext_pass, \
+            f"Decrypted password should match original (got '{reloaded.smtp.password}')"
+
+    def test_auto_migration_plaintext_to_encrypted(self, temp_settings_dir):
+        """Verify: Plaintext keys auto-migrated to encrypted format on first load
+        Scenario: Manually write plaintext key to JSON, then load settings
+        Expected: Key migrated to encrypted format, still accessible via property
+        """
+        plaintext_key = "sk-migration-test-key"
+
+        settings_file = Path(SettingsManager.SETTINGS_FILE)
+        settings_file.parent.mkdir(parents=True, exist_ok=True)
+
+        manual_data = {
+            "llm": {
+                "provider": "openai",
+                "api_key": plaintext_key,
+                "base_url": "",
+                "model": "",
+                "max_tokens": 4000,
+                "temperature": 0.7
+            },
+            "smtp": {
+                "host": "",
+                "port": 587,
+                "username": "",
+                "password": "",
+                "tls": True,
+                "from_email": ""
+            },
+            "security": {
+                "auto_generated": True
+            },
+            "profile": {
+                "user_name": "",
+                "company_name": "",
+                "timezone": "Asia/Shanghai",
+                "language": "zh_CN"
+            }
+        }
+
+        with open(settings_file, 'w') as f:
+            json.dump(manual_data, f, indent=2)
+
+        SettingsManager._instance = None
+        settings = get_settings()
+
+        assert settings.llm.api_key == plaintext_key, \
+            "Migrated key should be accessible after decryption"
+
+        with open(settings_file, 'r') as f:
+            migrated_data = json.load(f)
+
+        stored_value = migrated_data['llm']['api_key']
+        assert plaintext_key not in stored_value, \
+            "After migration, key should be encrypted in JSON file"
+
+    def test_invalid_ciphertext_handled_gracefully(self, temp_settings_dir):
+        """Verify: Invalid/corrupt ciphertext returns empty string with warning
+        Scenario: Write invalid base64 string as api_key in JSON
+        Expected: Loaded value is empty string (not crash)
+        """
+        invalid_token = "this-is-not-a-valid-fernet-token!!!"
+
+        settings_file = Path(SettingsManager.SETTINGS_FILE)
+        settings_file.parent.mkdir(parents=True, exist_ok=True)
+
+        corrupt_data = {
+            "llm": {
+                "provider": "openai",
+                "api_key": invalid_token,
+                "base_url": "",
+                "model": "",
+                "max_tokens": 4000,
+                "temperature": 0.7
+            },
+            "smtp": {
+                "host": "",
+                "port": 587,
+                "username": "",
+                "password": "",
+                "tls": True,
+                "from_email": ""
+            },
+            "security": {
+                "auto_generated": True
+            },
+            "profile": {
+                "user_name": "",
+                "company_name": "",
+                "timezone": "Asia/Shanghai",
+                "language": "zh_CN"
+            }
+        }
+
+        with open(settings_file, 'w') as f:
+            json.dump(corrupt_data, f, indent=2)
+
+        SettingsManager._instance = None
+        settings = get_settings()
+
+        assert settings.llm.api_key == "", \
+            "Invalid ciphertext should result in empty string"
+
+    def test_all_sensitive_fields_encrypted(self, temp_settings_dir):
+        """Verify: Both LLM api_key and SMTP password are encrypted
+        Scenario: Set both sensitive fields, inspect JSON file
+        Expected: Neither field contains plaintext in JSON
+        """
+        settings = get_settings()
+        settings.update_llm(api_key="sk-llm-test-key")
+        settings.update_smtp(password="smtp-test-password")
+
+        settings_file = Path(SettingsManager.SETTINGS_FILE)
+        with open(settings_file, 'r') as f:
+            saved_data = json.load(f)
+
+        llm_stored = saved_data['llm']['api_key']
+        smtp_stored = saved_data['smtp']['password']
+
+        assert "sk-llm-test-key" not in llm_stored, \
+            "LLM api_key should be encrypted"
+        assert "smtp-test-password" not in smtp_stored, \
+            "SMTP password should be encrypted"
+
+    def test_empty_sensitive_fields_not_encrypted(self, temp_settings_dir):
+        """Verify: Empty sensitive fields remain empty (no encryption needed)
+        Scenario: Don't set any API keys, save settings
+        Expected: Empty strings in JSON file for sensitive fields (if file exists)
+        """
+        settings = get_settings()
+
+        settings_file = Path(SettingsManager.SETTINGS_FILE)
+        if not settings_file.exists():
+            return
+
+        with open(settings_file, 'r') as f:
+            saved_data = json.load(f)
+
+        assert saved_data['llm']['api_key'] == "", \
+            "Empty api_key should remain empty"
+        assert saved_data['smtp']['password'] == "", \
+            "Empty password should remain empty"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
