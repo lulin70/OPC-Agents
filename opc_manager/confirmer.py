@@ -2,6 +2,7 @@
 
 Provides risk assessment and user confirmation workflow for sensitive operations.
 Implements confidence-based auto-approval with trust score tracking.
+Supports both legacy IntentType strings and new UnifiedTaskCategory for backward compatibility.
 """
 
 from dataclasses import dataclass, field
@@ -29,12 +30,13 @@ class ConfirmationRequest:
 
     Attributes:
         session_id: Unique session identifier.
-        intent_type: Type of the intended operation.
+        intent_type: Type of the intended operation (legacy string format).
         goal: Description of the operation goal.
         confidence: AI confidence level (0.0-1.0).
         risk_level: Assessed risk level for this operation.
         extracted_params: Extracted parameters from user input.
         created_at: Timestamp when request was created.
+        unified_category: Optional UnifiedTaskCategory for new dual-engine system.
     """
     session_id: str
     intent_type: str
@@ -43,6 +45,7 @@ class ConfirmationRequest:
     risk_level: RiskLevel
     extracted_params: dict = field(default_factory=dict)
     created_at: float = field(default_factory=time.time)
+    unified_category: Optional[str] = None
 
 
 @dataclass
@@ -53,6 +56,8 @@ class ConfirmationResult:
     latency_ms: int = 0
 
 
+# Legacy risk level mapping using string-based IntentType keys
+# Maintained for backward compatibility with existing code
 RISK_LEVEL_MAP = {
     "SEARCH": RiskLevel.LOW,
     "DASHBOARD": RiskLevel.LOW,
@@ -67,6 +72,38 @@ RISK_LEVEL_MAP = {
     "PROPOSAL": RiskLevel.HIGH,
     "INVOICE": RiskLevel.HIGH,
 }
+
+# New unified risk level mapping using UnifiedTaskCategory
+# Provides more granular risk assessment with 13 categories vs legacy 11
+# Import lazily to avoid circular imports
+_UNIFIED_RISK_MAP = None
+
+
+def _get_unified_risk_map():
+    """Lazy initialization of unified risk map to avoid circular imports."""
+    global _UNIFIED_RISK_MAP
+    if _UNIFIED_RISK_MAP is None:
+        try:
+            from .unified_types import (
+                UnifiedTaskCategory,
+                get_risk_level as _get_unified_risk_level,
+            )
+            _UNIFIED_RISK_MAP = {
+                category: _get_unified_risk_level(category)
+                for category in UnifiedTaskCategory
+            }
+        except ImportError:
+            _UNIFIED_RISK_MAP = {}
+    return _UNIFIED_RISK_MAP
+
+
+def _get_all_unified_categories():
+    """Get list of UnifiedTaskCategory values for pattern matching."""
+    try:
+        from .unified_types import UnifiedTaskCategory
+        return list(UnifiedTaskCategory)
+    except ImportError:
+        return []
 
 THRESHOLDS = {
     RiskLevel.LOW: 0.70,
@@ -113,7 +150,48 @@ class Confirmer:
         return text[:max_length]
 
     def assess_risk(self, intent_type: str) -> RiskLevel:
-        return RISK_LEVEL_MAP.get(intent_type, RiskLevel.MEDIUM)
+        """Assess risk level for an operation based on intent type.
+
+        Supports both legacy string-based IntentType and new UnifiedTaskCategory.
+        Priority: UnifiedTaskCategory (if available) > Legacy RISK_LEVEL_MAP > Default MEDIUM
+
+        Args:
+            intent_type: Operation type identifier (legacy string or unified category string)
+
+        Returns:
+            RiskLevel enum value
+        """
+        # Try unified category first (new dual-engine system)
+        if intent_type.startswith("info_search") or \
+           intent_type.startswith("data_query") or \
+           intent_type.startswith("document_writing") or \
+           intent_type in [cat.value for cat in _get_all_unified_categories()]:
+            try:
+                from .unified_types import (
+                    UnifiedTaskCategory,
+                    get_risk_level as _get_unified_risk_level,
+                )
+                unified_cat = UnifiedTaskCategory(intent_type)
+                return _get_unified_risk_level(unified_cat)
+            except (ValueError, ImportError):
+                pass
+
+        # Fall back to legacy mapping
+        return RISK_LEVEL_MAP.get(intent_type.upper(), RiskLevel.MEDIUM)
+
+    def assess_risk_unified(self, unified_category) -> RiskLevel:
+        """Assess risk level using UnifiedTaskCategory directly.
+
+        This is the recommended method for new code using the dual-engine system.
+
+        Args:
+            unified_category: UnifiedTaskCategory enum value
+
+        Returns:
+            RiskLevel enum value
+        """
+        from .unified_types import get_risk_level as _get_unified_risk_level
+        return _get_unified_risk_level(unified_category)
 
     def get_effective_threshold(self, intent_type: str, session_id: str) -> float:
         base = THRESHOLDS.get(self.assess_risk(intent_type), 0.85)
@@ -124,7 +202,26 @@ class Confirmer:
     async def check_confirmation(self, session_id: str, intent_type: str,
                                   goal: str, confidence: float,
                                   params: dict = None,
-                                  confirm_callback: Callable[[ConfirmationRequest], Awaitable[ConfirmationResult]] = None) -> ConfirmationResult:
+                                  confirm_callback: Callable[[ConfirmationRequest], Awaitable[ConfirmationResult]] = None,
+                                  unified_category=None) -> ConfirmationResult:
+        """Check if operation requires user confirmation.
+
+        Args:
+            session_id: Unique session identifier.
+            intent_type: Type of operation (legacy string or UnifiedTaskCategory.value).
+            goal: Description of operation goal.
+            confidence: AI confidence level (0.0-1.0).
+            params: Extracted parameters from user input.
+            confirm_callback: Async callback for user confirmation UI.
+            unified_category: Optional UnifiedTaskCategory for new dual-engine system.
+
+        Returns:
+            ConfirmationResult indicating if operation is approved.
+
+        Raises:
+            ValueError: If required parameters are invalid.
+            TypeError: If confirm_callback is not callable.
+        """
         if not session_id or not isinstance(session_id, str):
             raise ValueError("session_id must be a non-empty string")
         if not intent_type or not isinstance(intent_type, str):
@@ -136,7 +233,11 @@ class Confirmer:
         if confirm_callback is not None and not callable(confirm_callback):
             raise TypeError("confirm_callback must be callable or None")
 
-        risk = self.assess_risk(intent_type)
+        # Use unified category for risk assessment if provided
+        if unified_category:
+            risk = self.assess_risk_unified(unified_category)
+        else:
+            risk = self.assess_risk(intent_type)
         threshold = self.get_effective_threshold(intent_type, session_id)
 
         if confidence >= threshold:
@@ -149,6 +250,7 @@ class Confirmer:
             confidence=confidence,
             risk_level=risk,
             extracted_params=params or {},
+            unified_category=unified_category.value if unified_category else None,
         )
 
         if confirm_callback:
@@ -164,7 +266,15 @@ class Confirmer:
         self._trust_scores[key] = min(self._trust_scores.get(key, 0) + 1, MAX_TRUST_SCORE)
 
     def get_confirmation_card(self, request: ConfirmationRequest) -> dict:
-        return {
+        """Generate confirmation card data for UI display.
+
+        Args:
+            request: ConfirmationRequest with operation details
+
+        Returns:
+            Dictionary with formatted confirmation card data
+        """
+        card = {
             "intent_type": request.intent_type,
             "goal": request.goal[:MAX_GOAL_DISPLAY_CHARS],
             "confidence": f"{request.confidence:.0%}",
@@ -172,3 +282,22 @@ class Confirmer:
             "params": {k: str(v)[:MAX_PARAM_VALUE_LENGTH] for k, v in request.extracted_params.items() if v},
             "threshold": f"{self.get_effective_threshold(request.intent_type, request.session_id):.0%}",
         }
+
+        # Add unified category info if available (new dual-engine system)
+        if request.unified_category:
+            try:
+                from .unified_types import (
+                    UnifiedTaskCategory,
+                    get_category_label,
+                    get_category_icon,
+                )
+                unified_cat = UnifiedTaskCategory(request.unified_category)
+                card["unified_category"] = {
+                    "value": request.unified_category,
+                    "label": get_category_label(unified_cat),
+                    "icon": get_category_icon(unified_cat),
+                }
+            except (ValueError, ImportError):
+                pass
+
+        return card

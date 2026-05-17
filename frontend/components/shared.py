@@ -481,6 +481,28 @@ def _event_type_label(event_type: str) -> str:
     return labels.get(event_type, event_type.replace("_", " ").title())
 
 
+def _get_phase_from_event(event_type: str) -> tuple:
+    """根据事件类型返回对应的图标和阶段名称
+
+    Args:
+        event_type: 事件类型字符串
+
+    Returns:
+        (icon, name) 元组
+    """
+    phase_mapping = {
+        "plan_start": ("🚀", "任务启动"),
+        "intent_detected": ("🔍", "意图识别"),
+        "step_start": ("⚡", "执行中"),
+        "step_progress": ("⚡", "执行中"),
+        "step_complete": ("✅", "步骤完成"),
+        "complete": ("✅", "任务完成"),
+        "error": ("❌", "执行错误"),
+    }
+    event_key = event_type.lower().replace("-", "_")
+    return phase_mapping.get(event_key, ("⚡", "执行中"))
+
+
 def _event_emoji(event_type: str) -> str:
     """获取事件类型对应的emoji"""
     emojis = {
@@ -501,13 +523,17 @@ def _event_emoji(event_type: str) -> str:
 
 
 def _render_progress_indicator(session_id: str):
-    """渲染基于SSE的实时进度指示器
+    """渲染基于SSE的实时进度指示器（增强版）
 
-    显示一个动画进度条，通过Server-Sent Events更新。
-    如果SSE不可用则回退到静态进度显示。
+    显示功能：
+    - 动画进度条，通过Server-Sent Events更新
+    - 阶段图标映射（PLAN_START→🚀, INTENT_DETECTED→🔍等）
+    - 阶段时间线可视化
+    - 错误状态特殊样式（红色高亮）
+    - 如果SSE不可用则回退到静态进度显示
     """
     try:
-        from opc_manager.progress_emitter import ProgressEmitter, get_progress_emitter
+        from opc_manager.progress_emitter import ProgressEmitter, get_progress_emitter, EventType
     except ImportError:
         return
 
@@ -525,21 +551,41 @@ def _render_progress_indicator(session_id: str):
     event_type = latest.get("event", latest.get("event_type", ""))
     progress_pct = latest.get("progress", latest.get("progress_pct", 0))
     message = latest.get("message", "")
+    is_error = event_type in ("error", "ERROR")
 
-    st.markdown(f"#### ⚡ 当前状态: {_event_type_label(event_type)}")
+    phase_icon = _get_phase_icon(event_type)
+    status_label = _event_type_label(event_type)
 
+    if is_error:
+        st.markdown(f"#### {phase_icon} 当前状态: :red[{status_label}]")
+    else:
+        st.markdown(f"#### {phase_icon} 当前状态: {status_label}")
+
+    bar_color = "error" if is_error else None
     bar = st.progress(min(progress_pct / 100.0, 1.0))
 
     cols_info = st.columns(3)
     with cols_info[0]:
-        st.metric("进度", f"{progress_pct}%")
+        if is_error:
+            st.metric("进度", f":red[{progress_pct}%]")
+        else:
+            st.metric("进度", f"{progress_pct}%")
     with cols_info[1]:
-        st.metric("阶段", event_type.replace("_", " ").title() if event_type else "-")
+        stage_name = event_type.replace("_", " ").title() if event_type else "-"
+        st.metric("阶段", stage_name)
     with cols_info[2]:
         display_msg = message[:50] + "..." if len(message) > 50 else (message or "-")
-        st.metric("消息", display_msg)
+        if is_error:
+            st.metric("消息", f":red[{display_msg}]")
+        else:
+            st.metric("消息", display_msg)
 
     if len(history) > 1:
+        st.markdown("---")
+        st.markdown("**📈 执行时间线**")
+
+        _render_timeline(history)
+
         with st.expander("📋 操作日志详情", expanded=False):
             for evt in reversed(history[-10:]):
                 etype = evt.get("event", evt.get("event_type", "UNKNOWN"))
@@ -547,6 +593,7 @@ def _render_progress_indicator(session_id: str):
                 emsg = evt.get("message", "")
                 etime = evt.get("timestamp", "")
                 emoji = _event_emoji(etype)
+                evt_is_error = etype in ("error", "ERROR")
 
                 if etime:
                     try:
@@ -556,7 +603,74 @@ def _render_progress_indicator(session_id: str):
                 else:
                     time_str = ""
 
-                st.markdown(f"{emoji} `{time_str}` **{etype}** ({epct}%) - {emsg}")
+                if evt_is_error:
+                    st.markdown(f"{emoji} `{time_str}` :red[**{etype}**] ({epct}%) - :red[{emsg}]")
+                else:
+                    st.markdown(f"{emoji} `{time_str}` **{etype}** ({epct}%) - {emsg}")
+
+
+def _get_phase_icon(event_type: str) -> str:
+    """获取阶段对应的增强图标
+
+    Args:
+        event_type: 事件类型字符串
+
+    Returns:
+        对应的emoji图标
+    """
+    icon_mapping = {
+        "plan_start": "🚀",
+        "intent_detected": "🔍",
+        "confirm_requested": "❓",
+        "confirmed": "✅",
+        "step_start": "⚡",
+        "step_progress": "⚡",
+        "step_complete": "✅",
+        "complete": "✅",
+        "error": "❌",
+        "cancelled": "⏹️",
+    }
+    event_key = event_type.lower().replace("-", "_")
+    return icon_mapping.get(event_key, "📌")
+
+
+def _render_timeline(history: list):
+    """渲染阶段时间线可视化
+
+    Args:
+        history: 事件历史列表
+    """
+    timeline_phases = [
+        ("plan_start", "🚀 计划启动"),
+        ("intent_detected", "🔍 意图识别"),
+        ("step_start", "⚡ 步骤执行"),
+        ("step_complete", "✅ 步骤完成"),
+        ("complete", "🎉 任务完成"),
+    ]
+
+    completed_phases = set()
+    current_phase_idx = 0
+
+    for i, evt in enumerate(history):
+        etype = evt.get("event", evt.get("event_type", "")).lower().replace("-", "_")
+        completed_phases.add(etype)
+        if etype in [p[0] for p in timeline_phases]:
+            phase_names = [p[0] for p in timeline_phases]
+            if etype in phase_names:
+                current_phase_idx = max(current_phase_idx, phase_names.index(etype))
+
+    cols = st.columns(len(timeline_phases))
+    for idx, (phase_key, phase_label) in enumerate(timeline_phases):
+        with cols[idx]:
+            is_completed = phase_key in completed_phases
+            is_current = (idx == current_phase_idx) and not is_completed
+
+            if is_completed:
+                st.success(phase_label)
+            elif is_current:
+                st.info(phase_label)
+            else:
+                st.caption(f"~~{phase_label}~~")
 
 
 def _auto_refresh_progress(session_id: str, interval_sec: int = 2):

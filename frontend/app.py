@@ -157,10 +157,17 @@ from frontend.components.shared import (
     _execute_batch_export, _render_single_export_buttons, _event_type_label,
     _event_emoji, _render_progress_indicator, _auto_refresh_progress,
     _render_export_buttons, _get_undo_manager, _cached_list_undoable,
-    _render_undo_panel, _render_theme_selector, _render_language_selector,
-    _render_shortcuts_help, _get_current_session_id, _render_quick_undo_button,
+    _render_theme_selector, _render_language_selector,
+    _render_shortcuts_help, _get_current_session_id,
     show_success, show_error, show_info,
     _maybe_show_shortcut_hints, _render_floating_help_button,
+)
+
+from frontend.components.undo_panel import (
+    render_undo_panel,
+    render_mini_undo_hint,
+    render_batch_undo,
+    check_has_active_undo_records,
 )
 
 from frontend.pages.settings_page import (
@@ -173,6 +180,17 @@ from frontend.pages.dashboard_page import (
 
 from frontend.pages.marketplace_page import (
     _render_skill_marketplace_page, _render_global_search, _execute_global_search,
+)
+
+from frontend.components.confirmation_dialog import (
+    build_confirm_callback,
+    check_pending_confirmation,
+    render_confirmation_dialog,
+    clear_pending_confirmation,
+)
+
+from frontend.components.input_autocomplete import (
+    render_autocomplete_input,
 )
 
 
@@ -537,10 +555,62 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         return None, False, None, None, None
 
 
-def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_type=None) -> dict:
-    """Async execution wrapper for AsyncTaskExecutor background thread"""
+async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_type=None) -> dict:
+    """Async execution wrapper for AsyncTaskExecutor background thread
+
+    Integrated with Confirmer system for risk operation confirmation:
+    - Builds confirm_callback for high-risk operations
+    - Checks confirmation before execution
+    - Emits ProgressEmitter events for tracking
+    """
     try:
         logger.debug("[frontend-async] 开始后台执行: %s", prompt[:50])
+
+        session_id = getattr(session_ctx, '_session_id', None) if session_ctx else None
+        if not session_id:
+            from frontend.components.shared import _get_current_session_id
+            session_id = _get_current_session_id()
+
+        detected_intent = business_type or "GENERAL_CHAT"
+        ai_confidence = 0.75
+
+        try:
+            from opc_manager.confirmer import Confirmer
+            from frontend.components.confirmation_dialog import build_confirm_callback
+
+            confirmer = Confirmer()
+
+            if session_id and session_id != "default":
+                confirm_cb = build_confirm_callback(session_id)
+
+                confirmation_result = await confirmer.check_confirmation(
+                    session_id=session_id,
+                    intent_type=detected_intent,
+                    goal=prompt,
+                    confidence=ai_confidence,
+                    params={"prompt": prompt[:100]},
+                    confirm_callback=confirm_cb,
+                )
+
+                if not confirmation_result.confirmed:
+                    logger.info("[frontend-async] 操作被用户取消: %s", prompt[:50])
+                    return {
+                        "content": None,
+                        "success": False,
+                        "filepath": None,
+                        "task_type": None,
+                        "error": "操作已被用户取消",
+                        "deliverable_record": None,
+                        "_cancelled_by_user": True,
+                    }
+
+                if confirmation_result.method == "skipped":
+                    logger.info("[frontend-async] 用户选择跳过并信任: %s", prompt[:50])
+        except ImportError:
+            logger.debug("[frontend-async] Confirmer不可用，跳过确认步骤")
+        except Exception as e:
+            logger.warning("[frontend-async] 确认检查失败（继续执行）: %s", e)
+
         content, success, filepath, task_type, deliverable_record = execute_with_agent_loop(
             prompt, session_ctx=session_ctx, business_type=business_type
         )
@@ -837,7 +907,29 @@ with st.sidebar:
 
     st.divider()
 
-    _render_undo_panel()
+    with st.container():
+        if st.button("↩️ 撤销历史", use_container_width=True, help="查看和管理可撤销的操作"):
+            st.session_state.show_undo_panel = not st.session_state.get("show_undo_panel", False)
+
+        if st.session_state.get("show_undo_panel", False):
+            session_id = _get_current_session_id()
+            with st.expander("撤销历史详情", expanded=True):
+                render_undo_panel(session_id, expand=True)
+
+                if check_has_active_undo_records(session_id):
+                    with st.expander("📦 批量撤销（高级）", expanded=False):
+                        render_batch_undo(session_id)
+
+    st.divider()
+
+    with st.container():
+        if st.button("📡 实时日志", use_container_width=True, help="查看实时系统日志和任务执行详情"):
+            st.session_state.show_log_panel = not st.session_state.get("show_log_panel", False)
+
+        if st.session_state.get("show_log_panel", False):
+            with st.expander("📡 实时日志监控面板", expanded=True):
+                from frontend.components.live_log_panel import render_live_log_panel
+                render_live_log_panel(auto_refresh=True, refresh_interval=2)
 
     st.divider()
 
@@ -1043,7 +1135,11 @@ if page == "💬 对话":
         _save_chat_history()
         with st.chat_message("user"):
             st.markdown(prompt)
-    elif prompt := st.chat_input("告诉我你需要什么结果，我直接做完并交付文件..."):
+    elif prompt := render_autocomplete_input(
+        label="告诉我你需要什么结果，我直接做完并交付文件...",
+        key="user_input_main",
+        session_history=st.session_state.get("messages", []),
+    ):
         st.session_state.messages.append({"role": "user", "content": prompt})
         _save_chat_history()
         with st.chat_message("user"):
@@ -1052,6 +1148,16 @@ if page == "💬 对话":
         prompt = None
 
     if prompt:
+
+        pending_confirm = check_pending_confirmation()
+        if pending_confirm:
+            with st.container():
+                st.warning("⚠️ 检测到待确认的高风险操作")
+                confirmed = render_confirmation_dialog(pending_confirm)
+
+                if not confirmed:
+                    clear_pending_confirmation()
+                    st.stop()
 
         executor = st.session_state.async_executor
         session_ctx = st.session_state.get("session_ctx")
@@ -1133,40 +1239,64 @@ if page == "💬 对话":
                     continue
 
                 elif current_status == "running":
-                    phase_icon, phase_name, phase_hint = "⚡", "执行中", "处理中..."
-                    for phase_start, phase_end, icon, hint in EXECUTION_PHASES:
-                        if phase_start <= elapsed < phase_end:
-                            phase_icon, phase_name, phase_hint = (
-                                icon,
-                                hint.split("...")[0],
-                                hint,
-                            )
-                            break
-                    if elapsed >= 60:
-                        phase_icon, phase_name, phase_hint = (
-                            "🔄",
-                            "深度处理",
-                            "内容较长，请耐心等待...",
-                        )
+                    session_id = _get_current_session_id()
 
-                    estimated_total = (
-                        max(30, elapsed * 1.5)
-                        if elapsed < 10
-                        else max(30, elapsed / 0.7)
-                    )
-                    remaining = max(0, estimated_total - elapsed)
-                    progress_pct = min(int((elapsed / estimated_total) * 100), 95)
+                    real_progress = None
+                    real_message = None
+                    real_event_type = None
+
+                    if session_id and session_id != "default":
+                        try:
+                            from opc_manager.progress_emitter import ProgressEmitter
+                            emitter = ProgressEmitter()
+                            history = emitter.get_history(session_id)
+                            if history:
+                                latest = history[-1]
+                                real_progress = latest.get("progress", latest.get("progress_pct"))
+                                real_message = latest.get("message", "")
+                                real_event_type = latest.get("event", latest.get("event_type", ""))
+                        except Exception as e:
+                            logger.debug("[frontend] 读取真实进度失败，回退到估算: %s", e)
+
+                    if real_progress is not None:
+                        progress_pct = min(real_progress, 100)
+                        phase_hint = real_message or phase_hint
+                        if real_event_type:
+                            phase_icon, phase_name = _get_phase_from_event(real_event_type)
+                    else:
+                        phase_icon, phase_name, phase_hint = "⚡", "执行中", "处理中..."
+                        for phase_start, phase_end, icon, hint in EXECUTION_PHASES:
+                            if phase_start <= elapsed < phase_end:
+                                phase_icon, phase_name, phase_hint = (
+                                    icon,
+                                    hint.split("...")[0],
+                                    hint,
+                                )
+                                break
+                        if elapsed >= 60:
+                            phase_icon, phase_name, phase_hint = (
+                                "🔄",
+                                "深度处理",
+                                "内容较长，请耐心等待...",
+                            )
+
+                        estimated_total = (
+                            max(30, elapsed * 1.5)
+                            if elapsed < 10
+                            else max(30, elapsed / 0.7)
+                        )
+                        remaining = max(0, estimated_total - elapsed)
+                        progress_pct = min(int((elapsed / estimated_total) * 100), 95)
 
                     status_container.update(
-                        label=f"{phase_icon} {phase_name} ({elapsed:.0f}s / 预计还需{remaining:.0f}s)",
+                        label=f"{phase_icon} {phase_name} ({elapsed:.0f}s / 预计还需{remaining:.0f}s)" if real_progress is None else f"{phase_icon} {phase_name}",
                         state="running",
                     )
                     progress_placeholder.progress(
                         progress_pct / 100.0,
-                        text=f"预估进度 {progress_pct}% — {phase_hint} — 已耗时 {elapsed:.0f}s",
+                        text=f"{'真实' if real_progress is not None else '预估'}进度 {progress_pct}% — {phase_hint} — 已耗时 {elapsed:.0f}s",
                     )
 
-                    session_id = _get_current_session_id()
                     if session_id and session_id != "default":
                         with st.expander("📊 实时执行详情", expanded=False):
                             _render_progress_indicator(session_id)
@@ -1193,14 +1323,15 @@ if page == "💬 对话":
                         st.session_state.deliverables.insert(0, result_deliverable_record)
 
                     if result_content:
-                        st.markdown(result_content)
-                        show_success(f"成果物已创建: {os.path.basename(result_filepath) if result_filepath else '任务完成'}")
+                        from frontend.components.result_cards import render_result_card
 
-                        _render_export_buttons(
-                            result_content,
-                            task_status.get("_exportable_formats", []),
-                            key_prefix=f"{int(time.time()*1000)}",
+                        render_result_card(
+                            content=result_content,
+                            task_type=task_status.get("task_type"),
+                            deliverable_record=result_deliverable_record,
+                            filepath=result_filepath,
                         )
+                        show_success(f"成果物已创建: {os.path.basename(result_filepath) if result_filepath else '任务完成'}")
 
                         feedback_key = f"fb_{task_id}"
                         safe_task_id = re.sub(r'[^\w-]', '', task_id)
@@ -1235,6 +1366,9 @@ if page == "💬 对话":
 
                         _render_quick_undo_button(task_id, result_deliverable_record.get("task_type") if result_deliverable_record else None)
 
+                        session_id = _get_current_session_id()
+                        render_mini_undo_hint(session_id, task_id=task_id)
+
                         if result_filepath and os.path.exists(result_filepath):
                             col_dl, col_info = st.columns([1, 3])
                             with col_dl:
@@ -1267,10 +1401,38 @@ if page == "💬 对话":
                             msg_record["deliverable_path"] = result_filepath
                         st.session_state.messages.append(msg_record)
                         _save_chat_history()
+
+                        from frontend.components.smart_suggestions import (
+                            build_context_from_session,
+                            generate_suggestions,
+                            render_suggestion_panel,
+                        )
+                        suggestion_context = build_context_from_session(
+                            last_task_type=task_type or result_deliverable_record.get("task_type", ""),
+                            last_result={
+                                "execution_time_ms": result_deliverable_record.get("execution_time_ms", 0) if result_deliverable_record else 0,
+                                "sources_count": result_deliverable_record.get("sources_count", 0) if result_deliverable_record else 0,
+                            },
+                            deliverables=st.session_state.get("deliverables", []),
+                            feedback_history=list(st.session_state.get("quality_feedback", {}).items()),
+                        )
+
+                        suggestion_context["session_id"] = session_id
+
+                        suggestions = generate_suggestions(suggestion_context)
+                        if suggestions:
+                            render_suggestion_panel(suggestions, max_show=3)
                     break
 
                 elif current_status == "failed":
                     error_msg = task_status.get("error_message", "未知错误")
+
+                    if task_status.get("_cancelled_by_user"):
+                        status_container.update(label="⏹️ 操作已取消", state="complete")
+                        st.info("操作已被用户取消")
+                        clear_pending_confirmation()
+                        break
+
                     status_container.update(label="❌ 任务执行失败", state="error")
 
                     track_error(

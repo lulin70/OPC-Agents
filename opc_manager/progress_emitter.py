@@ -40,6 +40,7 @@ class ProgressEvent:
         progress_pct: Progress percentage (0-100), None if not applicable.
         detail: Additional event-specific data.
         timestamp: Unix timestamp when event was created.
+        unified_category: Optional UnifiedTaskCategory for dual-engine system (v0.2.1+).
     """
     event_type: EventType
     session_id: str
@@ -47,6 +48,7 @@ class ProgressEvent:
     progress_pct: int = None
     detail: Dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=lambda: time.time())
+    unified_category: Optional[str] = None
 
     def __post_init__(self):
         if self.progress_pct is not None:
@@ -54,7 +56,47 @@ class ProgressEvent:
                 raise TypeError("progress_pct must be an integer or None")
             if not (0 <= self.progress_pct <= 100):
                 raise ValueError("progress_pct must be between 0 and 100")
-    
+
+    @property
+    def extracted_unified_category(self) -> Optional[str]:
+        """Extract unified category from detail or unified_category field.
+
+        Priority:
+        1. Direct unified_category field (new style)
+        2. detail['unified_category'] (compatibility mode)
+        3. None if not found
+
+        Returns:
+            UnifiedTaskCategory value string or None
+        """
+        if self.unified_category:
+            return self.unified_category
+        return self.detail.get('unified_category')
+
+    def with_category(self, category) -> 'ProgressEvent':
+        """Return new event with unified category set (immutable pattern).
+
+        This method creates a new ProgressEvent with the unified_category field set,
+        leaving the original event unchanged. This follows the immutable pattern
+        for safer concurrent access in async environments.
+
+        Args:
+            category: UnifiedTaskCategory enum value or string value
+
+        Returns:
+            New ProgressEvent instance with unified_category set
+        """
+        cat_value = category.value if hasattr(category, 'value') else str(category)
+        return ProgressEvent(
+            event_type=self.event_type,
+            session_id=self.session_id,
+            message=self.message,
+            progress_pct=self.progress_pct,
+            detail={**self.detail, 'unified_category': cat_value},
+            timestamp=self.timestamp,
+            unified_category=cat_value,
+        )
+
     def to_dict(self) -> dict:
         d = {
             "event": self.event_type.value,
@@ -66,8 +108,11 @@ class ProgressEvent:
             d["progress"] = self.progress_pct
         if self.detail:
             d["detail"] = self.detail
+        # Include unified_category at top level for easy frontend access
+        if self.unified_category:
+            d["unified_category"] = self.unified_category
         return d
-    
+
     def to_sse(self) -> str:
         d = self.to_dict()
         return f"data: {json.dumps(d, ensure_ascii=False)}\n\n"
