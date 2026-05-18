@@ -99,6 +99,11 @@ SCENARIOS_MORE = [
     {"id": "project_deliverable", "icon": "📦", "title": "scenario_more_deliverable_title", "desc": "scenario_more_deliverable_desc", "prompt": "帮我整理项目交付物并做质量检查"},
     {"id": "write_report", "icon": "📄", "title": "scenario_more_report_title", "desc": "scenario_more_report_desc", "prompt": "帮我写一份结构化的分析报告"},
     {"id": "organize_meeting", "icon": "🤝", "title": "scenario_more_meeting_title", "desc": "scenario_more_meeting_desc", "prompt": "帮我组织一次项目会议"},
+    {"id": "social_publish", "icon": "📢", "title": "scenario_social_publish_title", "desc": "scenario_social_publish_desc", "prompt": "帮我在多个社交平台发布内容并管理互动"},
+    {"id": "generate_invoice", "icon": "🧾", "title": "scenario_invoice_title", "desc": "scenario_invoice_desc", "prompt": "帮我生成一张专业的发票或账单"},
+    {"id": "competitor_watch", "icon": "🔭", "title": "scenario_competitor_title", "desc": "scenario_competitor_desc", "prompt": "帮我监控竞品动态和市场趋势变化"},
+    {"id": "pricing_strategy", "icon": "💎", "title": "scenario_pricing_title", "desc": "scenario_pricing_desc", "prompt": "帮我制定产品或服务的最优定价策略"},
+    {"id": "tax_reminder", "icon": "🏛️", "title": "scenario_tax_reminder_title", "desc": "scenario_tax_reminder_desc", "prompt": "提醒我即将到期的税务申报和合规事项"},
 ]
 
 _TASK_TYPE_LABELS = {
