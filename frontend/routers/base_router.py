@@ -104,6 +104,14 @@ SCENARIOS_MORE = [
     {"id": "competitor_watch", "icon": "🔭", "title": "scenario_competitor_title", "desc": "scenario_competitor_desc", "prompt": "帮我监控竞品动态和市场趋势变化"},
     {"id": "pricing_strategy", "icon": "💎", "title": "scenario_pricing_title", "desc": "scenario_pricing_desc", "prompt": "帮我制定产品或服务的最优定价策略"},
     {"id": "tax_reminder", "icon": "🏛️", "title": "scenario_tax_reminder_title", "desc": "scenario_tax_reminder_desc", "prompt": "提醒我即将到期的税务申报和合规事项"},
+    {"id": "opc_creative_planning", "icon": "💡", "title": "scenario_opc_creative_planning_title", "desc": "scenario_opc_creative_planning_desc", "prompt": "帮我想一些创业创意方向，我想利用我的特殊知识建立一人公司"},
+    {"id": "opc_market_research", "icon": "🔍", "title": "scenario_opc_market_research_title", "desc": "scenario_opc_market_research_desc", "prompt": "帮我验证这个创意的市场需求，看看是否有真实的用户痛点"},
+    {"id": "opc_growth_hacker", "icon": "🚀", "title": "scenario_opc_growth_hacker_title", "desc": "scenario_opc_growth_hacker_desc", "prompt": "帮我设计一个0预算的增长策略，快速获取前100个种子用户"},
+    {"id": "opc_social_listening", "icon": "👂", "title": "scenario_opc_social_listening_title", "desc": "scenario_opc_social_listening_desc", "prompt": "帮我从Reddit和Twitter上挖掘用户对这个话题的真实抱怨和痛点"},
+    {"id": "opc_legal_advisor", "icon": "⚖️", "title": "scenario_opc_legal_advisor_title", "desc": "scenario_opc_legal_advisor_desc", "prompt": "帮我审查这份合同条款，看看有没有对我不利的霸王条款"},
+    {"id": "opc_proposal_review", "icon": "🔬", "title": "scenario_opc_proposal_review_title", "desc": "scenario_opc_proposal_review_desc", "prompt": "帮我评估这个项目的可行性，用逆向思维分析可能失败的原因"},
+    {"id": "opc_prd_generation", "icon": "📋", "title": "scenario_opc_prd_generation_title", "desc": "scenario_opc_prd_generation_desc", "prompt": "帮我把这个方案转化成详细的PRD文档，定义清楚功能需求和验收标准"},
+    {"id": "opc_domain_brand", "icon": "🎨", "title": "scenario_opc_domain_brand_title", "desc": "scenario_opc_domain_brand_desc", "prompt": "帮我为这个产品起个好名字，检查域名可用性，并提供Logo设计灵感"},
 ]
 
 _TASK_TYPE_LABELS = {
