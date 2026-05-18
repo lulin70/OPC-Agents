@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from frontend.pages.marketplace_page import (
+from frontend.page_modules._marketplace_page import (
     ALL_CATEGORIES,
     SORT_OPTIONS,
     _filter_and_sort_skills,
@@ -230,7 +230,7 @@ class TestVersionPinning:
         self.original_get_file = None
 
     def _patch_filepath(self):
-        import frontend.pages.marketplace_page as mp_module
+        import frontend.pages._marketplace_page as mp_module
         self.original_get_file = mp_module._get_installed_versions_file
         mp_module._get_installed_versions_file = lambda: os.path.join(
             self.tmpdir, "test_installed_skills.json"
@@ -238,7 +238,7 @@ class TestVersionPinning:
 
     def _unpatch_filepath(self):
         if self.original_get_file:
-            import frontend.pages.marketplace_page as mp_module
+            import frontend.pages._marketplace_page as mp_module
             mp_module._get_installed_versions_file = self.original_get_file
 
     def teardown_method(self):

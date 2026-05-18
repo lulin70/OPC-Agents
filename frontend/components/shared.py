@@ -839,17 +839,18 @@ def _render_undo_panel():
 
 def _render_theme_selector():
     """Render theme selector in sidebar."""
+    from opc_manager.i18n import t as _t
     themes = {
-        "light": "☀️ 浅色",
-        "dark": "🌙 深色",
-        "sunset": "🌅 日落橙",
-        "forest": "🌲 森林绿",
-        "ocean": "🌊 海洋蓝",
+        "light": _t("theme_light"),
+        "dark": _t("theme_dark"),
+        "sunset": _t("theme_sunset"),
+        "forest": _t("theme_forest"),
+        "ocean": _t("theme_ocean"),
     }
 
     current = st.session_state.get("theme", "light")
     selected = st.selectbox(
-        "🎨 主题",
+        _t("theme_label"),
         options=list(themes.keys()),
         format_func=lambda x: themes[x],
         index=list(themes.keys()).index(current) if current in themes else 0,
@@ -863,16 +864,16 @@ def _render_theme_selector():
 
 def _render_language_selector():
     """Render language selector in sidebar."""
-    from opc_manager.i18n import get_i18n
+    from opc_manager.i18n import get_i18n, t as _t
     i18n = get_i18n()
     locales = i18n.get_available_locales()
     current = i18n.locale
     selected = st.selectbox(
-        "🌐 Language / 语言",
+        _t("lang_selector"),
         options=[l["code"] for l in locales],
         format_func=lambda x: next(l["name"] for l in locales if l["code"] == x),
         index=[l["code"] for l in locales].index(current),
-        key="lang_selector"
+        key="lang_selector",
     )
     if selected != current:
         i18n.locale = selected
@@ -882,49 +883,50 @@ def _render_language_selector():
 def _render_shortcuts_help():
     """Render keyboard shortcuts help panel with enhanced content."""
     from opc_manager.i18n import t as _t
-    with st.expander("⌨️ Keyboard Shortcuts / 快捷键"):
+    with st.expander(_t("shortcuts_title")):
         shortcuts = [
-            ("Enter", "发送消息 / Send message"),
-            ("Esc", "取消当前操作 / Close dialog"),
-            ("Ctrl+Z", "撤销上一步 / Undo last step"),
-            ("/", "打开命令面板 / Command palette"),
-            ("?", "显示帮助 / Show help"),
-            ("Ctrl + N", "New chat / 新对话"),
-            ("Ctrl + E", "Export / 导出"),
-            ("Ctrl + D", "Dashboard / 仪表板"),
-            ("Ctrl + S", "Settings / 设置"),
+            ("Enter", _t("shortcut_send")),
+            ("Esc", _t("shortcut_cancel")),
+            ("Ctrl+Z", _t("shortcut_undo")),
+            ("/", _t("shortcut_cmd_palette")),
+            ("?", _t("shortcut_help")),
+            ("Ctrl + N", _t("shortcut_new_chat")),
+            ("Ctrl + E", _t("shortcut_export")),
+            ("Ctrl + D", _t("shortcut_dashboard")),
+            ("Ctrl + S", _t("shortcut_settings")),
         ]
         for keys, desc in shortcuts:
-            st.code(f"{keys:20s} → {desc}")
-        st.caption("💡 *提示：按 `?` 随时查看此列表*")
+            st.code(f"{keys:12s} → {desc}")
+        st.caption(_t("shortcuts_hint"))
 
 
 def _maybe_show_shortcut_hints():
     """Show keyboard shortcuts hint bubble on first visit to chat page."""
+    from opc_manager.i18n import t as _t
     if "shortcuts_shown" not in st.session_state:
         st.session_state.shortcuts_shown = False
 
     if not st.session_state.shortcuts_shown:
-        with st.expander("⌨️ 键盘快捷键提示 (点击收起)", expanded=True):
-            st.markdown("""
-            | 快捷键 | 功能 |
+        with st.expander(_t("shortcuts_title"), expanded=True):
+            st.markdown(f"""
+            | Shortcut | {_t('shortcut_dashboard')} |
             |--------|------|
-            | `Enter` | 发送消息 |
-            | `Esc` | 取消当前操作 |
-            | `Ctrl+Z` | 撤销上一步 |
-            | `/` | 打开命令面板 |
-            | `?` | 显示帮助 |
+            | `Enter` | {_t('shortcut_send')} |
+            | `Esc` | {_t('shortcut_cancel')} |
+            | `Ctrl+Z` | {_t('shortcut_undo')} |
+            | `/` | {_t('shortcut_cmd_palette')} |
+            | `?` | {_t('shortcut_help')} |
 
-            💡 *提示：按 `?` 随时查看此列表*
+            {_t('shortcuts_hint')}
             """)
 
         col_dismiss, col_later = st.columns([1, 1])
         with col_dismiss:
-            if st.button("知道了，不再显示", key="dismiss_shortcuts"):
+            if st.button(_t("shortcut_dismiss_btn"), key="dismiss_shortcuts"):
                 st.session_state.shortcuts_shown = True
                 st.rerun()
         with col_later:
-            if st.button("下次再说", key="shortcuts_later"):
+            if st.button(_t("shortcut_later_btn"), key="shortcuts_later"):
                 st.session_state.shortcuts_shown = True
 
 
@@ -939,7 +941,7 @@ def _render_floating_help_button():
     >
     </div>
     """, unsafe_allow_html=True)
-    if st.button("❓ 快捷键帮助", key="floating_help_btn", help="点击查看键盘快捷键"):
+    if st.button(_t("floating_help_btn"), key="floating_help_btn", help=_t("floating_help_desc")):
         st.session_state.shortcuts_shown = False
         st.rerun()
 

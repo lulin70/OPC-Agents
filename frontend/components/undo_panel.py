@@ -723,7 +723,8 @@ def render_undo_panel(session_id: str, expand: bool = False):
     """
     um = _get_undo_manager()
     if not um:
-        st.warning("⚠️ 撤销系统未初始化")
+        from opc_manager.i18n import t as _t
+        st.info(_t("undo_not_ready"))
         return
 
     st.markdown("""

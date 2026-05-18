@@ -112,13 +112,13 @@ class TestDemoMode:
     """P0-2: No-LLM Demo Mode tests."""
 
     def test_demo_data_function_exists(self):
-        """_get_demo_dashboard_data() must be importable from frontend.app."""
-        from frontend.app import _get_demo_dashboard_data
+        """_get_demo_dashboard_data() must be importable from frontend.routers.base_router."""
+        from frontend.routers.base_router import _get_demo_dashboard_data
         assert callable(_get_demo_dashboard_data)
 
     def test_demo_data_returns_expected_structure(self):
         """Demo data must return all required keys."""
-        from frontend.app import _get_demo_dashboard_data
+        from frontend.routers.base_router import _get_demo_dashboard_data
         data = _get_demo_dashboard_data()
         expected_keys = {
             "income_trend", "client_health", "task_completion",
@@ -129,7 +129,7 @@ class TestDemoMode:
 
     def test_demo_data_income_trend_structure(self):
         """income_trend must have labels, values, total, growth."""
-        from frontend.app import _get_demo_dashboard_data
+        from frontend.routers.base_router import _get_demo_dashboard_data
         data = _get_demo_dashboard_data()
         trend = data["income_trend"]
         assert "labels" in trend and isinstance(trend["labels"], list)
@@ -139,7 +139,7 @@ class TestDemoMode:
 
     def test_demo_data_client_health_structure(self):
         """client_health must be a list of client dicts with name/score/trend/projects."""
-        from frontend.app import _get_demo_dashboard_data
+        from frontend.routers.base_router import _get_demo_dashboard_data
         data = _get_demo_dashboard_data()
         clients = data["client_health"]
         assert isinstance(clients, list) and len(clients) > 0
@@ -151,21 +151,21 @@ class TestDemoMode:
 
     def test_demo_data_task_completion_structure(self):
         """task_completion must have total, done, rate."""
-        from frontend.app import _get_demo_dashboard_data
+        from frontend.routers.base_router import _get_demo_dashboard_data
         data = _get_demo_dashboard_data()
         tc = data["task_completion"]
         assert "total" in tc and "done" in tc and "rate" in tc
 
     def test_demo_data_financial_summary_structure(self):
         """financial_summary must have income, expenses, profit."""
-        from frontend.app import _get_demo_dashboard_data
+        from frontend.routers.base_router import _get_demo_dashboard_data
         data = _get_demo_dashboard_data()
         fs = data["financial_summary"]
         assert "income" in fs and "expenses" in fs and "profit" in fs
 
     def test_demo_data_timeline_structure(self):
         """timeline must be a list of event dicts with time/event/type."""
-        from frontend.app import _get_demo_dashboard_data
+        from frontend.routers.base_router import _get_demo_dashboard_data
         data = _get_demo_dashboard_data()
         timeline = data["timeline"]
         assert isinstance(timeline, list) and len(timeline) > 0
@@ -174,7 +174,7 @@ class TestDemoMode:
 
     def test_demo_data_skill_usage_structure(self):
         """skill_usage must be a list of skill dicts with name/count."""
-        from frontend.app import _get_demo_dashboard_data
+        from frontend.routers.base_router import _get_demo_dashboard_data
         data = _get_demo_dashboard_data()
         skills = data["skill_usage"]
         assert isinstance(skills, list) and len(skills) > 0
@@ -183,18 +183,18 @@ class TestDemoMode:
 
     def test_is_demo_mode_callable(self):
         """_is_demo_mode() must be callable."""
-        from frontend.app import _is_demo_mode
+        from frontend.routers.base_router import _is_demo_mode
         assert callable(_is_demo_mode)
 
     def test_is_demo_mode_returns_bool(self):
         """_is_demo_mode() must return a boolean."""
-        from frontend.app import _is_demo_mode
+        from frontend.routers.base_router import _is_demo_mode
         result = _is_demo_mode()
         assert isinstance(result, bool), f"_is_demo_mode returned {type(result)}, expected bool"
 
     def test_show_success_toast_callable(self):
         """_show_success_toast() must be callable."""
-        from frontend.app import _show_success_toast
+        from frontend.routers.base_router import _show_success_toast
         assert callable(_show_success_toast)
 
 
@@ -203,13 +203,13 @@ class TestDashboardDemoMode:
 
     def test_render_demo_dashboard_importable(self):
         """_render_demo_dashboard must be importable from dashboard_page."""
-        from frontend.pages.dashboard_page import _render_demo_dashboard
+        from frontend.page_modules._dashboard_page import _render_demo_dashboard
         assert callable(_render_demo_dashboard)
 
     def test_render_dashboard_accepts_demo_param(self):
         """_render_dashboard_page must accept demo_mode parameter."""
         import inspect
-        from frontend.pages.dashboard_page import _render_dashboard_page
+        from frontend.page_modules._dashboard_page import _render_dashboard_page
         sig = inspect.signature(_render_dashboard_page)
         params = list(sig.parameters.keys())
         assert "demo_mode" in params, \

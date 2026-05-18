@@ -18,24 +18,24 @@ class TestDemoDataStructure:
     """P1-5: Validate _DEMO_DATA structure in dashboard_page.py."""
 
     def test_demo_data_exists(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         assert isinstance(_DEMO_DATA, dict), "_DEMO_DATA should be a dict"
         assert len(_DEMO_DATA) > 0, "_DEMO_DATA should not be empty"
 
     def test_demo_data_has_required_keys(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         required_keys = ["income_months", "income_values", "clients", "tasks", "finance", "timeline", "skills"]
         for key in required_keys:
             assert key in _DEMO_DATA, f"_DEMO_DATA missing required key: {key}"
 
     def test_demo_income_data_structure(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         assert len(_DEMO_DATA["income_months"]) == len(_DEMO_DATA["income_values"])
         assert all(isinstance(m, str) for m in _DEMO_DATA["income_months"])
         assert all(isinstance(v, (int, float)) for v in _DEMO_DATA["income_values"])
 
     def test_demo_clients_are_realistic(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         clients = _DEMO_DATA["clients"]
         assert len(clients) >= 3, "Should have at least 3 demo clients"
         for client in clients:
@@ -46,14 +46,14 @@ class TestDemoDataStructure:
             assert 0 <= client["health"] <= 100, f"Health score out of range: {client['health']}"
 
     def test_demo_tasks_structure(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         tasks = _DEMO_DATA["tasks"]
         assert "total" in tasks
         assert "done" in tasks
         assert tasks["total"] == sum([tasks["done"], tasks.get("in_progress", 0), tasks.get("blocked", 0)])
 
     def test_demo_finance_chinese_currency(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         finance = _DEMO_DATA["finance"]
         assert "income" in finance
         assert "net_profit" in finance
@@ -61,7 +61,7 @@ class TestDemoDataStructure:
         assert finance["net_profit"] > 0
 
     def test_demo_timeline_entries(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         timeline = _DEMO_DATA["timeline"]
         assert len(timeline) >= 4, "Should have at least 4 timeline entries"
         for entry in timeline:
@@ -71,7 +71,7 @@ class TestDemoDataStructure:
             assert "tag" in entry
 
     def test_demo_skills_with_trends(self):
-        from frontend.pages.dashboard_page import _DEMO_DATA
+        from frontend.page_modules._dashboard_page import _DEMO_DATA
         skills = _DEMO_DATA["skills"]
         assert len(skills) >= 4
         for skill in skills:
@@ -210,22 +210,22 @@ class TestDemoModeDetection:
     """P1-5: Validate demo mode detection and badge rendering."""
 
     def test_is_demo_mode_exists(self):
-        from frontend.pages.dashboard_page import _is_demo_mode
+        from frontend.page_modules._dashboard_page import _is_demo_mode
         assert callable(_is_demo_mode)
 
     def test_render_demo_badge_exists(self):
-        from frontend.pages.dashboard_page import _render_demo_badge
+        from frontend.page_modules._dashboard_page import _render_demo_badge
         assert callable(_render_demo_badge)
 
     def test_demo_badge_contains_text(self):
-        from frontend.pages.dashboard_page import _render_demo_badge
+        from frontend.page_modules._dashboard_page import _render_demo_badge
         import inspect
         source = inspect.getsource(_render_demo_badge)
         assert "Demo" in source or "demo" in source
         assert "🎮" in source
 
     def test_demo_badge_uses_html(self):
-        from frontend.pages.dashboard_page import _render_demo_badge
+        from frontend.page_modules._dashboard_page import _render_demo_badge
         import inspect
         source = inspect.getsource(_render_demo_badge)
         assert "unsafe_allow_html" in source

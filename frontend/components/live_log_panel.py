@@ -728,7 +728,16 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
             key="log_export_format",
         )
 
-    session_id = st.session_state.get("session_ctx", {}).get("_session_id", None)
+    session_ctx = st.session_state.get("session_ctx", None)
+    if session_ctx is not None:
+        if hasattr(session_ctx, '_session_id'):
+            session_id = getattr(session_ctx, '_session_id', None)
+        elif isinstance(session_ctx, dict):
+            session_id = session_ctx.get("_session_id", None)
+        else:
+            session_id = str(session_ctx) if session_ctx else None
+    else:
+        session_id = None
 
     logs = collect_all_logs(session_id=session_id)
 

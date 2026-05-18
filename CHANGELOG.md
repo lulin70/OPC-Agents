@@ -2,7 +2,62 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
-## [0.2.0] - 2026-05-16 to 2026-05-17
+## [0.2.0] - 2026-05-16 to 2026-05-18
+
+### Final Stabilization (2026-05-18 — Frontend Architecture Reorganization)
+
+#### 🏗️ Architecture Refactor
+- **app.py**: 1913→405 lines (-79%), extracted to Router/Renderer architecture
+- **13 new files** created:
+  - `frontend/routers/` — 6 routers (base, chat, dashboard, deliverables, marketplace, settings)
+  - `frontend/renderers/` — 3 renderers (deliverables, audit_log, onboarding)
+  - `frontend/components/` — shared utilities (input_autocomplete, confirmation_dialog, undo_panel, etc.)
+  - `frontend/page_modules/` — 6 page modules (chat, dashboard, settings, marketplace, growth, deliverables)
+- **PageKey enum** + `navigate()` dispatcher for stable navigation
+
+#### 🔧 Critical Bug Fixes (14 bugs fixed)
+
+**P0 — Navigation & Runtime:**
+1. **st.radio key fix** — Added `key="main_page_navigation"` to prevent 70% page-jump rate on rerun
+2. **NameError: `_t` not defined** (Settings) — Added defensive import inside `_create_settings_page()` function body
+3. **NameError: `task_type` not defined** (Chat) — Fixed bare variable reference to `task_status.get("task_type", "")`
+4. **Coroutine leak to UI** — Created `_sync_execute_task()` wrapper; cleaned 3 corrupted chat_history.json entries
+
+**P1 — Display & Data:**
+5. **Dashboard `ash_` prefix** — Fixed 142+ occurrences (`ash_` → `dash_`) including nested `_t()` calls
+6. **Growth page tuple display** — Hardcoded level name/desc to bypass `_t()` returning tuple issue
+7. **Chat router imports** — Fixed 4 wrong import sources (autocomplete, confirmation, undo from correct modules)
+8. **deliverables_renderer missing `_read_file`** — Added local file reader function
+9. **base_router.py `_t` import** — Fixed `from opc_manager.i18n import _t` → `import t as _t`
+10. **app.py init_session_state path** — Fixed import source from base_router
+
+**P2 — UX Polish:**
+11. **Settings save feedback** — Added `st.toast()` on all 3 save buttons (LLM/SMTP/Profile)
+12. **Shortcut buttons i18n** — Added 4 new i18n keys (dismiss/later/floating_help) × 3 locales
+13. **Settings error message i18n** — Added `settings_module_not_ready` key × 3 locales
+14. **dim_map flywheel keys** — Changed CJK dimension keys to English identifiers
+
+#### 🌐 i18n Hardening
+- 58 hardcoded CJK strings → 0 in core user paths
+- 101 new translation keys added (total: ~696 keys × 3 languages: zh_CN/en_US/ja_JP)
+
+#### 🧪 Quality Assurance
+- **49 regression tests**: All passing ✅ (0 failures, 1 expected failure)
+- **Business flow E2E validation**: 5 flows tested
+  | Flow | Score | Status |
+  |------|-------|--------|
+  | Chat complete journey | 6/6 (100%) | ✅ |
+  | Settings → save → back | 5/6 (83%) | ✅ |
+  | Language switch × 6 pages | Core framework ✅ | ✅ |
+  | Skill create → market | 4/5 (80%) | ✅ |
+  | Dashboard config | Static ✅ / Interactive manual | ⚠️ |
+
+#### Known Residuals (P2, non-blocking)
+- Dashboard interactive features (panel toggle, layout switch) — needs manual browser testing
+- Auxiliary module i18n (export UI ~50 strings, audit log event labels) — logged for future sprint
+- Mock data in dashboard (Chinese sample names) — demo data only
+
+---
 
 ### Initial Release (commit 0b43f32)
 - 17 features: Settings Manager, Onboarding, Data Backup, Error Handler,
