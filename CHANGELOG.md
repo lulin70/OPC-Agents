@@ -2,6 +2,35 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.2.1] - 2026-05-18
+
+### User Experience Enhancement
+- **8 new OPC skills integrated** from tohnee/opc-skills (MIT License):
+  - 💡 Creative Planning (Naval's Specific Knowledge)
+  - 🔍 Market Research (Dan Koe + The Mom Test)
+  - 🚀 Growth Hacker (Justin Welsh Content OS)
+  - 👂 Social Listening (Reddit/X/HN pain point mining)
+  - ⚖️ Legal Advisor (contract review + IP protection)
+  - 🔬 Proposal Review (inversion thinking)
+  - 📋 PRD Generation (structured product requirements)
+  - 🎨 Domain & Brand (Paul Graham naming)
+- **Total visible scenarios**: 25 (4 core + 21 more), up from 12 in v0.2.0
+- **5 previously hidden skills** now exposed as scenario buttons
+
+### Tech Debt Cleanup (from v0.2.0 post-release)
+- 32 bare except fixes across 17 files with proper logging
+- shared.py: ~120 hardcoded CJK strings → _t() i18n (97 new keys ×3 langs)
+- Growth role names: hardcoded → i18n keys (11 new keys ×3 langs)
+- Settings placeholder: hardcoded → _t('llm_model_placeholder')
+
+### Bug Fixes (post-v0.2.0)
+- NameError: `task_type` not defined in chat_router.py — fixed variable scope
+- Settings save feedback: st.toast() added on all 3 save buttons
+
+### Quality
+- Regression tests: 49/49 passed (0 failures, 1 xfailed)
+- 7-dimension maturity score: 60/70 (85.7%), up from 55/70 (78.6%)
+
 ## [0.2.0] - 2026-05-16 to 2026-05-18
 
 ### Final Stabilization (2026-05-18 — Frontend Architecture Reorganization)

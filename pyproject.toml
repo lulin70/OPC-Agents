@@ -11,7 +11,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
-    {name = "OPC-Agents Contributors"},
+    {name = "Lin Lu", email = "lin@example.com"},
 ]
 keywords = [
     "opc",
@@ -41,16 +41,18 @@ classifiers = [
 ]
 
 dependencies = [
-    "streamlit>=1.28.0",
+    "streamlit>=1.30.0",
+    "openai>=1.10.0",
+    "cryptography>=41.0.0",
+    "python-dotenv>=1.0.0",
+    "PyJWT>=2.8.0",
     "requests>=2.31.0",
     "ddgs>=5.0.0",
     "httpx>=0.24.0",
     "beautifulsoup4>=4.12.0",
     "jieba>=0.42.1",
-    "python-dotenv>=1.0.0",
     "loguru>=0.7.0",
     "pandas>=2.0.0",
-    "openai>=1.0.0",
     "pydantic>=2.0.0",
     "pyyaml>=6.0",
 ]
