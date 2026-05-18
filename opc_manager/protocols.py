@@ -128,8 +128,8 @@ def get_llm_provider() -> LLMProvider:
             if api_base:
                 _llm_provider = _LLMProviderWrapper(gen)
                 return _llm_provider
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[Protocols] LLM provider init failed: %s", e)
         _llm_provider = NullLLMProvider()
         return _llm_provider
 
@@ -145,8 +145,8 @@ def get_search_provider() -> SearchProvider:
             from opc_manager.search_processor import SearchResultProcessor
             _search_provider = _SearchProviderWrapper(SearchResultProcessor())
             return _search_provider
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[Protocols] Search provider init failed: %s", e)
         _search_provider = NullSearchProvider()
         return _search_provider
 
@@ -164,8 +164,8 @@ def get_secure_provider() -> SecureProvider:
             if store.is_available:
                 _secure_provider = _SecureProviderWrapper(store)
                 return _secure_provider
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[Protocols] Secure provider init failed: %s", e)
         _secure_provider = NullSecureProvider()
         return _secure_provider
 

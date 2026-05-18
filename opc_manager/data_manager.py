@@ -74,8 +74,8 @@ def _get_conn() -> sqlite3.Connection:
         _local.conn = conn
         try:
             os.chmod(DB_PATH, stat.S_IRUSR | stat.S_IWUSR)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[DataManager] chmod failed: %s", e)
     return _local.conn
 
 

@@ -71,7 +71,8 @@ class WeChatGateway:
             from Crypto.Cipher import AES
             try:
                 key = base64.b64decode(self.encoding_aes_key + "=")
-            except Exception:
+            except Exception as e:
+                logger.debug("[WeChatGateway] AES key decode (padded) failed: %s", e)
                 key = base64.b64decode(self.encoding_aes_key)
             self._aes_key = key[:32]
             iv = key[32:48] if len(key) >= 48 else key[16:32]

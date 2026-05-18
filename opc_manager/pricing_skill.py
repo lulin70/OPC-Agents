@@ -44,7 +44,8 @@ def _load_hourly_benchmarks() -> dict:
     try:
         from opc_manager.utils import load_json_data
         return load_json_data("data/knowledge/pricing_benchmarks.json")
-    except Exception:
+    except Exception as e:
+        logger.debug("[PricingSkill] Load pricing benchmarks failed: %s", e)
         return dict(_DEFAULT_HOURLY_RATES)
 
 

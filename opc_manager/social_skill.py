@@ -28,7 +28,8 @@ def _load_platforms() -> dict:
             if "tags" in v:
                 v["tags"] = bool(v["tags"])
         return data
-    except Exception:
+    except Exception as e:
+        logger.debug("[SocialSkill] Load platforms failed: %s", e)
         return dict(_DEFAULT_PLATFORMS)
 
 
@@ -67,8 +68,8 @@ def _generate_with_llm(platform, topic, key_points, tone):
                     return parsed
             except (json.JSONDecodeError, ValueError):
                 pass
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("[SocialSkill] Parse profile URL failed: %s", e)
     return None
 
 

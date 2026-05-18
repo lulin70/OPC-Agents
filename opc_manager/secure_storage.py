@@ -235,8 +235,8 @@ class SecureKeyStore:
         try:
             if hasattr(os, "chmod"):
                 os.chmod(tmp_path, 0o600)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[SecureStorage] chmod failed: %s", e)
         os.replace(tmp_path, self._storage_path)
 
 

@@ -187,7 +187,8 @@ class OllamaBackend(LLMBackend):
         try:
             resp = httpx.get(f"{self.base_url}/api/tags", timeout=3)
             return resp.status_code == 200
-        except Exception:
+        except Exception as e:
+            logger.debug("[LLMService] Health check failed: %s", e)
             return False
 
     def estimate_cost(self, prompt: str) -> float:

@@ -124,7 +124,8 @@ class AuditLogger:
                     with open(cls._log_file, "a") as f:
                         f.write(json.dumps(record, ensure_ascii=False) + "\n")
                     queue.task_done()
-                except Exception:
+                except Exception as e:
+                    logger.warning("[ToolSystem] Writer loop error: %s", e)
                     break
         cls._writer_task = asyncio.create_task(_writer())
 
@@ -183,8 +184,8 @@ class AuditLogger:
             os.makedirs(os.path.dirname(cls._log_file), exist_ok=True)
             with open(cls._log_file, "a") as f:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
-        except Exception:
-            logger.error("审计日志写入失败")
+        except Exception as e:
+            logger.error("审计日志写入失败: %s", e)
 
     @classmethod
     def query(cls, event_type: str = None,

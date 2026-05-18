@@ -42,7 +42,8 @@ def _get_smtp_config() -> Optional[Dict[str, Any]]:
             decrypted = decrypt_field(config.get("password", ""))
             config["password"] = decrypted if decrypted is not None else ""
         return config
-    except Exception:
+    except Exception as e:
+        logger.debug("[EmailSkill] Load SMTP config failed: %s", e)
         return None
 
 
@@ -247,8 +248,8 @@ def _lookup_email_by_name(name: str) -> str:
             email = result["customer"]["email"]
             if email and email != "[DECRYPT_FAILED]":
                 return email
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("[EmailSkill] Get user email failed: %s", e)
     return ""
 
 

@@ -153,7 +153,8 @@ class ProgressEmitter:
         for cb in callbacks:
             try:
                 cb(sse_data)
-            except Exception:
+            except Exception as e:
+                logger.debug("[ProgressEmitter] Callback error: %s", e)
                 dead.append(cb)
         if dead:
             self._subscribers[event.session_id] = [cb for cb in callbacks if cb not in dead]
@@ -172,8 +173,8 @@ class ProgressEmitter:
         for event in self._history.get(session_id, []):
             try:
                 callback(ProgressEvent(**{**event, "event_type": EventType(event["event"])}).to_sse())
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[ProgressEmitter] Subscribe replay error: %s", e)
     
     def unsubscribe(self, session_id: str):
         self._subscribers.pop(session_id, None)

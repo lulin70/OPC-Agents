@@ -182,8 +182,8 @@ class SkillRegistry(SkillExecutorMixin):
                     logger.info("技能版本升级: %s %s→%s", skill.skill_id, existing.version, skill.version)
                     self.skills[skill.skill_id] = skill
                     return True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[SkillRegistry] Version comparison failed: %s", e)
             logger.warning("技能已存在: %s", skill.skill_id)
             return False
         

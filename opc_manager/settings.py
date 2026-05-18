@@ -242,8 +242,8 @@ class SettingsManager:
         try:
             decrypted = self._fernet.decrypt(ciphertext.encode('utf-8'))
             return decrypted.decode('utf-8')
-        except Exception:
-            logger.debug("[SettingsManager] Decryption failed, treating as potential plaintext")
+        except Exception as e:
+            logger.debug("[SettingsManager] Decryption failed: %s", e)
             return None
 
     def _load_from_disk(self) -> None:
@@ -387,7 +387,8 @@ class SettingsManager:
         try:
             decoded = base64.urlsafe_b64decode(value)
             return len(decoded) >= 32
-        except Exception:
+        except Exception as e:
+            logger.debug("[SettingsManager] is_valid_base64_token check failed: %s", e)
             return False
 
     def _looks_like_base64(self, value: str) -> bool:
@@ -408,7 +409,8 @@ class SettingsManager:
         try:
             decoded = base64.urlsafe_b64decode(value)
             return len(decoded) >= 16
-        except Exception:
+        except Exception as e:
+            logger.debug("[SettingsManager] looks_like_base64 check failed: %s", e)
             return False
 
     def _save_to_disk(self) -> None:

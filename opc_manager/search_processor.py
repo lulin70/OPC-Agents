@@ -178,7 +178,8 @@ def _load_builtin_knowledge() -> Dict[str, list]:
     try:
         with open(_BUILTIN_KB_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        logger.debug("[SearchProcessor] Load builtin KB failed: %s", e)
         return {}
 
 
@@ -618,7 +619,8 @@ class SearchResultProcessor:
             try:
                 with open(filepath, "r", encoding="utf-8") as f:
                     content = f.read(2000)
-            except Exception:
+            except Exception as e:
+                logger.debug("[SearchProcessor] Read file failed: %s", e)
                 continue
 
             from opc_manager.utils import sanitize_for_llm

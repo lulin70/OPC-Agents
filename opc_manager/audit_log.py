@@ -231,7 +231,8 @@ class AuditLog:
                         batch = []
                 except (KeyboardInterrupt, SystemExit):
                     break
-                except Exception:
+                except Exception as e:
+                    logger.warning("[AuditLog] Writer loop error: %s", e)
                     break
 
         t = threading.Thread(target=writer, daemon=True)

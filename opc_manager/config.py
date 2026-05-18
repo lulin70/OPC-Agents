@@ -115,10 +115,11 @@ class ConfigManager:
                 for callback in self._callbacks:
                     try:
                         callback()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("[Config] Callback failed: %s", e)
                 return True
-        except Exception:
+        except Exception as e:
+            logger.debug("[Config] Notify callbacks failed: %s", e)
             return False
 
     def register_callback(self, callback: Callable) -> None:
@@ -161,10 +162,11 @@ class ConfigManager:
                 for callback in self._callbacks:
                     try:
                         callback()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("[Config] Set callback failed: %s", e)
                 return True
-        except Exception:
+        except Exception as e:
+            logger.debug("[Config] Set value failed: %s", e)
             return False
 
 

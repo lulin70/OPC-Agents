@@ -11,6 +11,8 @@ import time
 import logging
 from datetime import datetime
 
+from opc_manager.i18n import t as _t
+
 logger = logging.getLogger(__name__)
 
 
@@ -192,10 +194,10 @@ def _get_export_bytes(content: str, fmt: str) -> tuple:
     try:
         return ErrorHandler.safe_execute(
             _do_get_export_bytes, content, fmt,
-            context=f"导出{fmt}格式时"
+            context=_t("export_fmt_context", fmt=fmt)
         )
     except UserFriendlyError as e:
-        logger.warning("[frontend] 导出失败 (%s): %s", fmt, e.user_message)
+        logger.warning("[frontend] %s: %s", _t("export_failed_log", fmt=fmt), e.user_message)
         return None, None, None
 
 
@@ -238,41 +240,39 @@ def _get_mime_type(filepath: str) -> str:
 
 
 def _render_batch_export_section(DELIVERABLES_DIR):
-    """在成果物Tab中渲染批量导出区域"""
-    st.markdown("### 📤 批量导出")
+    st.markdown(f"### 📤 {_t('export_batch_title')}")
 
     col_fmt, col_btn = st.columns([3, 1])
     with col_fmt:
         export_format = st.selectbox(
-            "选择导出格式",
-            options=["PDF文档包", "Word文档包", "Excel表格", "Markdown归档"],
-            help="将所有成果物打包为选定格式"
+            _t("export_select_format"),
+            options=[_t("export_pdf_pack"), _t("export_word_pack"), _t("export_excel"), _t("export_md_archive")],
+            help=_t("export_format_help")
         )
     with col_btn:
-        if st.button("批量导出", type="primary", use_container_width=True):
+        if st.button(_t("export_batch_btn"), type="primary", use_container_width=True):
             _execute_batch_export(export_format, DELIVERABLES_DIR)
 
 
 def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
-    """执行批量导出所有成果物"""
     from opc_manager.export.manager import ExportManager
     from opc_manager.export.models import ResultData, ExportFormat
 
     em = ExportManager()
 
-    progress_bar = st.progress(0, text="准备导出...")
+    progress_bar = st.progress(0, text=_t("export_preparing"))
 
     deliverables = st.session_state.get("deliverables", [])
 
     if not deliverables:
-        st.warning("暂无成果物可导出")
+        st.warning(_t("export_no_deliverables"))
         return
 
     fmt_map = {
-        "PDF文档包": ExportFormat.PDF,
-        "Word文档包": ExportFormat.WORD,
-        "Excel表格": ExportFormat.EXCEL,
-        "Markdown归档": ExportFormat.MD,
+        _t("export_pdf_pack"): ExportFormat.PDF,
+        _t("export_word_pack"): ExportFormat.WORD,
+        _t("export_excel"): ExportFormat.EXCEL,
+        _t("export_md_archive"): ExportFormat.MD,
     }
 
     target_fmt = fmt_map.get(format_name, ExportFormat.MD)
@@ -280,7 +280,7 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
 
     for i, item in enumerate(deliverables):
         progress = int((i + 1) / len(deliverables) * 100)
-        progress_bar.progress(progress, text=f"正在导出 ({i+1}/{len(deliverables)})...")
+        progress_bar.progress(progress, text=_t("export_progress", current=i+1, total=len(deliverables)))
 
         try:
             filepath = item.get("filepath", "")
@@ -305,17 +305,17 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
                     f.write(file_bytes)
                 results.append(output_path)
         except Exception as e:
-            st.warning(f"导出第{i+1}项失败: {e}")
+            st.warning(_t("export_item_failed", index=i+1, error=e))
 
-    progress_bar.progress(100, text="✅ 导出完成!")
+    progress_bar.progress(100, text=_t("export_complete"))
 
     if results:
-        st.success(f"成功导出 {len(results)} 个文件")
+        st.success(_t("export_success_count", count=len(results)))
         for fp in results:
             if os.path.exists(fp):
                 with open(fp, "rb") as f:
                     st.download_button(
-                        label=f"⬇️ 下载 {os.path.basename(fp)}",
+                        label=f"⬇️ {_t('download')} {os.path.basename(fp)}",
                         data=f,
                         file_name=os.path.basename(fp),
                         mime=_get_mime_type(fp),
@@ -324,64 +324,61 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
 
 
 def _render_single_export_buttons(item: dict, item_id: str):
-    """渲染单个成果物的4图标导出按钮组"""
     col_pdf, col_word, col_excel, col_png = st.columns(4)
     with col_pdf:
-        if st.button("📄 PDF", key=f"pdf_{item_id}", help="导出为PDF"):
+        if st.button("📄 PDF", key=f"pdf_{item_id}", help=_t("export_as_format", fmt="PDF")):
             _export_single_with_preview(item, "pdf", item_id)
     with col_word:
-        if st.button("📝 Word", key=f"word_{item_id}", help="导出为Word"):
+        if st.button("📝 Word", key=f"word_{item_id}", help=_t("export_as_format", fmt="Word")):
             _export_single_with_preview(item, "word", item_id)
     with col_excel:
-        if st.button("📊 Excel", key=f"excel_{item_id}", help="导出为Excel"):
+        if st.button("📊 Excel", key=f"excel_{item_id}", help=_t("export_as_format", fmt="Excel")):
             _export_single_with_preview(item, "excel", item_id)
     with col_png:
-        if st.button("🖼️ 图片", key=f"png_{item_id}", help="导出为PNG图片"):
+        if st.button("🖼️ 图片", key=f"png_{item_id}", help=_t("export_as_png")):
             _export_single_with_preview(item, "png", item_id)
 
 
 def _render_export_preview(item_data: dict, format_type: str):
-    """Show preview of export content before actual export."""
-    st.subheader("📋 导出预览")
+    st.subheader(_t("export_preview_title"))
 
     col_info, col_preview = st.columns([1, 2])
     with col_info:
-        st.markdown(f"**格式**: `{format_type.upper()}`")
+        st.markdown(f"**{_t('format')}**: `{format_type.upper()}`")
         content_str = str(item_data) if not isinstance(item_data, str) else item_data
         size_kb = len(content_str.encode("utf-8")) // 1024
-        st.markdown(f"**大小**: ~{size_kb} KB (预估)")
+        st.markdown(f"**{_t('size')}**: ~{size_kb} KB ({_t('size_estimated')})")
         keys = list(item_data.keys()) if isinstance(item_data, dict) else []
-        st.markdown(f"**包含字段**: {', '.join(keys[:5])}{'...' if len(keys) > 5 else ''}" if keys else "**内容类型**: 文本")
+        st.markdown(f"**{_t('included_fields')}**: {', '.join(keys[:5])}{'...' if len(keys) > 5 else ''}" if keys else f"**{_t('content_type')}**: {_t('text_type')}")
 
         format_hints = {
-            "pdf": "📄 PDF 文档，支持中文排版",
-            "word": "📝 Word 文档，可编辑格式",
-            "excel": "📊 Excel 表格，含数据表",
-            "image": "🖼️ PNG 图片，适合分享",
-            "png": "🖼️ PNG 图片，适合分享",
+            "pdf": "📄 PDF {_t('format_pdf_desc')}",
+            "word": "📝 Word {_t('format_word_desc')}",
+            "excel": "📊 Excel {_t('format_excel_desc')}",
+            "image": "🖼️ PNG {_t('format_png_desc')}",
+            "png": "🖼️ PNG {_t('format_png_desc')}",
         }
-        st.caption(format_hints.get(format_type.lower(), f"导出为 {format_type.upper()} 格式"))
+        st.caption(format_hints.get(format_type.lower(), _t("export_as_format2", fmt=format_type.upper())))
 
     with col_preview:
         content_preview = str(item_data)[:500] + ("..." if len(str(item_data)) > 500 else "")
-        st.text_area("内容预览", value=content_preview, height=200, disabled=True)
+        st.text_area(_t("content_preview"), value=content_preview, height=200, disabled=True)
 
     col_confirm, col_cancel = st.columns([1, 1])
     with col_confirm:
-        if st.button("✅ 确认导出", type="primary", key=f"confirm_export_{format_type}"):
+        if st.button("✅ " + _t("confirm_export"), type="primary", key=f"confirm_export_{format_type}"):
             return True
     with col_cancel:
-        if st.button("取消", key=f"cancel_export_{format_type}"):
+        if st.button(_t("cancel"), key=f"cancel_export_{format_type}"):
             return False
 
     return None
 
 
 def _export_single_with_preview(item: dict, fmt: str, item_id: str):
-    """Execute single export with preview step."""
     filepath = item.get("filepath", "")
     if not filepath or not os.path.exists(filepath):
-        st.error("文件不存在")
+        st.error(_t("file_not_exists"))
         return
 
     try:
@@ -399,19 +396,18 @@ def _export_single_with_preview(item: dict, fmt: str, item_id: str):
         if preview_result is True:
             _export_single(item, fmt)
         elif preview_result is False:
-            st.info("导出已取消")
+            st.info(_t("export_cancelled"))
     except Exception as e:
-        st.error(f"预览失败: {e}")
+        st.error(_t("preview_failed", error=e))
 
 
 def _export_single(item: dict, fmt: str):
-    """执行单个成果物的格式导出"""
     from opc_manager.export.manager import ExportManager
     from opc_manager.export.models import ResultData, ExportFormat
 
     filepath = item.get("filepath", "")
     if not filepath or not os.path.exists(filepath):
-        st.error("文件不存在")
+        st.error(_t("file_not_exists"))
         return
 
     try:
@@ -438,69 +434,60 @@ def _export_single(item: dict, fmt: str):
             ext = target_fmt.value
             filename = f"{os.path.splitext(item.get('filename', 'export'))[0]}.{ext}"
             st.download_button(
-                label=f"⬇️ 下载 {filename}",
+                label=f"⬇️ {_t('download')} {filename}",
                 data=file_bytes,
                 file_name=filename,
                 mime=_get_mime_type(f".{ext}"),
                 key=f"dl_single_{fmt}_{item_id}",
             )
         else:
-            st.warning(f"导出{fmt.upper()}失败")
+            st.warning(_t("export_format_failed", fmt=fmt.upper()))
     except Exception as e:
-        st.error(f"导出失败: {e}")
+        st.error(_t("export_failed", error=e))
 
 
 def _event_type_label(event_type: str) -> str:
-    """将事件类型转换为中文标签"""
     labels = {
-        "PLAN_START": "🎯 规划中...",
-        "INTENT_DETECTED": "🔍 分析意图...",
-        "CONFIRM_REQUESTED": "❓ 等待确认...",
-        "CONFIRMED": "✅ 已确认",
-        "STEP_START": "⚙️ 执行步骤...",
-        "STEP_PROGRESS": "🔄 进行中...",
-        "STEP_COMPLETE": "✅ 步骤完成",
-        "COLLAB_START": "🤝 协作处理...",
-        "REFLECT_START": "💭 反思评估...",
-        "COMPLETE": "🎉 全部完成!",
-        "ERROR": "❌ 出现错误",
-        "CANCELLED": "⏹️ 已取消",
-        "plan_start": "🎯 规划中...",
-        "intent_detected": "🔍 分析意图...",
-        "confirm_requested": "❓ 等待确认...",
-        "confirmed": "✅ 已确认",
-        "step_start": "⚙️ 执行步骤...",
-        "step_progress": "🔄 进行中...",
-        "step_complete": "✅ 步骤完成",
-        "collab_start": "🤝 协作处理...",
-        "reflect_start": "💭 反思评估...",
-        "complete": "🎉 全部完成!",
-        "error": "❌ 出现错误",
-        "cancelled": "⏹️ 已取消",
+        "PLAN_START": _t("event_plan_start"),
+        "INTENT_DETECTED": _t("event_intent_detected"),
+        "CONFIRM_REQUESTED": _t("event_confirm_requested"),
+        "CONFIRMED": _t("event_confirmed"),
+        "STEP_START": _t("event_step_start"),
+        "STEP_PROGRESS": _t("event_step_progress"),
+        "STEP_COMPLETE": _t("event_step_complete"),
+        "COLLAB_START": _t("event_collab_start"),
+        "REFLECT_START": _t("event_reflect_start"),
+        "COMPLETE": _t("event_complete"),
+        "ERROR": _t("event_error"),
+        "CANCELLED": _t("event_cancelled"),
+        "plan_start": _t("event_plan_start"),
+        "intent_detected": _t("event_intent_detected"),
+        "confirm_requested": _t("event_confirm_requested"),
+        "confirmed": _t("event_confirmed"),
+        "step_start": _t("event_step_start"),
+        "step_progress": _t("event_step_progress"),
+        "step_complete": _t("event_step_complete"),
+        "collab_start": _t("event_collab_start"),
+        "reflect_start": _t("event_reflect_start"),
+        "complete": _t("event_complete"),
+        "error": _t("event_error"),
+        "cancelled": _t("event_cancelled"),
     }
     return labels.get(event_type, event_type.replace("_", " ").title())
 
 
 def _get_phase_from_event(event_type: str) -> tuple:
-    """根据事件类型返回对应的图标和阶段名称
-
-    Args:
-        event_type: 事件类型字符串
-
-    Returns:
-        (icon, name) 元组
-    """
     phase_mapping = {
-        "plan_start": ("🚀", "任务启动"),
-        "intent_detected": ("🔍", "意图识别"),
-        "step_start": ("⚡", "执行中"),
-        "step_progress": ("⚡", "执行中"),
-        "step_complete": ("✅", "步骤完成"),
-        "complete": ("✅", "任务完成"),
-        "error": ("❌", "执行错误"),
+        "plan_start": ("🚀", _t("phase_task_start")),
+        "intent_detected": ("🔍", _t("phase_intent_detected")),
+        "step_start": ("⚡", _t("phase_executing")),
+        "step_progress": ("⚡", _t("phase_executing")),
+        "step_complete": ("✅", _t("event_step_complete")),
+        "complete": ("✅", _t("phase_task_complete")),
+        "error": ("❌", _t("phase_exec_error")),
     }
     event_key = event_type.lower().replace("-", "_")
-    return phase_mapping.get(event_key, ("⚡", "执行中"))
+    return phase_mapping.get(event_key, ("⚡", _t("phase_executing")))
 
 
 def _event_emoji(event_type: str) -> str:
@@ -557,9 +544,9 @@ def _render_progress_indicator(session_id: str):
     status_label = _event_type_label(event_type)
 
     if is_error:
-        st.markdown(f"#### {phase_icon} 当前状态: :red[{status_label}]")
+        st.markdown(f"#### {phase_icon} {_t('current_status')} :red[{status_label}]")
     else:
-        st.markdown(f"#### {phase_icon} 当前状态: {status_label}")
+        st.markdown(f"#### {phase_icon} {_t('current_status')}: {status_label}")
 
     bar_color = "error" if is_error else None
     bar = st.progress(min(progress_pct / 100.0, 1.0))
@@ -567,22 +554,22 @@ def _render_progress_indicator(session_id: str):
     cols_info = st.columns(3)
     with cols_info[0]:
         if is_error:
-            st.metric("进度", f":red[{progress_pct}%]")
+            st.metric(_t("progress"), f":red[{progress_pct}%]")
         else:
-            st.metric("进度", f"{progress_pct}%")
+            st.metric(_t("progress"), f"{progress_pct}%")
     with cols_info[1]:
         stage_name = event_type.replace("_", " ").title() if event_type else "-"
-        st.metric("阶段", stage_name)
+        st.metric(_t("stage"), stage_name)
     with cols_info[2]:
         display_msg = message[:50] + "..." if len(message) > 50 else (message or "-")
         if is_error:
-            st.metric("消息", f":red[{display_msg}]")
+            st.metric(_t("message"), f":red[{display_msg}]")
         else:
-            st.metric("消息", display_msg)
+            st.metric(_t("message"), display_msg)
 
     if len(history) > 1:
         st.markdown("---")
-        st.markdown("**📈 执行时间线**")
+        st.markdown(f"**📈 {_t('execution_timeline')}**")
 
         _render_timeline(history)
 
@@ -635,17 +622,12 @@ def _get_phase_icon(event_type: str) -> str:
 
 
 def _render_timeline(history: list):
-    """渲染阶段时间线可视化
-
-    Args:
-        history: 事件历史列表
-    """
     timeline_phases = [
-        ("plan_start", "🚀 计划启动"),
-        ("intent_detected", "🔍 意图识别"),
-        ("step_start", "⚡ 步骤执行"),
-        ("step_complete", "✅ 步骤完成"),
-        ("complete", "🎉 任务完成"),
+        ("plan_start", "🚀 " + _t("timeline_plan_start")),
+        ("intent_detected", "🔍 " + _t("timeline_intent_detected")),
+        ("step_start", "⚡ " + _t("timeline_step_start")),
+        ("step_complete", "✅ " + _t("event_step_complete")),
+        ("complete", "🎉 " + _t("timeline_task_complete")),
     ]
 
     completed_phases = set()
@@ -686,10 +668,10 @@ def _auto_refresh_progress(session_id: str, interval_sec: int = 2):
 
     col_refresh, col_close = st.columns([1, 3])
     with col_refresh:
-        if st.button("🔄 刷新进度", key="refresh_prog"):
+        if st.button("🔄 " + _t("refresh_progress"), key="refresh_prog"):
             st.rerun()
     with col_close:
-        st.caption("点击刷新查看最新进度")
+        st.caption(_t("click_refresh_hint"))
 
 
 def _render_export_buttons(content: str, formats: list, key_prefix: str):
@@ -699,7 +681,7 @@ def _render_export_buttons(content: str, formats: list, key_prefix: str):
         "pdf": "📄 PDF", "docx": "📝 Word", "xlsx": "📊 Excel",
         "png": "🖼️ 图片", "html": "🌐 HTML", "md": "📑 Markdown",
     }
-    st.markdown("**导出为其他格式:**")
+    st.markdown(f"**{_t('export_as_other_formats')}:**")
     btn_cols = st.columns(min(len(formats), 4))
     for i, fmt in enumerate(formats):
         label = FORMAT_LABELS.get(fmt, fmt.upper())
@@ -762,24 +744,24 @@ def _render_undo_panel():
 
     st.divider()
 
-    if st.button("↩️ 撤销操作", use_container_width=True, help="查看和管理可撤销的操作"):
+    if st.button("↩️ " + _t("undo_operations"), use_container_width=True, help=_t("undo_operations_help")):
         st.session_state.show_undo = not st.session_state.get("show_undo", False)
 
     if st.session_state.get("show_undo", False):
-        st.markdown("#### ↩️ 可撤销的操作")
+        st.markdown("#### ↩️ " + _t("undoable_operations"))
 
         session_id = _get_current_session_id()
         if not session_id:
-            st.warning("⚠️ 无法获取当前会话ID")
+            st.warning("⚠️ " + _t("cannot_get_session_id"))
             return
 
         undoable = _cached_list_undoable(session_id)
 
         if not undoable:
-            st.info("没有可撤销的操作")
+            st.info(_t("no_undoable_operations"))
             return
 
-        st.caption(f"共 {len(undoable)} 个可撤销操作")
+        st.caption(_t("total_undoable_count", count=len(undoable)))
 
         for record in undoable[-10:]:
             op_type = record.get("operation_type", "unknown")
@@ -793,37 +775,37 @@ def _render_undo_panel():
 
                 with col_info:
                     st.json({
-                        "类型": op_type,
-                        "时间": created_at,
-                        "状态": "可撤销" if can_undo else f"不可撤: {reason}",
+                        _t("type"): op_type,
+                        _t("time"): created_at,
+                        _t("status"): _t("can_undo") if can_undo else f"{_t('cannot_undo')}: {reason}",
                         "ID": op_id[:12] if op_id else "",
                     })
 
                 with col_action:
                     if can_undo:
                         confirmed = st.checkbox(
-                            "确认撤销",
+                            _t("confirm_undo"),
                             key=f"undo_confirm_{op_id}",
-                            help="勾选此项以确认执行撤销操作"
+                            help=_t("confirm_undo_help")
                         )
 
                         if confirmed:
                             if st.button(
-                                "撤销",
+                                _t("undo"),
                                 key=f"undo_{op_id}",
                                 type="secondary",
-                                help="此操作将执行逆操作，请谨慎"
+                                help=_t("undo_warning")
                             ):
-                                with st.spinner("正在撤销..."):
+                                with st.spinner(_t("undoing")):
                                     result = um.undo(session_id, op_id)
                                     if result.get("success"):
-                                        st.success(f"✅ 已撤销: {result.get('message', '')}")
+                                        st.success(f"✅ {_t('undo_success', msg=result.get('message', ''))}")
                                         st.balloons()
                                         _cached_list_undoable.clear()
                                         time.sleep(1)
                                         st.rerun()
                                     else:
-                                        st.error(f"❌ 撤销失败: {result.get('error', '未知错误')}")
+                                        st.error(f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}")
                     else:
                         st.caption(f"❌ {reason}")
 
@@ -832,9 +814,9 @@ def _render_undo_panel():
                             remaining = max(0, expires_at - time.time())
                             if remaining > 0:
                                 mins, secs = divmod(int(remaining), 60)
-                                st.caption(f"⏰ 剩余时间: {mins}分{secs}秒")
+                                st.caption(f"⏰ {_t('remaining_time', mins=mins, secs=secs)}")
                             else:
-                                st.caption("⏰ 已过撤销窗口期")
+                                st.caption("⏰ " + _t("undo_window_expired"))
 
 
 def _render_theme_selector():
@@ -998,26 +980,26 @@ def _render_quick_undo_button(task_id: str, operation_type: str = None):
 
         col_undo, col_space = st.columns([1, 4])
         with col_undo:
-            label = f"↩️ 撤销上一步 ({operation_type or last_record.get('operation_type', '操作')})"
+            label = f"↩️ {_t('undo_last_step', op=operation_type or last_record.get('operation_type', _t('operation'))) }"
 
             if st.button(label, key=f"quick_undo_{task_id}", type="secondary"):
                 confirmed = st.checkbox(
-                    "✅ 我确认要撤销此操作",
+                    "✅ " + _t("confirm_undo_this_operation"),
                     key=f"quick_undo_confirm_{task_id}",
-                    help="撤销是破坏性操作，将执行逆操作恢复原始状态"
+                    help=_t("undo_destructive_help")
                 )
 
                 if confirmed:
-                    with st.spinner("正在撤销..."):
+                    with st.spinner(_t("undoing")):
                         result = um.undo(session_id, op_id)
                         if result.get("success"):
-                            st.success(f"✅ 已撤销: {result.get('message', '')}")
+                            st.success(f"✅ {_t('undo_success', msg=result.get('message', ''))}")
                             st.balloons()
                             _cached_list_undoable.clear()
                             time.sleep(1)
                             st.rerun()
                         else:
-                            st.error(f"❌ 撤销失败: {result.get('error', '未知错误')}")
+                            st.error(f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}")
 
     except Exception as e:
         logger.warning("[frontend] Quick undo button error: %s", e)

@@ -239,8 +239,8 @@ class DataBackupManager:
                                     writer.writerow([table_name, k, str(v), ts])
                                 elif isinstance(v, dict):
                                     writer.writerow([table_name, k, json.dumps(v, ensure_ascii=False), ts])
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("[DataBackup] CSV write row failed: %s", e)
 
             return output.getvalue().encode('utf-8')
 

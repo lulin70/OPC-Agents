@@ -12,8 +12,8 @@ def render_growth_page():
     count = st.session_state.scenario_count
 
     _raw = _t("growth_level_1")
-    lv_name = "🌱 探索者"
-    lv_desc = "专注单一业务类型，持续深耕"
+    lv_name = _t("growth_level_1_name")
+    lv_desc = _t("growth_level_1_desc")
 
     col_level, col_count = st.columns([2, 1])
     with col_level:
@@ -47,4 +47,4 @@ def render_growth_page():
     if count == 0:
         st.info(f"💡 {_t('growth_empty_hint')}")
     elif level < 3:
-        st.success(f"🎯 {_t('growth_upgrade_hint', level_name='🔗 连接者')}")
+        st.success(f"🎯 {_t('growth_upgrade_hint', level_name=_t('growth_upgrade_target'))}")

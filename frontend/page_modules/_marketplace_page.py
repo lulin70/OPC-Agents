@@ -298,7 +298,8 @@ def _render_my_skills_v2(marketplace, external_mp):
     try:
         installed_result = external_mp.list_installed()
         installed = installed_result.get("skills", []) if isinstance(installed_result, dict) else []
-    except Exception:
+    except Exception as e:
+        logger.warning("[marketplace] list_installed failed: %s", e)
         installed = []
 
     if not installed:
@@ -367,8 +368,8 @@ def _load_installed_versions(external_mp):
             sid = s.get("skill_id", "")
             if sid and sid not in versions:
                 versions[sid] = s.get("version", "1.0.0")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[marketplace] load_installed_versions merge failed: %s", e)
     return versions
 
 
@@ -514,8 +515,8 @@ def _execute_global_search(query: str) -> list:
                     "score": _simple_match_score(q_lower, combined),
                     "link": None,
                 })
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[marketplace] global_search audit_log query failed: %s", e)
 
     messages = st.session_state.get("messages", [])
     for msg in messages[-50:]:

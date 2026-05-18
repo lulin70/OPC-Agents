@@ -27,7 +27,8 @@ _DEFAULT_TAX_CALENDAR = [
 try:
     from opc_manager.utils import load_json_data
     TAX_CALENDAR = load_json_data("data/knowledge/tax_calendar.json")
-except Exception:
+except Exception as e:
+    logger.debug("[TaxReminderSkill] Load tax calendar failed: %s", e)
     TAX_CALENDAR = _DEFAULT_TAX_CALENDAR
 
 
@@ -68,7 +69,8 @@ def check_upcoming_deadlines(days_ahead: int = 30) -> Dict[str, Any]:
             deadline_ts = time.mktime(time.strptime(deadline_date, "%Y-%m-%d"))
             now_ts = time.mktime(time.strptime(now, "%Y-%m-%d"))
             days_remaining = int((deadline_ts - now_ts) / 86400)
-        except Exception:
+        except Exception as e:
+            logger.debug("[TaxReminderSkill] Date parse failed: %s", e)
             continue
 
         if 0 <= days_remaining <= days_ahead:

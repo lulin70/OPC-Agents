@@ -99,7 +99,7 @@ def _render_llm_settings(settings):
             _t("llm_model"),
             value=llm_config.get("model", ""),
             help=_t("settings_llm_model_help"),
-            placeholder="gpt-4 / chatglm-turbo 等",
+            placeholder=_t("llm_model_placeholder"),
         )
 
         col_tokens, col_temp = st.columns(2)

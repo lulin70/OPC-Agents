@@ -212,8 +212,8 @@ class EventEmitter:
                     except asyncio.QueueEmpty:
                         pass
                 queue.put_nowait(event)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[Utils] Progress event queue put failed: %s", e)
 
     async def subscribe(self) -> AsyncIterator[Event]:
         queue: asyncio.Queue = asyncio.Queue(maxsize=self._max_queue_size)
