@@ -156,8 +156,8 @@ class TestExportPreview:
         from frontend.components.shared import _render_export_preview
         import inspect
         source = inspect.getsource(_render_export_preview)
-        assert "确认导出" in source
-        assert "取消" in source
+        assert "confirm_export" in source
+        assert "cancel" in source
 
 
 class TestShortcutHints:
@@ -182,13 +182,13 @@ class TestShortcutHints:
         from frontend.components.shared import _maybe_show_shortcut_hints
         import inspect
         source = inspect.getsource(_maybe_show_shortcut_hints)
-        assert "知道了，不再显示" in source or "dismiss" in source.lower()
+        assert "shortcut_dismiss_btn" in source or "dismiss" in source.lower()
 
     def test_shortcut_hints_has_later_button(self):
         from frontend.components.shared import _maybe_show_shortcut_hints
         import inspect
         source = inspect.getsource(_maybe_show_shortcut_hints)
-        assert "下次再说" in source or "later" in source.lower()
+        assert "shortcut_later_btn" in source or "later" in source.lower()
 
     def test_enhanced_shortcuts_table(self):
         from frontend.components.shared import _render_shortcuts_help

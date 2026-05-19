@@ -703,7 +703,7 @@ class TestConstantsAndConfiguration:
 
     def test_skill_category_icons_complete(self):
         """Test that all skill categories have icons"""
-        expected_categories = ["UTILITY", "SEARCH", "ANALYSIS", "CREATION", "OPERATION", "NOTIFICATION"]
+        expected_categories = ["utility", "search", "analysis", "creation", "operation", "notification"]
         for cat in expected_categories:
             assert cat in SKILL_CATEGORY_ICONS
 

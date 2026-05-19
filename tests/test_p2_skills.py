@@ -13,7 +13,26 @@ class TestCompetitorSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_add_competitor(self):
         from opc_manager.competitor_skill import add_competitor
@@ -76,7 +95,26 @@ class TestPricingSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_calculate_cost_pricing(self):
         from opc_manager.pricing_skill import calculate_pricing
@@ -163,7 +201,26 @@ class TestTaxReminderSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_check_upcoming_deadlines(self):
         from opc_manager.tax_reminder_skill import check_upcoming_deadlines
@@ -230,7 +287,26 @@ class TestDashboardSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     @patch("opc_manager.dashboard_skill.list_tasks")
     @patch("opc_manager.dashboard_skill.get_silent_customers")
@@ -321,7 +397,26 @@ class TestKnowledgeSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_create_article(self):
         from opc_manager.knowledge_skill import create_article
@@ -406,7 +501,26 @@ class TestSkillRegistryP2(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_competitor_skill_registered(self):
         from opc_manager.skill_registry import SkillRegistry

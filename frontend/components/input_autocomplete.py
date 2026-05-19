@@ -73,12 +73,12 @@ COMPLETION_TEMPLATES = [
 ]
 
 SKILL_CATEGORY_ICONS = {
-    "UTILITY": "🔧",
-    "SEARCH": "🔍",
-    "ANALYSIS": "📊",
-    "CREATION": "✍️",
-    "OPERATION": "⚙️",
-    "NOTIFICATION": "🔔",
+    "utility": "🔧",
+    "search": "🔍",
+    "analysis": "📊",
+    "creation": "✍️",
+    "operation": "⚙️",
+    "notification": "🔔",
 }
 
 SMART_HINTS = [

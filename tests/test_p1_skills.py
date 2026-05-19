@@ -12,8 +12,28 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 class TestSocialSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from opc_manager.data_manager import init_db
+        from opc_manager.data_manager import init_db, _db_initialized, _local
+        # 重置数据库状态，确保每个测试类获得干净连接
+        if hasattr(_local, 'conn') and _local.conn:
+            try:
+                _local.conn.close()
+            except Exception:
+                pass
+            _local.conn = None
+        import opc_manager.data_manager as dm
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_generate_content_xiaohongshu(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
@@ -102,7 +122,26 @@ class TestProposalSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_create_proposal_default(self):
         from opc_manager.proposal_skill import create_proposal
@@ -193,7 +232,26 @@ class TestInvoiceSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_create_invoice(self):
         from opc_manager.invoice_skill import create_invoice
@@ -283,7 +341,26 @@ class TestReportSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     @patch("opc_manager.report_skill.list_tasks")
     @patch("opc_manager.report_skill.get_customer_stats")
@@ -363,7 +440,26 @@ class TestCalendarSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_add_event(self):
         from opc_manager.calendar_skill import add_event
@@ -460,7 +556,26 @@ class TestSkillRegistryP1(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
         init_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        import opc_manager.data_manager as dm
+        if hasattr(dm._local, 'conn') and dm._local.conn:
+            try:
+                dm._local.conn.close()
+            except Exception:
+                pass
+            dm._local.conn = None
+        dm._db_initialized = False
 
     def test_social_skill_registered(self):
         from opc_manager.skill_registry import SkillRegistry
