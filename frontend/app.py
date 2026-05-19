@@ -261,6 +261,25 @@ with st.sidebar:
         st.divider()
         st.markdown(_t("deliverables_count", count=len(st.session_state.deliverables)))
 
+    # 记忆状态指示器
+    try:
+        from opc_manager.memory_bridge import get_memory_bridge
+        _mb = get_memory_bridge()
+        status = _mb.get_status()
+        if status["enabled"]:
+            st.divider()
+            mem_info = f"🧠 记忆 {status['memory_count']}条"
+            if status.get("rule_count", 0) > 0:
+                mem_info += f" | 规则 {status['rule_count']}条"
+            if status.get("pending_lessons", 0) > 0:
+                mem_info += f" | ⚠️{status['pending_lessons']}待审"
+            st.markdown(mem_info)
+        elif status["available"]:
+            st.divider()
+            st.caption("🧠 记忆未启用")
+    except Exception:
+        pass
+
     st.divider()
     if "exec_mode" not in st.session_state:
         st.session_state.exec_mode = _t("mode_quality")

@@ -360,11 +360,27 @@ class AgentLoop:
         history = conversation_history or []
         loop = asyncio.get_running_loop()
 
+        # MemoryBridge: 注入规则约束到策略脑 context
+        memory_rules = {}
+        try:
+            from opc_manager.memory_bridge import get_memory_bridge
+            _mb = get_memory_bridge()
+            if _mb.enabled:
+                memory_rules = _mb.get_rules_for_context(context.user_input)
+        except Exception:
+            pass
+
+        plan_context = {"history": history}
+        if memory_rules.get("rules_prompt"):
+            plan_context["rules_prompt"] = memory_rules["rules_prompt"]
+        if memory_rules.get("rules"):
+            plan_context["rules"] = memory_rules["rules"]
+
         intent = await loop.run_in_executor(
             None,
             lambda: self.strategist_brain.understand_intent(
                 user_input=context.user_input,
-                context={"history": history}
+                context=plan_context
             )
         )
         context.intent = intent
@@ -581,6 +597,20 @@ class AgentLoop:
         )
 
         logger.info("评估结果: %s (质量评分: %.2f)", evaluation.result.name, evaluation.quality_score)
+
+        # MemoryBridge: 质量不佳时记录失败经验
+        if evaluation.quality_score < 0.5:
+            try:
+                from opc_manager.memory_bridge import get_memory_bridge
+                _mb = get_memory_bridge()
+                if _mb.enabled:
+                    _mb.record_failure(
+                        user_input=context.user_input,
+                        failure_reason=evaluation.deviation_analysis[:200],
+                        quality_score=evaluation.quality_score,
+                    )
+            except Exception:
+                pass
 
         correction_strategy = await loop.run_in_executor(
             None,

@@ -538,12 +538,36 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
         except Exception as e:
             logger.warning("[frontend-async] 确认检查失败（继续执行）: %s", e)
 
+        # MemoryBridge: 任务前注入记忆上下文
+        memory_context = ""
+        try:
+            from opc_manager.memory_bridge import get_memory_bridge
+            _mb = get_memory_bridge()
+            if _mb.enabled:
+                memory_context = _mb.build_context(prompt)
+                if memory_context:
+                    prompt = f"{memory_context}\n\n{prompt}"
+                    logger.debug("[frontend-async] 记忆上下文已注入")
+        except Exception as e:
+            logger.debug("[frontend-async] 记忆注入跳过: %s", e)
+
         content, success, filepath, task_type, deliverable_record = execute_with_agent_loop(
             prompt, session_ctx=session_ctx, business_type=business_type
         )
         logger.debug(
             f"[frontend-async] 执行完成: success={success}, has_content={bool(content)}"
         )
+
+        # MemoryBridge: 任务后存储记忆
+        try:
+            if _mb.enabled and content:
+                _mb.remember(
+                    user_input=prompt.split("\n\n")[-1] if memory_context else prompt,
+                    result=content[:500],
+                    evaluation={"success": success},
+                )
+        except Exception as e:
+            logger.debug("[frontend-async] 记忆存储跳过: %s", e)
 
         if content and success:
             _export_formats = []

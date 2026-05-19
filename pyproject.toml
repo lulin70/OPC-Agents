@@ -72,6 +72,9 @@ marketplace = [
     "uvicorn>=0.23.0",
     "sse-starlette>=1.6.0",
 ]
+memory = [
+    "carrymem>=0.1.9,<0.3.0",
+]
 mcp = [
     "fastapi>=0.100.0",
     "uvicorn>=0.23.0",
