@@ -153,23 +153,23 @@ def render_chat_page():
                     )
                     st.rerun()
 
-        with st.expander(f"🔍 {_t('chat_more_scenarios')}", expanded=False):
-            st.markdown(f"**{_t('chat_select_scenario')}**")
-            more_cols = st.columns(2)
-            for i, sc in enumerate(SCENARIOS_MORE):
-                with more_cols[i % 2]:
-                    if st.button(
-                        f"{sc['icon']} {_t(sc['title'])}\n{_t(sc['desc'])}",
-                        key=f"more_{sc['id']}",
-                        use_container_width=True,
-                    ):
-                        st.session_state.pending_prompt = sc.get(
-                            "prompt", _t("scenario_execute_more", name=_t(sc['title']))
-                        )
-                        st.rerun()
-
         st.divider()
         st.caption(f"💡 {_t('chat_input_execute_hint')}")
+
+    with st.expander(f"🔍 {_t('chat_more_scenarios')}", expanded=False):
+        st.markdown(f"**{_t('chat_select_scenario')}**")
+        more_cols = st.columns(2)
+        for i, sc in enumerate(SCENARIOS_MORE):
+            with more_cols[i % 2]:
+                if st.button(
+                    f"{sc['icon']} {_t(sc['title'])}\n{_t(sc['desc'])}",
+                    key=f"more_{sc['id']}",
+                    use_container_width=True,
+                ):
+                    st.session_state.pending_prompt = sc.get(
+                        "prompt", _t("scenario_execute_more", name=_t(sc['title']))
+                    )
+                    st.rerun()
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):

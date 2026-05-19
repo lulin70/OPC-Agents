@@ -31,6 +31,6 @@ def get_version_string() -> str:
     """Get full version string (including project name)
 
     Returns:
-        str: Full version string, e.g. "OPC-Agents v0.2.0"
+        str: Full version string, e.g. "OPC-Agents v{__version__}"
     """
     return f"OPC-Agents v{__version__}"

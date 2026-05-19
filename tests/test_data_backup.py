@@ -78,7 +78,7 @@ class TestCreateBackupBasic:
         assert backup_path.name.startswith("opc_agents_backup_")
         assert isinstance(manifest, BackupManifest)
         assert manifest.version == BACKUP_VERSION
-        assert manifest.created_by == "OPC-Agents v0.2.0"
+        assert manifest.created_by == "OPC-Agents v0.2.1"
         assert manifest.created_at != ""
         assert manifest.total_files > 0
 
@@ -209,7 +209,7 @@ class TestExportData:
 
         assert "exported_at" in data
         assert "exporter" in data
-        assert data["exporter"] == "OPC-Agents v0.2.0"
+        assert data["exporter"] == "OPC-Agents v0.2.1"
         assert "tables" in data
         assert "data" in data
         assert len(data["tables"]) > 0
@@ -284,7 +284,7 @@ class TestGetBackupManager:
 
         assert manifest.version == BACKUP_VERSION
         assert manifest.created_at == ""
-        assert manifest.created_by == "OPC-Agents v0.2.0"
+        assert manifest.created_by == "OPC-Agents v0.2.1"
         assert manifest.total_files == 0
         assert manifest.total_size_bytes == 0
         assert manifest.checksum_sha256 == ""

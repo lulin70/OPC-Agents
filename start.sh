@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OPC-Agents One-Click Launcher v0.2.0
+# OPC-Agents One-Click Launcher v0.2.1
 # Usage: ./start.sh
 
 set -e

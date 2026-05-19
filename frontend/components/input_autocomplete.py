@@ -299,7 +299,7 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry()
-        skills = registry.get_all_skills()
+        skills = registry.list_all_skills()
 
         category_groups = {}
         for skill in skills:
