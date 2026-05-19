@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司智能任务执行系统
 
-> **版本**: v0.2.1 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.0 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -58,6 +58,10 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **知识库兜底** — 6类20条专业知识，搜索失败时自动兜底
 - ✅ **文件交付** — 自动生成`.md`文件，提供下载按钮
 - ✅ **安全防护** — 命令白名单+路径校验+输入长度限制+审计日志+输入验证+Prompt注入防护+URL安全+错误脱敏+API Key加密存储
+- ✅ **🧠 跨会话持久记忆** — CarryMem 集成，用户偏好和上下文跨重启保持（`pip install opc-agents[memory]`）
+- ✅ **📜 规则引擎** — 行为约束自动注入策略脑，失败经验提炼为规则，越用越精准
+- ✅ **📚 外接知识库** — 6种适配器（Obsidian/语雀/飞书/Notion/思源笔记/本地文件夹），国内用户友好
+- ✅ **🔄 飞轮机制** — 等级评估(🌱新手→👑传奇)+记忆驱动技能推荐+过时记忆清理+数据导出
 - ✅ **测试覆盖** — **1126**个测试用例，100%通过率，CI自动验证（覆盖settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全部新模块）
 - ✅ **技能市场API** — 外部技能注册/发现/调用，API Key认证+权限分级
 - ✅ **MCP协议兼容** — 兼容微软Model Context Protocol标准，支持工具/资源/提示词
@@ -83,7 +87,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    OPC-Agents v0.2.1                 │
+│                    OPC-Agents v0.3.0                 │
 ├─────────────────────────────────────────────────────┤
 │  三贤者架构                                          │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
@@ -135,7 +139,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.2.1
+pip install opc-agents==0.3.0
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -200,6 +204,11 @@ docker compose up -d
 | `OLLAMA_BASE_URL` | Ollama本地模型地址 | — |
 | `OPC_USE_AGENT_LOOP` | 使用三贤者执行循环 | `false` |
 | `OPC_SKIP_REFLECT` | 跳过反思阶段（快速模式） | `false` |
+| `CARRYMEM_ENABLED` | 启用跨会话持久记忆 | `false` |
+| `CARRYMEM_DB_PATH` | CarryMem 数据库路径 | `~/.opc-agents/memory.db` |
+| `OPC_KB_ENABLED` | 启用外接知识库 | `false` |
+| `OPC_KB_TYPE` | 知识库类型 | `local` |
+| `OPC_KB_PATH` | 知识库路径（Obsidian/本地） | `~/knowledge` |
 
 > ⚠️ **安全提示**：`OPC_ENCRYPTION_KEY` 为必设项，未设置时 `encrypt_field()` 将抛出 `RuntimeError`，导致邮件密码、客户敏感字段等加密操作失败。请务必在 `.env` 中设置强随机密钥。
 
@@ -260,6 +269,10 @@ OPC-Agents/
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts集成（5个CLI动作）
 │   ├── wechat_agent.py    # 💬 微信E2E智能体
 │   ├── wechat_gateway.py  # 💬 微信网关
+│   │
+│   ├── # === v0.3.0 新增：CarryMem + 知识库 + 飞轮 ===
+│   ├── memory_bridge.py   # 🧠 MemoryBridge（CarryMem适配层，持久记忆+规则引擎+飞轮）
+│   ├── knowledge_bridge.py# 📚 KnowledgeBridge（6种知识库适配：Obsidian/语雀/飞书/Notion/思源/本地）
 │   │
 │   ├── # === v0.2.0 模块化提取 ===
 │   ├── task_types.py              # 从task_engine_v3提取的任务类型定义
@@ -368,6 +381,8 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| **0.3.0** | **2026-05-19** | **CarryMem 集成** — 持久记忆+规则引擎+6种外接知识库+飞轮机制(等级评估/技能推荐/记忆清理/数据导出) |
+| 0.2.1 | 2026-05-18 | 8个OPC技能集成+技术债清理(32 bare except+i18n 97键) |
 | **0.2.0** | **2026-05-17** | **FINAL** — 产品化发布：统一设置管理+首次引导+数据备份恢复+错误处理+微信E2E+模块化仪表盘+i18n三语+技能市场V2+全局搜索+Apple Shortcuts+API Key加密(Fernet)+代码模块化重构（84模块/39测试文件/1126测试） |
 | 0.1.8 | 2026-05-14 | 21内置技能+外部技能市场+MCP服务发现+用户画像+数据安全+SQLite统一存储 |
 | 0.1.9-delta | 2026-05-09 | 真实运行验证：三贤者LLM驱动+技能市场FastAPI+MCP传输+插件示例+编辑器UI+性能监控 |

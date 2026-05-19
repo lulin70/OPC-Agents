@@ -31,6 +31,7 @@
 import logging
 import os
 import re
+import urllib.parse
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
@@ -394,7 +395,23 @@ class SiYuanAdapter(KnowledgeAdapter):
         self._api_url = api_url or os.environ.get("SIYUAN_API_URL", "http://127.0.0.1:6806")
         self._token = token or os.environ.get("SIYUAN_TOKEN", "")
         self._box_id = box_id or os.environ.get("SIYUAN_BOX", "")
-        self._available = True  # 思源默认本地运行，先设为 True
+        self._available = self._check_availability()
+
+    def _check_availability(self) -> bool:
+        """初始化时验证思源笔记是否可达"""
+        try:
+            import urllib.request
+            import json
+            url = f"{self._api_url}/api/system/version"
+            headers = {"Content-Type": "application/json"}
+            if self._token:
+                headers["Authorization"] = f"Token {self._token}"
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                result = json.loads(resp.read().decode())
+                return result.get("code", -1) == 0
+        except Exception:
+            return False
 
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:
         try:

@@ -367,8 +367,8 @@ class AgentLoop:
             _mb = get_memory_bridge()
             if _mb.enabled:
                 memory_rules = _mb.get_rules_for_context(context.user_input)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[AgentLoop] MemoryBridge 规则注入跳过: %s", e)
 
         plan_context = {"history": history}
         if memory_rules.get("rules_prompt"):
@@ -606,11 +606,11 @@ class AgentLoop:
                 if _mb.enabled:
                     _mb.record_failure(
                         user_input=context.user_input,
-                        failure_reason=evaluation.deviation_analysis[:200],
+                        failure_reason=str(evaluation.deviation_analysis or "")[:200],
                         quality_score=evaluation.quality_score,
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[AgentLoop] MemoryBridge 失败经验记录跳过: %s", e)
 
         correction_strategy = await loop.run_in_executor(
             None,

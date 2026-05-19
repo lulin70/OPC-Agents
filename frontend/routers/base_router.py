@@ -540,6 +540,8 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
 
         # MemoryBridge: 任务前注入记忆上下文
         memory_context = ""
+        _mb = None
+        original_prompt = prompt  # 保存原始用户输入，用于后续记忆存储
         try:
             from opc_manager.memory_bridge import get_memory_bridge
             _mb = get_memory_bridge()
@@ -557,7 +559,7 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
             from opc_manager.knowledge_bridge import get_knowledge_bridge
             _kb = get_knowledge_bridge()
             if _kb.enabled:
-                knowledge_context = _kb.build_knowledge_prompt(prompt[:200])
+                knowledge_context = _kb.build_knowledge_prompt(original_prompt[:200])
                 if knowledge_context:
                     prompt = f"{knowledge_context}\n\n{prompt}"
                     logger.debug("[frontend-async] 知识库上下文已注入")
@@ -573,9 +575,9 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
 
         # MemoryBridge: 任务后存储记忆
         try:
-            if _mb.enabled and content:
+            if _mb is not None and _mb.enabled and content:
                 _mb.remember(
-                    user_input=prompt.split("\n\n")[-1] if memory_context else prompt,
+                    user_input=original_prompt,
                     result=content[:500],
                     evaluation={"success": success},
                 )

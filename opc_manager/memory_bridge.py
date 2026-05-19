@@ -91,12 +91,16 @@ class MemoryBridge:
 
     @property
     def memory_count(self) -> int:
-        """当前记忆条目数"""
+        """当前记忆条目数（缓存，remember 时自增）"""
         if not self._enabled or not self._cm:
-            return 0
+            return self._memory_count
+        if self._memory_count > 0:
+            return self._memory_count
         try:
             result = self._cm.recall_memories(limit=1)
-            return result.get("total", 0) if isinstance(result, dict) else len(result) if isinstance(result, list) else 0
+            count = result.get("total", 0) if isinstance(result, dict) else len(result) if isinstance(result, list) else 0
+            self._memory_count = count
+            return count
         except Exception:
             return self._memory_count
 
@@ -441,7 +445,7 @@ class MemoryBridge:
         score += min(metrics["rule_count"] / 10, 1.0) * 2      # 规则密度 (0-2分)
         score += min(metrics["confirmed_lessons"] / 5, 1.0) * 1 # 经验沉淀 (0-1分)
 
-        level = min(int(score), 5)
+        level = min(round(score), 5)
         grades = {0: "🌱 新手", 1: "🌿 熟悉", 2: "🌳 精通", 3: "🏔️ 专家", 4: "🧙 大师", 5: "👑 传奇"}
 
         return {

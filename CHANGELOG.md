@@ -2,6 +2,52 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.0] - 2026-05-19
+
+### CarryMem Integration — Persistent Memory + Rules + Knowledge + Flywheel
+
+#### Phase 1 (v0.2.2): Persistent Memory
+- **New**: `memory_bridge.py` — CarryMem adapter layer (~540 lines)
+- **Feature**: Cross-session memory — user preferences persist across app restarts
+- **Feature**: Sidebar memory status indicator (🧠 记忆 N条)
+- **Config**: `CARRYMEM_ENABLED=true`, `CARRYMEM_DB_PATH`, `CARRYMEM_MAX_MEMORIES`
+- **Install**: `pip install opc-agents[memory]`
+
+#### Phase 2 (v0.3.0): Rule Engine
+- **Feature**: Rule matching — behavioral constraints injected into Strategist Brain
+- **Feature**: Failure experience recording — Reflector Brain auto-records quality failures
+- **Feature**: Rule prompt injection — anchored format for LLM attention optimization
+- **Feature**: Sidebar rule count + pending lessons indicator
+- **API**: `match_rules()`, `inject_rules_prompt()`, `record_failure()`, `get_rules_for_context()`
+
+#### Phase 3 (v0.4.0): External Knowledge Base
+- **New**: `knowledge_bridge.py` — 6 knowledge base adapters (~460 lines)
+  - Obsidian: local-first, reads .obsidian vault
+  - 语雀 (Yuque): Alibaba ecosystem, API search
+  - 飞书文档 (Feishu): ByteDance ecosystem, Open Platform API
+  - Notion: global popular, API search
+  - 思源笔记 (SiYuan): open-source local, API search
+  - 本地文件夹 (Local Folder): simplest, Markdown indexing
+- **Feature**: Knowledge context injection before task execution
+- **Feature**: Sidebar knowledge base status indicator (📚 知识库(type) N篇)
+- **Config**: `OPC_KB_ENABLED=true`, `OPC_KB_TYPE=obsidian|local|yuque|feishu|notion|siyuan`
+
+#### Phase 4 (v0.5.0): Flywheel Mechanism
+- **Feature**: Flywheel level assessment (🌱新手→🌿熟悉→🌳精通→🏔️专家→🧙大师→👑传奇)
+- **Feature**: Memory-driven skill recommendation (`suggest_skills()`)
+- **Feature**: Stale memory cleanup (`cleanup_stale_memories()`)
+- **Feature**: User data export for portability (`export_user_data()`)
+
+#### Bug Fixes (7-dimension code review)
+- Fixed: `urllib.parse` not imported in knowledge_bridge.py (runtime crash for Yuque/Feishu)
+- Fixed: `_mb` variable scope issue in base_router.py (NameError when CarryMem not installed)
+- Fixed: Original prompt extraction error in base_router.py (data loss on multi-paragraph input)
+- Fixed: Silent exceptions in agent_loop.py now log at debug level
+- Fixed: `deviation_analysis` defensive null check in failure recording
+- Fixed: Flywheel level calculation uses `round()` instead of `int()` to avoid 4.9→4 truncation
+- Fixed: `memory_count` property cached to avoid DB query on every access
+- Fixed: SiYuanAdapter `_available` now validates connection at init instead of defaulting to True
+
 ## [0.2.1] - 2026-05-18
 
 ### User Experience Enhancement

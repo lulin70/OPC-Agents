@@ -75,6 +75,9 @@ marketplace = [
 memory = [
     "carrymem>=0.1.9,<0.3.0",
 ]
+knowledge = [
+    "carrymem>=0.1.9,<0.3.0",
+]
 mcp = [
     "fastapi>=0.100.0",
     "uvicorn>=0.23.0",
@@ -89,7 +92,7 @@ export = [
     "markdown>=3.5.0",
 ]
 all = [
-    "opc-agents[dev,marketplace,mcp,export]",
+    "opc-agents[dev,marketplace,memory,knowledge,mcp,export]",
 ]
 
 [project.scripts]
