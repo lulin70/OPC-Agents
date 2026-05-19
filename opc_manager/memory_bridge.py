@@ -399,6 +399,143 @@ class MemoryBridge:
             except Exception:
                 pass
 
+    # ========== Phase 4: 飞轮机制 ==========
+
+    def get_flywheel_status(self) -> Dict[str, Any]:
+        """获取飞轮效应状态 — 衡量"越用越懂你"的程度
+
+        飞轮指标：
+        - 记忆深度: 记忆条目数（越多越懂用户偏好）
+        - 规则密度: 活跃规则数（越多约束越精准）
+        - 经验沉淀: 已确认的失败教训数
+        - 知识覆盖: 知识库文档数
+        - 飞轮等级: 综合评分对应的等级
+        """
+        if not self._enabled:
+            return {"level": 0, "grade": "未启用", "metrics": {}}
+
+        metrics = {
+            "memory_count": self.memory_count,
+            "rule_count": 0,
+            "confirmed_lessons": 0,
+            "auto_rules": 0,
+        }
+
+        try:
+            engine = self.rule_engine
+            if engine:
+                stats = engine.get_stats()
+                if isinstance(stats, dict):
+                    metrics["rule_count"] = stats.get("total_active", 0)
+                    metrics["auto_rules"] = stats.get("auto_promotion", 0)
+
+                lesson_stats = engine.get_lesson_stats()
+                if isinstance(lesson_stats, dict):
+                    metrics["confirmed_lessons"] = lesson_stats.get("accepted", 0)
+        except Exception:
+            pass
+
+        # 计算飞轮等级 (0-5)
+        score = 0
+        score += min(metrics["memory_count"] / 20, 1.0) * 2   # 记忆深度 (0-2分)
+        score += min(metrics["rule_count"] / 10, 1.0) * 2      # 规则密度 (0-2分)
+        score += min(metrics["confirmed_lessons"] / 5, 1.0) * 1 # 经验沉淀 (0-1分)
+
+        level = min(int(score), 5)
+        grades = {0: "🌱 新手", 1: "🌿 熟悉", 2: "🌳 精通", 3: "🏔️ 专家", 4: "🧙 大师", 5: "👑 传奇"}
+
+        return {
+            "level": level,
+            "grade": grades.get(level, "🌱 新手"),
+            "score": round(score, 1),
+            "metrics": metrics,
+        }
+
+    def suggest_skills(self, user_input: str) -> List[str]:
+        """基于记忆和规则，推荐可能适合的技能
+
+        飞轮效应：用得越多，推荐越精准
+        """
+        if not self._enabled:
+            return []
+
+        suggestions = []
+        try:
+            # 从记忆中提取技能相关关键词
+            rules = self.match_rules(user_input, max_rules=3)
+            for r in rules:
+                action = r.get("action", "")
+                if "营销" in action or "marketing" in action.lower():
+                    suggestions.append("opc_market_research")
+                elif "创意" in action or "creative" in action.lower():
+                    suggestions.append("opc_creative_planning")
+                elif "增长" in action or "growth" in action.lower():
+                    suggestions.append("opc_growth_hacker")
+                elif "法律" in action or "legal" in action.lower():
+                    suggestions.append("opc_legal_advisor")
+                elif "PRD" in action or "产品" in action:
+                    suggestions.append("opc_prd_generation")
+        except Exception:
+            pass
+
+        return list(set(suggestions))[:3]
+
+    def cleanup_stale_memories(self, max_age_days: int = 90) -> int:
+        """清理过时的记忆 — 飞轮维护
+
+        Args:
+            max_age_days: 最大保留天数
+
+        Returns:
+            清理的记忆条目数
+        """
+        if not self._enabled or not self._cm:
+            return 0
+        try:
+            # CarryMem 的 consolidate 功能会自动处理
+            if hasattr(self._cm, 'consolidate'):
+                result = self._cm.consolidate()
+                if isinstance(result, dict):
+                    return result.get("cleaned", 0)
+            return 0
+        except Exception as e:
+            logger.debug("[MemoryBridge] 清理跳过: %s", e)
+            return 0
+
+    def export_user_data(self) -> Dict[str, Any]:
+        """导出用户全部数据 — 数据可携带性（飞轮护城河的保障）
+
+        Returns:
+            包含记忆、规则、统计的完整导出
+        """
+        if not self._enabled:
+            return {"memories": [], "rules": [], "flywheel": {}}
+
+        export = {"memories": [], "rules": [], "flywheel": self.get_flywheel_status()}
+
+        try:
+            # 导出记忆
+            if self._cm:
+                mem_result = self._cm.recall_memories(limit=1000)
+                if isinstance(mem_result, dict):
+                    export["memories"] = mem_result.get("memories", [])
+                elif isinstance(mem_result, list):
+                    export["memories"] = mem_result
+        except Exception:
+            pass
+
+        try:
+            # 导出规则
+            engine = self.rule_engine
+            if engine:
+                rules_result = engine.export_rules()
+                if isinstance(rules_result, dict):
+                    export["rules"] = rules_result.get("rules", [])
+        except Exception:
+            pass
+
+        return export
+
     def _try_auto_add_rule(self, suggestion: Any) -> None:
         """尝试自动添加规则建议（仅添加软规则，硬规则需用户确认）"""
         if not suggestion:

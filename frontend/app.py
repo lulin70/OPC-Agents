@@ -280,6 +280,18 @@ with st.sidebar:
     except Exception:
         pass
 
+    # 知识库状态指示器
+    try:
+        from opc_manager.knowledge_bridge import get_knowledge_bridge
+        _kb = get_knowledge_bridge()
+        kb_status = _kb.get_status()
+        if kb_status["enabled"]:
+            kb_type = kb_status.get("type", "")
+            source_count = kb_status.get("source_count", kb_status.get("file_count", 0))
+            st.markdown(f"📚 知识库({kb_type}) {source_count}篇")
+    except Exception:
+        pass
+
     st.divider()
     if "exec_mode" not in st.session_state:
         st.session_state.exec_mode = _t("mode_quality")

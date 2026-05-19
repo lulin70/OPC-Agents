@@ -551,6 +551,19 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
         except Exception as e:
             logger.debug("[frontend-async] 记忆注入跳过: %s", e)
 
+        # KnowledgeBridge: 任务前注入知识库参考
+        knowledge_context = ""
+        try:
+            from opc_manager.knowledge_bridge import get_knowledge_bridge
+            _kb = get_knowledge_bridge()
+            if _kb.enabled:
+                knowledge_context = _kb.build_knowledge_prompt(prompt[:200])
+                if knowledge_context:
+                    prompt = f"{knowledge_context}\n\n{prompt}"
+                    logger.debug("[frontend-async] 知识库上下文已注入")
+        except Exception as e:
+            logger.debug("[frontend-async] 知识库注入跳过: %s", e)
+
         content, success, filepath, task_type, deliverable_record = execute_with_agent_loop(
             prompt, session_ctx=session_ctx, business_type=business_type
         )
