@@ -1,4 +1,4 @@
-name: Python CI
+name: CI
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
     - uses: actions/checkout@v4
@@ -26,13 +26,14 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-v2-${{ hashFiles('**/requirements*.txt') }}
+        key: ${{ runner.os }}-pip-v3-${{ hashFiles('**/requirements*.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-v2-
+          ${{ runner.os }}-pip-v3-
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install -r requirements.txt
         pip install -r requirements-dev.txt
 
     - name: Check code formatting with Black
@@ -58,7 +59,16 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing
+        PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing -q
+
+    - name: Verify version consistency
+      run: |
+        VERSION_FILE=$(cat VERSION)
+        VERSION_PY=$(python -c "from opc_manager.version import __version__; print(__version__)")
+        if [ "$VERSION_FILE" != "$VERSION_PY" ]; then
+          echo "Version mismatch: VERSION=$VERSION_FILE, version.py=$VERSION_PY"
+          exit 1
+        fi
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
