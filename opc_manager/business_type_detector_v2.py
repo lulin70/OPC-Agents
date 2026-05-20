@@ -14,8 +14,11 @@ from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
 import re
+import logging
 
 from opc_manager.business_types import BusinessType
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

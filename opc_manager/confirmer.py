@@ -7,7 +7,7 @@ Supports both legacy IntentType strings and new UnifiedTaskCategory for backward
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Awaitable, Callable, Optional
+from typing import Awaitable, Callable, Dict, Optional, Tuple
 
 import logging
 import time

@@ -26,6 +26,7 @@ Degradation condition: Insufficient effect → then consider Baidu/Google/Bing m
   v3.5.0: Initial version, implements keyword extraction/filtering/scoring/fallback four-step pipeline
 """
 
+import json
 import logging
 import os
 import re

@@ -188,7 +188,7 @@ class AuditLog:
                         "status": r.status,
                         "duration_ms": r.duration_ms,
                         "input_summary": r.input_summary,
-                        "output_summary": r.output_summary[:MAX_QUERY_OUTPUT_LENGTH],
+                        "output_summary": r.output_summary[:AUDIT_MAX_QUERY_OUTPUT_LENGTH],
                     }
                 )
         return results[:limit]

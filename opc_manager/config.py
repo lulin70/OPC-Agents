@@ -8,7 +8,10 @@ Legacy config.toml support has been removed in v0.1.0.
 
 import os
 import threading
+import logging
 from typing import Dict, Any, Callable, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigManager:

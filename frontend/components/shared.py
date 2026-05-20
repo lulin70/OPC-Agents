@@ -12,6 +12,7 @@ import logging
 from datetime import datetime
 
 from opc_manager.i18n import t as _t
+from opc_manager.error_handler import ErrorHandler, UserFriendlyError
 
 logger = logging.getLogger(__name__)
 
@@ -576,7 +577,7 @@ def _export_single(item: dict, fmt: str):
                 data=file_bytes,
                 file_name=filename,
                 mime=_get_mime_type(f".{ext}"),
-                key=f"dl_single_{fmt}_{item_id}",
+                key=f"dl_single_{fmt}_{item.get('id', id(item))}",
             )
         else:
             st.warning(_t("export_format_failed", fmt=fmt.upper()))

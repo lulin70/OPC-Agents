@@ -338,6 +338,7 @@ def render_chat_page():
                     real_progress = None
                     real_message = None
                     real_event_type = None
+                    phase_hint = ""
 
                     if session_id and session_id != "default":
                         try:
