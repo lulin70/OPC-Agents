@@ -65,7 +65,6 @@ def reset_cache_singleton():
     """Reset LogCache singleton before each test for isolation."""
     original = LogCache._instance
     LogCache._instance = None
-    global _log_cache_instance
     import frontend.components.live_log_panel as module
 
     original_instance = getattr(module, "_log_cache_instance", None)

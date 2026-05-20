@@ -409,7 +409,7 @@ class SearchResultProcessor:
             pass
 
         tokens = re.split(
-            r'[\s,，。！？、；：""' "（）\[\]{}|\\/+_\-*&^%$#@!~`《》【】…—–·]", cleaned
+            r'[\s,，。！？、；：""' r"（）\[\]{}|\\/+_\-*&^%$#@!~`《》【】…—–·]", cleaned
         )
 
         enhanced_tokens = []
