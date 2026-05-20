@@ -70,9 +70,13 @@ jobs:
     - name: Show test failures
       if: always()
       run: |
+        echo "## Test Results for Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
         if [ -f test_output.txt ]; then
-          grep -A 20 "FAILED\|ERROR\|failed" test_output.txt || echo "No failures found in output"
+          # Show last 100 lines of test output
+          tail -100 test_output.txt >> $GITHUB_STEP_SUMMARY
         fi
+        echo '```' >> $GITHUB_STEP_SUMMARY
 
     - name: Verify version consistency
       run: |
@@ -86,10 +90,12 @@ jobs:
     - name: Check test results
       run: |
         if [ -f test_output.txt ]; then
-          if grep -q "FAILED\|failed.*passed" test_output.txt; then
-            echo "Tests failed! See output above."
+          # Check for test failures in the output
+          if grep -E "^[0-9]+ failed" test_output.txt || grep -E "FAILED" test_output.txt; then
+            echo "Tests failed! See summary above."
             exit 1
           fi
+          echo "All tests passed."
         else
           echo "No test output file found"
           exit 1
