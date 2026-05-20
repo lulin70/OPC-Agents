@@ -2,7 +2,15 @@ import hashlib
 import base64
 import json
 import time
-import xml.etree.ElementTree as ET
+
+try:
+    from defusedxml.ElementTree import fromstring as _safe_fromstring
+
+    _ET_FROMSTRING = _safe_fromstring
+except ImportError:
+    import xml.etree.ElementTree as _ET  # noqa: S405  # fallback
+
+    _ET_FROMSTRING = _ET.fromstring
 from typing import Optional, Dict, Any, Callable, Awaitable
 from dataclasses import dataclass
 from enum import Enum
@@ -72,7 +80,11 @@ class WeChatGateway:
 
     def _init_aes_key(self):
         try:
-            from Crypto.Cipher import AES
+            from cryptography.hazmat.primitives.ciphers import (
+                Cipher,
+                algorithms,
+                modes,
+            )  # noqa: F401
 
             try:
                 key = base64.b64decode(self.encoding_aes_key + "=")
@@ -83,7 +95,7 @@ class WeChatGateway:
             iv = key[32:48] if len(key) >= 48 else key[16:32]
             self._iv = iv
         except ImportError:
-            logger.warning("pycryptodome not installed, encryption disabled")
+            logger.warning("cryptography not installed, encryption disabled")
             self._aes_key = None
         except Exception as e:
             logger.error("Failed to decode AES key: %s", e)
@@ -96,21 +108,23 @@ class WeChatGateway:
             )
             return False
         arr = sorted([self.token, timestamp, nonce])
-        sha = hashlib.sha1("".join(arr).encode()).hexdigest()
+        sha = hashlib.sha1(
+            "".join(arr).encode()
+        ).hexdigest()  # nosec B324  # WeChat API requires SHA1
         return sha == signature
 
     def decrypt_message(self, encrypted_msg: str) -> str:
         if not self._aes_key or not encrypted_msg:
             return encrypted_msg
         try:
-            from Crypto.Cipher import AES
+            from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
             enc = base64.b64decode(encrypted_msg)
-            random = enc[:16]
             msg_len = int.from_bytes(enc[16:20], "big")
             ciphertext = enc[20 : 20 + msg_len]
-            cipher = AES.new(self._aes_key, AES.MODE_CBC, iv=self._iv)
-            decrypted = cipher.decrypt(ciphertext)
+            cipher = Cipher(algorithms.AES(self._aes_key), modes.CBC(self._iv))
+            decryptor = cipher.decryptor()
+            decrypted = decryptor.update(ciphertext) + decryptor.finalize()
             pkcs7_pad = decrypted[-1]
             content = decrypted[:-pkcs7_pad] if 0 < pkcs7_pad <= 32 else decrypted
             return content.decode("utf-8", errors="ignore").lstrip("\x00")
@@ -120,7 +134,7 @@ class WeChatGateway:
 
     def parse_message(self, xml_body: str) -> Optional[WeChatMessage]:
         try:
-            root = ET.fromstring(xml_body)
+            root = _ET_FROMSTRING(xml_body)
             msg = WeChatMessage(
                 msg_id=root.findtext("MsgID") or root.findtext("MsgId") or "",
                 from_user=root.findtext("FromUserName") or "",
@@ -141,7 +155,7 @@ class WeChatGateway:
                 msg.msg_type = WeChatMsgType.EVENT
                 msg.event_key = root.findtext("EventKey") or ""
             return msg
-        except ET.ParseError as e:
+        except Exception as e:
             logger.error("Parse XML failed: %s", e)
             return None
 
