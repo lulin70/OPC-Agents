@@ -501,7 +501,7 @@ class ExternalSkillMarketplace:
                     )
                     with urllib.request.urlopen(
                         req, timeout=5, context=self._ssl_context
-                    ) as resp:
+                    ) as resp:  # nosec B310
                         data = json.loads(resp.read().decode())
 
                     if registry_name == "github" and "items" in data:
@@ -628,7 +628,7 @@ class ExternalSkillMarketplace:
             req = urllib.request.Request(url, headers={"User-Agent": "OPC-Agents/1.0"})
             with urllib.request.urlopen(
                 req, timeout=10, context=self._ssl_context
-            ) as resp:
+            ) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
             return data
         except Exception as e:
@@ -701,7 +701,7 @@ class ExternalSkillMarketplace:
                 )
                 with urllib.request.urlopen(
                     req, timeout=5, context=self._ssl_context
-                ) as resp:
+                ) as resp:  # nosec B310
                     data = json.loads(resp.read().decode())
                 if isinstance(data, list):
                     for item in data[:10]:

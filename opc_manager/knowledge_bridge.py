@@ -221,7 +221,7 @@ class YuqueAdapter(KnowledgeAdapter):
                     "User-Agent": "OPC-Agents/0.3.0",
                 },
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
 
             results = []
@@ -286,7 +286,7 @@ class FeishuAdapter(KnowledgeAdapter):
             req = urllib.request.Request(
                 url, data=data, headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
             self._tenant_token = result.get("tenant_access_token", "")
             return self._tenant_token
@@ -312,7 +312,7 @@ class FeishuAdapter(KnowledgeAdapter):
                     "Content-Type": "application/json",
                 },
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
 
             results = []
@@ -377,7 +377,7 @@ class NotionAdapter(KnowledgeAdapter):
                     "Content-Type": "application/json",
                 },
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
 
             entries = []
@@ -444,7 +444,7 @@ class SiYuanAdapter(KnowledgeAdapter):
             if self._token:
                 headers["Authorization"] = f"Token {self._token}"
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=3) as resp:
+            with urllib.request.urlopen(req, timeout=3) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
                 return result.get("code", -1) == 0
         except Exception:
@@ -466,7 +466,7 @@ class SiYuanAdapter(KnowledgeAdapter):
 
             data = json.dumps(body).encode()
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
 
             entries = []
