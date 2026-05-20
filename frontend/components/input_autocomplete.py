@@ -37,6 +37,8 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional, Any
 from pathlib import Path
 
+from opc_manager.i18n import t as _t
+
 logger = logging.getLogger(__name__)
 
 CACHE_DIR = Path("data")
@@ -62,14 +64,14 @@ class CompletionItem:
 
 
 COMPLETION_TEMPLATES = [
-    {"text": "帮我写一份{topic}报告", "display": "📝 写报告", "desc": "生成专业报告文档"},
-    {"text": "分析一下{metric}的数据趋势", "display": "📊 数据分析", "desc": "多维数据分析"},
-    {"text": "记录收入 ¥{amount} from {project}", "display": "💰 记录收入", "desc": "快速记账"},
-    {"text": "给 {client} 发送{subject}邮件", "display": "📧 发邮件", "desc": "撰写并发送邮件"},
-    {"text": "创建任务: {task_title}", "display": "✅ 新建任务", "desc": "添加待办事项"},
-    {"text": "查询本月财务报表", "display": "💹 月度报表", "desc": "财务概况"},
-    {"text": "搜索{keyword}相关信息", "display": "🔍 信息搜索", "desc": "知识检索"},
-    {"text": "生成{type}方案", "display": "🎯 方案生成", "desc": "商业方案策划"},
+    {"text": _t("ac_tmpl_write_report", topic="{topic}"), "display": _t("ac_tmpl_write_report_display"), "desc": _t("ac_tmpl_write_report_desc")},
+    {"text": _t("ac_tmpl_data_analysis", metric="{metric}"), "display": _t("ac_tmpl_data_analysis_display"), "desc": _t("ac_tmpl_data_analysis_desc")},
+    {"text": _t("ac_tmpl_record_income", amount="{amount}", project="{project}"), "display": _t("ac_tmpl_record_income_display"), "desc": _t("ac_tmpl_record_income_desc")},
+    {"text": _t("ac_tmpl_send_email", client="{client}", subject="{subject}"), "display": _t("ac_tmpl_send_email_display"), "desc": _t("ac_tmpl_send_email_desc")},
+    {"text": _t("ac_tmpl_create_task", task_title="{task_title}"), "display": _t("ac_tmpl_create_task_display"), "desc": _t("ac_tmpl_create_task_desc")},
+    {"text": _t("ac_tmpl_monthly_report"), "display": _t("ac_tmpl_monthly_report_display"), "desc": _t("ac_tmpl_monthly_report_desc")},
+    {"text": _t("ac_tmpl_search_info", keyword="{keyword}"), "display": _t("ac_tmpl_search_info_display"), "desc": _t("ac_tmpl_search_info_desc")},
+    {"text": _t("ac_tmpl_gen_plan", type="{type}"), "display": _t("ac_tmpl_gen_plan_display"), "desc": _t("ac_tmpl_gen_plan_desc")},
 ]
 
 SKILL_CATEGORY_ICONS = {
@@ -82,10 +84,10 @@ SKILL_CATEGORY_ICONS = {
 }
 
 SMART_HINTS = [
-    "试试：'帮我写一份报告' 或 '分析本月数据'",
-    "试试：'记录一笔收入' 或 '创建新任务'",
-    "试试：'搜索行业趋势' 或 '生成营销方案'",
-    "试试：'查看财务报表' 或 '给客户发邮件'",
+    _t("ac_hint_1"),
+    _t("ac_hint_2"),
+    _t("ac_hint_3"),
+    _t("ac_hint_4"),
 ]
 
 
@@ -308,7 +310,7 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
             display_text = f"{icon} {skill.name}"
 
             items.append(CompletionItem(
-                text=f"使用{skill.name}技能: {skill.description}",
+                text=_t("ac_use_skill", name=skill.name),
                 display_text=display_text,
                 source="skill"
             ))
@@ -322,13 +324,13 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
     except Exception as e:
         logger.warning(f"[autocomplete] Failed to load skills: {e}")
         default_skills = [
-            ("搜索", "🔍"), ("分析", "📊"), ("内容生成", "✍️"),
-            ("邮件管理", "📧"), ("财务记账", "💰"), ("客户管理", "👥"),
-            ("报告生成", "📝"), ("日程管理", "📅"), ("待办管理", "✅"),
+            (_t("ac_default_skill_search"), "🔍"), (_t("ac_default_skill_analysis"), "📊"), (_t("ac_default_skill_content"), "✍️"),
+            (_t("ac_default_skill_email"), "📧"), (_t("ac_default_skill_finance"), "💰"), (_t("ac_default_skill_crm"), "👥"),
+            (_t("ac_default_skill_report"), "📝"), (_t("ac_default_skill_schedule"), "📅"), (_t("ac_default_skill_todo"), "✅"),
         ]
         for name, icon in default_skills:
             items.append(CompletionItem(
-                text=f"使用{name}技能",
+                text=_t("ac_use_skill", name=name),
                 display_text=f"{icon} {name}",
                 source="skill"
             ))
@@ -423,6 +425,7 @@ def render_autocomplete_input(
     - Skill shortcuts
     - Template suggestions
     - Smart hints when input is empty
+    - Mobile responsive: compact suggestions and touch-friendly areas
 
     UI Layout:
     ┌─────────────────────────────────────────────┐
@@ -447,6 +450,34 @@ def render_autocomplete_input(
     Returns:
         User input string (empty string if no input)
     """
+    # 移动端响应式 CSS：紧凑建议列表和触摸友好区域
+    st.markdown("""
+    <style>
+    @media (max-width: 768px) {
+        /* 建议列表在小屏幕更紧凑 */
+        [data-testid="stHorizontalBlock"] > div {
+            flex-direction: column !important;
+            width: 100% !important;
+        }
+        /* 按钮触摸区域增大 */
+        .stButton > button {
+            min-height: 44px !important;
+            font-size: 14px !important;
+            padding: 8px 12px !important;
+        }
+        /* 输入框触摸友好 */
+        [data-testid="stChatInput"] textarea {
+            min-height: 48px !important;
+            font-size: 16px !important;
+        }
+        /* 建议区域间距紧凑 */
+        .stMarkdown p {
+            margin-bottom: 4px !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     state_key = f"{key}_autocomplete"
 
     if state_key not in st.session_state:
@@ -508,7 +539,7 @@ def _render_default_suggestions(session_history: List[Dict] = None) -> None:
         history_items = _render_history_suggestions(session_history, max_show=3)
 
     if history_items:
-        st.markdown("**💬 最近使用:**")
+        st.markdown(_t("ac_recent_used"))
         hist_cols = st.columns(min(len(history_items), 3))
         for i, item in enumerate(history_items):
             with hist_cols[i % len(history_items)]:
@@ -516,16 +547,16 @@ def _render_default_suggestions(session_history: List[Dict] = None) -> None:
                     item.display_text,
                     key=f"hist_def_{item.text[:20]}_{i}",
                     use_container_width=True,
-                    help="点击快速填入"
+                    help=_t("ac_click_to_fill")
                 ):
                     _apply_selection(item.text)
 
     skill_items = _render_skill_shortcuts()
     if skill_items:
-        st.markdown("**🛠️ 技能快捷入口:**")
-        skill_cols = st.columns(min(len(skill_items), 6))
+        st.markdown(_t("ac_skill_shortcuts"))
+        skill_cols = st.columns(min(len(skill_items), 3))
         for i, item in enumerate(skill_items[:12]):
-            with skill_cols[i % min(len(skill_items), 6)]:
+            with skill_cols[i % min(len(skill_items), 3)]:
                 if st.button(
                     item.display_text,
                     key=f"skill_def_{item.text[:15]}_{i}",
@@ -536,8 +567,8 @@ def _render_default_suggestions(session_history: List[Dict] = None) -> None:
 
     template_items = _render_template_suggestions()
     if template_items:
-        with st.expander("📋 常用模板", expanded=False):
-            tmpl_cols = st.columns(min(len(template_items), 4))
+        with st.expander(_t("ac_common_templates"), expanded=False):
+            tmpl_cols = st.columns(min(len(template_items), 2))
             for i, item in enumerate(template_items):
                 with tmpl_cols[i % len(tmpl_cols)]:
                     if st.button(
@@ -571,9 +602,9 @@ def _render_filtered_suggestions(
     if not filtered:
         return
 
-    st.markdown("**💡 匹配建议:**")
+    st.markdown(_t("ac_matched_suggestions"))
 
-    sug_cols = st.columns(min(len(filtered), 4))
+    sug_cols = st.columns(min(len(filtered), 2))
     for i, item in enumerate(filtered):
         with sug_cols[i % len(sug_cols)]:
             button_label = item.display_text
@@ -584,7 +615,7 @@ def _render_filtered_suggestions(
                 button_label,
                 key=f"sug_{base_key}_{item.source}_{item.text[:15]}_{i}",
                 use_container_width=True,
-                help=f"来源: {item.source} | 点击填入"
+                help=_t("ac_source_click_fill", source=item.source)
             ):
                 _apply_selection(item.text)
                 update_completion_frequency(item.text)

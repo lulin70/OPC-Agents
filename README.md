@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司智能任务执行系统
 
-> **版本**: v0.3.0 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.2.2 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -62,7 +62,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **📜 规则引擎** — 行为约束自动注入策略脑，失败经验提炼为规则，越用越精准
 - ✅ **📚 外接知识库** — 6种适配器（Obsidian/语雀/飞书/Notion/思源笔记/本地文件夹），国内用户友好
 - ✅ **🔄 飞轮机制** — 等级评估(🌱新手→👑传奇)+记忆驱动技能推荐+过时记忆清理+数据导出
-- ✅ **测试覆盖** — **1126**个测试用例，100%通过率，CI自动验证（覆盖settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全部新模块）
+- ✅ **测试覆盖** — **1859**个测试用例，100%通过率，CI自动验证（覆盖settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全部新模块）
 - ✅ **技能市场API** — 外部技能注册/发现/调用，API Key认证+权限分级
 - ✅ **MCP协议兼容** — 兼容微软Model Context Protocol标准，支持工具/资源/提示词
   > MCP SSE模式需要额外依赖：`pip install opc-agents[mcp]`，stdio模式无需额外安装。
@@ -87,7 +87,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    OPC-Agents v0.3.0                 │
+│                    OPC-Agents v0.2.2                 │
 ├─────────────────────────────────────────────────────┤
 │  三贤者架构                                          │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
@@ -139,7 +139,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.0
+pip install opc-agents==0.2.2
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -381,7 +381,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
-| **0.3.0** | **2026-05-19** | **CarryMem 集成** — 持久记忆+规则引擎+6种外接知识库+飞轮机制(等级评估/技能推荐/记忆清理/数据导出) |
+| **0.2.2** | **2026-05-20** | **品质修复** — i18n 315+硬编码清理+备份AES加密+导出脱敏+MCP默认localhost+Onboarding合并+移动端适配+快捷键修正+CI安全扫描 |
 | 0.2.1 | 2026-05-18 | 8个OPC技能集成+技术债清理(32 bare except+i18n 97键) |
 | **0.2.0** | **2026-05-17** | **FINAL** — 产品化发布：统一设置管理+首次引导+数据备份恢复+错误处理+微信E2E+模块化仪表盘+i18n三语+技能市场V2+全局搜索+Apple Shortcuts+API Key加密(Fernet)+代码模块化重构（84模块/39测试文件/1126测试） |
 | 0.1.8 | 2026-05-14 | 21内置技能+外部技能市场+MCP服务发现+用户画像+数据安全+SQLite统一存储 |

@@ -131,14 +131,17 @@ class TestThemeCSS:
         assert isinstance(css, str)
         assert "#0c1929" in css
 
-    def test_light_theme_returns_empty(self):
+    def test_light_theme_returns_no_custom_colors(self):
         css = self._get_css_func()("light")
-        assert css == "", "Light theme should return empty CSS (uses native)"
+        # Light theme uses native styling, may contain mobile CSS but no custom colors
+        assert "#111827" not in css, "Light theme should not have dark background"
+        assert "#0c1929" not in css, "Light theme should not have ocean background"
 
-    def test_unknown_theme_returns_empty(self):
+    def test_unknown_theme_returns_no_custom_colors(self):
         func = self._get_css_func()
         css = func("nonexistent")
-        assert css == ""
+        # Unknown theme may return mobile CSS but no theme-specific colors
+        assert "#111827" not in css
 
     def test_all_themes_return_string(self):
         func = self._get_css_func()

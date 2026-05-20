@@ -2,32 +2,67 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
-## [0.3.0] - 2026-05-19
+## [0.2.2] - 2026-05-20
 
-### CarryMem Integration — Persistent Memory + Rules + Knowledge + Flywheel
+### Quality Fix Sprint — All Blockers Resolved + Mobile + i18n + Security
 
-#### Phase 1 (v0.2.2): Persistent Memory
-- **New**: `memory_bridge.py` — CarryMem adapter layer (~540 lines)
-- **Feature**: Cross-session memory — user preferences persist across app restarts
-- **Feature**: Sidebar memory status indicator (🧠 记忆 N条)
-- **Config**: `CARRYMEM_ENABLED=true`, `CARRYMEM_DB_PATH`, `CARRYMEM_MAX_MEMORIES`
-- **Install**: `pip install opc-agents[memory]`
+#### B1: i18n Hardcoded Chinese Cleanup (315+ strings)
+- **Fixed**: `input_autocomplete.py` — 45 hardcoded Chinese strings → i18n keys
+- **Fixed**: `smart_suggestions.py` — 60+ hardcoded Chinese strings → i18n keys
+- **Fixed**: `result_cards.py` — 30+ hardcoded Chinese strings → i18n keys
+- **Fixed**: `timeline_view.py` — 75+ hardcoded Chinese strings → i18n keys
+- **Fixed**: `confirmation_dialog.py` — 20+ hardcoded Chinese strings → i18n keys
+- **Fixed**: `live_log_panel.py` — 30+ hardcoded Chinese strings → i18n keys
+- **Added**: 315+ new i18n keys in zh_CN/en_US/ja_JP dictionaries
 
-#### Phase 2 (v0.3.0): Rule Engine
-- **Feature**: Rule matching — behavioral constraints injected into Strategist Brain
-- **Feature**: Failure experience recording — Reflector Brain auto-records quality failures
-- **Feature**: Rule prompt injection — anchored format for LLM attention optimization
-- **Feature**: Sidebar rule count + pending lessons indicator
-- **API**: `match_rules()`, `inject_rules_prompt()`, `record_failure()`, `get_rules_for_context()`
+#### B2: Backup Encryption + Export Sanitization
+- **Added**: AES-256 ZIP encryption via pyzipper (fallback to unencrypted with WARNING)
+- **Added**: `BackupManifest.encrypted` field
+- **Added**: `SENSITIVE_FIELDS` auto-redaction in JSON/CSV export (api_key, password, token, etc.)
+- **Added**: `_meta.sanitized: true` marker in exported data
 
-#### Phase 3 (v0.4.0): External Knowledge Base
-- **New**: `knowledge_bridge.py` — 6 knowledge base adapters (~460 lines)
-  - Obsidian: local-first, reads .obsidian vault
-  - 语雀 (Yuque): Alibaba ecosystem, API search
-  - 飞书文档 (Feishu): ByteDance ecosystem, Open Platform API
-  - Notion: global popular, API search
-  - 思源笔记 (SiYuan): open-source local, API search
-  - 本地文件夹 (Local Folder): simplest, Markdown indexing
+#### B3: MCP Default Localhost
+- **Fixed**: Default host changed from `0.0.0.0` to `127.0.0.1`
+- **Added**: Security check — non-localhost without MCP_API_KEY refuses to start
+- **Added**: WARNING log when binding to non-localhost
+
+#### B4: Onboarding Merge
+- **Fixed**: Removed duplicate Chat inline onboarding (steps 0-3)
+- **Kept**: Overlay onboarding (WELCOME → LLM_CONFIG → SAMPLE_TASK)
+
+#### I1: Mobile Responsiveness
+- **Added**: `.streamlit/config.toml` with theme and server config
+- **Fixed**: `initial_sidebar_state` changed from "expanded" to "auto"
+- **Added**: Mobile CSS for sidebar, toast notifications, buttons, dashboard, chat, input
+- **Fixed**: Column counts adapted for small screens (6→3, 4→2, 3→2, 2→1)
+
+#### I3: Keyboard Shortcuts Cleanup
+- **Fixed**: Removed 6 unimplementable shortcuts (Ctrl+N/E/D/S, Ctrl+Z, ?)
+- **Kept**: 3 working tips (Enter, Esc, /)
+- **Changed**: Title from "Keyboard Shortcuts" to "操作提示"
+
+#### I5: .gitignore
+- **Added**: `.env.encrypted` to gitignore
+
+#### I6: CI Security Audit
+- **Added**: `pip-audit` step in python-ci.yml
+
+#### I2: Dependency Lock
+- **Added**: `requirements.lock` for reproducible builds
+
+#### Other Fixes
+- **Fixed**: Flywheel level calculation `int()` → `round()`
+- **Fixed**: `memory_count` property cached to avoid DB query per access
+- **Fixed**: SiYuanAdapter `_available` validates connection at init
+- **Fixed**: `SKILL_CATEGORY_ICONS` keys lowercase to match `SkillCategory.value`
+- **Fixed**: `test_marketplace_v2` import path `frontend.pages` → `frontend.page_modules`
+- **Fixed**: `test_p1_skills`/`test_p2_skills` SQLite state isolation with tearDownClass
+- **Fixed**: `test_ux_polish` i18n key assertions
+- **Fixed**: `test_input_autocomplete` category case assertions
+- **Updated**: README test count 1126 → 1859
+- **Updated**: Version unified to 0.2.2 across all files
+
+## [0.2.1] - 2026-05-18
 - **Feature**: Knowledge context injection before task execution
 - **Feature**: Sidebar knowledge base status indicator (📚 知识库(type) N篇)
 - **Config**: `OPC_KB_ENABLED=true`, `OPC_KB_TYPE=obsidian|local|yuque|feishu|notion|siyuan`

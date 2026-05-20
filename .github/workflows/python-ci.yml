@@ -49,6 +49,12 @@ jobs:
         pip install bandit
         bandit -r opc_manager/ -ll -ii
 
+    - name: Security audit
+      run: |
+        pip install pip-audit
+        pip-audit --desc --ignore-vuln PYSEC-2023-228
+      continue-on-error: true
+
     - name: Run tests with coverage
       run: |
         PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing

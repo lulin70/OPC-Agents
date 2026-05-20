@@ -89,6 +89,9 @@ build/
 *.key
 secrets/
 
+# Encrypted storage
+.env.encrypted
+
 # Mock遗留
 MagicMock/
 

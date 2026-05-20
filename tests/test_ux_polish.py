@@ -196,7 +196,7 @@ class TestShortcutHints:
         source = inspect.getsource(_render_shortcuts_help)
         assert "Enter" in source
         assert "Esc" in source
-        assert "Ctrl+Z" in source
+        # Ctrl+Z removed — not implementable in Streamlit
 
     def test_floating_help_resets_state(self):
         from frontend.components.shared import _render_floating_help_button

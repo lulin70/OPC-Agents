@@ -13,13 +13,15 @@ import logging
 from typing import Dict, Any, Optional, Callable, Awaitable
 from dataclasses import dataclass
 
+from opc_manager.i18n import t as _t
+
 logger = logging.getLogger(__name__)
 
 RISK_BADGE_CONFIG = {
-    "low": {"emoji": "🟢", "label": "低风险", "color": "#4CAF50"},
-    "medium": {"emoji": "🟡", "label": "中风险", "color": "#FF9800"},
-    "high": {"emoji": "🔴", "label": "高风险", "color": "#F44336"},
-    "critical": {"emoji": "🟣", "label": "关键操作", "color": "#9C27B0"},
+    "low": {"emoji": "🟢", "i18n_key": "confirm_risk_low", "color": "#4CAF50"},
+    "medium": {"emoji": "🟡", "i18n_key": "confirm_risk_medium", "color": "#FF9800"},
+    "high": {"emoji": "🔴", "i18n_key": "confirm_risk_high", "color": "#F44336"},
+    "critical": {"emoji": "🟣", "i18n_key": "confirm_risk_critical", "color": "#9C27B0"},
 }
 
 SENSITIVE_KEYWORDS = [
@@ -41,7 +43,7 @@ def _render_risk_badge(risk_level: str) -> str:
         Formatted badge string like "🔴 高风险"
     """
     config = RISK_BADGE_CONFIG.get(risk_level.lower(), RISK_BADGE_CONFIG["medium"])
-    return f"{config['emoji']} {config['label']}"
+    return f"{config['emoji']} {_t(config['i18n_key'])}"
 
 
 def _render_confidence_bar(confidence: float, threshold: float) -> str:
@@ -56,7 +58,7 @@ def _render_confidence_bar(confidence: float, threshold: float) -> str:
     """
     conf_pct = int(confidence * 100)
     thresh_pct = int(threshold * 100)
-    return f"AI判断 {conf_pct}% | 需要人工 {thresh_pct}%"
+    return _t("confirm_confidence_bar", conf_pct=conf_pct, thresh_pct=thresh_pct)
 
 
 def _sanitize_params_display(params: Dict[str, Any]) -> Dict[str, str]:
@@ -161,7 +163,7 @@ def render_confirmation_dialog(request: dict) -> bool:
 
     col_title = st.columns([1])
     with col_title[0]:
-        st.markdown(f'<div class="confirmation-title">⚠️ 风险操作确认</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="confirmation-title">{_t("confirm_risk_title")}</div>', unsafe_allow_html=True)
 
     st.divider()
 
@@ -169,28 +171,28 @@ def render_confirmation_dialog(request: dict) -> bool:
     if len(goal) > MAX_GOAL_LENGTH:
         goal_display += "..."
 
-    st.markdown(f"**🎯 操作目标:** `{goal_display}`")
+    st.markdown(f"**{_t('confirm_operation_target')}:** `{goal_display}`")
 
-    st.markdown("**📊 风险评估:**")
+    st.markdown(f"**{_t('confirm_risk_assessment')}:**")
 
     risk_badge = _render_risk_badge(risk_level)
     conf_text = _render_confidence_bar(confidence, threshold)
 
     col_type, col_conf, col_risk = st.columns(3)
     with col_type:
-        st.metric("操作类型", intent_type)
+        st.metric(_t("confirm_operation_type"), intent_type)
     with col_conf:
-        st.metric("置信度", f"{int(confidence*100)}%")
+        st.metric(_t("confirm_confidence"), f"{int(confidence*100)}%")
     with col_risk:
-        st.markdown(f"**风险等级:** {risk_badge}")
+        st.markdown(f"**{_t('confirm_risk_level')}:** {risk_badge}")
 
     if params:
-        st.markdown("**📝 执行参数:**")
+        st.markdown(f"**{_t('confirm_exec_params')}:**")
         sanitized_params = _sanitize_params_display(params)
         for param_key, param_value in sanitized_params.items():
             st.caption(f"- {param_key}: `{param_value}`")
 
-    st.markdown(f"**🤖 AI置信度:** {conf_text}")
+    st.markdown(f"**{_t('confirm_ai_confidence')}:** {conf_text}")
 
     st.divider()
 
@@ -201,21 +203,21 @@ def render_confirmation_dialog(request: dict) -> bool:
     skipped = False
 
     with btn_col1:
-        if st.button("✅ 确认执行", type="primary", key=f"confirm_{session_id}", use_container_width=True):
+        if st.button(_t("confirm_btn_confirm"), type="primary", key=f"confirm_{session_id}", use_container_width=True):
             confirmed = True
             logger.info("[ConfirmationDialog] User confirmed operation: %s", intent_type)
 
     with btn_col2:
-        if st.button("❌ 取消操作", key=f"cancel_{session_id}", use_container_width=True):
+        if st.button(_t("confirm_btn_cancel"), key=f"cancel_{session_id}", use_container_width=True):
             cancelled = True
             logger.info("[ConfirmationDialog] User cancelled operation: %s", intent_type)
 
     with btn_col3:
-        if st.button("⏭️ 跳过并信任", key=f"skip_{session_id}", use_container_width=True):
+        if st.button(_t("confirm_btn_skip_trust"), key=f"skip_{session_id}", use_container_width=True):
             skipped = True
             logger.info("[ConfirmationDialog] User skipped and trusted operation: %s", intent_type)
 
-    trust_boost = st.checkbox("☐ 不再提示此类操作（提升信任度）", key=f"trust_{session_id}")
+    trust_boost = st.checkbox(_t("confirm_trust_boost"), key=f"trust_{session_id}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -267,7 +269,7 @@ def build_confirm_callback(session_id: str):
             emitter.emit(ProgressEvent(
                 event_type=EventType.CONFIRM_REQUESTED,
                 session_id=session_id,
-                message=f"⚠️ 需要确认 {request.intent_type} 操作",
+                message=_t("confirm_need_confirm_op", intent_type=request.intent_type),
                 progress_pct=0,
                 detail={
                     "intent_type": request.intent_type,
@@ -318,15 +320,15 @@ def build_confirm_callback(session_id: str):
             if confirmed:
                 event_type = EventType.CONFIRMED
                 progress_pct = 50
-                message = f"✅ 用户确认 {request.intent_type} 操作"
+                message = _t("confirm_user_confirmed_op", intent_type=request.intent_type)
 
                 if trust_boost:
-                    message += "（已提升信任度）"
+                    message += _t("confirm_trust_boosted")
                     st.session_state[f"trust_boost_{session_id}_{request.intent_type}"] = True
             else:
                 event_type = EventType.CONFIRM_REJECTED
                 progress_pct = 0
-                message = f"❌ 用户取消 {request.intent_type} 操作"
+                message = _t("confirm_user_cancelled_op", intent_type=request.intent_type)
 
             emitter.emit(ProgressEvent(
                 event_type=event_type,

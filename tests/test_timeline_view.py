@@ -184,7 +184,7 @@ class TestEventTypeConfig(unittest.TestCase):
 
     def test_config_has_required_keys(self):
         """TC-TL-008: 每个配置项包含必要字段"""
-        required_keys = ["icon", "color", "category", "label"]
+        required_keys = ["icon", "color", "category", "i18n_key"]
 
         for event_type, config in EVENT_TYPE_CONFIG.items():
             for key in required_keys:

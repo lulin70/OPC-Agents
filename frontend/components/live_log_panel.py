@@ -30,6 +30,8 @@ from pathlib import Path
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
+from opc_manager.i18n import t as _t
+
 logger = logging.getLogger(__name__)
 
 _WORKSPACE_DIR = os.environ.get("OPC_WORKSPACE", os.getcwd())
@@ -43,65 +45,20 @@ DEFAULT_DISPLAY_LIMIT = 100
 MIN_POLL_INTERVAL = 1
 
 
-@dataclass
-class LogEntry:
-    """单条日志条目数据结构"""
-    timestamp: float
-    level: str
-    source: str
-    message: str
-    module: str
-    extra: dict = field(default_factory=dict)
+def _get_log_source_config():
+    return {
+        "app": {"i18n_key": "log_source_app", "icon": "🖥️"},
+        "engine": {"i18n_key": "log_source_engine", "icon": "⚙️"},
+        "audit": {"i18n_key": "log_source_audit", "icon": "📋"},
+        "progress": {"i18n_key": "log_source_progress", "icon": "📊"},
+        "system": {"i18n_key": "log_source_system", "icon": "🔧"},
+    }
 
-    def to_display(self) -> str:
-        """格式化为单行显示文本"""
-        ts = datetime.fromtimestamp(self.timestamp).strftime("%H:%M:%S")
-        level_icon = LOG_LEVEL_CONFIG.get(self.level, {}).get("icon", "📝")
-        source_label = LOG_SOURCE_CONFIG.get(self.source, {}).get("label", self.source)
-        return f"{ts} {level_icon} [{source_label}] {self.message}"
 
-    def to_html(self, colorized: bool = True) -> str:
-        """格式化为HTML（带颜色编码）"""
-        if not colorized:
-            return self.to_display()
-
-        ts = datetime.fromtimestamp(self.timestamp).strftime("%H:%M:%S")
-        level_cfg = LOG_LEVEL_CONFIG.get(self.level, {})
-        icon = level_cfg.get("icon", "📝")
-        color = level_cfg.get("color", "#6B7280")
-        bg_color = level_cfg.get("bg_color", "#F3F4F6")
-
-        source_cfg = LOG_SOURCE_CONFIG.get(self.source, {})
-        source_icon = source_cfg.get("icon", "📌")
-        source_label = source_cfg.get("label", self.source)
-
-        message_escaped = self.message.replace("<", "&lt;").replace(">", "&gt;")
-        if self.extra.get("traceback"):
-            traceback_escaped = self.extra["traceback"].replace("<", "&lt;").replace(">", "&gt;")
-            return (
-                f'<div style="background:{bg_color};padding:8px;border-radius:4px;margin:2px 0;">'
-                f'<span style="color:#9CA3AF;font-family:monospace">{ts}</span> '
-                f'<span style="font-size:16px">{icon}</span> '
-                f'<span style="background:#E5E7EB;padding:2px 6px;border-radius:3px;'
-                f'font-size:12px;margin:0 4px">{source_icon} {source_label}</span> '
-                f'<span style="color:{color}">{message_escaped}</span>'
-                f'<details style="margin-top:4px"><summary style="cursor:pointer;color:#EF4444">'
-                f'查看错误详情</summary>'
-                f'<pre style="background:#FEF2F2;padding:8px;border-radius:4px;overflow:auto;'
-                f'max-height:200px">{traceback_escaped}</pre></details></div>'
-            )
-        return (
-            f'<div style="background:{bg_color};padding:8px;border-radius:4px;margin:2px 0;">'
-            f'<span style="color:#9CA3AF;font-family:monospace">{ts}</span> '
-            f'<span style="font-size:16px">{icon}</span> '
-            f'<span style="background:#E5E7EB;padding:2px 6px;border-radius:3px;'
-            f'font-size:12px;margin:0 4px">{source_icon} {source_label}</span> '
-            f'<span style="color:{color}">{message_escaped}</span></div>'
-        )
-
-    def to_dict(self) -> dict:
-        """转换为字典（用于序列化）"""
-        return asdict(self)
+def _get_log_source_labels():
+    """Get source labels dict with i18n-translated values."""
+    config = _get_log_source_config()
+    return {k: {"label": _t(v["i18n_key"]), "icon": v["icon"]} for k, v in config.items()}
 
 
 LOG_LEVEL_CONFIG = {
@@ -112,13 +69,7 @@ LOG_LEVEL_CONFIG = {
     "CRITICAL": {"icon": "🚨", "color": "#DC2626", "bg_color": "#FEE2E2"},
 }
 
-LOG_SOURCE_CONFIG = {
-    "app": {"label": "应用", "icon": "🖥️"},
-    "engine": {"label": "引擎", "icon": "⚙️"},
-    "audit": {"label": "审计", "icon": "📋"},
-    "progress": {"label": "进度", "icon": "📊"},
-    "system": {"label": "系统", "icon": "🔧"},
-}
+LOG_SOURCE_CONFIG = _get_log_source_labels()
 
 LOG_LEVEL_ORDER = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -136,6 +87,69 @@ def sanitize_log_message(message: str) -> str:
     for pattern in SENSITIVE_PATTERNS:
         message = re.sub(pattern, "***REDACTED***", message, flags=re.IGNORECASE)
     return message
+
+
+@dataclass
+class LogEntry:
+    """单条日志条目数据结构"""
+    timestamp: float
+    level: str
+    source: str
+    message: str
+    module: str
+    extra: dict = field(default_factory=dict)
+
+    def to_display(self) -> str:
+        """格式化为单行显示文本"""
+        ts = datetime.fromtimestamp(self.timestamp).strftime("%H:%M:%S")
+        level_icon = LOG_LEVEL_CONFIG.get(self.level, {}).get("icon", "📝")
+        source_config = _get_log_source_labels()
+        source_label = source_config.get(self.source, {}).get("label", self.source)
+        return f"{ts} {level_icon} [{source_label}] {self.message}"
+
+    def to_html(self, colorized: bool = True) -> str:
+        """格式化为HTML（带颜色编码）"""
+        if not colorized:
+            return self.to_display()
+
+        ts = datetime.fromtimestamp(self.timestamp).strftime("%H:%M:%S")
+        level_cfg = LOG_LEVEL_CONFIG.get(self.level, {})
+        icon = level_cfg.get("icon", "📝")
+        color = level_cfg.get("color", "#6B7280")
+        bg_color = level_cfg.get("bg_color", "#F3F4F6")
+
+        source_config = _get_log_source_labels()
+        source_cfg = source_config.get(self.source, {"label": self.source, "icon": "📌"})
+        source_icon = source_cfg.get("icon", "📌")
+        source_label = source_cfg.get("label", self.source)
+
+        message_escaped = self.message.replace("<", "&lt;").replace(">", "&gt;")
+        if self.extra.get("traceback"):
+            traceback_escaped = self.extra["traceback"].replace("<", "&lt;").replace(">", "&gt;")
+            return (
+                f'<div style="background:{bg_color};padding:8px;border-radius:4px;margin:2px 0;">'
+                f'<span style="color:#9CA3AF;font-family:monospace">{ts}</span> '
+                f'<span style="font-size:16px">{icon}</span> '
+                f'<span style="background:#E5E7EB;padding:2px 6px;border-radius:3px;'
+                f'font-size:12px;margin:0 4px">{source_icon} {source_label}</span> '
+                f'<span style="color:{color}">{message_escaped}</span>'
+                f'<details style="margin-top:4px"><summary style="cursor:pointer;color:#EF4444">'
+                f'{_t("log_view_error_detail")}</summary>'
+                f'<pre style="background:#FEF2F2;padding:8px;border-radius:4px;overflow:auto;'
+                f'max-height:200px">{traceback_escaped}</pre></details></div>'
+            )
+        return (
+            f'<div style="background:{bg_color};padding:8px;border-radius:4px;margin:2px 0;">'
+            f'<span style="color:#9CA3AF;font-family:monospace">{ts}</span> '
+            f'<span style="font-size:16px">{icon}</span> '
+            f'<span style="background:#E5E7EB;padding:2px 6px;border-radius:3px;'
+            f'font-size:12px;margin:0 4px">{source_icon} {source_label}</span> '
+            f'<span style="color:{color}">{message_escaped}</span></div>'
+        )
+
+    def to_dict(self) -> dict:
+        """转换为字典（用于序列化）"""
+        return asdict(self)
 
 
 class LogCache:
@@ -203,7 +217,7 @@ class LogCache:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             temp_file.replace(CACHE_FILE)
         except Exception as e:
-            logger.debug("[LogCache] 持久化失败: %s", e)
+            logger.debug("[LogCache] persist failed: %s", e)
 
     @classmethod
     def load(cls) -> 'LogCache':
@@ -217,9 +231,9 @@ class LogCache:
                 with instance._lock:
                     instance._cache = deque(entries, maxlen=MAX_CACHE_ENTRIES)
                     instance._last_update = time.time()
-                logger.info("[LogCache] 从文件加载了 %d 条日志", len(entries))
+                logger.info("[LogCache] loaded %d entries from file", len(entries))
             except Exception as e:
-                logger.warning("[LogCache] 加载缓存文件失败: %s", e)
+                logger.warning("[LogCache] failed to load cache file: %s", e)
         return instance
 
     def shutdown(self):
@@ -294,7 +308,7 @@ def collect_app_logs(since_timestamp: float = None) -> List[LogEntry]:
                 except Exception:
                     continue
         except Exception as e:
-            logger.debug("[collect_app_logs] 读取 %s 失败: %s", log_file, e)
+            logger.debug("[collect_app_logs] failed to read %s: %s", log_file, e)
 
     return entries
 
@@ -344,7 +358,7 @@ def collect_engine_logs(since_timestamp: float = None) -> List[LogEntry]:
                 except Exception:
                     continue
         except Exception as e:
-            logger.debug("[collect_engine_logs] 读取失败: %s", e)
+            logger.debug("[collect_engine_logs] failed to read: %s", e)
 
     return entries
 
@@ -379,9 +393,9 @@ def collect_audit_logs(since_timestamp: float = None) -> List[LogEntry]:
                 extra={"record_id": record.get("id", "")},
             ))
     except ImportError:
-        logger.debug("[collect_audit_logs] AuditLog模块未安装")
+        logger.debug("[collect_audit_logs] AuditLog module not installed")
     except Exception as e:
-        logger.debug("[collect_audit_logs] 查询失败: %s", e)
+        logger.debug("[collect_audit_logs] query failed: %s", e)
 
     return entries
 
@@ -438,9 +452,9 @@ def collect_progress_logs(session_id: str = None, since_timestamp: float = None)
                 },
             ))
     except ImportError:
-        logger.debug("[collect_progress_logs] ProgressEmitter模块未安装")
+        logger.debug("[collect_progress_logs] ProgressEmitter module not installed")
     except Exception as e:
-        logger.debug("[collect_progress_logs] 获取历史失败: %s", e)
+        logger.debug("[collect_progress_logs] failed to get history: %s", e)
 
     return entries
 
@@ -472,11 +486,11 @@ def collect_system_logs(since_timestamp: float = None) -> List[LogEntry]:
             timestamp=time.time(),
             level="INFO",
             source="system",
-            message="psutil未安装，系统监控不可用",
+            message=_t("log_psutil_not_installed"),
             module="system_monitor",
         ))
     except Exception as e:
-        logger.debug("[collect_system_logs] 收集失败: %s", e)
+        logger.debug("[collect_system_logs] collection failed: %s", e)
 
     return entries
 
@@ -515,7 +529,8 @@ def _render_log_entry(entry: LogEntry, index: int):
     ts_str = datetime.fromtimestamp(entry.timestamp).strftime("%H:%M:%S.%f")[:-3]
 
     level_cfg = LOG_LEVEL_CONFIG.get(entry.level, LOG_LEVEL_CONFIG["INFO"])
-    source_cfg = LOG_SOURCE_CONFIG.get(entry.source, {"label": entry.source, "icon": "📌"})
+    source_config = _get_log_source_labels()
+    source_cfg = source_config.get(entry.source, {"label": entry.source, "icon": "📌"})
 
     col_time, col_icon, col_source, col_msg = st.columns([1.2, 0.6, 1.2, 6])
 
@@ -531,7 +546,7 @@ def _render_log_entry(entry: LogEntry, index: int):
         st.markdown(
             f'<span style="background:#E5E7EB;color:#374151;padding:2px 8px;'
             f'border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap">'
-            f'{source_cfg["icon"]} {source_cfg["label"]}</span>',
+            f'{source_cfg.get("icon", "📌")} {source_cfg.get("label", entry.source)}</span>',
             unsafe_allow_html=True,
         )
 
@@ -543,43 +558,44 @@ def _render_log_entry(entry: LogEntry, index: int):
         )
 
         if entry.extra.get("traceback"):
-            with st.expander("🔍 错误堆栈"):
+            with st.expander(_t("log_error_stack")):
                 st.code(entry.extra["traceback"], language="python")
 
 
 def _render_filter_bar(logs: List[LogEntry]) -> Tuple[List[LogEntry], Dict[str, Any]]:
     """渲染过滤器栏并返回过滤后的日志和过滤状态"""
+    source_config = _get_log_source_labels()
     filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 3])
 
     with filter_col1:
         min_level_index = st.selectbox(
-            "最低级别",
-            options=["全部", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            _t("log_min_level"),
+            options=[_t("log_level_all"), "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             index=1,
             key="log_level_filter",
-            help="只显示此级别及以上的日志",
+            help=_t("log_level_help"),
         )
 
     with filter_col2:
-        sources = list(LOG_SOURCE_CONFIG.keys())
+        sources = list(source_config.keys())
         selected_sources = st.multiselect(
-            "日志来源",
+            _t("log_source_label"),
             options=sources,
             default=sources,
             key="log_source_filter",
-            help="选择要显示的日志来源",
+            help=_t("log_source_help"),
         )
 
     with filter_col3:
         search_keyword = st.text_input(
-            "搜索关键词",
-            placeholder="输入关键词过滤...",
+            _t("log_search_keyword"),
+            placeholder=_t("log_search_placeholder"),
             key="log_search_keyword",
         )
 
     filtered_logs = logs
 
-    if min_level_index != "全部":
+    if min_level_index != _t("log_level_all"):
         min_level_pos = LOG_LEVEL_ORDER.index(min_level_index)
         allowed_levels = set(LOG_LEVEL_ORDER[min_level_pos:])
         filtered_logs = [l for l in filtered_logs if l.level in allowed_levels]
@@ -624,7 +640,7 @@ def _render_stats_summary(logs: List[LogEntry]):
     stat_cols = st.columns(7)
 
     with stat_cols[0]:
-        st.metric("总计", total)
+        st.metric(_t("log_total"), total)
 
     with stat_cols[1]:
         st.metric("ℹ️ INFO", stats["INFO"])
@@ -640,10 +656,10 @@ def _render_stats_summary(logs: List[LogEntry]):
 
     with stat_cols[5]:
         source_summary = ", ".join([f"{k}:{v}" for k, v in sorted(sources_count.items())])
-        st.caption(f"来源: {source_summary}")
+        st.caption(_t("log_source_summary", summary=source_summary))
 
     with stat_cols[6]:
-        st.caption(f"更新: {now}")
+        st.caption(_t("log_update_time", time=now))
 
 
 def export_logs(logs: List[LogEntry], format: str = "txt") -> bytes:
@@ -691,7 +707,7 @@ def export_logs(logs: List[LogEntry], format: str = "txt") -> bytes:
         return output.getvalue().encode("utf-8")
 
     else:
-        raise ValueError(f"不支持的导出格式: {format}. 支持: txt, json, csv")
+        raise ValueError(_t("log_unsupported_format", fmt=format))
 
 
 def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
@@ -703,27 +719,27 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
     """
     refresh_interval = max(refresh_interval, MIN_POLL_INTERVAL)
 
-    st.markdown("### 📡 实时日志监控")
+    st.markdown(_t("log_realtime_title"))
 
     control_col1, control_col2, control_col3, control_col4 = st.columns([2, 1.5, 1.5, 1.5])
 
     with control_col1:
-        auto_refresh = st.checkbox("▶️ 自动刷新", value=auto_refresh, key="log_auto_refresh")
+        auto_refresh = st.checkbox(_t("log_auto_refresh"), value=auto_refresh, key="log_auto_refresh")
 
     with control_col2:
-        if st.button("🔄 刷新", use_container_width=True, key="log_manual_refresh"):
+        if st.button(_t("log_refresh"), use_container_width=True, key="log_manual_refresh"):
             st.rerun()
 
     with control_col3:
-        if st.button("🗑️ 清空缓存", use_container_width=True, key="log_clear_cache"):
+        if st.button(_t("log_clear_cache"), use_container_width=True, key="log_clear_cache"):
             cache = _get_log_cache()
             cache.clear()
-            st.success("✅ 日志缓存已清空")
+            st.success(_t("log_cache_cleared"))
             st.rerun()
 
     with control_col4:
         export_format = st.selectbox(
-            "导出格式",
+            _t("log_export_format"),
             options=["txt", "json", "csv"],
             key="log_export_format",
         )
@@ -742,17 +758,17 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
     logs = collect_all_logs(session_id=session_id)
 
     if not logs:
-        st.info("💡 暂无日志数据。执行任务后日志会自动显示在这里。")
+        st.info(_t("log_no_data"))
         return
 
     filtered_logs, filter_state = _render_filter_bar(logs)
 
     if not filtered_logs:
-        st.warning(f"⚠️ 无匹配日志（共 {filter_state['total_before']} 条，筛选后为0）")
+        st.warning(_t("log_no_matching", total=filter_state['total_before']))
         return
 
-    st.caption(f"显示 {len(filtered_logs)} / {len(logs)} 条日志" +
-               ("（已过滤）" if filter_state['total_after'] < filter_state['total_before'] else ""))
+    filter_suffix = _t("log_filtered") if filter_state['total_after'] < filter_state['total_before'] else ""
+    st.caption(_t("log_showing_count", shown=len(filtered_logs), total=len(logs)) + filter_suffix)
 
     st.markdown("""
     <style>
@@ -778,25 +794,25 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
     """, unsafe_allow_html=True)
 
     with st.container():
-        with st.expander("📋 日志详情（点击展开）", expanded=True):
+        with st.expander(_t("log_detail_expand"), expanded=True):
             for idx, entry in enumerate(filtered_logs[-100:]):
                 _render_log_entry(entry, idx)
 
     _render_stats_summary(filtered_logs)
 
-    if st.button(f"📥 导出日志 ({export_format.upper()})", use_container_width=True, key="log_export_btn"):
+    if st.button(_t("log_export_btn", fmt=export_format.upper()), use_container_width=True, key="log_export_btn"):
         try:
             export_data = export_logs(filtered_logs, format=export_format)
             mime_types = {"txt": "text/plain", "json": "application/json", "csv": "text/csv"}
             st.download_button(
-                label=f"下载 {export_format.upper()} 文件",
+                label=_t("log_download_file", fmt=export_format.upper()),
                 data=export_data,
                 file_name=f"logs_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{export_format}",
                 mime=mime_types.get(export_format, "application/octet-stream"),
                 key=f"log_dl_{int(time.time())}",
             )
         except Exception as e:
-            st.error(f"❌ 导出失败: {e}")
+            st.error(_t("log_export_failed", error=e))
 
     if auto_refresh:
         time.sleep(refresh_interval)

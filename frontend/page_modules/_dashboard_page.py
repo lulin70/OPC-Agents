@@ -109,8 +109,26 @@ def _render_dashboard_page(demo_mode: bool = False):
     - Per-panel enable/disable toggles
     - Persistence via DashboardConfig JSON file
     - Demo mode with sample data when no API key configured
+    - Mobile responsive: auto-switches to Minimal layout on small screens
     """
     st.markdown(f"## {_t('dash_title')}")
+
+    # 移动端响应式 CSS：小屏幕自动切换到单列布局
+    st.markdown("""
+    <style>
+    @media (max-width: 768px) {
+        /* Dashboard 面板在小屏幕单列显示 */
+        [data-testid="stHorizontalBlock"] > div {
+            flex-direction: column !important;
+            width: 100% !important;
+        }
+        /* Metric 列在小屏幕单列 */
+        [data-testid="stMetricContainer"] {
+            width: 100% !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     if demo_mode:
         st.info(f"📊 {_t('dash_demo_info')}")
@@ -164,10 +182,10 @@ def _render_template_controls(config: DashboardConfig):
             )
 
         st.markdown(_t("dash_panel_toggles"))
-        panel_toggles_cols = st.columns(3)
+        panel_toggles_cols = st.columns(2)
         toggle_states = {}
         for idx, (panel_id, title, desc) in enumerate(ALL_PANELS_META):
-            with panel_toggles_cols[idx % 3]:
+            with panel_toggles_cols[idx % 2]:
                 is_checked = st.checkbox(
                     f"{title}",
                     value=config.panels[panel_id].enabled if panel_id in config.panels else True,

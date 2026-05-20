@@ -7,7 +7,7 @@ MCP Transport — SSE + stdio 传输层
 
 启动方式：
   # SSE模式
-  uvicorn opc_manager.mcp_transport:create_sse_app --host 0.0.0.0 --port 8901
+  uvicorn opc_manager.mcp_transport:create_sse_app --host 127.0.0.1 --port 8901
   
   # stdio模式
   python -m opc_manager.mcp_transport --transport stdio
@@ -139,7 +139,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="OPC-Agents MCP Transport")
     parser.add_argument("--transport", choices=["sse", "stdio"], default="stdio")
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8901)
     args = parser.parse_args()
 
@@ -150,10 +150,44 @@ def main():
         if SSE_AVAILABLE:
             import uvicorn
             app = create_sse_app()
-            uvicorn.run(app, host=args.host, port=args.port)
+            start_sse_server(app, host=args.host, port=args.port)
         else:
             print("SSE transport requires: pip install fastapi uvicorn sse-starlette")
             sys.exit(1)
+
+
+def start_sse_server(app, host: str = "127.0.0.1", port: int = 8901):
+    """Start SSE server with security checks.
+
+    Security rules:
+    - Default binding to 127.0.0.1 (localhost only)
+    - If MCP_HOST env var is set to a non-localhost address, log WARNING
+    - If host is not localhost and MCP_API_KEY is not set, refuse to start
+    """
+    # Check MCP_HOST environment variable for non-localhost binding
+    mcp_host_env = os.environ.get("MCP_HOST", "")
+    if mcp_host_env and mcp_host_env not in ("127.0.0.1", "localhost", "::1"):
+        logger.warning(
+            "MCP_HOST is set to '%s' (non-localhost) — SSE endpoint will be "
+            "accessible from external networks. Ensure MCP_API_KEY is configured.",
+            mcp_host_env,
+        )
+
+    # Security check: refuse to start if binding to non-localhost without API key
+    localhost_addresses = {"127.0.0.1", "localhost", "::1"}
+    if host not in localhost_addresses and not os.environ.get("MCP_API_KEY"):
+        error_msg = (
+            f"SECURITY: Refusing to start SSE server on {host} without MCP_API_KEY. "
+            "Binding to a non-localhost address without authentication exposes the "
+            "MCP endpoint to the network. Set MCP_API_KEY environment variable or "
+            "bind to 127.0.0.1 instead."
+        )
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    import uvicorn
+    logger.info("Starting SSE server on %s:%d", host, port)
+    uvicorn.run(app, host=host, port=port)
 
 
 if __name__ == "__main__":

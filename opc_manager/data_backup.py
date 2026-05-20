@@ -21,10 +21,20 @@ import hashlib
 
 logger = logging.getLogger(__name__)
 
+# AES加密ZIP支持：优先 pyzipper，不可用时回退到标准 zipfile（无加密）
+_ZIP_AES_AVAILABLE = False
+try:
+    import pyzipper
+    _ZIP_AES_AVAILABLE = True
+except ImportError:
+    pass
+
 BACKUP_DIR = "data/backups"
 EXPORT_FORMATS = ["json", "csv", "zip"]
 BACKUP_VERSION = "1.0"
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB — 超过此大小的文件跳过并记录警告
+SENSITIVE_FIELDS = {"api_key", "password", "secret", "token", "smtp_pass", "encryption_key", "app_secret"}
+REDACTED_VALUE = "***REDACTED***"
 
 
 @dataclass
@@ -37,6 +47,44 @@ class BackupManifest:
     checksum_sha256: str = ""
     tables: List[str] = field(default_factory=list)
     includes_attachments: bool = False
+    encrypted: bool = False
+
+
+def _get_backup_password() -> Optional[str]:
+    """Get backup password from environment variables.
+
+    Priority:
+    1. OPC_BACKUP_PASSWORD
+    2. First 32 bytes of OPC_ENCRYPTION_KEY (if set)
+    3. None (no encryption)
+    """
+    password = os.environ.get("OPC_BACKUP_PASSWORD")
+    if password:
+        return password
+
+    encryption_key = os.environ.get("OPC_ENCRYPTION_KEY", "")
+    if encryption_key:
+        return encryption_key[:32]
+
+    return None
+
+
+def _is_sensitive_field(field_name: str) -> bool:
+    """Check if a field name contains any sensitive keyword."""
+    name_lower = field_name.lower()
+    return any(kw in name_lower for kw in SENSITIVE_FIELDS)
+
+
+def _sanitize_value(data: Any) -> Any:
+    """Recursively sanitize sensitive fields in data structures."""
+    if isinstance(data, dict):
+        return {
+            k: REDACTED_VALUE if _is_sensitive_field(k) else _sanitize_value(v)
+            for k, v in data.items()
+        }
+    elif isinstance(data, list):
+        return [_sanitize_value(item) for item in data]
+    return data
 
 
 class DataBackupManager:
@@ -96,10 +144,35 @@ class DataBackupManager:
         manifest.total_files = len(files_to_backup)
         manifest.total_size_bytes = total_size
 
-        # Create ZIP
-        with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for file_path, rel_path in files_to_backup:
-                zf.write(file_path, arcname=str(rel_path))
+        # Determine encryption settings
+        backup_password = _get_backup_password()
+        encrypted = False
+
+        if backup_password:
+            if _ZIP_AES_AVAILABLE:
+                # AES加密模式
+                with pyzipper.AESZipFile(backup_path, 'w',
+                                         compression=pyzipper.ZIP_DEFLATED) as zf:
+                    zf.setpassword(backup_password.encode('utf-8'))
+                    zf.setencryption(pyzipper.WZ_AES, nbits=256)
+                    for file_path, rel_path in files_to_backup:
+                        zf.write(file_path, arcname=str(rel_path))
+                encrypted = True
+                logger.info("Backup created with AES-256 encryption")
+            else:
+                # pyzipper不可用，回退到无加密模式
+                logger.warning("pyzipper not available — backup will be created WITHOUT encryption. "
+                               "Install pyzipper for AES encryption: pip install pyzipper")
+                with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                    for file_path, rel_path in files_to_backup:
+                        zf.write(file_path, arcname=str(rel_path))
+        else:
+            # 无密码，使用标准zipfile无加密模式
+            with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for file_path, rel_path in files_to_backup:
+                    zf.write(file_path, arcname=str(rel_path))
+
+        manifest.encrypted = encrypted
 
         # Calculate checksum — 流式读取避免大文件OOM
         sha256 = hashlib.sha256()
@@ -188,6 +261,8 @@ class DataBackupManager:
     def export_data(self, format_type: str = "json") -> bytes:
         """Export all user data in specified format.
 
+        Sensitive fields are automatically redacted in the output.
+
         Args:
             format_type: "json" or "csv" or "zip"
 
@@ -205,7 +280,8 @@ class DataBackupManager:
             if data_dir.exists():
                 for f in data_dir.glob("*.json"):
                     try:
-                        data[f.stem] = json.loads(f.read_text(encoding='utf-8'))
+                        raw = json.loads(f.read_text(encoding='utf-8'))
+                        data[f.stem] = _sanitize_value(raw)
                     except Exception as e:
                         logger.warning("Failed to read %s: %s", f, e)
                         data[f.stem] = {"_error": str(e)}
@@ -215,6 +291,7 @@ class DataBackupManager:
                 "exporter": "OPC-Agents v0.2.1",
                 "tables": list(data.keys()),
                 "data": data,
+                "_meta": {"sanitized": True},
             }
             return json.dumps(result, indent=2, ensure_ascii=False).encode('utf-8')
 
@@ -232,6 +309,7 @@ class DataBackupManager:
                 for f in data_dir.glob("*.json"):
                     try:
                         d = json.loads(f.read_text(encoding='utf-8'))
+                        d = _sanitize_value(d)
                         table_name = f.stem
                         if isinstance(d, dict):
                             for k, v in d.items():

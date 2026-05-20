@@ -116,8 +116,28 @@ st.set_page_config(
     page_title=_t("app_title"),
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
+
+st.markdown("""
+<style>
+/* 移动端自适应：小屏幕自动收起侧边栏 */
+@media (max-width: 768px) {
+    [data-testid="stSidebar"] {
+        width: 0px !important;
+        min-width: 0px !important;
+        overflow: hidden;
+    }
+    [data-testid="stSidebar"][aria-expanded="true"] {
+        width: 280px !important;
+        min-width: 280px !important;
+    }
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 
 if DEMO_MODE:
     st.markdown(f"""

@@ -34,6 +34,31 @@ logger = logging.getLogger(__name__)
 
 def render_chat_page():
     """Main chat page — core user interaction interface."""
+    # 移动端响应式 CSS
+    st.markdown("""
+    <style>
+    @media (max-width: 768px) {
+        /* 场景按钮在小屏幕单列显示 */
+        [data-testid="stHorizontalBlock"] > div {
+            flex-direction: column !important;
+            width: 100% !important;
+        }
+        /* 输入框区域增加触摸友好的间距 */
+        [data-testid="stChatInput"] {
+            padding: 12px 8px !important;
+        }
+        [data-testid="stChatInput"] textarea {
+            min-height: 48px !important;
+            font-size: 16px !important;
+        }
+        /* 聊天消息区域增加间距 */
+        [data-testid="stChatMessage"] {
+            padding: 8px 4px !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     _maybe_show_shortcut_hints()
     if DEMO_MODE:
         st.markdown(f"## {_t('chat_demo_mode')}")
@@ -70,48 +95,6 @@ def render_chat_page():
             f"{_t('chat_welcome_desc_1')}**{_t('chat_welcome_desc_2')}**"
             f"**{_t('chat_welcome_desc_3')}** — {_t('chat_welcome_desc_4')}"
         )
-
-        if not st.session_state.get("onboarding_complete", False):
-            onboarding_step = st.session_state.get("onboarding_step", 0)
-            with st.container():
-                if onboarding_step == 0:
-                    st.info(f"👋 **{_t('chat_onboard_welcome')}**")
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        if st.button(f"▶️ {_t('chat_onboard_start')}", type="primary", use_container_width=True):
-                            st.session_state.onboarding_step = 1
-                            st.rerun()
-                    with col2:
-                        if st.button(f"⏭️ {_t('chat_onboard_skip')}"):
-                            st.session_state.onboarding_complete = True
-                            st.rerun()
-                elif onboarding_step == 1:
-                    st.success(f"✅ **{_t('chat_onboard_step1_title')}\n\n{_t('chat_onboard_step1_desc')}**")
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        if st.button(f"{_t('onboarding_next')}", type="primary", use_container_width=True):
-                            st.session_state.onboarding_step = 2
-                            st.rerun()
-                    with col2:
-                        if st.button(_t("chat_onboard_skip")):
-                            st.session_state.onboarding_complete = True
-                            st.rerun()
-                elif onboarding_step == 2:
-                    st.success(f"✅ **{_t('chat_onboard_step2_title')}\n\n{_t('chat_onboard_step2_desc')}**")
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        if st.button(f"{_t('onboarding_next')}", type="primary", use_container_width=True):
-                            st.session_state.onboarding_step = 3
-                            st.rerun()
-                    with col2:
-                        if st.button(_t("chat_onboard_skip")):
-                            st.session_state.onboarding_complete = True
-                            st.rerun()
-                elif onboarding_step == 3:
-                    st.success(f"✅ **{_t('chat_onboard_step3_title')}\n\n{_t('chat_onboard_step3_desc')}**")
-                    if st.button(f"🎉 {_t('chat_onboard_done')}", type="primary", use_container_width=True):
-                        st.session_state.onboarding_complete = True
-                        st.rerun()
 
         st.markdown(
             f"**{_t('chat_usage_steps')}**"
@@ -203,14 +186,14 @@ def render_chat_page():
     if len(st.session_state.messages) == 0:
         with st.container():
             st.markdown(f"### {_t('chat_try_ask')}")
-            example_cols = st.columns(3)
+            example_cols = st.columns(2)
             EXAMPLE_QUERIES = [
                 (_t("chat_example_comp"), _t("chat_example_comp_query")),
                 (_t("chat_example_marketing"), _t("chat_example_marketing_query")),
                 (_t("chat_example_trend"), _t("chat_example_trend_query")),
             ]
             for i, (title, query) in enumerate(EXAMPLE_QUERIES):
-                with example_cols[i]:
+                with example_cols[i % 2]:
                     if st.button(title, key=f"example_{i}", use_container_width=True):
                         st.session_state.pending_prompt = query
                         st.rerun()

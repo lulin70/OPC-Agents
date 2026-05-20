@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from collections import Counter
 
+from opc_manager.i18n import t as _t
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,31 +39,31 @@ TASK_TYPE_FOLLOW_UP_MAP = {
     "content_generation": [
         Suggestion(
             id="export_pdf",
-            title="导出为PDF",
-            description="将当前成果导出为专业PDF文档",
+            title=_t("ss_export_pdf"),
+            description=_t("ss_export_pdf_desc"),
             icon="📄",
             action_type="quick_task",
-            action_payload={"prompt": "将刚才的内容导出为PDF格式"},
+            action_payload={"prompt": _t("ss_export_pdf_prompt")},
             confidence=0.9,
             category="follow_up"
         ),
         Suggestion(
             id="gen_related_doc",
-            title="生成相关文档",
-            description="基于当前内容生成配套文档（如PPT、大纲）",
+            title=_t("ss_gen_related_doc"),
+            description=_t("ss_gen_related_doc_desc"),
             icon="📝",
             action_type="quick_task",
-            action_payload={"prompt": "基于刚才的内容，生成相关的配套文档"},
+            action_payload={"prompt": _t("ss_gen_related_doc_prompt")},
             confidence=0.75,
             category="follow_up"
         ),
         Suggestion(
             id="share_content",
-            title="分享到...",
-            description="生成适合社交媒体分享的摘要版本",
+            title=_t("ss_share_content"),
+            description=_t("ss_share_content_desc"),
             icon="📤",
             action_type="quick_task",
-            action_payload={"prompt": "将刚才的内容改写为适合分享的简短版本"},
+            action_payload={"prompt": _t("ss_share_content_prompt")},
             confidence=0.65,
             category="follow_up"
         ),
@@ -69,31 +71,31 @@ TASK_TYPE_FOLLOW_UP_MAP = {
     "data_analysis": [
         Suggestion(
             id="deep_dive_metric",
-            title="深入分析某指标",
-            description="选择关键指标进行更深入的趋势分析",
+            title=_t("ss_deep_dive_metric"),
+            description=_t("ss_deep_dive_metric_desc"),
             icon="🔍",
             action_type="quick_task",
-            action_payload={"prompt": "对刚才分析结果中的核心指标进行深入分析"},
+            action_payload={"prompt": _t("ss_deep_dive_metric_prompt")},
             confidence=0.88,
             category="follow_up"
         ),
         Suggestion(
             id="compare_history",
-            title="对比历史数据",
-            description="与历史同期数据进行对比分析",
+            title=_t("ss_compare_history"),
+            description=_t("ss_compare_history_desc"),
             icon="📊",
             action_type="quick_task",
-            action_payload={"prompt": "将刚才的数据与历史同期进行对比分析"},
+            action_payload={"prompt": _t("ss_compare_history_prompt")},
             confidence=0.82,
             category="follow_up"
         ),
         Suggestion(
             id="generate_report",
-            title="生成报告",
-            description="基于分析结果自动生成完整报告",
+            title=_t("ss_generate_report"),
+            description=_t("ss_generate_report_desc"),
             icon="📋",
             action_type="quick_task",
-            action_payload={"prompt": "基于刚才的分析结果，生成一份完整的分析报告"},
+            action_payload={"prompt": _t("ss_generate_report_prompt")},
             confidence=0.85,
             category="follow_up"
         ),
@@ -101,31 +103,31 @@ TASK_TYPE_FOLLOW_UP_MAP = {
     "info_collection": [
         Suggestion(
             id="gen_plan_from_info",
-            title="基于信息生成方案",
-            description="利用收集到的信息制定行动方案",
+            title=_t("ss_gen_plan_from_info"),
+            description=_t("ss_gen_plan_from_info_desc"),
             icon="💡",
             action_type="quick_task",
-            action_payload={"prompt": "基于刚才收集的信息，制定一个详细的执行方案"},
+            action_payload={"prompt": _t("ss_gen_plan_from_info_prompt")},
             confidence=0.87,
             category="follow_up"
         ),
         Suggestion(
             id="save_as_template",
-            title="保存为模板",
-            description="将本次搜索模式保存为可复用模板",
+            title=_t("ss_save_as_template"),
+            description=_t("ss_save_as_template_desc"),
             icon="📌",
             action_type="quick_task",
-            action_payload={"prompt": "将刚才的搜索过程总结为可复用的模板"},
+            action_payload={"prompt": _t("ss_save_as_template_prompt")},
             confidence=0.7,
             category="follow_up"
         ),
         Suggestion(
             id="set_reminder",
-            title="设置提醒",
-            description="为重要信息设置后续跟进提醒",
+            title=_t("ss_set_reminder"),
+            description=_t("ss_set_reminder_desc"),
             icon="⏰",
             action_type="quick_task",
-            action_payload={"prompt": "基于刚才收集的重要信息，设置后续跟进提醒"},
+            action_payload={"prompt": _t("ss_set_reminder_prompt")},
             confidence=0.72,
             category="follow_up"
         ),
@@ -133,8 +135,8 @@ TASK_TYPE_FOLLOW_UP_MAP = {
     "business_operation": [
         Suggestion(
             id="view_monthly_report",
-            title="查看月度报表",
-            description="汇总本月所有业务操作的财务报表",
+            title=_t("ss_view_monthly_report"),
+            description=_t("ss_view_monthly_report_desc"),
             icon="📈",
             action_type="navigate_tab",
             action_payload={"target_tab": "📈 Dashboard"},
@@ -143,21 +145,21 @@ TASK_TYPE_FOLLOW_UP_MAP = {
         ),
         Suggestion(
             id="record_expense",
-            title="记录支出",
-            description="记录相关的业务支出项",
+            title=_t("ss_record_expense"),
+            description=_t("ss_record_expense_desc"),
             icon="💰",
             action_type="quick_task",
-            action_payload={"prompt": "帮我记录一笔业务支出"},
+            action_payload={"prompt": _t("ss_record_expense_prompt")},
             confidence=0.78,
             category="follow_up"
         ),
         Suggestion(
             id="client_followup",
-            title="客户跟进提醒",
-            description="为关联客户设置跟进任务",
+            title=_t("ss_client_followup"),
+            description=_t("ss_client_followup_desc"),
             icon="👥",
             action_type="quick_task",
-            action_payload={"prompt": "为相关客户设置跟进提醒和任务"},
+            action_payload={"prompt": _t("ss_client_followup_prompt")},
             confidence=0.8,
             category="follow_up"
         ),
@@ -165,21 +167,21 @@ TASK_TYPE_FOLLOW_UP_MAP = {
     "scenario_based": [
         Suggestion(
             id="review_steps",
-            title="回顾执行步骤",
-            description="查看工作流的详细执行过程和决策点",
+            title=_t("ss_review_steps"),
+            description=_t("ss_review_steps_desc"),
             icon="🔄",
             action_type="quick_task",
-            action_payload={"prompt": "回顾刚才场景工作流的所有执行步骤"},
+            action_payload={"prompt": _t("ss_review_steps_prompt")},
             confidence=0.85,
             category="follow_up"
         ),
         Suggestion(
             id="adjust_rerun",
-            title="调整参数重跑",
-            description="修改部分参数后重新执行工作流",
+            title=_t("ss_adjust_rerun"),
+            description=_t("ss_adjust_rerun_desc"),
             icon="⚙️",
             action_type="quick_task",
-            action_payload={"prompt": "调整刚才工作流的参数并重新执行"},
+            action_payload={"prompt": _t("ss_adjust_rerun_prompt")},
             confidence=0.82,
             category="follow_up"
         ),
@@ -187,11 +189,11 @@ TASK_TYPE_FOLLOW_UP_MAP = {
     "general_chat": [
         Suggestion(
             id="start_task",
-            title="开始具体任务",
-            description="将对话转化为具体的可执行任务",
+            title=_t("ss_start_task"),
+            description=_t("ss_start_task_desc"),
             icon="🎯",
             action_type="quick_task",
-            action_payload={"prompt": "基于刚才的讨论，帮我开始执行具体任务"},
+            action_payload={"prompt": _t("ss_start_task_prompt")},
             confidence=0.75,
             category="follow_up"
         ),
@@ -208,12 +210,12 @@ COMPLEMENTARY_TASKS = {
 }
 
 TASK_TYPE_LABELS = {
-    "content_generation": "✍️ 内容生成",
-    "data_analysis": "📊 数据分析",
-    "info_collection": "🔍 信息收集",
-    "business_operation": "🏢 业务操作",
-    "scenario_based": "🎯 场景工作流",
-    "general_chat": "💬 智能对话",
+    "content_generation": _t("ss_task_type_content_gen"),
+    "data_analysis": _t("ss_task_type_data_analysis"),
+    "info_collection": _t("ss_task_type_info_collection"),
+    "business_operation": _t("ss_task_type_business_op"),
+    "scenario_based": _t("ss_task_type_scenario"),
+    "general_chat": _t("ss_task_type_general_chat"),
 }
 
 
@@ -246,33 +248,33 @@ def _generate_related_suggestions(context: dict) -> List[Suggestion]:
             if comp_type == "data_analysis":
                 suggestions.append(Suggestion(
                     id=f"rel_analysis_{comp_type}",
-                    title="财务数据分析",
-                    description="对近期业务数据进行深度分析",
+                    title=_t("ss_rel_financial_analysis"),
+                    description=_t("ss_rel_financial_analysis_desc"),
                     icon="📊",
                     action_type="quick_task",
-                    action_payload={"prompt": "对我最近的业务数据进行综合分析"},
+                    action_payload={"prompt": _t("ss_rel_financial_analysis_prompt")},
                     confidence=confidence,
                     category="related"
                 ))
             elif comp_type == "content_generation":
                 suggestions.append(Suggestion(
                     id=f"rel_content_{comp_type}",
-                    title="生成项目周报",
-                    description="基于本周活动自动生成项目周报",
+                    title=_t("ss_rel_weekly_report"),
+                    description=_t("ss_rel_weekly_report_desc"),
                     icon="📝",
                     action_type="quick_task",
-                    action_payload={"prompt": "生成本周的项目周报"},
+                    action_payload={"prompt": _t("ss_rel_weekly_report_prompt")},
                     confidence=confidence,
                     category="related"
                 ))
             elif comp_type == "info_collection":
                 suggestions.append(Suggestion(
                     id=f"rel_info_{comp_type}",
-                    title="市场调研",
-                    description="收集行业最新动态和竞品信息",
+                    title=_t("ss_rel_market_research"),
+                    description=_t("ss_rel_market_research_desc"),
                     icon="🔎",
                     action_type="quick_task",
-                    action_payload={"prompt": "帮我调研一下最新的行业动态"},
+                    action_payload={"prompt": _t("ss_rel_market_research_prompt")},
                     confidence=confidence,
                     category="related"
                 ))
@@ -292,8 +294,8 @@ def _generate_improvement_suggestions(context: dict) -> List[Suggestion]:
     if exec_time > 10000:
         suggestions.append(Suggestion(
             id="imp_speed",
-            title="简化需求以加快响应",
-            description="检测到上次执行较慢，尝试更简洁的需求描述",
+            title=_t("ss_imp_simplify_request"),
+            description=_t("ss_imp_simplify_request_desc"),
             icon="⚡",
             action_type="quick_task",
             action_payload={"prompt": ""},
@@ -304,8 +306,8 @@ def _generate_improvement_suggestions(context: dict) -> List[Suggestion]:
     if sources_count == 0:
         suggestions.append(Suggestion(
             id="imp_search",
-            title="优化搜索描述",
-            description="上次未找到参考来源，尝试更具体的关键词",
+            title=_t("ss_imp_optimize_search"),
+            description=_t("ss_imp_optimize_search_desc"),
             icon="🔍",
             action_type="quick_task",
             action_payload={"prompt": ""},
@@ -317,8 +319,8 @@ def _generate_improvement_suggestions(context: dict) -> List[Suggestion]:
     if negative_feedback:
         suggestions.append(Suggestion(
             id="imp_feedback",
-            title="需要改进？换个方式试试",
-            description="检测到之前的负面反馈，建议换种方式描述需求",
+            title=_t("ss_imp_try_different"),
+            description=_t("ss_imp_try_different_desc"),
             icon="💭",
             action_type="quick_task",
             action_payload={"prompt": ""},
@@ -340,8 +342,8 @@ def _generate_exploration_suggestions(context: dict) -> List[Suggestion]:
     if "dashboard" in unused:
         suggestions.append(Suggestion(
             id="exp_dashboard",
-            title="试试仪表盘查看成长轨迹",
-            description="可视化展示你的使用统计和成果趋势",
+            title=_t("ss_exp_dashboard"),
+            description=_t("ss_exp_dashboard_desc"),
             icon="📈",
             action_type="navigate_tab",
             action_payload={"target_tab": "📈 Dashboard"},
@@ -352,11 +354,11 @@ def _generate_exploration_suggestions(context: dict) -> List[Suggestion]:
     if "marketplace" in unused:
         suggestions.append(Suggestion(
             id="exp_marketplace",
-            title="浏览技能市场发现新能力",
-            description="探索可安装的外部技能扩展系统功能",
+            title=_t("ss_exp_marketplace"),
+            description=_t("ss_exp_marketplace_desc"),
             icon="🛒",
             action_type="navigate_tab",
-            action_payload={"target_tab": "技能市场"},
+            action_payload={"target_tab": _t("ss_skill_market_tab")},
             confidence=0.68,
             category="exploration"
         ))
@@ -364,8 +366,8 @@ def _generate_exploration_suggestions(context: dict) -> List[Suggestion]:
     if "shortcuts" in unused:
         suggestions.append(Suggestion(
             id="exp_shortcuts",
-            title="学习快捷键提升效率",
-            description="掌握键盘快捷键可以大幅提升操作效率",
+            title=_t("ss_exp_shortcuts"),
+            description=_t("ss_exp_shortcuts_desc"),
             icon="⌨️",
             action_type="open_settings",
             action_payload={"section": "shortcuts"},
@@ -404,21 +406,21 @@ def _generate_undo_suggestions(context: dict) -> List[Suggestion]:
 
             if record_info:
                 op_type = record_info.get("operation_type", "unknown")
-                op_label = record_info.get("label", "操作")
+                op_label = record_info.get("label", _t("ss_undo_last_op"))
                 op_icon = record_info.get("icon", "📝")
                 remaining = record_info.get("remaining_seconds", 0)
 
                 if remaining < 60:
-                    time_urgency = f"（仅剩{remaining}秒）"
+                    time_urgency = _t("ss_only_seconds_left", seconds=remaining)
                 elif remaining < 300:
-                    time_urgency = f"（还剩{remaining // 60}分钟）"
+                    time_urgency = _t("ss_minutes_left", minutes=remaining // 60)
                 else:
                     time_urgency = ""
 
                 suggestions.append(Suggestion(
                     id="undo_last_operation",
-                    title=f"撤销上一步操作",
-                    description=f"{op_icon} 撤销最近的「{op_label}」操作 {time_urgency}",
+                    title=_t("ss_undo_last_op"),
+                    description=_t("ss_undo_last_op_desc", icon=op_icon, label=op_label, urgency=time_urgency),
                     icon="↩️",
                     action_type="quick_task",
                     action_payload={
@@ -513,11 +515,11 @@ def _render_suggestion_card(suggestion: Suggestion) -> None:
     col_btn, col_space = st.columns([1, 2])
     with col_btn:
         if st.button(
-            f"一键执行",
+            _t("ss_one_click_exec"),
             key=f"sug_exec_{suggestion.id}",
             type="primary",
             use_container_width=True,
-            help=f"置信度: {confidence_pct}%"
+            help=_t("ss_confidence_label", pct=confidence_pct)
         ):
             execute_suggestion(suggestion)
 
@@ -543,7 +545,7 @@ def render_suggestion_panel(suggestions: List[Suggestion], max_show: int = 3) ->
         margin-bottom: 16px;
     ">
         <span style="font-size: 18px; margin-right: 8px;">💡</span>
-        <strong style="color: #92400e;">接下来可以...</strong>
+        <strong style="color: #92400e;">{_t("ss_next_steps")}</strong>
     </div>
     """, unsafe_allow_html=True)
 
@@ -554,7 +556,7 @@ def render_suggestion_panel(suggestions: List[Suggestion], max_show: int = 3) ->
         _render_suggestion_card(suggestion)
 
     if hidden:
-        with st.expander(f"查看更多建议 ({len(hidden)}个) ▼"):
+        with st.expander(_t("ss_view_more_suggestions", count=len(hidden))):
             for suggestion in hidden:
                 _render_suggestion_card(suggestion)
 
@@ -573,35 +575,35 @@ def execute_suggestion(suggestion: Suggestion) -> None:
             if prompt:
                 st.session_state.user_input = prompt
                 st.session_state.auto_submit = True
-                st.success(f"✅ 已准备执行: {suggestion.title}")
+                st.success(_t("ss_ready_to_exec", title=suggestion.title))
                 st.balloons()
                 st.rerun()
             else:
-                st.info(f"💡 建议: {suggestion.description}")
+                st.info(_t("ss_suggestion_tip", desc=suggestion.description))
 
         elif suggestion.action_type == "navigate_tab":
             target_tab = suggestion.action_payload.get("target_tab", "")
             if target_tab:
                 st.session_state.current_page = target_tab
-                st.success(f"📂 正在跳转到: {target_tab}")
+                st.success(_t("ss_navigating_to", tab=target_tab))
                 st.rerun()
             else:
-                st.warning("⚠️ 未指定目标页面")
+                st.warning(_t("ss_no_target_page"))
 
         elif suggestion.action_type == "open_settings":
             section = suggestion.action_payload.get("section", "")
-            st.session_state.current_page = "设置"
+            st.session_state.current_page = _t("ss_settings_tab")
             if section:
                 st.session_state.settings_section = section
-            st.success(f"⚙️ 打开设置: {section or '通用'}")
+            st.success(_t("ss_open_settings", section=section or _t("ss_general")))
             st.rerun()
 
         else:
-            st.warning(f"❓ 未知的操作类型: {suggestion.action_type}")
+            st.warning(_t("ss_unknown_action_type", type=suggestion.action_type))
 
     except Exception as e:
         logger.error("[smart_suggestions] 执行建议失败: %s", e)
-        st.error(f"❌ 执行失败: {str(e)}")
+        st.error(_t("ss_exec_failed", error=str(e)))
 
 
 def build_context_from_session(last_task_type: str = "",

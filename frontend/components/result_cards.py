@@ -11,40 +11,42 @@ import logging
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 
+from opc_manager.i18n import t as _t
+
 logger = logging.getLogger(__name__)
 
 TASK_TYPE_CONFIG = {
     "content_generation": {
         "icon": "✍️",
-        "title": "内容生成成果物",
+        "title": _t("rc_title_content_gen"),
         "gradient_start": "#667eea",
         "gradient_end": "#764ba2",
         "bg_color": "#f8f7ff",
     },
     "data_analysis": {
         "icon": "📊",
-        "title": "数据分析报告",
+        "title": _t("rc_title_data_analysis"),
         "gradient_start": "#11998e",
         "gradient_end": "#38ef7d",
         "bg_color": "#f0fdf9",
     },
     "info_collection": {
         "icon": "🔍",
-        "title": "信息收集结果",
+        "title": _t("rc_title_info_collection"),
         "gradient_start": "#f093fb",
         "gradient_end": "#f5576c",
         "bg_color": "#fff7ed",
     },
     "scenario_based": {
         "icon": "🎯",
-        "title": "场景工作流执行结果",
+        "title": _t("rc_title_scenario"),
         "gradient_start": "#fa709a",
         "gradient_end": "#fee140",
         "bg_color": "#fdf4ff",
     },
     "general_chat": {
         "icon": "💬",
-        "title": "智能对话",
+        "title": _t("rc_title_general_chat"),
         "gradient_start": "#a8edea",
         "gradient_end": "#fed6e3",
         "bg_color": "#f8fafc",
@@ -75,7 +77,7 @@ def render_result_card(
         )
     """
     if not content:
-        st.warning("⚠️ 暂无内容可显示")
+        st.warning(_t("rc_no_content"))
         return
 
     task_type = task_type or "general_chat"
@@ -178,7 +180,7 @@ def render_result_card(
             if task_type == "data_analysis":
                 insights = _extract_data_insights(content)
                 if insights:
-                    st.markdown("#### 💡 关键洞察")
+                    st.markdown(_t("rc_key_insights"))
                     for insight in insights[:5]:
                         st.markdown(f"- {insight}")
                     st.divider()
@@ -231,30 +233,30 @@ def _render_metadata_bar(
     execution_time = metadata.get("execution_time_ms")
     if execution_time:
         time_sec = round(execution_time / 1000, 1)
-        items.append(("⏱️", f"耗时: {time_sec}s"))
+        items.append(("⏱️", _t("rc_time_cost", sec=time_sec)))
 
     sources_count = metadata.get("sources_count")
     if sources_count:
-        items.append(("🔗", f"来源: {sources_count}条"))
+        items.append(("🔗", _t("rc_sources_count", count=sources_count)))
 
     file_format = metadata.get("format") or (deliverable_record or {}).get("task_type")
     if file_format:
         format_labels = {
             "content_generation": "Markdown",
-            "data_analysis": "分析报告",
-            "info_collection": "研究报告",
-            "scenario_based": "工作流文档",
+            "data_analysis": _t("rc_format_analysis"),
+            "info_collection": _t("rc_format_research"),
+            "scenario_based": _t("rc_format_workflow"),
         }
         fmt_display = format_labels.get(file_format, file_format.capitalize())
-        items.append(("📦", f"格式: {fmt_display}"))
+        items.append(("📦", _t("rc_format_label", fmt=fmt_display)))
 
     size_kb = (deliverable_record or {}).get("size_kb")
     if size_kb:
-        items.append(("📄", f"大小: {size_kb}KB"))
+        items.append(("📄", _t("rc_size_label", size=size_kb)))
 
     agent_loop = metadata.get("agent_loop")
     if agent_loop:
-        items.append(("🧠", "AI增强模式"))
+        items.append(("🧠", _t("rc_ai_enhanced")))
 
     if not items:
         return
@@ -301,7 +303,7 @@ def _render_action_buttons(
                 file_content = f.read()
 
             st.download_button(
-                label="📥 下载成果物",
+                label=_t("rc_download_deliverable"),
                 data=file_content,
                 file_name=os.path.basename(filepath),
                 mime="text/markdown",
@@ -310,16 +312,16 @@ def _render_action_buttons(
                 key=f"dl_main_{hash(filepath)}",
             )
         else:
-            st.button("📥 下载成果物", disabled=True, help="文件不存在")
+            st.button(_t("rc_download_deliverable"), disabled=True, help=_t("rc_file_not_exist"))
 
     with col_copy:
-        if st.button("📋 复制内容", key=f"copy_{hash(filepath)}", use_container_width=True):
+        if st.button(_t("rc_copy_content"), key=f"copy_{hash(filepath)}", use_container_width=True):
             st.session_state[f"clipboard_{hash(filepath)}"] = content
-            st.success("✅ 已复制到剪贴板")
+            st.success(_t("rc_copied"))
             st.balloons()
 
     if formats:
-        st.markdown("**其他导出格式:**")
+        st.markdown(_t("rc_other_formats"))
         try:
             btn_cols = st.columns(min(len(formats), 3))
             has_columns = len(btn_cols) > 0
@@ -344,17 +346,17 @@ def _render_action_buttons(
                             file_bytes, mime, ext = _get_export_bytes(content, fmt)
                             if file_bytes:
                                 st.download_button(
-                                    label=f"⬇️ 下载{label}",
+                                    label=_t("rc_download_label", label=label),
                                     data=file_bytes,
                                     file_name=f"export_{ext}",
                                     mime=mime,
                                     key=f"dl_fmt_{fmt}_{hash(filepath)}",
                                 )
                             else:
-                                st.warning(f"⚠️ 导出{fmt.upper()}失败，请检查依赖是否安装")
+                                st.warning(_t("rc_export_failed", fmt=fmt.upper()))
                         except Exception as e:
                             logger.error("[result_cards] 导出失败: %s", e)
-                            st.error(f"❌ 导出失败: {str(e)}")
+                            st.error(_t("rc_export_error", error=str(e)))
             else:
                 st.button(label, key=f"export_{fmt}_{hash(filepath)}", use_container_width=True)
 
@@ -377,13 +379,13 @@ def _render_content_preview(content: str, max_chars: int = 200) -> None:
         truncated = content[:max_chars] + "..."
         st.markdown(truncated)
 
-        if st.button("📖 展开全部", key=f"btn_expand_{preview_key}", use_container_width=True):
+        if st.button(_t("rc_expand_all"), key=f"btn_expand_{preview_key}", use_container_width=True):
             st.session_state[preview_key] = True
             st.rerun()
     else:
         st.markdown(content)
 
-        if st.button("📕 收起内容", key=f"btn_collapse_{preview_key}", use_container_width=True):
+        if st.button(_t("rc_collapse"), key=f"btn_collapse_{preview_key}", use_container_width=True):
             st.session_state[preview_key] = False
             st.rerun()
 
@@ -407,23 +409,23 @@ def _extract_data_insights(content: str) -> List[str]:
     percentage_pattern = r"(\d+(?:\.\d+)?%)"
     percentages = re.findall(percentage_pattern, content)
     if percentages:
-        insights.append(f"发现 {len(percentages)} 个百分比数据点: {', '.join(percentages[:5])}")
+        insights.append(_t("rc_found_pct_points", count=len(percentages), items=', '.join(percentages[:5])))
 
     number_patterns = [
-        (r"(\d+(?:\.\d+)?\s*(?:万|亿|元|美元|欧元|人民币))", "金额"),
-        (r"(\d+(?:\,\d{3})*(?:\.\d+)?)\s*(?:人|次|个|项|家)", "数量"),
-        (r"(\d{4}[-/年]\d{1,2}[-/月]\d{1,2})", "日期"),
+        (r"(\d+(?:\.\d+)?\s*(?:万|亿|元|美元|欧元|人民币))", _t("rc_amount_data")),
+        (r"(\d+(?:\,\d{3})*(?:\.\d+)?)\s*(?:人|次|个|项|家)", _t("rc_quantity_data")),
+        (r"(\d{4}[-/年]\d{1,2}[-/月]\d{1,2})", _t("rc_date_data")),
     ]
 
     for pattern, label in number_patterns:
         matches = re.findall(pattern, content)
         if matches and len(insights) < 5:
-            insights.append(f"{label}数据: {matches[0]}{' 等' if len(matches) > 1 else ''}")
+            insights.append(_t("rc_data_label", label=label, match=matches[0], suffix=' 等' if len(matches) > 1 else ''))
 
     trend_words = ["增长", "下降", "上升", "下滑", "提升", "降低", "增加", "减少", "涨幅", "跌幅"]
     found_trends = [word for word in trend_words if word in content]
     if found_trends:
-        insights.append(f"趋势关键词: {', '.join(found_trends[:4])}")
+        insights.append(_t("rc_trend_keywords", words=', '.join(found_trends[:4])))
 
     return insights
 
@@ -438,12 +440,12 @@ def get_task_type_label(task_type: str) -> str:
         中文标签
     """
     labels = {
-        "content_generation": "✍️ 内容生成",
-        "data_analysis": "📊 数据分析",
-        "info_collection": "🔍 信息收集",
-        "scenario_based": "🎯 场景工作流",
-        "general_chat": "💬 智能对话",
-        "business_operation": "⚙️ 业务操作",
+        "content_generation": _t("rc_task_type_content_gen"),
+        "data_analysis": _t("rc_task_type_data_analysis"),
+        "info_collection": _t("rc_task_type_info_collection"),
+        "scenario_based": _t("rc_task_type_scenario"),
+        "general_chat": _t("rc_task_type_general_chat"),
+        "business_operation": _t("rc_task_type_business_op"),
     }
     return labels.get(task_type, f"📌 {task_type}")
 
@@ -461,12 +463,12 @@ def validate_deliverable_record(record: Dict[str, Any]) -> Tuple[bool, str]:
 
     missing = [field for field in required_fields if field not in record]
     if missing:
-        return False, f"缺少必要字段: {', '.join(missing)}"
+        return False, _t("rc_missing_fields", fields=', '.join(missing))
 
     if not record.get("filepath") or not os.path.exists(record["filepath"]):
-        return False, f"文件不存在: {record.get('filepath', '')}"
+        return False, _t("rc_file_not_found", path=record.get('filepath', ''))
 
     if not record.get("task_type"):
-        return False, "task_type不能为空"
+        return False, _t("rc_task_type_empty")
 
     return True, ""

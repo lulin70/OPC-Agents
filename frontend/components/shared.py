@@ -21,7 +21,11 @@ def show_success(message: str, icon: str = "✅", duration: int = 3):
     placeholder = st.empty()
     with placeholder.container():
         st.markdown(f"""
-        <div style="
+        <div class="opc-toast opc-toast-success">
+            {icon} {message}
+        </div>
+        <style>
+        .opc-toast {{
             position: fixed;
             bottom: 24px;
             right: 24px;
@@ -33,13 +37,23 @@ def show_success(message: str, icon: str = "✅", duration: int = 3):
             z-index: 999;
             font-size: 15px;
             animation: slideIn 0.3s ease-out;
-        ">
-            {icon} {message}
-        </div>
-        <style>
+        }}
         @keyframes slideIn {{
             from {{ transform: translateX(100%); opacity: 0; }}
             to {{ transform: translateX(0); opacity: 1; }}
+        }}
+        @media (max-width: 768px) {{
+            .opc-toast {{
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                bottom: 16px;
+                width: 90%;
+                max-width: 360px;
+                text-align: center;
+                font-size: 14px;
+                padding: 12px 16px;
+            }}
         }}
         </style>
         """, unsafe_allow_html=True)
@@ -55,7 +69,11 @@ def show_error(message: str, icon: str = "❌"):
     placeholder = st.empty()
     with placeholder.container():
         st.markdown(f"""
-        <div style="
+        <div class="opc-toast opc-toast-error">
+            {icon} {message}
+        </div>
+        <style>
+        .opc-toast-error {{
             position: fixed;
             bottom: 24px;
             right: 24px;
@@ -66,9 +84,21 @@ def show_error(message: str, icon: str = "❌"):
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 999;
             font-size: 15px;
-        ">
-            {icon} {message}
-        </div>
+        }}
+        @media (max-width: 768px) {{
+            .opc-toast-error {{
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                bottom: 16px;
+                width: 90%;
+                max-width: 360px;
+                text-align: center;
+                font-size: 14px;
+                padding: 12px 16px;
+            }}
+        }}
+        </style>
         """, unsafe_allow_html=True)
     import time as _time
     _time.sleep(2)
@@ -80,7 +110,11 @@ def show_info(message: str, icon: str = "ℹ️"):
     placeholder = st.empty()
     with placeholder.container():
         st.markdown(f"""
-        <div style="
+        <div class="opc-toast opc-toast-info">
+            {icon} {message}
+        </div>
+        <style>
+        .opc-toast-info {{
             position: fixed;
             bottom: 24px;
             right: 24px;
@@ -91,9 +125,21 @@ def show_info(message: str, icon: str = "ℹ️"):
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 999;
             font-size: 15px;
-        ">
-            {icon} {message}
-        </div>
+        }}
+        @media (max-width: 768px) {{
+            .opc-toast-info {{
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                bottom: 16px;
+                width: 90%;
+                max-width: 360px;
+                text-align: center;
+                font-size: 14px;
+                padding: 12px 16px;
+            }}
+        }}
+        </style>
         """, unsafe_allow_html=True)
     import time as _time
     _time.sleep(2)
@@ -184,7 +230,39 @@ def _get_theme_css(theme_name: str) -> str:
             [data-testid="stMetric"] { background-color: #162d4a !important; }
             """,
     }
-    return themes.get(theme_name, "")
+    base_css = themes.get(theme_name, "")
+
+    mobile_css = """
+    /* 移动端响应式规则 */
+    @media (max-width: 768px) {
+        /* 按钮在小屏幕全宽显示 */
+        .stButton > button {
+            width: 100% !important;
+            min-height: 44px !important;
+        }
+        /* 侧边栏在小屏幕自动收起 */
+        [data-testid="stSidebar"] {
+            width: 0px !important;
+            min-width: 0px !important;
+            overflow: hidden;
+        }
+        [data-testid="stSidebar"][aria-expanded="true"] {
+            width: 280px !important;
+            min-width: 280px !important;
+        }
+        /* Metric 卡片适配 */
+        [data-testid="stMetric"] {
+            padding: 8px !important;
+        }
+        /* 减少内边距节省空间 */
+        .block-container {
+            padding-top: 2rem !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+    }
+    """
+    return base_css + mobile_css
 
 # Import DELIVERABLES_DIR from parent module (set in app.py before import)
 # We'll get it from the module-level config or pass it as needed
@@ -863,43 +941,35 @@ def _render_language_selector():
 
 
 def _render_shortcuts_help():
-    """Render keyboard shortcuts help panel with enhanced content."""
+    """Render operation tips help panel (shortcuts that actually work in Streamlit)."""
     from opc_manager.i18n import t as _t
-    with st.expander(_t("shortcuts_title")):
-        shortcuts = [
+    with st.expander(_t("tips_title")):
+        tips = [
             ("Enter", _t("shortcut_send")),
             ("Esc", _t("shortcut_cancel")),
-            ("Ctrl+Z", _t("shortcut_undo")),
-            ("/", _t("shortcut_cmd_palette")),
-            ("?", _t("shortcut_help")),
-            ("Ctrl + N", _t("shortcut_new_chat")),
-            ("Ctrl + E", _t("shortcut_export")),
-            ("Ctrl + D", _t("shortcut_dashboard")),
-            ("Ctrl + S", _t("shortcut_settings")),
+            ("/", _t("tip_slash_command")),
         ]
-        for keys, desc in shortcuts:
+        for keys, desc in tips:
             st.code(f"{keys:12s} → {desc}")
-        st.caption(_t("shortcuts_hint"))
+        st.caption(_t("tips_hint"))
 
 
 def _maybe_show_shortcut_hints():
-    """Show keyboard shortcuts hint bubble on first visit to chat page."""
+    """Show operation tips hint bubble on first visit to chat page."""
     from opc_manager.i18n import t as _t
     if "shortcuts_shown" not in st.session_state:
         st.session_state.shortcuts_shown = False
 
     if not st.session_state.shortcuts_shown:
-        with st.expander(_t("shortcuts_title"), expanded=True):
+        with st.expander(_t("tips_title"), expanded=True):
             st.markdown(f"""
-            | Shortcut | {_t('shortcut_dashboard')} |
+            | {_t('tips_title')} | |
             |--------|------|
             | `Enter` | {_t('shortcut_send')} |
             | `Esc` | {_t('shortcut_cancel')} |
-            | `Ctrl+Z` | {_t('shortcut_undo')} |
-            | `/` | {_t('shortcut_cmd_palette')} |
-            | `?` | {_t('shortcut_help')} |
+            | `/` | {_t('tip_slash_command')} |
 
-            {_t('shortcuts_hint')}
+            {_t('tips_hint')}
             """)
 
         col_dismiss, col_later = st.columns([1, 1])
