@@ -1070,7 +1070,8 @@ def _maybe_show_shortcut_hints():
 
     if not st.session_state.shortcuts_shown:
         with st.expander(_t("tips_title"), expanded=True):
-            st.markdown(f"""
+            st.markdown(
+                f"""
             | {_t('tips_title')} | |
             |--------|------|
             | `Enter` | {_t('shortcut_send')} |
@@ -1078,7 +1079,8 @@ def _maybe_show_shortcut_hints():
             | `/` | {_t('tip_slash_command')} |
 
             {_t('tips_hint')}
-            """)
+            """
+            )
 
         col_dismiss, col_later = st.columns([1, 1])
         with col_dismiss:
