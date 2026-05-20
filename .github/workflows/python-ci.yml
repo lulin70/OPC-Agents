@@ -44,14 +44,28 @@ jobs:
 
     - name: Run tests
       run: |
-        PYTHONPATH=. pytest --tb=short -q --junitxml=test-results.xml
+        PYTHONPATH=. pytest --tb=long -v --junitxml=test-results.xml 2>&1 | tee test-output.txt
 
-    - name: Upload test results
+    - name: Display test failures
       if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ matrix.python-version }}
-        path: test-results.xml
+      run: |
+        echo "===== TEST FAILURE SUMMARY ====="
+        if [ -f test-results.xml ]; then
+          python3 -c "
+        import xml.etree.ElementTree as ET
+        tree = ET.parse('test-results.xml')
+        root = tree.getroot()
+        for tc in root.iter('testcase'):
+            for child in tc:
+                if child.tag in ('failure', 'error'):
+                    print(f'FAILED: {tc.get(\"classname\")}.{tc.get(\"name\")}')
+                    text = child.text or ''
+                    print(text[:500])
+                    print('---')
+          " || true
+        fi
+        echo "===== LAST 50 LINES OF OUTPUT ====="
+        tail -50 test-output.txt || true
 
     - name: Verify version consistency
       run: |
