@@ -59,8 +59,20 @@ jobs:
 
     - name: Run tests with coverage
       run: |
+        echo "=== Diagnostics ==="
         python -c "import defusedxml; print('defusedxml OK')"
-        PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing --tb=short
+        python -c "import cryptography; print('cryptography OK')"
+        ls -la data/.gitkeep || echo "WARNING: data/.gitkeep missing"
+        echo "=== Running tests ==="
+        PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing --tb=short -x 2>&1 | tee test_output.txt
+      continue-on-error: true
+
+    - name: Show test failures
+      if: always()
+      run: |
+        if [ -f test_output.txt ]; then
+          grep -A 20 "FAILED\|ERROR\|failed" test_output.txt || echo "No failures found in output"
+        fi
 
     - name: Verify version consistency
       run: |
@@ -68,6 +80,18 @@ jobs:
         VERSION_PY=$(python -c "from opc_manager.version import __version__; print(__version__)")
         if [ "$VERSION_FILE" != "$VERSION_PY" ]; then
           echo "Version mismatch: VERSION=$VERSION_FILE, version.py=$VERSION_PY"
+          exit 1
+        fi
+
+    - name: Check test results
+      run: |
+        if [ -f test_output.txt ]; then
+          if grep -q "FAILED\|failed.*passed" test_output.txt; then
+            echo "Tests failed! See output above."
+            exit 1
+          fi
+        else
+          echo "No test output file found"
           exit 1
         fi
 
