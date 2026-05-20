@@ -65,6 +65,7 @@ jobs:
         ls -la data/.gitkeep || echo "WARNING: data/.gitkeep missing"
         echo "=== Running tests ==="
         PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing --tb=short -x 2>&1 | tee test_output.txt
+        echo "=== Exit code: $? ==="
       continue-on-error: true
 
     - name: Show test failures
@@ -73,10 +74,16 @@ jobs:
         echo "## Test Results for Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
         if [ -f test_output.txt ]; then
-          # Show last 100 lines of test output
           tail -100 test_output.txt >> $GITHUB_STEP_SUMMARY
         fi
         echo '```' >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload test output
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-output-${{ matrix.python-version }}
+        path: test_output.txt
 
     - name: Verify version consistency
       run: |
