@@ -419,8 +419,8 @@ def _generate_undo_suggestions(context: dict) -> List[Suggestion]:
         from frontend.components.undo_panel import (
             check_has_active_undo_records,
             get_latest_undo_record_info,
-            _get_current_session_id,
         )
+        from frontend.components.session_utils import _get_current_session_id
 
         session_id = context.get("session_id", "") or _get_current_session_id()
 

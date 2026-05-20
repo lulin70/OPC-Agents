@@ -506,7 +506,7 @@ class TestConvertToDisplayRecord:
 class TestExecuteUndo:
     """Test suite for execute_undo() function with ProgressEmitter integration."""
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_execute_undo_success(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.return_value = (True, "")
@@ -518,7 +518,7 @@ class TestExecuteUndo:
         assert "撤销成功" in result["message"]
         mock_manager.undo.assert_called_once_with("session1", "op123")
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_execute_undo_cannot_undo(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.return_value = (False, "已过期")
@@ -529,7 +529,7 @@ class TestExecuteUndo:
         assert "无法撤销" in result["message"]
         assert "已过期" in result["message"]
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_execute_undo_failure(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.return_value = (True, "")
@@ -540,14 +540,14 @@ class TestExecuteUndo:
         assert result["success"] is False
         assert "撤销失败" in result["message"]
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_execute_undo_manager_not_initialized(self, mock_get_manager):
         mock_get_manager.return_value = None
         result = execute_undo("session1", "op123")
         assert result["success"] is False
         assert "未初始化" in result["message"]
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_execute_undo_handles_exception(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.side_effect = ValueError("Invalid session")
@@ -561,7 +561,7 @@ class TestExecuteUndo:
 class TestRenderUndoStats:
     """Test suite for calculate_undo_stats() statistics calculation."""
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_stats_all_active(self, mock_get_manager):
         mock_manager = MagicMock()
         now = time.time()
@@ -582,7 +582,7 @@ class TestRenderUndoStats:
         assert stats["undone"] == 0
         assert stats["expired"] == 0
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_stats_mixed_statuses(self, mock_get_manager):
         mock_manager = MagicMock()
         now = time.time()
@@ -607,7 +607,7 @@ class TestRenderUndoStats:
         assert stats["expired"] == 1
         assert stats["total"] == 3
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_stats_empty_session(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager._records = {}
@@ -617,7 +617,7 @@ class TestRenderUndoStats:
         assert stats["total"] == 0
         assert stats["active"] == 0
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_stats_manager_not_available(self, mock_get_manager):
         mock_get_manager.return_value = None
         stats = calculate_undo_stats("sess1")
@@ -627,7 +627,7 @@ class TestRenderUndoStats:
 class TestCheckHasActiveRecords:
     """Test suite for check_has_active_undo_records()."""
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_has_active_records_true(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.list_undoable.return_value = [
@@ -639,7 +639,7 @@ class TestCheckHasActiveRecords:
         result = check_has_active_undo_records("sess1")
         assert result is True
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_has_active_records_false(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.list_undoable.return_value = []
@@ -648,7 +648,7 @@ class TestCheckHasActiveRecords:
         result = check_has_active_undo_records("sess1")
         assert result is False
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_has_active_records_manager_none(self, mock_get_manager):
         mock_get_manager.return_value = None
         result = check_has_active_undo_records("sess1")
@@ -658,7 +658,7 @@ class TestCheckHasActiveRecords:
 class TestGetLatestRecordInfo:
     """Test suite for get_latest_undo_record_info()."""
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_get_latest_info_success(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.list_undoable.return_value = [
@@ -679,7 +679,7 @@ class TestGetLatestRecordInfo:
         assert info["icon"] == "📧"
         assert info["remaining_seconds"] == 240
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_get_latest_info_no_records(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.list_undoable.return_value = []
@@ -688,7 +688,7 @@ class TestGetLatestRecordInfo:
         info = get_latest_undo_record_info("sess1")
         assert info is None
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_get_latest_info_manager_none(self, mock_get_manager):
         mock_get_manager.return_value = None
         info = get_latest_undo_record_info("sess1")
@@ -803,7 +803,7 @@ class TestExportGeneration:
 class TestEdgeCases:
     """Test suite for edge cases and error handling."""
 
-    @patch("frontend.components.undo_panel._get_undo_manager")
+    @patch("frontend.components.undo_actions._get_undo_manager")
     def test_empty_session_id_in_execute_undo(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.side_effect = ValueError(
@@ -818,7 +818,7 @@ class TestEdgeCases:
         )
 
     def test_invalid_operation_id_in_execute_undo(self, st_mock):
-        with patch("frontend.components.undo_panel._get_undo_manager") as mock_get:
+        with patch("frontend.components.undo_actions._get_undo_manager") as mock_get:
             mock_manager = MagicMock()
             mock_manager.can_undo.return_value = (False, "Record not found")
             mock_get.return_value = mock_manager

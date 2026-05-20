@@ -231,13 +231,14 @@ class TestAllCategoriesConstant:
 class TestSortOptionsConstant:
     """Tests for SORT_OPTIONS dict."""
 
-    def test_has_three_options(self):
-        assert len(SORT_OPTIONS) == 3
+    def test_has_four_options(self):
+        assert len(SORT_OPTIONS) == 4
 
     def test_has_expected_keys(self):
         assert "name_asc" in SORT_OPTIONS
         assert "name_desc" in SORT_OPTIONS
         assert "popular" in SORT_OPTIONS
+        assert "rating_desc" in SORT_OPTIONS
 
     def test_values_are_strings(self):
         for v in SORT_OPTIONS.values():

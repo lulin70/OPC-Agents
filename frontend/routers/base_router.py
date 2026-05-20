@@ -690,7 +690,7 @@ async def _async_execute_task(
 
         session_id = getattr(session_ctx, "_session_id", None) if session_ctx else None
         if not session_id:
-            from frontend.components.shared import _get_current_session_id
+            from frontend.components.session_utils import _get_current_session_id
 
             session_id = _get_current_session_id()
 

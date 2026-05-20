@@ -1,24 +1,25 @@
-> **状态更新 (2026-05-20)**: v0.2.2 品质修复已完成。所有阻断项(i18n/备份加密/MCP安全/Onboarding合并)已修复，移动端适配完成，1860测试全通过，CI/CD Pipeline 通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。原v0.3.0计划的功能(CarryMem集成/知识库/飞轮)已在v0.2.x中提前实现。
+> **状态更新 (2026-05-20)**: v0.3.0 架构与功能冲刺已完成。前端模块化(11新模块，3个大文件各减少59-83%)，LLM响应缓存层，技能市场评分系统，26个E2E集成测试。1911测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
 
 # OPC-Agents v0.3.0 Roadmap
 
 **Created**: 2026-05-16
-**Last Updated**: 2026-05-20 (v0.2.2 QUALITY FIX — CI/CD + Security + i18n + Mobile)
+**Last Updated**: 2026-05-20 (v0.3.0 ARCHITECTURE + FEATURE SPRINT)
 **Based on**: v0.2.0 post-release evaluation → **v0.2.0 FINAL** (1822+ tests, 5 iterations completed)
-**Status**: ✅ Sprint 1-3 items + Core Workflow Revolution COMPLETED within v0.2.0 — Ready for new v0.3.0 scope
+**Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.3.0 Architecture Sprint COMPLETED
 
 ---
 
-## 📊 Current State (v0.2.2)
+## 📊 Current State (v0.3.0)
 
 | Metric | Value |
 |--------|-------|
-| Version | 0.2.2 (released 2026-05-20) |
-| Tests | **1860** passed, 30 skipped, 0 failed |
+| Version | 0.3.0 (released 2026-05-20) |
+| Tests | **1911** passed, 30 skipped, 0 failed |
 | CI/CD | ✅ GitHub Actions passing (Python 3.10/3.11/3.12) |
 | Security | Bandit 0 High/Medium, all P0/P1 fixed, Fernet encryption at rest |
-| Source files | **108 .py** in opc_manager/ + frontend/ + plugins/, **43 test files** |
-| Total LOC | ~18,000+ lines |
+| Source files | **119+ .py** in opc_manager/ + frontend/ + plugins/, **46 test files** |
+| Frontend modules | **22 components** (11 new modularized modules) |
+| Total LOC | ~20,000+ lines |
 | Maturity | Production-ready Beta |
 
 ## ✅ v0.2.0 Completed (ALL planned items delivered in 4 iterations)
@@ -94,6 +95,29 @@
 - Mobile responsive CSS
 
 **v0.2.2 Summary**: All blockers resolved, CI/CD green, 0 tech debt, 1860 tests passing
+
+### v0.3.0 Architecture & Feature Sprint ✅ (2026-05-20)
+
+#### P0-5: Frontend Modularization (11 new modules)
+- shared.py: 1195 → ~200 lines (83% reduction)
+- timeline_view.py: 1345 → ~260 lines (81% reduction)
+- undo_panel.py: 1228 → ~500 lines (59% reduction)
+- All backward-compatible re-exports maintained
+
+#### P0-6: Integration Test Suite (26 E2E tests)
+- 8 test categories covering onboarding, task execution, knowledge bridge, marketplace, data management, LLM cache, i18n, security
+
+#### P1-6: LLM Response Cache Layer
+- SQLite-backed cache with SHA256 key, 7-day TTL, hit tracking
+- Integrated into SimpleLLMService + LLMEnhancedContentGenerator
+- Thread-safe, skips high-temperature (>0.7) responses
+
+#### P1-7: Skill Marketplace Rating System
+- SkillReviewManager with 1-5 star ratings + text reviews
+- Auto-updates external_skills.rating column
+- Frontend star display + rating sort option
+
+**v0.3.0 Summary**: 1911 tests, 11 new modules, LLM cache, skill ratings, 26 E2E tests
 
 ---
 

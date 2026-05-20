@@ -219,7 +219,7 @@ class TestEventTypeConfig(unittest.TestCase):
 class TestBuildTimelineFromSession(unittest.TestCase):
     """build_timeline_from_session()集成测试"""
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_build_empty_session(self, mock_st):
         """TC-TL-012: 空session返回空列表"""
         mock_st.session_state = {"deliverables": [], "messages": []}
@@ -229,7 +229,7 @@ class TestBuildTimelineFromSession(unittest.TestCase):
         self.assertIsInstance(events, list)
         self.assertEqual(len(events), 0)
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_build_with_deliverables(self, mock_st):
         """TC-TL-013: 从deliverables构建事件"""
         mock_st.session_state = {
@@ -254,7 +254,7 @@ class TestBuildTimelineFromSession(unittest.TestCase):
         self.assertEqual(len(task_events), 1)
         self.assertEqual(task_events[0].title, "生成Q2营销方案")
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_events_sorted_descending(self, mock_st):
         """TC-TL-014: 事件按时间戳降序排列"""
         now = time.time()
@@ -279,7 +279,7 @@ class TestBuildTimelineFromSession(unittest.TestCase):
         if len(events) >= 2:
             self.assertGreater(events[0].timestamp, events[1].timestamp)
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_max_events_limit(self, mock_st):
         """TC-TL-015: 超过MAX_TIMELINE_EVENTS时截断"""
         many_deliverables = [
@@ -296,7 +296,7 @@ class TestBuildTimelineFromSession(unittest.TestCase):
 
         self.assertLessEqual(len(events), MAX_TIMELINE_EVENTS)
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_graceful_failure_on_missing_source(self, mock_st):
         """TC-TL-016: 数据源不可用时优雅降级"""
         mock_st.session_state = {}
@@ -311,7 +311,7 @@ class TestBuildTimelineFromSession(unittest.TestCase):
 class TestBuildFromDeliverables(unittest.TestCase):
     """_build_from_deliverables()单元测试"""
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_empty_deliverables(self, mock_st):
         """TC-TL-017: 空deliverables返回空列表"""
         mock_st.session_state = {"deliverables": []}
@@ -320,7 +320,7 @@ class TestBuildFromDeliverables(unittest.TestCase):
 
         self.assertEqual(len(events), 0)
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_valid_deliverable_record(self, mock_st):
         """TC-TL-018: 正确的deliverable记录转换"""
         mock_st.session_state = {
@@ -346,7 +346,7 @@ class TestBuildFromDeliverables(unittest.TestCase):
         self.assertEqual(event.icon, "✅")
         self.assertIn("filepath", event.metadata)
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_invalid_records_skipped(self, mock_st):
         """TC-TL-019: 无效记录被跳过"""
         mock_st.session_state = {
@@ -361,7 +361,7 @@ class TestBuildFromDeliverables(unittest.TestCase):
 
         self.assertEqual(len(events), 1)
 
-    @patch("frontend.components.timeline_view.st")
+    @patch("frontend.components.timeline_data.st")
     def test_string_timestamp_parsed(self, mock_st):
         """TC-TL-020: 字符串时间戳正确解析"""
         mock_st.session_state = {

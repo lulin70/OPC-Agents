@@ -38,6 +38,7 @@ SORT_OPTIONS = {
     "name_asc": "mp_sort_name_asc",
     "name_desc": "mp_sort_name_desc",
     "popular": "mp_sort_popular",
+    "rating_desc": "mp_sort_highest_rated",
 }
 
 
@@ -182,6 +183,15 @@ def _filter_and_sort_skills(skills, search_text, categories, sort_by):
         filtered.sort(
             key=lambda s: _simulate_install_count(s.get("skill_id", "")), reverse=True
         )
+    elif sort_by == "rating_desc":
+        from opc_manager.skill_reviews import get_review_manager
+
+        _rm = get_review_manager()
+        if _rm:
+            filtered.sort(
+                key=lambda s: _rm.get_average_rating(s.get("skill_id", "")),
+                reverse=True,
+            )
 
     return filtered
 
@@ -233,6 +243,20 @@ def _render_skill_card_v2(skill, marketplace, external_mp, installed_versions=No
         st.markdown(f"**{name}**{status_text}")
         st.caption(desc[:80] + "..." if len(desc) > 80 else desc)
         st.markdown(f"*{category}* · {author}")
+
+        from opc_manager.skill_reviews import get_review_manager
+
+        review_mgr = get_review_manager()
+        if review_mgr:
+            summary = review_mgr.get_rating_summary(skill_id)
+            if summary["total"] > 0:
+                stars = "★" * int(summary["average"]) + "☆" * (
+                    5 - int(summary["average"])
+                )
+                st.markdown(
+                    f'<span style="font-size:0.85em">{stars} {summary["average"]} ({summary["total"]})</span>',
+                    unsafe_allow_html=True,
+                )
 
         if update_available:
             st.markdown(_t("mp_update_available_notice"), unsafe_allow_html=True)

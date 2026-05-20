@@ -191,6 +191,19 @@ class SimpleLLMService:
         if system_prompt:
             system_prompt = sanitize_for_llm(system_prompt, 500)
 
+        # Try LLM cache first
+        from opc_manager.llm_cache import get_llm_cache
+
+        cache = get_llm_cache()
+        _temperature = 0.3  # matches _call_openai_compat and _call_ollama
+        if cache is not None:
+            cached = cache.get(
+                self._model, _temperature, max_tokens, system_prompt or "", prompt
+            )
+            if cached is not None:
+                logger.debug("[SimpleLLMService] Cache hit for prompt")
+                return cached
+
         total_start = time.time()
 
         for attempt in range(LLM_MAX_RETRIES):
@@ -212,6 +225,17 @@ class SimpleLLMService:
                         )
                     if result:
                         self._record_provider_success("primary")
+                        # Cache the response
+                        if cache is not None:
+                            cache.put(
+                                self._model,
+                                _temperature,
+                                max_tokens,
+                                system_prompt or "",
+                                prompt,
+                                result,
+                                provider=self._base_url,
+                            )
                         return result
                 finally:
                     _llm_thread_semaphore.release()
@@ -238,6 +262,17 @@ class SimpleLLMService:
                 logger.info(
                     "Fallback to provider %s succeeded", provider.get("name", "unknown")
                 )
+                # Cache the fallback response
+                if cache is not None:
+                    cache.put(
+                        self._model,
+                        _temperature,
+                        max_tokens,
+                        system_prompt or "",
+                        prompt,
+                        result,
+                        provider=provider.get("base_url", ""),
+                    )
                 return result
 
         return None

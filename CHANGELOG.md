@@ -2,6 +2,59 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.0] - 2026-05-20
+
+### Architecture & Feature Sprint
+
+#### P0-5: Frontend Modularization (11 new modules)
+- **shared.py**: 1195 → ~200 lines (83% reduction)
+  - Extracted `session_utils.py` (shared utility functions)
+  - Extracted `export_helpers.py` (~300 lines, export workflow)
+  - Extracted `progress_indicator.py` (~245 lines, progress UI)
+  - Extracted `toast_notifications.py` (~160 lines, notification system)
+  - Extracted `theme_manager.py` (~120 lines, theme configuration)
+- **timeline_view.py**: 1345 → ~260 lines (81% reduction)
+  - Extracted `timeline_data.py` (~400 lines, data building layer)
+  - Extracted `timeline_export.py` (~283 lines, export functionality)
+  - Extracted `timeline_filters.py` (~205 lines, filter & grouping)
+- **undo_panel.py**: 1228 → ~500 lines (59% reduction)
+  - Extracted `undo_display.py` (~195 lines, data model & conversion)
+  - Extracted `undo_export.py` (~113 lines, export functionality)
+  - Extracted `undo_actions.py` (~220 lines, business actions)
+- All original files maintain backward-compatible re-exports via `from .new_module import *`
+
+#### P0-6: Integration Test Suite (26 E2E tests)
+- User Onboarding Flow (3 tests)
+- Task Execution Workflow (4 tests: simple task, undo, export, 5-task sequence)
+- Knowledge Bridge Workflow (2 tests: local folder, search)
+- Skill Marketplace Workflow (3 tests: browse, install, rate)
+- Data Management Workflow (3 tests: backup/restore, export sanitization, audit log)
+- LLM Cache Workflow (3 tests: cache hit, miss, expiry)
+- i18n Workflow (3 tests: English, Japanese, fallback)
+- Security Workflow (5 tests: MCP localhost, API key redaction, XSS, URL validation, audit sanitization)
+
+#### P1-6: LLM Response Cache Layer
+- New `opc_manager/llm_cache.py` — SQLite-backed cache with TTL & hit tracking
+- Cache key: SHA256(model + temperature + max_tokens + system_prompt + user_prompt)
+- Default TTL: 7 days, configurable via `OPC_LLM_CACHE_TTL` env var
+- Skips caching for temperature > 0.7 (high variance responses)
+- Integrated into `SimpleLLMService.complete()` and `LLMEnhancedContentGenerator._call_llm_api()`
+- Thread-safe via `threading.RLock`
+- 12 unit tests
+
+#### P1-7: Skill Marketplace Rating System
+- New `opc_manager/skill_reviews.py` — `SkillReviewManager` with SQLite persistence
+- Rating schema: 1-5 stars + text review + helpful count + status
+- `skill_reviews` table with indexes on skill_id, user_id
+- Auto-updates `external_skills.rating` column (aggregated average)
+- Frontend: star rating display (★☆) in skill cards, `rating_desc` sort option
+- 17 unit tests
+
+#### Test Coverage
+- **1911 tests** total (up from 1860 in v0.2.2)
+- 26 new E2E integration tests
+- 29 new feature tests (12 LLM cache + 17 skill reviews)
+
 ## [0.2.2] - 2026-05-20
 
 ### Quality Fix Sprint — All Blockers Resolved + Mobile + i18n + Security + CI/CD

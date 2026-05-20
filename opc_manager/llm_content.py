@@ -603,17 +603,33 @@ class LLMEnhancedContentGenerator:
                 )
                 return None
 
+            _temperature = 0.7
+            _max_tokens = 4000
+            _system_prompt = "You are a professional business consultant. Respond in the same language as the user's input. CRITICAL RULES: 1) Never skip key analysis sections with excuses like 'due to time constraints' or 'for brevity'. 2) Never fabricate data — if data is unavailable, explicitly state 'data source needed' rather than making up numbers. 3) Never give hollow suggestions like 'further research recommended' — always provide at least one concrete, actionable step."
+
+            # Try LLM cache first
+            from opc_manager.llm_cache import get_llm_cache
+
+            cache = get_llm_cache()
+            if cache is not None:
+                cached = cache.get(
+                    model, _temperature, _max_tokens, _system_prompt, prompt
+                )
+                if cached is not None:
+                    logger.debug("[LLMContentGen] Cache hit for prompt")
+                    return cached
+
             payload = {
                 "model": model,
                 "messages": [
                     {
                         "role": "system",
-                        "content": "You are a professional business consultant. Respond in the same language as the user's input. CRITICAL RULES: 1) Never skip key analysis sections with excuses like 'due to time constraints' or 'for brevity'. 2) Never fabricate data — if data is unavailable, explicitly state 'data source needed' rather than making up numbers. 3) Never give hollow suggestions like 'further research recommended' — always provide at least one concrete, actionable step.",
+                        "content": _system_prompt,
                     },
                     {"role": "user", "content": prompt},
                 ],
-                "temperature": 0.7,
-                "max_tokens": 4000,
+                "temperature": _temperature,
+                "max_tokens": _max_tokens,
             }
 
             endpoint = f"{api_base.rstrip('/')}/chat/completions"
@@ -640,6 +656,17 @@ class LLMEnhancedContentGenerator:
                 logger.info(
                     f"[LLMContentGen] LLM API call succeeded ({model}), returned {len(content)} chars"
                 )
+                # Cache the response
+                if cache is not None:
+                    cache.put(
+                        model,
+                        _temperature,
+                        _max_tokens,
+                        _system_prompt,
+                        prompt,
+                        content,
+                        provider=api_base,
+                    )
                 return content
             else:
                 logger.warning(
