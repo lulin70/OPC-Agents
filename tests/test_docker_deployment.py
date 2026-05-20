@@ -26,8 +26,8 @@ class TestDockerfile:
     def test_dockerfile_version_label(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()
         assert (
-            'version="0.2.1"' in content or "version=0.2.1" in content
-        ), "Dockerfile LABEL version should be 0.2.1"
+            'version="0.3.0"' in content or "version=0.3.0" in content
+        ), "Dockerfile LABEL version should be 0.3.0"
 
     def test_dockerfile_python_base(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()

@@ -112,11 +112,21 @@ def _render_marketplace_browse_v2(marketplace, external_mp):
 
         installed_versions = _load_installed_versions(external_mp)
 
+        from opc_manager.skill_reviews import get_review_manager
+
+        review_mgr = get_review_manager()
+        batch_ratings = {}
+        if review_mgr:
+            skill_ids = [
+                s.get("skill_id", "") for s in filtered_skills[:12] if s.get("skill_id")
+            ]
+            batch_ratings = review_mgr.get_average_ratings(skill_ids)
+
         cols = st.columns(3)
         for i, skill in enumerate(filtered_skills[:12]):
             with cols[i % 3]:
                 _render_skill_card_v2(
-                    skill, marketplace, external_mp, installed_versions
+                    skill, marketplace, external_mp, installed_versions, batch_ratings
                 )
 
     except Exception as e:
@@ -188,8 +198,10 @@ def _filter_and_sort_skills(skills, search_text, categories, sort_by):
 
         _rm = get_review_manager()
         if _rm:
+            skill_ids = [s.get("skill_id", "") for s in filtered if s.get("skill_id")]
+            batch_ratings = _rm.get_average_ratings(skill_ids)
             filtered.sort(
-                key=lambda s: _rm.get_average_rating(s.get("skill_id", "")),
+                key=lambda s: batch_ratings.get(s.get("skill_id", ""), 0.0),
                 reverse=True,
             )
 
@@ -201,10 +213,14 @@ def _simulate_install_count(skill_id):
     return int(hashlib.md5(skill_id.encode()).hexdigest()[:8], 16) % 10000
 
 
-def _render_skill_card_v2(skill, marketplace, external_mp, installed_versions=None):
+def _render_skill_card_v2(
+    skill, marketplace, external_mp, installed_versions=None, batch_ratings=None
+):
     """Render a single skill card with version pinning (V2)."""
     if installed_versions is None:
         installed_versions = {}
+    if batch_ratings is None:
+        batch_ratings = {}
 
     name = skill.get("name", _t("mp_unknown_skill"))
     version = skill.get("version", "1.0.0")
@@ -244,19 +260,13 @@ def _render_skill_card_v2(skill, marketplace, external_mp, installed_versions=No
         st.caption(desc[:80] + "..." if len(desc) > 80 else desc)
         st.markdown(f"*{category}* · {author}")
 
-        from opc_manager.skill_reviews import get_review_manager
-
-        review_mgr = get_review_manager()
-        if review_mgr:
-            summary = review_mgr.get_rating_summary(skill_id)
-            if summary["total"] > 0:
-                stars = "★" * int(summary["average"]) + "☆" * (
-                    5 - int(summary["average"])
-                )
-                st.markdown(
-                    f'<span style="font-size:0.85em">{stars} {summary["average"]} ({summary["total"]})</span>',
-                    unsafe_allow_html=True,
-                )
+        avg_rating = batch_ratings.get(skill_id, 0.0)
+        if avg_rating > 0:
+            stars = "★" * int(avg_rating) + "☆" * (5 - int(avg_rating))
+            st.markdown(
+                f'<span style="font-size:0.85em">{stars} {avg_rating}</span>',
+                unsafe_allow_html=True,
+            )
 
         if update_available:
             st.markdown(_t("mp_update_available_notice"), unsafe_allow_html=True)

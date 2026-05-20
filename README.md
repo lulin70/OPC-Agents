@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司智能任务执行系统
 
-> **版本**: v0.2.2 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.0 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -62,7 +62,11 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 - ✅ **📜 规则引擎** — 行为约束自动注入策略脑，失败经验提炼为规则，越用越精准
 - ✅ **📚 外接知识库** — 6种适配器（Obsidian/语雀/飞书/Notion/思源笔记/本地文件夹），国内用户友好
 - ✅ **🔄 飞轮机制** — 等级评估(🌱新手→👑传奇)+记忆驱动技能推荐+过时记忆清理+数据导出
-- ✅ **测试覆盖** — **1859**个测试用例，100%通过率，CI自动验证（覆盖settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全部新模块）
+- ✅ **测试覆盖** — **1911**个测试用例，100%通过率，CI自动验证（覆盖settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全部新模块）
+- ✅ **🧊 LLM缓存** — 响应缓存+TTL管理，减少重复LLM调用，节省成本
+- ✅ **⭐ 技能评分** — 技能使用评分与反馈系统，持续优化技能质量
+- ✅ **🧩 前端模块化** — 前端代码模块化重构，8模块独立维护
+- ✅ **🧪 E2E测试** — 端到端测试框架，模拟真实用户场景验证
 - ✅ **技能市场API** — 外部技能注册/发现/调用，API Key认证+权限分级
 - ✅ **MCP协议兼容** — 兼容微软Model Context Protocol标准，支持工具/资源/提示词
   > MCP SSE模式需要额外依赖：`pip install opc-agents[mcp]`，stdio模式无需额外安装。
@@ -87,7 +91,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    OPC-Agents v0.2.2                 │
+│                    OPC-Agents v0.3.0                 │
 ├─────────────────────────────────────────────────────┤
 │  三贤者架构                                          │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
@@ -139,7 +143,7 @@ OPC-Agents（One-Person Company Agents）是一个**面向一人公司/独立创
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.2.2
+pip install opc-agents==0.3.0
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

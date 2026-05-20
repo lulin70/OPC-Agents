@@ -51,9 +51,25 @@ All notable changes to OPC-Agents will be documented in this file.
 - 17 unit tests
 
 #### Test Coverage
-- **1911 tests** total (up from 1860 in v0.2.2)
+- **1913 tests** total (up from 1860 in v0.2.2)
 - 26 new E2E integration tests
 - 29 new feature tests (12 LLM cache + 17 skill reviews)
+
+#### 7-Dimension Code Review Fixes (Critical + High)
+- **[Critical] XSS**: Added `html.escape()` to toast_notifications.py message/icon rendering
+- **[Critical] Cache threshold**: Changed LLM cache skip threshold from `> 0.7` to `>= 0.7`
+- **[High] Thread safety**: Added `threading.RLock` to `SkillReviewManager`
+- **[High] N+1 query**: Added `get_average_ratings()` batch method, pre-compute ratings in marketplace
+- **[High] UI blocking**: Removed `time.sleep()` from toast notifications
+- **[High] Input validation**: Added skill_id/user_id length checks, HTML escape on review text
+- **[High] Error logging**: Changed silent exception swallowing to `logger.warning()`
+
+#### Version Consistency (9 files updated)
+- README.md, Dockerfile, start.sh, install.sh → v0.3.0
+- i18n.py, mcp_protocol.py → v0.3.0
+- requirements.txt → v0.3.0
+- pyproject.toml → carrymem upper bound widened to `<0.4.0`
+- Test assertions updated to match
 
 ## [0.2.2] - 2026-05-20
 

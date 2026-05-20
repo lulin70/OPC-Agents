@@ -6,6 +6,8 @@ Provides toast-style notification UI extracted from shared.py:
 - show_info: Info toast notification
 """
 
+import html
+
 import streamlit as st
 
 __all__ = ["show_success", "show_error", "show_info"]
@@ -13,12 +15,14 @@ __all__ = ["show_success", "show_error", "show_info"]
 
 def show_success(message: str, icon: str = "✅", duration: int = 3):
     """Show a success toast notification that auto-dismisses."""
+    safe_icon = html.escape(icon)
+    safe_message = html.escape(message)
     placeholder = st.empty()
     with placeholder.container():
         st.markdown(
             f"""
         <div class="opc-toast opc-toast-success">
-            {icon} {message}
+            {safe_icon} {safe_message}
         </div>
         <style>
         .opc-toast {{
@@ -56,21 +60,20 @@ def show_success(message: str, icon: str = "✅", duration: int = 3):
             unsafe_allow_html=True,
         )
 
-    import time as _time
-
-    _time.sleep(min(duration, 2))
     placeholder.empty()
     return True
 
 
 def show_error(message: str, icon: str = "❌"):
     """Show an error toast notification."""
+    safe_icon = html.escape(icon)
+    safe_message = html.escape(message)
     placeholder = st.empty()
     with placeholder.container():
         st.markdown(
             f"""
         <div class="opc-toast opc-toast-error">
-            {icon} {message}
+            {safe_icon} {safe_message}
         </div>
         <style>
         .opc-toast-error {{
@@ -102,20 +105,19 @@ def show_error(message: str, icon: str = "❌"):
         """,
             unsafe_allow_html=True,
         )
-    import time as _time
-
-    _time.sleep(2)
     placeholder.empty()
 
 
 def show_info(message: str, icon: str = "ℹ️"):
     """Show an info toast notification."""
+    safe_icon = html.escape(icon)
+    safe_message = html.escape(message)
     placeholder = st.empty()
     with placeholder.container():
         st.markdown(
             f"""
         <div class="opc-toast opc-toast-info">
-            {icon} {message}
+            {safe_icon} {safe_message}
         </div>
         <style>
         .opc-toast-info {{
@@ -147,7 +149,4 @@ def show_info(message: str, icon: str = "ℹ️"):
         """,
             unsafe_allow_html=True,
         )
-    import time as _time
-
-    _time.sleep(2)
     placeholder.empty()

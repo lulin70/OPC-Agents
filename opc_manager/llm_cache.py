@@ -109,9 +109,11 @@ class LLMCache:
         response: str,
         provider: str = "",
     ) -> None:
-        """Store LLM response in cache. Skip if temperature > 0.7 (high variance)."""
-        if temperature > 0.7:
-            logger.debug("[LLMCache] Skip caching: temperature=%.1f > 0.7", temperature)
+        """Store LLM response in cache. Skip if temperature >= 0.7 (high variance)."""
+        if temperature >= 0.7:
+            logger.debug(
+                "[LLMCache] Skip caching: temperature=%.1f >= 0.7", temperature
+            )
             return
         key = self.compute_key(
             model, temperature, max_tokens, system_prompt, user_prompt
