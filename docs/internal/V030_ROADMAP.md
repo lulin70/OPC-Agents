@@ -1,25 +1,25 @@
-> **状态更新 (2026-05-20)**: v0.2.2 品质修复已完成。所有阻断项(i18n/备份加密/MCP安全/Onboarding合并)已修复，移动端适配完成，1860测试全通过。原v0.3.0计划的功能(CarryMem集成/知识库/飞轮)已在v0.2.x中提前实现。
+> **状态更新 (2026-05-20)**: v0.2.2 品质修复已完成。所有阻断项(i18n/备份加密/MCP安全/Onboarding合并)已修复，移动端适配完成，1860测试全通过，CI/CD Pipeline 通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。原v0.3.0计划的功能(CarryMem集成/知识库/飞轮)已在v0.2.x中提前实现。
 
 # OPC-Agents v0.3.0 Roadmap
 
 **Created**: 2026-05-16
-**Last Updated**: 2026-05-17 (v0.2.0 FINAL + Iteration 5 Core Workflow Revolution)
+**Last Updated**: 2026-05-20 (v0.2.2 QUALITY FIX — CI/CD + Security + i18n + Mobile)
 **Based on**: v0.2.0 post-release evaluation → **v0.2.0 FINAL** (1822+ tests, 5 iterations completed)
 **Status**: ✅ Sprint 1-3 items + Core Workflow Revolution COMPLETED within v0.2.0 — Ready for new v0.3.0 scope
 
 ---
 
-## 📊 Current State (v0.2.0 FINAL + Iteration 5)
+## 📊 Current State (v0.2.2)
 
 | Metric | Value |
 |--------|-------|
-| Version | 0.2.0 FINAL (released 2026-05-16, iterated through 2026-05-17) |
-| Tests | **1822+** passed, 21 skipped, 0 failed (+124% from initial 813) |
+| Version | 0.2.2 (released 2026-05-20) |
+| Tests | **1860** passed, 30 skipped, 0 failed |
+| CI/CD | ✅ GitHub Actions passing (Python 3.10/3.11/3.12) |
+| Security | Bandit 0 High/Medium, all P0/P1 fixed, Fernet encryption at rest |
 | Source files | **108 .py** in opc_manager/ + frontend/ + plugins/, **43 test files** |
-| Total LOC | ~18,000+ lines (from ~12,000) |
-| Security | All P0/P1 fixed, Fernet encryption at rest, zero open issues |
+| Total LOC | ~18,000+ lines |
 | Maturity | Production-ready Beta |
-| Iterations | 5 post-release iterations completed |
 
 ## ✅ v0.2.0 Completed (ALL planned items delivered in 4 iterations)
 
@@ -66,6 +66,34 @@
 - ~~P2-10: Operation Timeline~~ → 10-event vertical timeline (+53 tests) ✅
 
 **Iteration 5 Summary**: 10 core workflow improvements, 596 new tests, ~4,280 lines new code
+
+### v0.2.2 Quality Fix Sprint ✅ (2026-05-20)
+
+#### CI/CD Pipeline
+- Consolidated duplicate CI workflows → single `python-ci.yml` (3.10/3.11/3.12)
+- Fixed missing `pip install -r requirements.txt` step
+- Added version consistency verification step
+- **Result**: CI/CD Pipeline passing on all 3 Python versions
+
+#### Security (Bandit 0 High/Medium)
+- Replaced `pyCrypto` with `cryptography` library (B413)
+- Replaced `xml.etree.ElementTree` with `defusedxml` (B314)
+- Added `# nosec` for controlled urllib/sha1 usage (B310/B324)
+- Added `defusedxml>=0.7.0` to requirements
+
+#### Code Quality
+- Fixed Flake8 F824 (unused global declaration)
+- Fixed SyntaxWarning (invalid escape sequence in regex)
+- Black 25.x formatting compliance
+
+#### i18n + Mobile + UX (from earlier v0.2.2 commits)
+- 315+ hardcoded Chinese strings → i18n keys
+- AES-256 encrypted backups via pyzipper
+- MCP default localhost (127.0.0.1)
+- Onboarding merge (removed duplicate)
+- Mobile responsive CSS
+
+**v0.2.2 Summary**: All blockers resolved, CI/CD green, 0 tech debt, 1860 tests passing
 
 ---
 

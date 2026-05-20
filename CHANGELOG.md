@@ -4,7 +4,22 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [0.2.2] - 2026-05-20
 
-### Quality Fix Sprint — All Blockers Resolved + Mobile + i18n + Security
+### Quality Fix Sprint — All Blockers Resolved + Mobile + i18n + Security + CI/CD
+
+#### CI/CD Pipeline Fixes
+- **Fixed**: Consolidated duplicate CI workflows (`ci.yml` + `python-ci.yml` → single `python-ci.yml`)
+- **Fixed**: Python matrix updated to 3.10/3.11/3.12 (matches `requires-python>=3.10`)
+- **Fixed**: Added `pip install -r requirements.txt` step (was missing, caused test failures)
+- **Fixed**: Added version consistency verification step
+- **Fixed**: Flake8 F824 — removed unused `global _log_cache_instance` in `test_live_log_panel.py`
+- **Fixed**: SyntaxWarning — invalid escape sequence in `search_processor.py` regex
+- **Fixed**: Black 25.x formatting for `audit_log.py`, `search_processor.py`
+- **Fixed**: Bandit B413 — replaced `pyCrypto` with `cryptography` in `wechat_gateway.py`
+- **Fixed**: Bandit B314 — replaced `xml.etree.ElementTree` with `defusedxml` in `wechat_gateway.py`
+- **Fixed**: Bandit B310 — added `# nosec` for controlled `urllib.request.urlopen` calls
+- **Fixed**: Bandit B324 — added `# nosec` for WeChat API-required `hashlib.sha1`
+- **Added**: `defusedxml>=0.7.0` to `requirements.txt`
+- **Result**: CI/CD Pipeline Run #125 — all 3 Python versions pass (Black + Flake8 + Bandit + pytest)
 
 #### B1: i18n Hardcoded Chinese Cleanup (315+ strings)
 - **Fixed**: `input_autocomplete.py` — 45 hardcoded Chinese strings → i18n keys
