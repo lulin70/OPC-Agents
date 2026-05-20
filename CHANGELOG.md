@@ -63,27 +63,6 @@ All notable changes to OPC-Agents will be documented in this file.
 - **Updated**: Version unified to 0.2.2 across all files
 
 ## [0.2.1] - 2026-05-18
-- **Feature**: Knowledge context injection before task execution
-- **Feature**: Sidebar knowledge base status indicator (📚 知识库(type) N篇)
-- **Config**: `OPC_KB_ENABLED=true`, `OPC_KB_TYPE=obsidian|local|yuque|feishu|notion|siyuan`
-
-#### Phase 4 (v0.5.0): Flywheel Mechanism
-- **Feature**: Flywheel level assessment (🌱新手→🌿熟悉→🌳精通→🏔️专家→🧙大师→👑传奇)
-- **Feature**: Memory-driven skill recommendation (`suggest_skills()`)
-- **Feature**: Stale memory cleanup (`cleanup_stale_memories()`)
-- **Feature**: User data export for portability (`export_user_data()`)
-
-#### Bug Fixes (7-dimension code review)
-- Fixed: `urllib.parse` not imported in knowledge_bridge.py (runtime crash for Yuque/Feishu)
-- Fixed: `_mb` variable scope issue in base_router.py (NameError when CarryMem not installed)
-- Fixed: Original prompt extraction error in base_router.py (data loss on multi-paragraph input)
-- Fixed: Silent exceptions in agent_loop.py now log at debug level
-- Fixed: `deviation_analysis` defensive null check in failure recording
-- Fixed: Flywheel level calculation uses `round()` instead of `int()` to avoid 4.9→4 truncation
-- Fixed: `memory_count` property cached to avoid DB query on every access
-- Fixed: SiYuanAdapter `_available` now validates connection at init instead of defaulting to True
-
-## [0.2.1] - 2026-05-18
 
 ### User Experience Enhancement
 - **8 new OPC skills integrated** from tohnee/opc-skills (MIT License):
@@ -97,6 +76,13 @@ All notable changes to OPC-Agents will be documented in this file.
   - 🎨 Domain & Brand (Paul Graham naming)
 - **Total visible scenarios**: 25 (4 core + 21 more), up from 12 in v0.2.0
 - **5 previously hidden skills** now exposed as scenario buttons
+- **Feature**: Knowledge context injection before task execution
+- **Feature**: Sidebar knowledge base status indicator (📚 知识库(type) N篇)
+- **Config**: `OPC_KB_ENABLED=true`, `OPC_KB_TYPE=obsidian|local|yuque|feishu|notion|siyuan`
+- **Feature**: Flywheel level assessment (🌱新手→🌿熟悉→🌳精通→🏔️专家→🧙大师→👑传奇)
+- **Feature**: Memory-driven skill recommendation (`suggest_skills()`)
+- **Feature**: Stale memory cleanup (`cleanup_stale_memories()`)
+- **Feature**: User data export for portability (`export_user_data()`)
 
 ### Tech Debt Cleanup (from v0.2.0 post-release)
 - 32 bare except fixes across 17 files with proper logging
@@ -104,7 +90,15 @@ All notable changes to OPC-Agents will be documented in this file.
 - Growth role names: hardcoded → i18n keys (11 new keys ×3 langs)
 - Settings placeholder: hardcoded → _t('llm_model_placeholder')
 
-### Bug Fixes (post-v0.2.0)
+### Bug Fixes (7-dimension code review)
+- Fixed: `urllib.parse` not imported in knowledge_bridge.py (runtime crash for Yuque/Feishu)
+- Fixed: `_mb` variable scope issue in base_router.py (NameError when CarryMem not installed)
+- Fixed: Original prompt extraction error in base_router.py (data loss on multi-paragraph input)
+- Fixed: Silent exceptions in agent_loop.py now log at debug level
+- Fixed: `deviation_analysis` defensive null check in failure recording
+- Fixed: Flywheel level calculation uses `round()` instead of `int()` to avoid 4.9→4 truncation
+- Fixed: `memory_count` property cached to avoid DB query on every access
+- Fixed: SiYuanAdapter `_available` now validates connection at init instead of defaulting to True
 - NameError: `task_type` not defined in chat_router.py — fixed variable scope
 - Settings save feedback: st.toast() added on all 3 save buttons
 

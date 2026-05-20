@@ -95,5 +95,11 @@ secrets/
 # Mock遗留
 MagicMock/
 
+# Streamlit secrets (keep config.toml tracked)
+.streamlit/secrets.toml
+
+# Type checking
+.mypy_cache/
+
 # Node
 node_modules/

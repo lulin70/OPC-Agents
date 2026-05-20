@@ -346,7 +346,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # 测试套件（39个测试文件，1126测试用例，100%通过）
+├── tests/                 # 测试套件（56个测试文件，1860测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）
@@ -365,7 +365,7 @@ OPC-Agents/
 # 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 运行全部测试（1126个用例）
+# 运行全部测试（1860个用例）
 PYTHONPATH=. pytest tests/ -v
 
 # 运行并生成覆盖率报告
@@ -375,7 +375,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **测试覆盖范围**：全部84个opc_manager模块 + 前端8模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **测试覆盖范围**：全部87个opc_manager模块 + 前端8模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## 版本历史
 
@@ -383,7 +383,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 |------|------|--------|
 | **0.2.2** | **2026-05-20** | **品质修复** — i18n 315+硬编码清理+备份AES加密+导出脱敏+MCP默认localhost+Onboarding合并+移动端适配+快捷键修正+CI安全扫描 |
 | 0.2.1 | 2026-05-18 | 8个OPC技能集成+技术债清理(32 bare except+i18n 97键) |
-| **0.2.0** | **2026-05-17** | **FINAL** — 产品化发布：统一设置管理+首次引导+数据备份恢复+错误处理+微信E2E+模块化仪表盘+i18n三语+技能市场V2+全局搜索+Apple Shortcuts+API Key加密(Fernet)+代码模块化重构（84模块/39测试文件/1126测试） |
+| **0.2.0** | **2026-05-17** | **FINAL** — 产品化发布：统一设置管理+首次引导+数据备份恢复+错误处理+微信E2E+模块化仪表盘+i18n三语+技能市场V2+全局搜索+Apple Shortcuts+API Key加密(Fernet)+代码模块化重构（87模块/56测试文件/1860测试） |
 | 0.1.8 | 2026-05-14 | 21内置技能+外部技能市场+MCP服务发现+用户画像+数据安全+SQLite统一存储 |
 | 0.1.9-delta | 2026-05-09 | 真实运行验证：三贤者LLM驱动+技能市场FastAPI+MCP传输+插件示例+编辑器UI+性能监控 |
 | 0.1.9-gamma | 2026-05-09 | 整改优化：三贤者接入主流程+技能市场API+MCP协议+插件系统+技能编辑器 |
