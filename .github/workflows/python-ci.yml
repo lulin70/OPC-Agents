@@ -26,9 +26,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-v3-${{ hashFiles('**/requirements*.txt') }}
+        key: ${{ runner.os }}-pip-v4-${{ hashFiles('**/requirements*.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-v3-
+          ${{ runner.os }}-pip-v4-
 
     - name: Install dependencies
       run: |
@@ -57,33 +57,9 @@ jobs:
         pip-audit --desc --ignore-vuln PYSEC-2023-228
       continue-on-error: true
 
-    - name: Run tests with coverage
+    - name: Run tests
       run: |
-        echo "=== Diagnostics ==="
-        python -c "import defusedxml; print('defusedxml OK')"
-        python -c "import cryptography; print('cryptography OK')"
-        ls -la data/.gitkeep || echo "WARNING: data/.gitkeep missing"
-        echo "=== Running tests ==="
-        PYTHONPATH=. pytest --cov=opc_manager --cov-report=xml --cov-report=term-missing --tb=short -x 2>&1 | tee test_output.txt
-        echo "=== Exit code: $? ==="
-      continue-on-error: true
-
-    - name: Show test failures
-      if: always()
-      run: |
-        echo "## Test Results for Python ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        if [ -f test_output.txt ]; then
-          tail -100 test_output.txt >> $GITHUB_STEP_SUMMARY
-        fi
-        echo '```' >> $GITHUB_STEP_SUMMARY
-
-    - name: Upload test output
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-output-${{ matrix.python-version }}
-        path: test_output.txt
+        PYTHONPATH=. pytest --tb=short -q
 
     - name: Verify version consistency
       run: |
@@ -93,25 +69,3 @@ jobs:
           echo "Version mismatch: VERSION=$VERSION_FILE, version.py=$VERSION_PY"
           exit 1
         fi
-
-    - name: Check test results
-      run: |
-        if [ -f test_output.txt ]; then
-          # Check for test failures in the output
-          if grep -E "^[0-9]+ failed" test_output.txt || grep -E "FAILED" test_output.txt; then
-            echo "Tests failed! See summary above."
-            exit 1
-          fi
-          echo "All tests passed."
-        else
-          echo "No test output file found"
-          exit 1
-        fi
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
