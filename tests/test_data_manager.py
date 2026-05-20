@@ -55,17 +55,18 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("OPC_DATA_DIR", str(db_dir))
     monkeypatch.setenv("OPC_ENCRYPTION_KEY", "test-key-for-encryption-32chars!!")
     import opc_manager.data_manager as dm
+
     _orig_initialized = dm._db_initialized
-    _orig_conn = getattr(_local, 'conn', None)
+    _orig_conn = getattr(_local, "conn", None)
     dm._db_initialized = False
-    if hasattr(_local, 'conn') and _local.conn is not None:
+    if hasattr(_local, "conn") and _local.conn is not None:
         try:
             _local.conn.close()
         except Exception:
             pass
         _local.conn = None
     yield db_dir
-    if hasattr(_local, 'conn') and _local.conn is not None:
+    if hasattr(_local, "conn") and _local.conn is not None:
         try:
             _local.conn.close()
         except Exception:
@@ -113,7 +114,7 @@ class TestGenId:
         id_ = gen_id()
         assert isinstance(id_, str)
         assert len(id_) == 16
-        assert all(c in '0123456789abcdef' for c in id_)
+        assert all(c in "0123456789abcdef" for c in id_)
 
     def test_gen_ids_are_unique(self):
         ids = {gen_id() for _ in range(200)}
@@ -150,7 +151,12 @@ class TestDbSchema:
         init_db()
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        tables = [row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        tables = [
+            row["name"]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
         conn.close()
         assert "finance_records" in tables
 
@@ -158,7 +164,12 @@ class TestDbSchema:
         init_db()
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        tables = [row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        tables = [
+            row["name"]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
         conn.close()
         assert "tasks" in tables
 
@@ -166,7 +177,12 @@ class TestDbSchema:
         init_db()
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        tables = [row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        tables = [
+            row["name"]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
         conn.close()
         assert "customers" in tables
 
@@ -174,7 +190,12 @@ class TestDbSchema:
         init_db()
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        tables = [row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        tables = [
+            row["name"]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
         conn.close()
         assert "email_history" in tables
 
@@ -182,7 +203,12 @@ class TestDbSchema:
         init_db()
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        tables = [row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        tables = [
+            row["name"]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
         conn.close()
         assert "user_preferences" in tables
 
@@ -208,7 +234,8 @@ class TestExecuteQuery:
     def test_empty_result(self, temp_db):
         init_db()
         rows = execute_query(
-            "SELECT * FROM tasks WHERE title=?", ("nonexistent_task_xyz",),
+            "SELECT * FROM tasks WHERE title=?",
+            ("nonexistent_task_xyz",),
         )
         assert rows == []
 
@@ -264,7 +291,9 @@ class TestExecuteTransaction:
         ]
         result = execute_transaction(statements)
         assert result is True
-        rows = execute_query("SELECT COUNT(*) as cnt FROM tasks WHERE id IN (?,?)", (id1, id2))
+        rows = execute_query(
+            "SELECT COUNT(*) as cnt FROM tasks WHERE id IN (?,?)", (id1, id2)
+        )
         assert rows[0]["cnt"] == 2
 
     def test_rollback_on_error(self, temp_db):
@@ -342,6 +371,7 @@ class TestBackupDb:
         for _ in range(5):
             backup_db()
         from pathlib import Path
+
         backups = sorted(Path(os.path.join(DATA_DIR, "backups")).glob("opc_data_*.db"))
         assert len(backups) <= 3
 
@@ -353,14 +383,20 @@ class TestMigrationAddColumn:
         init_db()
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        cols_before = [row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()]
+        cols_before = [
+            row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()
+        ]
         conn.close()
         assert "test_migration_col" not in cols_before
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        _add_column_if_not_exists(conn, "tasks", "test_migration_col", "TEXT DEFAULT ''")
+        _add_column_if_not_exists(
+            conn, "tasks", "test_migration_col", "TEXT DEFAULT ''"
+        )
         conn.commit()
-        cols_after = [row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()]
+        cols_after = [
+            row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()
+        ]
         conn.close()
         assert "test_migration_col" in cols_after
         conn = sqlite3.connect(DB_PATH)

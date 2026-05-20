@@ -40,7 +40,9 @@ class PerformanceMetric:
 
 class LRUCache:
 
-    def __init__(self, max_size: int = LLM_CACHE_MAX_SIZE, ttl: int = LLM_CACHE_TTL_SECONDS):
+    def __init__(
+        self, max_size: int = LLM_CACHE_MAX_SIZE, ttl: int = LLM_CACHE_TTL_SECONDS
+    ):
         self._max_size = max_size
         self._ttl = ttl
         self._cache: OrderedDict = OrderedDict()
@@ -85,7 +87,9 @@ class LRUCache:
 
 class PerformanceMonitor:
 
-    PERSIST_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "perf_metrics.json")
+    PERSIST_FILE = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "data", "perf_metrics.json"
+    )
 
     def __init__(self):
         self._metrics: List[PerformanceMetric] = []
@@ -95,25 +99,37 @@ class PerformanceMonitor:
         self._persist_interval = 60
         self._last_persist = 0.0
 
-    def record(self, operation: str, duration_ms: float, success: bool = True, **metadata) -> None:
+    def record(
+        self, operation: str, duration_ms: float, success: bool = True, **metadata
+    ) -> None:
         metric = PerformanceMetric(
-            operation=operation, duration_ms=duration_ms,
-            success=success, metadata=metadata
+            operation=operation,
+            duration_ms=duration_ms,
+            success=success,
+            metadata=metadata,
         )
         should_persist = False
         with self._lock:
             self._metrics.append(metric)
             if len(self._metrics) > self._max_metrics:
-                self._metrics = self._metrics[-self._max_metrics:]
+                self._metrics = self._metrics[-self._max_metrics :]
             now = time.time()
             if now - self._last_persist > self._persist_interval:
                 self._last_persist = now
                 should_persist = True
 
         if operation == "agent_loop" and duration_ms > SLA_SINGLE_REQUEST_MS:
-            logger.warning("SLA breach: agent_loop took %.0fms (SLA: %sms)", duration_ms, SLA_SINGLE_REQUEST_MS)
+            logger.warning(
+                "SLA breach: agent_loop took %.0fms (SLA: %sms)",
+                duration_ms,
+                SLA_SINGLE_REQUEST_MS,
+            )
         if operation == "reflect_loop" and duration_ms > SLA_REFLECT_LOOP_MS:
-            logger.warning("SLA breach: reflect_loop took %.0fms (SLA: %sms)", duration_ms, SLA_REFLECT_LOOP_MS)
+            logger.warning(
+                "SLA breach: reflect_loop took %.0fms (SLA: %sms)",
+                duration_ms,
+                SLA_REFLECT_LOOP_MS,
+            )
 
         if should_persist:
             self._persist_metrics()
@@ -129,13 +145,13 @@ class PerformanceMonitor:
     def get_stats(self) -> Dict[str, Any]:
         if not self._metrics:
             return {"total_operations": 0}
-        
+
         by_op = {}
         for m in self._metrics:
             if m.operation not in by_op:
                 by_op[m.operation] = []
             by_op[m.operation].append(m.duration_ms)
-        
+
         op_stats = {}
         for op, durations in by_op.items():
             op_stats[op] = {
@@ -143,9 +159,13 @@ class PerformanceMonitor:
                 "avg_ms": sum(durations) / len(durations),
                 "max_ms": max(durations),
                 "min_ms": min(durations),
-                "p95_ms": sorted(durations)[int(len(durations) * 0.95)] if len(durations) > 1 else durations[0],
+                "p95_ms": (
+                    sorted(durations)[int(len(durations) * 0.95)]
+                    if len(durations) > 1
+                    else durations[0]
+                ),
             }
-        
+
         return {
             "total_operations": len(self._metrics),
             "operations": op_stats,
@@ -156,16 +176,30 @@ class PerformanceMonitor:
         sla_status = {"single_request": True, "reflect_loop": True}
         with self._lock:
             for m in self._metrics:
-                if m.operation == "agent_loop" and m.duration_ms > SLA_SINGLE_REQUEST_MS:
+                if (
+                    m.operation == "agent_loop"
+                    and m.duration_ms > SLA_SINGLE_REQUEST_MS
+                ):
                     sla_status["single_request"] = False
-                if m.operation == "reflect_loop" and m.duration_ms > SLA_REFLECT_LOOP_MS:
+                if (
+                    m.operation == "reflect_loop"
+                    and m.duration_ms > SLA_REFLECT_LOOP_MS
+                ):
                     sla_status["reflect_loop"] = False
         return sla_status
 
     def _persist_metrics(self) -> None:
         try:
             with self._lock:
-                data = [{"op": m.operation, "ms": m.duration_ms, "ok": m.success, "ts": m.timestamp} for m in self._metrics[-200:]]
+                data = [
+                    {
+                        "op": m.operation,
+                        "ms": m.duration_ms,
+                        "ok": m.success,
+                        "ts": m.timestamp,
+                    }
+                    for m in self._metrics[-200:]
+                ]
             persist_dir = os.path.dirname(self.PERSIST_FILE)
 
             def _write():
@@ -175,6 +209,7 @@ class PerformanceMonitor:
 
             try:
                 import asyncio
+
                 loop = asyncio.get_running_loop()
                 loop.run_in_executor(None, _write)
             except RuntimeError:
@@ -189,10 +224,14 @@ class PerformanceMonitor:
                     data = json.load(f)
                 with self._lock:
                     for d in data[-200:]:
-                        self._metrics.append(PerformanceMetric(
-                            operation=d["op"], duration_ms=d["ms"],
-                            success=d.get("ok", True), timestamp=d.get("ts", 0)
-                        ))
+                        self._metrics.append(
+                            PerformanceMetric(
+                                operation=d["op"],
+                                duration_ms=d["ms"],
+                                success=d.get("ok", True),
+                                timestamp=d.get("ts", 0),
+                            )
+                        )
         except Exception as e:
             logger.warning("Metrics load failed: %s", e)
 

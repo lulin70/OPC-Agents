@@ -10,7 +10,12 @@ from email.mime.text import MIMEText
 from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import (
-    encrypt_field, decrypt_field, execute_query, execute_write, gen_id, init_db,
+    encrypt_field,
+    decrypt_field,
+    execute_query,
+    execute_write,
+    gen_id,
+    init_db,
 )
 from opc_manager.tool_system import AuditLogger
 
@@ -36,6 +41,7 @@ def _get_smtp_config() -> Optional[Dict[str, Any]]:
         return None
     try:
         import json
+
         with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
         if config.get("password_encrypted"):
@@ -53,6 +59,7 @@ def save_smtp_config(config: Dict[str, Any]) -> Dict[str, Any]:
     )
     try:
         import json
+
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
         save_config = dict(config)
         if save_config.get("password"):
@@ -83,7 +90,9 @@ def _count_today_sends() -> int:
 
 
 def _check_rate_limit(to: str) -> bool:
-    cutoff = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - RATE_LIMIT_WINDOW))
+    cutoff = time.strftime(
+        "%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - RATE_LIMIT_WINDOW)
+    )
     rows = execute_query(
         "SELECT COUNT(*) as cnt FROM email_history WHERE to_addr=? AND status='sent' AND created_at>=?",
         (to, cutoff),
@@ -92,8 +101,9 @@ def _check_rate_limit(to: str) -> bool:
     return count < RATE_LIMIT_MAX
 
 
-def send_email(to: str, subject: str, body: str,
-               cc: str = "", template_name: str = "") -> Dict[str, Any]:
+def send_email(
+    to: str, subject: str, body: str, cc: str = "", template_name: str = ""
+) -> Dict[str, Any]:
     to = _sanitize_email_field(to)
     subject = _sanitize_email_field(subject)
     cc = _sanitize_email_field(cc) if cc else ""
@@ -105,10 +115,16 @@ def send_email(to: str, subject: str, body: str,
         return {"success": False, "error": f"今日发送已达上限({MAX_DAILY_SENDS}封)"}
 
     if not _check_rate_limit(to):
-        return {"success": False, "error": f"发送频率过高：同一收件人1小时内最多{RATE_LIMIT_MAX}封"}
+        return {
+            "success": False,
+            "error": f"发送频率过高：同一收件人1小时内最多{RATE_LIMIT_MAX}封",
+        }
 
     if len(body.encode("utf-8")) > MAX_BODY_SIZE:
-        return {"success": False, "error": f"邮件正文超过大小限制({MAX_BODY_SIZE // 1024}KB)"}
+        return {
+            "success": False,
+            "error": f"邮件正文超过大小限制({MAX_BODY_SIZE // 1024}KB)",
+        }
 
     if template_name:
         tpl = get_template(template_name)
@@ -147,9 +163,13 @@ def send_email(to: str, subject: str, body: str,
                 try:
                     server.starttls()
                 except smtplib.SMTPNotSupportedError:
-                    logger.error("[email_skill] Server does not support STARTTLS, aborting")
+                    logger.error(
+                        "[email_skill] Server does not support STARTTLS, aborting"
+                    )
                     server.quit()
-                    raise RuntimeError("SMTP server does not support STARTTLS, cannot send securely")
+                    raise RuntimeError(
+                        "SMTP server does not support STARTTLS, cannot send securely"
+                    )
 
             if username:
                 server.login(username, password)
@@ -166,7 +186,10 @@ def send_email(to: str, subject: str, body: str,
                 "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
                 (record_id, to, subject, body, "sent", template_name, now),
             )
-            AuditLogger.log("email_sent", {"to": to, "subject": subject[:50], "body_digest": body_digest})
+            AuditLogger.log(
+                "email_sent",
+                {"to": to, "subject": subject[:50], "body_digest": body_digest},
+            )
             return {"success": True, "message": f"邮件已发送至 {to}", "id": record_id}
 
         except Exception as e:
@@ -184,8 +207,9 @@ def send_email(to: str, subject: str, body: str,
     return {"success": False, "error": "邮件发送失败"}
 
 
-async def send_email_async(to: str, subject: str, body: str,
-                           cc: str = "", template_name: str = "") -> Dict[str, Any]:
+async def send_email_async(
+    to: str, subject: str, body: str, cc: str = "", template_name: str = ""
+) -> Dict[str, Any]:
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
         None, send_email, to, subject, body, cc, template_name
@@ -193,7 +217,9 @@ async def send_email_async(to: str, subject: str, body: str,
 
 
 def list_templates() -> List[Dict[str, Any]]:
-    return execute_query("SELECT name, subject, variables FROM email_templates ORDER BY name")
+    return execute_query(
+        "SELECT name, subject, variables FROM email_templates ORDER BY name"
+    )
 
 
 def get_template(name: str) -> Optional[Dict[str, Any]]:
@@ -214,12 +240,19 @@ def render_template(name: str, variables: Dict[str, str]) -> Dict[str, Any]:
 
     leftover = re.findall(r"\{[a-zA-Z_]+\}", subject + body)
     if leftover:
-        return {"success": False, "error": f"模板变量未替换: {leftover}", "subject": subject, "body": body}
+        return {
+            "success": False,
+            "error": f"模板变量未替换: {leftover}",
+            "subject": subject,
+            "body": body,
+        }
 
     return {"success": True, "subject": subject, "body": body}
 
 
-def create_template(name: str, subject: str, body: str, variables: str = "") -> Dict[str, Any]:
+def create_template(
+    name: str, subject: str, body: str, variables: str = ""
+) -> Dict[str, Any]:
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     try:
         execute_write(
@@ -243,6 +276,7 @@ def _lookup_email_by_name(name: str) -> str:
         return ""
     try:
         from opc_manager.crm_skill import get_customer
+
         result = get_customer(name=name)
         if result.get("success") and result.get("customer", {}).get("email"):
             email = result["customer"]["email"]
@@ -263,7 +297,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         m = re.search(r"邮箱[：:]\s*(\S+)", goal)
         if m:
             to = m.group(1).strip()
-            goal = goal[:m.start()] + goal[m.end():]
+            goal = goal[: m.start()] + goal[m.end() :]
     if not to:
         m = re.search(r"收件人[：:]\s*(\S+)", goal)
         if m:
@@ -274,7 +308,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
                 looked_up = _lookup_email_by_name(recipient)
                 if looked_up:
                     to = looked_up
-            goal = goal[:m.start()] + goal[m.end():]
+            goal = goal[: m.start()] + goal[m.end() :]
     if not to:
         m = re.search(r"给(.+?)(发邮件|写信|发信|发一封|回邮件|邮件)", goal)
         if m:
@@ -287,36 +321,56 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
                     to = looked_up
                     if not subject:
                         subject = f"关于{recipient}"
-            goal = goal[:m.start()] + goal[m.end():]
+            goal = goal[: m.start()] + goal[m.end() :]
 
     if to and subject and body:
         return send_email(to, subject, body)
 
     if "模板" in goal or "template" in goal.lower():
         templates = list_templates()
-        return {"success": True, "templates": templates, "message": f"共{len(templates)}个邮件模板"}
+        return {
+            "success": True,
+            "templates": templates,
+            "message": f"共{len(templates)}个邮件模板",
+        }
 
     if to:
         subject = subject or f"关于{goal}"
         body = body or goal
         if body == goal:
             cleaned = body
-            for pattern in [r'给.+?(发邮件|写信|发信|发一封|回邮件|邮件)', r'发一封邮件', r'发邮件', r'写信给.*?$', r'帮我']:
-                cleaned = re.sub(pattern, '', cleaned)
+            for pattern in [
+                r"给.+?(发邮件|写信|发信|发一封|回邮件|邮件)",
+                r"发一封邮件",
+                r"发邮件",
+                r"写信给.*?$",
+                r"帮我",
+            ]:
+                cleaned = re.sub(pattern, "", cleaned)
             cleaned = cleaned.strip().strip("，。、的")
             if cleaned:
                 body = cleaned
         return send_email(to, subject, body)
 
-    return {"success": False, "error": "请提供收件人地址或姓名（如：给张三发邮件），请先在CRM中录入客户邮箱"}
+    return {
+        "success": False,
+        "error": "请提供收件人地址或姓名（如：给张三发邮件），请先在CRM中录入客户邮箱",
+    }
 
 
 def undo_send_email(record_id=None, **kwargs):
     init_db()
     if record_id:
-        execute_write("UPDATE email_history SET status='draft' WHERE id=? AND status='sent'", (record_id,))
+        execute_write(
+            "UPDATE email_history SET status='draft' WHERE id=? AND status='sent'",
+            (record_id,),
+        )
     else:
-        latest = execute_query("SELECT id FROM email_history WHERE status='sent' ORDER BY created_at DESC LIMIT 1")
+        latest = execute_query(
+            "SELECT id FROM email_history WHERE status='sent' ORDER BY created_at DESC LIMIT 1"
+        )
         if latest:
-            execute_write("UPDATE email_history SET status='draft' WHERE id=?", (latest[0]["id"],))
+            execute_write(
+                "UPDATE email_history SET status='draft' WHERE id=?", (latest[0]["id"],)
+            )
     return {"success": True, "message": "邮件发送记录已标记为草稿"}

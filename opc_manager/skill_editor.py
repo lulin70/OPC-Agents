@@ -20,7 +20,9 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-SKILLS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "custom_skills")
+SKILLS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "data", "custom_skills"
+)
 
 
 class ParameterType(str, Enum):
@@ -208,7 +210,9 @@ class SkillEditor:
             for s in self._skills.values()
         ]
 
-    def preview_skill(self, skill_id: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def preview_skill(
+        self, skill_id: str, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
         skill = self._skills.get(skill_id)
         if not skill:
             return {"success": False, "error": f"技能不存在: {skill_id}"}
@@ -234,7 +238,8 @@ class SkillEditor:
             return {"success": False, "error": f"技能不存在: {skill_id}"}
 
         missing = [
-            p.name for p in skill.input_parameters
+            p.name
+            for p in skill.input_parameters
             if p.required and p.name not in parameters
         ]
         if missing:
@@ -256,6 +261,7 @@ class SkillEditor:
 
         if marketplace:
             from .skill_marketplace import MarketplaceSkill, PermissionLevel
+
             market_skill = MarketplaceSkill(
                 skill_id=skill.skill_id,
                 name=skill.name,
@@ -265,11 +271,22 @@ class SkillEditor:
                 author=skill.author,
                 permissions=[PermissionLevel.READ, PermissionLevel.EXECUTE],
                 dependencies=skill.dependencies,
-                config={"template": skill.template, "prompt_template": skill.prompt_template},
+                config={
+                    "template": skill.template,
+                    "prompt_template": skill.prompt_template,
+                },
             )
-            return {"success": True, "skill_id": skill_id, "marketplace_status": "pending"}
+            return {
+                "success": True,
+                "skill_id": skill_id,
+                "marketplace_status": "pending",
+            }
 
-        return {"success": True, "skill_id": skill_id, "marketplace_status": "not_connected"}
+        return {
+            "success": True,
+            "skill_id": skill_id,
+            "marketplace_status": "not_connected",
+        }
 
     def get_stats(self) -> Dict[str, Any]:
         return {

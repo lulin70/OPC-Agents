@@ -59,7 +59,7 @@ class TestTaskEngineEventSequence:
         mock_ctx._session_id = sid
         mock_ctx.get_turn_count.return_value = 0
 
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.return_value = Mock(
                 success=True,
                 content="test",
@@ -81,7 +81,7 @@ class TestTaskEngineEventSequence:
         mock_ctx._session_id = sid
         mock_ctx.get_turn_count.return_value = 0
 
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.return_value = Mock(
                 success=True,
                 content="test",
@@ -103,7 +103,7 @@ class TestTaskEngineEventSequence:
         mock_ctx._session_id = sid
         mock_ctx.get_turn_count.return_value = 0
 
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.return_value = Mock(
                 success=True,
                 content="test",
@@ -126,7 +126,7 @@ class TestTaskEngineEventSequence:
         mock_ctx._session_id = sid
         mock_ctx.get_turn_count.return_value = 0
 
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.return_value = Mock(
                 success=True,
                 content="test",
@@ -148,7 +148,7 @@ class TestTaskEngineEventSequence:
         mock_ctx._session_id = sid
         mock_ctx.get_turn_count.return_value = 0
 
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.side_effect = RuntimeError("test error")
             result = engine.execute("hello", session_ctx=mock_ctx)
 
@@ -167,7 +167,9 @@ class TestTaskEngineEventSequence:
         mock_ctx._session_id = sid
         mock_ctx.get_turn_count.return_value = 0
 
-        with patch('opc_manager.task_engine_v3.InputValidator.sanitize') as mock_sanitize:
+        with patch(
+            "opc_manager.task_engine_v3.InputValidator.sanitize"
+        ) as mock_sanitize:
             mock_sanitize.return_value = (None, "validation failed")
             engine.execute("", session_ctx=mock_ctx)
 
@@ -184,7 +186,7 @@ class TestTaskEngineEventSequence:
         mock_ctx._session_id = sid
         mock_ctx.get_turn_count.return_value = 0
 
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.return_value = Mock(
                 success=True,
                 content="test",
@@ -218,18 +220,22 @@ class TestFrontendHistoryReading:
     def test_frontend_reads_latest_event(self, emitter):
         """Frontend should read latest event from history."""
         sid = "h" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.PLAN_START,
-            session_id=sid,
-            message="start",
-            progress_pct=0,
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_PROGRESS,
-            session_id=sid,
-            message="progressing",
-            progress_pct=50,
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=sid,
+                message="start",
+                progress_pct=0,
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_PROGRESS,
+                session_id=sid,
+                message="progressing",
+                progress_pct=50,
+            )
+        )
 
         history = emitter.get_history(sid)
         latest = history[-1]
@@ -246,12 +252,14 @@ class TestFrontendHistoryReading:
     def test_frontend_extracts_progress_pct(self, emitter):
         """Frontend should extract progress_pct from event."""
         sid = "j" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_PROGRESS,
-            session_id=sid,
-            message="75%",
-            progress_pct=75,
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_PROGRESS,
+                session_id=sid,
+                message="75%",
+                progress_pct=75,
+            )
+        )
 
         history = emitter.get_history(sid)
         latest = history[-1]
@@ -261,11 +269,13 @@ class TestFrontendHistoryReading:
     def test_frontend_handles_missing_progress(self, emitter):
         """Frontend should handle events without progress_pct."""
         sid = "k" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.PLAN_START,
-            session_id=sid,
-            message="starting",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=sid,
+                message="starting",
+            )
+        )
 
         history = emitter.get_history(sid)
         latest = history[-1]
@@ -276,12 +286,14 @@ class TestFrontendHistoryReading:
         """Frontend should get message from latest event."""
         sid = "l" * 32
         test_msg = "🔍 意图识别: content_generation"
-        emitter.emit(ProgressEvent(
-            event_type=EventType.INTENT_DETECTED,
-            session_id=sid,
-            message=test_msg,
-            progress_pct=10,
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.INTENT_DETECTED,
+                session_id=sid,
+                message=test_msg,
+                progress_pct=10,
+            )
+        )
 
         history = emitter.get_history(sid)
         latest = history[-1]
@@ -294,11 +306,13 @@ class TestErrorStateHandling:
     def test_error_event_has_correct_format(self, emitter):
         """Error event should have proper format."""
         sid = "m" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.ERROR,
-            session_id=sid,
-            message="❌ 执行异常: RuntimeError",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.ERROR,
+                session_id=sid,
+                message="❌ 执行异常: RuntimeError",
+            )
+        )
 
         history = emitter.get_history(sid)
         error_event = history[-1]
@@ -309,11 +323,13 @@ class TestErrorStateHandling:
     def test_error_does_not_have_progress(self, emitter):
         """Error events typically don't have progress percentage."""
         sid = "n" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.ERROR,
-            session_id=sid,
-            message="error occurred",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.ERROR,
+                session_id=sid,
+                message="error occurred",
+            )
+        )
 
         history = emitter.get_history(sid)
         error_event = history[-1]
@@ -322,16 +338,20 @@ class TestErrorStateHandling:
     def test_multiple_errors_accumulate(self, emitter):
         """Multiple errors should all be recorded."""
         sid = "o" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.ERROR,
-            session_id=sid,
-            message="error 1",
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.ERROR,
-            session_id=sid,
-            message="error 2",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.ERROR,
+                session_id=sid,
+                message="error 1",
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.ERROR,
+                session_id=sid,
+                message="error 2",
+            )
+        )
 
         history = emitter.get_history(sid)
         errors = [e for e in history if e["event"] == "error"]
@@ -340,17 +360,21 @@ class TestErrorStateHandling:
     def test_error_after_complete_is_recorded(self, emitter):
         """Error emitted after complete should still be recorded."""
         sid = "p" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.COMPLETE,
-            session_id=sid,
-            message="done",
-            progress_pct=100,
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.ERROR,
-            session_id=sid,
-            message="post-error",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.COMPLETE,
+                session_id=sid,
+                message="done",
+                progress_pct=100,
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.ERROR,
+                session_id=sid,
+                message="post-error",
+            )
+        )
 
         history = emitter.get_history(sid)
         assert len(history) == 2
@@ -365,16 +389,20 @@ class TestSessionIsolation:
         sid1 = "q" * 32
         sid2 = "r" * 32
 
-        emitter.emit(ProgressEvent(
-            event_type=EventType.PLAN_START,
-            session_id=sid1,
-            message="session 1 start",
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.PLAN_START,
-            session_id=sid2,
-            message="session 2 start",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=sid1,
+                message="session 1 start",
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=sid2,
+                message="session 2 start",
+            )
+        )
 
         history1 = emitter.get_history(sid1)
         history2 = emitter.get_history(sid2)
@@ -391,16 +419,20 @@ class TestSessionIsolation:
         sid1 = "s" * 32
         sid2 = "t" * 32
 
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_PROGRESS,
-            session_id=sid1,
-            message="progress 1",
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_PROGRESS,
-            session_id=sid2,
-            message="progress 2",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_PROGRESS,
+                session_id=sid1,
+                message="progress 1",
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_PROGRESS,
+                session_id=sid2,
+                message="progress 2",
+            )
+        )
 
         emitter.clear_history(sid1)
 
@@ -412,18 +444,22 @@ class TestSessionIsolation:
         sid1 = "u" * 32
         sid2 = "v" * 32
 
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_PROGRESS,
-            session_id=sid1,
-            message="25%",
-            progress_pct=25,
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_PROGRESS,
-            session_id=sid2,
-            message="75%",
-            progress_pct=75,
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_PROGRESS,
+                session_id=sid1,
+                message="25%",
+                progress_pct=25,
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_PROGRESS,
+                session_id=sid2,
+                message="75%",
+                progress_pct=75,
+            )
+        )
 
         history1 = emitter.get_history(sid1)
         history2 = emitter.get_history(sid2)
@@ -445,16 +481,20 @@ class TestBackwardCompatibility:
 
     def test_emit_progress_without_progress_emitter(self, engine):
         """_emit_progress should work even if ProgressEmitter is unavailable."""
-        original_available = engine.__class__.__module__._PROGRESS_EMITTER_AVAILABLE if hasattr(engine.__class__, '_PROGRESS_EMITTER_AVAILABLE') else True
+        original_available = (
+            engine.__class__.__module__._PROGRESS_EMITTER_AVAILABLE
+            if hasattr(engine.__class__, "_PROGRESS_EMITTER_AVAILABLE")
+            else True
+        )
         try:
-            with patch.dict('sys.modules', {'opc_manager.progress_emitter': None}):
+            with patch.dict("sys.modules", {"opc_manager.progress_emitter": None}):
                 engine._emit_progress("x" * 32, EventType.PLAN_START, "test")
         except Exception:
             pass
 
     def test_execute_without_session_ctx_still_works(self, engine):
         """execute() should work without session_ctx (no events emitted)."""
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.return_value = Mock(
                 success=True,
                 content="test",
@@ -469,12 +509,12 @@ class TestBackwardCompatibility:
         """execute() should work with session_ctx that has no session_id."""
         mock_ctx = Mock()
         mock_ctx.get_turn_count.return_value = 0
-        if hasattr(mock_ctx, '_session_id'):
-            delattr(mock_ctx, '_session_id')
-        if hasattr(mock_ctx, 'session_id'):
-            delattr(mock_ctx, 'session_id')
+        if hasattr(mock_ctx, "_session_id"):
+            delattr(mock_ctx, "_session_id")
+        if hasattr(mock_ctx, "session_id"):
+            delattr(mock_ctx, "session_id")
 
-        with patch.object(engine, '_execute_general_chat') as mock_exec:
+        with patch.object(engine, "_execute_general_chat") as mock_exec:
             mock_exec.return_value = Mock(
                 success=True,
                 content="test",
@@ -492,31 +532,37 @@ class TestPhaseIconMapping:
     def test_plan_start_icon(self):
         """PLAN_START should map to 🚀 icon."""
         from frontend.components.shared import _get_phase_icon
+
         assert _get_phase_icon("plan_start") == "🚀"
 
     def test_intent_detected_icon(self):
         """INTENT_DETECTED should map to 🔍 icon."""
         from frontend.components.shared import _get_phase_icon
+
         assert _get_phase_icon("intent_detected") == "🔍"
 
     def test_step_progress_icon(self):
         """STEP_PROGRESS should map to ⚡ icon."""
         from frontend.components.shared import _get_phase_icon
+
         assert _get_phase_icon("step_progress") == "⚡"
 
     def test_complete_icon(self):
         """COMPLETE should map to ✅ icon."""
         from frontend.components.shared import _get_phase_icon
+
         assert _get_phase_icon("complete") == "✅"
 
     def test_error_icon(self):
         """ERROR should map to ❌ icon."""
         from frontend.components.shared import _get_phase_icon
+
         assert _get_phase_icon("error") == "❌"
 
     def test_unknown_event_returns_default_icon(self):
         """Unknown event type should return default 📌 icon."""
         from frontend.components.shared import _get_phase_icon
+
         assert _get_phase_icon("unknown_event") == "📌"
 
 
@@ -526,6 +572,7 @@ class TestGetPhaseFromEvent:
     def test_plan_start_phase(self):
         """PLAN_START should return (🚀, 任务启动)."""
         from frontend.components.shared import _get_phase_from_event
+
         icon, name = _get_phase_from_event("plan_start")
         assert icon == "🚀"
         assert name == "任务启动"
@@ -533,6 +580,7 @@ class TestGetPhaseFromEvent:
     def test_intent_detected_phase(self):
         """INTENT_DETECTED should return (🔍, 意图识别)."""
         from frontend.components.shared import _get_phase_from_event
+
         icon, name = _get_phase_from_event("intent_detected")
         assert icon == "🔍"
         assert name == "意图识别"
@@ -540,6 +588,7 @@ class TestGetPhaseFromEvent:
     def test_step_start_phase(self):
         """STEP_START should return (⚡, 执行中)."""
         from frontend.components.shared import _get_phase_from_event
+
         icon, name = _get_phase_from_event("step_start")
         assert icon == "⚡"
         assert name == "执行中"
@@ -547,6 +596,7 @@ class TestGetPhaseFromEvent:
     def test_complete_phase(self):
         """COMPLETE should return (✅, 任务完成)."""
         from frontend.components.shared import _get_phase_from_event
+
         icon, name = _get_phase_from_event("complete")
         assert icon == "✅"
         assert name == "任务完成"
@@ -554,6 +604,7 @@ class TestGetPhaseFromEvent:
     def test_error_phase(self):
         """ERROR should return (❌, 执行错误)."""
         from frontend.components.shared import _get_phase_from_event
+
         icon, name = _get_phase_from_event("error")
         assert icon == "❌"
         assert name == "执行错误"
@@ -561,6 +612,7 @@ class TestGetPhaseFromEvent:
     def test_unknown_event_returns_default(self):
         """Unknown event should return default (⚡, 执行中)."""
         from frontend.components.shared import _get_phase_from_event
+
         icon, name = _get_phase_from_event("unknown")
         assert icon == "⚡"
         assert name == "执行中"
@@ -568,6 +620,7 @@ class TestGetPhaseFromEvent:
     def test_case_insensitive_matching(self):
         """Should match case-insensitively."""
         from frontend.components.shared import _get_phase_from_event
+
         icon1, name1 = _get_phase_from_event("PLAN_START")
         icon2, name2 = _get_phase_from_event("plan_start")
         assert icon1 == icon2
@@ -576,6 +629,7 @@ class TestGetPhaseFromEvent:
     def test_hyphen_to_underscore_conversion(self):
         """Should convert hyphens to underscores."""
         from frontend.components.shared import _get_phase_from_event
+
         icon1, name1 = _get_phase_from_event("step-start")
         icon2, name2 = _get_phase_from_event("step_start")
         assert icon1 == icon2
@@ -588,18 +642,22 @@ class TestTimelineVisualization:
     def test_timeline_shows_completed_phases(self, emitter):
         """Timeline should show completed phases as success."""
         sid = "w" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.PLAN_START,
-            session_id=sid,
-            message="start",
-            progress_pct=0,
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.INTENT_DETECTED,
-            session_id=sid,
-            message="intent",
-            progress_pct=10,
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=sid,
+                message="start",
+                progress_pct=0,
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.INTENT_DETECTED,
+                session_id=sid,
+                message="intent",
+                progress_pct=10,
+            )
+        )
 
         history = emitter.get_history(sid)
         completed = {evt["event"] for evt in history}
@@ -609,17 +667,21 @@ class TestTimelineVisualization:
     def test_timeline_identifies_current_phase(self, emitter):
         """Timeline should identify current phase correctly."""
         sid = "x" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.PLAN_START,
-            session_id=sid,
-            message="start",
-        ))
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_START,
-            session_id=sid,
-            message="executing",
-            progress_pct=50,
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=sid,
+                message="start",
+            )
+        )
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_START,
+                session_id=sid,
+                message="executing",
+                progress_pct=50,
+            )
+        )
 
         history = emitter.get_history(sid)
         assert history[-1]["event"] == "step_start"

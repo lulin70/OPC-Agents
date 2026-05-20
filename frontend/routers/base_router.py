@@ -1,4 +1,5 @@
 """Base router with shared initialization, constants, and utility functions."""
+
 import streamlit as st
 import os
 import re
@@ -61,7 +62,10 @@ SCENARIOS_CORE = [
         "icon": "✍️",
         "title": "scenario_core_content_title",
         "desc": "scenario_core_content_desc",
-        "coverage": ["scenario_core_content_coverage_1", "scenario_core_content_coverage_2"],
+        "coverage": [
+            "scenario_core_content_coverage_1",
+            "scenario_core_content_coverage_2",
+        ],
         "prompt": "帮我规划下周的内容日历和选题",
     },
     {
@@ -69,7 +73,10 @@ SCENARIOS_CORE = [
         "icon": "🚀",
         "title": "scenario_core_product_title",
         "desc": "scenario_core_product_desc",
-        "coverage": ["scenario_core_product_coverage_1", "scenario_core_product_coverage_2"],
+        "coverage": [
+            "scenario_core_product_coverage_1",
+            "scenario_core_product_coverage_2",
+        ],
         "prompt": "帮我制定新产品发布的完整方案",
     },
     {
@@ -85,33 +92,163 @@ SCENARIOS_CORE = [
         "icon": "📋",
         "title": "scenario_core_project_title",
         "desc": "scenario_core_project_desc",
-        "coverage": ["scenario_core_project_coverage_1", "scenario_core_project_coverage_2", "scenario_core_project_coverage_3"],
+        "coverage": [
+            "scenario_core_project_coverage_1",
+            "scenario_core_project_coverage_2",
+            "scenario_core_project_coverage_3",
+        ],
         "prompt": "帮我撰写一份专业咨询提案",
     },
 ]
 
 SCENARIOS_MORE = [
-    {"id": "content_calendar", "icon": "📅", "title": "scenario_more_calendar_title", "desc": "scenario_more_calendar_desc", "prompt": "帮我规划下周的内容日历和选题排期"},
-    {"id": "digital_product_launch", "icon": "🎯", "title": "scenario_more_digital_title", "desc": "scenario_more_digital_desc", "prompt": "帮我制定数字产品的发布方案，包括定价和推广"},
-    {"id": "feedback_analysis", "icon": "💬", "title": "scenario_more_feedback_title", "desc": "scenario_more_feedback_desc", "prompt": "帮我分析用户反馈，提炼关键行动项"},
-    {"id": "consulting_proposal", "icon": "📝", "title": "scenario_more_proposal_title", "desc": "scenario_more_proposal_desc", "prompt": "帮我撰写一份专业咨询提案"},
-    {"id": "ecommerce_ops", "icon": "🛒", "title": "scenario_more_ecommerce_title", "desc": "scenario_more_ecommerce_desc", "prompt": "帮我优化电商运营，提升GMV"},
-    {"id": "project_deliverable", "icon": "📦", "title": "scenario_more_deliverable_title", "desc": "scenario_more_deliverable_desc", "prompt": "帮我整理项目交付物并做质量检查"},
-    {"id": "write_report", "icon": "📄", "title": "scenario_more_report_title", "desc": "scenario_more_report_desc", "prompt": "帮我写一份结构化的分析报告"},
-    {"id": "organize_meeting", "icon": "🤝", "title": "scenario_more_meeting_title", "desc": "scenario_more_meeting_desc", "prompt": "帮我组织一次项目会议"},
-    {"id": "social_publish", "icon": "📢", "title": "scenario_social_publish_title", "desc": "scenario_social_publish_desc", "prompt": "帮我在多个社交平台发布内容并管理互动"},
-    {"id": "generate_invoice", "icon": "🧾", "title": "scenario_invoice_title", "desc": "scenario_invoice_desc", "prompt": "帮我生成一张专业的发票或账单"},
-    {"id": "competitor_watch", "icon": "🔭", "title": "scenario_competitor_title", "desc": "scenario_competitor_desc", "prompt": "帮我监控竞品动态和市场趋势变化"},
-    {"id": "pricing_strategy", "icon": "💎", "title": "scenario_pricing_title", "desc": "scenario_pricing_desc", "prompt": "帮我制定产品或服务的最优定价策略"},
-    {"id": "tax_reminder", "icon": "🏛️", "title": "scenario_tax_reminder_title", "desc": "scenario_tax_reminder_desc", "prompt": "提醒我即将到期的税务申报和合规事项"},
-    {"id": "opc_creative_planning", "icon": "💡", "title": "scenario_opc_creative_planning_title", "desc": "scenario_opc_creative_planning_desc", "prompt": "帮我想一些创业创意方向，我想利用我的特殊知识建立一人公司"},
-    {"id": "opc_market_research", "icon": "🔍", "title": "scenario_opc_market_research_title", "desc": "scenario_opc_market_research_desc", "prompt": "帮我验证这个创意的市场需求，看看是否有真实的用户痛点"},
-    {"id": "opc_growth_hacker", "icon": "🚀", "title": "scenario_opc_growth_hacker_title", "desc": "scenario_opc_growth_hacker_desc", "prompt": "帮我设计一个0预算的增长策略，快速获取前100个种子用户"},
-    {"id": "opc_social_listening", "icon": "👂", "title": "scenario_opc_social_listening_title", "desc": "scenario_opc_social_listening_desc", "prompt": "帮我从Reddit和Twitter上挖掘用户对这个话题的真实抱怨和痛点"},
-    {"id": "opc_legal_advisor", "icon": "⚖️", "title": "scenario_opc_legal_advisor_title", "desc": "scenario_opc_legal_advisor_desc", "prompt": "帮我审查这份合同条款，看看有没有对我不利的霸王条款"},
-    {"id": "opc_proposal_review", "icon": "🔬", "title": "scenario_opc_proposal_review_title", "desc": "scenario_opc_proposal_review_desc", "prompt": "帮我评估这个项目的可行性，用逆向思维分析可能失败的原因"},
-    {"id": "opc_prd_generation", "icon": "📋", "title": "scenario_opc_prd_generation_title", "desc": "scenario_opc_prd_generation_desc", "prompt": "帮我把这个方案转化成详细的PRD文档，定义清楚功能需求和验收标准"},
-    {"id": "opc_domain_brand", "icon": "🎨", "title": "scenario_opc_domain_brand_title", "desc": "scenario_opc_domain_brand_desc", "prompt": "帮我为这个产品起个好名字，检查域名可用性，并提供Logo设计灵感"},
+    {
+        "id": "content_calendar",
+        "icon": "📅",
+        "title": "scenario_more_calendar_title",
+        "desc": "scenario_more_calendar_desc",
+        "prompt": "帮我规划下周的内容日历和选题排期",
+    },
+    {
+        "id": "digital_product_launch",
+        "icon": "🎯",
+        "title": "scenario_more_digital_title",
+        "desc": "scenario_more_digital_desc",
+        "prompt": "帮我制定数字产品的发布方案，包括定价和推广",
+    },
+    {
+        "id": "feedback_analysis",
+        "icon": "💬",
+        "title": "scenario_more_feedback_title",
+        "desc": "scenario_more_feedback_desc",
+        "prompt": "帮我分析用户反馈，提炼关键行动项",
+    },
+    {
+        "id": "consulting_proposal",
+        "icon": "📝",
+        "title": "scenario_more_proposal_title",
+        "desc": "scenario_more_proposal_desc",
+        "prompt": "帮我撰写一份专业咨询提案",
+    },
+    {
+        "id": "ecommerce_ops",
+        "icon": "🛒",
+        "title": "scenario_more_ecommerce_title",
+        "desc": "scenario_more_ecommerce_desc",
+        "prompt": "帮我优化电商运营，提升GMV",
+    },
+    {
+        "id": "project_deliverable",
+        "icon": "📦",
+        "title": "scenario_more_deliverable_title",
+        "desc": "scenario_more_deliverable_desc",
+        "prompt": "帮我整理项目交付物并做质量检查",
+    },
+    {
+        "id": "write_report",
+        "icon": "📄",
+        "title": "scenario_more_report_title",
+        "desc": "scenario_more_report_desc",
+        "prompt": "帮我写一份结构化的分析报告",
+    },
+    {
+        "id": "organize_meeting",
+        "icon": "🤝",
+        "title": "scenario_more_meeting_title",
+        "desc": "scenario_more_meeting_desc",
+        "prompt": "帮我组织一次项目会议",
+    },
+    {
+        "id": "social_publish",
+        "icon": "📢",
+        "title": "scenario_social_publish_title",
+        "desc": "scenario_social_publish_desc",
+        "prompt": "帮我在多个社交平台发布内容并管理互动",
+    },
+    {
+        "id": "generate_invoice",
+        "icon": "🧾",
+        "title": "scenario_invoice_title",
+        "desc": "scenario_invoice_desc",
+        "prompt": "帮我生成一张专业的发票或账单",
+    },
+    {
+        "id": "competitor_watch",
+        "icon": "🔭",
+        "title": "scenario_competitor_title",
+        "desc": "scenario_competitor_desc",
+        "prompt": "帮我监控竞品动态和市场趋势变化",
+    },
+    {
+        "id": "pricing_strategy",
+        "icon": "💎",
+        "title": "scenario_pricing_title",
+        "desc": "scenario_pricing_desc",
+        "prompt": "帮我制定产品或服务的最优定价策略",
+    },
+    {
+        "id": "tax_reminder",
+        "icon": "🏛️",
+        "title": "scenario_tax_reminder_title",
+        "desc": "scenario_tax_reminder_desc",
+        "prompt": "提醒我即将到期的税务申报和合规事项",
+    },
+    {
+        "id": "opc_creative_planning",
+        "icon": "💡",
+        "title": "scenario_opc_creative_planning_title",
+        "desc": "scenario_opc_creative_planning_desc",
+        "prompt": "帮我想一些创业创意方向，我想利用我的特殊知识建立一人公司",
+    },
+    {
+        "id": "opc_market_research",
+        "icon": "🔍",
+        "title": "scenario_opc_market_research_title",
+        "desc": "scenario_opc_market_research_desc",
+        "prompt": "帮我验证这个创意的市场需求，看看是否有真实的用户痛点",
+    },
+    {
+        "id": "opc_growth_hacker",
+        "icon": "🚀",
+        "title": "scenario_opc_growth_hacker_title",
+        "desc": "scenario_opc_growth_hacker_desc",
+        "prompt": "帮我设计一个0预算的增长策略，快速获取前100个种子用户",
+    },
+    {
+        "id": "opc_social_listening",
+        "icon": "👂",
+        "title": "scenario_opc_social_listening_title",
+        "desc": "scenario_opc_social_listening_desc",
+        "prompt": "帮我从Reddit和Twitter上挖掘用户对这个话题的真实抱怨和痛点",
+    },
+    {
+        "id": "opc_legal_advisor",
+        "icon": "⚖️",
+        "title": "scenario_opc_legal_advisor_title",
+        "desc": "scenario_opc_legal_advisor_desc",
+        "prompt": "帮我审查这份合同条款，看看有没有对我不利的霸王条款",
+    },
+    {
+        "id": "opc_proposal_review",
+        "icon": "🔬",
+        "title": "scenario_opc_proposal_review_title",
+        "desc": "scenario_opc_proposal_review_desc",
+        "prompt": "帮我评估这个项目的可行性，用逆向思维分析可能失败的原因",
+    },
+    {
+        "id": "opc_prd_generation",
+        "icon": "📋",
+        "title": "scenario_opc_prd_generation_title",
+        "desc": "scenario_opc_prd_generation_desc",
+        "prompt": "帮我把这个方案转化成详细的PRD文档，定义清楚功能需求和验收标准",
+    },
+    {
+        "id": "opc_domain_brand",
+        "icon": "🎨",
+        "title": "scenario_opc_domain_brand_title",
+        "desc": "scenario_opc_domain_brand_desc",
+        "prompt": "帮我为这个产品起个好名字，检查域名可用性，并提供Logo设计灵感",
+    },
 ]
 
 _TASK_TYPE_LABELS = {
@@ -179,7 +316,7 @@ def _get_demo_dashboard_data():
             "labels": ["1月", "2月", "3月", "4月", "5月"],
             "values": [12000, 15000, 13500, 18000, 22000],
             "total": 80500,
-            "growth": "+63%"
+            "growth": "+63%",
         },
         "client_health": [
             {"name": "张三科技", "score": 92, "trend": "up", "projects": 3},
@@ -198,7 +335,7 @@ def _get_demo_dashboard_data():
             {"name": "CRM技能", "count": 45},
             {"name": "财务技能", "count": 32},
             {"name": "报告生成", "count": 28},
-        ]
+        ],
     }
 
 
@@ -234,11 +371,17 @@ def safe_get_persona(type_value):
         pm = st.session_state.persona_manager
         persona = pm.get_persona(business_type=BusinessType(type_value))
         if persona:
-            return persona.display_name, persona.style_overrides.get("tone", _t("persona_fallback_style"))
+            return persona.display_name, persona.style_overrides.get(
+                "tone", _t("persona_fallback_style")
+            )
         return _t("persona_fallback_name"), _t("persona_fallback_style")
     except Exception as e:
         logger.debug("[frontend] persona error: %s", e)
-        name = _t(PERSONA_MAP.get(type_value, ("persona_fallback_name", "persona_fallback_style_alt"))[0])
+        name = _t(
+            PERSONA_MAP.get(
+                type_value, ("persona_fallback_name", "persona_fallback_style_alt")
+            )[0]
+        )
         return name, _t("persona_fallback_style_alt")
 
 
@@ -287,7 +430,9 @@ def generate_filename(prompt: str, task_type: str) -> str:
     return f"{timestamp}_{task_type}_{safe_name}.md"
 
 
-def save_deliverable(content: str, prompt: str, task_type: str, meta: dict = None) -> tuple:
+def save_deliverable(
+    content: str, prompt: str, task_type: str, meta: dict = None
+) -> tuple:
     """Save deliverable content to filesystem and register in session_state."""
     filename = generate_filename(prompt, task_type)
     filepath = os.path.join(DELIVERABLES_DIR, filename)
@@ -305,7 +450,9 @@ def save_deliverable(content: str, prompt: str, task_type: str, meta: dict = Non
         "meta": meta or {},
     }
 
-    logger.debug("[frontend] 成果物已保存: %s (%sKB)", filepath, deliverable_record['size_kb'])
+    logger.debug(
+        "[frontend] 成果物已保存: %s (%sKB)", filepath, deliverable_record["size_kb"]
+    )
     return filepath, deliverable_record
 
 
@@ -314,10 +461,14 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
     import os as _os
     import asyncio
 
-    use_agent_loop = st.session_state.get("exec_mode", _t("mode_quality")) == _t("mode_quality")
+    use_agent_loop = st.session_state.get("exec_mode", _t("mode_quality")) == _t(
+        "mode_quality"
+    )
 
     if not use_agent_loop:
-        return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+        return execute_task_and_deliver(
+            prompt, session_ctx=session_ctx, business_type=business_type
+        )
 
     try:
         from opc_manager.agent_loop import AgentLoop
@@ -328,29 +479,44 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
             adapter = TaskEngineAdapter(task_engine=task_engine_v3)
             from opc_manager.simple_llm_service import SimpleLLMService
             from opc_manager.skill_registry import SkillRegistry
+
             simple_llm = SimpleLLMService()
             skill_registry = SkillRegistry()
             st.session_state.agent_loop = AgentLoop(
-                task_engine_adapter=adapter, llm_service=simple_llm, skill_registry=skill_registry
+                task_engine_adapter=adapter,
+                llm_service=simple_llm,
+                skill_registry=skill_registry,
             )
         agent_loop = st.session_state.agent_loop
 
         loop = asyncio.new_event_loop()
         try:
             result_dict = loop.run_until_complete(
-                agent_loop.run(prompt, session_id=getattr(session_ctx, '_session_id', None) if session_ctx else None)
+                agent_loop.run(
+                    prompt,
+                    session_id=(
+                        getattr(session_ctx, "_session_id", None)
+                        if session_ctx
+                        else None
+                    ),
+                )
             )
             pending = asyncio.all_tasks(loop)
             if pending:
-                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                loop.run_until_complete(
+                    asyncio.gather(*pending, return_exceptions=True)
+                )
         finally:
             loop.close()
 
         if not result_dict.get("success"):
             logger.warning("[frontend] AgentLoop执行失败，降级到TaskEngineV3")
-            return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+            return execute_task_and_deliver(
+                prompt, session_ctx=session_ctx, business_type=business_type
+            )
 
         from opc_manager.task_engine_adapter import TaskEngineAdapter as TEA
+
         task_result = TEA.dict_to_task_result(result_dict)
 
         if not task_result.content:
@@ -365,16 +531,24 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
         if not task_result.content:
             logger.warning("[frontend] AgentLoop返回空内容，降级到TaskEngineV3")
-            return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+            return execute_task_and_deliver(
+                prompt, session_ctx=session_ctx, business_type=business_type
+            )
 
         from opc_manager.task_engine_v3 import TaskType
-        if task_result.task_type == TaskType.GENERAL_CHAT and len(task_result.content) < 300:
+
+        if (
+            task_result.task_type == TaskType.GENERAL_CHAT
+            and len(task_result.content) < 300
+        ):
             return task_result.content, True, None, "general_chat", None
 
         meta_lines = []
         if task_result.execution_time_ms:
             meta_lines.append(f"⏱️ 执行耗时: {task_result.execution_time_ms:.0f}ms")
-        task_type_label = _t(_TASK_TYPE_LABELS.get(task_result.task_type.name, _TASK_TYPE_GENERIC))
+        task_type_label = _t(
+            _TASK_TYPE_LABELS.get(task_result.task_type.name, _TASK_TYPE_GENERIC)
+        )
         meta_lines.append(f"📌 任务类型: {task_type_label}")
         meta_lines.append("🧠 三贤者架构执行")
         if task_result.sources:
@@ -395,13 +569,22 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
             },
         )
 
-        return content_with_meta, task_result.success, filepath, task_result.task_type.value, deliverable_record
+        return (
+            content_with_meta,
+            task_result.success,
+            filepath,
+            task_result.task_type.value,
+            deliverable_record,
+        )
 
     except Exception as e:
         import traceback
+
         tb = traceback.format_exc()
         logger.warning("[frontend] AgentLoop异常，降级到TaskEngineV3: %s\n%s", e, tb)
-        return execute_task_and_deliver(prompt, session_ctx=session_ctx, business_type=business_type)
+        return execute_task_and_deliver(
+            prompt, session_ctx=session_ctx, business_type=business_type
+        )
 
 
 def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
@@ -436,7 +619,9 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         meta_lines = []
         if result.execution_time_ms:
             meta_lines.append(f"⏱️ 执行耗时: {result.execution_time_ms:.0f}ms")
-        task_type_label = _t(_TASK_TYPE_LABELS.get(result.task_type.name, _TASK_TYPE_GENERIC))
+        task_type_label = _t(
+            _TASK_TYPE_LABELS.get(result.task_type.name, _TASK_TYPE_GENERIC)
+        )
         meta_lines.append(f"📌 任务类型: {task_type_label}")
         if result.sources:
             meta_lines.append(f"🔗 信息来源: {len(result.sources)} 条")
@@ -451,6 +636,7 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
             mode_tag = f"\n\n> {_t('mode_template')}"
         else:
             from opc_manager.simple_llm_service import SimpleLLMService
+
             svc = SimpleLLMService()
             if svc.is_available():
                 mode_tag = f"\n\n> {_t('mode_ai')}"
@@ -473,16 +659,25 @@ def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
         )
         logger.debug("[frontend] 文件已保存: %s", filepath)
 
-        return content_with_meta, result.success, filepath, result.task_type.value, deliverable_record
+        return (
+            content_with_meta,
+            result.success,
+            filepath,
+            result.task_type.value,
+            deliverable_record,
+        )
 
     except Exception as e:
         import traceback
+
         tb = traceback.format_exc()
         logger.debug("[frontend] execute_task_and_deliver error: %s\n%s", e, tb)
         return None, False, None, None, None
 
 
-async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, business_type=None) -> dict:
+async def _async_execute_task(
+    prompt: str, cancel_event, session_ctx=None, business_type=None
+) -> dict:
     """Async execution wrapper for AsyncTaskExecutor background thread.
 
     Integrated with Confirmer system for risk operation confirmation:
@@ -493,9 +688,10 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
     try:
         logger.debug("[frontend-async] 开始后台执行: %s", prompt[:50])
 
-        session_id = getattr(session_ctx, '_session_id', None) if session_ctx else None
+        session_id = getattr(session_ctx, "_session_id", None) if session_ctx else None
         if not session_id:
             from frontend.components.shared import _get_current_session_id
+
             session_id = _get_current_session_id()
 
         detected_intent = business_type or "GENERAL_CHAT"
@@ -544,6 +740,7 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
         original_prompt = prompt  # 保存原始用户输入，用于后续记忆存储
         try:
             from opc_manager.memory_bridge import get_memory_bridge
+
             _mb = get_memory_bridge()
             if _mb.enabled:
                 memory_context = _mb.build_context(prompt)
@@ -557,6 +754,7 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
         knowledge_context = ""
         try:
             from opc_manager.knowledge_bridge import get_knowledge_bridge
+
             _kb = get_knowledge_bridge()
             if _kb.enabled:
                 knowledge_context = _kb.build_knowledge_prompt(original_prompt[:200])
@@ -566,8 +764,10 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
         except Exception as e:
             logger.debug("[frontend-async] 知识库注入跳过: %s", e)
 
-        content, success, filepath, task_type, deliverable_record = execute_with_agent_loop(
-            prompt, session_ctx=session_ctx, business_type=business_type
+        content, success, filepath, task_type, deliverable_record = (
+            execute_with_agent_loop(
+                prompt, session_ctx=session_ctx, business_type=business_type
+            )
         )
         logger.debug(
             f"[frontend-async] 执行完成: success={success}, has_content={bool(content)}"
@@ -615,6 +815,7 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
 
     except Exception as e:
         import traceback
+
         tb = traceback.format_exc()
         logger.debug("[frontend-async] 执行异常: %s\n%s", e, tb)
         return {
@@ -627,25 +828,42 @@ async def _async_execute_task(prompt: str, cancel_event, session_ctx=None, busin
         }
 
 
-def _sync_execute_task(prompt: str, cancel_event, session_ctx=None, business_type=None) -> dict:
+def _sync_execute_task(
+    prompt: str, cancel_event, session_ctx=None, business_type=None
+) -> dict:
     import asyncio
+
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             return loop.run_until_complete(
-                _async_execute_task(prompt, cancel_event, session_ctx=session_ctx, business_type=business_type)
+                _async_execute_task(
+                    prompt,
+                    cancel_event,
+                    session_ctx=session_ctx,
+                    business_type=business_type,
+                )
             )
         finally:
             loop.close()
     except RuntimeError:
         try:
             return asyncio.get_event_loop().run_until_complete(
-                _async_execute_task(prompt, cancel_event, session_ctx=session_ctx, business_type=business_type)
+                _async_execute_task(
+                    prompt,
+                    cancel_event,
+                    session_ctx=session_ctx,
+                    business_type=business_type,
+                )
             )
         except Exception as e2:
             logger.warning("[frontend-async] fallback event loop failed: %s", e2)
             return {
-                "content": None, "success": False, "filepath": None,
-                "task_type": None, "error": str(e2), "deliverable_record": None,
+                "content": None,
+                "success": False,
+                "filepath": None,
+                "task_type": None,
+                "error": str(e2),
+                "deliverable_record": None,
             }

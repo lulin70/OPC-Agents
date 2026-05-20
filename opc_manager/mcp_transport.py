@@ -8,7 +8,7 @@ MCP Transport — SSE + stdio 传输层
 启动方式：
   # SSE模式
   uvicorn opc_manager.mcp_transport:create_sse_app --host 127.0.0.1 --port 8901
-  
+
   # stdio模式
   python -m opc_manager.mcp_transport --transport stdio
 """
@@ -30,6 +30,7 @@ try:
     from fastapi import FastAPI, Request
     from fastapi.responses import StreamingResponse
     from sse_starlette.sse import EventSourceResponse
+
     SSE_AVAILABLE = True
 except ImportError:
     pass
@@ -41,12 +42,14 @@ def create_mcp_server() -> MCPServer:
     from .task_engine_adapter import TaskEngineAdapter
     from .task_engine_v3 import task_engine_v3
     from .skill_registry import SkillRegistry
+
     adapter = TaskEngineAdapter(task_engine=task_engine_v3)
     skill_registry = SkillRegistry()
     return MCPServer(task_engine_adapter=adapter, skill_registry=skill_registry)
 
 
 if SSE_AVAILABLE:
+
     def create_sse_app() -> FastAPI:
         mcp_server = create_mcp_server()
         app = FastAPI(title="OPC-Agents MCP SSE Endpoint", version=__version__)
@@ -57,15 +60,25 @@ if SSE_AVAILABLE:
         async def sse_endpoint(request: Request):
             if MCP_API_KEY:
                 auth = request.headers.get("Authorization", "")
-                token = auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+                token = (
+                    auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+                )
                 if not hmac.compare_digest(token, MCP_API_KEY):
                     from fastapi.responses import JSONResponse
-                    return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+                    return JSONResponse(
+                        status_code=401, content={"error": "Unauthorized"}
+                    )
             else:
-                logger.warning("MCP_API_KEY is empty — SSE endpoint is open without authentication (development mode only)")
+                logger.warning(
+                    "MCP_API_KEY is empty — SSE endpoint is open without authentication (development mode only)"
+                )
 
             async def event_generator():
-                yield {"event": "endpoint", "data": json.dumps({"type": "endpoint", "url": "/messages"})}
+                yield {
+                    "event": "endpoint",
+                    "data": json.dumps({"type": "endpoint", "url": "/messages"}),
+                }
                 while True:
                     if await request.is_disconnected():
                         break
@@ -78,12 +91,19 @@ if SSE_AVAILABLE:
         async def handle_message(request: Request):
             if MCP_API_KEY:
                 auth = request.headers.get("Authorization", "")
-                token = auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+                token = (
+                    auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+                )
                 if not hmac.compare_digest(token, MCP_API_KEY):
                     from fastapi.responses import JSONResponse
-                    return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+                    return JSONResponse(
+                        status_code=401, content={"error": "Unauthorized"}
+                    )
             else:
-                logger.warning("MCP_API_KEY is empty — messages endpoint is open without authentication (development mode only)")
+                logger.warning(
+                    "MCP_API_KEY is empty — messages endpoint is open without authentication (development mode only)"
+                )
             body = await request.json()
             result = mcp_server.handle_request(body)
             return result
@@ -107,7 +127,9 @@ class StdioTransport:
     def run(self) -> None:
         mcp_api_key = os.environ.get("MCP_API_KEY", "")
         if not mcp_api_key:
-            logger.warning("MCP_API_KEY is empty — stdio endpoint is open without authentication (development mode only)")
+            logger.warning(
+                "MCP_API_KEY is empty — stdio endpoint is open without authentication (development mode only)"
+            )
         logger.info("MCP stdio transport started")
         while not self._shutdown:
             try:
@@ -123,8 +145,9 @@ class StdioTransport:
                 sys.stdout.flush()
             except json.JSONDecodeError as e:
                 error_response = {
-                    "jsonrpc": "2.0", "id": None,
-                    "error": {"code": -32700, "message": f"Parse error: {e}"}
+                    "jsonrpc": "2.0",
+                    "id": None,
+                    "error": {"code": -32700, "message": f"Parse error: {e}"},
                 }
                 sys.stdout.write(json.dumps(error_response) + "\n")
                 sys.stdout.flush()
@@ -137,6 +160,7 @@ class StdioTransport:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="OPC-Agents MCP Transport")
     parser.add_argument("--transport", choices=["sse", "stdio"], default="stdio")
     parser.add_argument("--host", default="127.0.0.1")
@@ -149,6 +173,7 @@ def main():
     elif args.transport == "sse":
         if SSE_AVAILABLE:
             import uvicorn
+
             app = create_sse_app()
             start_sse_server(app, host=args.host, port=args.port)
         else:
@@ -186,6 +211,7 @@ def start_sse_server(app, host: str = "127.0.0.1", port: int = 8901):
         raise RuntimeError(error_msg)
 
     import uvicorn
+
     logger.info("Starting SSE server on %s:%d", host, port)
     uvicorn.run(app, host=host, port=port)
 

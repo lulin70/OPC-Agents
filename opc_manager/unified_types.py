@@ -41,29 +41,29 @@ class UnifiedTaskCategory(Enum):
     """
 
     # === Information Acquisition (Low Risk) ===
-    INFO_SEARCH = "info_search"           # Search information, knowledge retrieval
-    DATA_QUERY = "data_query"             # Query data, view reports/dashboards
+    INFO_SEARCH = "info_search"  # Search information, knowledge retrieval
+    DATA_QUERY = "data_query"  # Query data, view reports/dashboards
 
     # === Content Creation (Medium Risk) ===
-    DOCUMENT_WRITING = "document_writing" # Write reports/proposals/documents
-    MESSAGE_COMPOSE = "message_compose"   # Write emails/messages/notifications
+    DOCUMENT_WRITING = "document_writing"  # Write reports/proposals/documents
+    MESSAGE_COMPOSE = "message_compose"  # Write emails/messages/notifications
 
     # === Business Operations (Medium-High Risk) ===
-    TASK_MANAGEMENT = "task_management"   # Task creation/update/completion
-    FINANCE_OPERATION = "finance_operation"# Income/expense recording
-    CRM_OPERATION = "crm_operation"       # Customer/opportunity/follow-up management
-    CALENDAR_OPERATION = "calendar_operation" # Schedule/meeting arrangement
+    TASK_MANAGEMENT = "task_management"  # Task creation/update/completion
+    FINANCE_OPERATION = "finance_operation"  # Income/expense recording
+    CRM_OPERATION = "crm_operation"  # Customer/opportunity/follow-up management
+    CALENDAR_OPERATION = "calendar_operation"  # Schedule/meeting arrangement
 
     # === Publishing (High Risk) ===
-    SOCIAL_PUBLISH = "social_publish"     # Social media publishing
-    EMAIL_SEND = "email_send"            # Email sending (distinguished from compose)
+    SOCIAL_PUBLISH = "social_publish"  # Social media publishing
+    EMAIL_SEND = "email_send"  # Email sending (distinguished from compose)
 
     # === Analysis (Low-Medium Risk) ===
-    DATA_ANALYSIS = "data_analysis"      # Data analysis/comparison/insights
-    WORKFLOW_AUTOMATION = "workflow_automation" # Scenario workflows/batch operations
+    DATA_ANALYSIS = "data_analysis"  # Data analysis/comparison/insights
+    WORKFLOW_AUTOMATION = "workflow_automation"  # Scenario workflows/batch operations
 
     # === General (Low Risk) ===
-    GENERAL_CHAT = "general_chat"         # Chat/greetings/simple Q&A
+    GENERAL_CHAT = "general_chat"  # Chat/greetings/simple Q&A
 
 
 # =============================================================================
@@ -78,14 +78,12 @@ INTENT_TO_UNIFIED_MAP: Dict[IntentType, UnifiedTaskCategory] = {
     IntentType.SEARCH: UnifiedTaskCategory.INFO_SEARCH,
     IntentType.KNOWLEDGE: UnifiedTaskCategory.INFO_SEARCH,
     IntentType.DASHBOARD: UnifiedTaskCategory.DATA_QUERY,
-
     # Content Creation (Medium Risk)
     # Rationale: These generate content but may require review before use
     IntentType.REPORT: UnifiedTaskCategory.DOCUMENT_WRITING,
     IntentType.PROPOSAL: UnifiedTaskCategory.DOCUMENT_WRITING,
     IntentType.ANALYSIS: UnifiedTaskCategory.DOCUMENT_WRITING,  # Analysis reports are documents
     IntentType.CREATION: UnifiedTaskCategory.DOCUMENT_WRITING,  # Generic creation maps to document writing
-
     # Business Operations (Medium-High Risk)
     # Rationale: These modify business data and have operational impact
     IntentType.TASK: UnifiedTaskCategory.TASK_MANAGEMENT,
@@ -93,28 +91,23 @@ INTENT_TO_UNIFIED_MAP: Dict[IntentType, UnifiedTaskCategory] = {
     IntentType.INVOICE: UnifiedTaskCategory.FINANCE_OPERATION,  # Invoicing is financial operation
     IntentType.CRM: UnifiedTaskCategory.CRM_OPERATION,
     IntentType.CALENDAR: UnifiedTaskCategory.CALENDAR_OPERATION,
-    IntentType.PRICING: UnifiedTaskCategory.CRM_OPERATION,      # Pricing affects customer relationships
-    IntentType.COMPETITOR: UnifiedTaskCategory.DATA_ANALYSIS,   # Competitor monitoring is analytical
+    IntentType.PRICING: UnifiedTaskCategory.CRM_OPERATION,  # Pricing affects customer relationships
+    IntentType.COMPETITOR: UnifiedTaskCategory.DATA_ANALYSIS,  # Competitor monitoring is analytical
     IntentType.TAX_REMINDER: UnifiedTaskCategory.CALENDAR_OPERATION,  # Tax reminders are calendar events
-
     # Publishing (High Risk)
     # Rationale: These have external visibility and cannot be easily undone
     IntentType.SOCIAL: UnifiedTaskCategory.SOCIAL_PUBLISH,
     IntentType.EMAIL: UnifiedTaskCategory.EMAIL_SEND,
-
     # Communication (Medium Risk)
     # Rationale: Internal notifications, lower risk than external publishing
     IntentType.NOTIFICATION: UnifiedTaskCategory.MESSAGE_COMPOSE,
-
     # Operations (Medium-High Risk)
     # Rationale: Generic operations that could affect system state
     IntentType.OPERATION: UnifiedTaskCategory.WORKFLOW_AUTOMATION,
-
     # Complex Scenarios (Medium Risk)
     # Rationale: Multi-step workflows require coordination
     IntentType.COMBINED: UnifiedTaskCategory.WORKFLOW_AUTOMATION,
     IntentType.EXTENDED_SKILL: UnifiedTaskCategory.WORKFLOW_AUTOMATION,
-
     # Fallback (Medium Risk)
     # Rationale: Unknown intents should be treated with caution
     IntentType.UNKNOWN: UnifiedTaskCategory.GENERAL_CHAT,
@@ -125,19 +118,14 @@ INTENT_TO_UNIFIED_MAP: Dict[IntentType, UnifiedTaskCategory] = {
 TASK_TO_UNIFIED_MAP: Dict[TaskType, UnifiedTaskCategory] = {
     # INFO_COLLECTION covers search and knowledge queries
     TaskType.INFO_COLLECTION: UnifiedTaskCategory.INFO_SEARCH,
-
     # CONTENT_GENERATION is the most versatile, used for documents, messages, social content
     TaskType.CONTENT_GENERATION: UnifiedTaskCategory.DOCUMENT_WRITING,
-
     # DATA_ANALYSIS for dashboards, reports, comparisons
     TaskType.DATA_ANALYSIS: UnifiedTaskCategory.DATA_ANALYSIS,
-
     # SCENARIO_BASED for complex multi-step workflows (tasks, CRM, calendar, finance)
     TaskType.SCENARIO_BASED: UnifiedTaskCategory.WORKFLOW_AUTOMATION,
-
     # BUSINESS_OPERATION for specific business actions
     TaskType.BUSINESS_OPERATION: UnifiedTaskCategory.WORKFLOW_AUTOMATION,
-
     # GENERAL_CHAT for casual conversation
     TaskType.GENERAL_CHAT: UnifiedTaskCategory.GENERAL_CHAT,
 }
@@ -164,6 +152,7 @@ UNIFIED_TO_TASK_MAP: Dict[UnifiedTaskCategory, TaskType] = {
 # =============================================================================
 # Core Utility Functions
 # =============================================================================
+
 
 def unify_intent(intent_type: str) -> UnifiedTaskCategory:
     """Convert AgentLoop's IntentType string to unified category.
@@ -214,9 +203,14 @@ def unify_task(task_type: TaskType, context: str = None) -> UnifiedTaskCategory:
         # Check email first (more specific) before general sending
         if any(word in context_lower for word in ["邮件", "email", "信"]):
             return UnifiedTaskCategory.EMAIL_SEND
-        elif any(word in context_lower for word in ["发送", "send", "发布", "publish", "post"]):
+        elif any(
+            word in context_lower
+            for word in ["发送", "send", "发布", "publish", "post"]
+        ):
             return UnifiedTaskCategory.SOCIAL_PUBLISH
-        elif any(word in context_lower for word in ["消息", "消息", "通知", "notification"]):
+        elif any(
+            word in context_lower for word in ["消息", "消息", "通知", "notification"]
+        ):
             return UnifiedTaskCategory.MESSAGE_COMPOSE
 
     return base_category
@@ -254,7 +248,6 @@ def get_risk_level(category: UnifiedTaskCategory) -> RiskLevel:
         UnifiedTaskCategory.DATA_QUERY: RiskLevel.LOW,
         UnifiedTaskCategory.DATA_ANALYSIS: RiskLevel.LOW,
         UnifiedTaskCategory.GENERAL_CHAT: RiskLevel.LOW,
-
         # Medium Risk: Content creation and business operations
         UnifiedTaskCategory.DOCUMENT_WRITING: RiskLevel.MEDIUM,
         UnifiedTaskCategory.MESSAGE_COMPOSE: RiskLevel.MEDIUM,
@@ -263,7 +256,6 @@ def get_risk_level(category: UnifiedTaskCategory) -> RiskLevel:
         UnifiedTaskCategory.CRM_OPERATION: RiskLevel.MEDIUM,
         UnifiedTaskCategory.CALENDAR_OPERATION: RiskLevel.MEDIUM,
         UnifiedTaskCategory.WORKFLOW_AUTOMATION: RiskLevel.MEDIUM,
-
         # High Risk: External publishing with public visibility
         UnifiedTaskCategory.SOCIAL_PUBLISH: RiskLevel.HIGH,
         UnifiedTaskCategory.EMAIL_SEND: RiskLevel.HIGH,
@@ -490,6 +482,7 @@ def suggest_follow_up_actions(category: UnifiedTaskCategory) -> List[str]:
 # Backward Compatibility Utilities
 # =============================================================================
 
+
 def legacy_intent_to_risk(intent_type: str) -> RiskLevel:
     """Backward-compatible function: Convert legacy intent type string to risk level.
 
@@ -519,6 +512,7 @@ class UnifiedClassificationResult:
         icon: Emoji icon
         suggestions: Follow-up action suggestions
     """
+
     category: UnifiedTaskCategory
     original_intent: Optional[str] = None
     original_task: Optional[str] = None
@@ -551,9 +545,7 @@ class UnifiedClassificationResult:
 
 
 def classify_unified(
-    intent_type: str = None,
-    task_type: TaskType = None,
-    context: str = None
+    intent_type: str = None, task_type: TaskType = None, context: str = None
 ) -> UnifiedClassificationResult:
     """Main entry point: Classify operation into unified category with full metadata.
 

@@ -28,13 +28,17 @@ try:
     from fastapi import FastAPI, HTTPException, Header, Depends, Query
     from fastapi.middleware.cors import CORSMiddleware
     from pydantic import BaseModel
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     pass
 
 if FASTAPI_AVAILABLE:
     from .skill_marketplace import (
-        SkillMarketplace, MarketplaceSkill, PermissionLevel, SkillStatus,
+        SkillMarketplace,
+        MarketplaceSkill,
+        PermissionLevel,
+        SkillStatus,
         ExternalSkillMarketplace,
     )
 
@@ -44,7 +48,9 @@ if FASTAPI_AVAILABLE:
         description="技能市场REST API — 注册/发现/调用技能",
     )
 
-    _allowed_origins = os.environ.get("MARKETPLACE_CORS_ORIGINS", "http://localhost:8501,http://localhost:8900").split(",")
+    _allowed_origins = os.environ.get(
+        "MARKETPLACE_CORS_ORIGINS", "http://localhost:8501,http://localhost:8900"
+    ).split(",")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_allowed_origins,
@@ -64,7 +70,10 @@ if FASTAPI_AVAILABLE:
             body = await request.body()
             if len(body) > MAX_REQUEST_BODY_BYTES:
                 from fastapi.responses import JSONResponse
-                return JSONResponse(status_code=413, content={"error": "Request body too large"})
+
+                return JSONResponse(
+                    status_code=413, content={"error": "Request body too large"}
+                )
         return await call_next(request)
 
     class SkillRegisterRequest(BaseModel):
@@ -102,7 +111,10 @@ if FASTAPI_AVAILABLE:
 
     def _check_permission(api_key: str, required: PermissionLevel) -> None:
         if not marketplace.check_permission(api_key, required):
-            raise HTTPException(status_code=403, detail=f"Insufficient permissions: {required.value} required")
+            raise HTTPException(
+                status_code=403,
+                detail=f"Insufficient permissions: {required.value} required",
+            )
 
     @app.post("/api/v1/keys")
     async def create_api_key(request: APIKeyCreateRequest):
@@ -111,13 +123,19 @@ if FASTAPI_AVAILABLE:
         return {"success": True, "api_key": raw_key, "name": request.name}
 
     @app.post("/api/v1/skills")
-    async def register_skill(request: SkillRegisterRequest, api_key: str = Depends(_get_api_key)):
+    async def register_skill(
+        request: SkillRegisterRequest, api_key: str = Depends(_get_api_key)
+    ):
         _check_permission(api_key, PermissionLevel.WRITE)
         skill = MarketplaceSkill(
-            skill_id=request.skill_id, name=request.name,
-            description=request.description, version=request.version,
-            category=request.category, author=request.author,
-            dependencies=request.dependencies, config=request.config,
+            skill_id=request.skill_id,
+            name=request.name,
+            description=request.description,
+            version=request.version,
+            category=request.category,
+            author=request.author,
+            dependencies=request.dependencies,
+            config=request.config,
         )
         result = marketplace.register_skill(skill, api_key)
         if not result["success"]:
@@ -148,7 +166,11 @@ if FASTAPI_AVAILABLE:
         return skill
 
     @app.post("/api/v1/skills/{skill_id}/execute")
-    async def execute_skill(skill_id: str, request: SkillExecuteRequest, api_key: str = Depends(_get_api_key)):
+    async def execute_skill(
+        skill_id: str,
+        request: SkillExecuteRequest,
+        api_key: str = Depends(_get_api_key),
+    ):
         _check_permission(api_key, PermissionLevel.EXECUTE)
         result = marketplace.execute_skill(skill_id, request.parameters, api_key)
         if not result["success"]:
@@ -184,14 +206,18 @@ if FASTAPI_AVAILABLE:
     async def install_skill(skill_id: str, source: str = "opc_official"):
         result = external_marketplace.install_skill(skill_id, source)
         if not result.get("success") and not result.get("requires_confirmation"):
-            raise HTTPException(status_code=400, detail=result.get("error", "Installation failed"))
+            raise HTTPException(
+                status_code=400, detail=result.get("error", "Installation failed")
+            )
         return result
 
     @app.delete("/api/v1/marketplace/{skill_id}/uninstall")
     async def uninstall_skill(skill_id: str):
         result = external_marketplace.uninstall_skill(skill_id)
         if not result.get("success"):
-            raise HTTPException(status_code=404, detail=result.get("error", "Skill not found"))
+            raise HTTPException(
+                status_code=404, detail=result.get("error", "Skill not found")
+            )
         return result
 
     @app.get("/api/v1/marketplace/installed")

@@ -43,7 +43,7 @@ class TestSuggestionDataStructure:
             action_type="quick_task",
             action_payload={"prompt": "测试"},
             confidence=0.85,
-            category="follow_up"
+            category="follow_up",
         )
         assert sug.id == "test_1"
         assert sug.title == "测试建议"
@@ -60,7 +60,7 @@ class TestSuggestionDataStructure:
             action_type="quick_task",
             action_payload={},
             confidence=0.5,
-            category="follow_up"
+            category="follow_up",
         )
         assert 0 <= sug.confidence <= 1
 
@@ -69,16 +69,18 @@ class TestSuggestionDataStructure:
         valid_types = {"quick_task", "navigate_tab", "open_settings"}
         for task_type, suggestions in TASK_TYPE_FOLLOW_UP_MAP.items():
             for s in suggestions:
-                assert s.action_type in valid_types, \
-                    f"Invalid action type {s.action_type} for {s.id}"
+                assert (
+                    s.action_type in valid_types
+                ), f"Invalid action type {s.action_type} for {s.id}"
 
     def test_categories_are_valid(self):
         """Test that only allowed categories are used"""
         valid_cats = {"follow_up", "related", "improvement", "exploration"}
         for task_type, suggestions in TASK_TYPE_FOLLOW_UP_MAP.items():
             for s in suggestions:
-                assert s.category in valid_cats, \
-                    f"Invalid category {s.category} for {s.id}"
+                assert (
+                    s.category in valid_cats
+                ), f"Invalid category {s.category} for {s.id}"
 
 
 class TestFollowUpSuggestions:
@@ -150,7 +152,7 @@ class TestRelatedSuggestions:
             "user_history": [
                 {"task_type": "data_analysis"},
                 {"task_type": "data_analysis"},
-            ]
+            ],
         }
         suggestions = _generate_related_suggestions(context)
         assert len(suggestions) > 0
@@ -158,10 +160,7 @@ class TestRelatedSuggestions:
 
     def test_no_history_returns_empty(self):
         """Test empty history returns no related suggestions"""
-        context = {
-            "last_task_type": "content_generation",
-            "user_history": []
-        }
+        context = {"last_task_type": "content_generation", "user_history": []}
         suggestions = _generate_related_suggestions(context)
         assert len(suggestions) == 0
 
@@ -169,11 +168,11 @@ class TestRelatedSuggestions:
         """Test that more frequent complementary tasks get higher confidence"""
         context_low = {
             "last_task_type": "content_generation",
-            "user_history": [{"task_type": "data_analysis"}]
+            "user_history": [{"task_type": "data_analysis"}],
         }
         context_high = {
             "last_task_type": "content_generation",
-            "user_history": [{"task_type": "data_analysis"}] * 5
+            "user_history": [{"task_type": "data_analysis"}] * 5,
         }
         sug_low = _generate_related_suggestions(context_low)
         sug_high = _generate_related_suggestions(context_high)
@@ -187,7 +186,7 @@ class TestRelatedSuggestions:
             "user_history": [
                 {"task_type": "content_generation"},
                 {"task_type": "content_generation"},
-            ]
+            ],
         }
         suggestions = _generate_related_suggestions(context)
         assert len(suggestions) == 0
@@ -198,29 +197,23 @@ class TestImprovementSuggestions:
 
     def test_slow_execution_triggers_speed_suggestion(self):
         """Test slow execution (>10s) triggers speed improvement suggestion"""
-        context = {
-            "last_result": {"execution_time_ms": 15000},
-            "feedback_history": []
-        }
+        context = {"last_result": {"execution_time_ms": 15000}, "feedback_history": []}
         suggestions = _generate_improvement_suggestions(context)
         assert len(suggestions) > 0
         assert any("简化" in s.title or "加快" in s.title for s in suggestions)
 
     def test_fast_execution_no_speed_suggestion(self):
         """Test fast execution (<10s) does not trigger speed suggestion"""
-        context = {
-            "last_result": {"execution_time_ms": 5000},
-            "feedback_history": []
-        }
+        context = {"last_result": {"execution_time_ms": 5000}, "feedback_history": []}
         suggestions = _generate_improvement_suggestions(context)
         speed_sugs = [s for s in suggestions if "简化" in s.title or "加快" in s.title]
-        assert len(speed_sugs)  == 0
+        assert len(speed_sugs) == 0
 
     def test_no_sources_triggers_search_suggestion(self):
         """Test zero sources triggers search optimization suggestion"""
         context = {
             "last_result": {"sources_count": 0, "execution_time_ms": 1000},
-            "feedback_history": []
+            "feedback_history": [],
         }
         suggestions = _generate_improvement_suggestions(context)
         assert any("搜索" in s.title or "优化" in s.title for s in suggestions)
@@ -229,7 +222,7 @@ class TestImprovementSuggestions:
         """Test having sources does not trigger search suggestion"""
         context = {
             "last_result": {"sources_count": 5, "execution_time_ms": 1000},
-            "feedback_history": []
+            "feedback_history": [],
         }
         suggestions = _generate_improvement_suggestions(context)
         search_sugs = [s for s in suggestions if "搜索" in s.title]
@@ -239,7 +232,7 @@ class TestImprovementSuggestions:
         """Test negative feedback triggers improvement suggestion"""
         context = {
             "last_result": {"execution_time_ms": 1000, "sources_count": 3},
-            "feedback_history": [{"feedback": "bad"}]
+            "feedback_history": [{"feedback": "bad"}],
         }
         suggestions = _generate_improvement_suggestions(context)
         assert any("改进" in s.title or "换个方式" in s.title for s in suggestions)
@@ -248,7 +241,7 @@ class TestImprovementSuggestions:
         """Test positive feedback does not trigger improvement suggestion"""
         context = {
             "last_result": {"execution_time_ms": 1000, "sources_count": 3},
-            "feedback_history": [{"feedback": "good"}]
+            "feedback_history": [{"feedback": "good"}],
         }
         suggestions = _generate_improvement_suggestions(context)
         feedback_sugs = [s for s in suggestions if "改进" in s.title]
@@ -258,7 +251,7 @@ class TestImprovementSuggestions:
         """Test multiple issues generate multiple improvement suggestions"""
         context = {
             "last_result": {"execution_time_ms": 15000, "sources_count": 0},
-            "feedback_history": [{"feedback": "bad"}, {"feedback": "bad"}]
+            "feedback_history": [{"feedback": "bad"}, {"feedback": "bad"}],
         }
         suggestions = _generate_improvement_suggestions(context)
         assert len(suggestions) >= 2
@@ -307,7 +300,10 @@ class TestGenerateSuggestionsMain:
         context = {
             "last_task_type": "content_generation",
             "last_result": {"execution_time_ms": 15000, "sources_count": 0},
-            "user_history": [{"task_type": "data_analysis"}, {"task_type": "data_analysis"}],
+            "user_history": [
+                {"task_type": "data_analysis"},
+                {"task_type": "data_analysis"},
+            ],
             "deliverables_count": 5,
             "feedback_history": [{"feedback": "bad"}],
             "features_used": set(),
@@ -329,7 +325,7 @@ class TestGenerateSuggestionsMain:
         suggestions = generate_suggestions(context)
         if len(suggestions) > 1:
             for i in range(len(suggestions) - 1):
-                assert suggestions[i].confidence >= suggestions[i+1].confidence
+                assert suggestions[i].confidence >= suggestions[i + 1].confidence
 
     def test_max_10_suggestions_limit(self):
         """Test that maximum 10 suggestions are returned"""
@@ -374,7 +370,7 @@ class TestGenerateSuggestionsMain:
 class TestBuildContextFromSession:
     """Test context building utility function"""
 
-    @patch('frontend.components.smart_suggestions.st')
+    @patch("frontend.components.smart_suggestions.st")
     def test_build_context_with_deliverables(self, mock_st):
         """Test context building extracts deliverable history"""
         mock_st.session_state = {
@@ -387,19 +383,18 @@ class TestBuildContextFromSession:
         }
         context = build_context_from_session(
             last_task_type="content_generation",
-            deliverables=mock_st.session_state["deliverables"]
+            deliverables=mock_st.session_state["deliverables"],
         )
         assert context["last_task_type"] == "content_generation"
         assert len(context["user_history"]) == 2
         assert "dashboard" in context["features_used"]
 
-    @patch('frontend.components.smart_suggestions.st')
+    @patch("frontend.components.smart_suggestions.st")
     def test_build_context_empty_deliverables(self, mock_st):
         """Test context building with empty deliverables"""
         mock_st.session_state = {}
         context = build_context_from_session(
-            last_task_type="general_chat",
-            deliverables=[]
+            last_task_type="general_chat", deliverables=[]
         )
         assert context["deliverables_count"] == 0
         assert len(context["user_history"]) == 0
@@ -430,13 +425,13 @@ class TestEdgeCasesAndBoundaryConditions:
         """Test suggestions handle special characters properly"""
         sug = Suggestion(
             id="special",
-            title="测试<>&\"标题",
+            title='测试<>&"标题',
             description="描述with特殊chars",
             icon="🎯",
             action_type="quick_task",
             action_payload={},
             confidence=0.5,
-            category="follow_up"
+            category="follow_up",
         )
         assert "<" in sug.title
 
@@ -450,7 +445,7 @@ class TestEdgeCasesAndBoundaryConditions:
             action_type="quick_task",
             action_payload={},
             confidence=0.0,
-            category="follow_up"
+            category="follow_up",
         )
         assert sug.confidence == 0.0
 
@@ -464,7 +459,7 @@ class TestEdgeCasesAndBoundaryConditions:
             action_type="quick_task",
             action_payload={},
             confidence=1.0,
-            category="follow_up"
+            category="follow_up",
         )
         assert sug.confidence == 1.0
 
@@ -479,8 +474,9 @@ class TestEdgeCasesAndBoundaryConditions:
             "general_chat",
         ]
         for task_type in known_types:
-            assert task_type in TASK_TYPE_FOLLOW_UP_MAP, \
-                f"Missing follow-up definitions for {task_type}"
+            assert (
+                task_type in TASK_TYPE_FOLLOW_UP_MAP
+            ), f"Missing follow-up definitions for {task_type}"
 
     def test_complementary_tasks_coverage(self):
         """Test all task types have complementary task mappings"""
@@ -493,8 +489,9 @@ class TestEdgeCasesAndBoundaryConditions:
             "general_chat",
         ]
         for task_type in known_types:
-            assert task_type in COMPLEMENTARY_TASKS, \
-                f"Missing complementary mapping for {task_type}"
+            assert (
+                task_type in COMPLEMENTARY_TASKS
+            ), f"Missing complementary mapping for {task_type}"
             assert len(COMPLEMENTARY_TASKS[task_type]) > 0
 
 

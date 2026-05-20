@@ -199,14 +199,21 @@ class TestInvalidConfigRecovery:
 
     def test_invalid_layout_value_fallback(self, tmp_path):
         bad_path = tmp_path / "bad_layout.json"
-        bad_path.write_text(json.dumps({"layout": "invalid_layout", "density": "standard", "panels": {}}), encoding="utf-8")
+        bad_path.write_text(
+            json.dumps(
+                {"layout": "invalid_layout", "density": "standard", "panels": {}}
+            ),
+            encoding="utf-8",
+        )
         c = DashboardConfig.load(path=bad_path)
         assert c.layout == LayoutType.FOCUSED
         assert c.density == DensityLevel.STANDARD
 
     def test_missing_panels_field_populates_defaults(self, tmp_path):
         partial_path = tmp_path / "partial.json"
-        partial_path.write_text(json.dumps({"layout": "minimal", "density": "compact"}), encoding="utf-8")
+        partial_path.write_text(
+            json.dumps({"layout": "minimal", "density": "compact"}), encoding="utf-8"
+        )
         c = DashboardConfig.load(path=partial_path)
         assert c.layout == LayoutType.MINIMAL
         assert c.density == DensityLevel.COMPACT

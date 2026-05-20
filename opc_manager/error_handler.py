@@ -13,7 +13,12 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 try:
-    from openai import APIError as _OpenAIAPIError, APIConnectionError, RateLimitError, APITimeoutError
+    from openai import (
+        APIError as _OpenAIAPIError,
+        APIConnectionError,
+        RateLimitError,
+        APITimeoutError,
+    )
 except ImportError:
     _OpenAIAPIError = Exception
     APIConnectionError = Exception
@@ -86,11 +91,14 @@ ERROR_MAP: Dict[Tuple[Type, ...], Dict[str, Any]] = {
 
 
 class UserFriendlyError(Exception):
-    def __init__(self, original_exception: Exception,
-                 user_message: str = "",
-                 suggestion: str = "",
-                 category: ErrorCategory = ErrorCategory.UNKNOWN,
-                 severity: ErrorSeverity = ErrorSeverity.ERROR):
+    def __init__(
+        self,
+        original_exception: Exception,
+        user_message: str = "",
+        suggestion: str = "",
+        category: ErrorCategory = ErrorCategory.UNKNOWN,
+        severity: ErrorSeverity = ErrorSeverity.ERROR,
+    ):
         super().__init__(user_message)
         self.original = original_exception
         self.user_message = user_message or "操作未能完成，请重试"
@@ -135,7 +143,9 @@ class ErrorHandler:
                     severity=mapping["severity"],
                 )
 
-        logger.warning("Unhandled exception type: %s - %s", exc_type.__name__, str(exception))
+        logger.warning(
+            "Unhandled exception type: %s - %s", exc_type.__name__, str(exception)
+        )
         fallback_msg = f"操作出现意外错误({exc_type.__name__})"
         if context:
             fallback_msg = f"{context}：{fallback_msg}"

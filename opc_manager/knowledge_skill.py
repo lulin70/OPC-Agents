@@ -9,8 +9,9 @@ from opc_manager.tool_system import AuditLogger
 logger = logging.getLogger(__name__)
 
 
-def create_article(title: str, content: str, tags: str = "",
-                   category: str = "") -> Dict[str, Any]:
+def create_article(
+    title: str, content: str, tags: str = "", category: str = ""
+) -> Dict[str, Any]:
     if not title.strip():
         return {"success": False, "error": "文章标题不能为空"}
     if not content.strip():
@@ -24,7 +25,17 @@ def create_article(title: str, content: str, tags: str = "",
     try:
         execute_write(
             "INSERT INTO knowledge_articles (id,title,content,tags,category,status,word_count,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
-            (article_id, title, content, tags_json, category, "draft", len(content), now, now),
+            (
+                article_id,
+                title,
+                content,
+                tags_json,
+                category,
+                "draft",
+                len(content),
+                now,
+                now,
+            ),
         )
     except Exception as e:
         logger.warning("knowledge_skill.create_article write failed: %s", e)
@@ -54,11 +65,23 @@ def get_article(article_id: str) -> Dict[str, Any]:
     return {"success": True, "article": article}
 
 
-_KNOWLEDGE_UPDATEABLE_COLUMNS = {"title", "content", "word_count", "tags", "category", "updated_at"}
+_KNOWLEDGE_UPDATEABLE_COLUMNS = {
+    "title",
+    "content",
+    "word_count",
+    "tags",
+    "category",
+    "updated_at",
+}
 
 
-def update_article(article_id: str, title: str = "", content: str = "",
-                   tags: str = "", category: str = "") -> Dict[str, Any]:
+def update_article(
+    article_id: str,
+    title: str = "",
+    content: str = "",
+    tags: str = "",
+    category: str = "",
+) -> Dict[str, Any]:
     rows = execute_query("SELECT * FROM knowledge_articles WHERE id=?", (article_id,))
     if not rows:
         return {"success": False, "error": f"文章不存在: {article_id}"}
@@ -121,8 +144,9 @@ def delete_article(article_id: str) -> Dict[str, Any]:
     return {"success": True, "message": "文章已删除"}
 
 
-def search_articles(query: str = "", tags: str = "",
-                    category: str = "") -> Dict[str, Any]:
+def search_articles(
+    query: str = "", tags: str = "", category: str = ""
+) -> Dict[str, Any]:
     conditions = []
     params = []
 
@@ -174,20 +198,28 @@ def list_categories() -> Dict[str, Any]:
         logger.warning("knowledge_skill.list_categories query failed: %s", e)
         return {"success": True, "categories": [], "count": 0}
 
-    categories = [{"name": row["category"] or "未分类", "count": row["count"]} for row in rows]
+    categories = [
+        {"name": row["category"] or "未分类", "count": row["count"]} for row in rows
+    ]
     return {"success": True, "categories": categories, "count": len(categories)}
 
 
 def get_stats() -> Dict[str, Any]:
     try:
-        total_row = execute_query("SELECT COUNT(*) as total, SUM(word_count) as total_words FROM knowledge_articles")
-        cat_row = execute_query("SELECT COUNT(DISTINCT category) as categories FROM knowledge_articles")
+        total_row = execute_query(
+            "SELECT COUNT(*) as total, SUM(word_count) as total_words FROM knowledge_articles"
+        )
+        cat_row = execute_query(
+            "SELECT COUNT(DISTINCT category) as categories FROM knowledge_articles"
+        )
     except Exception as e:
         logger.warning("knowledge_skill.get_stats query failed: %s", e)
         return {"success": True, "total": 0, "total_words": 0, "categories": 0}
 
     total = total_row[0]["total"] if total_row else 0
-    total_words = total_row[0]["total_words"] if total_row and total_row[0]["total_words"] else 0
+    total_words = (
+        total_row[0]["total_words"] if total_row and total_row[0]["total_words"] else 0
+    )
     categories = cat_row[0]["categories"] if cat_row else 0
 
     return {
@@ -220,11 +252,27 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
 
     if any(kw in goal for kw in ["写", "创建", "添加", "新建", "记录"]):
         title = goal
-        for kw in ["帮我写", "帮我创建", "帮我记录", "写", "创建", "添加", "新建", "笔记", "知识库", "文档"]:
+        for kw in [
+            "帮我写",
+            "帮我创建",
+            "帮我记录",
+            "写",
+            "创建",
+            "添加",
+            "新建",
+            "笔记",
+            "知识库",
+            "文档",
+        ]:
             title = title.replace(kw, "")
         title = title.strip().strip("，。、的")
         if title:
-            return {"success": True, "message": f"请提供'{title}'的具体内容，我将为你保存到知识库", "title": title, "needs_content": True}
+            return {
+                "success": True,
+                "message": f"请提供'{title}'的具体内容，我将为你保存到知识库",
+                "title": title,
+                "needs_content": True,
+            }
         return {"success": False, "error": "请指定文章标题"}
 
     return search_articles()

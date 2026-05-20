@@ -93,7 +93,9 @@ class TestTranslateWithContext:
         """Without context, message should be clean."""
         exc = PermissionError("Denied")
         friendly = ErrorHandler.translate(exc)
-        assert "：" not in friendly.user_message or friendly.user_message.index("：") > 10
+        assert (
+            "：" not in friendly.user_message or friendly.user_message.index("：") > 10
+        )
 
 
 class TestSafeExecute:
@@ -121,7 +123,7 @@ class TestSafeExecute:
             ErrorHandler.safe_execute(
                 lambda: (_ for _ in ()).throw(ValueError("test")),
                 on_error=on_error_callback,
-                context="测试回调"
+                context="测试回调",
             )
         assert len(errors_captured) == 1
         assert isinstance(errors_captured[0], UserFriendlyError)
@@ -134,8 +136,7 @@ class TestUserFriendlyErrorStr:
         """str() should return user_message."""
         exc = RuntimeError("tech detail")
         friendly = UserFriendlyError(
-            original_exception=exc,
-            user_message="用户可见的消息"
+            original_exception=exc, user_message="用户可见的消息"
         )
         assert str(friendly) == "用户可见的消息"
 
@@ -149,22 +150,28 @@ class TestUserFriendlyErrorStr:
 class TestSeverityAndEmojiHelpers:
     """Test severity color and emoji helper methods."""
 
-    @pytest.mark.parametrize("severity,expected_color", [
-        (ErrorSeverity.INFO, "blue"),
-        (ErrorSeverity.WARNING, "orange"),
-        (ErrorSeverity.ERROR, "red"),
-        (ErrorSeverity.CRITICAL, "red"),
-    ])
+    @pytest.mark.parametrize(
+        "severity,expected_color",
+        [
+            (ErrorSeverity.INFO, "blue"),
+            (ErrorSeverity.WARNING, "orange"),
+            (ErrorSeverity.ERROR, "red"),
+            (ErrorSeverity.CRITICAL, "red"),
+        ],
+    )
     def test_get_severity_color(self, severity, expected_color):
         """Each severity level should return correct Streamlit color."""
         assert ErrorHandler.get_severity_color(severity) == expected_color
 
-    @pytest.mark.parametrize("severity,expected_emoji", [
-        (ErrorSeverity.INFO, "ℹ️"),
-        (ErrorSeverity.WARNING, "⚠️"),
-        (ErrorSeverity.ERROR, "❌"),
-        (ErrorSeverity.CRITICAL, "🔴"),
-    ])
+    @pytest.mark.parametrize(
+        "severity,expected_emoji",
+        [
+            (ErrorSeverity.INFO, "ℹ️"),
+            (ErrorSeverity.WARNING, "⚠️"),
+            (ErrorSeverity.ERROR, "❌"),
+            (ErrorSeverity.CRITICAL, "🔴"),
+        ],
+    )
     def test_get_emoji(self, severity, expected_emoji):
         """Each severity level should return correct emoji."""
         assert ErrorHandler.get_emoji(severity) == expected_emoji
@@ -187,7 +194,10 @@ class TestNestedExceptionPreservation:
         except Exception as e:
             friendly = ErrorHandler.translate(e)
             assert len(friendly.traceback_str) > 0
-            assert "ValueError" in friendly.traceback_str or "test traceback" in friendly.traceback_str
+            assert (
+                "ValueError" in friendly.traceback_str
+                or "test traceback" in friendly.traceback_str
+            )
 
 
 class TestLoggingOnUnhandledType:
@@ -196,13 +206,11 @@ class TestLoggingOnUnhandledType:
     def test_logging_on_unhandled_type(self, caplog):
         """Unhandled exception types should generate warning log."""
         import logging
+
         with caplog.at_level(logging.WARNING, logger="opc_manager.error_handler"):
             exc = StopIteration("unhandled")
             friendly = ErrorHandler.translate(exc)
-        assert any(
-            "Unhandled exception type" in rec.message
-            for rec in caplog.records
-        )
+        assert any("Unhandled exception type" in rec.message for rec in caplog.records)
 
 
 class TestNetworkErrorSuggestion:
@@ -221,10 +229,11 @@ class TestLLMErrorTranslation:
 
     def test_llm_error_translation(self):
         """LLM errors should be identified and translated appropriately.
-        
+
         Note: LLM errors use string-based matching since they may be
         custom exception classes defined elsewhere.
         """
+
         class LLMError(Exception):
             pass
 
@@ -243,9 +252,10 @@ class TestDatabaseErrorCritical:
 
     def test_database_error_critical(self):
         """Database errors should be marked as CRITICAL severity.
-        
+
         Note: Database errors use string-based matching similar to LLM errors.
         """
+
         class DatabaseError(Exception):
             pass
 

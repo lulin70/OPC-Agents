@@ -37,26 +37,42 @@ def temp_workspace(tmp_path):
     data_dir.mkdir()
 
     # Create sample JSON files
-    (data_dir / "customers.json").write_text(json.dumps({
-        "cust_1": {"name": "Test Customer", "status": "active"},
-        "cust_2": {"name": "Another Customer", "status": "potential"},
-    }, ensure_ascii=False), encoding='utf-8')
+    (data_dir / "customers.json").write_text(
+        json.dumps(
+            {
+                "cust_1": {"name": "Test Customer", "status": "active"},
+                "cust_2": {"name": "Another Customer", "status": "potential"},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
-    (data_dir / "finance.json").write_text(json.dumps({
-        "income": 10000,
-        "expense": 5000,
-        "profit": 5000,
-    }), encoding='utf-8')
+    (data_dir / "finance.json").write_text(
+        json.dumps(
+            {
+                "income": 10000,
+                "expense": 5000,
+                "profit": 5000,
+            }
+        ),
+        encoding="utf-8",
+    )
 
-    (data_dir / "tasks.json").write_text(json.dumps([
-        {"id": 1, "title": "Task 1", "status": "completed"},
-        {"id": 2, "title": "Task 2", "status": "pending"},
-    ]), encoding='utf-8')
+    (data_dir / "tasks.json").write_text(
+        json.dumps(
+            [
+                {"id": 1, "title": "Task 1", "status": "completed"},
+                {"id": 2, "title": "Task 2", "status": "pending"},
+            ]
+        ),
+        encoding="utf-8",
+    )
 
     # Create a subdirectory with files
     subdir = data_dir / "subdir"
     subdir.mkdir()
-    (subdir / "config.json").write_text(json.dumps({"key": "value"}), encoding='utf-8')
+    (subdir / "config.json").write_text(json.dumps({"key": "value"}), encoding="utf-8")
 
     # Create backup directory
     backup_dir = workspace / BACKUP_DIR
@@ -88,7 +104,7 @@ class TestCreateBackupBasic:
         backup_path, manifest = manager.create_backup()
 
         # Verify manifest is saved inside ZIP
-        with zipfile.ZipFile(backup_path, 'r') as zf:
+        with zipfile.ZipFile(backup_path, "r") as zf:
             assert "manifest.json" in zf.namelist()
             saved_manifest = json.loads(zf.read("manifest.json"))
 
@@ -120,6 +136,7 @@ class TestListBackups:
         # Create multiple backups with small delay to ensure unique timestamps
         manager.create_backup()
         import time
+
         time.sleep(1.1)  # Ensure different timestamp
         manager.create_backup()
 
@@ -153,8 +170,10 @@ class TestRestoreBackup:
 
         # Modify original data to verify restore works
         data_dir = temp_workspace / "data"
-        original_content = (data_dir / "customers.json").read_text(encoding='utf-8')
-        (data_dir / "customers.json").write_text(json.dumps({"modified": True}), encoding='utf-8')
+        original_content = (data_dir / "customers.json").read_text(encoding="utf-8")
+        (data_dir / "customers.json").write_text(
+            json.dumps({"modified": True}), encoding="utf-8"
+        )
 
         # Restore from backup
         result = manager.restore_backup(str(backup_path), confirm=True)
@@ -162,7 +181,7 @@ class TestRestoreBackup:
         assert result["success"] is True
         assert result["restored_files"] > 0
         # Verify data was restored
-        restored_content = (data_dir / "customers.json").read_text(encoding='utf-8')
+        restored_content = (data_dir / "customers.json").read_text(encoding="utf-8")
         assert restored_content == original_content
 
     def test_restore_nonexistent_file(self, temp_workspace):
@@ -205,7 +224,7 @@ class TestExportData:
         manager = DataBackupManager(base_dir=str(temp_workspace))
         json_bytes = manager.export_data(format_type="json")
 
-        data = json.loads(json_bytes.decode('utf-8'))
+        data = json.loads(json_bytes.decode("utf-8"))
 
         assert "exported_at" in data
         assert "exporter" in data
@@ -220,8 +239,8 @@ class TestExportData:
         manager = DataBackupManager(base_dir=str(temp_workspace))
         csv_bytes = manager.export_data(format_type="csv")
 
-        csv_text = csv_bytes.decode('utf-8')
-        lines = csv_text.strip().split('\n')
+        csv_text = csv_bytes.decode("utf-8")
+        lines = csv_text.strip().split("\n")
 
         # Should have header + data rows
         assert len(lines) >= 2
@@ -237,8 +256,9 @@ class TestExportData:
 
         # Verify it's a valid ZIP
         import io
+
         zip_buffer = io.BytesIO(zip_bytes)
-        with zipfile.ZipFile(zip_buffer, 'r') as zf:
+        with zipfile.ZipFile(zip_buffer, "r") as zf:
             assert "manifest.json" in zf.namelist()
             filenames = zf.namelist()
             assert any("customers.json" in f for f in filenames)

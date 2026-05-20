@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 _CARRYMEM_AVAILABLE = False
 try:
     from carrymem import CarryMem
+
     _CARRYMEM_AVAILABLE = True
 except ImportError:
     pass
@@ -68,7 +69,9 @@ class MemoryBridge:
         self._memory_count = 0
 
         if not is_memory_enabled():
-            logger.debug("[MemoryBridge] 记忆功能未启用 (CARRYMEM_ENABLED != true 或 CarryMem 未安装)")
+            logger.debug(
+                "[MemoryBridge] 记忆功能未启用 (CARRYMEM_ENABLED != true 或 CarryMem 未安装)"
+            )
             return
 
         try:
@@ -98,7 +101,11 @@ class MemoryBridge:
             return self._memory_count
         try:
             result = self._cm.recall_memories(limit=1)
-            count = result.get("total", 0) if isinstance(result, dict) else len(result) if isinstance(result, list) else 0
+            count = (
+                result.get("total", 0)
+                if isinstance(result, dict)
+                else len(result) if isinstance(result, list) else 0
+            )
             self._memory_count = count
             return count
         except Exception:
@@ -173,7 +180,11 @@ class MemoryBridge:
                 {
                     "trigger": m.rule.trigger,
                     "action": m.rule.action,
-                    "rule_type": m.rule.rule_type.value if hasattr(m.rule.rule_type, 'value') else str(m.rule.rule_type),
+                    "rule_type": (
+                        m.rule.rule_type.value
+                        if hasattr(m.rule.rule_type, "value")
+                        else str(m.rule.rule_type)
+                    ),
                     "override": m.rule.override,
                     "score": m.score,
                     "match_type": m.match_type,
@@ -184,7 +195,9 @@ class MemoryBridge:
             logger.warning("[MemoryBridge] match_rules 失败: %s", e)
             return []
 
-    def inject_rules_prompt(self, scene: str, max_rules: int = 0, max_tokens: int = 500) -> str:
+    def inject_rules_prompt(
+        self, scene: str, max_rules: int = 0, max_tokens: int = 500
+    ) -> str:
         """生成规则注入的 prompt 片段（用于策略脑规划）。
 
         Args:
@@ -216,7 +229,9 @@ class MemoryBridge:
             logger.warning("[MemoryBridge] inject_rules_prompt 失败: %s", e)
             return ""
 
-    def remember(self, user_input: str, result: str, evaluation: Optional[Dict[str, Any]] = None) -> None:
+    def remember(
+        self, user_input: str, result: str, evaluation: Optional[Dict[str, Any]] = None
+    ) -> None:
         """任务后存储记忆。
 
         Args:
@@ -249,7 +264,9 @@ class MemoryBridge:
         except Exception as e:
             logger.warning("[MemoryBridge] 记忆存储失败: %s", e)
 
-    def record_failure(self, user_input: str, failure_reason: str, quality_score: float = 0.0) -> None:
+    def record_failure(
+        self, user_input: str, failure_reason: str, quality_score: float = 0.0
+    ) -> None:
         """反思脑判定质量不佳时，记录失败经验。
 
         Args:
@@ -262,7 +279,9 @@ class MemoryBridge:
 
         try:
             # 存储失败记忆
-            failure_msg = f"失败经验：{user_input} — {failure_reason}（评分 {quality_score}）"
+            failure_msg = (
+                f"失败经验：{user_input} — {failure_reason}（评分 {quality_score}）"
+            )
             self._cm.classify_and_remember(failure_msg)
             self._memory_count += 1
 
@@ -276,7 +295,9 @@ class MemoryBridge:
                     result = engine.extract_failure_lessons(memories)
                     lessons_found = result.get("lessons_found", 0)
                     if lessons_found > 0:
-                        logger.info("[MemoryBridge] 发现 %d 条失败教训待审核", lessons_found)
+                        logger.info(
+                            "[MemoryBridge] 发现 %d 条失败教训待审核", lessons_found
+                        )
                 except Exception as e:
                     logger.debug("[MemoryBridge] 失败教训提取跳过: %s", e)
 
@@ -379,9 +400,15 @@ class MemoryBridge:
             engine = self.rule_engine
             if engine:
                 stats = engine.get_stats()
-                rule_count = stats.get("total_active", 0) if isinstance(stats, dict) else 0
+                rule_count = (
+                    stats.get("total_active", 0) if isinstance(stats, dict) else 0
+                )
                 lesson_stats = engine.get_lesson_stats()
-                pending_count = lesson_stats.get("pending", 0) if isinstance(lesson_stats, dict) else 0
+                pending_count = (
+                    lesson_stats.get("pending", 0)
+                    if isinstance(lesson_stats, dict)
+                    else 0
+                )
         except Exception:
             pass
 
@@ -398,7 +425,7 @@ class MemoryBridge:
         """清理资源"""
         if self._cm:
             try:
-                if hasattr(self._cm, 'close'):
+                if hasattr(self._cm, "close"):
                     self._cm.close()
             except Exception:
                 pass
@@ -441,12 +468,19 @@ class MemoryBridge:
 
         # 计算飞轮等级 (0-5)
         score = 0
-        score += min(metrics["memory_count"] / 20, 1.0) * 2   # 记忆深度 (0-2分)
-        score += min(metrics["rule_count"] / 10, 1.0) * 2      # 规则密度 (0-2分)
-        score += min(metrics["confirmed_lessons"] / 5, 1.0) * 1 # 经验沉淀 (0-1分)
+        score += min(metrics["memory_count"] / 20, 1.0) * 2  # 记忆深度 (0-2分)
+        score += min(metrics["rule_count"] / 10, 1.0) * 2  # 规则密度 (0-2分)
+        score += min(metrics["confirmed_lessons"] / 5, 1.0) * 1  # 经验沉淀 (0-1分)
 
         level = min(round(score), 5)
-        grades = {0: "🌱 新手", 1: "🌿 熟悉", 2: "🌳 精通", 3: "🏔️ 专家", 4: "🧙 大师", 5: "👑 传奇"}
+        grades = {
+            0: "🌱 新手",
+            1: "🌿 熟悉",
+            2: "🌳 精通",
+            3: "🏔️ 专家",
+            4: "🧙 大师",
+            5: "👑 传奇",
+        }
 
         return {
             "level": level,
@@ -497,7 +531,7 @@ class MemoryBridge:
             return 0
         try:
             # CarryMem 的 consolidate 功能会自动处理
-            if hasattr(self._cm, 'consolidate'):
+            if hasattr(self._cm, "consolidate"):
                 result = self._cm.consolidate()
                 if isinstance(result, dict):
                     return result.get("cleaned", 0)
@@ -556,11 +590,15 @@ class MemoryBridge:
                     override=False,  # 自动添加的规则默认为软规则
                     derived_from="auto_promotion",
                 )
-            elif hasattr(suggestion, 'trigger') and hasattr(suggestion, 'action'):
+            elif hasattr(suggestion, "trigger") and hasattr(suggestion, "action"):
                 engine.add_rule(
                     trigger=suggestion.trigger,
                     action=suggestion.action,
-                    rule_type=suggestion.rule_type if hasattr(suggestion, 'rule_type') else "prefer",
+                    rule_type=(
+                        suggestion.rule_type
+                        if hasattr(suggestion, "rule_type")
+                        else "prefer"
+                    ),
                     override=False,
                     derived_from="auto_promotion",
                 )

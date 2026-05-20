@@ -46,14 +46,36 @@ def register_opc_skills(registry) -> None:
         description_zh="生成可执行的创意方向与核心假设，为一人公司项目提供起点",
         category=SkillCategory.CREATION,
         inputs=[
-            SkillInput(name="business_goal", type="str", description="业务目标（如增加被动收入、建立个人品牌）"),
-            SkillInput(name="constraints", type="str", required=False, description="资源限制（时间、预算、技能栈）"),
-            SkillInput(name="existing_insights", type="str", required=False, description="已有的观察或初步调研结果")
+            SkillInput(
+                name="business_goal",
+                type="str",
+                description="业务目标（如增加被动收入、建立个人品牌）",
+            ),
+            SkillInput(
+                name="constraints",
+                type="str",
+                required=False,
+                description="资源限制（时间、预算、技能栈）",
+            ),
+            SkillInput(
+                name="existing_insights",
+                type="str",
+                required=False,
+                description="已有的观察或初步调研结果",
+            ),
         ],
         outputs=[
-            SkillOutput(name="creative_directions", type="list", description="创意方向清单（3-7个）"),
-            SkillOutput(name="value_propositions", type="list", description="每个方向的价值主张"),
-            SkillOutput(name="assumptions", type="list", description="需要验证的核心假设")
+            SkillOutput(
+                name="creative_directions",
+                type="list",
+                description="创意方向清单（3-7个）",
+            ),
+            SkillOutput(
+                name="value_propositions", type="list", description="每个方向的价值主张"
+            ),
+            SkillOutput(
+                name="assumptions", type="list", description="需要验证的核心假设"
+            ),
         ],
         prompt_template="""## Role
 你是一位融合了 Naval Ravikant (杠杆哲学)、Dan Koe (个人品牌即操作系统) 与 Elon Musk (第一性原理) 智慧的创业导师。你的目标是帮助"一人公司"找到"Productize Yourself"（把自己产品化）的最佳路径。
@@ -79,7 +101,20 @@ def register_opc_skills(registry) -> None:
 - 问题本质、物理限制、创新解法
 
 ### 4. 下一步建议""",
-        intent_keywords=["创意", "策划", "想法", "点子", "创业方向", "商业创意", "产品化自己", "特殊知识", "creative", "idea", "planning", "startup direction"]
+        intent_keywords=[
+            "创意",
+            "策划",
+            "想法",
+            "点子",
+            "创业方向",
+            "商业创意",
+            "产品化自己",
+            "特殊知识",
+            "creative",
+            "idea",
+            "planning",
+            "startup direction",
+        ],
     )
     registry.register_skill(creative_planning_skill)
 
@@ -90,16 +125,43 @@ def register_opc_skills(registry) -> None:
         description_zh="验证创意方向的市场真实性与机会度，基于数据与事实进行决策",
         category=SkillCategory.ANALYSIS,
         inputs=[
-            SkillInput(name="creative_directions", type="str", description="待验证的1-2个核心创意"),
-            SkillInput(name="target_audience", type="str", required=False, description="假设的用户画像与痛点"),
-            SkillInput(name="time_range", type="str", required=False, default="近1-2年", description="市场数据时效范围")
+            SkillInput(
+                name="creative_directions",
+                type="str",
+                description="待验证的1-2个核心创意",
+            ),
+            SkillInput(
+                name="target_audience",
+                type="str",
+                required=False,
+                description="假设的用户画像与痛点",
+            ),
+            SkillInput(
+                name="time_range",
+                type="str",
+                required=False,
+                default="近1-2年",
+                description="市场数据时效范围",
+            ),
         ],
         outputs=[
-            SkillOutput(name="founder_market_fit", type="dict", description="创始人-市场契合度分析"),
-            SkillOutput(name="need_validation", type="dict", description="真需求vs伪需求判断"),
-            SkillOutput(name="user_feedback", type="list", description="用户真实声音收集"),
-            SkillOutput(name="competitive_landscape", type="list", description="竞品格局分析"),
-            SkillOutput(name="recommendation", type="str", description="继续/调整/放弃的建议")
+            SkillOutput(
+                name="founder_market_fit",
+                type="dict",
+                description="创始人-市场契合度分析",
+            ),
+            SkillOutput(
+                name="need_validation", type="dict", description="真需求vs伪需求判断"
+            ),
+            SkillOutput(
+                name="user_feedback", type="list", description="用户真实声音收集"
+            ),
+            SkillOutput(
+                name="competitive_landscape", type="list", description="竞品格局分析"
+            ),
+            SkillOutput(
+                name="recommendation", type="str", description="继续/调整/放弃的建议"
+            ),
         ],
         prompt_template="""## Role
 你是一位信奉 Dan Koe (The Niche is You) 与 Paul Graham (Do things that don't scale) 哲学的市场分析师。真正的蓝海在于"解决你自己的问题，然后把解决方案卖给两年前的自己"。
@@ -121,7 +183,18 @@ def register_opc_skills(registry) -> None:
 ### 4. 隐性需求洞察 (Jobs Insight)
 ### 5. 竞品格局 (Competitive Landscape)
 ### 6. 结论 (Conclusion)""",
-        intent_keywords=["市场调研", "市场验证", "用户痛点", "竞品分析", "市场需求", "目标用户", "market research", "validation", "user pain points", "competitor analysis"]
+        intent_keywords=[
+            "市场调研",
+            "市场验证",
+            "用户痛点",
+            "竞品分析",
+            "市场需求",
+            "目标用户",
+            "market research",
+            "validation",
+            "user pain points",
+            "competitor analysis",
+        ],
     )
     registry.register_skill(market_research_skill)
 
@@ -132,15 +205,41 @@ def register_opc_skills(registry) -> None:
         description_zh="为一人公司设计0预算或低预算的增长与营销策略",
         category=SkillCategory.CREATION,
         inputs=[
-            SkillInput(name="product_type", type="str", description="产品类型（SaaS/数字产品/Newsletter/服务等）"),
-            SkillInput(name="target_audience", type="str", description="目标受众（ICP）"),
-            SkillInput(name="budget", type="str", required=False, default="0预算", description="预算限制")
+            SkillInput(
+                name="product_type",
+                type="str",
+                description="产品类型（SaaS/数字产品/Newsletter/服务等）",
+            ),
+            SkillInput(
+                name="target_audience", type="str", description="目标受众（ICP）"
+            ),
+            SkillInput(
+                name="budget",
+                type="str",
+                required=False,
+                default="0预算",
+                description="预算限制",
+            ),
         ],
         outputs=[
-            SkillOutput(name="growth_blueprint", type="dict", description="增长蓝图（渠道、OMTM指标）"),
-            SkillOutput(name="content_os", type="dict", description="内容操作系统（主题矩阵、复用流程）"),
-            SkillOutput(name="content_strategy", type="list", description="内容策略（具体选题和Hook）"),
-            SkillOutput(name="action_items", type="list", description="未来7天执行清单")
+            SkillOutput(
+                name="growth_blueprint",
+                type="dict",
+                description="增长蓝图（渠道、OMTM指标）",
+            ),
+            SkillOutput(
+                name="content_os",
+                type="dict",
+                description="内容操作系统（主题矩阵、复用流程）",
+            ),
+            SkillOutput(
+                name="content_strategy",
+                type="list",
+                description="内容策略（具体选题和Hook）",
+            ),
+            SkillOutput(
+                name="action_items", type="list", description="未来7天执行清单"
+            ),
         ],
         prompt_template="""## Role
 你是一位融合了 Justin Welsh (内容系统化)、Tim Denning (高产出与真实感) 与 Roberto Blake (视频优先与多元变现) 的全栈营销专家。核心理念："内容不是艺术，而是系统。"
@@ -160,7 +259,19 @@ def register_opc_skills(registry) -> None:
 ### 2. 内容操作系统 (Content OS)
 ### 3. 内容策略 (Content Strategy)
 ### 4. 执行清单 (Action Items) - 未来7天具体行动""",
-        intent_keywords=["增长", "营销", "推广", "获客", "内容策略", "0预算增长", "冷启动", "growth hacking", "marketing", "acquisition", "content strategy"]
+        intent_keywords=[
+            "增长",
+            "营销",
+            "推广",
+            "获客",
+            "内容策略",
+            "0预算增长",
+            "冷启动",
+            "growth hacking",
+            "marketing",
+            "acquisition",
+            "content strategy",
+        ],
     )
     registry.register_skill(growth_hacker_skill)
 
@@ -171,14 +282,41 @@ def register_opc_skills(registry) -> None:
         description_zh="从Reddit, X, Hacker News等平台挖掘真实的用户痛点与需求",
         category=SkillCategory.ANALYSIS,
         inputs=[
-            SkillInput(name="keywords", type="str", description="关键词（如'alternative to', 'sucks', 'how to'）"),
-            SkillInput(name="target_communities", type="str", required=False, description="目标社区（Reddit/X/HN/Product Hunt）"),
-            SkillInput(name="time_range", type="str", required=False, default="最近1-6个月", description="数据时效范围")
+            SkillInput(
+                name="keywords",
+                type="str",
+                description="关键词（如'alternative to', 'sucks', 'how to'）",
+            ),
+            SkillInput(
+                name="target_communities",
+                type="str",
+                required=False,
+                description="目标社区（Reddit/X/HN/Product Hunt）",
+            ),
+            SkillInput(
+                name="time_range",
+                type="str",
+                required=False,
+                default="最近1-6个月",
+                description="数据时效范围",
+            ),
         ],
         outputs=[
-            SkillOutput(name="pain_point_heatmap", type="list", description="痛点热图（按频率排序）"),
-            SkillOutput(name="voice_of_customer", type="list", description="用户原声引用（保留情绪）"),
-            SkillOutput(name="opportunity_insights", type="list", description="机会洞察（未满足的需求）")
+            SkillOutput(
+                name="pain_point_heatmap",
+                type="list",
+                description="痛点热图（按频率排序）",
+            ),
+            SkillOutput(
+                name="voice_of_customer",
+                type="list",
+                description="用户原声引用（保留情绪）",
+            ),
+            SkillOutput(
+                name="opportunity_insights",
+                type="list",
+                description="机会洞察（未满足的需求）",
+            ),
         ],
         prompt_template="""## Role
 你是一位精通网络民族志(Digital Ethnography)的数据侦探。你寻找的不是"功能请求"，而是"痛苦的呻吟"。相信The Mom Test原则：不要问用户想要什么，观察他们在做什么。
@@ -201,7 +339,17 @@ def register_opc_skills(registry) -> None:
 ### 3. 机会洞察 (Opportunity Insight)
 - 未被满足的需求
 - 现有解决方案的缺陷""",
-        intent_keywords=["社交聆听", "用户反馈", "痛点挖掘", "舆情监控", "社区监听", "social listening", "user feedback", "pain point mining", "community monitoring"]
+        intent_keywords=[
+            "社交聆听",
+            "用户反馈",
+            "痛点挖掘",
+            "舆情监控",
+            "社区监听",
+            "social listening",
+            "user feedback",
+            "pain point mining",
+            "community monitoring",
+        ],
     )
     registry.register_skill(social_listening_skill)
 
@@ -212,14 +360,36 @@ def register_opc_skills(registry) -> None:
         description_zh="为一人公司提供合同审查与知识产权保护建议，规避法律风险",
         category=SkillCategory.OPERATION,
         inputs=[
-            SkillInput(name="contract_text", type="str", description="需要审查的合同条款或全文"),
-            SkillInput(name="business_scenario", type="str", required=False, description="业务场景（如软件开发外包/内容创作授权）"),
-            SkillInput(name="core_concerns", type="str", required=False, description="核心关切（如怕收不到钱/怕被窃取代码）")
+            SkillInput(
+                name="contract_text", type="str", description="需要审查的合同条款或全文"
+            ),
+            SkillInput(
+                name="business_scenario",
+                type="str",
+                required=False,
+                description="业务场景（如软件开发外包/内容创作授权）",
+            ),
+            SkillInput(
+                name="core_concerns",
+                type="str",
+                required=False,
+                description="核心关切（如怕收不到钱/怕被窃取代码）",
+            ),
         ],
         outputs=[
-            SkillOutput(name="risk_summary", type="dict", description="风险评估摘要（整体风险等级+核心风险点）"),
-            SkillOutput(name="detailed_review", type="list", description="条款审查详情（原条款+风险解读+建议修改）"),
-            SkillOutput(name="negotiation_email", type="str", description="谈判邮件草稿")
+            SkillOutput(
+                name="risk_summary",
+                type="dict",
+                description="风险评估摘要（整体风险等级+核心风险点）",
+            ),
+            SkillOutput(
+                name="detailed_review",
+                type="list",
+                description="条款审查详情（原条款+风险解读+建议修改）",
+            ),
+            SkillOutput(
+                name="negotiation_email", type="str", description="谈判邮件草稿"
+            ),
         ],
         prompt_template="""## Role
 你是一位拥有20年经验的资深商业合同律师，专门服务于自由职业者、个人创业者和小型工作室。擅长识别对乙方不利的霸王条款。
@@ -242,7 +412,18 @@ def register_opc_skills(registry) -> None:
 - 原条款、风险解读、建议修改、理由
 
 ### 3. 谈判邮件草稿 (Email Draft)""",
-        intent_keywords=["法律", "合同", "IP保护", "知识产权", "合同审查", "法律顾问", "legal", "contract", "IP protection", "intellectual property"]
+        intent_keywords=[
+            "法律",
+            "合同",
+            "IP保护",
+            "知识产权",
+            "合同审查",
+            "法律顾问",
+            "legal",
+            "contract",
+            "IP protection",
+            "intellectual property",
+        ],
     )
     registry.register_skill(legal_advisor_skill)
 
@@ -254,15 +435,35 @@ def register_opc_skills(registry) -> None:
         category=SkillCategory.ANALYSIS,
         inputs=[
             SkillInput(name="full_proposal", type="str", description="完整的项目方案"),
-            SkillInput(name="review_dimensions", type="str", required=False, default="可行性/收益/风险", description="评审维度")
+            SkillInput(
+                name="review_dimensions",
+                type="str",
+                required=False,
+                default="可行性/收益/风险",
+                description="评审维度",
+            ),
         ],
         outputs=[
-            SkillOutput(name="verdict", type="str", description="最终决定（通过/有条件通过/不通过）"),
-            SkillOutput(name="mental_models_analysis", type="dict", description="决策模型分析（事前验尸+二阶后果）"),
-            SkillOutput(name="stress_test_results", type="dict", description="压力测试结果（转化率推演+现金流测算）"),
+            SkillOutput(
+                name="verdict",
+                type="str",
+                description="最终决定（通过/有条件通过/不通过）",
+            ),
+            SkillOutput(
+                name="mental_models_analysis",
+                type="dict",
+                description="决策模型分析（事前验尸+二阶后果）",
+            ),
+            SkillOutput(
+                name="stress_test_results",
+                type="dict",
+                description="压力测试结果（转化率推演+现金流测算）",
+            ),
             SkillOutput(name="fatal_flaws", type="list", description="致命缺陷列表"),
-            SkillOutput(name="required_fixes", type="list", description="必须修改项及验证标准"),
-            SkillOutput(name="kill_criteria", type="list", description="终止条件")
+            SkillOutput(
+                name="required_fixes", type="list", description="必须修改项及验证标准"
+            ),
+            SkillOutput(name="kill_criteria", type="list", description="终止条件"),
         ],
         prompt_template="""## Role
 你是一位客观、真实、毒舌的评委，同时是Shane Parrish (Farnam Street) 思维模型的践行者。角色定位："决策质量守门人"。运用逆向思维(Inversion)和二阶思维(Second-Order Thinking)审视方案。
@@ -292,7 +493,17 @@ def register_opc_skills(registry) -> None:
 ### 4. 致命缺陷 (Fatal Flaws)
 ### 5. 必须修改项 (Non-negotiable Fixes)
 ### 6. 终止条件 (Kill Criteria)""",
-        intent_keywords=["方案评审", "可行性分析", "风险评估", "项目评估", "决策", "proposal review", "feasibility", "risk assessment", "project evaluation"]
+        intent_keywords=[
+            "方案评审",
+            "可行性分析",
+            "风险评估",
+            "项目评估",
+            "决策",
+            "proposal review",
+            "feasibility",
+            "risk assessment",
+            "project evaluation",
+        ],
     )
     registry.register_skill(proposal_review_skill)
 
@@ -303,16 +514,40 @@ def register_opc_skills(registry) -> None:
         description_en="Convert approved proposals into executable PRDs with product details and interaction logic",
         category=SkillCategory.CREATION,
         inputs=[
-            SkillInput(name="approved_proposal", type="str", description="评审通过的方案"),
-            SkillInput(name="key_decisions", type="str", required=False, description="评审过程中的关键决策"),
-            SkillInput(name="target_users", type="str", required=False, description="核心用户画像与使用场景")
+            SkillInput(
+                name="approved_proposal", type="str", description="评审通过的方案"
+            ),
+            SkillInput(
+                name="key_decisions",
+                type="str",
+                required=False,
+                description="评审过程中的关键决策",
+            ),
+            SkillInput(
+                name="target_users",
+                type="str",
+                required=False,
+                description="核心用户画像与使用场景",
+            ),
         ],
         outputs=[
-            SkillOutput(name="document_overview", type="dict", description="文档概览（版本/目标/范围）"),
+            SkillOutput(
+                name="document_overview",
+                type="dict",
+                description="文档概览（版本/目标/范围）",
+            ),
             SkillOutput(name="user_flows", type="list", description="用户流程图"),
-            SkillOutput(name="functional_requirements", type="list", description="功能需求详述（含验收标准AC）"),
-            SkillOutput(name="non_functional_requirements", type="dict", description="非功能需求（性能/安全/兼容性）"),
-            SkillOutput(name="data_metrics", type="list", description="数据埋点规划")
+            SkillOutput(
+                name="functional_requirements",
+                type="list",
+                description="功能需求详述（含验收标准AC）",
+            ),
+            SkillOutput(
+                name="non_functional_requirements",
+                type="dict",
+                description="非功能需求（性能/安全/兼容性）",
+            ),
+            SkillOutput(name="data_metrics", type="list", description="数据埋点规划"),
         ],
         prompt_template="""## Role
 你是一位注重细节与逻辑的产品经理(Product Manager)，负责将高层级的商业方案转化为开发团队可直接执行的产品需求文档(PRD)。目标是消除歧义，确保产品按预期构建。
@@ -342,7 +577,18 @@ def register_opc_skills(registry) -> None:
 
 ### 5. 数据指标 (Data Metrics)
 - 事件(Event Name, Trigger, Properties)""",
-        intent_keywords=["PRD", "产品需求", "需求文档", "产品设计", "功能规格", "验收标准", "PRD generation", "product requirements", "specification", "acceptance criteria"]
+        intent_keywords=[
+            "PRD",
+            "产品需求",
+            "需求文档",
+            "产品设计",
+            "功能规格",
+            "验收标准",
+            "PRD generation",
+            "product requirements",
+            "specification",
+            "acceptance criteria",
+        ],
     )
     registry.register_skill(prd_generation_skill)
 
@@ -353,14 +599,40 @@ def register_opc_skills(registry) -> None:
         description_en="Generate brand names, check domain availability, and provide logo design inspiration",
         category=SkillCategory.CREATION,
         inputs=[
-            SkillInput(name="creative_direction", type="str", description="产品的核心功能或隐喻"),
-            SkillInput(name="core_value", type="str", required=False, description="希望传递的情感（信任/速度/创新）"),
-            SkillInput(name="target_audience", type="str", required=False, description="目标受众")
+            SkillInput(
+                name="creative_direction",
+                type="str",
+                description="产品的核心功能或隐喻",
+            ),
+            SkillInput(
+                name="core_value",
+                type="str",
+                required=False,
+                description="希望传递的情感（信任/速度/创新）",
+            ),
+            SkillInput(
+                name="target_audience",
+                type="str",
+                required=False,
+                description="目标受众",
+            ),
         ],
         outputs=[
-            SkillOutput(name="brand_names", type="list", description="品牌名称建议（5-10个选项含域名）"),
-            SkillOutput(name="slogans", type="list", description="Slogan/Taglines（功能性+情感性）"),
-            SkillOutput(name="logo_prompts", type="list", description="AI绘图工具用的Logo Prompt")
+            SkillOutput(
+                name="brand_names",
+                type="list",
+                description="品牌名称建议（5-10个选项含域名）",
+            ),
+            SkillOutput(
+                name="slogans",
+                type="list",
+                description="Slogan/Taglines（功能性+情感性）",
+            ),
+            SkillOutput(
+                name="logo_prompts",
+                type="list",
+                description="AI绘图工具用的Logo Prompt",
+            ),
         ],
         prompt_template="""## Role
 你是一位融合了 Paul Graham (简单命名) 和 Steve Jobs (极简设计) 美学的品牌专家。目标是帮助"一人公司"以极低成本建立看起来很贵的品牌资产。相信"好名字不需要解释"。
@@ -385,7 +657,18 @@ def register_opc_skills(registry) -> None:
 
 ### 3. Logo Design Prompt
 - Style, Prompt (可直接用于DALL-E 3/Midjourney)""",
-        intent_keywords=["品牌", "命名", "域名", "Logo", "品牌构建", "品牌设计", "brand", "naming", "domain", "logo design"]
+        intent_keywords=[
+            "品牌",
+            "命名",
+            "域名",
+            "Logo",
+            "品牌构建",
+            "品牌设计",
+            "brand",
+            "naming",
+            "domain",
+            "logo design",
+        ],
     )
     registry.register_skill(domain_brand_skill)
 

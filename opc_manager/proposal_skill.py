@@ -9,29 +9,67 @@ from opc_manager.tool_system import AuditLogger
 logger = logging.getLogger(__name__)
 
 SERVICE_TEMPLATES = {
-    "咨询": {"items": [{"name": "咨询诊断", "unit": "次", "price": 2000}, {"name": "方案交付", "unit": "份", "price": 5000}, {"name": "后续跟进", "unit": "月", "price": 3000}]},
-    "培训": {"items": [{"name": "培训课程", "unit": "天", "price": 5000}, {"name": "教材资料", "unit": "套", "price": 500}, {"name": "答疑支持", "unit": "月", "price": 2000}]},
-    "设计": {"items": [{"name": "需求分析", "unit": "次", "price": 3000}, {"name": "设计交付", "unit": "稿", "price": 8000}, {"name": "修改迭代", "unit": "轮", "price": 2000}]},
-    "开发": {"items": [{"name": "需求梳理", "unit": "次", "price": 3000}, {"name": "开发实施", "unit": "人天", "price": 2000}, {"name": "测试上线", "unit": "次", "price": 5000}, {"name": "维护支持", "unit": "月", "price": 3000}]},
+    "咨询": {
+        "items": [
+            {"name": "咨询诊断", "unit": "次", "price": 2000},
+            {"name": "方案交付", "unit": "份", "price": 5000},
+            {"name": "后续跟进", "unit": "月", "price": 3000},
+        ]
+    },
+    "培训": {
+        "items": [
+            {"name": "培训课程", "unit": "天", "price": 5000},
+            {"name": "教材资料", "unit": "套", "price": 500},
+            {"name": "答疑支持", "unit": "月", "price": 2000},
+        ]
+    },
+    "设计": {
+        "items": [
+            {"name": "需求分析", "unit": "次", "price": 3000},
+            {"name": "设计交付", "unit": "稿", "price": 8000},
+            {"name": "修改迭代", "unit": "轮", "price": 2000},
+        ]
+    },
+    "开发": {
+        "items": [
+            {"name": "需求梳理", "unit": "次", "price": 3000},
+            {"name": "开发实施", "unit": "人天", "price": 2000},
+            {"name": "测试上线", "unit": "次", "price": 5000},
+            {"name": "维护支持", "unit": "月", "price": 3000},
+        ]
+    },
     "通用": {"items": [{"name": "服务内容", "unit": "项", "price": 5000}]},
 }
 
 
-def create_proposal(client_name: str, service_type: str = "通用",
-                    items: List[Dict[str, Any]] = None,
-                    valid_days: int = 30,
-                    note: str = "") -> Dict[str, Any]:
+def create_proposal(
+    client_name: str,
+    service_type: str = "通用",
+    items: List[Dict[str, Any]] = None,
+    valid_days: int = 30,
+    note: str = "",
+) -> Dict[str, Any]:
     if not client_name.strip():
         return {"success": False, "error": "客户名称不能为空"}
 
     if items is None:
         tpl = SERVICE_TEMPLATES.get(service_type, SERVICE_TEMPLATES["通用"])
-        items = [{"name": it["name"], "quantity": 1, "unit": it["unit"], "price": it.get("price", 0)} for it in tpl["items"]]
+        items = [
+            {
+                "name": it["name"],
+                "quantity": 1,
+                "unit": it["unit"],
+                "price": it.get("price", 0),
+            }
+            for it in tpl["items"]
+        ]
 
     total = sum(it.get("quantity", 1) * it.get("price", 0) for it in items)
     proposal_id = gen_id()
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
-    valid_until = time.strftime("%Y-%m-%d", time.localtime(time.time() + valid_days * 86400))
+    valid_until = time.strftime(
+        "%Y-%m-%d", time.localtime(time.time() + valid_days * 86400)
+    )
 
     proposal = {
         "id": proposal_id,
@@ -50,13 +88,26 @@ def create_proposal(client_name: str, service_type: str = "通用",
     try:
         execute_write(
             "INSERT INTO proposals (id,client_name,service_type,items,total,valid_days,valid_until,status,markdown,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (proposal_id, client_name, service_type, json.dumps(items, ensure_ascii=False), total, valid_days, valid_until, "draft", markdown, now),
+            (
+                proposal_id,
+                client_name,
+                service_type,
+                json.dumps(items, ensure_ascii=False),
+                total,
+                valid_days,
+                valid_until,
+                "draft",
+                markdown,
+                now,
+            ),
         )
     except Exception as e:
         logger.warning("proposal_skill.create_proposal write failed: %s", e)
         return {"success": False, "error": f"保存失败: {e}"}
 
-    AuditLogger.log("proposal_created", {"id": proposal_id, "client": client_name, "total": total})
+    AuditLogger.log(
+        "proposal_created", {"id": proposal_id, "client": client_name, "total": total}
+    )
 
     return {
         "success": True,
@@ -116,13 +167,18 @@ def update_proposal_status(proposal_id: str, status: str) -> Dict[str, Any]:
     if status == "accepted":
         try:
             from opc_manager.invoice_skill import create_invoice
+
             proposal = rows[0]
             invoice_result = create_invoice(
                 client_name=proposal["client_name"],
                 amount=proposal["total"],
                 proposal_id=proposal_id,
             )
-            logger.info("auto invoice created for accepted proposal %s: %s", proposal_id, invoice_result.get("id", ""))
+            logger.info(
+                "auto invoice created for accepted proposal %s: %s",
+                proposal_id,
+                invoice_result.get("id", ""),
+            )
         except Exception as e:
             logger.warning("auto create_invoice failed: %s", e)
 
@@ -162,6 +218,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
             break
 
     import re
+
     m = re.search(r"给(.+?)(的|做|出|写)", goal)
     if m:
         client_name = m.group(1).strip()
@@ -185,4 +242,7 @@ def undo_create_proposal(proposal_id=None, **kwargs):
         return {"success": False, "error": "未找到可撤销的报价单"}
     target_id = proposal_id or rows[0]["id"]
     execute_write("UPDATE proposals SET status='expired' WHERE id=?", (target_id,))
-    return {"success": True, "message": f"报价单已撤销: {rows[0].get('client_name', target_id)}"}
+    return {
+        "success": True,
+        "message": f"报价单已撤销: {rows[0].get('client_name', target_id)}",
+    }

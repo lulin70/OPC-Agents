@@ -42,15 +42,19 @@ class SkillExecutorMixin:
     inline implementations.
     """
 
-    def _execute_intent_analysis(self, user_input: str, context: dict = None, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_intent_analysis(
+        self,
+        user_input: str,
+        context: dict = None,
+        _context: Optional[SkillContext] = None,
+    ) -> Dict[str, Any]:
         """执行意图分析"""
-        return {
-            "intent": {"goal": user_input, "type": "analysis"},
-            "confidence": 0.85
-        }
+        return {"intent": {"goal": user_input, "type": "analysis"}, "confidence": 0.85}
 
-    async def _execute_search(self, query: str, max_results: int = 10, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
-        cleaned_query = re.sub(r'[<>&"\']', '', query).strip()
+    async def _execute_search(
+        self, query: str, max_results: int = 10, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
+        cleaned_query = re.sub(r'[<>&"\']', "", query).strip()
         if not cleaned_query:
             return {"results": [], "count": 0, "fallback_used": False}
 
@@ -92,6 +96,7 @@ class SkillExecutorMixin:
             if self._web_search is None:
                 try:
                     from opc_hr.web_search import WebSearchMCP
+
                     self._web_search = WebSearchMCP()
                 except ImportError:
                     self._web_search = False
@@ -107,7 +112,9 @@ class SkillExecutorMixin:
             logger.warning("Web搜索失败: %s", e)
         return []
 
-    async def _execute_analysis(self, data: list = None, goal: str = "", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    async def _execute_analysis(
+        self, data: list = None, goal: str = "", _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         if self.llm_service is not None:
             try:
                 search_results = data or []
@@ -131,7 +138,12 @@ class SkillExecutorMixin:
 
         return self._rule_based_analysis(goal, data or [])
 
-    async def _execute_content_generation(self, goal: str, format: str = "markdown", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    async def _execute_content_generation(
+        self,
+        goal: str,
+        format: str = "markdown",
+        _context: Optional[SkillContext] = None,
+    ) -> Dict[str, Any]:
         if self.llm_service is not None:
             try:
                 search_results = []
@@ -159,9 +171,12 @@ class SkillExecutorMixin:
 
         return self._rule_based_content_generation(goal, format)
 
-    async def _call_llm_generate(self, user_input: str, template: str, search_results: list = None):
+    async def _call_llm_generate(
+        self, user_input: str, template: str, search_results: list = None
+    ):
         try:
             from opc_manager.llm_content import LLMEnhancedContentGenerator
+
             if self._content_generator is None:
                 self._content_generator = LLMEnhancedContentGenerator()
             loop = asyncio.get_running_loop()
@@ -227,7 +242,15 @@ class SkillExecutorMixin:
                     "analysis_result": content,
                     "summary": parsed.get("summary", ""),
                     "key_findings": parsed.get("key_findings", []),
-                    "swot": parsed.get("swot", {"strengths": [], "weaknesses": [], "opportunities": [], "threats": []}),
+                    "swot": parsed.get(
+                        "swot",
+                        {
+                            "strengths": [],
+                            "weaknesses": [],
+                            "opportunities": [],
+                            "threats": [],
+                        },
+                    ),
                     "action_items": parsed.get("action_items", []),
                 }
         except (json.JSONDecodeError, IndexError, AttributeError):
@@ -237,7 +260,12 @@ class SkillExecutorMixin:
             "analysis_result": content,
             "summary": "",
             "key_findings": [],
-            "swot": {"strengths": [], "weaknesses": [], "opportunities": [], "threats": []},
+            "swot": {
+                "strengths": [],
+                "weaknesses": [],
+                "opportunities": [],
+                "threats": [],
+            },
             "action_items": [],
         }
         sections = content.split("##")
@@ -246,18 +274,43 @@ class SkillExecutorMixin:
             if "摘要" in section_lower:
                 result["summary"] = section.strip().split("\n", 1)[-1].strip()
             elif "关键发现" in section_lower:
-                lines = [l.strip().lstrip("-•*0-9. ") for l in section.strip().split("\n") if l.strip().startswith(("-", "•", "*")) or any(l.strip().startswith(f"{i}.") for i in range(1, 10))]
+                lines = [
+                    l.strip().lstrip("-•*0-9. ")
+                    for l in section.strip().split("\n")
+                    if l.strip().startswith(("-", "•", "*"))
+                    or any(l.strip().startswith(f"{i}.") for i in range(1, 10))
+                ]
                 result["key_findings"] = lines
             elif "优势" in section_lower or "strengths" in section_lower:
-                result["swot"]["strengths"] = [l.strip().lstrip("-•*0-9. ") for l in section.strip().split("\n") if l.strip() and not l.strip().startswith("#")]
+                result["swot"]["strengths"] = [
+                    l.strip().lstrip("-•*0-9. ")
+                    for l in section.strip().split("\n")
+                    if l.strip() and not l.strip().startswith("#")
+                ]
             elif "劣势" in section_lower or "weaknesses" in section_lower:
-                result["swot"]["weaknesses"] = [l.strip().lstrip("-•*0-9. ") for l in section.strip().split("\n") if l.strip() and not l.strip().startswith("#")]
+                result["swot"]["weaknesses"] = [
+                    l.strip().lstrip("-•*0-9. ")
+                    for l in section.strip().split("\n")
+                    if l.strip() and not l.strip().startswith("#")
+                ]
             elif "机会" in section_lower or "opportunities" in section_lower:
-                result["swot"]["opportunities"] = [l.strip().lstrip("-•*0-9. ") for l in section.strip().split("\n") if l.strip() and not l.strip().startswith("#")]
+                result["swot"]["opportunities"] = [
+                    l.strip().lstrip("-•*0-9. ")
+                    for l in section.strip().split("\n")
+                    if l.strip() and not l.strip().startswith("#")
+                ]
             elif "威胁" in section_lower or "threats" in section_lower:
-                result["swot"]["threats"] = [l.strip().lstrip("-•*0-9. ") for l in section.strip().split("\n") if l.strip() and not l.strip().startswith("#")]
+                result["swot"]["threats"] = [
+                    l.strip().lstrip("-•*0-9. ")
+                    for l in section.strip().split("\n")
+                    if l.strip() and not l.strip().startswith("#")
+                ]
             elif "行动" in section_lower:
-                result["action_items"] = [l.strip().lstrip("-•*0-9. ") for l in section.strip().split("\n") if l.strip() and not l.strip().startswith("#")]
+                result["action_items"] = [
+                    l.strip().lstrip("-•*0-9. ")
+                    for l in section.strip().split("\n")
+                    if l.strip() and not l.strip().startswith("#")
+                ]
         return result
 
     def _rule_based_analysis(self, goal: str, data: list) -> Dict[str, Any]:
@@ -269,8 +322,16 @@ class SkillExecutorMixin:
         return {
             "analysis_result": f"# {goal} 分析报告\n\n## 摘要\n\n基于现有数据的分析。\n\n## 关键发现\n\n- 需要更多数据支持深度分析\n- 建议结合搜索结果进行LLM增强分析\n\n## 数据概览\n\n{data_summary}\n\n## SWOT分析\n\n### 优势\n- 数据可用，可进行基础分析\n\n### 劣势\n- 缺乏LLM深度推理能力\n\n### 机会\n- 可通过启用LLM服务获得更高质量分析\n\n### 威胁\n- 数据不足可能导致分析偏差\n\n## 行动清单\n\n1. 收集更多相关数据\n2. 启用LLM服务进行深度分析\n",
             "summary": f"基于现有数据的{goal}分析",
-            "key_findings": ["需要更多数据支持深度分析", "建议结合搜索结果进行LLM增强分析"],
-            "swot": {"strengths": ["数据可用，可进行基础分析"], "weaknesses": ["缺乏LLM深度推理能力"], "opportunities": ["可通过启用LLM服务获得更高质量分析"], "threats": ["数据不足可能导致分析偏差"]},
+            "key_findings": [
+                "需要更多数据支持深度分析",
+                "建议结合搜索结果进行LLM增强分析",
+            ],
+            "swot": {
+                "strengths": ["数据可用，可进行基础分析"],
+                "weaknesses": ["缺乏LLM深度推理能力"],
+                "opportunities": ["可通过启用LLM服务获得更高质量分析"],
+                "threats": ["数据不足可能导致分析偏差"],
+            },
             "action_items": ["收集更多相关数据", "启用LLM服务进行深度分析"],
         }
 
@@ -282,7 +343,12 @@ class SkillExecutorMixin:
             "quality_score": 0.3,
         }
 
-    async def _execute_operation(self, operation: str, parameters: dict = None, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    async def _execute_operation(
+        self,
+        operation: str,
+        parameters: dict = None,
+        _context: Optional[SkillContext] = None,
+    ) -> Dict[str, Any]:
         params = parameters or {}
         if self.tool_system is not None:
             try:
@@ -302,15 +368,25 @@ class SkillExecutorMixin:
                 return {"success": False, "error": str(e)}
         return {"success": False, "error": "工具系统未初始化"}
 
-    async def _execute_notification(self, message: str, recipient: str = None, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    async def _execute_notification(
+        self,
+        message: str,
+        recipient: str = None,
+        _context: Optional[SkillContext] = None,
+    ) -> Dict[str, Any]:
         if self.tool_system is not None:
             try:
-                cleaned_recipient = (recipient or "").replace("\r", "").replace("\n", "")
-                result = await self.tool_system.call_tool("send_email", {
-                    "to": cleaned_recipient,
-                    "subject": "OPC-Agents 通知",
-                    "body": message,
-                })
+                cleaned_recipient = (
+                    (recipient or "").replace("\r", "").replace("\n", "")
+                )
+                result = await self.tool_system.call_tool(
+                    "send_email",
+                    {
+                        "to": cleaned_recipient,
+                        "subject": "OPC-Agents 通知",
+                        "body": message,
+                    },
+                )
                 return result
             except Exception as e:
                 logger.warning("邮件发送失败: %s", e)
@@ -322,33 +398,54 @@ class SkillExecutorMixin:
             "error": "工具系统未初始化",
         }
 
-    def _execute_output(self, data: dict = None, format: str = "markdown", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_output(
+        self,
+        data: dict = None,
+        format: str = "markdown",
+        _context: Optional[SkillContext] = None,
+    ) -> Dict[str, Any]:
         if data is None:
             data = {}
         return {
             "output": f"## 执行结果\n\n{json.dumps(data, indent=2, ensure_ascii=False)}",
-            "format": format
+            "format": format,
         }
 
-    def _execute_email(self, goal: str, to: str = "", subject: str = "",
-                       body: str = "", _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_email(
+        self,
+        goal: str,
+        to: str = "",
+        subject: str = "",
+        body: str = "",
+        _context: Optional[SkillContext] = None,
+    ) -> Dict[str, Any]:
         from opc_manager.email_skill import execute_goal
+
         return execute_goal(goal, _context, to=to, subject=subject, body=body)
 
-    def _execute_finance(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_finance(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.finance_skill import execute_goal as finance_execute_goal
+
         if any(kw in goal for kw in ["报税", "提醒"]):
             collab_result = self._execute_collaborative(goal, _context)
             if collab_result:
                 return collab_result
         return finance_execute_goal(goal, _context)
 
-    def _execute_task(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_task(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.task_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_crm(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_crm(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.crm_skill import execute_goal as crm_execute_goal
+
         if any(kw in goal for kw in ["发邮件", "跟进"]):
             crm_result = None
             name = goal
@@ -357,6 +454,7 @@ class SkillExecutorMixin:
             name = name.strip().strip("，。、的")
             if name:
                 from opc_manager.crm_skill import get_customer
+
                 crm_result = get_customer(name=name)
             collab_result = self._execute_collaborative(goal, _context)
             if collab_result:
@@ -365,42 +463,72 @@ class SkillExecutorMixin:
                 return collab_result
         return crm_execute_goal(goal, _context)
 
-    def _execute_social(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_social(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.social_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_proposal(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_proposal(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.proposal_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_invoice(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_invoice(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.invoice_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_report(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_report(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.report_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_calendar(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_calendar(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.calendar_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_competitor(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_competitor(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.competitor_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_pricing(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_pricing(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.pricing_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_tax_reminder(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_tax_reminder(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.tax_reminder_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_dashboard(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_dashboard(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.dashboard_skill import execute_goal
+
         return execute_goal(goal, _context)
 
-    def _execute_knowledge(self, goal: str, _context: Optional[SkillContext] = None) -> Dict[str, Any]:
+    def _execute_knowledge(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Dict[str, Any]:
         from opc_manager.knowledge_skill import execute_goal
+
         return execute_goal(goal, _context)

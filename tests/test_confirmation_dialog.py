@@ -33,36 +33,42 @@ class TestRenderRiskBadge:
 
     def test_low_risk_badge(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
+
         result = _render_risk_badge("low")
         assert "🟢" in result
         assert "低风险" in result
 
     def test_medium_risk_badge(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
+
         result = _render_risk_badge("medium")
         assert "🟡" in result
         assert "中风险" in result
 
     def test_high_risk_badge(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
+
         result = _render_risk_badge("high")
         assert "🔴" in result
         assert "高风险" in result
 
     def test_critical_risk_badge(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
+
         result = _render_risk_badge("critical")
         assert "🟣" in result
         assert "关键操作" in result
 
     def test_unknown_risk_fallback_to_medium(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
+
         result = _render_risk_badge("unknown")
         assert "🟡" in result
         assert "中风险" in result
 
     def test_case_insensitive_risk_level(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
+
         result_upper = _render_risk_badge("HIGH")
         result_lower = _render_risk_badge("high")
         assert result_upper == result_lower
@@ -73,36 +79,42 @@ class TestRenderConfidenceBar:
 
     def test_normal_confidence_display(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(0.75, 0.95)
         assert "AI判断 75%" in result
         assert "需要人工 95%" in result
 
     def test_low_confidence_display(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(0.30, 0.85)
         assert "AI判断 30%" in result
         assert "需要人工 85%" in result
 
     def test_high_confidence_display(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(0.95, 0.70)
         assert "AI判断 95%" in result
         assert "需要人工 70%" in result
 
     def test_zero_confidence(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(0.0, 1.0)
         assert "AI判断 0%" in result
         assert "需要人工 100%" in result
 
     def test_full_confidence(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(1.0, 0.0)
         assert "AI判断 100%" in result
         assert "需要人工 0%" in result
 
     def test_equal_confidence_and_threshold(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(0.85, 0.85)
         assert "AI判断 85%" in result
         assert "需要人工 85%" in result
@@ -113,16 +125,19 @@ class TestSanitizeParamsDisplay:
 
     def test_empty_params_returns_empty_dict(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         result = _sanitize_params_display({})
         assert result == {}
 
     def test_none_params_returns_empty_dict(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         result = _sanitize_params_display(None)
         assert result == {}
 
     def test_password_key_redacted(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {"password": "secret123", "username": "admin"}
         result = _sanitize_params_display(params)
         assert result["password"] == "***"
@@ -130,18 +145,21 @@ class TestSanitizeParamsDisplay:
 
     def test_api_key_redacted(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {"api_key": "sk-12345"}
         result = _sanitize_params_display(params)
         assert result["api_key"] == "***"
 
     def test_token_redacted(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {"access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"}
         result = _sanitize_params_display(params)
         assert result["access_token"] == "***"
 
     def test_multiple_sensitive_keys_redacted(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {
             "password": "pwd123",
             "api_key": "key456",
@@ -156,6 +174,7 @@ class TestSanitizeParamsDisplay:
 
     def test_long_value_truncated(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         long_value = "x" * 100
         params = {"description": long_value}
         result = _sanitize_params_display(params)
@@ -163,18 +182,21 @@ class TestSanitizeParamsDisplay:
 
     def test_short_value_not_truncated(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {"name": "test_value"}
         result = _sanitize_params_display(params)
         assert result["name"] == "test_value"
 
     def test_none_value_handled(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {"optional": None}
         result = _sanitize_params_display(params)
         assert result["optional"] == ""
 
     def test_case_insensitive_sensitive_detection(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {"PASSWORD": "case_test", "Api_Key": "another_test"}
         result = _sanitize_params_display(params)
         assert result["PASSWORD"] == "***"
@@ -186,6 +208,7 @@ class TestBuildConfirmCallback:
 
     def test_callback_is_async_callable(self):
         from frontend.components.confirmation_dialog import build_confirm_callback
+
         cb = build_confirm_callback("test_session_12345678901234567890123456789012")
         assert asyncio.iscoroutinefunction(cb)
 
@@ -371,11 +394,13 @@ class TestRenderConfirmationDialog:
 
     def test_empty_request_returns_false(self):
         from frontend.components.confirmation_dialog import render_confirmation_dialog
+
         result = render_confirmation_dialog(None)
         assert result is False
 
     def test_valid_request_shows_dialog(self):
         from frontend.components.confirmation_dialog import render_confirmation_dialog
+
         request = {
             "goal": "Send Q2 report email",
             "intent_type": "EMAIL",
@@ -391,7 +416,7 @@ class TestRenderConfirmationDialog:
         result = render_confirmation_dialog(request)
         assert result is False  # No button clicked yet
 
-    @patch('streamlit.button')
+    @patch("streamlit.button")
     def test_confirm_button_clicked(self, mock_button):
         from frontend.components.confirmation_dialog import render_confirmation_dialog
         import streamlit as st
@@ -516,7 +541,9 @@ class TestIntegrationWithConfirmer:
 
     def test_trust_score_increases_on_confirmation(self):
         confirmer = Confirmer()
-        initial_threshold = confirmer.get_effective_threshold("EMAIL", "trust_test_session")
+        initial_threshold = confirmer.get_effective_threshold(
+            "EMAIL", "trust_test_session"
+        )
 
         from frontend.components.confirmation_dialog import build_confirm_callback
         import streamlit as st
@@ -544,7 +571,9 @@ class TestIntegrationWithConfirmer:
             )
             assert result.confirmed is True
 
-            new_threshold = confirmer.get_effective_threshold("EMAIL", "trust_test_session")
+            new_threshold = confirmer.get_effective_threshold(
+                "EMAIL", "trust_test_session"
+            )
             assert new_threshold < initial_threshold
         finally:
             loop.close()
@@ -554,7 +583,11 @@ class TestEdgeCases:
     """Edge case tests for boundary conditions and special inputs."""
 
     def test_extremely_long_goal_truncation(self):
-        from frontend.components.confirmation_dialog import _sanitize_params_display, MAX_GOAL_LENGTH
+        from frontend.components.confirmation_dialog import (
+            _sanitize_params_display,
+            MAX_GOAL_LENGTH,
+        )
+
         long_goal = "x" * 500
         request = {
             "goal": long_goal,
@@ -566,26 +599,31 @@ class TestEdgeCases:
             "session_id": "long_goal_test",
         }
         from frontend.components.confirmation_dialog import render_confirmation_dialog
+
         result = render_confirmation_dialog(request)
         assert result is False
 
     def test_extreme_confidence_zero(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(0.0, 0.95)
         assert "0%" in result
 
     def test_extreme_confidence_one(self):
         from frontend.components.confirmation_dialog import _render_confidence_bar
+
         result = _render_confidence_bar(1.0, 0.95)
         assert "100%" in result
 
     def test_empty_params_dict(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         result = _sanitize_params_display({})
         assert result == {}
 
     def test_params_with_all_sensitive_keys(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {
             "password": "val1",
             "api_key": "val2",
@@ -599,6 +637,7 @@ class TestEdgeCases:
 
     def test_mixed_case_sensitive_keys(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {
             "Password": "val1",
             "API_KEY": "val2",
@@ -610,6 +649,7 @@ class TestEdgeCases:
 
     def test_special_characters_in_values(self):
         from frontend.components.confirmation_dialog import _sanitize_params_display
+
         params = {
             "name": "用户名@#$%",
             "description": "Description with <script>alert('xss')</script>",
@@ -626,7 +666,9 @@ class TestProgressEmitterIntegration:
         from frontend.components.confirmation_dialog import build_confirm_callback
         import streamlit as st
 
-        with patch('opc_manager.progress_emitter.ProgressEmitter') as mock_emitter_class:
+        with patch(
+            "opc_manager.progress_emitter.ProgressEmitter"
+        ) as mock_emitter_class:
             mock_emitter = Mock()
             mock_emitter_class.return_value = mock_emitter
 
@@ -652,7 +694,9 @@ class TestProgressEmitterIntegration:
         from frontend.components.confirmation_dialog import build_confirm_callback
         import streamlit as st
 
-        with patch('opc_manager.progress_emitter.ProgressEmitter') as mock_emitter_class:
+        with patch(
+            "opc_manager.progress_emitter.ProgressEmitter"
+        ) as mock_emitter_class:
             mock_emitter = Mock()
             mock_emitter_class.return_value = mock_emitter
 
@@ -684,7 +728,9 @@ class TestProgressEmitterIntegration:
         from frontend.components.confirmation_dialog import build_confirm_callback
         import streamlit as st
 
-        with patch('opc_manager.progress_emitter.ProgressEmitter') as mock_emitter_class:
+        with patch(
+            "opc_manager.progress_emitter.ProgressEmitter"
+        ) as mock_emitter_class:
             mock_emitter = Mock()
             mock_emitter_class.return_value = mock_emitter
 

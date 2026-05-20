@@ -88,7 +88,7 @@ class OnboardingManager:
     def _load_state(self):
         if self._state_file.exists():
             try:
-                data = json.loads(self._state_file.read_text(encoding='utf-8'))
+                data = json.loads(self._state_file.read_text(encoding="utf-8"))
                 step_str = data.get("current_step", "welcome")
                 self._state.current_step = OnboardingStep(step_str)
                 self._state.started_at = data.get("started_at", time.time())
@@ -108,7 +108,7 @@ class OnboardingManager:
                 "steps_completed": self._state.steps_completed,
                 "sample_task_result": self._state.sample_task_result,
             }
-            self._state_file.write_text(json.dumps(data, indent=2), encoding='utf-8')
+            self._state_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
         except Exception as e:
             logger.error("Failed to save onboarding state: %s", e)
 
@@ -124,7 +124,11 @@ class OnboardingManager:
     def progress_pct(self) -> int:
         if self.is_completed:
             return 100
-        step_order = [OnboardingStep.WELCOME, OnboardingStep.LLM_CONFIG, OnboardingStep.SAMPLE_TASK]
+        step_order = [
+            OnboardingStep.WELCOME,
+            OnboardingStep.LLM_CONFIG,
+            OnboardingStep.SAMPLE_TASK,
+        ]
         try:
             current_index = step_order.index(self._state.current_step)
             return int((current_index / self.TOTAL_STEPS) * 100)
@@ -237,7 +241,10 @@ class OnboardingManager:
         self._state.current_step = OnboardingStep.COMPLETED
         self._state.completed_at = time.time()
         self._save_state()
-        logger.info("Onboarding completed in %.1fs", self._state.completed_at - self._state.started_at)
+        logger.info(
+            "Onboarding completed in %.1fs",
+            self._state.completed_at - self._state.started_at,
+        )
 
     def skip_onboarding(self):
         """Allow user to skip onboarding."""

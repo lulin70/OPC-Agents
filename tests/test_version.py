@@ -27,7 +27,13 @@ def test_version_format():
     pattern = r"^\d+\.\d+\.\d+((-[a-zA-Z0-9.]+)|(\.post\d+))?$"
     assert re.match(pattern, __version__), f"版本号格式错误: {__version__}"
 
-    base_version = re.split(r"[-.]", __version__)[0] + "." + re.split(r"[-.]", __version__)[1] + "." + re.split(r"[-.]", __version__)[2]
+    base_version = (
+        re.split(r"[-.]", __version__)[0]
+        + "."
+        + re.split(r"[-.]", __version__)[1]
+        + "."
+        + re.split(r"[-.]", __version__)[2]
+    )
     parts = base_version.split(".")
     assert len(parts) == 3, f"版本号格式错误: {__version__}"
     for part in parts:

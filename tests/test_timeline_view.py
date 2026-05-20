@@ -173,9 +173,15 @@ class TestEventTypeConfig(unittest.TestCase):
     def test_all_required_types_exist(self):
         """TC-TL-007: 所有必需的事件类型都存在"""
         required_types = [
-            "task_complete", "income_recorded", "expense_recorded",
-            "email_sent", "proposal_created", "error_occurred",
-            "undo_action", "confirmation_required", "skill_executed",
+            "task_complete",
+            "income_recorded",
+            "expense_recorded",
+            "email_sent",
+            "proposal_created",
+            "error_occurred",
+            "undo_action",
+            "confirmation_required",
+            "skill_executed",
             "dashboard_viewed",
         ]
 
@@ -193,6 +199,7 @@ class TestEventTypeConfig(unittest.TestCase):
     def test_colors_are_valid_hex(self):
         """TC-TL-009: 所有颜色值为有效的HEX格式"""
         import re
+
         hex_pattern = r"^#[0-9A-Fa-f]{6}$"
 
         for config in EVENT_TYPE_CONFIG.values():
@@ -253,8 +260,16 @@ class TestBuildTimelineFromSession(unittest.TestCase):
         now = time.time()
         mock_st.session_state = {
             "deliverables": [
-                {"id": "del_old", "prompt": "旧任务", "created_at": "2024-01-01 00:00:00"},
-                {"id": "del_new", "prompt": "新任务", "created_at": "2024-12-31 23:59:59"},
+                {
+                    "id": "del_old",
+                    "prompt": "旧任务",
+                    "created_at": "2024-01-01 00:00:00",
+                },
+                {
+                    "id": "del_new",
+                    "prompt": "新任务",
+                    "created_at": "2024-12-31 23:59:59",
+                },
             ],
             "messages": [],
         }
@@ -268,7 +283,11 @@ class TestBuildTimelineFromSession(unittest.TestCase):
     def test_max_events_limit(self, mock_st):
         """TC-TL-015: 超过MAX_TIMELINE_EVENTS时截断"""
         many_deliverables = [
-            {"id": f"del_{i}", "prompt": f"任务{i}", "created_at": f"2024-01-{(i%30)+1:02d} 12:00:00"}
+            {
+                "id": f"del_{i}",
+                "prompt": f"任务{i}",
+                "created_at": f"2024-01-{(i%30)+1:02d} 12:00:00",
+            }
             for i in range(MAX_TIMELINE_EVENTS + 100)
         ]
         mock_st.session_state = {"deliverables": many_deliverables, "messages": []}
@@ -305,15 +324,17 @@ class TestBuildFromDeliverables(unittest.TestCase):
     def test_valid_deliverable_record(self, mock_st):
         """TC-TL-018: 正确的deliverable记录转换"""
         mock_st.session_state = {
-            "deliverables": [{
-                "id": "del_valid",
-                "prompt": "创建报告",
-                "task_type": "report",
-                "created_at": "2024-06-15 10:30:00",
-                "filepath": "/path/to/report.md",
-                "filename": "report.md",
-                "size_kb": 45.6,
-            }]
+            "deliverables": [
+                {
+                    "id": "del_valid",
+                    "prompt": "创建报告",
+                    "task_type": "report",
+                    "created_at": "2024-06-15 10:30:00",
+                    "filepath": "/path/to/report.md",
+                    "filename": "report.md",
+                    "size_kb": 45.6,
+                }
+            ]
         }
 
         events = _build_from_deliverables()
@@ -344,11 +365,13 @@ class TestBuildFromDeliverables(unittest.TestCase):
     def test_string_timestamp_parsed(self, mock_st):
         """TC-TL-020: 字符串时间戳正确解析"""
         mock_st.session_state = {
-            "deliverables": [{
-                "id": "time_test",
-                "prompt": "Time test",
-                "created_at": "2024-03-15 08:45:00",
-            }]
+            "deliverables": [
+                {
+                    "id": "time_test",
+                    "prompt": "Time test",
+                    "created_at": "2024-03-15 08:45:00",
+                }
+            ]
         }
 
         events = _build_from_deliverables()
@@ -440,15 +463,53 @@ class TestFiltersAndGrouping(unittest.TestCase):
     def setUp(self):
         now = time.time()
         self.sample_events = [
-            TimelineEvent(id="e1", timestamp=now - 3600, event_type="task_complete", title="任务1", description="desc1", icon="✅", category="work"),
-            TimelineEvent(id="e2", timestamp=now - 1800, event_type="income_recorded", title="收入", description="desc2", icon="💰", category="finance"),
-            TimelineEvent(id="e3", timestamp=now - 900, event_type="error_occurred", title="错误", description="desc3", icon="❌", category="system", status="error"),
-            TimelineEvent(id="e4", timestamp=now - 300, event_type="email_sent", title="邮件", description="desc4", icon="📧", category="communication"),
+            TimelineEvent(
+                id="e1",
+                timestamp=now - 3600,
+                event_type="task_complete",
+                title="任务1",
+                description="desc1",
+                icon="✅",
+                category="work",
+            ),
+            TimelineEvent(
+                id="e2",
+                timestamp=now - 1800,
+                event_type="income_recorded",
+                title="收入",
+                description="desc2",
+                icon="💰",
+                category="finance",
+            ),
+            TimelineEvent(
+                id="e3",
+                timestamp=now - 900,
+                event_type="error_occurred",
+                title="错误",
+                description="desc3",
+                icon="❌",
+                category="system",
+                status="error",
+            ),
+            TimelineEvent(
+                id="e4",
+                timestamp=now - 300,
+                event_type="email_sent",
+                title="邮件",
+                description="desc4",
+                icon="📧",
+                category="communication",
+            ),
         ]
 
     def test_filter_by_keyword(self):
         """TC-TL-030: 关键词筛选正确匹配标题和描述"""
-        filters = {"keyword": "收入", "categories": list(CATEGORY_LABELS.keys()), "statuses": list(STATUS_LABELS.keys()), "time_range": "all"}
+        filters = {
+            "keyword": "收入",
+            "categories": list(CATEGORY_LABELS.keys()),
+            "statuses": list(STATUS_LABELS.keys()),
+            "time_range": "all",
+        }
 
         with patch("frontend.components.timeline_view.st") as mock_st:
             mock_st.session_state = {}
@@ -459,7 +520,12 @@ class TestFiltersAndGrouping(unittest.TestCase):
 
     def test_filter_by_category(self):
         """TC-TL-031: 类别筛选只返回指定类别的事件"""
-        filters = {"keyword": "", "categories": ["finance"], "statuses": list(STATUS_LABELS.keys()), "time_range": "all"}
+        filters = {
+            "keyword": "",
+            "categories": ["finance"],
+            "statuses": list(STATUS_LABELS.keys()),
+            "time_range": "all",
+        }
 
         with patch("frontend.components.timeline_view.st") as mock_st:
             mock_st.session_state = {}
@@ -470,7 +536,12 @@ class TestFiltersAndGrouping(unittest.TestCase):
 
     def test_filter_by_status(self):
         """TC-TL-032: 状态筛选只返回指定状态的事件"""
-        filters = {"keyword": "", "categories": list(CATEGORY_LABELS.keys()), "statuses": ["error"], "time_range": "all"}
+        filters = {
+            "keyword": "",
+            "categories": list(CATEGORY_LABELS.keys()),
+            "statuses": ["error"],
+            "time_range": "all",
+        }
 
         with patch("frontend.components.timeline_view.st") as mock_st:
             mock_st.session_state = {}
@@ -481,11 +552,36 @@ class TestFiltersAndGrouping(unittest.TestCase):
 
     def test_filter_by_time_range_today(self):
         """TC-TL-033: 今天时间范围筛选"""
-        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-        today_event = TimelineEvent(id="today", timestamp=today_start + 3600, event_type="task_complete", title="今天", description="", icon="✅", category="work")
-        old_event = TimelineEvent(id="old", timestamp=today_start - 86400, event_type="task_complete", title="昨天", description="", icon="✅", category="work")
+        today_start = (
+            datetime.now()
+            .replace(hour=0, minute=0, second=0, microsecond=0)
+            .timestamp()
+        )
+        today_event = TimelineEvent(
+            id="today",
+            timestamp=today_start + 3600,
+            event_type="task_complete",
+            title="今天",
+            description="",
+            icon="✅",
+            category="work",
+        )
+        old_event = TimelineEvent(
+            id="old",
+            timestamp=today_start - 86400,
+            event_type="task_complete",
+            title="昨天",
+            description="",
+            icon="✅",
+            category="work",
+        )
 
-        filters = {"keyword": "", "categories": list(CATEGORY_LABELS.keys()), "statuses": list(STATUS_LABELS.keys()), "time_range": "today"}
+        filters = {
+            "keyword": "",
+            "categories": list(CATEGORY_LABELS.keys()),
+            "statuses": list(STATUS_LABELS.keys()),
+            "time_range": "today",
+        }
 
         with patch("frontend.components.timeline_view.st") as mock_st:
             mock_st.session_state = {}
@@ -510,14 +606,22 @@ class TestFiltersAndGrouping(unittest.TestCase):
 
         today_label = "今天"
         if today_label in grouped:
-            self.assertTrue(all(e.timestamp > (datetime.now() - timedelta(days=1)).timestamp() for e in grouped[today_label]))
+            self.assertTrue(
+                all(
+                    e.timestamp > (datetime.now() - timedelta(days=1)).timestamp()
+                    for e in grouped[today_label]
+                )
+            )
 
     def test_empty_events_list(self):
         """TC-TL-036: 空事件列表的筛选和分组"""
         with patch("frontend.components.timeline_view.st") as mock_st:
             mock_st.session_state = {}
 
-            filtered = _apply_filters([], {"keyword": "", "categories": [], "statuses": [], "time_range": "all"})
+            filtered = _apply_filters(
+                [],
+                {"keyword": "", "categories": [], "statuses": [], "time_range": "all"},
+            )
             self.assertEqual(len(filtered), 0)
 
             grouped = _group_events_by_time([], "hour")
@@ -525,12 +629,30 @@ class TestFiltersAndGrouping(unittest.TestCase):
 
     def test_single_event_handling(self):
         """TC-TL-037: 单个事件的边界情况"""
-        single_event = [TimelineEvent(id="single", timestamp=time.time(), event_type="task_complete", title="Single", description="", icon="✅", category="work")]
+        single_event = [
+            TimelineEvent(
+                id="single",
+                timestamp=time.time(),
+                event_type="task_complete",
+                title="Single",
+                description="",
+                icon="✅",
+                category="work",
+            )
+        ]
 
         with patch("frontend.components.timeline_view.st") as mock_st:
             mock_st.session_state = {}
 
-            filtered = _apply_filters(single_event, {"keyword": "", "categories": ["work"], "statuses": ["success"], "time_range": "all"})
+            filtered = _apply_filters(
+                single_event,
+                {
+                    "keyword": "",
+                    "categories": ["work"],
+                    "statuses": ["success"],
+                    "time_range": "all",
+                },
+            )
             self.assertEqual(len(filtered), 1)
 
             grouped = _group_events_by_time(single_event, "day")
@@ -567,7 +689,7 @@ class TestExportFunctions(unittest.TestCase):
         rows = list(reader)
 
         self.assertGreater(len(rows), 1)  # 至少有header + 1行数据
-        self.assertIn("事件ID", rows[0])   # 包含中文header
+        self.assertIn("事件ID", rows[0])  # 包含中文header
 
     def test_export_csv_contains_data(self):
         """TC-TL-039: CSV包含正确的数据"""
@@ -585,7 +707,7 @@ class TestExportFunctions(unittest.TestCase):
         content = md_result
 
         self.assertIn("# 操作时间线报告", content)
-        self.assertIn("## ", content)           # 日期标题
+        self.assertIn("## ", content)  # 日期标题
         self.assertIn("**导出时间**:", content)
         self.assertIn("导出测试", content)
 
@@ -636,7 +758,15 @@ class TestUIRendering(unittest.TestCase):
 
     def setUp(self):
         self.sample_events = [
-            TimelineEvent(id="ui_001", timestamp=time.time(), event_type="task_complete", title="UI测试", description="渲染测试", icon="✅", category="work"),
+            TimelineEvent(
+                id="ui_001",
+                timestamp=time.time(),
+                event_type="task_complete",
+                title="UI测试",
+                description="渲染测试",
+                icon="✅",
+                category="work",
+            ),
         ]
 
     @patch("frontend.components.timeline_view.st")
@@ -649,7 +779,13 @@ class TestUIRendering(unittest.TestCase):
     @patch("frontend.components.timeline_view.st")
     def test_render_with_events_calls_stats(self, mock_st):
         """TC-TL-046: 有事件时调用统计渲染"""
-        mock_st.columns.return_value = (MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
+        mock_st.columns.return_value = (
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+        )
         mock_st.expander.return_value.__enter__ = MagicMock()
         mock_st.expander.return_value.__exit__ = MagicMock(return_value=False)
         mock_st.container.return_value.__enter__ = MagicMock()
@@ -665,7 +801,13 @@ class TestUIRendering(unittest.TestCase):
     @patch("frontend.components.timeline_view.st")
     def test_render_injects_css(self, mock_st):
         """TC-TL-047: 渲染时注入CSS样式"""
-        mock_st.columns.return_value = (MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
+        mock_st.columns.return_value = (
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+        )
         mock_st.expander.return_value.__enter__ = MagicMock()
         mock_st.expander.return_value.__exit__ = MagicMock(return_value=False)
         mock_st.container.return_value.__enter__ = MagicMock()
@@ -684,9 +826,12 @@ class TestUtilityFunctions(unittest.TestCase):
 
     def test_escape_html_special_chars(self):
         """TC-TL-048: HTML特殊字符转义"""
-        self.assertEqual(_escape_html("<script>alert('xss')</script>"), "&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;")
+        self.assertEqual(
+            _escape_html("<script>alert('xss')</script>"),
+            "&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;",
+        )
         self.assertEqual(_escape_html("a&b<c>d"), "a&amp;b&lt;c&gt;d")
-        self.assertEqual(_escape_html('hello "world"'), 'hello &quot;world&quot;')
+        self.assertEqual(_escape_html('hello "world"'), "hello &quot;world&quot;")
 
     def test_escape_html_plain_text(self):
         """TC-TL-049: 普通文本不受影响"""
@@ -726,7 +871,7 @@ class TestEdgeCases(unittest.TestCase):
             timestamp=time.time(),
             event_type="task_complete",
             title="中文标题 🎉 日本語 한국어",
-            description="Emoji: 🚀 🎯 💡 特殊字符: <>&\"",
+            description='Emoji: 🚀 🎯 💡 特殊字符: <>&"',
             icon="🌏",
             category="work",
         )
@@ -772,9 +917,36 @@ class TestEdgeCases(unittest.TestCase):
     def test_related_ids_chain(self):
         """TC-TL-057: 关联ID链式关系"""
         events = [
-            TimelineEvent(id="a", timestamp=1, event_type="email_sent", title="Email", description="", icon="📧", category="communication", related_ids=["b"]),
-            TimelineEvent(id="b", timestamp=2, event_type="confirmation_required", title="Confirm", description="", icon="⚠️", category="system", related_ids=["c"]),
-            TimelineEvent(id="c", timestamp=3, event_type="email_sent", title="Sent", description="", icon="📧", category="communication", related_ids=[]),
+            TimelineEvent(
+                id="a",
+                timestamp=1,
+                event_type="email_sent",
+                title="Email",
+                description="",
+                icon="📧",
+                category="communication",
+                related_ids=["b"],
+            ),
+            TimelineEvent(
+                id="b",
+                timestamp=2,
+                event_type="confirmation_required",
+                title="Confirm",
+                description="",
+                icon="⚠️",
+                category="system",
+                related_ids=["c"],
+            ),
+            TimelineEvent(
+                id="c",
+                timestamp=3,
+                event_type="email_sent",
+                title="Sent",
+                description="",
+                icon="📧",
+                category="communication",
+                related_ids=[],
+            ),
         ]
 
         self.assertEqual(len(events[0].related_ids), 1)

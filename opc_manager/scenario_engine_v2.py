@@ -240,7 +240,9 @@ if __name__ == "__main__":
     stats = engine.get_statistics()
     print(f"\n📊 Engine statistics:")
     print(f"   Total scenarios: {stats['total_scenarios']}")
-    print(f"   Supported business types: {', '.join(stats['business_types_supported'])}")
+    print(
+        f"   Supported business types: {', '.join(stats['business_types_supported'])}"
+    )
     print(f"   Version: {stats['version']}")
 
     print(f"\n📋 All scenarios:")

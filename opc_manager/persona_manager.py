@@ -98,7 +98,9 @@ class PersonaManager:
     def _load_config(self):
         """Load YAML configuration file"""
         if not os.path.exists(self.config_path):
-            print(f"[PersonaManager] Warning: config file not found - {self.config_path}")
+            print(
+                f"[PersonaManager] Warning: config file not found - {self.config_path}"
+            )
             self._load_fallback_config()
             return
 
@@ -125,7 +127,9 @@ class PersonaManager:
                     response_patterns=variant_config.get("response_patterns", {}),
                 )
 
-            print(f"[PersonaManager] Successfully loaded {len(self.variants)} persona variants")
+            print(
+                f"[PersonaManager] Successfully loaded {len(self.variants)} persona variants"
+            )
             for vid, v in self.variants.items():
                 print(f"  - [{v.emoji}] {v.display_name} ({vid})")
 
@@ -190,7 +194,9 @@ class PersonaManager:
         persona = self.variants.get(type_key)
 
         if persona is None:
-            print(f"[PersonaManager] No persona config found for business type {type_key}")
+            print(
+                f"[PersonaManager] No persona config found for business type {type_key}"
+            )
             available = list(self.variants.keys())
             print(f"[PersonaManager] Available persona variants: {available}")
 

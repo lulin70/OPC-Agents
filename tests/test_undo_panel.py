@@ -87,9 +87,15 @@ class TestOperationDescription:
 
     def test_email_send_subject_only(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={"subject": "测试邮件"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={"subject": "测试邮件"},
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "发送邮件" in desc
@@ -97,19 +103,30 @@ class TestOperationDescription:
 
     def test_email_send_no_args(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert desc == "发送邮件"
 
     def test_record_income_with_amount_and_project(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="RECORD_INCOME", session_id="s1",
+            operation_id="op1",
+            operation_type="RECORD_INCOME",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"amount": 5000, "project": "字节跳动项目"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "¥5000" in desc
@@ -117,19 +134,30 @@ class TestOperationDescription:
 
     def test_record_income_amount_only(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="RECORD_INCOME", session_id="s1",
-            inverse_func_name="f", inverse_args={"amount": 1000},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            operation_id="op1",
+            operation_type="RECORD_INCOME",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={"amount": 1000},
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "¥1000" in desc
 
     def test_record_expense_with_category(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="RECORD_EXPENSE", session_id="s1",
+            operation_id="op1",
+            operation_type="RECORD_EXPENSE",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"amount": 200, "category": "办公用品"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "¥200" in desc
@@ -137,9 +165,15 @@ class TestOperationDescription:
 
     def test_add_event_with_title(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="ADD_EVENT", session_id="s1",
-            inverse_func_name="f", inverse_args={"title": "Q2营销方案会议"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            operation_id="op1",
+            operation_type="ADD_EVENT",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={"title": "Q2营销方案会议"},
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "新建日程" in desc
@@ -147,10 +181,15 @@ class TestOperationDescription:
 
     def test_add_deal_with_value(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="ADD_DEAL", session_id="s1",
+            operation_id="op1",
+            operation_type="ADD_DEAL",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"deal_name": "企业版合同", "value": 50000},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "新建商机" in desc
@@ -159,10 +198,15 @@ class TestOperationDescription:
 
     def test_create_proposal_with_client(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="CREATE_PROPOSAL", session_id="s1",
+            operation_id="op1",
+            operation_type="CREATE_PROPOSAL",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"title": "数字化转型方案", "client": "ABC公司"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "创建方案" in desc
@@ -170,10 +214,15 @@ class TestOperationDescription:
 
     def test_create_invoice_with_number(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="CREATE_INVOICE", session_id="s1",
+            operation_id="op1",
+            operation_type="CREATE_INVOICE",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"invoice_number": "INV-2024-001", "amount": 10000},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "创建发票" in desc
@@ -181,10 +230,15 @@ class TestOperationDescription:
 
     def test_add_customer_with_company(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="ADD_CUSTOMER", session_id="s1",
+            operation_id="op1",
+            operation_type="ADD_CUSTOMER",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"name": "张三", "company": "科技有限公司"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "添加客户" in desc
@@ -192,10 +246,15 @@ class TestOperationDescription:
 
     def test_add_follow_up_with_content(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="ADD_FOLLOW_UP", session_id="s1",
+            operation_id="op1",
+            operation_type="ADD_FOLLOW_UP",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"customer_name": "李四", "content": "跟进合同签订进度"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "添加跟进" in desc
@@ -203,10 +262,15 @@ class TestOperationDescription:
 
     def test_social_publish_with_platform(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="SOCIAL_PUBLISH", session_id="s1",
+            operation_id="op1",
+            operation_type="SOCIAL_PUBLISH",
+            session_id="s1",
             inverse_func_name="f",
             inverse_args={"platform": "微信", "content": "新品发布通知"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "发布内容" in desc
@@ -214,20 +278,30 @@ class TestOperationDescription:
 
     def test_unknown_operation_type_fallback(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="UNKNOWN_TYPE", session_id="s1",
+            operation_id="op1",
+            operation_type="UNKNOWN_TYPE",
+            session_id="s1",
             inverse_func_name="custom_func",
             inverse_args={"title": "自定义操作"},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "自定义操作" in desc
 
     def test_fallback_to_inverse_func_name(self):
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="UNKNOWN", session_id="s1",
+            operation_id="op1",
+            operation_type="UNKNOWN",
+            session_id="s1",
             inverse_func_name="some_special_function",
             inverse_args={},
-            original_result={}, created_at=0, expires_at=0, status="active"
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         desc = _get_operation_description(record)
         assert "some_special_function" in desc
@@ -242,9 +316,15 @@ class TestCalculateRemainingTime:
     def test_already_expired(self):
         now = time.time()
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=now - 3600, expires_at=now - 10, status="expired"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=now - 3600,
+            expires_at=now - 10,
+            status="expired",
         )
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert remaining == 0
@@ -254,9 +334,15 @@ class TestCalculateRemainingTime:
     def test_critical_less_than_10_seconds(self):
         now = time.time()
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=now - 290, expires_at=now + 5, status="active"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=now - 290,
+            expires_at=now + 5,
+            status="active",
         )
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert 0 < remaining <= 10
@@ -266,9 +352,15 @@ class TestCalculateRemainingTime:
     def test_warning_less_than_60_seconds(self):
         now = time.time()
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=now - 250, expires_at=now + 30, status="active"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=now - 250,
+            expires_at=now + 30,
+            status="active",
         )
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert 10 < remaining < 60
@@ -278,9 +370,15 @@ class TestCalculateRemainingTime:
     def test_normal_minutes_remaining(self):
         now = time.time()
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=now - 60, expires_at=now + 180, status="active"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=now - 60,
+            expires_at=now + 180,
+            status="active",
         )
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert remaining >= 60
@@ -290,9 +388,15 @@ class TestCalculateRemainingTime:
     def test_hours_remaining(self):
         now = time.time()
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="ADD_EVENT", session_id="s1",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=now - 60, expires_at=now + 7200, status="active"
+            operation_id="op1",
+            operation_type="ADD_EVENT",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=now - 60,
+            expires_at=now + 7200,
+            status="active",
         )
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert remaining >= 3600
@@ -303,9 +407,15 @@ class TestCalculateRemainingTime:
         total_window = 300
         mid_point = total_window // 2
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=now - mid_point, expires_at=now + mid_point, status="active"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=now - mid_point,
+            expires_at=now + mid_point,
+            status="active",
         )
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert 45 <= percentage <= 55
@@ -313,9 +423,15 @@ class TestCalculateRemainingTime:
     def test_exact_expiry_boundary(self):
         now = time.time()
         record = UndoRecordDisplay(
-            operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=now - 300, expires_at=now, status="active"
+            operation_id="op1",
+            operation_type="EMAIL_SEND",
+            session_id="s1",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=now - 300,
+            expires_at=now,
+            status="active",
         )
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert remaining == 0
@@ -390,14 +506,11 @@ class TestConvertToDisplayRecord:
 class TestExecuteUndo:
     """Test suite for execute_undo() function with ProgressEmitter integration."""
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_execute_undo_success(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.return_value = (True, "")
-        mock_manager.undo.return_value = {
-            "success": True,
-            "result": {"undone": True}
-        }
+        mock_manager.undo.return_value = {"success": True, "result": {"undone": True}}
         mock_get_manager.return_value = mock_manager
 
         result = execute_undo("session1", "op123")
@@ -405,7 +518,7 @@ class TestExecuteUndo:
         assert "撤销成功" in result["message"]
         mock_manager.undo.assert_called_once_with("session1", "op123")
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_execute_undo_cannot_undo(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.return_value = (False, "已过期")
@@ -416,28 +529,25 @@ class TestExecuteUndo:
         assert "无法撤销" in result["message"]
         assert "已过期" in result["message"]
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_execute_undo_failure(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.return_value = (True, "")
-        mock_manager.undo.return_value = {
-            "success": False,
-            "error": "逆函数执行错误"
-        }
+        mock_manager.undo.return_value = {"success": False, "error": "逆函数执行错误"}
         mock_get_manager.return_value = mock_manager
 
         result = execute_undo("session1", "op123")
         assert result["success"] is False
         assert "撤销失败" in result["message"]
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_execute_undo_manager_not_initialized(self, mock_get_manager):
         mock_get_manager.return_value = None
         result = execute_undo("session1", "op123")
         assert result["success"] is False
         assert "未初始化" in result["message"]
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_execute_undo_handles_exception(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.can_undo.side_effect = ValueError("Invalid session")
@@ -451,7 +561,7 @@ class TestExecuteUndo:
 class TestRenderUndoStats:
     """Test suite for calculate_undo_stats() statistics calculation."""
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_stats_all_active(self, mock_get_manager):
         mock_manager = MagicMock()
         now = time.time()
@@ -472,7 +582,7 @@ class TestRenderUndoStats:
         assert stats["undone"] == 0
         assert stats["expired"] == 0
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_stats_mixed_statuses(self, mock_get_manager):
         mock_manager = MagicMock()
         now = time.time()
@@ -497,7 +607,7 @@ class TestRenderUndoStats:
         assert stats["expired"] == 1
         assert stats["total"] == 3
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_stats_empty_session(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager._records = {}
@@ -507,7 +617,7 @@ class TestRenderUndoStats:
         assert stats["total"] == 0
         assert stats["active"] == 0
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_stats_manager_not_available(self, mock_get_manager):
         mock_get_manager.return_value = None
         stats = calculate_undo_stats("sess1")
@@ -517,7 +627,7 @@ class TestRenderUndoStats:
 class TestCheckHasActiveRecords:
     """Test suite for check_has_active_undo_records()."""
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_has_active_records_true(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.list_undoable.return_value = [
@@ -529,7 +639,7 @@ class TestCheckHasActiveRecords:
         result = check_has_active_undo_records("sess1")
         assert result is True
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_has_active_records_false(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.list_undoable.return_value = []
@@ -538,7 +648,7 @@ class TestCheckHasActiveRecords:
         result = check_has_active_undo_records("sess1")
         assert result is False
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_has_active_records_manager_none(self, mock_get_manager):
         mock_get_manager.return_value = None
         result = check_has_active_undo_records("sess1")
@@ -548,15 +658,17 @@ class TestCheckHasActiveRecords:
 class TestGetLatestRecordInfo:
     """Test suite for get_latest_undo_record_info()."""
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_get_latest_info_success(self, mock_get_manager):
         mock_manager = MagicMock()
-        mock_manager.list_undoable.return_value = [{
-            "operation_id": "op123",
-            "type": "EMAIL_SEND",
-            "remaining_seconds": 240,
-            "original_summary": "发送了邮件",
-        }]
+        mock_manager.list_undoable.return_value = [
+            {
+                "operation_id": "op123",
+                "type": "EMAIL_SEND",
+                "remaining_seconds": 240,
+                "original_summary": "发送了邮件",
+            }
+        ]
         mock_get_manager.return_value = mock_manager
 
         info = get_latest_undo_record_info("sess1")
@@ -567,7 +679,7 @@ class TestGetLatestRecordInfo:
         assert info["icon"] == "📧"
         assert info["remaining_seconds"] == 240
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_get_latest_info_no_records(self, mock_get_manager):
         mock_manager = MagicMock()
         mock_manager.list_undoable.return_value = []
@@ -576,7 +688,7 @@ class TestGetLatestRecordInfo:
         info = get_latest_undo_record_info("sess1")
         assert info is None
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_get_latest_info_manager_none(self, mock_get_manager):
         mock_get_manager.return_value = None
         info = get_latest_undo_record_info("sess1")
@@ -590,10 +702,18 @@ class TestExportGeneration:
         now = time.time()
         records = [
             UndoRecordDisplay(
-                operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-                inverse_func_name="f", inverse_args={}, original_result={},
-                created_at=now - 60, expires_at=now + 240, status="active",
-                description="发送邮件: Test", remaining_seconds=240, time_ago="1分钟前"
+                operation_id="op1",
+                operation_type="EMAIL_SEND",
+                session_id="s1",
+                inverse_func_name="f",
+                inverse_args={},
+                original_result={},
+                created_at=now - 60,
+                expires_at=now + 240,
+                status="active",
+                description="发送邮件: Test",
+                remaining_seconds=240,
+                time_ago="1分钟前",
             ),
         ]
         csv_data = _generate_csv(records)
@@ -610,16 +730,32 @@ class TestExportGeneration:
         now = time.time()
         records = [
             UndoRecordDisplay(
-                operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-                inverse_func_name="f1", inverse_args={}, original_result={},
-                created_at=now - 60, expires_at=now + 240, status="active",
-                description="Op1", remaining_seconds=240, time_ago="1分钟前"
+                operation_id="op1",
+                operation_type="EMAIL_SEND",
+                session_id="s1",
+                inverse_func_name="f1",
+                inverse_args={},
+                original_result={},
+                created_at=now - 60,
+                expires_at=now + 240,
+                status="active",
+                description="Op1",
+                remaining_seconds=240,
+                time_ago="1分钟前",
             ),
             UndoRecordDisplay(
-                operation_id="op2", operation_type="RECORD_INCOME", session_id="s1",
-                inverse_func_name="f2", inverse_args={}, original_result={},
-                created_at=now - 120, expires_at=now + 1680, status="undone",
-                description="Op2", remaining_seconds=0, time_ago="2分钟前"
+                operation_id="op2",
+                operation_type="RECORD_INCOME",
+                session_id="s1",
+                inverse_func_name="f2",
+                inverse_args={},
+                original_result={},
+                created_at=now - 120,
+                expires_at=now + 1680,
+                status="undone",
+                description="Op2",
+                remaining_seconds=0,
+                time_ago="2分钟前",
             ),
         ]
         csv_data = _generate_csv(records)
@@ -635,10 +771,18 @@ class TestExportGeneration:
         now = time.time()
         records = [
             UndoRecordDisplay(
-                operation_id="op1", operation_type="EMAIL_SEND", session_id="s1",
-                inverse_func_name="f", inverse_args={"key": "val"}, original_result={"res": "ok"},
-                created_at=now - 60, expires_at=now + 240, status="active",
-                description="Test", remaining_seconds=240, time_ago="1分钟前"
+                operation_id="op1",
+                operation_type="EMAIL_SEND",
+                session_id="s1",
+                inverse_func_name="f",
+                inverse_args={"key": "val"},
+                original_result={"res": "ok"},
+                created_at=now - 60,
+                expires_at=now + 240,
+                status="active",
+                description="Test",
+                remaining_seconds=240,
+                time_ago="1分钟前",
             ),
         ]
         json_data = _generate_json(records)
@@ -659,18 +803,22 @@ class TestExportGeneration:
 class TestEdgeCases:
     """Test suite for edge cases and error handling."""
 
-    @patch('frontend.components.undo_panel._get_undo_manager')
+    @patch("frontend.components.undo_panel._get_undo_manager")
     def test_empty_session_id_in_execute_undo(self, mock_get_manager):
         mock_manager = MagicMock()
-        mock_manager.can_undo.side_effect = ValueError("session_id must be a non-empty string")
+        mock_manager.can_undo.side_effect = ValueError(
+            "session_id must be a non-empty string"
+        )
         mock_get_manager.return_value = mock_manager
 
         result = execute_undo("", "op123")
         assert result["success"] is False
-        assert "参数错误" in result["message"] or "session_id" in result["message"].lower()
+        assert (
+            "参数错误" in result["message"] or "session_id" in result["message"].lower()
+        )
 
     def test_invalid_operation_id_in_execute_undo(self, st_mock):
-        with patch('frontend.components.undo_panel._get_undo_manager') as mock_get:
+        with patch("frontend.components.undo_panel._get_undo_manager") as mock_get:
             mock_manager = MagicMock()
             mock_manager.can_undo.return_value = (False, "Record not found")
             mock_get.return_value = mock_manager
@@ -680,9 +828,16 @@ class TestEdgeCases:
 
     def test_operation_type_config_complete(self):
         expected_types = [
-            "EMAIL_SEND", "RECORD_INCOME", "RECORD_EXPENSE", "ADD_EVENT",
-            "ADD_DEAL", "CREATE_PROPOSAL", "CREATE_INVOICE", "ADD_CUSTOMER",
-            "ADD_FOLLOW_UP", "SOCIAL_PUBLISH"
+            "EMAIL_SEND",
+            "RECORD_INCOME",
+            "RECORD_EXPENSE",
+            "ADD_EVENT",
+            "ADD_DEAL",
+            "CREATE_PROPOSAL",
+            "CREATE_INVOICE",
+            "ADD_CUSTOMER",
+            "ADD_FOLLOW_UP",
+            "SOCIAL_PUBLISH",
         ]
         for op_type in expected_types:
             assert op_type in OPERATION_TYPE_CONFIG
@@ -701,9 +856,15 @@ class TestEdgeCases:
 
     def test_undo_record_display_defaults(self):
         record = UndoRecordDisplay(
-            operation_id="test", operation_type="TEST", session_id="s",
-            inverse_func_name="f", inverse_args={}, original_result={},
-            created_at=0, expires_at=0, status="active"
+            operation_id="test",
+            operation_type="TEST",
+            session_id="s",
+            inverse_func_name="f",
+            inverse_args={},
+            original_result={},
+            created_at=0,
+            expires_at=0,
+            status="active",
         )
         assert record.description == ""
         assert record.remaining_seconds == 0
@@ -713,7 +874,7 @@ class TestEdgeCases:
 @pytest.fixture
 def st_mock():
     """Mock Streamlit for UI component testing."""
-    with patch.dict('sys.modules', {'streamlit': MagicMock()}):
+    with patch.dict("sys.modules", {"streamlit": MagicMock()}):
         yield
 
 

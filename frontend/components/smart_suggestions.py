@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Suggestion:
     """Single smart suggestion item"""
+
     id: str
     title: str
     description: str
@@ -45,7 +46,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_export_pdf_prompt")},
             confidence=0.9,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="gen_related_doc",
@@ -55,7 +56,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_gen_related_doc_prompt")},
             confidence=0.75,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="share_content",
@@ -65,7 +66,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_share_content_prompt")},
             confidence=0.65,
-            category="follow_up"
+            category="follow_up",
         ),
     ],
     "data_analysis": [
@@ -77,7 +78,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_deep_dive_metric_prompt")},
             confidence=0.88,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="compare_history",
@@ -87,7 +88,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_compare_history_prompt")},
             confidence=0.82,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="generate_report",
@@ -97,7 +98,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_generate_report_prompt")},
             confidence=0.85,
-            category="follow_up"
+            category="follow_up",
         ),
     ],
     "info_collection": [
@@ -109,7 +110,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_gen_plan_from_info_prompt")},
             confidence=0.87,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="save_as_template",
@@ -119,7 +120,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_save_as_template_prompt")},
             confidence=0.7,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="set_reminder",
@@ -129,7 +130,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_set_reminder_prompt")},
             confidence=0.72,
-            category="follow_up"
+            category="follow_up",
         ),
     ],
     "business_operation": [
@@ -141,7 +142,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="navigate_tab",
             action_payload={"target_tab": "📈 Dashboard"},
             confidence=0.9,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="record_expense",
@@ -151,7 +152,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_record_expense_prompt")},
             confidence=0.78,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="client_followup",
@@ -161,7 +162,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_client_followup_prompt")},
             confidence=0.8,
-            category="follow_up"
+            category="follow_up",
         ),
     ],
     "scenario_based": [
@@ -173,7 +174,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_review_steps_prompt")},
             confidence=0.85,
-            category="follow_up"
+            category="follow_up",
         ),
         Suggestion(
             id="adjust_rerun",
@@ -183,7 +184,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_adjust_rerun_prompt")},
             confidence=0.82,
-            category="follow_up"
+            category="follow_up",
         ),
     ],
     "general_chat": [
@@ -195,7 +196,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             action_type="quick_task",
             action_payload={"prompt": _t("ss_start_task_prompt")},
             confidence=0.75,
-            category="follow_up"
+            category="follow_up",
         ),
     ],
 }
@@ -234,7 +235,9 @@ def _generate_related_suggestions(context: dict) -> List[Suggestion]:
     if not user_history:
         return []
 
-    recent_types = [h.get("task_type", "") for h in user_history[:5] if h.get("task_type")]
+    recent_types = [
+        h.get("task_type", "") for h in user_history[:5] if h.get("task_type")
+    ]
     type_counter = Counter(recent_types)
 
     complementary = COMPLEMENTARY_TASKS.get(last_task_type, [])
@@ -246,38 +249,46 @@ def _generate_related_suggestions(context: dict) -> List[Suggestion]:
             confidence = min(0.6 + (count * 0.08), 0.9)
 
             if comp_type == "data_analysis":
-                suggestions.append(Suggestion(
-                    id=f"rel_analysis_{comp_type}",
-                    title=_t("ss_rel_financial_analysis"),
-                    description=_t("ss_rel_financial_analysis_desc"),
-                    icon="📊",
-                    action_type="quick_task",
-                    action_payload={"prompt": _t("ss_rel_financial_analysis_prompt")},
-                    confidence=confidence,
-                    category="related"
-                ))
+                suggestions.append(
+                    Suggestion(
+                        id=f"rel_analysis_{comp_type}",
+                        title=_t("ss_rel_financial_analysis"),
+                        description=_t("ss_rel_financial_analysis_desc"),
+                        icon="📊",
+                        action_type="quick_task",
+                        action_payload={
+                            "prompt": _t("ss_rel_financial_analysis_prompt")
+                        },
+                        confidence=confidence,
+                        category="related",
+                    )
+                )
             elif comp_type == "content_generation":
-                suggestions.append(Suggestion(
-                    id=f"rel_content_{comp_type}",
-                    title=_t("ss_rel_weekly_report"),
-                    description=_t("ss_rel_weekly_report_desc"),
-                    icon="📝",
-                    action_type="quick_task",
-                    action_payload={"prompt": _t("ss_rel_weekly_report_prompt")},
-                    confidence=confidence,
-                    category="related"
-                ))
+                suggestions.append(
+                    Suggestion(
+                        id=f"rel_content_{comp_type}",
+                        title=_t("ss_rel_weekly_report"),
+                        description=_t("ss_rel_weekly_report_desc"),
+                        icon="📝",
+                        action_type="quick_task",
+                        action_payload={"prompt": _t("ss_rel_weekly_report_prompt")},
+                        confidence=confidence,
+                        category="related",
+                    )
+                )
             elif comp_type == "info_collection":
-                suggestions.append(Suggestion(
-                    id=f"rel_info_{comp_type}",
-                    title=_t("ss_rel_market_research"),
-                    description=_t("ss_rel_market_research_desc"),
-                    icon="🔎",
-                    action_type="quick_task",
-                    action_payload={"prompt": _t("ss_rel_market_research_prompt")},
-                    confidence=confidence,
-                    category="related"
-                ))
+                suggestions.append(
+                    Suggestion(
+                        id=f"rel_info_{comp_type}",
+                        title=_t("ss_rel_market_research"),
+                        description=_t("ss_rel_market_research_desc"),
+                        icon="🔎",
+                        action_type="quick_task",
+                        action_payload={"prompt": _t("ss_rel_market_research_prompt")},
+                        confidence=confidence,
+                        category="related",
+                    )
+                )
 
     return suggestions
 
@@ -292,41 +303,47 @@ def _generate_improvement_suggestions(context: dict) -> List[Suggestion]:
     sources_count = last_result.get("sources_count", 0)
 
     if exec_time > 10000:
-        suggestions.append(Suggestion(
-            id="imp_speed",
-            title=_t("ss_imp_simplify_request"),
-            description=_t("ss_imp_simplify_request_desc"),
-            icon="⚡",
-            action_type="quick_task",
-            action_payload={"prompt": ""},
-            confidence=0.75,
-            category="improvement"
-        ))
+        suggestions.append(
+            Suggestion(
+                id="imp_speed",
+                title=_t("ss_imp_simplify_request"),
+                description=_t("ss_imp_simplify_request_desc"),
+                icon="⚡",
+                action_type="quick_task",
+                action_payload={"prompt": ""},
+                confidence=0.75,
+                category="improvement",
+            )
+        )
 
     if sources_count == 0:
-        suggestions.append(Suggestion(
-            id="imp_search",
-            title=_t("ss_imp_optimize_search"),
-            description=_t("ss_imp_optimize_search_desc"),
-            icon="🔍",
-            action_type="quick_task",
-            action_payload={"prompt": ""},
-            confidence=0.7,
-            category="improvement"
-        ))
+        suggestions.append(
+            Suggestion(
+                id="imp_search",
+                title=_t("ss_imp_optimize_search"),
+                description=_t("ss_imp_optimize_search_desc"),
+                icon="🔍",
+                action_type="quick_task",
+                action_payload={"prompt": ""},
+                confidence=0.7,
+                category="improvement",
+            )
+        )
 
     negative_feedback = [f for f in feedback_history if f.get("feedback") == "bad"]
     if negative_feedback:
-        suggestions.append(Suggestion(
-            id="imp_feedback",
-            title=_t("ss_imp_try_different"),
-            description=_t("ss_imp_try_different_desc"),
-            icon="💭",
-            action_type="quick_task",
-            action_payload={"prompt": ""},
-            confidence=0.8,
-            category="improvement"
-        ))
+        suggestions.append(
+            Suggestion(
+                id="imp_feedback",
+                title=_t("ss_imp_try_different"),
+                description=_t("ss_imp_try_different_desc"),
+                icon="💭",
+                action_type="quick_task",
+                action_payload={"prompt": ""},
+                confidence=0.8,
+                category="improvement",
+            )
+        )
 
     return suggestions
 
@@ -340,40 +357,46 @@ def _generate_exploration_suggestions(context: dict) -> List[Suggestion]:
     unused = all_features - user_features_used
 
     if "dashboard" in unused:
-        suggestions.append(Suggestion(
-            id="exp_dashboard",
-            title=_t("ss_exp_dashboard"),
-            description=_t("ss_exp_dashboard_desc"),
-            icon="📈",
-            action_type="navigate_tab",
-            action_payload={"target_tab": "📈 Dashboard"},
-            confidence=0.72,
-            category="exploration"
-        ))
+        suggestions.append(
+            Suggestion(
+                id="exp_dashboard",
+                title=_t("ss_exp_dashboard"),
+                description=_t("ss_exp_dashboard_desc"),
+                icon="📈",
+                action_type="navigate_tab",
+                action_payload={"target_tab": "📈 Dashboard"},
+                confidence=0.72,
+                category="exploration",
+            )
+        )
 
     if "marketplace" in unused:
-        suggestions.append(Suggestion(
-            id="exp_marketplace",
-            title=_t("ss_exp_marketplace"),
-            description=_t("ss_exp_marketplace_desc"),
-            icon="🛒",
-            action_type="navigate_tab",
-            action_payload={"target_tab": _t("ss_skill_market_tab")},
-            confidence=0.68,
-            category="exploration"
-        ))
+        suggestions.append(
+            Suggestion(
+                id="exp_marketplace",
+                title=_t("ss_exp_marketplace"),
+                description=_t("ss_exp_marketplace_desc"),
+                icon="🛒",
+                action_type="navigate_tab",
+                action_payload={"target_tab": _t("ss_skill_market_tab")},
+                confidence=0.68,
+                category="exploration",
+            )
+        )
 
     if "shortcuts" in unused:
-        suggestions.append(Suggestion(
-            id="exp_shortcuts",
-            title=_t("ss_exp_shortcuts"),
-            description=_t("ss_exp_shortcuts_desc"),
-            icon="⌨️",
-            action_type="open_settings",
-            action_payload={"section": "shortcuts"},
-            confidence=0.65,
-            category="exploration"
-        ))
+        suggestions.append(
+            Suggestion(
+                id="exp_shortcuts",
+                title=_t("ss_exp_shortcuts"),
+                description=_t("ss_exp_shortcuts_desc"),
+                icon="⌨️",
+                action_type="open_settings",
+                action_payload={"section": "shortcuts"},
+                confidence=0.65,
+                category="exploration",
+            )
+        )
 
     return suggestions
 
@@ -417,20 +440,27 @@ def _generate_undo_suggestions(context: dict) -> List[Suggestion]:
                 else:
                     time_urgency = ""
 
-                suggestions.append(Suggestion(
-                    id="undo_last_operation",
-                    title=_t("ss_undo_last_op"),
-                    description=_t("ss_undo_last_op_desc", icon=op_icon, label=op_label, urgency=time_urgency),
-                    icon="↩️",
-                    action_type="quick_task",
-                    action_payload={
-                        "prompt": "",
-                        "undo_action": True,
-                        "operation_id": record_info.get("operation_id", ""),
-                    },
-                    confidence=0.85,
-                    category="follow_up"
-                ))
+                suggestions.append(
+                    Suggestion(
+                        id="undo_last_operation",
+                        title=_t("ss_undo_last_op"),
+                        description=_t(
+                            "ss_undo_last_op_desc",
+                            icon=op_icon,
+                            label=op_label,
+                            urgency=time_urgency,
+                        ),
+                        icon="↩️",
+                        action_type="quick_task",
+                        action_payload={
+                            "prompt": "",
+                            "undo_action": True,
+                            "operation_id": record_info.get("operation_id", ""),
+                        },
+                        confidence=0.85,
+                        category="follow_up",
+                    )
+                )
 
     except ImportError:
         logger.debug("[smart_suggestions] Undo panel not available for suggestions")
@@ -471,7 +501,9 @@ def generate_suggestions(context: dict) -> List[Suggestion]:
             seen_ids.add(s.id)
             unique_suggestions.append(s)
 
-    sorted_suggestions = sorted(unique_suggestions, key=lambda x: x.confidence, reverse=True)
+    sorted_suggestions = sorted(
+        unique_suggestions, key=lambda x: x.confidence, reverse=True
+    )
     return sorted_suggestions[:10]
 
 
@@ -479,7 +511,8 @@ def _render_suggestion_card(suggestion: Suggestion) -> None:
     """Render a single suggestion card with icon, title, description, and action button"""
     confidence_pct = int(suggestion.confidence * 100)
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="
         background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         border: 1px solid #e2e8f0;
@@ -510,7 +543,9 @@ def _render_suggestion_card(suggestion: Suggestion) -> None:
             "></div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     col_btn, col_space = st.columns([1, 2])
     with col_btn:
@@ -519,7 +554,7 @@ def _render_suggestion_card(suggestion: Suggestion) -> None:
             key=f"sug_exec_{suggestion.id}",
             type="primary",
             use_container_width=True,
-            help=_t("ss_confidence_label", pct=confidence_pct)
+            help=_t("ss_confidence_label", pct=confidence_pct),
         ):
             execute_suggestion(suggestion)
 
@@ -536,7 +571,8 @@ def render_suggestion_panel(suggestions: List[Suggestion], max_show: int = 3) ->
 
     st.divider()
 
-    st.markdown("""
+    st.markdown(
+        """
     <div style="
         background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         border-left: 4px solid #f59e0b;
@@ -547,7 +583,9 @@ def render_suggestion_panel(suggestions: List[Suggestion], max_show: int = 3) ->
         <span style="font-size: 18px; margin-right: 8px;">💡</span>
         <strong style="color: #92400e;">{_t("ss_next_steps")}</strong>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     visible = suggestions[:max_show]
     hidden = suggestions[max_show:]
@@ -606,10 +644,12 @@ def execute_suggestion(suggestion: Suggestion) -> None:
         st.error(_t("ss_exec_failed", error=str(e)))
 
 
-def build_context_from_session(last_task_type: str = "",
-                                last_result: dict = None,
-                                deliverables: list = None,
-                                feedback_history: list = None) -> dict:
+def build_context_from_session(
+    last_task_type: str = "",
+    last_result: dict = None,
+    deliverables: list = None,
+    feedback_history: list = None,
+) -> dict:
     """Build suggestion context from current Streamlit session state
 
     Convenience function to gather all needed context from session.
@@ -626,10 +666,13 @@ def build_context_from_session(last_task_type: str = "",
     """
     user_history = []
     if deliverables:
-        user_history = [{
-            "task_type": d.get("task_type", ""),
-            "created_at": d.get("created_at", ""),
-        } for d in deliverables[-5:]]
+        user_history = [
+            {
+                "task_type": d.get("task_type", ""),
+                "created_at": d.get("created_at", ""),
+            }
+            for d in deliverables[-5:]
+        ]
 
     features_used = set()
     if st.session_state.get("has_visited_dashboard"):

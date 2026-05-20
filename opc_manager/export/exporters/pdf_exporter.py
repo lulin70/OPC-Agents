@@ -5,7 +5,9 @@ class PDFExporter:
 
             html_content = self._md_to_html(data, template)
             css_str = opts.get("css", self._get_default_css())
-            pdf_bytes = HTML(string=html_content).write_pdf(stylesheets=[CSS(string=css_str)])
+            pdf_bytes = HTML(string=html_content).write_pdf(
+                stylesheets=[CSS(string=css_str)]
+            )
             return pdf_bytes
         except (ImportError, OSError):
             return self._fallback_pdf(data)
@@ -13,43 +15,47 @@ class PDFExporter:
     def _md_to_html(self, data, template):
         if template:
             from jinja2 import SandboxedEnvironment
+
             env = SandboxedEnvironment()
             j_template = env.from_string(template)
             return j_template.render(content=data.content, meta=data.metadata)
         try:
             import markdown
-            return markdown.markdown(data.content, extensions=['tables', 'fenced_code'])
+
+            return markdown.markdown(data.content, extensions=["tables", "fenced_code"])
         except ImportError:
             return self._simple_md_to_html(data.content)
 
     def _simple_md_to_html(self, md_text):
-        html = md_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        lines = html.split('\n')
+        html = md_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        lines = html.split("\n")
         out = []
         in_code = False
         for line in lines:
-            if line.startswith('```'):
+            if line.startswith("```"):
                 in_code = not in_code
                 continue
             if in_code:
-                out.append(f'<code>{line}</code><br>')
-            elif line.startswith('# '):
-                out.append(f'<h1>{line[2:]}</h1>')
-            elif line.startswith('## '):
-                out.append(f'<h2>{line[3:]}</h2>')
-            elif line.startswith('### '):
-                out.append(f'<h3>{line[4:]}</h3>')
-            elif line.strip() == '':
-                out.append('<br>')
-            elif line.startswith('- '):
-                out.append(f'<li>{line[2:]}</li>')
-            elif line.startswith('|'):
-                cells = [c.strip() for c in line.split('|') if c.strip()]
+                out.append(f"<code>{line}</code><br>")
+            elif line.startswith("# "):
+                out.append(f"<h1>{line[2:]}</h1>")
+            elif line.startswith("## "):
+                out.append(f"<h2>{line[3:]}</h2>")
+            elif line.startswith("### "):
+                out.append(f"<h3>{line[4:]}</h3>")
+            elif line.strip() == "":
+                out.append("<br>")
+            elif line.startswith("- "):
+                out.append(f"<li>{line[2:]}</li>")
+            elif line.startswith("|"):
+                cells = [c.strip() for c in line.split("|") if c.strip()]
                 if cells:
-                    out.append('<tr>' + ''.join(f'<td>{c}</td>' for c in cells) + '</tr>')
+                    out.append(
+                        "<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
+                    )
             else:
-                out.append(f'<p>{line}</p>')
-        return '\n'.join(out)
+                out.append(f"<p>{line}</p>")
+        return "\n".join(out)
 
     def _get_default_css(self):
         return """
@@ -64,4 +70,4 @@ class PDFExporter:
 
     def _fallback_pdf(self, data):
         html = f"<html><body><pre>{data.content}</pre></body></html>"
-        return html.encode('utf-8')
+        return html.encode("utf-8")

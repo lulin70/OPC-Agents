@@ -25,23 +25,29 @@ Usage:
 
 from typing import Optional, Dict, List, Any, Protocol, runtime_checkable
 import threading
+
 try:
     from loguru import logger
 except ImportError:
     import logging
+
     logger = logging.getLogger(__name__)
 
 
 @runtime_checkable
 class LLMProvider(Protocol):
     def is_available(self) -> bool: ...
-    def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> Optional[str]: ...
+    def generate(
+        self, prompt: str, system_prompt: str = "", **kwargs
+    ) -> Optional[str]: ...
 
 
 @runtime_checkable
 class LLMServiceProtocol(Protocol):
     def is_available(self) -> bool: ...
-    def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> Optional[str]: ...
+    def generate(
+        self, prompt: str, system_prompt: str = "", **kwargs
+    ) -> Optional[str]: ...
     def analyze(self, text: str, **kwargs) -> Optional[Dict[str, Any]]: ...
 
 
@@ -88,14 +94,19 @@ class NullSecureProvider:
         return False
 
     def set_key(self, name: str, value: str) -> bool:
-        logger.warning("[NullSecureProvider] Secure storage unavailable — set_key(%s) returned False", name)
+        logger.warning(
+            "[NullSecureProvider] Secure storage unavailable — set_key(%s) returned False",
+            name,
+        )
         return False
 
     def get_key(self, name: str) -> Optional[str]:
         return None
 
     def load_to_env(self) -> int:
-        logger.warning("[NullSecureProvider] Secure storage unavailable — load_to_env() returned 0")
+        logger.warning(
+            "[NullSecureProvider] Secure storage unavailable — load_to_env() returned 0"
+        )
         return 0
 
 
@@ -123,6 +134,7 @@ def get_llm_provider() -> LLMProvider:
             return _llm_provider
         try:
             from opc_manager.llm_content import LLMEnhancedContentGenerator
+
             gen = LLMEnhancedContentGenerator()
             api_key, api_base, model = gen._get_llm_config()
             if api_base:
@@ -143,6 +155,7 @@ def get_search_provider() -> SearchProvider:
             return _search_provider
         try:
             from opc_manager.search_processor import SearchResultProcessor
+
             _search_provider = _SearchProviderWrapper(SearchResultProcessor())
             return _search_provider
         except Exception as e:
@@ -160,6 +173,7 @@ def get_secure_provider() -> SecureProvider:
             return _secure_provider
         try:
             from opc_manager.secure_storage import SecureKeyStore
+
             store = SecureKeyStore()
             if store.is_available:
                 _secure_provider = _SecureProviderWrapper(store)

@@ -43,6 +43,7 @@ _DEFAULT_HOURLY_RATES = {
 def _load_hourly_benchmarks() -> dict:
     try:
         from opc_manager.utils import load_json_data
+
         return load_json_data("data/knowledge/pricing_benchmarks.json")
     except Exception as e:
         logger.debug("[PricingSkill] Load pricing benchmarks failed: %s", e)
@@ -52,11 +53,19 @@ def _load_hourly_benchmarks() -> dict:
 HOURLY_RATE_BENCHMARKS = _load_hourly_benchmarks()
 
 
-def calculate_pricing(method: str, service_type: str = "通用",
-                      cost: float = 0, hours: float = 0,
-                      market_avg: float = 0, level: str = "mid") -> Dict[str, Any]:
+def calculate_pricing(
+    method: str,
+    service_type: str = "通用",
+    cost: float = 0,
+    hours: float = 0,
+    market_avg: float = 0,
+    level: str = "mid",
+) -> Dict[str, Any]:
     if method not in PRICING_METHODS:
-        return {"success": False, "error": f"不支持的方法: {method}，可选: {list(PRICING_METHODS.keys())}"}
+        return {
+            "success": False,
+            "error": f"不支持的方法: {method}，可选: {list(PRICING_METHODS.keys())}",
+        }
 
     cfg = PRICING_METHODS[method]
     result = {"method": method, "formula": cfg["formula"]}
@@ -66,22 +75,36 @@ def calculate_pricing(method: str, service_type: str = "通用",
             return {"success": False, "error": "成本定价法需要提供cost参数"}
         margin = cfg["default_margin"]
         price = cost * (1 + margin)
-        result.update({"cost": cost, "margin": f"{margin*100:.0f}%", "price": round(price, 2)})
+        result.update(
+            {"cost": cost, "margin": f"{margin*100:.0f}%", "price": round(price, 2)}
+        )
 
     elif method == "价值定价":
         if cost <= 0:
-            return {"success": False, "error": "价值定价法需要提供cost参数(作为最低参考)"}
+            return {
+                "success": False,
+                "error": "价值定价法需要提供cost参数(作为最低参考)",
+            }
         value_multiplier = cfg["default_margin"] + 1.0
         perceived_value = cost * 2.5
         price = perceived_value * value_multiplier
-        result.update({"base_cost": cost, "perceived_value": round(perceived_value, 2), "value_multiplier": f"{value_multiplier:.1f}x", "price": round(price, 2)})
+        result.update(
+            {
+                "base_cost": cost,
+                "perceived_value": round(perceived_value, 2),
+                "value_multiplier": f"{value_multiplier:.1f}x",
+                "price": round(price, 2),
+            }
+        )
 
     elif method == "竞争定价":
         if market_avg <= 0:
             return {"success": False, "error": "竞争定价法需要提供market_avg参数"}
         position_factor = 1.0
         price = market_avg * position_factor
-        result.update({"market_avg": market_avg, "position": "市场均价", "price": round(price, 2)})
+        result.update(
+            {"market_avg": market_avg, "position": "市场均价", "price": round(price, 2)}
+        )
 
     elif method == "小时费率":
         if hours <= 0:
@@ -89,12 +112,19 @@ def calculate_pricing(method: str, service_type: str = "通用",
         rates = HOURLY_RATE_BENCHMARKS.get(service_type, HOURLY_RATE_BENCHMARKS["通用"])
         rate = rates.get(level, rates["mid"])
         price = rate * hours
-        result.update({
-            "hourly_rate": rate, "hours": hours, "level": level,
-            "service_type": service_type, "price": round(price, 2),
-        })
+        result.update(
+            {
+                "hourly_rate": rate,
+                "hours": hours,
+                "level": level,
+                "service_type": service_type,
+                "price": round(price, 2),
+            }
+        )
 
-    AuditLogger.log("pricing_calculated", {"method": method, "price": result.get("price", 0)})
+    AuditLogger.log(
+        "pricing_calculated", {"method": method, "price": result.get("price", 0)}
+    )
 
     return {
         "success": True,
@@ -121,8 +151,9 @@ def get_hourly_benchmarks(service_type: str = "") -> Dict[str, Any]:
     }
 
 
-def save_pricing_record(name: str, method: str, price: float,
-                        note: str = "") -> Dict[str, Any]:
+def save_pricing_record(
+    name: str, method: str, price: float, note: str = ""
+) -> Dict[str, Any]:
     if not name.strip():
         return {"success": False, "error": "定价记录名称不能为空"}
     if price <= 0:
@@ -141,7 +172,11 @@ def save_pricing_record(name: str, method: str, price: float,
         return {"success": False, "error": f"保存失败: {e}"}
 
     AuditLogger.log("pricing_saved", {"id": record_id, "name": name, "price": price})
-    return {"success": True, "id": record_id, "message": f"定价记录已保存: {name} ¥{price:.2f}"}
+    return {
+        "success": True,
+        "id": record_id,
+        "message": f"定价记录已保存: {name} ¥{price:.2f}",
+    }
 
 
 def list_pricing_records() -> Dict[str, Any]:
@@ -155,30 +190,45 @@ def list_pricing_records() -> Dict[str, Any]:
     return {"success": True, "records": records, "count": len(records)}
 
 
-def suggest_pricing(service_type: str = "通用", cost: float = 0,
-                    hours: float = 0) -> Dict[str, Any]:
+def suggest_pricing(
+    service_type: str = "通用", cost: float = 0, hours: float = 0
+) -> Dict[str, Any]:
     suggestions = []
     if cost > 0:
         r = calculate_pricing("成本定价", cost=cost)
         if r["success"]:
-            suggestions.append({"method": "成本定价", "price": r["price"], "formula": r["formula"]})
+            suggestions.append(
+                {"method": "成本定价", "price": r["price"], "formula": r["formula"]}
+            )
         r = calculate_pricing("价值定价", cost=cost)
         if r["success"]:
-            suggestions.append({"method": "价值定价", "price": r["price"], "formula": r["formula"]})
+            suggestions.append(
+                {"method": "价值定价", "price": r["price"], "formula": r["formula"]}
+            )
     if hours > 0:
         for level in ["mid", "senior"]:
-            r = calculate_pricing("小时费率", service_type=service_type, hours=hours, level=level)
+            r = calculate_pricing(
+                "小时费率", service_type=service_type, hours=hours, level=level
+            )
             if r["success"]:
-                suggestions.append({"method": f"小时费率({level})", "price": r["price"], "detail": r["detail"]})
+                suggestions.append(
+                    {
+                        "method": f"小时费率({level})",
+                        "price": r["price"],
+                        "detail": r["detail"],
+                    }
+                )
 
     if not suggestions:
         rates = HOURLY_RATE_BENCHMARKS.get(service_type, HOURLY_RATE_BENCHMARKS["通用"])
-        suggestions.append({
-            "method": "行业参考",
-            "mid_rate": f"¥{rates['mid']}/小时",
-            "senior_rate": f"¥{rates['senior']}/小时",
-            "expert_rate": f"¥{rates['expert']}/小时",
-        })
+        suggestions.append(
+            {
+                "method": "行业参考",
+                "mid_rate": f"¥{rates['mid']}/小时",
+                "senior_rate": f"¥{rates['senior']}/小时",
+                "expert_rate": f"¥{rates['expert']}/小时",
+            }
+        )
 
     return {
         "success": True,
@@ -198,6 +248,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
 
     if any(kw in goal for kw in ["建议", "怎么定", "如何定", "推荐"]):
         from opc_manager.finance_skill import parse_amount_from_text
+
         cost = parse_amount_from_text(goal) or 0
         service_type = "通用"
         for st in ["咨询", "培训", "设计", "开发"]:
@@ -213,6 +264,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
             break
 
     from opc_manager.finance_skill import parse_amount_from_text
+
     amount = parse_amount_from_text(goal) or 0
     if amount > 0:
         return calculate_pricing(method, cost=amount)

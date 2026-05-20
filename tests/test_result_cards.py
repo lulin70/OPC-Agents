@@ -120,7 +120,9 @@ class TestRenderResultCard(unittest.TestCase):
     def test_render_with_general_chat(self, mock_st):
         """TC-008: GENERAL_CHAT类型卡片渲染（无下载按钮）"""
         content = "对话内容..."
-        with patch.object(sys.modules["frontend.components.result_cards"].st, "container") as mock_container:
+        with patch.object(
+            sys.modules["frontend.components.result_cards"].st, "container"
+        ) as mock_container:
             render_result_card(content, "general_chat", {}, None)
 
     @patch("frontend.components.result_cards.st")
@@ -219,16 +221,24 @@ class TestRenderActionButtons(unittest.TestCase):
     def test_disabled_button_for_missing_file(self, mock_st):
         """TC-019: 文件不存在时禁用下载按钮"""
         _render_action_buttons("/nonexistent/path.md", "content", [])
-        button_calls = [call for call in mock_st.button.call_args_list if "下载" in str(call)]
+        button_calls = [
+            call for call in mock_st.button.call_args_list if "下载" in str(call)
+        ]
         self.assertTrue(len(button_calls) > 0)
-        call_kwargs = button_calls[0].kwargs if hasattr(button_calls[0], 'kwargs') else {}
-        self.assertTrue(call_kwargs.get('disabled', False) or 'disabled' in str(button_calls[0]))
+        call_kwargs = (
+            button_calls[0].kwargs if hasattr(button_calls[0], "kwargs") else {}
+        )
+        self.assertTrue(
+            call_kwargs.get("disabled", False) or "disabled" in str(button_calls[0])
+        )
 
     @patch("frontend.components.result_cards.st")
     def test_copy_button_present(self, mock_st):
         """TC-020: 复制按钮始终存在"""
         _render_action_buttons("/tmp/test.md", "content", ["pdf"])
-        copy_calls = [call for call in mock_st.button.call_args_list if "复制" in str(call)]
+        copy_calls = [
+            call for call in mock_st.button.call_args_list if "复制" in str(call)
+        ]
         self.assertTrue(len(copy_calls) > 0)
 
     @patch("frontend.components.result_cards.st")
@@ -266,7 +276,10 @@ class TestRenderContentPreview(unittest.TestCase):
             if "..." in call_content and len(call_content) < len(long_content):
                 found_truncated = True
                 break
-        self.assertTrue(found_truncated, f"应该在调用中找到截断的内容，实际调用数: {len(call_args_list)}")
+        self.assertTrue(
+            found_truncated,
+            f"应该在调用中找到截断的内容，实际调用数: {len(call_args_list)}",
+        )
 
     @patch("frontend.components.result_cards.st")
     def test_expand_toggle_for_long_content(self, mock_st):
@@ -274,7 +287,9 @@ class TestRenderContentPreview(unittest.TestCase):
         long_content = "x" * 300
         _render_content_preview(long_content, max_chars=200)
         button_calls = [str(call) for call in mock_st.button.call_args_list]
-        self.assertTrue(any("展开" in call or "expand" in call.lower() for call in button_calls))
+        self.assertTrue(
+            any("展开" in call or "expand" in call.lower() for call in button_calls)
+        )
 
 
 class TestExtractDataInsights(unittest.TestCase):
@@ -308,7 +323,11 @@ class TestExtractDataInsights(unittest.TestCase):
         insights = _extract_data_insights(content)
         trend_found = any("趋势" in insight for insight in insights)
         self.assertTrue(trend_found)
-        self.assertTrue(any("增长" in str(insight) or "下滑" in str(insight) for insight in insights))
+        self.assertTrue(
+            any(
+                "增长" in str(insight) or "下滑" in str(insight) for insight in insights
+            )
+        )
 
     def test_no_data_returns_empty(self):
         """TC-029: 无数据时返回空列表"""

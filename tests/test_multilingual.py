@@ -26,9 +26,21 @@ from opc_manager.validators import TaskRequest
 from opc_manager.llm_content import LLMEnhancedContentGenerator
 
 MOCK_SEARCH_RESULTS = [
-    {"title": "AI Market Research", "href": "https://example.com/1", "body": "Latest AI market trends and analysis..."},
-    {"title": "Marketing Plan Guide", "href": "https://example.com/2", "body": "How to create an effective marketing plan..."},
-    {"title": "SWOT Analysis Framework", "href": "https://example.com/3", "body": "Business SWOT analysis methodology..."},
+    {
+        "title": "AI Market Research",
+        "href": "https://example.com/1",
+        "body": "Latest AI market trends and analysis...",
+    },
+    {
+        "title": "Marketing Plan Guide",
+        "href": "https://example.com/2",
+        "body": "How to create an effective marketing plan...",
+    },
+    {
+        "title": "SWOT Analysis Framework",
+        "href": "https://example.com/3",
+        "body": "Business SWOT analysis methodology...",
+    },
 ]
 
 MOCK_SOURCES = [
@@ -57,7 +69,9 @@ class TestInputValidatorMultilingual(unittest.TestCase):
         self.assertIn("AI", text)
 
     def test_english_input_passes(self):
-        text, err = InputValidator.sanitize("Collect the latest AI industry trends for 2024")
+        text, err = InputValidator.sanitize(
+            "Collect the latest AI industry trends for 2024"
+        )
         self.assertIsNone(err)
         self.assertIn("AI", text)
 
@@ -121,13 +135,17 @@ class TestInputValidatorMultilingual(unittest.TestCase):
         self.assertIn("正常内容", text)
 
     def test_english_html_stripped(self):
-        text, err = InputValidator.sanitize("<script>alert('xss')</script>normal content")
+        text, err = InputValidator.sanitize(
+            "<script>alert('xss')</script>normal content"
+        )
         self.assertIsNone(err)
         self.assertNotIn("<script>", text)
         self.assertIn("normal content", text)
 
     def test_japanese_html_stripped(self):
-        text, err = InputValidator.sanitize("<script>alert('xss')</script>正常コンテンツ")
+        text, err = InputValidator.sanitize(
+            "<script>alert('xss')</script>正常コンテンツ"
+        )
         self.assertIsNone(err)
         self.assertNotIn("<script>", text)
 
@@ -327,12 +345,10 @@ class TestTaskEngineMultilingual(unittest.TestCase):
     def setUp(self):
         self.engine = TaskEngineV3()
         self._search_patcher = patch.object(
-            TaskEngineV3, '_search',
-            return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
+            TaskEngineV3, "_search", return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
         )
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
-            return_value=MOCK_LLM_RESPONSE
+            LLMEnhancedContentGenerator, "_call_llm_api", return_value=MOCK_LLM_RESPONSE
         )
         self._search_patcher.start()
         self._llm_patcher.start()

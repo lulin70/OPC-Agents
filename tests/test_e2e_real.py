@@ -30,10 +30,10 @@ from opc_manager.task_engine_v3 import TaskEngineV3, TaskType, TaskResult
 from opc_manager.llm_content import LLMEnhancedContentGenerator
 from opc_hr.web_search import WebSearchMCP
 
-
 # ============================================================
 # Real Search Tests (DuckDuckGo)
 # ============================================================
+
 
 @pytest.mark.e2e
 @pytest.mark.e2e_search
@@ -84,6 +84,7 @@ class TestRealSearch(unittest.TestCase):
 # Real Full Pipeline Tests (Search + Engine)
 # ============================================================
 
+
 @pytest.mark.e2e
 @pytest.mark.e2e_search
 class TestRealFullPipeline(unittest.TestCase):
@@ -120,25 +121,35 @@ class TestRealFullPipeline(unittest.TestCase):
         result = self.engine.execute("分析一下一人公司的SWOT")
         self.assertTrue(result.success)
         content_lower = result.content.lower()
-        has_swot = any(kw in content_lower for kw in ["swot", "优势", "劣势", "机会", "威胁"])
-        self.assertTrue(has_swot, f"SWOT analysis should contain SWOT keywords: {result.content[:100]}")
+        has_swot = any(
+            kw in content_lower for kw in ["swot", "优势", "劣势", "机会", "威胁"]
+        )
+        self.assertTrue(
+            has_swot,
+            f"SWOT analysis should contain SWOT keywords: {result.content[:100]}",
+        )
 
     def test_no_placeholder_in_real_output(self):
         result = self.engine.execute("帮我制定一个产品发布计划")
         placeholders = ["___", "待填写", "此处插入", "TODO", "FIXME"]
         for p in placeholders:
-            self.assertNotIn(p, result.content, f"Real output should not contain placeholder: {p}")
+            self.assertNotIn(
+                p, result.content, f"Real output should not contain placeholder: {p}"
+            )
 
     def test_real_pipeline_performance_under_30s(self):
         start = time.time()
         self.engine.execute("收集SaaS增长策略信息")
         elapsed = time.time() - start
-        self.assertLess(elapsed, 30, f"Full pipeline took {elapsed:.1f}s, should be < 30s")
+        self.assertLess(
+            elapsed, 30, f"Full pipeline took {elapsed:.1f}s, should be < 30s"
+        )
 
 
 # ============================================================
 # Real LLM Tests (requires API key)
 # ============================================================
+
 
 @pytest.mark.e2e
 @pytest.mark.e2e_llm
@@ -155,7 +166,7 @@ class TestRealLLM(unittest.TestCase):
         result = self.generator.generate(
             user_input="帮我写一份AI写作助手的Q2营销方案，月活5000提升到10000",
             template="# Q2营销方案\n\n## 项目概览\n{business_context}\n\n## 目标\n{goals}\n\n"
-                     + "详细内容。\n" * 20,
+            + "详细内容。\n" * 20,
         )
         self.assertTrue(result.success)
         self.assertGreater(len(result.content), 500)
@@ -165,7 +176,7 @@ class TestRealLLM(unittest.TestCase):
         result = self.generator.generate(
             user_input="Write a Q2 marketing plan for an AI writing assistant, MAU from 5000 to 10000",
             template="# Q2 Marketing Plan\n\n## Overview\n{business_context}\n\n## Goals\n{goals}\n\n"
-                     + "Detailed content.\n" * 20,
+            + "Detailed content.\n" * 20,
         )
         self.assertTrue(result.success)
         self.assertGreater(len(result.content), 500)
@@ -174,7 +185,7 @@ class TestRealLLM(unittest.TestCase):
         result = self.generator.generate(
             user_input="AIライティングアシスタントのQ2マーケティングプランを作成して、MAUを5000から10000に",
             template="# Q2マーケティングプラン\n\n## 概要\n{business_context}\n\n## 目標\n{goals}\n\n"
-                     + "詳細内容。\n" * 20,
+            + "詳細内容。\n" * 20,
         )
         self.assertTrue(result.success)
         self.assertGreater(len(result.content), 500)
@@ -195,12 +206,15 @@ class TestRealLLM(unittest.TestCase):
             template="# 方案\n{business_context}\n" + "内容。\n" * 20,
         )
         elapsed = time.time() - start
-        self.assertLess(elapsed, 60, f"LLM generation took {elapsed:.1f}s, should be < 60s")
+        self.assertLess(
+            elapsed, 60, f"LLM generation took {elapsed:.1f}s, should be < 60s"
+        )
 
 
 # ============================================================
 # Real End-to-End with LLM (full system)
 # ============================================================
+
 
 @pytest.mark.e2e
 @pytest.mark.e2e_llm
@@ -215,7 +229,9 @@ class TestRealE2EWithLLM(unittest.TestCase):
             raise unittest.SkipTest("LLM API not available")
 
     def test_full_chinese_pipeline_with_llm(self):
-        result = self.engine.execute("帮我写一份AI产品Q2增长方案，目标月活从5000提升到10000")
+        result = self.engine.execute(
+            "帮我写一份AI产品Q2增长方案，目标月活从5000提升到10000"
+        )
         self.assertTrue(result.success)
         self.assertGreater(len(result.content), 500)
         self.assertIn("# ", result.content)
@@ -224,12 +240,16 @@ class TestRealE2EWithLLM(unittest.TestCase):
             self.assertNotIn(p, result.content)
 
     def test_full_english_pipeline_with_llm(self):
-        result = self.engine.execute("Write a Q2 growth plan for an AI product, target MAU from 5000 to 10000")
+        result = self.engine.execute(
+            "Write a Q2 growth plan for an AI product, target MAU from 5000 to 10000"
+        )
         self.assertTrue(result.success)
         self.assertGreater(len(result.content), 500)
 
     def test_full_japanese_pipeline_with_llm(self):
-        result = self.engine.execute("AI製品のQ2成長プランを作成して、目標MAUを5000から10000に")
+        result = self.engine.execute(
+            "AI製品のQ2成長プランを作成して、目標MAUを5000から10000に"
+        )
         self.assertTrue(result.success)
         self.assertGreater(len(result.content), 500)
 

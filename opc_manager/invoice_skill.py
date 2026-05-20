@@ -10,9 +10,14 @@ from opc_manager.tax_reminder_skill import get_tax_calendar, TAX_CALENDAR
 logger = logging.getLogger(__name__)
 
 
-def create_invoice(client_name: str, amount: float, item: str = "服务费",
-                   tax_rate: float = 0.06, invoice_type: str = "增值税普通发票",
-                   proposal_id: str = "") -> Dict[str, Any]:
+def create_invoice(
+    client_name: str,
+    amount: float,
+    item: str = "服务费",
+    tax_rate: float = 0.06,
+    invoice_type: str = "增值税普通发票",
+    proposal_id: str = "",
+) -> Dict[str, Any]:
     if amount <= 0:
         return {"success": False, "error": "金额必须大于0"}
     if not client_name.strip():
@@ -50,13 +55,28 @@ def create_invoice(client_name: str, amount: float, item: str = "服务费",
     try:
         execute_write(
             "INSERT INTO invoices (id,invoice_no,client_name,amount,item,tax_rate,tax_amount,total_with_tax,proposal_id,status,markdown,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-            (invoice_id, invoice_no, client_name, amount, item, tax_rate, tax_amount, total_with_tax, proposal_id, "pending", markdown, now),
+            (
+                invoice_id,
+                invoice_no,
+                client_name,
+                amount,
+                item,
+                tax_rate,
+                tax_amount,
+                total_with_tax,
+                proposal_id,
+                "pending",
+                markdown,
+                now,
+            ),
         )
     except Exception as e:
         logger.warning("invoice_skill.create_invoice write failed: %s", e)
         return {"success": False, "error": f"保存失败: {e}"}
 
-    AuditLogger.log("invoice_created", {"no": invoice_no, "client": client_name, "amount": amount})
+    AuditLogger.log(
+        "invoice_created", {"no": invoice_no, "client": client_name, "amount": amount}
+    )
 
     return {
         "success": True,
@@ -73,7 +93,10 @@ def create_invoice(client_name: str, amount: float, item: str = "服务费",
 def update_invoice_status(invoice_id: str, status: str) -> Dict[str, Any]:
     valid_statuses = {"issued", "paid", "cancelled"}
     if status not in valid_statuses:
-        return {"success": False, "error": f"无效状态: {status}，支持: {', '.join(sorted(valid_statuses))}"}
+        return {
+            "success": False,
+            "error": f"无效状态: {status}，支持: {', '.join(sorted(valid_statuses))}",
+        }
     rows = execute_query("SELECT * FROM invoices WHERE id=?", (invoice_id,))
     if not rows:
         return {"success": False, "error": f"发票不存在: {invoice_id}"}
@@ -87,7 +110,10 @@ def update_invoice_status(invoice_id: str, status: str) -> Dict[str, Any]:
         return {"success": False, "error": f"更新失败: {e}"}
     record = dict(rows[0])
     AuditLogger.log("invoice_status_updated", {"id": invoice_id, "status": status})
-    return {"success": True, "message": f"发票 {record.get('invoice_no', invoice_id)} 状态已更新为: {status}"}
+    return {
+        "success": True,
+        "message": f"发票 {record.get('invoice_no', invoice_id)} 状态已更新为: {status}",
+    }
 
 
 def list_invoices(status: str = "") -> Dict[str, Any]:
@@ -129,12 +155,14 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         return list_invoices()
 
     from opc_manager.finance_skill import parse_amount_from_text
+
     amount = parse_amount_from_text(goal)
     if not amount:
         return {"success": False, "error": "请指定金额（如：给张总开一张3000元的发票）"}
 
     client_name = ""
     import re
+
     m = re.search(r"给(.+?)(开|出)", goal)
     if m:
         client_name = m.group(1).strip()
@@ -154,4 +182,7 @@ def undo_create_invoice(invoice_id=None, **kwargs):
         return {"success": False, "error": "未找到可撤销的发票"}
     target_id = invoice_id or rows[0]["id"]
     execute_write("UPDATE invoices SET status='cancelled' WHERE id=?", (target_id,))
-    return {"success": True, "message": f"发票已撤销: {rows[0].get('invoice_no', target_id)}"}
+    return {
+        "success": True,
+        "message": f"发票已撤销: {rows[0].get('invoice_no', target_id)}",
+    }

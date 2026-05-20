@@ -36,6 +36,7 @@ class AuditRecord:
         status: Operation status ('success', 'failed', 'cancelled').
         error_msg: Error message if operation failed.
     """
+
     id: str
     session_id: str
     user_id: str
@@ -49,15 +50,28 @@ class AuditRecord:
     status: str
     error_msg: str = ""
 
+
 AUDIT_MAX_MEMORY_LOGS = 1000
 AUDIT_WRITE_BATCH_SIZE = 10
 AUDIT_RETENTION_DAYS = 90
 AUDIT_MAX_QUERY_OUTPUT_LENGTH = 500
 
 AUDIT_SENSITIVE_PATTERNS = [
-    'password', 'passwd', 'pwd', 'secret', 'api_key', 'apikey',
-    'token', 'auth', 'credential', 'private_key', 'access_key',
-    'credit_card', 'card_number', 'ssn', 'social_security',
+    "password",
+    "passwd",
+    "pwd",
+    "secret",
+    "api_key",
+    "apikey",
+    "token",
+    "auth",
+    "credential",
+    "private_key",
+    "access_key",
+    "credit_card",
+    "card_number",
+    "ssn",
+    "social_security",
 ]
 
 
@@ -71,6 +85,7 @@ class AuditLog:
         _instance: Singleton instance.
         _lock: Threading lock for thread safety.
     """
+
     _instance = None
     _lock = threading.Lock()
 
@@ -100,16 +115,26 @@ class AuditLog:
     def _init_db_connection(self):
         try:
             from opc_manager.data_manager import init_db
+
             init_db()
             logger.info("AuditLog database connection initialized")
         except Exception as e:
             logger.warning("AuditLog failed to initialize database connection: %s", e)
 
-    def log(self, session_id: str, operation_type: str, skill_id: str,
-            input_text: str, output_data: Any, duration_ms: int,
-            status: str = "success", error_msg: str = "",
-            user_id: str = "default"):
+    def log(
+        self,
+        session_id: str,
+        operation_type: str,
+        skill_id: str,
+        input_text: str,
+        output_data: Any,
+        duration_ms: int,
+        status: str = "success",
+        error_msg: str = "",
+        user_id: str = "default",
+    ):
         import uuid
+
         input_text = input_text or ""
         record = AuditRecord(
             id=uuid.uuid4().hex[:12],
@@ -134,8 +159,13 @@ class AuditLog:
 
         return record.id
 
-    def query(self, session_id: str = None, operation_type: str = None,
-              limit: int = 50, since: float = None) -> List[dict]:
+    def query(
+        self,
+        session_id: str = None,
+        operation_type: str = None,
+        limit: int = 50,
+        since: float = None,
+    ) -> List[dict]:
         if not isinstance(limit, int) or limit < 1:
             raise ValueError("limit must be a positive integer")
         if limit > 1000:
@@ -149,16 +179,18 @@ class AuditLog:
                     continue
                 if since and r.timestamp < since:
                     continue
-                results.append({
-                    "id": r.id,
-                    "timestamp": r.timestamp,
-                    "operation_type": r.operation_type,
-                    "skill_id": r.skill_id,
-                    "status": r.status,
-                    "duration_ms": r.duration_ms,
-                    "input_summary": r.input_summary,
-                    "output_summary": r.output_summary[:MAX_QUERY_OUTPUT_LENGTH],
-                })
+                results.append(
+                    {
+                        "id": r.id,
+                        "timestamp": r.timestamp,
+                        "operation_type": r.operation_type,
+                        "skill_id": r.skill_id,
+                        "status": r.status,
+                        "duration_ms": r.duration_ms,
+                        "input_summary": r.input_summary,
+                        "output_summary": r.output_summary[:MAX_QUERY_OUTPUT_LENGTH],
+                    }
+                )
         return results[:limit]
 
     def get_stats(self, session_id: str = None) -> dict:
@@ -186,13 +218,17 @@ class AuditLog:
         if before_timestamp is None:
             before_timestamp = time.time() - AUDIT_RETENTION_DAYS * 86400
         with self._lock:
-            self._logs = deque([r for r in self._logs if r.timestamp >= before_timestamp], maxlen=AUDIT_MAX_MEMORY_LOGS)
+            self._logs = deque(
+                [r for r in self._logs if r.timestamp >= before_timestamp],
+                maxlen=AUDIT_MAX_MEMORY_LOGS,
+            )
 
     def _start_background_writer(self):
         self._started = True
 
         def writer():
             from opc_manager.data_manager import init_db, execute_write
+
             try:
                 init_db()
             except Exception as e:
@@ -212,17 +248,34 @@ class AuditLog:
 
                     try:
                         init_db()
-                        values = [(r.id, r.session_id, r.user_id, r.timestamp,
-                                 r.operation_type, r.skill_id, r.input_hash,
-                                 r.input_summary, r.output_summary, r.duration_ms,
-                                 r.status, r.error_msg) for r in batch]
-                        execute_write("""
+                        values = [
+                            (
+                                r.id,
+                                r.session_id,
+                                r.user_id,
+                                r.timestamp,
+                                r.operation_type,
+                                r.skill_id,
+                                r.input_hash,
+                                r.input_summary,
+                                r.output_summary,
+                                r.duration_ms,
+                                r.status,
+                                r.error_msg,
+                            )
+                            for r in batch
+                        ]
+                        execute_write(
+                            """
                             INSERT OR IGNORE INTO audit_log
                             (id, session_id, user_id, timestamp, operation_type,
                              skill_id, input_hash, input_summary, output_summary,
                              duration_ms, status, error_msg)
                             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-                        """, values, many=True)
+                        """,
+                            values,
+                            many=True,
+                        )
                     except (IOError, OSError) as e:
                         logger.warning("AuditLog I/O write failed: %s", e)
                     except Exception as e:

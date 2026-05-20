@@ -32,11 +32,13 @@ load_dotenv(Path(_WORKSPACE_DIR) / ".env")
 
 try:
     from opc_manager.secure_storage import init_secure_storage
+
     init_secure_storage()
 except ImportError:
     pass
 except Exception as e:
     import logging as _logging
+
     _logging.getLogger(__name__).warning("Secure storage init failed: %s", e)
 
 init_monitoring()
@@ -56,24 +58,47 @@ from frontend.routers.base_router import (
 os.makedirs(DELIVERABLES_DIR, exist_ok=True)
 
 for _subdir in [
-    "data/knowledge", "data/notifications", "data/custom_skills",
-    "data/marketplace", "data/feedback", "data/consensus_logs",
-    "data/llm_cache", "data/schedules", "data/completions",
-    "data/context", "data/checkpoints", "data/loop_progress",
-    "data/workflows", "logs", "output",
+    "data/knowledge",
+    "data/notifications",
+    "data/custom_skills",
+    "data/marketplace",
+    "data/feedback",
+    "data/consensus_logs",
+    "data/llm_cache",
+    "data/schedules",
+    "data/completions",
+    "data/context",
+    "data/checkpoints",
+    "data/loop_progress",
+    "data/workflows",
+    "logs",
+    "output",
 ]:
     os.makedirs(os.path.join(_WORKSPACE_DIR, _subdir), exist_ok=True)
 
 from frontend.components.shared import (
-    _get_export_bytes, _get_mime_type, _render_batch_export_section,
-    _execute_batch_export, _render_single_export_buttons, _event_type_label,
-    _event_emoji, _render_progress_indicator, _auto_refresh_progress,
-    _render_export_buttons, _get_undo_manager, _cached_list_undoable,
-    _render_theme_selector, _render_language_selector,
-    _render_shortcuts_help, _get_current_session_id,
+    _get_export_bytes,
+    _get_mime_type,
+    _render_batch_export_section,
+    _execute_batch_export,
+    _render_single_export_buttons,
+    _event_type_label,
+    _event_emoji,
+    _render_progress_indicator,
+    _auto_refresh_progress,
+    _render_export_buttons,
+    _get_undo_manager,
+    _cached_list_undoable,
+    _render_theme_selector,
+    _render_language_selector,
+    _render_shortcuts_help,
+    _get_current_session_id,
     _get_phase_from_event,
-    show_success, show_error, show_info,
-    _maybe_show_shortcut_hints, _render_floating_help_button,
+    show_success,
+    show_error,
+    show_info,
+    _maybe_show_shortcut_hints,
+    _render_floating_help_button,
     _render_quick_undo_button,
 )
 
@@ -93,7 +118,9 @@ from frontend.page_modules._dashboard_page import (
 )
 
 from frontend.page_modules._marketplace_page import (
-    _render_skill_marketplace_page, _render_global_search, _execute_global_search,
+    _render_skill_marketplace_page,
+    _render_global_search,
+    _execute_global_search,
 )
 
 from frontend.components.confirmation_dialog import (
@@ -111,7 +138,6 @@ from opc_manager.i18n import t as _t
 from frontend.routers import PageKey, get_page_label, navigate
 from frontend.renderers.onboarding_renderer import _show_onboarding_overlay
 
-
 st.set_page_config(
     page_title=_t("app_title"),
     page_icon="🚀",
@@ -119,7 +145,8 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
-st.markdown("""
+st.markdown(
+    """
 <style>
 /* 移动端自适应：小屏幕自动收起侧边栏 */
 @media (max-width: 768px) {
@@ -137,10 +164,13 @@ st.markdown("""
     }
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 if DEMO_MODE:
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -153,7 +183,9 @@ if DEMO_MODE:
         🎮 <strong>{_t('demo_banner_title')}</strong> — {_t('demo_banner_hint')} &nbsp;|&nbsp;
         {_t('demo_banner_action')}
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
@@ -189,7 +221,14 @@ if "initialized" not in st.session_state:
         persist_dir="data",
     )
     import atexit
-    atexit.register(lambda: st.session_state.async_executor.shutdown() if hasattr(st.session_state, 'async_executor') else None)
+
+    atexit.register(
+        lambda: (
+            st.session_state.async_executor.shutdown()
+            if hasattr(st.session_state, "async_executor")
+            else None
+        )
+    )
     logger.debug("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
 
     if os.path.exists(DELIVERABLES_DIR):
@@ -207,7 +246,11 @@ if "initialized" not in st.session_state:
                         "prompt": (
                             parts[3]
                             if len(parts) > 3
-                            else (parts[2] if len(parts) > 2 else _t("deliverable_prompt_fallback"))
+                            else (
+                                parts[2]
+                                if len(parts) > 2
+                                else _t("deliverable_prompt_fallback")
+                            )
                         ),
                         "task_type": (
                             parts[2]
@@ -237,7 +280,12 @@ onboarding_container = st.empty()
 
 with st.sidebar:
     from opc_manager.i18n import t as _t
-    st.text_input(_t("search_placeholder"), key="sidebar_global_search", label_visibility="collapsed")
+
+    st.text_input(
+        _t("search_placeholder"),
+        key="sidebar_global_search",
+        label_visibility="collapsed",
+    )
 
     if st.session_state.get("sidebar_global_search", "").strip():
         query = st.session_state.sidebar_global_search.strip()
@@ -272,10 +320,16 @@ with st.sidebar:
     )
 
     if st.session_state.detected_type:
-        pinfo = PERSONA_MAP.get(st.session_state.detected_type, (_t("persona_default_name"), ""))
+        pinfo = PERSONA_MAP.get(
+            st.session_state.detected_type, (_t("persona_default_name"), "")
+        )
         st.divider()
-        st.markdown(f"{_t('current_persona')}\n{_t(pinfo[0]) if pinfo else _t('persona_default_name')}")
-        st.caption(f"{_t('style_label')}{_t(pinfo[1]) if pinfo and len(pinfo) > 1 else ''}")
+        st.markdown(
+            f"{_t('current_persona')}\n{_t(pinfo[0]) if pinfo else _t('persona_default_name')}"
+        )
+        st.caption(
+            f"{_t('style_label')}{_t(pinfo[1]) if pinfo and len(pinfo) > 1 else ''}"
+        )
 
     if st.session_state.deliverables:
         st.divider()
@@ -284,6 +338,7 @@ with st.sidebar:
     # 记忆状态指示器
     try:
         from opc_manager.memory_bridge import get_memory_bridge
+
         _mb = get_memory_bridge()
         status = _mb.get_status()
         if status["enabled"]:
@@ -303,6 +358,7 @@ with st.sidebar:
     # 知识库状态指示器
     try:
         from opc_manager.knowledge_bridge import get_knowledge_bridge
+
         _kb = get_knowledge_bridge()
         kb_status = _kb.get_status()
         if kb_status["enabled"]:
@@ -326,30 +382,54 @@ with st.sidebar:
     st.divider()
     st.markdown(_t("tools_section"))
     if st.button(_t("skill_editor"), use_container_width=True):
-        st.session_state.show_skill_editor = not st.session_state.get("show_skill_editor", False)
+        st.session_state.show_skill_editor = not st.session_state.get(
+            "show_skill_editor", False
+        )
 
     if st.session_state.get("show_skill_editor", False):
         st.markdown(_t("skill_editor_title"))
-        from opc_manager.skill_editor import SkillEditor, CustomSkill, SkillParameter, ParameterType, OutputFormat
+        from opc_manager.skill_editor import (
+            SkillEditor,
+            CustomSkill,
+            SkillParameter,
+            ParameterType,
+            OutputFormat,
+        )
+
         editor = SkillEditor()
         with st.form("create_skill_form"):
             sk_name = st.text_input(_t("skill_name_label"), key="sk_name")
             sk_desc = st.text_input(_t("skill_desc_label"), key="sk_desc")
-            sk_cat = st.selectbox(_t("skill_cat_label"), ["custom", "analysis", "creation", "search", "operation"], key="sk_cat")
-            sk_output = st.selectbox(_t("skill_output_label"), ["markdown", "json", "text"], key="sk_output")
-            sk_template = st.text_area(_t("skill_template_placeholder"), key="sk_template", height=100)
+            sk_cat = st.selectbox(
+                _t("skill_cat_label"),
+                ["custom", "analysis", "creation", "search", "operation"],
+                key="sk_cat",
+            )
+            sk_output = st.selectbox(
+                _t("skill_output_label"), ["markdown", "json", "text"], key="sk_output"
+            )
+            sk_template = st.text_area(
+                _t("skill_template_placeholder"), key="sk_template", height=100
+            )
             submitted = st.form_submit_button(_t("skill_create_btn"))
             if submitted and sk_name:
                 import re
-                if not re.match(r'^[\w\u4e00-\u9fff\s-]+$', sk_name) or len(sk_name) > 50:
+
+                if (
+                    not re.match(r"^[\w\u4e00-\u9fff\s-]+$", sk_name)
+                    or len(sk_name) > 50
+                ):
                     st.error(_t("skill_name_validation_error"))
                 elif len(sk_desc) > 500:
                     st.error(_t("skill_desc_validation_error"))
                 else:
                     skill = CustomSkill(
                         skill_id=f"custom_{sk_name.lower().replace(' ', '_')}",
-                        name=sk_name, description=sk_desc, category=sk_cat,
-                        output_format=OutputFormat(sk_output), template=sk_template,
+                        name=sk_name,
+                        description=sk_desc,
+                        category=sk_cat,
+                        output_format=OutputFormat(sk_output),
+                        template=sk_template,
                     )
                     result = editor.create_skill(skill)
                     if result["success"]:
@@ -363,24 +443,48 @@ with st.sidebar:
                 st.markdown(f"- {s['name']} ({s['skill_id']})")
 
     if st.button(_t("marketplace_btn"), use_container_width=True):
-        st.session_state.show_marketplace = not st.session_state.get("show_marketplace", False)
+        st.session_state.show_marketplace = not st.session_state.get(
+            "show_marketplace", False
+        )
 
     if st.session_state.get("show_marketplace", False):
         st.markdown(_t("marketplace_panel_title"))
         from opc_manager.skill_marketplace import SkillMarketplace
+
         mp = SkillMarketplace()
         stats = mp.get_stats()
-        st.caption(_t("marketplace_stats_caption", total=stats['total_skills'], approved=stats['approved_skills'], pending=stats['pending_skills']))
+        st.caption(
+            _t(
+                "marketplace_stats_caption",
+                total=stats["total_skills"],
+                approved=stats["approved_skills"],
+                pending=stats["pending_skills"],
+            )
+        )
         categories = mp.list_categories()
         if categories:
-            sel_cat = st.selectbox(_t("filter_by_category"), [_t("category_all")] + categories, key="mp_cat")
-            discovered = mp.discover_skills(category=sel_cat if sel_cat != _t("category_all") else None)
+            sel_cat = st.selectbox(
+                _t("filter_by_category"),
+                [_t("category_all")] + categories,
+                key="mp_cat",
+            )
+            discovered = mp.discover_skills(
+                category=sel_cat if sel_cat != _t("category_all") else None
+            )
         else:
             discovered = mp.discover_skills()
         if discovered:
             for sk in discovered[:10]:
-                st.markdown(f"**{sk['name']}** `v{sk['version']}` — {sk['description'][:80]}")
-                st.caption(_t("skill_card_category_author", category=sk['category'], author=sk['author']))
+                st.markdown(
+                    f"**{sk['name']}** `v{sk['version']}` — {sk['description'][:80]}"
+                )
+                st.caption(
+                    _t(
+                        "skill_card_category_author",
+                        category=sk["category"],
+                        author=sk["author"],
+                    )
+                )
         else:
             st.info(_t("no_approved_skills"))
 
@@ -390,23 +494,44 @@ with st.sidebar:
     if st.session_state.get("show_perf", False):
         st.markdown(_t("perf_monitor_title"))
         from opc_manager.performance_monitor import performance_monitor
+
         stats = performance_monitor.get_stats()
         sla = performance_monitor.check_sla()
         total = stats.get("total_operations", 0)
         st.metric(_t("total_ops"), total)
         sla_color = "🟢" if all(sla.values()) else "🔴"
-        st.markdown(f"{_t('sla_status_label')}: {sla_color} {_t('sla_single_request')}{'✅' if sla.get('single_request') else '❌'} | {_t('sla_reflect_loop')}{'✅' if sla.get('reflect_loop') else '❌'}")
+        st.markdown(
+            f"{_t('sla_status_label')}: {sla_color} {_t('sla_single_request')}{'✅' if sla.get('single_request') else '❌'} | {_t('sla_reflect_loop')}{'✅' if sla.get('reflect_loop') else '❌'}"
+        )
         cache = stats.get("cache", {})
         if cache:
-            st.caption(_t("cache_llm", hit_rate=cache.get('hit_rate', 0), size=cache.get('size', 0), max_size=cache.get('max_size', 0)))
+            st.caption(
+                _t(
+                    "cache_llm",
+                    hit_rate=cache.get("hit_rate", 0),
+                    size=cache.get("size", 0),
+                    max_size=cache.get("max_size", 0),
+                )
+            )
         ops = stats.get("operations", {})
         if ops:
             for op, op_stats in ops.items():
-                st.caption(_t("op_stats_fmt", op=op, avg_ms=op_stats['avg_ms'], p95_ms=op_stats.get('p95_ms', 0)))
+                st.caption(
+                    _t(
+                        "op_stats_fmt",
+                        op=op,
+                        avg_ms=op_stats["avg_ms"],
+                        p95_ms=op_stats.get("p95_ms", 0),
+                    )
+                )
 
     with st.container():
-        if st.button(_t("undo_history_btn"), use_container_width=True, help=_t("undo_mgmt")):
-            st.session_state.show_undo_panel = not st.session_state.get("show_undo_panel", False)
+        if st.button(
+            _t("undo_history_btn"), use_container_width=True, help=_t("undo_mgmt")
+        ):
+            st.session_state.show_undo_panel = not st.session_state.get(
+                "show_undo_panel", False
+            )
 
         if st.session_state.get("show_undo_panel", False):
             session_id = _get_current_session_id()
@@ -419,11 +544,14 @@ with st.sidebar:
 
     with st.container():
         if st.button(_t("live_log_btn"), use_container_width=True, help=_t("live_log")):
-            st.session_state.show_log_panel = not st.session_state.get("show_log_panel", False)
+            st.session_state.show_log_panel = not st.session_state.get(
+                "show_log_panel", False
+            )
 
         if st.session_state.get("show_log_panel", False):
             with st.expander(_t("live_log_panel_title"), expanded=True):
                 from frontend.components.live_log_panel import render_live_log_panel
+
                 render_live_log_panel(auto_refresh=True, refresh_interval=2)
 
     _render_theme_selector()
@@ -438,8 +566,11 @@ navigate(page_key_map[selected])
 
 try:
     from opc_manager.onboarding import get_onboarding
+
     onboard = get_onboarding()
-    if not onboard.is_completed and not st.session_state.get("onboarding_complete", False):
+    if not onboard.is_completed and not st.session_state.get(
+        "onboarding_complete", False
+    ):
         with onboarding_container:
             _show_onboarding_overlay()
     else:

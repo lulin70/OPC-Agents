@@ -55,10 +55,19 @@ class TestUnifiedTaskCategoryEnum:
     def test_all_13_categories_exist(self):
         """Verify all 13 expected categories are defined."""
         expected_categories = {
-            "info_search", "data_query", "document_writing", "message_compose",
-            "task_management", "finance_operation", "crm_operation",
-            "calendar_operation", "social_publish", "email_send",
-            "data_analysis", "workflow_automation", "general_chat"
+            "info_search",
+            "data_query",
+            "document_writing",
+            "message_compose",
+            "task_management",
+            "finance_operation",
+            "crm_operation",
+            "calendar_operation",
+            "social_publish",
+            "email_send",
+            "data_analysis",
+            "workflow_automation",
+            "general_chat",
         }
         actual_categories = {cat.value for cat in UnifiedTaskCategory}
         assert actual_categories == expected_categories
@@ -102,70 +111,131 @@ class TestIntentToUnifiedMapping:
     """Test suite for IntentType → UnifiedTaskCategory mapping correctness."""
 
     def test_search_maps_to_info_search(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.SEARCH] == UnifiedTaskCategory.INFO_SEARCH
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.SEARCH] == UnifiedTaskCategory.INFO_SEARCH
+        )
 
     def test_knowledge_maps_to_info_search(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.KNOWLEDGE] == UnifiedTaskCategory.INFO_SEARCH
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.KNOWLEDGE]
+            == UnifiedTaskCategory.INFO_SEARCH
+        )
 
     def test_dashboard_maps_to_data_query(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.DASHBOARD] == UnifiedTaskCategory.DATA_QUERY
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.DASHBOARD]
+            == UnifiedTaskCategory.DATA_QUERY
+        )
 
     def test_report_maps_to_document_writing(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.REPORT] == UnifiedTaskCategory.DOCUMENT_WRITING
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.REPORT]
+            == UnifiedTaskCategory.DOCUMENT_WRITING
+        )
 
     def test_proposal_maps_to_document_writing(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.PROPOSAL] == UnifiedTaskCategory.DOCUMENT_WRITING
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.PROPOSAL]
+            == UnifiedTaskCategory.DOCUMENT_WRITING
+        )
 
     def test_analysis_maps_to_document_writing(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.ANALYSIS] == UnifiedTaskCategory.DOCUMENT_WRITING
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.ANALYSIS]
+            == UnifiedTaskCategory.DOCUMENT_WRITING
+        )
 
     def test_creation_maps_to_document_writing(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.CREATION] == UnifiedTaskCategory.DOCUMENT_WRITING
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.CREATION]
+            == UnifiedTaskCategory.DOCUMENT_WRITING
+        )
 
     def test_task_maps_to_task_management(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.TASK] == UnifiedTaskCategory.TASK_MANAGEMENT
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.TASK]
+            == UnifiedTaskCategory.TASK_MANAGEMENT
+        )
 
     def test_finance_maps_to_finance_operation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.FINANCE] == UnifiedTaskCategory.FINANCE_OPERATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.FINANCE]
+            == UnifiedTaskCategory.FINANCE_OPERATION
+        )
 
     def test_invoice_maps_to_finance_operation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.INVOICE] == UnifiedTaskCategory.FINANCE_OPERATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.INVOICE]
+            == UnifiedTaskCategory.FINANCE_OPERATION
+        )
 
     def test_crm_maps_to_crm_operation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.CRM] == UnifiedTaskCategory.CRM_OPERATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.CRM] == UnifiedTaskCategory.CRM_OPERATION
+        )
 
     def test_calendar_maps_to_calendar_operation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.CALENDAR] == UnifiedTaskCategory.CALENDAR_OPERATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.CALENDAR]
+            == UnifiedTaskCategory.CALENDAR_OPERATION
+        )
 
     def test_pricing_maps_to_crm_operation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.PRICING] == UnifiedTaskCategory.CRM_OPERATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.PRICING]
+            == UnifiedTaskCategory.CRM_OPERATION
+        )
 
     def test_competitor_maps_to_data_analysis(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.COMPETITOR] == UnifiedTaskCategory.DATA_ANALYSIS
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.COMPETITOR]
+            == UnifiedTaskCategory.DATA_ANALYSIS
+        )
 
     def test_tax_reminder_maps_to_calendar_operation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.TAX_REMINDER] == UnifiedTaskCategory.CALENDAR_OPERATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.TAX_REMINDER]
+            == UnifiedTaskCategory.CALENDAR_OPERATION
+        )
 
     def test_social_maps_to_social_publish(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.SOCIAL] == UnifiedTaskCategory.SOCIAL_PUBLISH
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.SOCIAL]
+            == UnifiedTaskCategory.SOCIAL_PUBLISH
+        )
 
     def test_email_maps_to_email_send(self):
         assert INTENT_TO_UNIFIED_MAP[IntentType.EMAIL] == UnifiedTaskCategory.EMAIL_SEND
 
     def test_notification_maps_to_message_compose(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.NOTIFICATION] == UnifiedTaskCategory.MESSAGE_COMPOSE
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.NOTIFICATION]
+            == UnifiedTaskCategory.MESSAGE_COMPOSE
+        )
 
     def test_operation_maps_to_workflow_automation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.OPERATION] == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.OPERATION]
+            == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        )
 
     def test_combined_maps_to_workflow_automation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.COMBINED] == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.COMBINED]
+            == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        )
 
     def test_extended_skill_maps_to_workflow_automation(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.EXTENDED_SKILL] == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.EXTENDED_SKILL]
+            == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        )
 
     def test_unknown_maps_to_general_chat(self):
-        assert INTENT_TO_UNIFIED_MAP[IntentType.UNKNOWN] == UnifiedTaskCategory.GENERAL_CHAT
+        assert (
+            INTENT_TO_UNIFIED_MAP[IntentType.UNKNOWN]
+            == UnifiedTaskCategory.GENERAL_CHAT
+        )
 
     def test_all_intents_have_mapping(self):
         """Ensure every IntentType has a corresponding unified category."""
@@ -177,22 +247,40 @@ class TestTaskToUnifiedMapping:
     """Test suite for TaskType → UnifiedTaskCategory mapping."""
 
     def test_info_collection_maps_to_info_search(self):
-        assert TASK_TO_UNIFIED_MAP[TaskType.INFO_COLLECTION] == UnifiedTaskCategory.INFO_SEARCH
+        assert (
+            TASK_TO_UNIFIED_MAP[TaskType.INFO_COLLECTION]
+            == UnifiedTaskCategory.INFO_SEARCH
+        )
 
     def test_content_generation_maps_to_document_writing(self):
-        assert TASK_TO_UNIFIED_MAP[TaskType.CONTENT_GENERATION] == UnifiedTaskCategory.DOCUMENT_WRITING
+        assert (
+            TASK_TO_UNIFIED_MAP[TaskType.CONTENT_GENERATION]
+            == UnifiedTaskCategory.DOCUMENT_WRITING
+        )
 
     def test_data_analysis_maps_to_data_analysis(self):
-        assert TASK_TO_UNIFIED_MAP[TaskType.DATA_ANALYSIS] == UnifiedTaskCategory.DATA_ANALYSIS
+        assert (
+            TASK_TO_UNIFIED_MAP[TaskType.DATA_ANALYSIS]
+            == UnifiedTaskCategory.DATA_ANALYSIS
+        )
 
     def test_scenario_based_maps_to_workflow_automation(self):
-        assert TASK_TO_UNIFIED_MAP[TaskType.SCENARIO_BASED] == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        assert (
+            TASK_TO_UNIFIED_MAP[TaskType.SCENARIO_BASED]
+            == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        )
 
     def test_business_operation_maps_to_workflow_automation(self):
-        assert TASK_TO_UNIFIED_MAP[TaskType.BUSINESS_OPERATION] == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        assert (
+            TASK_TO_UNIFIED_MAP[TaskType.BUSINESS_OPERATION]
+            == UnifiedTaskCategory.WORKFLOW_AUTOMATION
+        )
 
     def test_general_chat_maps_to_general_chat(self):
-        assert TASK_TO_UNIFIED_MAP[TaskType.GENERAL_CHAT] == UnifiedTaskCategory.GENERAL_CHAT
+        assert (
+            TASK_TO_UNIFIED_MAP[TaskType.GENERAL_CHAT]
+            == UnifiedTaskCategory.GENERAL_CHAT
+        )
 
     def test_all_tasks_have_mapping(self):
         """Ensure every TaskType has a corresponding unified category."""
@@ -204,43 +292,82 @@ class TestReverseMapping:
     """Test suite for UnifiedTaskCategory → TaskType reverse mapping."""
 
     def test_info_search_to_info_collection(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.INFO_SEARCH] == TaskType.INFO_COLLECTION
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.INFO_SEARCH]
+            == TaskType.INFO_COLLECTION
+        )
 
     def test_data_query_to_data_analysis(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.DATA_QUERY] == TaskType.DATA_ANALYSIS
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.DATA_QUERY]
+            == TaskType.DATA_ANALYSIS
+        )
 
     def test_document_writing_to_content_generation(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.DOCUMENT_WRITING] == TaskType.CONTENT_GENERATION
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.DOCUMENT_WRITING]
+            == TaskType.CONTENT_GENERATION
+        )
 
     def test_message_compose_to_content_generation(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.MESSAGE_COMPOSE] == TaskType.CONTENT_GENERATION
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.MESSAGE_COMPOSE]
+            == TaskType.CONTENT_GENERATION
+        )
 
     def test_task_management_to_scenario_based(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.TASK_MANAGEMENT] == TaskType.SCENARIO_BASED
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.TASK_MANAGEMENT]
+            == TaskType.SCENARIO_BASED
+        )
 
     def test_finance_operation_to_scenario_based(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.FINANCE_OPERATION] == TaskType.SCENARIO_BASED
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.FINANCE_OPERATION]
+            == TaskType.SCENARIO_BASED
+        )
 
     def test_crm_operation_to_scenario_based(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.CRM_OPERATION] == TaskType.SCENARIO_BASED
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.CRM_OPERATION]
+            == TaskType.SCENARIO_BASED
+        )
 
     def test_calendar_operation_to_scenario_based(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.CALENDAR_OPERATION] == TaskType.SCENARIO_BASED
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.CALENDAR_OPERATION]
+            == TaskType.SCENARIO_BASED
+        )
 
     def test_social_publish_to_content_generation(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.SOCIAL_PUBLISH] == TaskType.CONTENT_GENERATION
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.SOCIAL_PUBLISH]
+            == TaskType.CONTENT_GENERATION
+        )
 
     def test_email_send_to_content_generation(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.EMAIL_SEND] == TaskType.CONTENT_GENERATION
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.EMAIL_SEND]
+            == TaskType.CONTENT_GENERATION
+        )
 
     def test_data_analysis_to_data_analysis(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.DATA_ANALYSIS] == TaskType.DATA_ANALYSIS
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.DATA_ANALYSIS]
+            == TaskType.DATA_ANALYSIS
+        )
 
     def test_workflow_automation_to_scenario_based(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.WORKFLOW_AUTOMATION] == TaskType.SCENARIO_BASED
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.WORKFLOW_AUTOMATION]
+            == TaskType.SCENARIO_BASED
+        )
 
     def test_general_chat_to_general_chat(self):
-        assert UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.GENERAL_CHAT] == TaskType.GENERAL_CHAT
+        assert (
+            UNIFIED_TO_TASK_MAP[UnifiedTaskCategory.GENERAL_CHAT]
+            == TaskType.GENERAL_CHAT
+        )
 
     def test_all_categories_have_reverse_mapping(self):
         """Ensure every UnifiedTaskCategory has a reverse mapping to TaskType."""
@@ -335,13 +462,22 @@ class TestToTaskTypeFunction:
         assert to_task_type(UnifiedTaskCategory.INFO_SEARCH) == TaskType.INFO_COLLECTION
 
     def test_document_writing_returns_content_generation(self):
-        assert to_task_type(UnifiedTaskCategory.DOCUMENT_WRITING) == TaskType.CONTENT_GENERATION
+        assert (
+            to_task_type(UnifiedTaskCategory.DOCUMENT_WRITING)
+            == TaskType.CONTENT_GENERATION
+        )
 
     def test_social_publish_returns_content_generation(self):
-        assert to_task_type(UnifiedTaskCategory.SOCIAL_PUBLISH) == TaskType.CONTENT_GENERATION
+        assert (
+            to_task_type(UnifiedTaskCategory.SOCIAL_PUBLISH)
+            == TaskType.CONTENT_GENERATION
+        )
 
     def test_workflow_automation_returns_scenario_based(self):
-        assert to_task_type(UnifiedTaskCategory.WORKFLOW_AUTOMATION) == TaskType.SCENARIO_BASED
+        assert (
+            to_task_type(UnifiedTaskCategory.WORKFLOW_AUTOMATION)
+            == TaskType.SCENARIO_BASED
+        )
 
     def test_general_chat_returns_general_chat(self):
         assert to_task_type(UnifiedTaskCategory.GENERAL_CHAT) == TaskType.GENERAL_CHAT
@@ -350,27 +486,31 @@ class TestToTaskTypeFunction:
 class TestRiskLevelMapping:
     """Test suite for risk level assessment based on unified category."""
 
-    @pytest.mark.parametrize("category,expected_risk", [
-        (UnifiedTaskCategory.INFO_SEARCH, RiskLevel.LOW),
-        (UnifiedTaskCategory.DATA_QUERY, RiskLevel.LOW),
-        (UnifiedTaskCategory.DATA_ANALYSIS, RiskLevel.LOW),
-        (UnifiedTaskCategory.GENERAL_CHAT, RiskLevel.LOW),
-        (UnifiedTaskCategory.DOCUMENT_WRITING, RiskLevel.MEDIUM),
-        (UnifiedTaskCategory.MESSAGE_COMPOSE, RiskLevel.MEDIUM),
-        (UnifiedTaskCategory.TASK_MANAGEMENT, RiskLevel.MEDIUM),
-        (UnifiedTaskCategory.FINANCE_OPERATION, RiskLevel.MEDIUM),
-        (UnifiedTaskCategory.CRM_OPERATION, RiskLevel.MEDIUM),
-        (UnifiedTaskCategory.CALENDAR_OPERATION, RiskLevel.MEDIUM),
-        (UnifiedTaskCategory.WORKFLOW_AUTOMATION, RiskLevel.MEDIUM),
-        (UnifiedTaskCategory.SOCIAL_PUBLISH, RiskLevel.HIGH),
-        (UnifiedTaskCategory.EMAIL_SEND, RiskLevel.HIGH),
-    ])
+    @pytest.mark.parametrize(
+        "category,expected_risk",
+        [
+            (UnifiedTaskCategory.INFO_SEARCH, RiskLevel.LOW),
+            (UnifiedTaskCategory.DATA_QUERY, RiskLevel.LOW),
+            (UnifiedTaskCategory.DATA_ANALYSIS, RiskLevel.LOW),
+            (UnifiedTaskCategory.GENERAL_CHAT, RiskLevel.LOW),
+            (UnifiedTaskCategory.DOCUMENT_WRITING, RiskLevel.MEDIUM),
+            (UnifiedTaskCategory.MESSAGE_COMPOSE, RiskLevel.MEDIUM),
+            (UnifiedTaskCategory.TASK_MANAGEMENT, RiskLevel.MEDIUM),
+            (UnifiedTaskCategory.FINANCE_OPERATION, RiskLevel.MEDIUM),
+            (UnifiedTaskCategory.CRM_OPERATION, RiskLevel.MEDIUM),
+            (UnifiedTaskCategory.CALENDAR_OPERATION, RiskLevel.MEDIUM),
+            (UnifiedTaskCategory.WORKFLOW_AUTOMATION, RiskLevel.MEDIUM),
+            (UnifiedTaskCategory.SOCIAL_PUBLISH, RiskLevel.HIGH),
+            (UnifiedTaskCategory.EMAIL_SEND, RiskLevel.HIGH),
+        ],
+    )
     def test_risk_level_for_each_category(self, category, expected_risk):
         assert get_risk_level(category) == expected_risk
 
     def test_risk_distribution_counts(self):
         """Verify correct distribution: 4 LOW, 7 MEDIUM, 2 HIGH."""
         from collections import Counter
+
         risk_counts = Counter(get_risk_level(cat) for cat in UnifiedTaskCategory)
         assert risk_counts[RiskLevel.LOW] == 4
         assert risk_counts[RiskLevel.MEDIUM] == 7
@@ -386,8 +526,9 @@ class TestI18nSupport:
             label = get_category_label(cat, locale="zh_CN")
             assert isinstance(label, str)
             assert len(label) > 0
-            assert any('\u4e00' <= char <= '\u9fff' for char in label), \
-                f"Chinese label for {cat.value} should contain Chinese characters"
+            assert any(
+                "\u4e00" <= char <= "\u9fff" for char in label
+            ), f"Chinese label for {cat.value} should contain Chinese characters"
 
     def test_en_us_labels_for_all_categories(self):
         """Verify all categories have English labels."""
@@ -411,15 +552,28 @@ class TestI18nSupport:
 
     def test_specific_zh_cn_examples(self):
         """Test specific Chinese label examples."""
-        assert get_category_label(UnifiedTaskCategory.INFO_SEARCH, "zh_CN") == "信息搜索"
+        assert (
+            get_category_label(UnifiedTaskCategory.INFO_SEARCH, "zh_CN") == "信息搜索"
+        )
         assert get_category_label(UnifiedTaskCategory.EMAIL_SEND, "zh_CN") == "邮件发送"
-        assert get_category_label(UnifiedTaskCategory.SOCIAL_PUBLISH, "zh_CN") == "社交发布"
+        assert (
+            get_category_label(UnifiedTaskCategory.SOCIAL_PUBLISH, "zh_CN")
+            == "社交发布"
+        )
 
     def test_specific_en_us_examples(self):
         """Test specific English label examples."""
-        assert get_category_label(UnifiedTaskCategory.INFO_SEARCH, "en_US") == "Information Search"
-        assert get_category_label(UnifiedTaskCategory.EMAIL_SEND, "en_US") == "Email Send"
-        assert get_category_label(UnifiedTaskCategory.SOCIAL_PUBLISH, "en_US") == "Social Publish"
+        assert (
+            get_category_label(UnifiedTaskCategory.INFO_SEARCH, "en_US")
+            == "Information Search"
+        )
+        assert (
+            get_category_label(UnifiedTaskCategory.EMAIL_SEND, "en_US") == "Email Send"
+        )
+        assert (
+            get_category_label(UnifiedTaskCategory.SOCIAL_PUBLISH, "en_US")
+            == "Social Publish"
+        )
 
 
 class TestIconSystem:
@@ -438,8 +592,9 @@ class TestIconSystem:
             icon = get_category_icon(cat)
             # Basic emoji detection: should be in Unicode emoji ranges or common emoji
             code_point = ord(icon[0])
-            assert code_point >= 0x1F300 or code_point in range(0x2600, 0x27BF), \
-                f"Icon '{icon}' for {cat.value} doesn't look like valid emoji"
+            assert code_point >= 0x1F300 or code_point in range(
+                0x2600, 0x27BF
+            ), f"Icon '{icon}' for {cat.value} doesn't look like valid emoji"
 
     def test_specific_icon_assignments(self):
         """Test specific icon assignments match expectations."""
@@ -480,7 +635,9 @@ class TestSmartSuggestions:
 
     def test_social_publish_suggestions_include_preview(self):
         actions = suggest_follow_up_actions(UnifiedTaskCategory.SOCIAL_PUBLISH)
-        assert any("预览" in action or "preview" in action.lower() for action in actions)
+        assert any(
+            "预览" in action or "preview" in action.lower() for action in actions
+        )
 
     def test_email_send_suggestions_include_cc(self):
         actions = suggest_follow_up_actions(UnifiedTaskCategory.EMAIL_SEND)
@@ -490,8 +647,9 @@ class TestSmartSuggestions:
         """Most categories should have 3-5 suggestions."""
         for cat in UnifiedTaskCategory:
             actions = suggest_follow_up_actions(cat)
-            assert 2 <= len(actions) <= 6, \
-                f"Category {cat.value} has {len(actions)} suggestions (expected 2-6)"
+            assert (
+                2 <= len(actions) <= 6
+            ), f"Category {cat.value} has {len(actions)} suggestions (expected 2-6)"
 
 
 class TestEdgeCases:
@@ -698,6 +856,7 @@ class TestConfirmerIntegration:
     def test_confirmation_request_with_unified_category(self, confirmer):
         """Verify ConfirmationRequest can hold unified_category."""
         from opc_manager.confirmer import ConfirmationRequest
+
         req = ConfirmationRequest(
             session_id="test_session",
             intent_type="EMAIL",
@@ -824,7 +983,9 @@ class TestBackwardCompatibility:
         risk = confirmer.assess_risk("SEARCH")
         assert risk == RiskLevel.LOW
 
-        threshold = confirmer.get_effective_threshold("SEARCH", "test_session_12345678901234567890123456789012")
+        threshold = confirmer.get_effective_threshold(
+            "SEARCH", "test_session_12345678901234567890123456789012"
+        )
         assert threshold == 0.70  # LOW threshold
 
 

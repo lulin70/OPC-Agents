@@ -42,10 +42,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class KnowledgeEntry:
     """知识条目"""
+
     title: str
     content: str
-    source: str           # 来源标识（文件路径/文档ID等）
-    source_type: str      # obsidian/yuque/feishu/notion/siyuan/local
+    source: str  # 来源标识（文件路径/文档ID等）
+    source_type: str  # obsidian/yuque/feishu/notion/siyuan/local
     tags: List[str] = field(default_factory=list)
     relevance_score: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -83,23 +84,29 @@ class LocalFolderAdapter(KnowledgeAdapter):
         """构建文件索引"""
         for root, dirs, files in os.walk(self._path):
             # 跳过隐藏目录
-            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
             for fname in files:
-                if fname.endswith(('.md', '.txt', '.markdown')):
+                if fname.endswith((".md", ".txt", ".markdown")):
                     fpath = os.path.join(root, fname)
                     try:
-                        with open(fpath, 'r', encoding='utf-8') as f:
+                        with open(fpath, "r", encoding="utf-8") as f:
                             content = f.read()
-                        title = fname.replace('.md', '').replace('.txt', '').replace('.markdown', '')
+                        title = (
+                            fname.replace(".md", "")
+                            .replace(".txt", "")
+                            .replace(".markdown", "")
+                        )
                         # 提取标签（#tag 格式）
-                        tags = re.findall(r'#(\w+)', content[:500])
-                        self._index.append({
-                            "title": title,
-                            "content": content,
-                            "path": fpath,
-                            "tags": tags,
-                            "size": len(content),
-                        })
+                        tags = re.findall(r"#(\w+)", content[:500])
+                        self._index.append(
+                            {
+                                "title": title,
+                                "content": content,
+                                "path": fpath,
+                                "tags": tags,
+                                "size": len(content),
+                            }
+                        )
                     except Exception:
                         pass
         logger.info("[LocalFolder] 索引完成: %d 个文件", len(self._index))
@@ -131,14 +138,16 @@ class LocalFolderAdapter(KnowledgeAdapter):
                     score += 0.15
 
             if score > 0:
-                results.append(KnowledgeEntry(
-                    title=entry["title"],
-                    content=entry["content"][:1500],
-                    source=entry["path"],
-                    source_type="local",
-                    tags=entry.get("tags", []),
-                    relevance_score=min(score, 1.0),
-                ))
+                results.append(
+                    KnowledgeEntry(
+                        title=entry["title"],
+                        content=entry["content"][:1500],
+                        source=entry["path"],
+                        source_type="local",
+                        tags=entry.get("tags", []),
+                        relevance_score=min(score, 1.0),
+                    )
+                )
 
         results.sort(key=lambda x: x.relevance_score, reverse=True)
         return results[:max_results]
@@ -165,7 +174,8 @@ class ObsidianAdapter(LocalFolderAdapter):
         if os.path.isfile(config_path):
             try:
                 import json
-                with open(config_path, 'r') as f:
+
+                with open(config_path, "r") as f:
                     self._obsidian_config = json.load(f)
             except Exception:
                 pass
@@ -204,22 +214,27 @@ class YuqueAdapter(KnowledgeAdapter):
             import json
 
             url = f"https://www.yuque.com/api/v2/search?q={urllib.parse.quote(query)}&limit={max_results}"
-            req = urllib.request.Request(url, headers={
-                "X-Auth-Token": self._token,
-                "User-Agent": "OPC-Agents/0.3.0",
-            })
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "X-Auth-Token": self._token,
+                    "User-Agent": "OPC-Agents/0.3.0",
+                },
+            )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode())
 
             results = []
             for hit in data.get("data", [])[:max_results]:
-                results.append(KnowledgeEntry(
-                    title=hit.get("title", ""),
-                    content=hit.get("highlight", hit.get("description", ""))[:1500],
-                    source=f"yuque:{hit.get('slug', '')}",
-                    source_type="yuque",
-                    relevance_score=hit.get("score", 0.5),
-                ))
+                results.append(
+                    KnowledgeEntry(
+                        title=hit.get("title", ""),
+                        content=hit.get("highlight", hit.get("description", ""))[:1500],
+                        source=f"yuque:{hit.get('slug', '')}",
+                        source_type="yuque",
+                        relevance_score=hit.get("score", 0.5),
+                    )
+                )
             return results
         except Exception as e:
             logger.warning("[Yuque] 搜索失败: %s", e)
@@ -258,12 +273,19 @@ class FeishuAdapter(KnowledgeAdapter):
         try:
             import urllib.request
             import json
-            url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
-            data = json.dumps({
-                "app_id": self._app_id,
-                "app_secret": self._app_secret,
-            }).encode()
-            req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+
+            url = (
+                "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+            )
+            data = json.dumps(
+                {
+                    "app_id": self._app_id,
+                    "app_secret": self._app_secret,
+                }
+            ).encode()
+            req = urllib.request.Request(
+                url, data=data, headers={"Content-Type": "application/json"}
+            )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 result = json.loads(resp.read().decode())
             self._tenant_token = result.get("tenant_access_token", "")
@@ -281,23 +303,29 @@ class FeishuAdapter(KnowledgeAdapter):
         try:
             import urllib.request
             import json
+
             url = f"https://open.feishu.cn/open-apis/suite/docs/search?query={urllib.parse.quote(query)}&page_size={max_results}"
-            req = urllib.request.Request(url, headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            })
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+            )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode())
 
             results = []
             for item in data.get("data", {}).get("items", [])[:max_results]:
-                results.append(KnowledgeEntry(
-                    title=item.get("title", ""),
-                    content=item.get("snippet", "")[:1500],
-                    source=f"feishu:{item.get('obj_token', '')}",
-                    source_type="feishu",
-                    relevance_score=0.5,
-                ))
+                results.append(
+                    KnowledgeEntry(
+                        title=item.get("title", ""),
+                        content=item.get("snippet", "")[:1500],
+                        source=f"feishu:{item.get('obj_token', '')}",
+                        source_type="feishu",
+                        relevance_score=0.5,
+                    )
+                )
             return results
         except Exception as e:
             logger.warning("[Feishu] 搜索失败: %s", e)
@@ -340,11 +368,15 @@ class NotionAdapter(KnowledgeAdapter):
                 body["filter"] = {"property": "object", "value": "page"}
 
             data = json.dumps(body).encode()
-            req = urllib.request.Request(url, data=data, headers={
-                "Authorization": f"Bearer {self._token}",
-                "Notion-Version": "2022-06-28",
-                "Content-Type": "application/json",
-            })
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={
+                    "Authorization": f"Bearer {self._token}",
+                    "Notion-Version": "2022-06-28",
+                    "Content-Type": "application/json",
+                },
+            )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 result = json.loads(resp.read().decode())
 
@@ -359,13 +391,15 @@ class NotionAdapter(KnowledgeAdapter):
                 elif isinstance(title_prop, list) and title_prop:
                     title = title_prop[0].get("plain_text", "")
 
-                entries.append(KnowledgeEntry(
-                    title=title or page.get("id", "Untitled"),
-                    content=f"Notion page: {title}",
-                    source=f"notion:{page.get('id', '')}",
-                    source_type="notion",
-                    relevance_score=0.5,
-                ))
+                entries.append(
+                    KnowledgeEntry(
+                        title=title or page.get("id", "Untitled"),
+                        content=f"Notion page: {title}",
+                        source=f"notion:{page.get('id', '')}",
+                        source_type="notion",
+                        relevance_score=0.5,
+                    )
+                )
             return entries
         except Exception as e:
             logger.warning("[Notion] 搜索失败: %s", e)
@@ -392,7 +426,9 @@ class SiYuanAdapter(KnowledgeAdapter):
     """
 
     def __init__(self, api_url: str = "", token: str = "", box_id: str = ""):
-        self._api_url = api_url or os.environ.get("SIYUAN_API_URL", "http://127.0.0.1:6806")
+        self._api_url = api_url or os.environ.get(
+            "SIYUAN_API_URL", "http://127.0.0.1:6806"
+        )
         self._token = token or os.environ.get("SIYUAN_TOKEN", "")
         self._box_id = box_id or os.environ.get("SIYUAN_BOX", "")
         self._available = self._check_availability()
@@ -402,6 +438,7 @@ class SiYuanAdapter(KnowledgeAdapter):
         try:
             import urllib.request
             import json
+
             url = f"{self._api_url}/api/system/version"
             headers = {"Content-Type": "application/json"}
             if self._token:
@@ -434,13 +471,15 @@ class SiYuanAdapter(KnowledgeAdapter):
 
             entries = []
             for block in result.get("data", {}).get("blocks", [])[:max_results]:
-                entries.append(KnowledgeEntry(
-                    title=block.get("hPath", block.get("content", "")[:50]),
-                    content=block.get("content", "")[:1500],
-                    source=f"siyuan:{block.get('id', '')}",
-                    source_type="siyuan",
-                    relevance_score=float(block.get("score", 0.5)),
-                ))
+                entries.append(
+                    KnowledgeEntry(
+                        title=block.get("hPath", block.get("content", "")[:50]),
+                        content=block.get("content", "")[:1500],
+                        source=f"siyuan:{block.get('id', '')}",
+                        source_type="siyuan",
+                        relevance_score=float(block.get("score", 0.5)),
+                    )
+                )
             return entries
         except Exception as e:
             logger.debug("[SiYuan] 搜索失败（可能未运行）: %s", e)
@@ -472,7 +511,11 @@ class KnowledgeBridge:
         self._enabled = False
         self._kb_type = ""
 
-        kb_enabled = os.environ.get("OPC_KB_ENABLED", "false").lower() in ("true", "1", "yes")
+        kb_enabled = os.environ.get("OPC_KB_ENABLED", "false").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
         if not kb_enabled:
             logger.debug("[KnowledgeBridge] 知识库未启用")
             return
@@ -525,7 +568,9 @@ class KnowledgeBridge:
             logger.warning("[KnowledgeBridge] 搜索失败: %s", e)
             return []
 
-    def build_knowledge_prompt(self, query: str, max_results: int = 0, max_tokens: int = 0) -> str:
+    def build_knowledge_prompt(
+        self, query: str, max_results: int = 0, max_tokens: int = 0
+    ) -> str:
         """生成知识库注入的 prompt 片段"""
         if not self._enabled:
             return ""
@@ -541,7 +586,9 @@ class KnowledgeBridge:
         sections = []
         total_len = 0
         for entry in results:
-            section = f"### {entry.title} (来源: {entry.source_type})\n{entry.content[:800]}"
+            section = (
+                f"### {entry.title} (来源: {entry.source_type})\n{entry.content[:800]}"
+            )
             if total_len + len(section) > max_tokens:
                 break
             sections.append(section)

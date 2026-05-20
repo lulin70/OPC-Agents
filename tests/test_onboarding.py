@@ -327,7 +327,7 @@ class TestStatePersistence(unittest.TestCase):
         self.manager.advance_to_step(OnboardingStep.LLM_CONFIG)
         self.assertTrue(self.manager._state_file.exists())
 
-        data = json.loads(self.manager._state_file.read_text(encoding='utf-8'))
+        data = json.loads(self.manager._state_file.read_text(encoding="utf-8"))
         self.assertEqual(data["current_step"], "llm_config")
 
     def test_state_loaded_on_init(self):
@@ -350,7 +350,7 @@ class TestStatePersistence(unittest.TestCase):
     def test_state_handles_corrupted_file(self):
         """损坏的状态文件不应导致崩溃"""
         self.manager._state_file.parent.mkdir(parents=True, exist_ok=True)
-        self.manager._state_file.write_text("{corrupted json", encoding='utf-8')
+        self.manager._state_file.write_text("{corrupted json", encoding="utf-8")
 
         manager2 = OnboardingManager()
         self.assertEqual(manager2.get_current_step(), OnboardingStep.WELCOME)
@@ -432,7 +432,9 @@ class TestConcurrentAccess(unittest.TestCase):
         for t in threads:
             t.join(timeout=5)
 
-        self.assertEqual(len(errors), 0, f"Concurrent read/write caused errors: {errors}")
+        self.assertEqual(
+            len(errors), 0, f"Concurrent read/write caused errors: {errors}"
+        )
 
 
 class TestSampleTasksConstant(unittest.TestCase):
@@ -445,7 +447,14 @@ class TestSampleTasksConstant(unittest.TestCase):
     def test_first_task_has_required_fields(self):
         """第一个示例任务应包含所有必需字段"""
         task = SAMPLE_TASKS[0]
-        required_fields = ["id", "title", "description", "example_input", "category", "expected_output_contains"]
+        required_fields = [
+            "id",
+            "title",
+            "description",
+            "example_input",
+            "category",
+            "expected_output_contains",
+        ]
         for field in required_fields:
             self.assertIn(field, task, f"Missing field: {field}")
 

@@ -39,7 +39,8 @@ def reset_singleton():
 def audit_log():
     """Provide a fresh AuditLog singleton instance."""
     import opc_manager.audit_log as al_module
-    if not hasattr(al_module, 'MAX_QUERY_OUTPUT_LENGTH'):
+
+    if not hasattr(al_module, "MAX_QUERY_OUTPUT_LENGTH"):
         al_module.MAX_QUERY_OUTPUT_LENGTH = 500
     return AuditLog()
 
@@ -183,7 +184,7 @@ class TestLogMethod:
         )
         record = list(audit_log._logs)[-1]
         assert len(record.input_hash) == 64
-        assert all(c in '0123456789abcdef' for c in record.input_hash)
+        assert all(c in "0123456789abcdef" for c in record.input_hash)
 
     def test_log_truncates_output_summary(self, audit_log):
         long_output = "y" * 600

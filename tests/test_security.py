@@ -105,7 +105,10 @@ class TestAPIKeyLeakage(unittest.TestCase):
 
     def test_key_not_in_frontend_error(self):
         error_msg = "Connection failed with key sk-proj-abc123def456"
-        self.assertNotIn("sk-proj-abc123def456", error_msg.replace("sk-proj-abc123def456", "[REDACTED]"))
+        self.assertNotIn(
+            "sk-proj-abc123def456",
+            error_msg.replace("sk-proj-abc123def456", "[REDACTED]"),
+        )
 
 
 class TestOutputSanitization(unittest.TestCase):

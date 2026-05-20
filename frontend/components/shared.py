@@ -20,7 +20,8 @@ def show_success(message: str, icon: str = "✅", duration: int = 3):
     """Show a success toast notification that auto-dismisses."""
     placeholder = st.empty()
     with placeholder.container():
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="opc-toast opc-toast-success">
             {icon} {message}
         </div>
@@ -56,9 +57,12 @@ def show_success(message: str, icon: str = "✅", duration: int = 3):
             }}
         }}
         </style>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     import time as _time
+
     _time.sleep(min(duration, 2))
     placeholder.empty()
     return True
@@ -68,7 +72,8 @@ def show_error(message: str, icon: str = "❌"):
     """Show an error toast notification."""
     placeholder = st.empty()
     with placeholder.container():
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="opc-toast opc-toast-error">
             {icon} {message}
         </div>
@@ -99,8 +104,11 @@ def show_error(message: str, icon: str = "❌"):
             }}
         }}
         </style>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
     import time as _time
+
     _time.sleep(2)
     placeholder.empty()
 
@@ -109,7 +117,8 @@ def show_info(message: str, icon: str = "ℹ️"):
     """Show an info toast notification."""
     placeholder = st.empty()
     with placeholder.container():
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="opc-toast opc-toast-info">
             {icon} {message}
         </div>
@@ -140,10 +149,14 @@ def show_info(message: str, icon: str = "ℹ️"):
             }}
         }}
         </style>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
     import time as _time
+
     _time.sleep(2)
     placeholder.empty()
+
 
 THEME_CONFIGS = {
     "light": {
@@ -188,10 +201,13 @@ def apply_theme(theme_name: str):
     """Apply complete theme via Streamlit config."""
     config = THEME_CONFIGS.get(theme_name, THEME_CONFIGS["light"])
     import streamlit as st
+
     try:
         st.config.set_option("theme.primaryColor", config["primaryColor"])
         st.config.set_option("theme.backgroundColor", config["backgroundColor"])
-        st.config.set_option("theme.secondaryBackgroundColor", config["secondaryBackgroundColor"])
+        st.config.set_option(
+            "theme.secondaryBackgroundColor", config["secondaryBackgroundColor"]
+        )
         st.config.set_option("theme.textColor", config["textColor"])
         st.config.set_option("theme.font", config["font"])
         if theme_name == "dark":
@@ -264,6 +280,7 @@ def _get_theme_css(theme_name: str) -> str:
     """
     return base_css + mobile_css
 
+
 # Import DELIVERABLES_DIR from parent module (set in app.py before import)
 # We'll get it from the module-level config or pass it as needed
 
@@ -271,11 +288,15 @@ def _get_theme_css(theme_name: str) -> str:
 def _get_export_bytes(content: str, fmt: str) -> tuple:
     try:
         return ErrorHandler.safe_execute(
-            _do_get_export_bytes, content, fmt,
-            context=_t("export_fmt_context", fmt=fmt)
+            _do_get_export_bytes,
+            content,
+            fmt,
+            context=_t("export_fmt_context", fmt=fmt),
         )
     except UserFriendlyError as e:
-        logger.warning("[frontend] %s: %s", _t("export_failed_log", fmt=fmt), e.user_message)
+        logger.warning(
+            "[frontend] %s: %s", _t("export_failed_log", fmt=fmt), e.user_message
+        )
         return None, None, None
 
 
@@ -296,10 +317,18 @@ def _do_get_export_bytes(content: str, fmt: str) -> tuple:
         "md": "text/markdown",
     }
     ext_map = {
-        "pdf": "pdf", "docx": "docx", "xlsx": "xlsx",
-        "png": "png", "html": "html", "md": "md",
+        "pdf": "pdf",
+        "docx": "docx",
+        "xlsx": "xlsx",
+        "png": "png",
+        "html": "html",
+        "md": "md",
     }
-    return file_bytes, mime_map.get(fmt, "application/octet-stream"), ext_map.get(fmt, "bin")
+    return (
+        file_bytes,
+        mime_map.get(fmt, "application/octet-stream"),
+        ext_map.get(fmt, "bin"),
+    )
 
 
 def _get_mime_type(filepath: str) -> str:
@@ -324,8 +353,13 @@ def _render_batch_export_section(DELIVERABLES_DIR):
     with col_fmt:
         export_format = st.selectbox(
             _t("export_select_format"),
-            options=[_t("export_pdf_pack"), _t("export_word_pack"), _t("export_excel"), _t("export_md_archive")],
-            help=_t("export_format_help")
+            options=[
+                _t("export_pdf_pack"),
+                _t("export_word_pack"),
+                _t("export_excel"),
+                _t("export_md_archive"),
+            ],
+            help=_t("export_format_help"),
         )
     with col_btn:
         if st.button(_t("export_batch_btn"), type="primary", use_container_width=True):
@@ -358,7 +392,9 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
 
     for i, item in enumerate(deliverables):
         progress = int((i + 1) / len(deliverables) * 100)
-        progress_bar.progress(progress, text=_t("export_progress", current=i+1, total=len(deliverables)))
+        progress_bar.progress(
+            progress, text=_t("export_progress", current=i + 1, total=len(deliverables))
+        )
 
         try:
             filepath = item.get("filepath", "")
@@ -378,12 +414,14 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
             if file_bytes:
                 ext = target_fmt.value
                 output_filename = f"batch_{os.path.splitext(item.get('filename', f'item_{i}'))[0]}.{ext}"
-                output_path = os.path.join(DELIVERABLES_DIR, f"batch_export_{output_filename}")
+                output_path = os.path.join(
+                    DELIVERABLES_DIR, f"batch_export_{output_filename}"
+                )
                 with open(output_path, "wb") as f:
                     f.write(file_bytes)
                 results.append(output_path)
         except Exception as e:
-            st.warning(_t("export_item_failed", index=i+1, error=e))
+            st.warning(_t("export_item_failed", index=i + 1, error=e))
 
     progress_bar.progress(100, text=_t("export_complete"))
 
@@ -404,13 +442,19 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
 def _render_single_export_buttons(item: dict, item_id: str):
     col_pdf, col_word, col_excel, col_png = st.columns(4)
     with col_pdf:
-        if st.button("📄 PDF", key=f"pdf_{item_id}", help=_t("export_as_format", fmt="PDF")):
+        if st.button(
+            "📄 PDF", key=f"pdf_{item_id}", help=_t("export_as_format", fmt="PDF")
+        ):
             _export_single_with_preview(item, "pdf", item_id)
     with col_word:
-        if st.button("📝 Word", key=f"word_{item_id}", help=_t("export_as_format", fmt="Word")):
+        if st.button(
+            "📝 Word", key=f"word_{item_id}", help=_t("export_as_format", fmt="Word")
+        ):
             _export_single_with_preview(item, "word", item_id)
     with col_excel:
-        if st.button("📊 Excel", key=f"excel_{item_id}", help=_t("export_as_format", fmt="Excel")):
+        if st.button(
+            "📊 Excel", key=f"excel_{item_id}", help=_t("export_as_format", fmt="Excel")
+        ):
             _export_single_with_preview(item, "excel", item_id)
     with col_png:
         if st.button("🖼️ 图片", key=f"png_{item_id}", help=_t("export_as_png")):
@@ -427,7 +471,11 @@ def _render_export_preview(item_data: dict, format_type: str):
         size_kb = len(content_str.encode("utf-8")) // 1024
         st.markdown(f"**{_t('size')}**: ~{size_kb} KB ({_t('size_estimated')})")
         keys = list(item_data.keys()) if isinstance(item_data, dict) else []
-        st.markdown(f"**{_t('included_fields')}**: {', '.join(keys[:5])}{'...' if len(keys) > 5 else ''}" if keys else f"**{_t('content_type')}**: {_t('text_type')}")
+        st.markdown(
+            f"**{_t('included_fields')}**: {', '.join(keys[:5])}{'...' if len(keys) > 5 else ''}"
+            if keys
+            else f"**{_t('content_type')}**: {_t('text_type')}"
+        )
 
         format_hints = {
             "pdf": "📄 PDF {_t('format_pdf_desc')}",
@@ -436,15 +484,27 @@ def _render_export_preview(item_data: dict, format_type: str):
             "image": "🖼️ PNG {_t('format_png_desc')}",
             "png": "🖼️ PNG {_t('format_png_desc')}",
         }
-        st.caption(format_hints.get(format_type.lower(), _t("export_as_format2", fmt=format_type.upper())))
+        st.caption(
+            format_hints.get(
+                format_type.lower(), _t("export_as_format2", fmt=format_type.upper())
+            )
+        )
 
     with col_preview:
-        content_preview = str(item_data)[:500] + ("..." if len(str(item_data)) > 500 else "")
-        st.text_area(_t("content_preview"), value=content_preview, height=200, disabled=True)
+        content_preview = str(item_data)[:500] + (
+            "..." if len(str(item_data)) > 500 else ""
+        )
+        st.text_area(
+            _t("content_preview"), value=content_preview, height=200, disabled=True
+        )
 
     col_confirm, col_cancel = st.columns([1, 1])
     with col_confirm:
-        if st.button("✅ " + _t("confirm_export"), type="primary", key=f"confirm_export_{format_type}"):
+        if st.button(
+            "✅ " + _t("confirm_export"),
+            type="primary",
+            key=f"confirm_export_{format_type}",
+        ):
             return True
     with col_cancel:
         if st.button(_t("cancel"), key=f"cancel_export_{format_type}"):
@@ -571,18 +631,30 @@ def _get_phase_from_event(event_type: str) -> tuple:
 def _event_emoji(event_type: str) -> str:
     """获取事件类型对应的emoji"""
     emojis = {
-        "PLAN_START": "🎯", "INTENT_DETECTED": "🔍",
-        "CONFIRM_REQUESTED": "❓", "CONFIRMED": "✅",
-        "STEP_START": "⚙️", "STEP_PROGRESS": "🔄",
-        "STEP_COMPLETE": "✅", "COLLAB_START": "🤝",
-        "REFLECT_START": "💭", "COMPLETE": "🎉",
-        "ERROR": "❌", "CANCELLED": "⏹️",
-        "plan_start": "🎯", "intent_detected": "🔍",
-        "confirm_requested": "❓", "confirmed": "✅",
-        "step_start": "⚙️", "step_progress": "🔄",
-        "step_complete": "✅", "collab_start": "🤝",
-        "reflect_start": "💭", "complete": "🎉",
-        "error": "❌", "cancelled": "⏹️",
+        "PLAN_START": "🎯",
+        "INTENT_DETECTED": "🔍",
+        "CONFIRM_REQUESTED": "❓",
+        "CONFIRMED": "✅",
+        "STEP_START": "⚙️",
+        "STEP_PROGRESS": "🔄",
+        "STEP_COMPLETE": "✅",
+        "COLLAB_START": "🤝",
+        "REFLECT_START": "💭",
+        "COMPLETE": "🎉",
+        "ERROR": "❌",
+        "CANCELLED": "⏹️",
+        "plan_start": "🎯",
+        "intent_detected": "🔍",
+        "confirm_requested": "❓",
+        "confirmed": "✅",
+        "step_start": "⚙️",
+        "step_progress": "🔄",
+        "step_complete": "✅",
+        "collab_start": "🤝",
+        "reflect_start": "💭",
+        "complete": "🎉",
+        "error": "❌",
+        "cancelled": "⏹️",
     }
     return emojis.get(event_type, "📌")
 
@@ -598,7 +670,11 @@ def _render_progress_indicator(session_id: str):
     - 如果SSE不可用则回退到静态进度显示
     """
     try:
-        from opc_manager.progress_emitter import ProgressEmitter, get_progress_emitter, EventType
+        from opc_manager.progress_emitter import (
+            ProgressEmitter,
+            get_progress_emitter,
+            EventType,
+        )
     except ImportError:
         return
 
@@ -669,7 +745,9 @@ def _render_progress_indicator(session_id: str):
                     time_str = ""
 
                 if evt_is_error:
-                    st.markdown(f"{emoji} `{time_str}` :red[**{etype}**] ({epct}%) - :red[{emsg}]")
+                    st.markdown(
+                        f"{emoji} `{time_str}` :red[**{etype}**] ({epct}%) - :red[{emsg}]"
+                    )
                 else:
                     st.markdown(f"{emoji} `{time_str}` **{etype}** ({epct}%) - {emsg}")
 
@@ -756,8 +834,12 @@ def _render_export_buttons(content: str, formats: list, key_prefix: str):
     if not formats:
         return
     FORMAT_LABELS = {
-        "pdf": "📄 PDF", "docx": "📝 Word", "xlsx": "📊 Excel",
-        "png": "🖼️ 图片", "html": "🌐 HTML", "md": "📑 Markdown",
+        "pdf": "📄 PDF",
+        "docx": "📝 Word",
+        "xlsx": "📊 Excel",
+        "png": "🖼️ 图片",
+        "html": "🌐 HTML",
+        "md": "📑 Markdown",
     }
     st.markdown(f"**{_t('export_as_other_formats')}:**")
     btn_cols = st.columns(min(len(formats), 4))
@@ -775,13 +857,19 @@ def _render_export_buttons(content: str, formats: list, key_prefix: str):
                     use_container_width=True,
                 )
             else:
-                st.button(label, key=f"export_fail_{fmt}_{key_prefix}", disabled=True, help="导出依赖未安装")
+                st.button(
+                    label,
+                    key=f"export_fail_{fmt}_{key_prefix}",
+                    disabled=True,
+                    help="导出依赖未安装",
+                )
 
 
 def _get_undo_manager():
     """Safe wrapper to get UndoManager instance."""
     try:
         from opc_manager.undo_manager import get_undo_manager
+
         return get_undo_manager()
     except ImportError:
         return None
@@ -822,7 +910,11 @@ def _render_undo_panel():
 
     st.divider()
 
-    if st.button("↩️ " + _t("undo_operations"), use_container_width=True, help=_t("undo_operations_help")):
+    if st.button(
+        "↩️ " + _t("undo_operations"),
+        use_container_width=True,
+        help=_t("undo_operations_help"),
+    ):
         st.session_state.show_undo = not st.session_state.get("show_undo", False)
 
     if st.session_state.get("show_undo", False):
@@ -852,19 +944,25 @@ def _render_undo_panel():
                 col_info, col_action = st.columns([3, 1])
 
                 with col_info:
-                    st.json({
-                        _t("type"): op_type,
-                        _t("time"): created_at,
-                        _t("status"): _t("can_undo") if can_undo else f"{_t('cannot_undo')}: {reason}",
-                        "ID": op_id[:12] if op_id else "",
-                    })
+                    st.json(
+                        {
+                            _t("type"): op_type,
+                            _t("time"): created_at,
+                            _t("status"): (
+                                _t("can_undo")
+                                if can_undo
+                                else f"{_t('cannot_undo')}: {reason}"
+                            ),
+                            "ID": op_id[:12] if op_id else "",
+                        }
+                    )
 
                 with col_action:
                     if can_undo:
                         confirmed = st.checkbox(
                             _t("confirm_undo"),
                             key=f"undo_confirm_{op_id}",
-                            help=_t("confirm_undo_help")
+                            help=_t("confirm_undo_help"),
                         )
 
                         if confirmed:
@@ -872,18 +970,22 @@ def _render_undo_panel():
                                 _t("undo"),
                                 key=f"undo_{op_id}",
                                 type="secondary",
-                                help=_t("undo_warning")
+                                help=_t("undo_warning"),
                             ):
                                 with st.spinner(_t("undoing")):
                                     result = um.undo(session_id, op_id)
                                     if result.get("success"):
-                                        st.success(f"✅ {_t('undo_success', msg=result.get('message', ''))}")
+                                        st.success(
+                                            f"✅ {_t('undo_success', msg=result.get('message', ''))}"
+                                        )
                                         st.balloons()
                                         _cached_list_undoable.clear()
                                         time.sleep(1)
                                         st.rerun()
                                     else:
-                                        st.error(f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}")
+                                        st.error(
+                                            f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}"
+                                        )
                     else:
                         st.caption(f"❌ {reason}")
 
@@ -892,7 +994,9 @@ def _render_undo_panel():
                             remaining = max(0, expires_at - time.time())
                             if remaining > 0:
                                 mins, secs = divmod(int(remaining), 60)
-                                st.caption(f"⏰ {_t('remaining_time', mins=mins, secs=secs)}")
+                                st.caption(
+                                    f"⏰ {_t('remaining_time', mins=mins, secs=secs)}"
+                                )
                             else:
                                 st.caption("⏰ " + _t("undo_window_expired"))
 
@@ -900,6 +1004,7 @@ def _render_undo_panel():
 def _render_theme_selector():
     """Render theme selector in sidebar."""
     from opc_manager.i18n import t as _t
+
     themes = {
         "light": _t("theme_light"),
         "dark": _t("theme_dark"),
@@ -914,7 +1019,7 @@ def _render_theme_selector():
         options=list(themes.keys()),
         format_func=lambda x: themes[x],
         index=list(themes.keys()).index(current) if current in themes else 0,
-        key="theme_selector"
+        key="theme_selector",
     )
 
     if selected != current:
@@ -925,6 +1030,7 @@ def _render_theme_selector():
 def _render_language_selector():
     """Render language selector in sidebar."""
     from opc_manager.i18n import get_i18n, t as _t
+
     i18n = get_i18n()
     locales = i18n.get_available_locales()
     current = i18n.locale
@@ -943,6 +1049,7 @@ def _render_language_selector():
 def _render_shortcuts_help():
     """Render operation tips help panel (shortcuts that actually work in Streamlit)."""
     from opc_manager.i18n import t as _t
+
     with st.expander(_t("tips_title")):
         tips = [
             ("Enter", _t("shortcut_send")),
@@ -957,6 +1064,7 @@ def _render_shortcuts_help():
 def _maybe_show_shortcut_hints():
     """Show operation tips hint bubble on first visit to chat page."""
     from opc_manager.i18n import t as _t
+
     if "shortcuts_shown" not in st.session_state:
         st.session_state.shortcuts_shown = False
 
@@ -984,7 +1092,8 @@ def _maybe_show_shortcut_hints():
 
 def _render_floating_help_button():
     """Render a small floating '?' button that re-shows shortcut hints."""
-    st.markdown("""
+    st.markdown(
+        """
     <div style="
         position: fixed;
         bottom: 80px;
@@ -992,8 +1101,12 @@ def _render_floating_help_button():
         z-index: 998;
     >
     </div>
-    """, unsafe_allow_html=True)
-    if st.button(_t("floating_help_btn"), key="floating_help_btn", help=_t("floating_help_desc")):
+    """,
+        unsafe_allow_html=True,
+    )
+    if st.button(
+        _t("floating_help_btn"), key="floating_help_btn", help=_t("floating_help_desc")
+    ):
         st.session_state.shortcuts_shown = False
         st.rerun()
 
@@ -1006,9 +1119,9 @@ def _get_current_session_id() -> str:
     """
     try:
         session_ctx = st.session_state.get("session_ctx")
-        if session_ctx and hasattr(session_ctx, '_session_id'):
+        if session_ctx and hasattr(session_ctx, "_session_id"):
             return session_ctx._session_id
-        elif session_ctx and hasattr(session_ctx, 'session_id'):
+        elif session_ctx and hasattr(session_ctx, "session_id"):
             return session_ctx.session_id
     except Exception:
         pass
@@ -1056,20 +1169,24 @@ def _render_quick_undo_button(task_id: str, operation_type: str = None):
                 confirmed = st.checkbox(
                     "✅ " + _t("confirm_undo_this_operation"),
                     key=f"quick_undo_confirm_{task_id}",
-                    help=_t("undo_destructive_help")
+                    help=_t("undo_destructive_help"),
                 )
 
                 if confirmed:
                     with st.spinner(_t("undoing")):
                         result = um.undo(session_id, op_id)
                         if result.get("success"):
-                            st.success(f"✅ {_t('undo_success', msg=result.get('message', ''))}")
+                            st.success(
+                                f"✅ {_t('undo_success', msg=result.get('message', ''))}"
+                            )
                             st.balloons()
                             _cached_list_undoable.clear()
                             time.sleep(1)
                             st.rerun()
                         else:
-                            st.error(f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}")
+                            st.error(
+                                f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}"
+                            )
 
     except Exception as e:
         logger.warning("[frontend] Quick undo button error: %s", e)

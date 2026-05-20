@@ -22,25 +22,60 @@ import logging
 import re
 import threading
 
-from opc_manager.intent_types import IntentType, INTENT_KEYWORDS, INTENT_STEP_MAP, SKILL_INTENT_MAP
+from opc_manager.intent_types import (
+    IntentType,
+    INTENT_KEYWORDS,
+    INTENT_STEP_MAP,
+    SKILL_INTENT_MAP,
+)
 from opc_manager.protocols import LLMServiceProtocol
-from opc_manager.skill_models import SkillContext, SkillCategory, SkillInput, SkillOutput, Skill
+from opc_manager.skill_models import (
+    SkillContext,
+    SkillCategory,
+    SkillInput,
+    SkillOutput,
+    Skill,
+)
 from opc_manager.skill_builtin import register_builtin_skills
 from opc_manager.skill_executors import SkillExecutorMixin
 
-__all__ = ["SkillRegistry", "SKILL_COLLABORATIONS", "Skill", "SkillCategory", "SkillInput", "SkillOutput", "SkillContext"]
+__all__ = [
+    "SkillRegistry",
+    "SKILL_COLLABORATIONS",
+    "Skill",
+    "SkillCategory",
+    "SkillInput",
+    "SkillOutput",
+    "SkillContext",
+]
 
 logger = logging.getLogger(__name__)
 
 SKILL_COLLABORATIONS = {
     "crm_to_email": {"trigger": ["跟进", "发邮件"], "skills": ["crm", "email"]},
-    "finance_to_tax": {"trigger": ["记账", "报税"], "skills": ["finance", "tax_reminder"]},
+    "finance_to_tax": {
+        "trigger": ["记账", "报税"],
+        "skills": ["finance", "tax_reminder"],
+    },
     "deal_to_income": {"trigger": ["成交", "收款"], "skills": ["crm", "finance"]},
-    "report_full": {"trigger": ["经营报告", "全面报告"], "skills": ["finance", "crm", "task_manager", "report"]},
-    "deal_to_email": {"trigger": ["成交后发邮件", "成交通知"], "skills": ["crm", "email"]},
-    "report_to_calendar": {"trigger": ["报告截止", "报告日程"], "skills": ["report", "calendar"]},
-    "proposal_to_email": {"trigger": ["报价后发邮件", "报价通知"], "skills": ["proposal", "email"]},
+    "report_full": {
+        "trigger": ["经营报告", "全面报告"],
+        "skills": ["finance", "crm", "task_manager", "report"],
+    },
+    "deal_to_email": {
+        "trigger": ["成交后发邮件", "成交通知"],
+        "skills": ["crm", "email"],
+    },
+    "report_to_calendar": {
+        "trigger": ["报告截止", "报告日程"],
+        "skills": ["report", "calendar"],
+    },
+    "proposal_to_email": {
+        "trigger": ["报价后发邮件", "报价通知"],
+        "skills": ["proposal", "email"],
+    },
 }
+
 
 class SkillRegistry(SkillExecutorMixin):
     """技能注册表 — 负责技能的注册、发现和调用"""
@@ -49,7 +84,14 @@ class SkillRegistry(SkillExecutorMixin):
     _instance_lock = threading.Lock()
     _init_lock = threading.Lock()
 
-    def __new__(cls, llm_service=None, search_processor=None, tool_system=None, register_builtins: bool = True, register_external: bool = True):
+    def __new__(
+        cls,
+        llm_service=None,
+        search_processor=None,
+        tool_system=None,
+        register_builtins: bool = True,
+        register_external: bool = True,
+    ):
         if cls._instance is None:
             with cls._instance_lock:
                 if cls._instance is None:
@@ -65,7 +107,7 @@ class SkillRegistry(SkillExecutorMixin):
         register_external: bool = True,
     ):
         with self._init_lock:
-            if hasattr(self, '_initialized') and self._initialized:
+            if hasattr(self, "_initialized") and self._initialized:
                 if llm_service is not None:
                     self.llm_service = llm_service
                 if search_processor is not None:
@@ -95,6 +137,7 @@ class SkillRegistry(SkillExecutorMixin):
     def _register_external_skills(self):
         try:
             from opc_manager.data_manager import init_db, execute_query
+
             init_db()
             rows = execute_query("SELECT * FROM external_skills")
             for row in rows:
@@ -112,8 +155,12 @@ class SkillRegistry(SkillExecutorMixin):
                     name=row.get("name", skill_id),
                     description=row.get("description", ""),
                     category=SkillCategory.UTILITY,
-                    inputs=[SkillInput(name="goal", type="str", description="执行目标")],
-                    outputs=[SkillOutput(name="result", type="dict", description="执行结果")],
+                    inputs=[
+                        SkillInput(name="goal", type="str", description="执行目标")
+                    ],
+                    outputs=[
+                        SkillOutput(name="result", type="dict", description="执行结果")
+                    ],
                     execute=self._execute_extended_skill,
                     enabled=True,
                     version=row.get("version", "1.0.0"),
@@ -123,14 +170,21 @@ class SkillRegistry(SkillExecutorMixin):
         except Exception as e:
             logger.debug("注册外部技能失败: %s", e)
 
-    def _execute_extended_skill(self, goal: str = "", _context: Optional[SkillContext] = None, **kwargs) -> Dict[str, Any]:
+    def _execute_extended_skill(
+        self, goal: str = "", _context: Optional[SkillContext] = None, **kwargs
+    ) -> Dict[str, Any]:
         try:
             from opc_manager.skill_marketplace import ExternalSkillMarketplace
+
             if self._external_marketplace is None:
                 self._external_marketplace = ExternalSkillMarketplace()
             skill_id = kwargs.get("skill_id", "")
             if skill_id:
-                clean_skill_id = skill_id.replace("ext_", "") if skill_id.startswith("ext_") else skill_id
+                clean_skill_id = (
+                    skill_id.replace("ext_", "")
+                    if skill_id.startswith("ext_")
+                    else skill_id
+                )
                 return self._external_marketplace.execute_in_sandbox(
                     clean_skill_id, {"goal": goal, **kwargs}
                 )
@@ -142,9 +196,12 @@ class SkillRegistry(SkillExecutorMixin):
             "data": {"goal": goal, "extended": True},
         }
 
-    def install_external_skill(self, skill_id: str, source: str = "opc_official") -> Dict[str, Any]:
+    def install_external_skill(
+        self, skill_id: str, source: str = "opc_official"
+    ) -> Dict[str, Any]:
         if self._external_marketplace is None:
             from opc_manager.skill_marketplace import ExternalSkillMarketplace
+
             self._external_marketplace = ExternalSkillMarketplace()
 
         result = self._external_marketplace.install_skill(skill_id, source)
@@ -155,6 +212,7 @@ class SkillRegistry(SkillExecutorMixin):
     def uninstall_external_skill(self, skill_id: str) -> Dict[str, Any]:
         if self._external_marketplace is None:
             from opc_manager.skill_marketplace import ExternalSkillMarketplace
+
             self._external_marketplace = ExternalSkillMarketplace()
 
         ext_skill_id = f"ext_{skill_id}"
@@ -167,10 +225,10 @@ class SkillRegistry(SkillExecutorMixin):
     def register_skill(self, skill: Skill) -> bool:
         """
         注册技能
-        
+
         Args:
             skill: 技能对象
-        
+
         Returns:
             bool: 是否注册成功
         """
@@ -178,37 +236,43 @@ class SkillRegistry(SkillExecutorMixin):
             existing = self.skills[skill.skill_id]
             try:
                 from packaging.version import Version
+
                 if Version(skill.version) > Version(existing.version):
-                    logger.info("技能版本升级: %s %s→%s", skill.skill_id, existing.version, skill.version)
+                    logger.info(
+                        "技能版本升级: %s %s→%s",
+                        skill.skill_id,
+                        existing.version,
+                        skill.version,
+                    )
                     self.skills[skill.skill_id] = skill
                     return True
             except Exception as e:
                 logger.debug("[SkillRegistry] Version comparison failed: %s", e)
             logger.warning("技能已存在: %s", skill.skill_id)
             return False
-        
+
         self.skills[skill.skill_id] = skill
-        
+
         category_name = skill.category.value
         if category_name not in self.category_index:
             self.category_index[category_name] = []
         self.category_index[category_name].append(skill.skill_id)
-        
+
         for keyword in skill.intent_keywords:
             if keyword not in self.keyword_index:
                 self.keyword_index[keyword] = []
             self.keyword_index[keyword].append(skill.skill_id)
-        
+
         logger.info("技能注册成功: %s", skill.skill_id)
         return True
 
     def get_skill(self, skill_id: str) -> Optional[Skill]:
         """
         获取技能
-        
+
         Args:
             skill_id: 技能ID
-        
+
         Returns:
             Optional[Skill]: 技能对象，如果存在的话
         """
@@ -217,28 +281,28 @@ class SkillRegistry(SkillExecutorMixin):
     def find_by_intent(self, intent_text: str) -> List[Skill]:
         """
         根据意图查找技能
-        
+
         Args:
             intent_text: 意图文本
-        
+
         Returns:
             List[Skill]: 匹配的技能列表
         """
         matched_skill_ids = set()
-        
+
         for keyword, skill_ids in self.keyword_index.items():
             if keyword in intent_text:
                 matched_skill_ids.update(skill_ids)
-        
+
         return [self.skills[sid] for sid in matched_skill_ids if sid in self.skills]
 
     def find_by_category(self, category: SkillCategory) -> List[Skill]:
         """
         根据分类查找技能
-        
+
         Args:
             category: 技能分类
-        
+
         Returns:
             List[Skill]: 该分类下的技能列表
         """
@@ -249,13 +313,15 @@ class SkillRegistry(SkillExecutorMixin):
     def list_all_skills(self) -> List[Skill]:
         """
         获取所有技能列表
-        
+
         Returns:
             List[Skill]: 所有技能列表
         """
         return list(self.skills.values())
 
-    async def execute_skill(self, skill_id: str, context: Optional[SkillContext] = None, **kwargs) -> Dict[str, Any]:
+    async def execute_skill(
+        self, skill_id: str, context: Optional[SkillContext] = None, **kwargs
+    ) -> Dict[str, Any]:
         skill = self.get_skill(skill_id)
         if not skill:
             return {"success": False, "error": f"技能不存在: {skill_id}"}
@@ -270,14 +336,21 @@ class SkillRegistry(SkillExecutorMixin):
                     missing_params.append(input_spec.name)
 
             if missing_params:
-                return {"success": False, "error": f"缺少必填参数: {', '.join(missing_params)}"}
+                return {
+                    "success": False,
+                    "error": f"缺少必填参数: {', '.join(missing_params)}",
+                }
 
             if asyncio.iscoroutinefunction(skill.execute):
                 result = await skill.execute(**kwargs, _context=context)
             else:
                 result = skill.execute(**kwargs, _context=context)
 
-            from opc_manager.export.models import SKILL_EXPORT_CAPABILITIES, ExportFormat
+            from opc_manager.export.models import (
+                SKILL_EXPORT_CAPABILITIES,
+                ExportFormat,
+            )
+
             supported = SKILL_EXPORT_CAPABILITIES.get(skill_id, [ExportFormat.MARKDOWN])
             result["_exportable_formats"] = [f.value for f in supported]
 
@@ -287,7 +360,9 @@ class SkillRegistry(SkillExecutorMixin):
             logger.error("技能执行异常: %s, 错误: %s", skill_id, str(e))
             return {"success": False, "error": str(e)}
 
-    def export_result(self, skill_id: str, result_data: Dict[str, Any], fmt: str, **opts) -> bytes:
+    def export_result(
+        self, skill_id: str, result_data: Dict[str, Any], fmt: str, **opts
+    ) -> bytes:
         from opc_manager.export import ExportManager
         from opc_manager.export.models import ResultData, ExportFormat
 
@@ -296,14 +371,16 @@ class SkillRegistry(SkillExecutorMixin):
         content = result_data.get("content", result_data.get("output", ""))
         data = ResultData(
             content=content,
-            metadata=result_data.get("metadata", {"title": result_data.get("title", "Export")}),
+            metadata=result_data.get(
+                "metadata", {"title": result_data.get("title", "Export")}
+            ),
         )
         return manager.export_sync(data, format_enum, **opts)
 
     def to_dict(self) -> Dict[str, Any]:
         """
         将技能注册表转换为字典
-        
+
         Returns:
             Dict[str, Any]: 状态字典
         """
@@ -315,16 +392,18 @@ class SkillRegistry(SkillExecutorMixin):
                 sid: {
                     "name": s.name,
                     "category": s.category.value,
-                    "description": s.description
+                    "description": s.description,
                 }
                 for sid, s in self.skills.items()
-            }
+            },
         }
 
     def from_dict(self, data: Dict[str, Any]) -> None:
         pass
 
-    def _execute_collaborative(self, goal: str, _context: Optional[SkillContext] = None) -> Optional[Dict[str, Any]]:
+    def _execute_collaborative(
+        self, goal: str, _context: Optional[SkillContext] = None
+    ) -> Optional[Dict[str, Any]]:
         if self._collab_in_progress:
             return None
         collab = None
@@ -362,11 +441,19 @@ class SkillRegistry(SkillExecutorMixin):
                     results.append({"skill_id": skill_id, "result": result})
                     context_data[skill_id] = result
                 except Exception as e:
-                    results.append({"skill_id": skill_id, "result": {"success": False, "error": str(e)}})
+                    results.append(
+                        {
+                            "skill_id": skill_id,
+                            "result": {"success": False, "error": str(e)},
+                        }
+                    )
 
             if results:
                 return {
-                    "success": any(isinstance(r["result"], dict) and r["result"].get("success") for r in results),
+                    "success": any(
+                        isinstance(r["result"], dict) and r["result"].get("success")
+                        for r in results
+                    ),
                     "collaboration": collab_name,
                     "results": results,
                     "message": f"协作执行完成: {' → '.join(collab['skills'])}",

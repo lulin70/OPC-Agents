@@ -62,10 +62,19 @@ class TestEventTypeEnum:
 
     def test_all_expected_types_exist(self):
         expected = {
-            "plan_start", "intent_detected", "confirm_requested",
-            "confirmed", "confirm_rejected", "step_start",
-            "step_progress", "step_complete", "collab_start",
-            "reflect_start", "complete", "error", "cancelled",
+            "plan_start",
+            "intent_detected",
+            "confirm_requested",
+            "confirmed",
+            "confirm_rejected",
+            "step_start",
+            "step_progress",
+            "step_complete",
+            "collab_start",
+            "reflect_start",
+            "complete",
+            "error",
+            "cancelled",
         }
         actual = {e.value for e in EventType}
         assert expected == actual
@@ -195,7 +204,7 @@ class TestProgressEventToSSE:
         sse = event.to_sse()
         assert sse.startswith("data: ")
         assert sse.endswith("\n\n")
-        data = json.loads(sse[len("data: "):])
+        data = json.loads(sse[len("data: ") :])
         assert data["event"] == "complete"
         assert data["progress"] == 100
 
@@ -243,12 +252,14 @@ class TestEmit:
     def test_emit_multiple_events_accumulate(self, emitter):
         sid = "c" * 32
         for i in range(5):
-            emitter.emit(ProgressEvent(
-                event_type=EventType.STEP_PROGRESS,
-                session_id=sid,
-                message=f"step {i}",
-                progress_pct=i * 20,
-            ))
+            emitter.emit(
+                ProgressEvent(
+                    event_type=EventType.STEP_PROGRESS,
+                    session_id=sid,
+                    message=f"step {i}",
+                    progress_pct=i * 20,
+                )
+            )
         assert len(emitter.get_history(sid)) == 5
 
 
@@ -257,11 +268,13 @@ class TestSubscribe:
 
     def test_subscribe_receives_history_replay(self, emitter):
         sid = "d" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.PLAN_START,
-            session_id=sid,
-            message="old event",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.PLAN_START,
+                session_id=sid,
+                message="old event",
+            )
+        )
         replayed = []
 
         def callback(sse_data):
@@ -278,11 +291,13 @@ class TestSubscribe:
             received.append(sse_data)
 
         emitter.subscribe(sid, callback)
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_COMPLETE,
-            session_id=sid,
-            message="new event after sub",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_COMPLETE,
+                session_id=sid,
+                message="new event after sub",
+            )
+        )
         assert len(received) >= 1
 
     def test_subscribe_validates_session_id_too_short(self, emitter):
@@ -309,20 +324,24 @@ class TestUnsubscribe:
             received.append(sse_data)
 
         emitter.subscribe(sid, callback)
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_START,
-            session_id=sid,
-            message="before unsub",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_START,
+                session_id=sid,
+                message="before unsub",
+            )
+        )
         assert len(received) >= 1
         prev_count = len(received)
 
         emitter.unsubscribe(sid)
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_COMPLETE,
-            session_id=sid,
-            message="after unsub",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_COMPLETE,
+                session_id=sid,
+                message="after unsub",
+            )
+        )
         assert len(received) == prev_count
 
     def test_unsubscribe_nonexistent_no_error(self, emitter):
@@ -334,11 +353,13 @@ class TestGetHistory:
 
     def test_get_history_returns_events_for_session(self, emitter):
         sid = "f" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.CONFIRMED,
-            session_id=sid,
-            message="confirmed",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.CONFIRMED,
+                session_id=sid,
+                message="confirmed",
+            )
+        )
         history = emitter.get_history(sid)
         assert isinstance(history, list)
         assert len(history) == 1
@@ -353,11 +374,13 @@ class TestClearHistory:
 
     def test_clear_history_removes_events(self, emitter):
         sid = "h" * 32
-        emitter.emit(ProgressEvent(
-            event_type=EventType.ERROR,
-            session_id=sid,
-            message="error event",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.ERROR,
+                session_id=sid,
+                message="error event",
+            )
+        )
         assert len(emitter.get_history(sid)) >= 1
         emitter.clear_history(sid)
         assert emitter.get_history(sid) == []
@@ -382,11 +405,13 @@ class TestDeadCallbackHandling:
         emitter.subscribe(sid, bad_callback)
         emitter.subscribe(sid, good_callback)
 
-        emitter.emit(ProgressEvent(
-            event_type=EventType.STEP_PROGRESS,
-            session_id=sid,
-            message="test dead cb",
-        ))
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.STEP_PROGRESS,
+                session_id=sid,
+                message="test dead cb",
+            )
+        )
         assert len(good_received) == 1
 
     def test_dead_callback_removed_from_subscribers(self, emitter):
@@ -396,12 +421,17 @@ class TestDeadCallbackHandling:
             raise RuntimeError("always fails")
 
         emitter.subscribe(sid, bad_callback)
-        emitter.emit(ProgressEvent(
-            event_type=EventType.CANCELLED,
-            session_id=sid,
-            message="trigger removal",
-        ))
-        assert sid not in emitter._subscribers or len(emitter._subscribers.get(sid, [])) == 0
+        emitter.emit(
+            ProgressEvent(
+                event_type=EventType.CANCELLED,
+                session_id=sid,
+                message="trigger removal",
+            )
+        )
+        assert (
+            sid not in emitter._subscribers
+            or len(emitter._subscribers.get(sid, [])) == 0
+        )
 
 
 class TestMaxHistorySizeCap:
@@ -410,12 +440,14 @@ class TestMaxHistorySizeCap:
     def test_history_capped_at_max_size(self, emitter):
         sid = "k" * 32
         for i in range(ProgressEmitter.MAX_HISTORY_SIZE + 50):
-            emitter.emit(ProgressEvent(
-                event_type=EventType.STEP_PROGRESS,
-                session_id=sid,
-                message=f"event {i}",
-                progress_pct=i % 101,
-            ))
+            emitter.emit(
+                ProgressEvent(
+                    event_type=EventType.STEP_PROGRESS,
+                    session_id=sid,
+                    message=f"event {i}",
+                    progress_pct=i % 101,
+                )
+            )
         assert len(emitter.get_history(sid)) <= ProgressEmitter.MAX_HISTORY_SIZE
 
 

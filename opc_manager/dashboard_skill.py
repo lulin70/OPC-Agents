@@ -25,8 +25,14 @@ def get_overview() -> Dict[str, Any]:
     silent = get_silent_customers()
     tasks_result = list_tasks(status="all")
 
-    pending_tasks = [t for t in tasks_result.get("tasks", []) if t.get("status") in ("pending", "in_progress")]
-    overdue_tasks = [t for t in pending_tasks if t.get("due_date") and t["due_date"] < now]
+    pending_tasks = [
+        t
+        for t in tasks_result.get("tasks", [])
+        if t.get("status") in ("pending", "in_progress")
+    ]
+    overdue_tasks = [
+        t for t in pending_tasks if t.get("due_date") and t["due_date"] < now
+    ]
 
     return {
         "success": True,
@@ -109,7 +115,11 @@ def get_task_dashboard() -> Dict[str, Any]:
         by_status[status] = by_status.get(status, 0) + 1
         priority = t.get("priority", 2)
         by_priority[f"P{priority}"] = by_priority.get(f"P{priority}", 0) + 1
-        if status in ("pending", "in_progress") and t.get("due_date") and t["due_date"] < now:
+        if (
+            status in ("pending", "in_progress")
+            and t.get("due_date")
+            and t["due_date"] < now
+        ):
             overdue.append(t)
 
     return {

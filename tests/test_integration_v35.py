@@ -26,9 +26,21 @@ from opc_manager.async_executor import AsyncTaskExecutor
 from opc_manager.session_context import SessionContextManager
 
 MOCK_SEARCH_RESULTS = [
-    {"title": "SaaS Q2 Marketing Strategy", "href": "https://example.com/1", "body": "A comprehensive guide to Q2 marketing planning for SaaS products..."},
-    {"title": "Market Analysis Framework", "href": "https://example.com/2", "body": "SWOT analysis and market research methodology for business growth..."},
-    {"title": "Growth Hacking for Startups", "href": "https://example.com/3", "body": "Low-cost customer acquisition strategies and Q2 marketing plans..."},
+    {
+        "title": "SaaS Q2 Marketing Strategy",
+        "href": "https://example.com/1",
+        "body": "A comprehensive guide to Q2 marketing planning for SaaS products...",
+    },
+    {
+        "title": "Market Analysis Framework",
+        "href": "https://example.com/2",
+        "body": "SWOT analysis and market research methodology for business growth...",
+    },
+    {
+        "title": "Growth Hacking for Startups",
+        "href": "https://example.com/3",
+        "body": "Low-cost customer acquisition strategies and Q2 marketing plans...",
+    },
 ]
 
 MOCK_SOURCES = [
@@ -49,10 +61,10 @@ MOCK_LLM_RESPONSE = (
 
 def _start_mocks(test_instance):
     test_instance._search_patcher = patch.object(
-        TaskEngineV3, '_search', return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
+        TaskEngineV3, "_search", return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
     )
     test_instance._llm_patcher = patch.object(
-        LLMEnhancedContentGenerator, '_call_llm_api', return_value=MOCK_LLM_RESPONSE
+        LLMEnhancedContentGenerator, "_call_llm_api", return_value=MOCK_LLM_RESPONSE
     )
     test_instance._search_patcher.start()
     test_instance._llm_patcher.start()
@@ -84,11 +96,13 @@ class TestIntegrationSearchProcessor(unittest.TestCase):
                 snippet = r.get("snippet", "") or r.get("body", "")
                 combined = f"{title} {snippet}".lower()
                 has_relevant = any(
-                    kw in combined for kw in ["marketing", "q2", "growth", "strategy", "方案", "增长"]
+                    kw in combined
+                    for kw in ["marketing", "q2", "growth", "strategy", "方案", "增长"]
                 )
                 if not r.get("_kb_fallback"):
                     self.assertTrue(
-                        has_relevant or len(results) == 0, f"Search results should be relevant: {title}"
+                        has_relevant or len(results) == 0,
+                        f"Search results should be relevant: {title}",
                     )
 
     def test_engine_search_degradation_safe(self):
@@ -107,7 +121,7 @@ class TestIntegrationLLMContent(unittest.TestCase):
     def setUp(self):
         self.generator = LLMEnhancedContentGenerator()
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api', return_value=MOCK_LLM_RESPONSE
+            LLMEnhancedContentGenerator, "_call_llm_api", return_value=MOCK_LLM_RESPONSE
         )
         self._llm_patcher.start()
 

@@ -9,12 +9,17 @@ logger = logging.getLogger(__name__)
 
 
 class WeChatAgentBridge:
-    def __init__(self, agent_loop: AgentLoop,
-                 token: str = "", encoding_aes_key: str = "", corp_id: str = ""):
+    def __init__(
+        self,
+        agent_loop: AgentLoop,
+        token: str = "",
+        encoding_aes_key: str = "",
+        corp_id: str = "",
+    ):
         self.agent_loop = agent_loop
-        self.gateway = WeChatGateway(token=token,
-                                     encoding_aes_key=encoding_aes_key,
-                                     corp_id=corp_id)
+        self.gateway = WeChatGateway(
+            token=token, encoding_aes_key=encoding_aes_key, corp_id=corp_id
+        )
         self.gateway.set_message_handler(self._on_message)
         self._original_check_confirmation = None
         self._confirm_callback_wrapper = None
@@ -47,13 +52,16 @@ class WeChatAgentBridge:
     async def _run_agent(self, user_input: str, session_id: str) -> WeChatResponse:
         try:
             loop_result = await self.agent_loop.run(
-                user_input=user_input,
-                session_id=session_id
+                user_input=user_input, session_id=session_id
             )
             return self._format_response(loop_result)
         except Exception as e:
-            logger.error("AgentLoop execution error for wechat user %s: %s", session_id, e)
-            return WeChatResponse(content="抱歉，处理您的请求时出现了错误，请稍后重试。")
+            logger.error(
+                "AgentLoop execution error for wechat user %s: %s", session_id, e
+            )
+            return WeChatResponse(
+                content="抱歉，处理您的请求时出现了错误，请稍后重试。"
+            )
 
     def _format_response(self, result: dict) -> WeChatResponse:
         if not result.get("success"):
@@ -75,7 +83,9 @@ class WeChatAgentBridge:
         if results and results[-1].get("success"):
             last_data = results[-1].get("data", {})
             if isinstance(last_data, dict):
-                content = last_data.get("content", "") or last_data.get("analysis_result", "")
+                content = last_data.get("content", "") or last_data.get(
+                    "analysis_result", ""
+                )
                 if content:
                     return WeChatResponse(content=str(content)[:500])
             elif isinstance(last_data, str):
@@ -84,7 +94,9 @@ class WeChatAgentBridge:
         return WeChatResponse(content=message or "操作完成")
 
     def setup_confirm_callback(self):
-        async def wechat_confirm_callback(request: ConfirmationRequest) -> ConfirmationResult:
+        async def wechat_confirm_callback(
+            request: ConfirmationRequest,
+        ) -> ConfirmationResult:
             card_content = WeChatGateway.build_confirmation_card(
                 title="操作确认",
                 params={
@@ -92,20 +104,29 @@ class WeChatAgentBridge:
                     "目标": request.goal[:80],
                     "置信度": f"{request.confidence:.0%}",
                     "风险等级": request.risk_level.value,
-                    **{k: str(v)[:50] for k, v in request.extracted_params.items() if v},
+                    **{
+                        k: str(v)[:50] for k, v in request.extracted_params.items() if v
+                    },
                 },
             )
-            logger.info("WeChat confirmation card generated for session %s:\n%s",
-                        request.session_id, card_content)
+            logger.info(
+                "WeChat confirmation card generated for session %s:\n%s",
+                request.session_id,
+                card_content,
+            )
             return ConfirmationResult(confirmed=False, method="wechat_card")
 
         self._original_check_confirmation = self.agent_loop.confirmer.check_confirmation
         self._confirm_callback_wrapper = wechat_confirm_callback
 
-        async def wrapped_check_confirmation(session_id: str, intent_type: str,
-                                              goal: str, confidence: float,
-                                              params: dict = None,
-                                              confirm_callback=None):
+        async def wrapped_check_confirmation(
+            session_id: str,
+            intent_type: str,
+            goal: str,
+            confidence: float,
+            params: dict = None,
+            confirm_callback=None,
+        ):
             if confirm_callback is None:
                 confirm_callback = self._confirm_callback_wrapper
             return await self._original_check_confirmation(
@@ -117,8 +138,9 @@ class WeChatAgentBridge:
     async def handle_callback(self, query_params: dict, body: str) -> str:
         return await self.gateway.handle_callback(query_params, body)
 
-    def verify_url(self, signature: str, timestamp: str, nonce: str,
-                   echostr: str) -> Optional[str]:
+    def verify_url(
+        self, signature: str, timestamp: str, nonce: str, echostr: str
+    ) -> Optional[str]:
         if self.gateway.verify_signature(signature, timestamp, nonce):
             return echostr
         return None

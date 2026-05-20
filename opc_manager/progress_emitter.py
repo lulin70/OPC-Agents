@@ -18,6 +18,7 @@ Implements pub/sub pattern for progress event distribution.
 
 class EventType(Enum):
     """Types of progress events in the system."""
+
     PLAN_START = "plan_start"
     INTENT_DETECTED = "intent_detected"
     CONFIRM_REQUESTED = "confirm_requested"
@@ -32,6 +33,7 @@ class EventType(Enum):
     ERROR = "error"
     CANCELLED = "cancelled"
 
+
 @dataclass
 class ProgressEvent:
     """Represents a progress event with optional percentage.
@@ -45,6 +47,7 @@ class ProgressEvent:
         timestamp: Unix timestamp when event was created.
         unified_category: Optional UnifiedTaskCategory for dual-engine system (v0.2.1+).
     """
+
     event_type: EventType
     session_id: str
     message: str
@@ -74,9 +77,9 @@ class ProgressEvent:
         """
         if self.unified_category:
             return self.unified_category
-        return self.detail.get('unified_category')
+        return self.detail.get("unified_category")
 
-    def with_category(self, category) -> 'ProgressEvent':
+    def with_category(self, category) -> "ProgressEvent":
         """Return new event with unified category set (immutable pattern).
 
         This method creates a new ProgressEvent with the unified_category field set,
@@ -89,13 +92,13 @@ class ProgressEvent:
         Returns:
             New ProgressEvent instance with unified_category set
         """
-        cat_value = category.value if hasattr(category, 'value') else str(category)
+        cat_value = category.value if hasattr(category, "value") else str(category)
         return ProgressEvent(
             event_type=self.event_type,
             session_id=self.session_id,
             message=self.message,
             progress_pct=self.progress_pct,
-            detail={**self.detail, 'unified_category': cat_value},
+            detail={**self.detail, "unified_category": cat_value},
             timestamp=self.timestamp,
             unified_category=cat_value,
         )
@@ -120,6 +123,7 @@ class ProgressEvent:
         d = self.to_dict()
         return f"data: {json.dumps(d, ensure_ascii=False)}\n\n"
 
+
 class ProgressEmitter:
     """Singleton progress event emitter with pub/sub support.
 
@@ -134,6 +138,7 @@ class ProgressEmitter:
         _history: Dict mapping session_id to event history.
         _max_history: Maximum events kept in history (default: 200).
     """
+
     _instance = None
     _lock = threading.Lock()
     MAX_HISTORY_SIZE = 200
@@ -148,7 +153,7 @@ class ProgressEmitter:
                     cls._instance._history = {}
                     cls._instance._max_history = cls.MAX_HISTORY_SIZE
         return cls._instance
-    
+
     def emit(self, event: ProgressEvent):
         sse_data = event.to_sse()
         callbacks = self._subscribers.get(event.session_id, [])
@@ -160,13 +165,15 @@ class ProgressEmitter:
                 logger.debug("[ProgressEmitter] Callback error: %s", e)
                 dead.append(cb)
         if dead:
-            self._subscribers[event.session_id] = [cb for cb in callbacks if cb not in dead]
-        
+            self._subscribers[event.session_id] = [
+                cb for cb in callbacks if cb not in dead
+            ]
+
         history = self._history.setdefault(event.session_id, [])
         history.append(event.to_dict())
         if len(history) > self._max_history:
-            history[:] = history[-self._max_history:]
-    
+            history[:] = history[-self._max_history :]
+
     def subscribe(self, session_id: str, callback: Callable[[str], None]):
         if not session_id or not isinstance(session_id, str):
             raise ValueError("session_id must be a non-empty string")
@@ -175,15 +182,19 @@ class ProgressEmitter:
         self._subscribers.setdefault(session_id, []).append(callback)
         for event in self._history.get(session_id, []):
             try:
-                callback(ProgressEvent(**{**event, "event_type": EventType(event["event"])}).to_sse())
+                callback(
+                    ProgressEvent(
+                        **{**event, "event_type": EventType(event["event"])}
+                    ).to_sse()
+                )
             except Exception as e:
                 logger.debug("[ProgressEmitter] Subscribe replay error: %s", e)
-    
+
     def unsubscribe(self, session_id: str):
         self._subscribers.pop(session_id, None)
-    
+
     def get_history(self, session_id: str) -> List[dict]:
         return list(self._history.get(session_id, []))
-    
+
     def clear_history(self, session_id: str):
         self._history.pop(session_id, None)

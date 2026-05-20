@@ -28,7 +28,6 @@ from frontend.page_modules._marketplace_page import (
     _remove_installed_version,
 )
 
-
 SAMPLE_SKILLS = [
     {
         "skill_id": "crm_pro",
@@ -101,7 +100,9 @@ class TestFilterAndSortSkills:
         assert result_lower == result_upper
 
     def test_search_no_match(self):
-        result = _filter_and_sort_skills(SAMPLE_SKILLS, "xyznonexistent", [], "name_asc")
+        result = _filter_and_sort_skills(
+            SAMPLE_SKILLS, "xyznonexistent", [], "name_asc"
+        )
         assert len(result) == 0
 
     def test_category_filter_single(self):
@@ -110,7 +111,9 @@ class TestFilterAndSortSkills:
         assert result[0]["category"] == "Finance"
 
     def test_category_filter_multiple(self):
-        result = _filter_and_sort_skills(SAMPLE_SKILLS, "", ["CRM", "Email"], "name_asc")
+        result = _filter_and_sort_skills(
+            SAMPLE_SKILLS, "", ["CRM", "Email"], "name_asc"
+        )
         assert len(result) == 2
         categories = {s["category"] for s in result}
         assert categories == {"CRM", "Email"}
@@ -120,7 +123,9 @@ class TestFilterAndSortSkills:
         assert len(result) == 0
 
     def test_combined_search_and_category(self):
-        result = _filter_and_sort_skills(SAMPLE_SKILLS, "dashboard", ["Dashboard"], "name_asc")
+        result = _filter_and_sort_skills(
+            SAMPLE_SKILLS, "dashboard", ["Dashboard"], "name_asc"
+        )
         assert len(result) == 1
         assert result[0]["name"] == "Analytics Dashboard"
 
@@ -154,7 +159,10 @@ class TestFilterAndSortSkills:
     def test_search_with_partial_match(self):
         result = _filter_and_sort_skills(SAMPLE_SKILLS, "mail", [], "name_asc")
         assert len(result) >= 1
-        assert all("mail" in s["name"].lower() or "mail" in s["description"].lower() for s in result)
+        assert all(
+            "mail" in s["name"].lower() or "mail" in s["description"].lower()
+            for s in result
+        )
 
     def test_skills_with_missing_fields(self):
         broken_skills = [{"skill_id": "x"}, {"name": "NoId"}]
@@ -196,10 +204,24 @@ class TestAllCategoriesConstant:
         assert len(ALL_CATEGORIES) > 0
 
     def test_expected_categories_present(self):
-        expected = {"CRM", "Finance", "Email", "Calendar", "Social",
-                     "Knowledge", "Report", "Task", "Proposal", "Tax",
-                     "Dashboard", "Competitor", "Pricing", "Invoice",
-                     "Security", "Monitoring"}
+        expected = {
+            "CRM",
+            "Finance",
+            "Email",
+            "Calendar",
+            "Social",
+            "Knowledge",
+            "Report",
+            "Task",
+            "Proposal",
+            "Tax",
+            "Dashboard",
+            "Competitor",
+            "Pricing",
+            "Invoice",
+            "Security",
+            "Monitoring",
+        }
         assert set(ALL_CATEGORIES) == expected
 
     def test_count_sixteen(self):
@@ -231,6 +253,7 @@ class TestVersionPinning:
 
     def _patch_filepath(self):
         import frontend.page_modules._marketplace_page as mp_module
+
         self.original_get_file = mp_module._get_installed_versions_file
         mp_module._get_installed_versions_file = lambda: os.path.join(
             self.tmpdir, "test_installed_skills.json"
@@ -239,6 +262,7 @@ class TestVersionPinning:
     def _unpatch_filepath(self):
         if self.original_get_file:
             import frontend.page_modules._marketplace_page as mp_module
+
             mp_module._get_installed_versions_file = self.original_get_file
 
     def teardown_method(self):
@@ -328,7 +352,9 @@ class TestSkillDetailDataPrep:
         skill = SAMPLE_SKILLS[0]
         is_installed = skill["skill_id"] in installed_versions
         installed_ver = installed_versions.get(skill["skill_id"], "")
-        update_available = is_installed and installed_ver and installed_ver != skill["version"]
+        update_available = (
+            is_installed and installed_ver and installed_ver != skill["version"]
+        )
         assert is_installed is True
         assert update_available is True
 
@@ -336,9 +362,11 @@ class TestSkillDetailDataPrep:
         installed_versions = {"finance_tracker": "1.5.0"}
         skill = SAMPLE_SKILLS[1]
         installed_ver = installed_versions.get(skill["skill_id"], "")
-        update_available = (skill["skill_id"] in installed_versions
-                           and installed_ver
-                           and installed_ver != skill["version"])
+        update_available = (
+            skill["skill_id"] in installed_versions
+            and installed_ver
+            and installed_ver != skill["version"]
+        )
         assert update_available is False
 
     def test_not_installed_detection(self):

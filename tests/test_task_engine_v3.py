@@ -8,6 +8,7 @@
 - TaskEngineV3.execute(): 主流程（4种任务类型 + 错误处理）
 - 零占位符门禁: 回归检测（确保不会重新引入___/待填写等）
 """
+
 import unittest
 import sys
 import os
@@ -28,10 +29,26 @@ from opc_manager.task_engine_v3 import (
 from opc_manager.llm_content import LLMEnhancedContentGenerator
 
 MOCK_SEARCH_RESULTS = [
-    {"title": "SaaS Q2 Marketing Strategy", "href": "https://example.com/1", "body": "A comprehensive guide to Q2 marketing planning for SaaS products..."},
-    {"title": "One-Person Company Growth Framework", "href": "https://example.com/2", "body": "Growth strategies for solo entrepreneurs including content marketing..."},
-    {"title": "AI Agent Market Trends 2024", "href": "https://example.com/3", "body": "The latest trends in AI agent frameworks and architectures..."},
-    {"title": "Business SWOT Analysis Template", "href": "https://example.com/4", "body": "How to conduct a thorough SWOT analysis for your business..."},
+    {
+        "title": "SaaS Q2 Marketing Strategy",
+        "href": "https://example.com/1",
+        "body": "A comprehensive guide to Q2 marketing planning for SaaS products...",
+    },
+    {
+        "title": "One-Person Company Growth Framework",
+        "href": "https://example.com/2",
+        "body": "Growth strategies for solo entrepreneurs including content marketing...",
+    },
+    {
+        "title": "AI Agent Market Trends 2024",
+        "href": "https://example.com/3",
+        "body": "The latest trends in AI agent frameworks and architectures...",
+    },
+    {
+        "title": "Business SWOT Analysis Template",
+        "href": "https://example.com/4",
+        "body": "How to conduct a thorough SWOT analysis for your business...",
+    },
 ]
 
 MOCK_SOURCES = [
@@ -257,12 +274,10 @@ class TestTaskEngineV3Execute(unittest.TestCase):
     def setUp(self):
         self.engine = TaskEngineV3()
         self._search_patcher = patch.object(
-            TaskEngineV3, '_search',
-            return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
+            TaskEngineV3, "_search", return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
         )
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
-            return_value=MOCK_LLM_RESPONSE
+            LLMEnhancedContentGenerator, "_call_llm_api", return_value=MOCK_LLM_RESPONSE
         )
         self._search_patcher.start()
         self._llm_patcher.start()
@@ -360,12 +375,10 @@ class TestZeroPlaceholderGate(unittest.TestCase):
     def setUp(self):
         self.engine = TaskEngineV3()
         self._search_patcher = patch.object(
-            TaskEngineV3, '_search',
-            return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
+            TaskEngineV3, "_search", return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
         )
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
-            return_value=MOCK_LLM_RESPONSE
+            LLMEnhancedContentGenerator, "_call_llm_api", return_value=MOCK_LLM_RESPONSE
         )
         self._search_patcher.start()
         self._llm_patcher.start()
@@ -439,12 +452,10 @@ class TestTaskEngineEdgeCases(unittest.TestCase):
     def setUp(self):
         self.engine = TaskEngineV3()
         self._search_patcher = patch.object(
-            TaskEngineV3, '_search',
-            return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
+            TaskEngineV3, "_search", return_value=(MOCK_SEARCH_RESULTS, MOCK_SOURCES)
         )
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
-            return_value=MOCK_LLM_RESPONSE
+            LLMEnhancedContentGenerator, "_call_llm_api", return_value=MOCK_LLM_RESPONSE
         )
         self._search_patcher.start()
         self._llm_patcher.start()
@@ -554,6 +565,7 @@ class TestFollowUpContextInjection(unittest.TestCase):
 
     def test_follow_up_adds_marker_to_content(self):
         from opc_manager.session_context import SessionContextManager
+
         session = SessionContextManager(max_turns=20)
         session.add_turn(
             user_input="帮我写Q2营销方案",
@@ -566,6 +578,7 @@ class TestFollowUpContextInjection(unittest.TestCase):
 
     def test_new_task_no_marker(self):
         from opc_manager.session_context import SessionContextManager
+
         session = SessionContextManager(max_turns=20)
         session.add_turn(
             user_input="帮我写Q2营销方案",
@@ -578,6 +591,7 @@ class TestFollowUpContextInjection(unittest.TestCase):
 
     def test_no_history_no_follow_up(self):
         from opc_manager.session_context import SessionContextManager
+
         session = SessionContextManager(max_turns=20)
         result = self.engine.execute("补充竞品分析", session_ctx=session)
         self.assertTrue(result.success)

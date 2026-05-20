@@ -1,4 +1,5 @@
 """Audit log page renderer — extracted from app.py to fix NameError ordering bugs."""
+
 import streamlit as st
 import time as _time
 import logging
@@ -30,7 +31,9 @@ def _render_audit_log_page():
         with col_success:
             st.metric(_t("audit_success_rate"), success_rate)
         with col_avg:
-            st.metric(_t("audit_avg_duration"), _t("audit_duration_ms", ms=avg_duration))
+            st.metric(
+                _t("audit_avg_duration"), _t("audit_duration_ms", ms=avg_duration)
+            )
 
         if total_ops == 0:
             st.info(_t("audit_empty"))
@@ -41,9 +44,13 @@ def _render_audit_log_page():
         filter_col1, filter_col2, filter_col3, filter_col4 = st.columns([2, 2, 2, 2])
 
         with filter_col1:
-            op_types = [_t("audit_time_all")] + list(set(
-                r.get("operation_type", "") for r in audit_log.query(limit=200) if r.get("operation_type")
-            ))
+            op_types = [_t("audit_time_all")] + list(
+                set(
+                    r.get("operation_type", "")
+                    for r in audit_log.query(limit=200)
+                    if r.get("operation_type")
+                )
+            )
             selected_type = st.selectbox(
                 _t("audit_op_type"),
                 op_types,
@@ -69,7 +76,12 @@ def _render_audit_log_page():
             )
 
         with filter_col4:
-            time_range_options = [_t("audit_time_all"), _t("audit_time_today"), _t("audit_time_7d"), _t("audit_time_30d")]
+            time_range_options = [
+                _t("audit_time_all"),
+                _t("audit_time_today"),
+                _t("audit_time_7d"),
+                _t("audit_time_30d"),
+            ]
             selected_time_range = st.selectbox(
                 _t("audit_time_range"),
                 time_range_options,
@@ -104,15 +116,25 @@ def _render_audit_log_page():
         if selected_status != _t("audit_time_all"):
             records = [r for r in records if r.get("status") == selected_status]
 
-        filtered_flag = (selected_type != _t("audit_time_all") or selected_status != _t("audit_time_all") or session_search or selected_time_range != _t("audit_time_all"))
-        st.caption(_t("audit_showing", count=len(records)) + (_t("audit_filtered") if filtered_flag else ""))
+        filtered_flag = (
+            selected_type != _t("audit_time_all")
+            or selected_status != _t("audit_time_all")
+            or session_search
+            or selected_time_range != _t("audit_time_all")
+        )
+        st.caption(
+            _t("audit_showing", count=len(records))
+            + (_t("audit_filtered") if filtered_flag else "")
+        )
 
         if not records:
             st.info(_t("audit_no_match"))
             return
 
         for idx, record in enumerate(records):
-            timestamp_str = datetime.fromtimestamp(record.get("timestamp", 0)).strftime("%H:%M:%S")
+            timestamp_str = datetime.fromtimestamp(record.get("timestamp", 0)).strftime(
+                "%H:%M:%S"
+            )
             op_type = record.get("operation_type", "unknown")
             skill_id = record.get("skill_id", "unknown")
             status = record.get("status", "unknown")
@@ -140,7 +162,9 @@ def _render_audit_log_page():
                 col_meta, col_detail = st.columns([1, 2])
 
                 with col_meta:
-                    st.markdown(f"**{_t('audit_status_label')}**: :{status_color}[{status.upper()}]")
+                    st.markdown(
+                        f"**{_t('audit_status_label')}**: :{status_color}[{status.upper()}]"
+                    )
                     st.markdown(f"**{_t('audit_session_label')}**: `{session_id}`")
                     st.markdown(f"**{_t('audit_duration_label')}**: {duration}ms")
                     st.markdown(f"**{_t('audit_skill_label')}**: `{skill_id}`")

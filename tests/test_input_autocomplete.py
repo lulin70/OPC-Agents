@@ -69,28 +69,28 @@ def sample_items():
             display_text="📝 写报告",
             source="template",
             frequency=10,
-            last_used=time.time() - 3600
+            last_used=time.time() - 3600,
         ),
         CompletionItem(
             text="分析数据趋势",
             display_text="📊 数据分析",
             source="template",
             frequency=5,
-            last_used=time.time() - 7200
+            last_used=time.time() - 7200,
         ),
         CompletionItem(
             text="记录收入",
             display_text="💰 记录收入",
             source="history",
             frequency=3,
-            last_used=time.time() - 86400
+            last_used=time.time() - 86400,
         ),
         CompletionItem(
             text="发送邮件给客户",
             display_text="📧 发邮件",
             source="skill",
             frequency=1,
-            last_used=time.time() - 172800
+            last_used=time.time() - 172800,
         ),
     ]
 
@@ -101,8 +101,10 @@ def temp_cache_dir(tmp_path):
     test_cache_dir = tmp_path / "data"
     test_cache_file = test_cache_dir / "completions_cache.json"
 
-    with patch("frontend.components.input_autocomplete.CACHE_DIR", test_cache_dir), \
-         patch("frontend.components.input_autocomplete.CACHE_FILE", test_cache_file):
+    with (
+        patch("frontend.components.input_autocomplete.CACHE_DIR", test_cache_dir),
+        patch("frontend.components.input_autocomplete.CACHE_FILE", test_cache_file),
+    ):
         yield tmp_path
 
 
@@ -112,9 +114,7 @@ class TestCompletionItemDataStructure:
     def test_creation_with_required_fields(self):
         """Test creating CompletionItem with minimum required fields"""
         item = CompletionItem(
-            text="test text",
-            display_text="Test Display",
-            source="template"
+            text="test text", display_text="Test Display", source="template"
         )
         assert item.text == "test text"
         assert item.display_text == "Test Display"
@@ -129,7 +129,7 @@ class TestCompletionItemDataStructure:
             display_text="Full Item",
             source="history",
             frequency=15,
-            last_used=1234567890.0
+            last_used=1234567890.0,
         )
         assert item.frequency == 15
         assert item.last_used == 1234567890.0
@@ -137,10 +137,7 @@ class TestCompletionItemDataStructure:
     def test_to_dict_conversion(self):
         """Test converting CompletionItem to dictionary"""
         item = CompletionItem(
-            text="convert me",
-            display_text="Convert Me",
-            source="skill",
-            frequency=7
+            text="convert me", display_text="Convert Me", source="skill", frequency=7
         )
         result = item.to_dict()
         assert isinstance(result, dict)
@@ -154,7 +151,7 @@ class TestCompletionItemDataStructure:
             "display_text": "Dict Item",
             "source": "contact",
             "frequency": 20,
-            "last_used": 9999999999.0
+            "last_used": 9999999999.0,
         }
         item = CompletionItem.from_dict(data)
         assert item.text == "dict item"
@@ -217,7 +214,9 @@ class TestFilteringAlgorithm:
     def test_max_results_limit(self):
         """Test that results are limited to max_results"""
         many_items = [
-            CompletionItem(text=f"item {i}", display_text=f"Item {i}", source="template")
+            CompletionItem(
+                text=f"item {i}", display_text=f"Item {i}", source="template"
+            )
             for i in range(20)
         ]
         result = filter_completions("item", many_items, max_results=5)
@@ -231,14 +230,14 @@ class TestFilteringAlgorithm:
                 display_text="Common Task",
                 source="history",
                 frequency=100,
-                last_used=time.time()
+                last_used=time.time(),
             ),
             CompletionItem(
                 text="common task alternative",
                 display_text="Alternative",
                 source="template",
                 frequency=1,
-                last_used=time.time()
+                last_used=time.time(),
             ),
         ]
         result = filter_completions("common", items)
@@ -253,14 +252,14 @@ class TestFilteringAlgorithm:
                 display_text="Recent",
                 source="history",
                 frequency=5,
-                last_used=time.time()
+                last_used=time.time(),
             ),
             CompletionItem(
                 text="old item",
                 display_text="Old",
                 source="template",
                 frequency=5,
-                last_used=time.time() - 30 * 86400  # 30 days ago
+                last_used=time.time() - 30 * 86400,  # 30 days ago
             ),
         ]
         result = filter_completions("item", items)
@@ -284,7 +283,7 @@ class TestFilteringAlgorithm:
                 display_text="💰 记录收入",
                 source="history",
                 frequency=2,
-                last_used=time.time()
+                last_used=time.time(),
             )
         ]
         result = filter_completions("¥5000", items_with_special)
@@ -376,7 +375,9 @@ class TestSkillShortcuts:
         """Test that skill display text includes icon and name"""
         items = _render_skill_shortcuts()
         for item in items[:3]:
-            assert any(icon in item.display_text for icon in SKILL_CATEGORY_ICONS.values())
+            assert any(
+                icon in item.display_text for icon in SKILL_CATEGORY_ICONS.values()
+            )
 
     @patch("opc_manager.skill_registry.SkillRegistry")
     def test_fallback_on_registry_error(self, mock_registry_cls):
@@ -410,8 +411,12 @@ class TestTemplateSuggestions:
     def test_most_templates_have_placeholders(self):
         """Test that most templates contain variable placeholders"""
         items = _render_template_suggestions()
-        items_with_placeholders = [item for item in items if "{" in item.text and "}" in item.text]
-        assert len(items_with_placeholders) >= len(items) - 1  # Allow 1 template without placeholders
+        items_with_placeholders = [
+            item for item in items if "{" in item.text and "}" in item.text
+        ]
+        assert (
+            len(items_with_placeholders) >= len(items) - 1
+        )  # Allow 1 template without placeholders
 
     def test_template_source_is_template(self):
         """Test that all template items have correct source"""
@@ -422,7 +427,10 @@ class TestTemplateSuggestions:
         """Test that template display texts contain emojis"""
         items = _render_template_suggestions()
         for item in items:
-            assert any(char in item.display_text for char in ["📝", "📊", "💰", "📧", "✅", "💹", "🔍", "🎯"])
+            assert any(
+                char in item.display_text
+                for char in ["📝", "📊", "💰", "📧", "✅", "💹", "🔍", "🎯"]
+            )
 
 
 class TestContactSuggestions:
@@ -437,9 +445,7 @@ class TestContactSuggestions:
         """Test that '@' trigger activates contact search"""
         with patch("opc_manager.crm_skill.search_customers") as mock_search:
             mock_search.return_value = {
-                "customers": [
-                    {"name": "张三"}, {"name": "李四"}
-                ]
+                "customers": [{"name": "张三"}, {"name": "李四"}]
             }
             items = _render_contact_suggestions("@张")
             assert len(items) > 0
@@ -447,18 +453,14 @@ class TestContactSuggestions:
     def test_gei_trigger_activates_contacts(self):
         """Test that '给 ' trigger activates contact search"""
         with patch("opc_manager.crm_skill.search_customers") as mock_search:
-            mock_search.return_value = {
-                "customers": [{"name": "王五"}]
-            }
+            mock_search.return_value = {"customers": [{"name": "王五"}]}
             items = _render_contact_suggestions("给 ")
             assert len(items) > 0
 
     def test_contact_source_label(self):
         """Test that contact items have correct source"""
         with patch("opc_manager.crm_skill.search_customers") as mock_search:
-            mock_search.return_value = {
-                "customers": [{"name": "赵六"}]
-            }
+            mock_search.return_value = {"customers": [{"name": "赵六"}]}
             items = _render_contact_suggestions("@")
             assert all(item.source == "contact" for item in items)
 
@@ -500,9 +502,7 @@ class TestCachingSystem:
 
     def test_update_frequency_existing_item(self, temp_cache_dir):
         """Test updating frequency for existing item"""
-        initial_data = {
-            "existing command": {"frequency": 3, "last_used": 1000.0}
-        }
+        initial_data = {"existing command": {"frequency": 3, "last_used": 1000.0}}
         save_completion_cache(initial_data)
 
         update_completion_frequency("existing command")
@@ -532,8 +532,7 @@ class TestCachingSystem:
         from frontend.components import input_autocomplete as ia_module
 
         large_data = {
-            f"item_{i}": {"frequency": i, "last_used": time.time()}
-            for i in range(200)
+            f"item_{i}": {"frequency": i, "last_used": time.time()} for i in range(200)
         }
         save_completion_cache(large_data)
 
@@ -628,7 +627,9 @@ class TestEdgeCasesAndBoundaryConditions:
     def test_zero_frequency_items(self):
         """Test items with zero frequency"""
         items = [
-            CompletionItem(text="unused", display_text="Unused", source="template", frequency=0)
+            CompletionItem(
+                text="unused", display_text="Unused", source="template", frequency=0
+            )
         ]
         result = filter_completions("unused", items)
         assert len(result) > 0
@@ -642,7 +643,7 @@ class TestEdgeCasesAndBoundaryConditions:
                 display_text="Future",
                 source="history",
                 frequency=10,
-                last_used=future_time
+                last_used=future_time,
             )
         ]
         result = filter_completions("future", items)
@@ -653,10 +654,21 @@ class TestUIIntegration:
     """Test UI-related functions with mocked Streamlit"""
 
     @patch("frontend.components.input_autocomplete.st")
-    @patch("frontend.components.input_autocomplete._render_skill_shortcuts", return_value=[])
-    @patch("frontend.components.input_autocomplete._render_template_suggestions", return_value=[])
-    @patch("frontend.components.input_autocomplete._render_history_suggestions", return_value=[])
-    def test_render_autocomplete_initializes_state(self, mock_hist, mock_tmpl, mock_skills, mock_st):
+    @patch(
+        "frontend.components.input_autocomplete._render_skill_shortcuts",
+        return_value=[],
+    )
+    @patch(
+        "frontend.components.input_autocomplete._render_template_suggestions",
+        return_value=[],
+    )
+    @patch(
+        "frontend.components.input_autocomplete._render_history_suggestions",
+        return_value=[],
+    )
+    def test_render_autocomplete_initializes_state(
+        self, mock_hist, mock_tmpl, mock_skills, mock_st
+    ):
         """Test that render_autocomplete initializes session state"""
         mock_session = {}
         mock_st.session_state = mock_session
@@ -703,7 +715,14 @@ class TestConstantsAndConfiguration:
 
     def test_skill_category_icons_complete(self):
         """Test that all skill categories have icons"""
-        expected_categories = ["utility", "search", "analysis", "creation", "operation", "notification"]
+        expected_categories = [
+            "utility",
+            "search",
+            "analysis",
+            "creation",
+            "operation",
+            "notification",
+        ]
         for cat in expected_categories:
             assert cat in SKILL_CATEGORY_ICONS
 

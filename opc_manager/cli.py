@@ -53,11 +53,13 @@ def main():
 
     try:
         from opc_manager.secure_storage import init_secure_storage
+
         init_secure_storage()
     except ImportError:
         pass
 
     import frontend
+
     app_path = os.path.join(os.path.dirname(frontend.__file__), "app.py")
 
     if not os.path.exists(app_path):

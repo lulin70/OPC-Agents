@@ -18,15 +18,18 @@ import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 from opc_manager.wechat_gateway import (
-    WeChatGateway, WeChatMessage, WeChatResponse, WeChatMsgType
+    WeChatGateway,
+    WeChatMessage,
+    WeChatResponse,
+    WeChatMsgType,
 )
 from opc_manager.wechat_agent import WeChatAgentBridge
 from opc_manager.confirmer import ConfirmationRequest, ConfirmationResult, RiskLevel
 
-
 # ============================================================================
 # Part 1: Gateway Layer Tests (补充test_wechat_gateway.py缺失的用例)
 # ============================================================================
+
 
 class TestGatewayEncryptedMessage:
     """测试加密消息完整流程"""
@@ -53,14 +56,12 @@ class TestGatewayEncryptedMessage:
 
         ts, nonce = "1234567890", "abc123"
         arr = sorted(["test_token", ts, nonce])
-        sig = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        sig = __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
 
-        result = await gw.handle_callback({
-            "signature": sig,
-            "timestamp": ts,
-            "nonce": nonce,
-            "encrypt_type": "aes"
-        }, xml)
+        result = await gw.handle_callback(
+            {"signature": sig, "timestamp": ts, "nonce": nonce, "encrypt_type": "aes"},
+            xml,
+        )
 
         assert len(handler_called) == 1
         assert "收到加密消息" in result
@@ -85,13 +86,11 @@ class TestGatewayEncryptedMessage:
 
         ts, nonce = "1", "1"
         arr = sorted(["test", ts, nonce])
-        sig = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        sig = __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
 
-        result = await gw.handle_callback({
-            "signature": sig,
-            "timestamp": ts,
-            "nonce": nonce
-        }, xml)
+        result = await gw.handle_callback(
+            {"signature": sig, "timestamp": ts, "nonce": nonce}, xml
+        )
 
         assert len(handler_called) == 1
         assert "收到明文" in result
@@ -109,13 +108,11 @@ class TestGatewayEncryptedMessage:
 
         ts, nonce = "1", "1"
         arr = sorted(["test", ts, nonce])
-        sig = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        sig = __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
 
-        result = await gw.handle_callback({
-            "signature": sig,
-            "timestamp": ts,
-            "nonce": nonce
-        }, xml)
+        result = await gw.handle_callback(
+            {"signature": sig, "timestamp": ts, "nonce": nonce}, xml
+        )
 
         assert result == "success"
 
@@ -132,13 +129,11 @@ class TestGatewayEncryptedMessage:
 
         ts, nonce = "1", "1"
         arr = sorted(["test", ts, nonce])
-        sig = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        sig = __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
 
-        result = await gw.handle_callback({
-            "signature": sig,
-            "timestamp": ts,
-            "nonce": nonce
-        }, xml)
+        result = await gw.handle_callback(
+            {"signature": sig, "timestamp": ts, "nonce": nonce}, xml
+        )
 
         assert result == "success"
 
@@ -147,8 +142,7 @@ class TestGatewayEncryptedMessage:
         """签名失败返回error"""
         gw = WeChatGateway(token="secure_token")
         result = await gw.handle_callback(
-            {"signature": "invalid_sig", "timestamp": "1", "nonce": "1"},
-            "<xml/>"
+            {"signature": "invalid_sig", "timestamp": "1", "nonce": "1"}, "<xml/>"
         )
         assert "error" in result.lower() or "invalid" in result.lower()
 
@@ -160,14 +154,9 @@ class TestGatewayConfirmationCard:
         """完整参数的确认卡片"""
         card = WeChatGateway.build_confirmation_card(
             title="操作确认",
-            params={
-                "类型": "收入",
-                "金额": "3000元",
-                "时间": "今天",
-                "备注": "测试"
-            },
+            params={"类型": "收入", "金额": "3000元", "时间": "今天", "备注": "测试"},
             confirm_text="确认执行",
-            cancel_text="放弃操作"
+            cancel_text="放弃操作",
         )
         assert "📋 操作确认" in card
         assert "类型: 收入" in card
@@ -177,10 +166,7 @@ class TestGatewayConfirmationCard:
 
     def test_build_confirmation_card_empty_params(self):
         """空参数的确认卡片"""
-        card = WeChatGateway.build_confirmation_card(
-            title="空确认",
-            params={}
-        )
+        card = WeChatGateway.build_confirmation_card(title="空确认", params={})
         assert "📋 空确认" in card
         assert "✅ 确认" in card
 
@@ -188,6 +174,7 @@ class TestGatewayConfirmationCard:
 # ============================================================================
 # Part 2: Bridge Layer Tests (完全缺失的新测试)
 # ============================================================================
+
 
 class TestBridgeInitialization:
     """测试Bridge初始化"""
@@ -199,7 +186,7 @@ class TestBridgeInitialization:
             agent_loop=mock_agent_loop,
             token="test_token",
             encoding_aes_key="aes_key",
-            corp_id="corp_id"
+            corp_id="corp_id",
         )
 
         assert bridge.agent_loop is mock_agent_loop
@@ -228,7 +215,7 @@ class TestBridgeMessageRouting:
         mock_agent_loop.run.return_value = {
             "success": True,
             "message": "处理完成",
-            "results": [{"success": True, "data": {"content": "文本回复"}}]
+            "results": [{"success": True, "data": {"content": "文本回复"}}],
         }
 
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
@@ -238,15 +225,14 @@ class TestBridgeMessageRouting:
             to_user="bot",
             create_time=1234567890,
             msg_type=WeChatMsgType.TEXT,
-            content="你好"
+            content="你好",
         )
 
         response = await bridge._on_message(msg)
 
         assert response.content == "文本回复"
         mock_agent_loop.run.assert_called_once_with(
-            user_input="你好",
-            session_id="user1"
+            user_input="你好", session_id="user1"
         )
 
     @pytest.mark.asyncio
@@ -255,7 +241,7 @@ class TestBridgeMessageRouting:
         mock_agent_loop = AsyncMock()
         mock_agent_loop.run.return_value = {
             "success": True,
-            "results": [{"success": True, "data": {"content": "语音识别结果"}}]
+            "results": [{"success": True, "data": {"content": "语音识别结果"}}],
         }
 
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
@@ -265,14 +251,13 @@ class TestBridgeMessageRouting:
             to_user="bot",
             create_time=1234567890,
             msg_type=WeChatMsgType.VOICE,
-            recognition="语音转文字内容"
+            recognition="语音转文字内容",
         )
 
         response = await bridge._on_message(msg)
 
         mock_agent_loop.run.assert_called_once_with(
-            user_input="语音转文字内容",
-            session_id="user2"
+            user_input="语音转文字内容", session_id="user2"
         )
 
     @pytest.mark.asyncio
@@ -281,7 +266,7 @@ class TestBridgeMessageRouting:
         mock_agent_loop = AsyncMock()
         mock_agent_loop.run.return_value = {
             "success": True,
-            "results": [{"success": True, "data": {"content": "fallback"}}]
+            "results": [{"success": True, "data": {"content": "fallback"}}],
         }
 
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
@@ -291,14 +276,13 @@ class TestBridgeMessageRouting:
             to_user="bot",
             create_time=1234567890,
             msg_type=WeChatMsgType.VOICE,
-            content="content_fallback"
+            content="content_fallback",
         )
 
         response = await bridge._on_message(msg)
 
         mock_agent_loop.run.assert_called_once_with(
-            user_input="content_fallback",
-            session_id="user3"
+            user_input="content_fallback", session_id="user3"
         )
 
     @pytest.mark.asyncio
@@ -313,7 +297,7 @@ class TestBridgeMessageRouting:
             to_user="bot",
             create_time=1234567890,
             msg_type=WeChatMsgType.IMAGE,
-            media_id="img_123"
+            media_id="img_123",
         )
 
         response = await bridge._on_message(msg)
@@ -333,7 +317,7 @@ class TestBridgeMessageRouting:
             to_user="bot",
             create_time=1234567890,
             msg_type=WeChatMsgType.EVENT,
-            event_type="subscribe"
+            event_type="subscribe",
         )
 
         response = await bridge._on_message(msg)
@@ -353,7 +337,7 @@ class TestBridgeMessageRouting:
             to_user="bot",
             create_time=1234567890,
             msg_type=WeChatMsgType.EVENT,
-            event_type="unsubscribe"
+            event_type="unsubscribe",
         )
 
         response = await bridge._on_message(msg)
@@ -371,7 +355,7 @@ class TestBridgeMessageRouting:
             from_user="user7",
             to_user="bot",
             create_time=1234567890,
-            msg_type=WeChatMsgType.VIDEO
+            msg_type=WeChatMsgType.VIDEO,
         )
 
         response = await bridge._on_message(msg)
@@ -391,7 +375,7 @@ class TestBridgeMessageRouting:
             to_user="bot",
             create_time=1234567890,
             msg_type=WeChatMsgType.TEXT,
-            content="   "
+            content="   ",
         )
 
         response = await bridge._on_message(msg)
@@ -403,6 +387,7 @@ class TestBridgeMessageRouting:
 # ============================================================================
 # Part 3: Bridge + AgentLoop 集成测试 (核心！)
 # ============================================================================
+
 
 class TestBridgeAgentIntegration:
     """Bridge与AgentLoop集成测试"""
@@ -419,10 +404,10 @@ class TestBridgeAgentIntegration:
                 {
                     "step_id": "step_1",
                     "success": True,
-                    "data": {"content": "查询完成：本月收入50000元"}
+                    "data": {"content": "查询完成：本月收入50000元"},
                 }
             ],
-            "message": "执行完成"
+            "message": "执行完成",
         }
 
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
@@ -452,7 +437,7 @@ class TestBridgeAgentIntegration:
             "confirmation_required": True,
             "intent_type": "FINANCE",
             "goal": "删除账单记录",
-            "confidence": 0.65
+            "confidence": 0.65,
         }
 
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
@@ -471,10 +456,7 @@ class TestBridgeAgentIntegration:
 
         result = {
             "success": True,
-            "results": [{
-                "success": True,
-                "data": {"content": "分析报告已生成"}
-            }]
+            "results": [{"success": True, "data": {"content": "分析报告已生成"}}],
         }
 
         response = bridge._format_response(result)
@@ -486,13 +468,7 @@ class TestBridgeAgentIntegration:
         mock_agent_loop = MagicMock()
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
 
-        result = {
-            "success": True,
-            "results": [{
-                "success": True,
-                "data": "纯文本结果"
-            }]
-        }
+        result = {"success": True, "results": [{"success": True, "data": "纯文本结果"}]}
 
         response = bridge._format_response(result)
         assert response.content == "纯文本结果"
@@ -508,7 +484,7 @@ class TestBridgeAgentIntegration:
             "confirmation_required": True,
             "intent_type": "EMAIL",
             "goal": "发送邮件给客户",
-            "confidence": 0.72
+            "confidence": 0.72,
         }
 
         response = bridge._format_response(result)
@@ -522,10 +498,7 @@ class TestBridgeAgentIntegration:
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
 
         long_error = "x" * 1000
-        result = {
-            "success": False,
-            "error": long_error
-        }
+        result = {"success": False, "error": long_error}
 
         response = bridge._format_response(result)
         assert len(response.content) <= 500
@@ -539,10 +512,7 @@ class TestBridgeAgentIntegration:
         long_content = "y" * 800
         result = {
             "success": True,
-            "results": [{
-                "success": True,
-                "data": {"content": long_content}
-            }]
+            "results": [{"success": True, "data": {"content": long_content}}],
         }
 
         response = bridge._format_response(result)
@@ -580,7 +550,7 @@ class TestSetupConfirmCallback:
             intent_type="TEST",
             goal="测试目标",
             confidence=0.5,
-            risk_level=RiskLevel.MEDIUM
+            risk_level=RiskLevel.MEDIUM,
         )
 
         result = await wrapper(request)
@@ -608,13 +578,21 @@ class TestSetupConfirmCallback:
         """wrapper正确委托给原始方法并注入wechat回调"""
         call_record = []
 
-        async def original_check(session_id, intent_type, goal, confidence,
-                                  params=None, confirm_callback=None):
-            call_record.append({
-                "session_id": session_id,
-                "intent_type": intent_type,
-                "has_callback": confirm_callback is not None
-            })
+        async def original_check(
+            session_id,
+            intent_type,
+            goal,
+            confidence,
+            params=None,
+            confirm_callback=None,
+        ):
+            call_record.append(
+                {
+                    "session_id": session_id,
+                    "intent_type": intent_type,
+                    "has_callback": confirm_callback is not None,
+                }
+            )
             return ConfirmationResult(confirmed=True, method="auto")
 
         mock_agent_loop = MagicMock()
@@ -626,10 +604,7 @@ class TestSetupConfirmCallback:
         bridge.setup_confirm_callback()
 
         result = await mock_agent_loop.confirmer.check_confirmation(
-            session_id="sess_test",
-            intent_type="TEST",
-            goal="测试",
-            confidence=0.8
+            session_id="sess_test", intent_type="TEST", goal="测试", confidence=0.8
         )
 
         assert len(call_record) == 1
@@ -640,6 +615,7 @@ class TestSetupConfirmCallback:
 # ============================================================================
 # Part 4: 全链路端到端测试
 # ============================================================================
+
 
 class TestFullFlowE2E:
     """完整消息流E2E测试"""
@@ -652,27 +628,25 @@ class TestFullFlowE2E:
             "success": True,
             "task_id": "task_e2e_1",
             "session_id": "user_e2e",
-            "results": [{
-                "step_id": "step_1",
-                "skill_id": "analysis",
-                "success": True,
-                "data": {"content": "E2E测试成功：已处理您的请求"}
-            }],
-            "message": "执行完成"
+            "results": [
+                {
+                    "step_id": "step_1",
+                    "skill_id": "analysis",
+                    "success": True,
+                    "data": {"content": "E2E测试成功：已处理您的请求"},
+                }
+            ],
+            "message": "执行完成",
         }
 
         bridge = WeChatAgentBridge(
             agent_loop=mock_agent_loop,
             token="e2e_token",
             encoding_aes_key="",
-            corp_id=""
+            corp_id="",
         )
 
-        query_params = {
-            "signature": "",
-            "timestamp": "1",
-            "nonce": "1"
-        }
+        query_params = {"signature": "", "timestamp": "1", "nonce": "1"}
         body = """<xml>
 <ToUserName><![CDATA[bot]]></ToUserName>
 <FromUserName><![CDATA[user_e2e]]></FromUserName>
@@ -684,7 +658,9 @@ class TestFullFlowE2E:
 
         ts, nonce = "1", "1"
         arr = sorted(["e2e_token", ts, nonce])
-        query_params["signature"] = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        query_params["signature"] = (
+            __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
+        )
 
         result = await bridge.handle_callback(query_params, body)
 
@@ -700,19 +676,12 @@ class TestFullFlowE2E:
         mock_agent_loop = AsyncMock()
         mock_agent_loop.run.return_value = {
             "success": True,
-            "results": [{
-                "success": True,
-                "data": {"content": "语音消息已处理"}}
-            ]
+            "results": [{"success": True, "data": {"content": "语音消息已处理"}}],
         }
 
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="voice_test")
 
-        query_params = {
-            "signature": "",
-            "timestamp": "2",
-            "nonce": "2"
-        }
+        query_params = {"signature": "", "timestamp": "2", "nonce": "2"}
         body = """<xml>
 <ToUserName><![CDATA[bot]]></ToUserName>
 <FromUserName><![CDATA[user_voice]]></FromUserName>
@@ -725,14 +694,15 @@ class TestFullFlowE2E:
 
         ts, nonce = "2", "2"
         arr = sorted(["voice_test", ts, nonce])
-        query_params["signature"] = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        query_params["signature"] = (
+            __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
+        )
 
         result = await bridge.handle_callback(query_params, body)
 
         assert "语音消息已处理" in result
         mock_agent_loop.run.assert_called_once_with(
-            user_input="语音转文字测试",
-            session_id="user_voice"
+            user_input="语音转文字测试", session_id="user_voice"
         )
 
     @pytest.mark.asyncio
@@ -741,23 +711,20 @@ class TestFullFlowE2E:
         mock_agent_loop = AsyncMock()
         mock_agent_loop.run.return_value = {
             "success": True,
-            "results": [{
-                "success": True,
-                "data": {"content": "加密消息处理完成"}}
-            ]
+            "results": [{"success": True, "data": {"content": "加密消息处理完成"}}],
         }
 
         bridge = WeChatAgentBridge(
             agent_loop=mock_agent_loop,
             token="enc_token",
-            encoding_aes_key="enc_key_test"
+            encoding_aes_key="enc_key_test",
         )
 
         query_params = {
             "signature": "",
             "timestamp": "3",
             "nonce": "3",
-            "encrypt_type": "aes"
+            "encrypt_type": "aes",
         }
         body = """<xml>
 <ToUserName><![CDATA[bot]]></ToUserName>
@@ -769,7 +736,9 @@ class TestFullFlowE2E:
 
         ts, nonce = "3", "3"
         arr = sorted(["enc_token", ts, nonce])
-        query_params["signature"] = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        query_params["signature"] = (
+            __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
+        )
 
         result = await bridge.handle_callback(query_params, body)
 
@@ -783,7 +752,7 @@ class TestFullFlowE2E:
         ts, nonce = "999", "nonce_xyz"
         echostr = "echostr_test_123"
         arr = sorted(["verify_token", ts, nonce])
-        sig = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        sig = __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
 
         result = bridge.verify_url(sig, ts, nonce, echostr)
 
@@ -810,11 +779,10 @@ class TestEdgeCases:
 
         ts, nonce = "1", "1"
         arr = sorted(["test", ts, nonce])
-        sig = __import__('hashlib').sha1("".join(arr).encode()).hexdigest()
+        sig = __import__("hashlib").sha1("".join(arr).encode()).hexdigest()
 
         result = await bridge.handle_callback(
-            {"signature": sig, "timestamp": ts, "nonce": nonce},
-            "not_xml_at_all"
+            {"signature": sig, "timestamp": ts, "nonce": nonce}, "not_xml_at_all"
         )
 
         assert result == "success"

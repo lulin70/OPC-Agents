@@ -95,8 +95,11 @@ class PluginProcessPool:
     - 执行统计
     """
 
-    def __init__(self, max_workers: int = MAX_CONCURRENT_PLUGINS,
-                 default_timeout: int = PLUGIN_TIMEOUT_SECONDS):
+    def __init__(
+        self,
+        max_workers: int = MAX_CONCURRENT_PLUGINS,
+        default_timeout: int = PLUGIN_TIMEOUT_SECONDS,
+    ):
         self._max_workers = max_workers
         self._default_timeout = default_timeout
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
@@ -109,9 +112,14 @@ class PluginProcessPool:
             "timeout_kills": 0,
         }
 
-    def execute_in_sandbox(self, plugin_id: str, plugin_path: str,
-                           method: str, parameters: Dict[str, Any],
-                           timeout: Optional[int] = None) -> Dict[str, Any]:
+    def execute_in_sandbox(
+        self,
+        plugin_id: str,
+        plugin_path: str,
+        method: str,
+        parameters: Dict[str, Any],
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Any]:
         timeout = timeout or self._default_timeout
         request = {
             "action": "execute",
@@ -146,7 +154,12 @@ class PluginProcessPool:
                 self._stats["timeout_kills"] += 1
                 self._stats["failed_executions"] += 1
                 elapsed = time.time() - start_time
-                logger.warning("Plugin %s killed after %.1fs (timeout: %ss)", plugin_id, elapsed, timeout)
+                logger.warning(
+                    "Plugin %s killed after %.1fs (timeout: %ss)",
+                    plugin_id,
+                    elapsed,
+                    timeout,
+                )
                 return {
                     "success": False,
                     "error": f"Plugin execution timed out ({timeout}s)",
@@ -160,7 +173,11 @@ class PluginProcessPool:
 
             if process.returncode != 0:
                 self._stats["failed_executions"] += 1
-                error_msg = stderr.strip()[:200] if stderr else f"Process exited with code {process.returncode}"
+                error_msg = (
+                    stderr.strip()[:200]
+                    if stderr
+                    else f"Process exited with code {process.returncode}"
+                )
                 return {
                     "success": False,
                     "error": error_msg,
@@ -199,13 +216,22 @@ class PluginProcessPool:
                 self._active_processes.pop(plugin_id, None)
             return {"success": False, "error": f"Sandbox error: {str(e)}"}
 
-    def submit_async(self, plugin_id: str, plugin_path: str,
-                     method: str, parameters: Dict[str, Any],
-                     timeout: Optional[int] = None,
-                     callback: Optional[Callable] = None) -> Future:
+    def submit_async(
+        self,
+        plugin_id: str,
+        plugin_path: str,
+        method: str,
+        parameters: Dict[str, Any],
+        timeout: Optional[int] = None,
+        callback: Optional[Callable] = None,
+    ) -> Future:
         future = self._executor.submit(
             self.execute_in_sandbox,
-            plugin_id, plugin_path, method, parameters, timeout,
+            plugin_id,
+            plugin_path,
+            method,
+            parameters,
+            timeout,
         )
         if callback:
             future.add_done_callback(callback)
@@ -253,8 +279,11 @@ class PluginSandbox:
     execute()方法委托给进程池实现真正的进程级隔离。
     """
 
-    def __init__(self, allowed_permissions: Optional[List[Permission]] = None,
-                 process_pool: Optional[PluginProcessPool] = None):
+    def __init__(
+        self,
+        allowed_permissions: Optional[List[Permission]] = None,
+        process_pool: Optional[PluginProcessPool] = None,
+    ):
         self.allowed_permissions = set(allowed_permissions or [])
         self._access_log: List[Dict[str, Any]] = []
         self._process_pool = process_pool
@@ -265,27 +294,45 @@ class PluginSandbox:
     def check_permission(self, permission: Permission) -> bool:
         return permission in self.allowed_permissions
 
-    def log_access(self, plugin_id: str, action: str, resource: str, allowed: bool) -> None:
-        self._access_log.append({
-            "plugin_id": plugin_id,
-            "action": action,
-            "resource": resource,
-            "allowed": allowed,
-            "timestamp": time.time(),
-        })
+    def log_access(
+        self, plugin_id: str, action: str, resource: str, allowed: bool
+    ) -> None:
+        self._access_log.append(
+            {
+                "plugin_id": plugin_id,
+                "action": action,
+                "resource": resource,
+                "allowed": allowed,
+                "timestamp": time.time(),
+            }
+        )
 
-    def execute_in_sandbox(self, plugin_id: str, plugin_path: str,
-                           method: str, parameters: Dict[str, Any],
-                           timeout: Optional[int] = None) -> Dict[str, Any]:
+    def execute_in_sandbox(
+        self,
+        plugin_id: str,
+        plugin_path: str,
+        method: str,
+        parameters: Dict[str, Any],
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Any]:
         if self._process_pool is None:
             self._process_pool = PluginProcessPool()
 
-        for perm in [Permission.FILESYSTEM, Permission.NETWORK, Permission.ENV_VARS, Permission.SUBPROCESS]:
+        for perm in [
+            Permission.FILESYSTEM,
+            Permission.NETWORK,
+            Permission.ENV_VARS,
+            Permission.SUBPROCESS,
+        ]:
             if perm not in self.allowed_permissions:
                 self.log_access(plugin_id, "blocked", perm.value, False)
 
         return self._process_pool.execute_in_sandbox(
-            plugin_id, plugin_path, method, parameters, timeout,
+            plugin_id,
+            plugin_path,
+            method,
+            parameters,
+            timeout,
         )
 
     def get_access_log(self) -> List[Dict[str, Any]]:
@@ -303,7 +350,10 @@ class PluginManager:
 
     def register_plugin(self, manifest: PluginManifest) -> Dict[str, Any]:
         if manifest.plugin_id in self._plugins:
-            return {"success": False, "error": f"Plugin already registered: {manifest.plugin_id}"}
+            return {
+                "success": False,
+                "error": f"Plugin already registered: {manifest.plugin_id}",
+            }
 
         missing = self._check_dependencies(manifest)
         if missing:
@@ -317,9 +367,15 @@ class PluginManager:
         self._plugins[manifest.plugin_id] = instance
         self._sandboxes[manifest.plugin_id] = sandbox
 
-        return {"success": True, "plugin_id": manifest.plugin_id, "state": instance.state.value}
+        return {
+            "success": True,
+            "plugin_id": manifest.plugin_id,
+            "state": instance.state.value,
+        }
 
-    def initialize_plugin(self, plugin_id: str, config: Optional[Dict] = None) -> Dict[str, Any]:
+    def initialize_plugin(
+        self, plugin_id: str, config: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         instance = self._plugins.get(plugin_id)
         if not instance:
             return {"success": False, "error": f"Plugin not found: {plugin_id}"}
@@ -337,20 +393,28 @@ class PluginManager:
             instance.state = PluginState.INITIALIZED
             instance.loaded_at = time.time()
 
-            return {"success": True, "plugin_id": plugin_id, "state": instance.state.value}
+            return {
+                "success": True,
+                "plugin_id": plugin_id,
+                "state": instance.state.value,
+            }
 
         except Exception as e:
             instance.state = PluginState.ERROR
             instance.error = str(e)
             return {"success": False, "error": str(e)}
 
-    def execute_plugin(self, plugin_id: str, method: str,
-                       parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_plugin(
+        self, plugin_id: str, method: str, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
         instance = self._plugins.get(plugin_id)
         if not instance:
             return {"success": False, "error": f"Plugin not found: {plugin_id}"}
         if instance.state not in (PluginState.INITIALIZED, PluginState.RUNNING):
-            return {"success": False, "error": f"Plugin not initialized: {instance.state.value}"}
+            return {
+                "success": False,
+                "error": f"Plugin not initialized: {instance.state.value}",
+            }
 
         sandbox = self._sandboxes.get(plugin_id)
 
@@ -358,21 +422,32 @@ class PluginManager:
             instance.state = PluginState.RUNNING
             start_time = time.time()
 
-            plugin_path = os.path.realpath(os.path.join(self._plugin_dir, instance.manifest.entry_point))
+            plugin_path = os.path.realpath(
+                os.path.join(self._plugin_dir, instance.manifest.entry_point)
+            )
             if not plugin_path.startswith(os.path.realpath(self._plugin_dir)):
                 instance.state = PluginState.ERROR
                 instance.error = "Entry point escapes plugin directory"
-                return {"success": False, "error": "Entry point escapes plugin directory"}
+                return {
+                    "success": False,
+                    "error": "Entry point escapes plugin directory",
+                }
 
             if sandbox:
                 result = sandbox.execute_in_sandbox(
-                    plugin_id, plugin_path, method, parameters,
+                    plugin_id,
+                    plugin_path,
+                    method,
+                    parameters,
                     timeout=PLUGIN_TIMEOUT_SECONDS,
                 )
             else:
                 instance.state = PluginState.ERROR
                 instance.error = "No sandbox configured, refusing to execute"
-                return {"success": False, "error": f"Plugin {plugin_id} has no sandbox, refusing to execute"}
+                return {
+                    "success": False,
+                    "error": f"Plugin {plugin_id} has no sandbox, refusing to execute",
+                }
 
             elapsed = time.time() - start_time
             instance.execution_count += 1
@@ -454,8 +529,12 @@ class PluginManager:
     def get_stats(self) -> Dict[str, Any]:
         return {
             "total_plugins": len(self._plugins),
-            "running_plugins": sum(1 for p in self._plugins.values() if p.state == PluginState.RUNNING),
-            "error_plugins": sum(1 for p in self._plugins.values() if p.state == PluginState.ERROR),
+            "running_plugins": sum(
+                1 for p in self._plugins.values() if p.state == PluginState.RUNNING
+            ),
+            "error_plugins": sum(
+                1 for p in self._plugins.values() if p.state == PluginState.ERROR
+            ),
             "plugin_dir": self._plugin_dir,
             "process_pool": self._process_pool.get_stats(),
         }

@@ -33,7 +33,7 @@ class ImageExporter:
         bg_color = opts.get("bg_color", (255, 248, 220))
         text_color = opts.get("text_color", (33, 33, 33))
 
-        img = Image.new('RGB', (width, height), bg_color)
+        img = Image.new("RGB", (width, height), bg_color)
         draw = ImageDraw.Draw(img)
 
         font_large = self._load_font(FONT_FALLBACK_LIST, 36)
@@ -46,7 +46,7 @@ class ImageExporter:
             draw.text(((width - tw) / 2, 80), title, fill=text_color, font=font_large)
 
         y = 160
-        for line in data.content.split('\n')[:20]:
+        for line in data.content.split("\n")[:20]:
             if line.strip():
                 draw.text((60, y), line.strip(), fill=text_color, font=font_normal)
                 y += 40
@@ -54,5 +54,5 @@ class ImageExporter:
                     break
 
         buf = io.BytesIO()
-        img.save(buf, format='PNG')
+        img.save(buf, format="PNG")
         return buf.getvalue()

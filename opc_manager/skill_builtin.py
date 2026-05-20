@@ -47,14 +47,16 @@ def register_builtin_skills(registry) -> None:
         category=SkillCategory.UTILITY,
         inputs=[
             SkillInput(name="user_input", type="str", description="用户输入文本"),
-            SkillInput(name="context", type="dict", required=False, description="上下文信息")
+            SkillInput(
+                name="context", type="dict", required=False, description="上下文信息"
+            ),
         ],
         outputs=[
             SkillOutput(name="intent", type="Intent", description="解析后的意图对象"),
-            SkillOutput(name="confidence", type="float", description="置信度")
+            SkillOutput(name="confidence", type="float", description="置信度"),
         ],
         execute=registry._execute_intent_analysis,
-        intent_keywords=["分析", "理解", "需求"]
+        intent_keywords=["分析", "理解", "需求"],
     )
     registry.register_skill(intent_analysis_skill)
 
@@ -65,15 +67,27 @@ def register_builtin_skills(registry) -> None:
         category=SkillCategory.SEARCH,
         inputs=[
             SkillInput(name="query", type="str", description="搜索查询词"),
-            SkillInput(name="max_results", type="int", required=False, default=10, description="最大结果数")
+            SkillInput(
+                name="max_results",
+                type="int",
+                required=False,
+                default=10,
+                description="最大结果数",
+            ),
         ],
         outputs=[
-            SkillOutput(name="results", type="list", description="搜索结果列表（含title/url/snippet）"),
+            SkillOutput(
+                name="results",
+                type="list",
+                description="搜索结果列表（含title/url/snippet）",
+            ),
             SkillOutput(name="count", type="int", description="结果数量"),
-            SkillOutput(name="fallback_used", type="bool", description="是否使用了知识库兜底")
+            SkillOutput(
+                name="fallback_used", type="bool", description="是否使用了知识库兜底"
+            ),
         ],
         execute=registry._execute_search,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("search"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("search"), []),
     )
     registry.register_skill(search_skill)
 
@@ -83,17 +97,22 @@ def register_builtin_skills(registry) -> None:
         description="进行深度分析（自动搜索增强）",
         category=SkillCategory.ANALYSIS,
         inputs=[
-            SkillInput(name="data", type="list", required=False, description="待分析数据（可选，自动搜索）"),
-            SkillInput(name="goal", type="str", description="分析目标")
+            SkillInput(
+                name="data",
+                type="list",
+                required=False,
+                description="待分析数据（可选，自动搜索）",
+            ),
+            SkillInput(name="goal", type="str", description="分析目标"),
         ],
         outputs=[
             SkillOutput(name="analysis_result", type="str", description="分析结果"),
             SkillOutput(name="key_findings", type="list", description="关键发现"),
             SkillOutput(name="swot", type="dict", description="SWOT分析"),
-            SkillOutput(name="action_items", type="list", description="行动清单")
+            SkillOutput(name="action_items", type="list", description="行动清单"),
         ],
         execute=registry._execute_analysis,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("analysis"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("analysis"), []),
     )
     registry.register_skill(analysis_skill)
 
@@ -104,14 +123,22 @@ def register_builtin_skills(registry) -> None:
         category=SkillCategory.CREATION,
         inputs=[
             SkillInput(name="goal", type="str", description="生成目标"),
-            SkillInput(name="format", type="str", required=False, default="markdown", description="输出格式")
+            SkillInput(
+                name="format",
+                type="str",
+                required=False,
+                default="markdown",
+                description="输出格式",
+            ),
         ],
         outputs=[
             SkillOutput(name="content", type="str", description="生成的内容"),
-            SkillOutput(name="format", type="str", description="输出格式")
+            SkillOutput(name="format", type="str", description="输出格式"),
         ],
         execute=registry._execute_content_generation,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("content_generation"), [])
+        intent_keywords=INTENT_KEYWORDS.get(
+            SKILL_INTENT_MAP.get("content_generation"), []
+        ),
     )
     registry.register_skill(content_gen_skill)
 
@@ -122,13 +149,15 @@ def register_builtin_skills(registry) -> None:
         category=SkillCategory.OPERATION,
         inputs=[
             SkillInput(name="operation", type="str", description="操作名称"),
-            SkillInput(name="parameters", type="dict", required=False, description="操作参数")
+            SkillInput(
+                name="parameters", type="dict", required=False, description="操作参数"
+            ),
         ],
-        outputs=[
-            SkillOutput(name="result", type="dict", description="操作结果")
-        ],
+        outputs=[SkillOutput(name="result", type="dict", description="操作结果")],
         execute=registry._execute_operation,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("execute_operation"), [])
+        intent_keywords=INTENT_KEYWORDS.get(
+            SKILL_INTENT_MAP.get("execute_operation"), []
+        ),
     )
     registry.register_skill(operation_skill)
 
@@ -139,13 +168,15 @@ def register_builtin_skills(registry) -> None:
         category=SkillCategory.NOTIFICATION,
         inputs=[
             SkillInput(name="message", type="str", description="消息内容"),
-            SkillInput(name="recipient", type="str", required=False, description="接收者")
+            SkillInput(
+                name="recipient", type="str", required=False, description="接收者"
+            ),
         ],
-        outputs=[
-            SkillOutput(name="sent", type="bool", description="是否发送成功")
-        ],
+        outputs=[SkillOutput(name="sent", type="bool", description="是否发送成功")],
         execute=registry._execute_notification,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("send_notification"), [])
+        intent_keywords=INTENT_KEYWORDS.get(
+            SKILL_INTENT_MAP.get("send_notification"), []
+        ),
     )
     registry.register_skill(notification_skill)
 
@@ -155,14 +186,20 @@ def register_builtin_skills(registry) -> None:
         description="输出最终结果",
         category=SkillCategory.UTILITY,
         inputs=[
-            SkillInput(name="data", type="dict", required=False, description="结果数据"),
-            SkillInput(name="format", type="str", required=False, default="markdown", description="输出格式")
+            SkillInput(
+                name="data", type="dict", required=False, description="结果数据"
+            ),
+            SkillInput(
+                name="format",
+                type="str",
+                required=False,
+                default="markdown",
+                description="输出格式",
+            ),
         ],
-        outputs=[
-            SkillOutput(name="output", type="str", description="格式化输出")
-        ],
+        outputs=[SkillOutput(name="output", type="str", description="格式化输出")],
         execute=registry._execute_output,
-        intent_keywords=["输出", "生成", "报告"]
+        intent_keywords=["输出", "生成", "报告"],
     )
     registry.register_skill(output_skill)
 
@@ -181,7 +218,7 @@ def register_builtin_skills(registry) -> None:
             SkillOutput(name="result", type="dict", description="发送结果"),
         ],
         execute=registry._execute_email,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("email"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("email"), []),
     )
     registry.register_skill(email_skill)
 
@@ -197,7 +234,7 @@ def register_builtin_skills(registry) -> None:
             SkillOutput(name="result", type="dict", description="操作结果"),
         ],
         execute=registry._execute_finance,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("finance"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("finance"), []),
     )
     registry.register_skill(finance_skill)
 
@@ -213,7 +250,7 @@ def register_builtin_skills(registry) -> None:
             SkillOutput(name="result", type="dict", description="操作结果"),
         ],
         execute=registry._execute_task,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("task_manager"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("task_manager"), []),
     )
     registry.register_skill(task_skill)
 
@@ -229,7 +266,7 @@ def register_builtin_skills(registry) -> None:
             SkillOutput(name="result", type="dict", description="操作结果"),
         ],
         execute=registry._execute_crm,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("crm"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("crm"), []),
     )
     registry.register_skill(crm_skill)
 
@@ -241,7 +278,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="发布目标")],
         outputs=[SkillOutput(name="result", type="dict", description="生成结果")],
         execute=registry._execute_social,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("social_publish"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("social_publish"), []),
     )
     registry.register_skill(social_skill)
 
@@ -253,7 +290,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="报价目标")],
         outputs=[SkillOutput(name="result", type="dict", description="报价结果")],
         execute=registry._execute_proposal,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("proposal"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("proposal"), []),
     )
     registry.register_skill(proposal_skill)
 
@@ -265,7 +302,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="发票/税务目标")],
         outputs=[SkillOutput(name="result", type="dict", description="操作结果")],
         execute=registry._execute_invoice,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("invoice"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("invoice"), []),
     )
     registry.register_skill(invoice_skill)
 
@@ -277,7 +314,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="报告目标")],
         outputs=[SkillOutput(name="result", type="dict", description="报告结果")],
         execute=registry._execute_report,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("report"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("report"), []),
     )
     registry.register_skill(report_skill)
 
@@ -289,7 +326,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="日程目标")],
         outputs=[SkillOutput(name="result", type="dict", description="日程结果")],
         execute=registry._execute_calendar,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("calendar"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("calendar"), []),
     )
     registry.register_skill(calendar_skill)
 
@@ -301,7 +338,9 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="竞品监控目标")],
         outputs=[SkillOutput(name="result", type="dict", description="监控结果")],
         execute=registry._execute_competitor,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("competitor_watch"), [])
+        intent_keywords=INTENT_KEYWORDS.get(
+            SKILL_INTENT_MAP.get("competitor_watch"), []
+        ),
     )
     registry.register_skill(competitor_skill)
 
@@ -313,7 +352,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="定价目标")],
         outputs=[SkillOutput(name="result", type="dict", description="定价结果")],
         execute=registry._execute_pricing,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("pricing"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("pricing"), []),
     )
     registry.register_skill(pricing_skill)
 
@@ -325,7 +364,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="税务提醒目标")],
         outputs=[SkillOutput(name="result", type="dict", description="提醒结果")],
         execute=registry._execute_tax_reminder,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("tax_reminder"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("tax_reminder"), []),
     )
     registry.register_skill(tax_reminder_skill)
 
@@ -337,7 +376,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="看板目标")],
         outputs=[SkillOutput(name="result", type="dict", description="看板结果")],
         execute=registry._execute_dashboard,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("dashboard"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("dashboard"), []),
     )
     registry.register_skill(dashboard_skill)
 
@@ -349,7 +388,7 @@ def register_builtin_skills(registry) -> None:
         inputs=[SkillInput(name="goal", type="str", description="知识管理目标")],
         outputs=[SkillOutput(name="result", type="dict", description="管理结果")],
         execute=registry._execute_knowledge,
-        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("knowledge_mgmt"), [])
+        intent_keywords=INTENT_KEYWORDS.get(SKILL_INTENT_MAP.get("knowledge_mgmt"), []),
     )
     registry.register_skill(knowledge_skill)
 

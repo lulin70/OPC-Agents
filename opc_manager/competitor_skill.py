@@ -3,14 +3,21 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from opc_manager.data_manager import execute_query, execute_write, execute_transaction, gen_id, init_db
+from opc_manager.data_manager import (
+    execute_query,
+    execute_write,
+    execute_transaction,
+    gen_id,
+    init_db,
+)
 from opc_manager.tool_system import AuditLogger
 
 logger = logging.getLogger(__name__)
 
 
-def add_competitor(name: str, url: str = "", keywords: str = "",
-                   note: str = "") -> Dict[str, Any]:
+def add_competitor(
+    name: str, url: str = "", keywords: str = "", note: str = ""
+) -> Dict[str, Any]:
     if not name.strip():
         return {"success": False, "error": "竞品名称不能为空"}
 
@@ -37,9 +44,7 @@ def add_competitor(name: str, url: str = "", keywords: str = "",
 
 def list_competitors() -> Dict[str, Any]:
     try:
-        rows = execute_query(
-            "SELECT * FROM competitors ORDER BY created_at DESC"
-        )
+        rows = execute_query("SELECT * FROM competitors ORDER BY created_at DESC")
     except Exception as e:
         logger.warning("competitor_skill.list_competitors query failed: %s", e)
         return {"success": True, "competitors": [], "count": 0}
@@ -60,8 +65,9 @@ def list_competitors() -> Dict[str, Any]:
     return {"success": True, "competitors": competitors, "count": len(competitors)}
 
 
-def record_snapshot(competitor_id: str, changes: str = "",
-                    source: str = "手动记录") -> Dict[str, Any]:
+def record_snapshot(
+    competitor_id: str, changes: str = "", source: str = "手动记录"
+) -> Dict[str, Any]:
     rows = execute_query("SELECT * FROM competitors WHERE id=?", (competitor_id,))
     if not rows:
         return {"success": False, "error": f"竞品不存在: {competitor_id}"}
@@ -78,12 +84,17 @@ def record_snapshot(competitor_id: str, changes: str = "",
         logger.warning("competitor_skill.record_snapshot write failed: %s", e)
         return {"success": False, "error": f"保存失败: {e}"}
 
-    snapshot_count = len(execute_query(
-        "SELECT id FROM competitor_snapshots WHERE competitor_id=?", (competitor_id,)
-    ))
+    snapshot_count = len(
+        execute_query(
+            "SELECT id FROM competitor_snapshots WHERE competitor_id=?",
+            (competitor_id,),
+        )
+    )
 
     record = dict(rows[0])
-    AuditLogger.log("competitor_snapshot", {"id": competitor_id, "changes": changes[:50]})
+    AuditLogger.log(
+        "competitor_snapshot", {"id": competitor_id, "changes": changes[:50]}
+    )
 
     return {
         "success": True,
@@ -110,7 +121,10 @@ def get_competitor_report(competitor_id: str = "") -> Dict[str, Any]:
 
     all_competitors = list_competitors()
     if all_competitors["count"] == 0:
-        return {"success": True, "markdown": "# 竞品监控报告\n\n暂无竞品数据，请先添加竞品。"}
+        return {
+            "success": True,
+            "markdown": "# 竞品监控报告\n\n暂无竞品数据，请先添加竞品。",
+        }
 
     md = "# 竞品监控总览\n\n"
     md += "| 竞品 | 网址 | 动态数 | 最近更新 |\n"
@@ -165,21 +179,42 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
 
     if any(kw in goal for kw in ["记录", "动态", "变化", "更新"]):
         name = goal
-        for kw in ["帮我记录", "记录竞品", "记录", "的动态", "的变化", "的更新", "动态", "变化", "更新"]:
+        for kw in [
+            "帮我记录",
+            "记录竞品",
+            "记录",
+            "的动态",
+            "的变化",
+            "的更新",
+            "动态",
+            "变化",
+            "更新",
+        ]:
             name = name.replace(kw, "")
         name = name.strip().strip("，。、的")
         if name:
             rows = execute_query("SELECT id FROM competitors WHERE name=?", (name,))
             if rows:
                 return record_snapshot(rows[0]["id"], changes=goal)
-        return {"success": False, "error": "请指定竞品名称来记录动态（如：记录XX竞品的动态）"}
+        return {
+            "success": False,
+            "error": "请指定竞品名称来记录动态（如：记录XX竞品的动态）",
+        }
 
     if any(kw in goal for kw in ["删除", "移除"]):
         return {"success": False, "error": "请指定竞品ID来移除"}
 
     if any(kw in goal for kw in ["添加", "新增", "加上", "监控"]):
         name = goal
-        for kw in ["帮我添加", "帮我新增", "帮我监控", "添加竞品", "新增竞品", "监控竞品", "竞品"]:
+        for kw in [
+            "帮我添加",
+            "帮我新增",
+            "帮我监控",
+            "添加竞品",
+            "新增竞品",
+            "监控竞品",
+            "竞品",
+        ]:
             name = name.replace(kw, "")
         name = name.strip().strip("，。、的")
         if name:

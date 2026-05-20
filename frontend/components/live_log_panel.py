@@ -58,7 +58,9 @@ def _get_log_source_config():
 def _get_log_source_labels():
     """Get source labels dict with i18n-translated values."""
     config = _get_log_source_config()
-    return {k: {"label": _t(v["i18n_key"]), "icon": v["icon"]} for k, v in config.items()}
+    return {
+        k: {"label": _t(v["i18n_key"]), "icon": v["icon"]} for k, v in config.items()
+    }
 
 
 LOG_LEVEL_CONFIG = {
@@ -74,11 +76,11 @@ LOG_SOURCE_CONFIG = _get_log_source_labels()
 LOG_LEVEL_ORDER = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 SENSITIVE_PATTERNS = [
-    r'api[_\-]?key\s*[:=]\s*\S+',
-    r'password\s*[:=]\s*\S+',
-    r'token\s*[:=]\s*\S+',
-    r'secret\s*[:=]\s*\S+',
-    r'sk-[a-zA-Z0-9]{20,}',
+    r"api[_\-]?key\s*[:=]\s*\S+",
+    r"password\s*[:=]\s*\S+",
+    r"token\s*[:=]\s*\S+",
+    r"secret\s*[:=]\s*\S+",
+    r"sk-[a-zA-Z0-9]{20,}",
 ]
 
 
@@ -92,6 +94,7 @@ def sanitize_log_message(message: str) -> str:
 @dataclass
 class LogEntry:
     """单条日志条目数据结构"""
+
     timestamp: float
     level: str
     source: str
@@ -119,13 +122,17 @@ class LogEntry:
         bg_color = level_cfg.get("bg_color", "#F3F4F6")
 
         source_config = _get_log_source_labels()
-        source_cfg = source_config.get(self.source, {"label": self.source, "icon": "📌"})
+        source_cfg = source_config.get(
+            self.source, {"label": self.source, "icon": "📌"}
+        )
         source_icon = source_cfg.get("icon", "📌")
         source_label = source_cfg.get("label", self.source)
 
         message_escaped = self.message.replace("<", "&lt;").replace(">", "&gt;")
         if self.extra.get("traceback"):
-            traceback_escaped = self.extra["traceback"].replace("<", "&lt;").replace(">", "&gt;")
+            traceback_escaped = (
+                self.extra["traceback"].replace("<", "&lt;").replace(">", "&gt;")
+            )
             return (
                 f'<div style="background:{bg_color};padding:8px;border-radius:4px;margin:2px 0;">'
                 f'<span style="color:#9CA3AF;font-family:monospace">{ts}</span> '
@@ -165,7 +172,9 @@ class LogCache:
                     cls._instance = super().__new__(cls)
                     cls._instance._cache: deque = deque(maxlen=MAX_CACHE_ENTRIES)
                     cls._instance._last_update = 0.0
-                    cls._instance._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="log_cache")
+                    cls._instance._executor = ThreadPoolExecutor(
+                        max_workers=2, thread_name_prefix="log_cache"
+                    )
         return cls._instance
 
     def update(self, new_entries: List[LogEntry]):
@@ -220,7 +229,7 @@ class LogCache:
             logger.debug("[LogCache] persist failed: %s", e)
 
     @classmethod
-    def load(cls) -> 'LogCache':
+    def load(cls) -> "LogCache":
         """从文件加载缓存"""
         instance = cls()
         if CACHE_FILE.exists():
@@ -281,13 +290,15 @@ def collect_app_logs(since_timestamp: float = None) -> List[LogEntry]:
                     continue
                 try:
                     match = re.match(
-                        r'(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}[,.]?\d*)\s*-?\s*(\w+)\s*-?\s*(\w+)\s*-?\s*(.*)',
+                        r"(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}[,.]?\d*)\s*-?\s*(\w+)\s*-?\s*(\w+)\s*-?\s*(.*)",
                         line,
                     )
                     if match:
                         ts_str, name, level, message = match.groups()
                         try:
-                            ts = datetime.strptime(ts_str.split(",")[0], "%Y-%m-%d %H:%M:%S").timestamp()
+                            ts = datetime.strptime(
+                                ts_str.split(",")[0], "%Y-%m-%d %H:%M:%S"
+                            ).timestamp()
                         except ValueError:
                             ts = time.time()
 
@@ -298,13 +309,15 @@ def collect_app_logs(since_timestamp: float = None) -> List[LogEntry]:
                         if level not in LOG_LEVEL_CONFIG:
                             level = "INFO"
 
-                        entries.append(LogEntry(
-                            timestamp=ts,
-                            level=level,
-                            source="app",
-                            message=sanitize_log_message(message),
-                            module=name,
-                        ))
+                        entries.append(
+                            LogEntry(
+                                timestamp=ts,
+                                level=level,
+                                source="app",
+                                message=sanitize_log_message(message),
+                                module=name,
+                            )
+                        )
                 except Exception:
                     continue
         except Exception as e:
@@ -333,11 +346,16 @@ def collect_engine_logs(since_timestamp: float = None) -> List[LogEntry]:
                 if not line or "opc_manager" not in line.lower():
                     continue
                 try:
-                    match = re.match(r'(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2})\s*[|-]\s*(\w+)\s*[|-]\s*(.*)', line)
+                    match = re.match(
+                        r"(\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2})\s*[|-]\s*(\w+)\s*[|-]\s*(.*)",
+                        line,
+                    )
                     if match:
                         ts_str, level, message = match.groups()
                         try:
-                            ts = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S").timestamp()
+                            ts = datetime.strptime(
+                                ts_str, "%Y-%m-%d %H:%M:%S"
+                            ).timestamp()
                         except ValueError:
                             ts = time.time()
 
@@ -348,13 +366,15 @@ def collect_engine_logs(since_timestamp: float = None) -> List[LogEntry]:
                         if level not in LOG_LEVEL_CONFIG:
                             level = "DEBUG"
 
-                        entries.append(LogEntry(
-                            timestamp=ts,
-                            level=level,
-                            source="engine",
-                            message=sanitize_log_message(message),
-                            module="task_engine",
-                        ))
+                        entries.append(
+                            LogEntry(
+                                timestamp=ts,
+                                level=level,
+                                source="engine",
+                                message=sanitize_log_message(message),
+                                module="task_engine",
+                            )
+                        )
                 except Exception:
                     continue
         except Exception as e:
@@ -374,24 +394,32 @@ def collect_audit_logs(since_timestamp: float = None) -> List[LogEntry]:
 
         for record in records:
             status = record.get("status", "success")
-            level = "ERROR" if status == "failed" else ("WARNING" if status == "cancelled" else "INFO")
+            level = (
+                "ERROR"
+                if status == "failed"
+                else ("WARNING" if status == "cancelled" else "INFO")
+            )
 
             op_type = record.get("operation_type", "unknown")
             skill_id = record.get("skill_id", "unknown")
             duration = record.get("duration_ms", 0)
 
-            message = f"[{op_type}] skill={skill_id} duration={duration}ms status={status}"
+            message = (
+                f"[{op_type}] skill={skill_id} duration={duration}ms status={status}"
+            )
             if record.get("error_msg"):
                 message += f" error={record['error_msg'][:100]}"
 
-            entries.append(LogEntry(
-                timestamp=record.get("timestamp", time.time()),
-                level=level,
-                source="audit",
-                message=sanitize_log_message(message),
-                module="audit_log",
-                extra={"record_id": record.get("id", "")},
-            ))
+            entries.append(
+                LogEntry(
+                    timestamp=record.get("timestamp", time.time()),
+                    level=level,
+                    source="audit",
+                    message=sanitize_log_message(message),
+                    module="audit_log",
+                    extra={"record_id": record.get("id", "")},
+                )
+            )
     except ImportError:
         logger.debug("[collect_audit_logs] AuditLog module not installed")
     except Exception as e:
@@ -400,7 +428,9 @@ def collect_audit_logs(since_timestamp: float = None) -> List[LogEntry]:
     return entries
 
 
-def collect_progress_logs(session_id: str = None, since_timestamp: float = None) -> List[LogEntry]:
+def collect_progress_logs(
+    session_id: str = None, since_timestamp: float = None
+) -> List[LogEntry]:
     """收集进度事件日志（ProgressEmitter历史）"""
     entries = []
     try:
@@ -439,18 +469,20 @@ def collect_progress_logs(session_id: str = None, since_timestamp: float = None)
             progress_str = f" ({progress_pct}%)" if progress_pct is not None else ""
             display_msg = f"[{event_type_str.upper()}]{progress_str} {message}"
 
-            entries.append(LogEntry(
-                timestamp=event_ts,
-                level=level,
-                source="progress",
-                message=sanitize_log_message(display_msg),
-                module="progress_emitter",
-                extra={
-                    "event_type": event_type_str,
-                    "progress_pct": progress_pct,
-                    "session_id": event_dict.get("session_id", ""),
-                },
-            ))
+            entries.append(
+                LogEntry(
+                    timestamp=event_ts,
+                    level=level,
+                    source="progress",
+                    message=sanitize_log_message(display_msg),
+                    module="progress_emitter",
+                    extra={
+                        "event_type": event_type_str,
+                        "progress_pct": progress_pct,
+                        "session_id": event_dict.get("session_id", ""),
+                    },
+                )
+            )
     except ImportError:
         logger.debug("[collect_progress_logs] ProgressEmitter module not installed")
     except Exception as e:
@@ -469,33 +501,39 @@ def collect_system_logs(since_timestamp: float = None) -> List[LogEntry]:
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage(_WORKSPACE_DIR)
 
-        entries.append(LogEntry(
-            timestamp=time.time(),
-            level="DEBUG",
-            source="system",
-            message=f"CPU: {cpu_percent}% | Memory: {memory.percent}% ({memory.used // 1024 // 1024}MB/{memory.total // 1024 // 1024}MB) | Disk: {disk.percent}%",
-            module="system_monitor",
-            extra={
-                "cpu_percent": cpu_percent,
-                "memory_percent": memory.percent,
-                "disk_percent": disk.percent,
-            },
-        ))
+        entries.append(
+            LogEntry(
+                timestamp=time.time(),
+                level="DEBUG",
+                source="system",
+                message=f"CPU: {cpu_percent}% | Memory: {memory.percent}% ({memory.used // 1024 // 1024}MB/{memory.total // 1024 // 1024}MB) | Disk: {disk.percent}%",
+                module="system_monitor",
+                extra={
+                    "cpu_percent": cpu_percent,
+                    "memory_percent": memory.percent,
+                    "disk_percent": disk.percent,
+                },
+            )
+        )
     except ImportError:
-        entries.append(LogEntry(
-            timestamp=time.time(),
-            level="INFO",
-            source="system",
-            message=_t("log_psutil_not_installed"),
-            module="system_monitor",
-        ))
+        entries.append(
+            LogEntry(
+                timestamp=time.time(),
+                level="INFO",
+                source="system",
+                message=_t("log_psutil_not_installed"),
+                module="system_monitor",
+            )
+        )
     except Exception as e:
         logger.debug("[collect_system_logs] collection failed: %s", e)
 
     return entries
 
 
-def collect_all_logs(since_timestamp: float = None, session_id: str = None) -> List[LogEntry]:
+def collect_all_logs(
+    since_timestamp: float = None, session_id: str = None
+) -> List[LogEntry]:
     """收集所有来源的最新日志条目
 
     Args:
@@ -535,12 +573,17 @@ def _render_log_entry(entry: LogEntry, index: int):
     col_time, col_icon, col_source, col_msg = st.columns([1.2, 0.6, 1.2, 6])
 
     with col_time:
-        st.markdown(f'<span style="color:#9CA3AF;font-family:monospace;font-size:13px">'
-                   f'{ts_str}</span>', unsafe_allow_html=True)
+        st.markdown(
+            f'<span style="color:#9CA3AF;font-family:monospace;font-size:13px">'
+            f"{ts_str}</span>",
+            unsafe_allow_html=True,
+        )
 
     with col_icon:
-        st.markdown(f'<span style="font-size:18px">{level_cfg["icon"]}</span>',
-                   unsafe_allow_html=True)
+        st.markdown(
+            f'<span style="font-size:18px">{level_cfg["icon"]}</span>',
+            unsafe_allow_html=True,
+        )
 
     with col_source:
         st.markdown(
@@ -570,7 +613,14 @@ def _render_filter_bar(logs: List[LogEntry]) -> Tuple[List[LogEntry], Dict[str, 
     with filter_col1:
         min_level_index = st.selectbox(
             _t("log_min_level"),
-            options=[_t("log_level_all"), "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            options=[
+                _t("log_level_all"),
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL",
+            ],
             index=1,
             key="log_level_filter",
             help=_t("log_level_help"),
@@ -655,7 +705,9 @@ def _render_stats_summary(logs: List[LogEntry]):
         st.metric("🚨 CRIT", stats["CRITICAL"])
 
     with stat_cols[5]:
-        source_summary = ", ".join([f"{k}:{v}" for k, v in sorted(sources_count.items())])
+        source_summary = ", ".join(
+            [f"{k}:{v}" for k, v in sorted(sources_count.items())]
+        )
         st.caption(_t("log_source_summary", summary=source_summary))
 
     with stat_cols[6]:
@@ -696,13 +748,15 @@ def export_logs(logs: List[LogEntry], format: str = "txt") -> bytes:
 
         for entry in logs:
             ts_str = datetime.fromtimestamp(entry.timestamp).isoformat()
-            writer.writerow([
-                ts_str,
-                entry.level,
-                entry.source,
-                entry.message,
-                entry.module,
-            ])
+            writer.writerow(
+                [
+                    ts_str,
+                    entry.level,
+                    entry.source,
+                    entry.message,
+                    entry.module,
+                ]
+            )
 
         return output.getvalue().encode("utf-8")
 
@@ -721,17 +775,25 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
 
     st.markdown(_t("log_realtime_title"))
 
-    control_col1, control_col2, control_col3, control_col4 = st.columns([2, 1.5, 1.5, 1.5])
+    control_col1, control_col2, control_col3, control_col4 = st.columns(
+        [2, 1.5, 1.5, 1.5]
+    )
 
     with control_col1:
-        auto_refresh = st.checkbox(_t("log_auto_refresh"), value=auto_refresh, key="log_auto_refresh")
+        auto_refresh = st.checkbox(
+            _t("log_auto_refresh"), value=auto_refresh, key="log_auto_refresh"
+        )
 
     with control_col2:
-        if st.button(_t("log_refresh"), use_container_width=True, key="log_manual_refresh"):
+        if st.button(
+            _t("log_refresh"), use_container_width=True, key="log_manual_refresh"
+        ):
             st.rerun()
 
     with control_col3:
-        if st.button(_t("log_clear_cache"), use_container_width=True, key="log_clear_cache"):
+        if st.button(
+            _t("log_clear_cache"), use_container_width=True, key="log_clear_cache"
+        ):
             cache = _get_log_cache()
             cache.clear()
             st.success(_t("log_cache_cleared"))
@@ -746,8 +808,8 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
 
     session_ctx = st.session_state.get("session_ctx", None)
     if session_ctx is not None:
-        if hasattr(session_ctx, '_session_id'):
-            session_id = getattr(session_ctx, '_session_id', None)
+        if hasattr(session_ctx, "_session_id"):
+            session_id = getattr(session_ctx, "_session_id", None)
         elif isinstance(session_ctx, dict):
             session_id = session_ctx.get("_session_id", None)
         else:
@@ -764,13 +826,21 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
     filtered_logs, filter_state = _render_filter_bar(logs)
 
     if not filtered_logs:
-        st.warning(_t("log_no_matching", total=filter_state['total_before']))
+        st.warning(_t("log_no_matching", total=filter_state["total_before"]))
         return
 
-    filter_suffix = _t("log_filtered") if filter_state['total_after'] < filter_state['total_before'] else ""
-    st.caption(_t("log_showing_count", shown=len(filtered_logs), total=len(logs)) + filter_suffix)
+    filter_suffix = (
+        _t("log_filtered")
+        if filter_state["total_after"] < filter_state["total_before"]
+        else ""
+    )
+    st.caption(
+        _t("log_showing_count", shown=len(filtered_logs), total=len(logs))
+        + filter_suffix
+    )
 
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     .log-container {
         background: #FAFAFA;
@@ -791,7 +861,9 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
         background: #F9FAFB;
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     with st.container():
         with st.expander(_t("log_detail_expand"), expanded=True):
@@ -800,10 +872,18 @@ def render_live_log_panel(auto_refresh: bool = True, refresh_interval: int = 2):
 
     _render_stats_summary(filtered_logs)
 
-    if st.button(_t("log_export_btn", fmt=export_format.upper()), use_container_width=True, key="log_export_btn"):
+    if st.button(
+        _t("log_export_btn", fmt=export_format.upper()),
+        use_container_width=True,
+        key="log_export_btn",
+    ):
         try:
             export_data = export_logs(filtered_logs, format=export_format)
-            mime_types = {"txt": "text/plain", "json": "application/json", "csv": "text/csv"}
+            mime_types = {
+                "txt": "text/plain",
+                "json": "application/json",
+                "csv": "text/csv",
+            }
             st.download_button(
                 label=_t("log_download_file", fmt=export_format.upper()),
                 data=export_data,

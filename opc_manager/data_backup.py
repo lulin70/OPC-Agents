@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 _ZIP_AES_AVAILABLE = False
 try:
     import pyzipper
+
     _ZIP_AES_AVAILABLE = True
 except ImportError:
     pass
@@ -33,7 +34,15 @@ BACKUP_DIR = "data/backups"
 EXPORT_FORMATS = ["json", "csv", "zip"]
 BACKUP_VERSION = "1.0"
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB — 超过此大小的文件跳过并记录警告
-SENSITIVE_FIELDS = {"api_key", "password", "secret", "token", "smtp_pass", "encryption_key", "app_secret"}
+SENSITIVE_FIELDS = {
+    "api_key",
+    "password",
+    "secret",
+    "token",
+    "smtp_pass",
+    "encryption_key",
+    "app_secret",
+}
 REDACTED_VALUE = "***REDACTED***"
 
 
@@ -95,7 +104,9 @@ class DataBackupManager:
         self._backup_dir = self._base_dir / BACKUP_DIR
         self._backup_dir.mkdir(parents=True, exist_ok=True)
 
-    def create_backup(self, include_attachments: bool = False) -> Tuple[Path, BackupManifest]:
+    def create_backup(
+        self, include_attachments: bool = False
+    ) -> Tuple[Path, BackupManifest]:
         """Create a full backup of all user data.
 
         Returns:
@@ -123,15 +134,26 @@ class DataBackupManager:
                     fname = str(rel_path)
 
                     # Skip runtime cache files
-                    skip_patterns = ["__pycache__", ".pyc", ".db-wal", ".db-shm",
-                                   "settings.json", "onboarding.json",
-                                   "llm_cache/", "dashboard/"]
+                    skip_patterns = [
+                        "__pycache__",
+                        ".pyc",
+                        ".db-wal",
+                        ".db-shm",
+                        "settings.json",
+                        "onboarding.json",
+                        "llm_cache/",
+                        "dashboard/",
+                    ]
                     if any(p in fname for p in skip_patterns):
                         continue
 
                     fsize = f.stat().st_size
                     if fsize > MAX_FILE_SIZE:
-                        logger.warning("跳过超大文件 %s (%.1fMB > 50MB限制)", fname, fsize / (1024 * 1024))
+                        logger.warning(
+                            "跳过超大文件 %s (%.1fMB > 50MB限制)",
+                            fname,
+                            fsize / (1024 * 1024),
+                        )
                         continue
 
                     files_to_backup.append((f, rel_path))
@@ -151,9 +173,10 @@ class DataBackupManager:
         if backup_password:
             if _ZIP_AES_AVAILABLE:
                 # AES加密模式
-                with pyzipper.AESZipFile(backup_path, 'w',
-                                         compression=pyzipper.ZIP_DEFLATED) as zf:
-                    zf.setpassword(backup_password.encode('utf-8'))
+                with pyzipper.AESZipFile(
+                    backup_path, "w", compression=pyzipper.ZIP_DEFLATED
+                ) as zf:
+                    zf.setpassword(backup_password.encode("utf-8"))
                     zf.setencryption(pyzipper.WZ_AES, nbits=256)
                     for file_path, rel_path in files_to_backup:
                         zf.write(file_path, arcname=str(rel_path))
@@ -161,14 +184,16 @@ class DataBackupManager:
                 logger.info("Backup created with AES-256 encryption")
             else:
                 # pyzipper不可用，回退到无加密模式
-                logger.warning("pyzipper not available — backup will be created WITHOUT encryption. "
-                               "Install pyzipper for AES encryption: pip install pyzipper")
-                with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                logger.warning(
+                    "pyzipper not available — backup will be created WITHOUT encryption. "
+                    "Install pyzipper for AES encryption: pip install pyzipper"
+                )
+                with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zf:
                     for file_path, rel_path in files_to_backup:
                         zf.write(file_path, arcname=str(rel_path))
         else:
             # 无密码，使用标准zipfile无加密模式
-            with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zf:
                 for file_path, rel_path in files_to_backup:
                     zf.write(file_path, arcname=str(rel_path))
 
@@ -176,18 +201,22 @@ class DataBackupManager:
 
         # Calculate checksum — 流式读取避免大文件OOM
         sha256 = hashlib.sha256()
-        with open(backup_path, 'rb') as f:
-            for chunk in iter(lambda: f.read(65536), b''):
+        with open(backup_path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
                 sha256.update(chunk)
         manifest.checksum_sha256 = sha256.hexdigest()
 
         # Save manifest inside zip
         manifest_json = json.dumps(manifest.__dict__, indent=2, ensure_ascii=False)
-        with zipfile.ZipFile(backup_path, 'a') as zf:
+        with zipfile.ZipFile(backup_path, "a") as zf:
             zf.writestr("manifest.json", manifest_json)
 
-        logger.info("Backup created: %s (%d files, %d bytes)",
-                    backup_path, manifest.total_files, total_size)
+        logger.info(
+            "Backup created: %s (%d files, %d bytes)",
+            backup_path,
+            manifest.total_files,
+            total_size,
+        )
 
         return backup_path, manifest
 
@@ -196,12 +225,14 @@ class DataBackupManager:
         backups = []
         for f in sorted(self._backup_dir.glob("*.zip"), reverse=True):
             stat = f.stat()
-            backups.append({
-                "filename": f.name,
-                "path": str(f),
-                "size_mb": round(stat.st_size / (1024*1024), 2),
-                "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            })
+            backups.append(
+                {
+                    "filename": f.name,
+                    "path": str(f),
+                    "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                    "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                }
+            )
         return backups
 
     def restore_backup(self, backup_path: str, confirm: bool = False) -> Dict[str, Any]:
@@ -221,11 +252,14 @@ class DataBackupManager:
             data_dir = self._base_dir / "data"
 
             # Read manifest and extract all files safely — prevent Zip Slip
-            with zipfile.ZipFile(bp, 'r') as zf:
+            with zipfile.ZipFile(bp, "r") as zf:
                 if "manifest.json" in zf.namelist():
                     manifest_data = json.loads(zf.read("manifest.json"))
-                    logger.info("Restoring from backup: v%s, %d files",
-                               manifest_data.get("version"), manifest_data.get("total_files", "?"))
+                    logger.info(
+                        "Restoring from backup: v%s, %d files",
+                        manifest_data.get("version"),
+                        manifest_data.get("total_files", "?"),
+                    )
 
                 for zip_info in zf.infolist():
                     arcname = zip_info.filename
@@ -243,8 +277,9 @@ class DataBackupManager:
             return {
                 "success": True,
                 "message": f"Restored from {bp.name}",
-                "restored_files": len([n for n in zipfile.ZipFile(bp).namelist()
-                                       if n != "manifest.json"]),
+                "restored_files": len(
+                    [n for n in zipfile.ZipFile(bp).namelist() if n != "manifest.json"]
+                ),
             }
         except Exception as e:
             logger.error("Restore failed: %s", e)
@@ -271,7 +306,7 @@ class DataBackupManager:
         """
         if format_type == "zip":
             path, _ = self.create_backup(include_attachments=False)
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 return f.read()
 
         elif format_type == "json":
@@ -280,7 +315,7 @@ class DataBackupManager:
             if data_dir.exists():
                 for f in data_dir.glob("*.json"):
                     try:
-                        raw = json.loads(f.read_text(encoding='utf-8'))
+                        raw = json.loads(f.read_text(encoding="utf-8"))
                         data[f.stem] = _sanitize_value(raw)
                     except Exception as e:
                         logger.warning("Failed to read %s: %s", f, e)
@@ -293,7 +328,7 @@ class DataBackupManager:
                 "data": data,
                 "_meta": {"sanitized": True},
             }
-            return json.dumps(result, indent=2, ensure_ascii=False).encode('utf-8')
+            return json.dumps(result, indent=2, ensure_ascii=False).encode("utf-8")
 
         elif format_type == "csv":
             import csv
@@ -308,7 +343,7 @@ class DataBackupManager:
             if data_dir.exists():
                 for f in data_dir.glob("*.json"):
                     try:
-                        d = json.loads(f.read_text(encoding='utf-8'))
+                        d = json.loads(f.read_text(encoding="utf-8"))
                         d = _sanitize_value(d)
                         table_name = f.stem
                         if isinstance(d, dict):
@@ -316,11 +351,18 @@ class DataBackupManager:
                                 if isinstance(v, (str, int, float, bool)):
                                     writer.writerow([table_name, k, str(v), ts])
                                 elif isinstance(v, dict):
-                                    writer.writerow([table_name, k, json.dumps(v, ensure_ascii=False), ts])
+                                    writer.writerow(
+                                        [
+                                            table_name,
+                                            k,
+                                            json.dumps(v, ensure_ascii=False),
+                                            ts,
+                                        ]
+                                    )
                     except Exception as e:
                         logger.debug("[DataBackup] CSV write row failed: %s", e)
 
-            return output.getvalue().encode('utf-8')
+            return output.getvalue().encode("utf-8")
 
         else:
             raise ValueError(f"Unsupported format: {format_type}")

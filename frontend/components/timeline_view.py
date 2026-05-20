@@ -52,6 +52,7 @@ class TimelineEvent:
         status: 状态（success/error/pending/cancelled）
         related_ids: 相关事件ID列表（用于连线）
     """
+
     id: str
     timestamp: float
     event_type: str
@@ -207,7 +208,11 @@ def build_timeline_from_session(session_id: str = "") -> List[TimelineEvent]:
 
     elapsed_ms = (time.time() - start_time) * 1000
     if elapsed_ms > TIMELINE_BUILD_TIMEOUT_MS:
-        logger.warning("[timeline] build took %.1fms (exceeds %dms limit)", elapsed_ms, TIMELINE_BUILD_TIMEOUT_MS)
+        logger.warning(
+            "[timeline] build took %.1fms (exceeds %dms limit)",
+            elapsed_ms,
+            TIMELINE_BUILD_TIMEOUT_MS,
+        )
 
     return events
 
@@ -224,26 +229,30 @@ def _build_from_deliverables() -> List[TimelineEvent]:
         created_at = record.get("created_at", 0)
         if isinstance(created_at, str):
             try:
-                created_at = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S").timestamp()
+                created_at = datetime.strptime(
+                    created_at, "%Y-%m-%d %H:%M:%S"
+                ).timestamp()
             except ValueError:
                 created_at = 0
 
-        events.append(TimelineEvent(
-            id=record.get("id", f"del_{hash(str(record))}"),
-            timestamp=created_at,
-            event_type="task_complete",
-            title=record.get("prompt", _t("timeline_task_complete"))[:50],
-            description=f"{_t('timeline_generated')} {record.get('task_type', _t('timeline_document'))}",
-            icon="✅",
-            category="work",
-            metadata={
-                "filepath": record.get("filepath", ""),
-                "filename": record.get("filename", ""),
-                "task_type": record.get("task_type", ""),
-                "size_kb": record.get("size_kb", 0),
-            },
-            status="success",
-        ))
+        events.append(
+            TimelineEvent(
+                id=record.get("id", f"del_{hash(str(record))}"),
+                timestamp=created_at,
+                event_type="task_complete",
+                title=record.get("prompt", _t("timeline_task_complete"))[:50],
+                description=f"{_t('timeline_generated')} {record.get('task_type', _t('timeline_document'))}",
+                icon="✅",
+                category="work",
+                metadata={
+                    "filepath": record.get("filepath", ""),
+                    "filename": record.get("filename", ""),
+                    "task_type": record.get("task_type", ""),
+                    "size_kb": record.get("size_kb", 0),
+                },
+                status="success",
+            )
+        )
 
     return events
 
@@ -254,6 +263,7 @@ def _build_from_undo_manager(session_id: str) -> List[TimelineEvent]:
 
     try:
         from opc_manager.undo_manager import get_undo_manager
+
         undo_mgr = get_undo_manager()
 
         if not undo_mgr or not session_id:
@@ -262,27 +272,29 @@ def _build_from_undo_manager(session_id: str) -> List[TimelineEvent]:
         records = undo_mgr.list_records(session_id)
 
         for record in records:
-            if not hasattr(record, 'operation_id'):
+            if not hasattr(record, "operation_id"):
                 continue
 
-            is_undone = getattr(record, 'status', '') == 'undone'
-            operation_type = getattr(record, 'operation_type', None)
+            is_undone = getattr(record, "status", "") == "undone"
+            operation_type = getattr(record, "operation_type", None)
             op_type_str = operation_type.value if operation_type else "unknown"
 
-            events.append(TimelineEvent(
-                id=getattr(record, 'operation_id', ''),
-                timestamp=getattr(record, 'created_at', 0),
-                event_type="undo_action" if is_undone else "task_complete",
-                title=_get_undo_description(record),
-                description=f"{op_type_str} {_t('timeline_operation')}",
-                icon="↩️" if is_undone else "✅",
-                category="system",
-                metadata={
-                    "operation_type": op_type_str,
-                    "inverse_func": getattr(record, 'inverse_func_name', ''),
-                },
-                status="undone" if is_undone else "success",
-            ))
+            events.append(
+                TimelineEvent(
+                    id=getattr(record, "operation_id", ""),
+                    timestamp=getattr(record, "created_at", 0),
+                    event_type="undo_action" if is_undone else "task_complete",
+                    title=_get_undo_description(record),
+                    description=f"{op_type_str} {_t('timeline_operation')}",
+                    icon="↩️" if is_undone else "✅",
+                    category="system",
+                    metadata={
+                        "operation_type": op_type_str,
+                        "inverse_func": getattr(record, "inverse_func_name", ""),
+                    },
+                    status="undone" if is_undone else "success",
+                )
+            )
     except ImportError:
         pass
     except Exception as e:
@@ -293,7 +305,7 @@ def _build_from_undo_manager(session_id: str) -> List[TimelineEvent]:
 
 def _get_undo_description(record) -> str:
     """生成撤销操作的描述文本"""
-    op_type = getattr(record, 'operation_type', None)
+    op_type = getattr(record, "operation_type", None)
     op_str = op_type.value if op_type else _t("timeline_operation")
 
     type_label_keys = {
@@ -311,9 +323,9 @@ def _get_undo_description(record) -> str:
 
     i18n_key = type_label_keys.get(op_str)
     label = _t(i18n_key) if i18n_key else op_str
-    status = getattr(record, 'status', '')
+    status = getattr(record, "status", "")
 
-    if status == 'undone':
+    if status == "undone":
         return _t("timeline_undone_prefix", label=label)
     return _t("timeline_executed_prefix", label=label)
 
@@ -325,15 +337,24 @@ def _build_from_audit_log() -> List[TimelineEvent]:
 
     try:
         from opc_manager.audit_log import AuditLog
+
         audit = AuditLog()
 
-        entries = audit.get_recent_entries(limit=30) if hasattr(audit, 'get_recent_entries') else []
+        entries = (
+            audit.get_recent_entries(limit=30)
+            if hasattr(audit, "get_recent_entries")
+            else []
+        )
 
         for entry in entries:
-            if not isinstance(entry, dict) and not hasattr(entry, 'operation_type'):
+            if not isinstance(entry, dict) and not hasattr(entry, "operation_type"):
                 continue
 
-            op_type = getattr(entry, 'operation_type', '') if hasattr(entry, 'operation_type') else entry.get('operation_type', '')
+            op_type = (
+                getattr(entry, "operation_type", "")
+                if hasattr(entry, "operation_type")
+                else entry.get("operation_type", "")
+            )
             event_info = _map_audit_operation_to_event(op_type)
 
             if not event_info:
@@ -341,27 +362,57 @@ def _build_from_audit_log() -> List[TimelineEvent]:
 
             event_type, icon, category = event_info
 
-            timestamp = getattr(entry, 'timestamp', 0) if hasattr(entry, 'timestamp') else entry.get('timestamp', 0)
-            input_summary = getattr(entry, 'input_summary', '') if hasattr(entry, 'input_summary') else entry.get('input_summary', '')
-            output_summary = getattr(entry, 'output_summary', '') if hasattr(entry, 'output_summary') else entry.get('output_summary', '')
-            duration = getattr(entry, 'duration_ms', 0) if hasattr(entry, 'duration_ms') else entry.get('duration_ms', 0)
-            status = getattr(entry, 'status', 'success') if hasattr(entry, 'status') else entry.get('status', 'success')
+            timestamp = (
+                getattr(entry, "timestamp", 0)
+                if hasattr(entry, "timestamp")
+                else entry.get("timestamp", 0)
+            )
+            input_summary = (
+                getattr(entry, "input_summary", "")
+                if hasattr(entry, "input_summary")
+                else entry.get("input_summary", "")
+            )
+            output_summary = (
+                getattr(entry, "output_summary", "")
+                if hasattr(entry, "output_summary")
+                else entry.get("output_summary", "")
+            )
+            duration = (
+                getattr(entry, "duration_ms", 0)
+                if hasattr(entry, "duration_ms")
+                else entry.get("duration_ms", 0)
+            )
+            status = (
+                getattr(entry, "status", "success")
+                if hasattr(entry, "status")
+                else entry.get("status", "success")
+            )
 
-            events.append(TimelineEvent(
-                id=getattr(entry, 'id', f"audit_{hash(str(entry))}") if hasattr(entry, 'id') else entry.get('id', f"audit_{hash(str(entry))}"),
-                timestamp=timestamp,
-                event_type=event_type,
-                title=input_summary[:50] if input_summary else event_type,
-                description=output_summary[:100] if output_summary else op_type,
-                icon=icon,
-                category=category,
-                metadata={
-                    "operation_type": op_type,
-                    "skill_id": getattr(entry, 'skill_id', '') if hasattr(entry, 'skill_id') else entry.get('skill_id', ''),
-                },
-                duration_ms=float(duration),
-                status=status if status in status_labels else "success",
-            ))
+            events.append(
+                TimelineEvent(
+                    id=(
+                        getattr(entry, "id", f"audit_{hash(str(entry))}")
+                        if hasattr(entry, "id")
+                        else entry.get("id", f"audit_{hash(str(entry))}")
+                    ),
+                    timestamp=timestamp,
+                    event_type=event_type,
+                    title=input_summary[:50] if input_summary else event_type,
+                    description=output_summary[:100] if output_summary else op_type,
+                    icon=icon,
+                    category=category,
+                    metadata={
+                        "operation_type": op_type,
+                        "skill_id": (
+                            getattr(entry, "skill_id", "")
+                            if hasattr(entry, "skill_id")
+                            else entry.get("skill_id", "")
+                        ),
+                    },
+                    duration_ms=float(duration),
+                    status=status if status in status_labels else "success",
+                )
+            )
     except ImportError:
         pass
     except Exception as e:
@@ -370,7 +421,9 @@ def _build_from_audit_log() -> List[TimelineEvent]:
     return events
 
 
-def _map_audit_operation_to_event(operation_type: str) -> Optional[Tuple[str, str, str]]:
+def _map_audit_operation_to_event(
+    operation_type: str,
+) -> Optional[Tuple[str, str, str]]:
     """将AuditLog的operation_type映射到时间线事件类型"""
     mapping = {
         "email_send": ("email_sent", "📧", "communication"),
@@ -393,6 +446,7 @@ def _build_from_progress_emitter(session_id: str) -> List[TimelineEvent]:
 
     try:
         from opc_manager.progress_emitter import get_progress_emitter
+
         emitter = get_progress_emitter()
 
         if not emitter or not session_id:
@@ -407,30 +461,38 @@ def _build_from_progress_emitter(session_id: str) -> List[TimelineEvent]:
             event_val = evt.get("event", evt.get("event_type", ""))
 
             if event_val in ("confirm_requested", "CONFIRM_REQUESTED"):
-                events.append(TimelineEvent(
-                    id=f"prog_confirm_{evt.get('timestamp', 0)}",
-                    timestamp=evt.get("timestamp", 0),
-                    event_type="confirmation_required",
-                    title=evt.get("message", _t("timeline_waiting_confirm"))[:50],
-                    description=_t("timeline_need_user_confirm"),
-                    icon="⚠️",
-                    category="system",
-                    metadata={"progress": evt.get("progress", 0)},
-                    status="pending",
-                ))
+                events.append(
+                    TimelineEvent(
+                        id=f"prog_confirm_{evt.get('timestamp', 0)}",
+                        timestamp=evt.get("timestamp", 0),
+                        event_type="confirmation_required",
+                        title=evt.get("message", _t("timeline_waiting_confirm"))[:50],
+                        description=_t("timeline_need_user_confirm"),
+                        icon="⚠️",
+                        category="system",
+                        metadata={"progress": evt.get("progress", 0)},
+                        status="pending",
+                    )
+                )
 
             elif event_val in ("error", "ERROR"):
-                events.append(TimelineEvent(
-                    id=f"prog_error_{evt.get('timestamp', 0)}",
-                    timestamp=evt.get("timestamp", 0),
-                    event_type="error_occurred",
-                    title=evt.get("message", _t("timeline_error_occurred"))[:50],
-                    description=evt.get("detail", {}).get("error_msg", "")[:100] if evt.get("detail") else "",
-                    icon="❌",
-                    category="system",
-                    metadata={"detail": evt.get("detail", {})},
-                    status="error",
-                ))
+                events.append(
+                    TimelineEvent(
+                        id=f"prog_error_{evt.get('timestamp', 0)}",
+                        timestamp=evt.get("timestamp", 0),
+                        event_type="error_occurred",
+                        title=evt.get("message", _t("timeline_error_occurred"))[:50],
+                        description=(
+                            evt.get("detail", {}).get("error_msg", "")[:100]
+                            if evt.get("detail")
+                            else ""
+                        ),
+                        icon="❌",
+                        category="system",
+                        metadata={"detail": evt.get("detail", {})},
+                        status="error",
+                    )
+                )
     except ImportError:
         pass
     except Exception as e:
@@ -456,35 +518,43 @@ def _build_from_chat_history() -> List[TimelineEvent]:
 
         if isinstance(timestamp, str):
             try:
-                timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").timestamp()
+                timestamp = datetime.strptime(
+                    timestamp, "%Y-%m-%d %H:%M:%S"
+                ).timestamp()
             except (ValueError, TypeError):
                 timestamp = time.time()
 
         role = msg.get("role", "")
 
         if any(kw in content.lower() for kw in dashboard_keywords):
-            events.append(TimelineEvent(
-                id=f"chat_dash_{timestamp}",
-                timestamp=timestamp,
-                event_type="dashboard_viewed",
-                title=_t("timeline_dashboard_viewed"),
-                description=_t("timeline_viewed_dashboard_desc"),
-                icon="📊",
-                category="work",
-                status="success",
-            ))
+            events.append(
+                TimelineEvent(
+                    id=f"chat_dash_{timestamp}",
+                    timestamp=timestamp,
+                    event_type="dashboard_viewed",
+                    title=_t("timeline_dashboard_viewed"),
+                    description=_t("timeline_viewed_dashboard_desc"),
+                    icon="📊",
+                    category="work",
+                    status="success",
+                )
+            )
 
-        elif role == "assistant" and any(kw in content.lower() for kw in skill_keywords):
-            events.append(TimelineEvent(
-                id=f"chat_skill_{timestamp}",
-                timestamp=timestamp,
-                event_type="skill_executed",
-                title=_t("timeline_skill_executed"),
-                description=content[:80],
-                icon="🛠️",
-                category="work",
-                status="success",
-            ))
+        elif role == "assistant" and any(
+            kw in content.lower() for kw in skill_keywords
+        ):
+            events.append(
+                TimelineEvent(
+                    id=f"chat_skill_{timestamp}",
+                    timestamp=timestamp,
+                    event_type="skill_executed",
+                    title=_t("timeline_skill_executed"),
+                    description=content[:80],
+                    icon="🛠️",
+                    category="work",
+                    status="success",
+                )
+            )
 
     return events
 
@@ -530,7 +600,7 @@ def render_timeline_view(events: List[TimelineEvent], title: str = None):
             st.markdown(f"#### 📅 {group_label}")
 
             for i, event in enumerate(group_events):
-                is_latest = (i == 0 and group_label == list(grouped.keys())[0])
+                is_latest = i == 0 and group_label == list(grouped.keys())[0]
                 _render_timeline_event(event, is_latest)
 
             st.markdown("---")
@@ -544,7 +614,13 @@ def render_timeline_view(events: List[TimelineEvent], title: str = None):
                 )
                 st.rerun()
         with col_info:
-            st.caption(_t("timeline_showing_count", shown=len(filtered_events), total=len(events)))
+            st.caption(
+                _t(
+                    "timeline_showing_count",
+                    shown=len(filtered_events),
+                    total=len(events),
+                )
+            )
 
     _render_export_section(events)
 
@@ -581,25 +657,39 @@ def _render_timeline_stats(events: List[TimelineEvent]):
     with cols[0]:
         st.metric(_t("timeline_total_ops"), _t("timeline_times", count=total))
     with cols[1]:
-        st.metric(_t("timeline_status_success"), f"{success_count}", delta_color="normal")
+        st.metric(
+            _t("timeline_status_success"), f"{success_count}", delta_color="normal"
+        )
     with cols[2]:
         if error_count > 0:
-            st.metric(_t("timeline_status_error"), f"{error_count}", delta_color="inverse")
+            st.metric(
+                _t("timeline_status_error"), f"{error_count}", delta_color="inverse"
+            )
         else:
             st.metric(_t("timeline_status_error"), "0")
     with cols[3]:
         st.metric(_t("timeline_undone_cancelled"), f"{undone_count}")
     with cols[4]:
         if duration_min > 0:
-            st.metric(_t("timeline_work_duration"), _t("timeline_minutes", min=duration_min))
+            st.metric(
+                _t("timeline_work_duration"), _t("timeline_minutes", min=duration_min)
+            )
         else:
             st.metric(_t("timeline_work_duration"), "-")
 
     if total > 0:
-        st.caption(_t("timeline_peak_period", range=peak_range, rate=success_count/total*100))
+        st.caption(
+            _t(
+                "timeline_peak_period",
+                range=peak_range,
+                rate=success_count / total * 100,
+            )
+        )
 
 
-def _render_timeline_filters(events: List[TimelineEvent]) -> Tuple[List[TimelineEvent], Dict]:
+def _render_timeline_filters(
+    events: List[TimelineEvent],
+) -> Tuple[List[TimelineEvent], Dict]:
     """渲染筛选控制面板
 
     提供：
@@ -636,7 +726,7 @@ def _render_timeline_filters(events: List[TimelineEvent]) -> Tuple[List[Timeline
                 _t("timeline_keyword_search"),
                 placeholder=_t("timeline_search_placeholder"),
                 key="timeline_keyword",
-        )
+            )
 
         col_cat, col_status = st.columns(2)
 
@@ -661,7 +751,10 @@ def _render_timeline_filters(events: List[TimelineEvent]) -> Tuple[List[Timeline
         group_by = st.selectbox(
             _t("timeline_group_by"),
             options=["hour", "day"],
-            format_func=lambda x: {"hour": _t("timeline_group_by_hour"), "day": _t("timeline_group_by_day")}.get(x, x),
+            format_func=lambda x: {
+                "hour": _t("timeline_group_by_hour"),
+                "day": _t("timeline_group_by_day"),
+            }.get(x, x),
             index=0,
             key="timeline_group_by",
         )
@@ -701,18 +794,25 @@ def _apply_filters(events: List[TimelineEvent], filters: Dict) -> List[TimelineE
         result = [e for e in result if e.timestamp >= today_start]
 
     elif time_range == "week":
-        week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        week_start = (
+            (now - timedelta(days=now.weekday()))
+            .replace(hour=0, minute=0, second=0, microsecond=0)
+            .timestamp()
+        )
         result = [e for e in result if e.timestamp >= week_start]
 
     elif time_range == "month":
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
+        month_start = now.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ).timestamp()
         result = [e for e in result if e.timestamp >= month_start]
 
     keyword = filters.get("keyword", "").strip()
     if keyword:
         keyword_lower = keyword.lower()
         result = [
-            e for e in result
+            e
+            for e in result
             if keyword_lower in e.title.lower()
             or keyword_lower in e.description.lower()
         ]
@@ -732,7 +832,9 @@ def _apply_filters(events: List[TimelineEvent], filters: Dict) -> List[TimelineE
     return result
 
 
-def _group_events_by_time(events: List[TimelineEvent], group_by: str = "hour") -> Dict[str, List[TimelineEvent]]:
+def _group_events_by_time(
+    events: List[TimelineEvent], group_by: str = "hour"
+) -> Dict[str, List[TimelineEvent]]:
     """按时间分组事件
 
     Args:
@@ -753,9 +855,9 @@ def _group_events_by_time(events: List[TimelineEvent], group_by: str = "hour") -
 
         if group_by == "hour":
             if dt.date() == now.date():
-                label = _t("timeline_today_label", time=dt.strftime('%H:%M'))
+                label = _t("timeline_today_label", time=dt.strftime("%H:%M"))
             elif dt.date() == (now - timedelta(days=1)).date():
-                label = _t("timeline_yesterday_label", time=dt.strftime('%H:%M'))
+                label = _t("timeline_yesterday_label", time=dt.strftime("%H:%M"))
             else:
                 label = dt.strftime("%m-%d %H:%M")
 
@@ -773,7 +875,11 @@ def _group_events_by_time(events: List[TimelineEvent], group_by: str = "hour") -
 
         groups[label].append(event)
 
-    sorted_groups = dict(sorted(groups.items(), key=lambda x: x[1][0].timestamp if x[1] else 0, reverse=True))
+    sorted_groups = dict(
+        sorted(
+            groups.items(), key=lambda x: x[1][0].timestamp if x[1] else 0, reverse=True
+        )
+    )
     return sorted_groups
 
 
@@ -825,10 +931,17 @@ def _render_timeline_event(event: TimelineEvent, is_latest: bool = False):
         col_time, col_content = st.columns([1, 5])
 
         with col_time:
-            st.markdown(f"<div style='text-align:right; font-family:monospace; color:#6B7280; font-size:14px; padding-top:8px;'>{time_str}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='text-align:right; font-family:monospace; color:#6B7280; font-size:14px; padding-top:8px;'>{time_str}</div>",
+                unsafe_allow_html=True,
+            )
 
         with col_content:
-            latest_badge = f'<div style="position:absolute;top:-8px;right:-8px;background:#10B981;color:white;font-size:10px;padding:2px 6px;border-radius:10px;">{_t("timeline_latest")}</div>' if is_latest else ''
+            latest_badge = (
+                f'<div style="position:absolute;top:-8px;right:-8px;background:#10B981;color:white;font-size:10px;padding:2px 6px;border-radius:10px;">{_t("timeline_latest")}</div>'
+                if is_latest
+                else ""
+            )
             event_html = f"""
             <div style="
                 display: flex;
@@ -890,6 +1003,7 @@ def _render_event_detail_panel(event: TimelineEvent):
     - 错误详情（如有）
     """
     import os
+
     category_labels = _get_category_labels()
     status_labels = _get_status_labels()
 
@@ -898,12 +1012,22 @@ def _render_event_detail_panel(event: TimelineEvent):
     with col_meta:
         st.markdown(f"**{_t('timeline_basic_info')}**")
         meta_data = {
-            _t("timeline_event_id"): event.id[:16] + "..." if len(event.id) > 16 else event.id,
+            _t("timeline_event_id"): (
+                event.id[:16] + "..." if len(event.id) > 16 else event.id
+            ),
             _t("timeline_event_type"): event.event_type,
-            _t("timeline_category"): category_labels.get(event.category, event.category),
+            _t("timeline_category"): category_labels.get(
+                event.category, event.category
+            ),
             _t("timeline_status"): status_labels.get(event.status, event.status),
-            _t("timeline_timestamp"): datetime.fromtimestamp(event.timestamp).strftime("%Y-%m-%d %H:%M:%S"),
-            _t("timeline_duration"): _t("timeline_duration_sec", sec=event.duration_ms) if event.duration_ms > 0 else "-",
+            _t("timeline_timestamp"): datetime.fromtimestamp(event.timestamp).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+            _t("timeline_duration"): (
+                _t("timeline_duration_sec", sec=event.duration_ms)
+                if event.duration_ms > 0
+                else "-"
+            ),
         }
 
         for label, value in meta_data.items():
@@ -955,12 +1079,20 @@ def _render_export_section(events: List[TimelineEvent]):
             key="timeline_export_format",
         )
 
-        if st.button(_t("timeline_export_btn"), key="export_timeline_btn", type="primary"):
+        if st.button(
+            _t("timeline_export_btn"), key="export_timeline_btn", type="primary"
+        ):
             exported = export_timeline(events, export_format)
 
             if exported:
-                file_ext = {"csv": "csv", "markdown": "md", "png": "png"}.get(export_format, "txt")
-                mime_types = {"csv": "text/csv", "markdown": "text/markdown", "png": "image/png"}
+                file_ext = {"csv": "csv", "markdown": "md", "png": "png"}.get(
+                    export_format, "txt"
+                )
+                mime_types = {
+                    "csv": "text/csv",
+                    "markdown": "text/markdown",
+                    "png": "image/png",
+                }
                 st.download_button(
                     label=_t("timeline_download_file", fmt=export_format.upper()),
                     data=exported,
@@ -970,7 +1102,9 @@ def _render_export_section(events: List[TimelineEvent]):
                 )
 
 
-def export_timeline(events: List[TimelineEvent], format: str = "csv") -> Optional[bytes]:
+def export_timeline(
+    events: List[TimelineEvent], format: str = "csv"
+) -> Optional[bytes]:
     """导出时间线数据
 
     Args:
@@ -1005,37 +1139,43 @@ def _export_to_csv(events: List[TimelineEvent]) -> bytes:
     output = io.StringIO()
     writer = csv.writer(output)
 
-    writer.writerow([
-        _t("timeline_csv_header_timestamp"),
-        _t("timeline_csv_header_time"),
-        _t("timeline_csv_header_event_type"),
-        _t("timeline_csv_header_title"),
-        _t("timeline_csv_header_desc"),
-        _t("timeline_csv_header_category"),
-        _t("timeline_csv_header_status"),
-        _t("timeline_csv_header_duration_ms"),
-        _t("timeline_csv_header_icon"),
-        _t("timeline_csv_header_event_id"),
-    ])
+    writer.writerow(
+        [
+            _t("timeline_csv_header_timestamp"),
+            _t("timeline_csv_header_time"),
+            _t("timeline_csv_header_event_type"),
+            _t("timeline_csv_header_title"),
+            _t("timeline_csv_header_desc"),
+            _t("timeline_csv_header_category"),
+            _t("timeline_csv_header_status"),
+            _t("timeline_csv_header_duration_ms"),
+            _t("timeline_csv_header_icon"),
+            _t("timeline_csv_header_event_id"),
+        ]
+    )
 
     for event in events:
         try:
-            time_str = datetime.fromtimestamp(event.timestamp).strftime("%Y-%m-%d %H:%M:%S")
+            time_str = datetime.fromtimestamp(event.timestamp).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
         except (ValueError, OSError):
             time_str = ""
 
-        writer.writerow([
-            event.timestamp,
-            time_str,
-            event.event_type,
-            event.title,
-            event.description,
-            event.category,
-            event.status,
-            event.duration_ms,
-            event.icon,
-            event.id,
-        ])
+        writer.writerow(
+            [
+                event.timestamp,
+                time_str,
+                event.event_type,
+                event.title,
+                event.description,
+                event.category,
+                event.status,
+                event.duration_ms,
+                event.icon,
+                event.id,
+            ]
+        )
 
     return output.getvalue().encode("utf-8-sig")
 
@@ -1047,7 +1187,9 @@ def _export_to_markdown(events: List[TimelineEvent]) -> str:
 
     lines = []
     lines.append(f"{_t('timeline_md_report_title')}\n")
-    lines.append(f"{_t('timeline_md_export_time')}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    lines.append(
+        f"{_t('timeline_md_export_time')}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    )
     lines.append(f"{_t('timeline_md_total_events')}: {len(events)}\n")
     lines.append("---\n")
 
@@ -1066,15 +1208,23 @@ def _export_to_markdown(events: List[TimelineEvent]) -> str:
             lines.append(f"\n## {date_str}\n")
 
         config = EVENT_TYPE_CONFIG.get(event.event_type, {})
-        event_label = _t(config["i18n_key"]) if "i18n_key" in config else event.event_type
+        event_label = (
+            _t(config["i18n_key"]) if "i18n_key" in config else event.event_type
+        )
         lines.append(f"### {time_str} {event.icon} {event.title}\n")
         lines.append(f"- {_t('timeline_md_type')}: {event_label}\n")
         lines.append(f"- {_t('timeline_md_desc')}: {event.description}\n")
-        lines.append(f"- {_t('timeline_md_category')}: {category_labels.get(event.category, event.category)}\n")
-        lines.append(f"- {_t('timeline_md_status')}: {status_labels.get(event.status, event.status)}\n")
+        lines.append(
+            f"- {_t('timeline_md_category')}: {category_labels.get(event.category, event.category)}\n"
+        )
+        lines.append(
+            f"- {_t('timeline_md_status')}: {status_labels.get(event.status, event.status)}\n"
+        )
 
         if event.duration_ms > 0:
-            lines.append(f"- {_t('timeline_md_duration')}: {_t('timeline_md_duration_sec', sec=event.duration_ms)}\n")
+            lines.append(
+                f"- {_t('timeline_md_duration')}: {_t('timeline_md_duration_sec', sec=event.duration_ms)}\n"
+            )
 
         if event.metadata:
             lines.append(f"- {_t('timeline_md_metadata')}: `{event.metadata}`\n")
@@ -1086,7 +1236,7 @@ def _export_to_markdown(events: List[TimelineEvent]) -> str:
 
 def _export_to_png(events: List[TimelineEvent]) -> bytes:
     """导出为PNG图片（使用HTML+CSS渲染）"""
-    html_parts = ['''
+    html_parts = ["""
     <html>
     <head><meta charset="utf-8">
     <style>
@@ -1102,10 +1252,12 @@ def _export_to_png(events: List[TimelineEvent]) -> bytes:
         .card-title { font-weight: 600; color: #1f2937; margin-bottom: 4px; }
         .card-desc { font-size: 13px; color: #6b7280; }
     </style></head><body>
-    ''']
+    """]
 
     html_parts.append(f'<div class="header"><h1>{_t("timeline_png_title")}</h1>')
-    html_parts.append(f'<p>{_t("timeline_png_record_count", count=len(events), time=datetime.now().strftime("%Y-%m-%d %H:%M"))}</p></div>')
+    html_parts.append(
+        f'<p>{_t("timeline_png_record_count", count=len(events), time=datetime.now().strftime("%Y-%m-%d %H:%M"))}</p></div>'
+    )
 
     for event in events[:50]:
         config = EVENT_TYPE_CONFIG.get(event.event_type, {})
@@ -1116,10 +1268,16 @@ def _export_to_png(events: List[TimelineEvent]) -> bytes:
         except (ValueError, OSError):
             time_str = "--:--"
 
-        escaped_title = event.title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        escaped_desc = event.description.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        escaped_title = (
+            event.title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
+        escaped_desc = (
+            event.description.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
 
-        html_parts.append(f'''
+        html_parts.append(f"""
         <div class="event">
             <div class="dot" style="background: {color};"></div>
             <div class="time">{time_str}</div>
@@ -1128,16 +1286,17 @@ def _export_to_png(events: List[TimelineEvent]) -> bytes:
                 <div class="card-desc">{escaped_desc}</div>
             </div>
         </div>
-        ''')
+        """)
 
-    html_parts.append('</body></html>')
+    html_parts.append("</body></html>")
 
     return "\n".join(html_parts).encode("utf-8")
 
 
 def _inject_timeline_css():
     """注入时间线专用CSS样式"""
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     .timeline-container {
         position: relative;
@@ -1166,14 +1325,17 @@ def _inject_timeline_css():
         }
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 def _escape_html(text: str) -> str:
     """转义HTML特殊字符"""
-    return (text
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-            .replace("'", "&#039;"))
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#039;")
+    )

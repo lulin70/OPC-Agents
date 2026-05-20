@@ -208,7 +208,9 @@ class TestCheckConfirmationValidation:
     @pytest.mark.asyncio
     async def test_bad_callback_not_callable(self, confirmer):
         with pytest.raises(TypeError, match="confirm_callback.*callable"):
-            await confirmer.check_confirmation("sess1", "SEARCH", "goal", 0.5, confirm_callback="not_callable")
+            await confirmer.check_confirmation(
+                "sess1", "SEARCH", "goal", 0.5, confirm_callback="not_callable"
+            )
 
 
 class TestCheckConfirmationAutoApproval:
@@ -216,7 +218,9 @@ class TestCheckConfirmationAutoApproval:
 
     @pytest.mark.asyncio
     async def test_auto_approve_low_risk_high_confidence(self, confirmer):
-        result = await confirmer.check_confirmation("sess1", "SEARCH", "search something", 0.95)
+        result = await confirmer.check_confirmation(
+            "sess1", "SEARCH", "search something", 0.95
+        )
         assert result.confirmed is True
         assert result.method == "auto"
 
@@ -246,7 +250,9 @@ class TestCheckConfirmationCallbackPath:
 
         async def mock_callback(request):
             callback_called.append(request)
-            return ConfirmationResult(confirmed=True, method="callback", user_choice="yes")
+            return ConfirmationResult(
+                confirmed=True, method="callback", user_choice="yes"
+            )
 
         result = await confirmer.check_confirmation(
             "sess1", "EMAIL", "send email", 0.5, confirm_callback=mock_callback
@@ -259,7 +265,9 @@ class TestCheckConfirmationCallbackPath:
     @pytest.mark.asyncio
     async def test_callback_rejection_propagated(self, confirmer):
         async def reject_callback(request):
-            return ConfirmationResult(confirmed=False, method="callback", user_choice="no")
+            return ConfirmationResult(
+                confirmed=False, method="callback", user_choice="no"
+            )
 
         result = await confirmer.check_confirmation(
             "sess1", "EMAIL", "send email", 0.5, confirm_callback=reject_callback

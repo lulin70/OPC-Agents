@@ -129,9 +129,7 @@ class TaskEngineAdapter:
             )
             return self._task_result_to_dict(result, skill_id)
         except Exception as e:
-            logger.error(
-                f"[TaskEngineAdapter] TaskEngineV3 execution failed: {e}"
-            )
+            logger.error(f"[TaskEngineAdapter] TaskEngineV3 execution failed: {e}")
             return {
                 "success": False,
                 "error": str(e),
@@ -170,18 +168,14 @@ class TaskEngineAdapter:
             )
             return self._task_result_to_dict(result, intent_type.value)
         except Exception as e:
-            logger.error(
-                f"[TaskEngineAdapter] execute_by_intent failed: {e}"
-            )
+            logger.error(f"[TaskEngineAdapter] execute_by_intent failed: {e}")
             return {
                 "success": False,
                 "error": str(e),
                 "data": {},
             }
 
-    def _task_result_to_dict(
-        self, result: TaskResult, skill_id: str
-    ) -> Dict[str, Any]:
+    def _task_result_to_dict(self, result: TaskResult, skill_id: str) -> Dict[str, Any]:
         return {
             "success": result.success,
             "data": {
@@ -192,7 +186,9 @@ class TaskEngineAdapter:
                 "deliverable_format": result.deliverable_format,
             },
             "error": result.error,
-            "execution_time": result.execution_time_ms / 1000.0 if result.execution_time_ms else 0,
+            "execution_time": (
+                result.execution_time_ms / 1000.0 if result.execution_time_ms else 0
+            ),
             "skill_id": skill_id,
         }
 

@@ -13,21 +13,24 @@ class TestSocialSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from opc_manager.data_manager import init_db, _db_initialized, _local
+
         # 重置数据库状态，确保每个测试类获得干净连接
-        if hasattr(_local, 'conn') and _local.conn:
+        if hasattr(_local, "conn") and _local.conn:
             try:
                 _local.conn.close()
             except Exception:
                 pass
             _local.conn = None
         import opc_manager.data_manager as dm
+
         dm._db_initialized = False
         init_db()
 
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -51,7 +54,9 @@ class TestSocialSkill(unittest.TestCase):
     def test_generate_content_gongzhonghao(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
-        result = generate_content("公众号", "一人公司税务规划", "增值税、个税、企业所得税")
+        result = generate_content(
+            "公众号", "一人公司税务规划", "增值税、个税、企业所得税"
+        )
         self.assertTrue(result["success"])
         self.assertEqual(result["platform"], "公众号")
         self.assertIn("深度解析", result["title"])
@@ -123,7 +128,8 @@ class TestProposalSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -135,7 +141,8 @@ class TestProposalSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -233,7 +240,8 @@ class TestInvoiceSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -245,7 +253,8 @@ class TestInvoiceSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -320,7 +329,9 @@ class TestInvoiceSkill(unittest.TestCase):
         result = get_tax_calendar(4)
         self.assertTrue(result["success"])
         self.assertEqual(result["current_month"], 4)
-        self.assertTrue(any("企业所得税" in e.get("type", "") for e in result["this_month"]))
+        self.assertTrue(
+            any("企业所得税" in e.get("type", "") for e in result["this_month"])
+        )
 
     def test_tax_calendar_12_months(self):
         from opc_manager.invoice_skill import TAX_CALENDAR
@@ -342,7 +353,8 @@ class TestReportSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -354,7 +366,8 @@ class TestReportSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -366,10 +379,17 @@ class TestReportSkill(unittest.TestCase):
     @patch("opc_manager.report_skill.get_customer_stats")
     @patch("opc_manager.report_skill.get_silent_customers")
     def test_generate_weekly_report(self, mock_silent, mock_crm, mock_tasks):
-        mock_tasks.return_value = {"tasks": [
-            {"title": "完成方案", "status": "done", "priority_label": "P1"},
-            {"title": "待开会", "status": "pending", "priority_label": "P2", "due_date": "2025-05-16"},
-        ]}
+        mock_tasks.return_value = {
+            "tasks": [
+                {"title": "完成方案", "status": "done", "priority_label": "P1"},
+                {
+                    "title": "待开会",
+                    "status": "pending",
+                    "priority_label": "P2",
+                    "due_date": "2025-05-16",
+                },
+            ]
+        }
         mock_crm.return_value = {"total": 5, "active": 3}
         mock_silent.return_value = {"count": 1}
 
@@ -386,18 +406,34 @@ class TestReportSkill(unittest.TestCase):
     @patch("opc_manager.report_skill.get_monthly_report")
     @patch("opc_manager.report_skill.get_customer_stats")
     @patch("opc_manager.report_skill.get_silent_customers")
-    def test_generate_monthly_report(self, mock_silent, mock_crm, mock_finance, mock_trend):
+    def test_generate_monthly_report(
+        self, mock_silent, mock_crm, mock_finance, mock_trend
+    ):
         mock_finance.return_value = {
-            "success": True, "income": 30000, "expense": 10000, "profit": 20000,
-            "income_change": "+10%", "expense_change": "-5%",
+            "success": True,
+            "income": 30000,
+            "expense": 10000,
+            "profit": 20000,
+            "income_change": "+10%",
+            "expense_change": "-5%",
             "income_by_category": {"咨询费": 20000, "培训费": 10000},
             "expense_by_category": {"工具订阅": 5000, "差旅": 5000},
         }
         mock_crm.return_value = {"total": 8, "active": 5, "potential": 2, "silent": 1}
         mock_silent.return_value = {"count": 1}
         mock_trend.return_value = [
-            {"year_month": "2025-03", "income": 25000, "expense": 9000, "profit": 16000},
-            {"year_month": "2025-04", "income": 28000, "expense": 9500, "profit": 18500},
+            {
+                "year_month": "2025-03",
+                "income": 25000,
+                "expense": 9000,
+                "profit": 16000,
+            },
+            {
+                "year_month": "2025-04",
+                "income": 28000,
+                "expense": 9500,
+                "profit": 18500,
+            },
         ]
 
         from opc_manager.report_skill import generate_monthly_report
@@ -411,8 +447,14 @@ class TestReportSkill(unittest.TestCase):
     @patch("opc_manager.report_skill.get_customer_stats")
     def test_generate_annual_report(self, mock_crm, mock_finance):
         mock_finance.side_effect = lambda ym: (
-            {"success": True, "income": 30000 * int(ym.split("-")[1]) % 5, "expense": 10000, "profit": 20000}
-            if int(ym.split("-")[1]) % 3 == 0 else {"success": True, "income": 0, "expense": 0, "profit": 0}
+            {
+                "success": True,
+                "income": 30000 * int(ym.split("-")[1]) % 5,
+                "expense": 10000,
+                "profit": 20000,
+            }
+            if int(ym.split("-")[1]) % 3 == 0
+            else {"success": True, "income": 0, "expense": 0, "profit": 0}
         )
         mock_crm.return_value = {"total": 10, "active": 6, "lost": 1}
 
@@ -441,7 +483,8 @@ class TestCalendarSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -453,7 +496,8 @@ class TestCalendarSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -557,7 +601,8 @@ class TestSkillRegistryP1(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -569,7 +614,8 @@ class TestSkillRegistryP1(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -699,9 +745,17 @@ class TestSkillRegistryP1(unittest.TestCase):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
-        with patch("opc_manager.report_skill.list_tasks", return_value={"tasks": []}), \
-             patch("opc_manager.report_skill.get_customer_stats", return_value={"total": 0, "active": 0}), \
-             patch("opc_manager.report_skill.get_silent_customers", return_value={"count": 0}):
+        with (
+            patch("opc_manager.report_skill.list_tasks", return_value={"tasks": []}),
+            patch(
+                "opc_manager.report_skill.get_customer_stats",
+                return_value={"total": 0, "active": 0},
+            ),
+            patch(
+                "opc_manager.report_skill.get_silent_customers",
+                return_value={"count": 0},
+            ),
+        ):
             result = registry._execute_report("生成本周周报")
         self.assertTrue(result["success"])
 

@@ -21,12 +21,25 @@ RISK_BADGE_CONFIG = {
     "low": {"emoji": "🟢", "i18n_key": "confirm_risk_low", "color": "#4CAF50"},
     "medium": {"emoji": "🟡", "i18n_key": "confirm_risk_medium", "color": "#FF9800"},
     "high": {"emoji": "🔴", "i18n_key": "confirm_risk_high", "color": "#F44336"},
-    "critical": {"emoji": "🟣", "i18n_key": "confirm_risk_critical", "color": "#9C27B0"},
+    "critical": {
+        "emoji": "🟣",
+        "i18n_key": "confirm_risk_critical",
+        "color": "#9C27B0",
+    },
 }
 
 SENSITIVE_KEYWORDS = [
-    'password', 'passwd', 'pwd', 'secret', 'api_key', 'apikey',
-    'token', 'auth', 'credential', 'private_key', 'access_key',
+    "password",
+    "passwd",
+    "pwd",
+    "secret",
+    "api_key",
+    "apikey",
+    "token",
+    "auth",
+    "credential",
+    "private_key",
+    "access_key",
 ]
 
 MAX_GOAL_LENGTH = 100
@@ -131,7 +144,8 @@ def render_confirmation_dialog(request: dict) -> bool:
     threshold = request.get("threshold", 0.85)
     session_id = request.get("session_id", "")
 
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     .confirmation-dialog {
         border: 2px solid #F44336;
@@ -157,13 +171,18 @@ def render_confirmation_dialog(request: dict) -> bool:
         border-left: 4px solid #FF9800;
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     st.markdown('<div class="confirmation-dialog">', unsafe_allow_html=True)
 
     col_title = st.columns([1])
     with col_title[0]:
-        st.markdown(f'<div class="confirmation-title">{_t("confirm_risk_title")}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="confirmation-title">{_t("confirm_risk_title")}</div>',
+            unsafe_allow_html=True,
+        )
 
     st.divider()
 
@@ -203,23 +222,43 @@ def render_confirmation_dialog(request: dict) -> bool:
     skipped = False
 
     with btn_col1:
-        if st.button(_t("confirm_btn_confirm"), type="primary", key=f"confirm_{session_id}", use_container_width=True):
+        if st.button(
+            _t("confirm_btn_confirm"),
+            type="primary",
+            key=f"confirm_{session_id}",
+            use_container_width=True,
+        ):
             confirmed = True
-            logger.info("[ConfirmationDialog] User confirmed operation: %s", intent_type)
+            logger.info(
+                "[ConfirmationDialog] User confirmed operation: %s", intent_type
+            )
 
     with btn_col2:
-        if st.button(_t("confirm_btn_cancel"), key=f"cancel_{session_id}", use_container_width=True):
+        if st.button(
+            _t("confirm_btn_cancel"),
+            key=f"cancel_{session_id}",
+            use_container_width=True,
+        ):
             cancelled = True
-            logger.info("[ConfirmationDialog] User cancelled operation: %s", intent_type)
+            logger.info(
+                "[ConfirmationDialog] User cancelled operation: %s", intent_type
+            )
 
     with btn_col3:
-        if st.button(_t("confirm_btn_skip_trust"), key=f"skip_{session_id}", use_container_width=True):
+        if st.button(
+            _t("confirm_btn_skip_trust"),
+            key=f"skip_{session_id}",
+            use_container_width=True,
+        ):
             skipped = True
-            logger.info("[ConfirmationDialog] User skipped and trusted operation: %s", intent_type)
+            logger.info(
+                "[ConfirmationDialog] User skipped and trusted operation: %s",
+                intent_type,
+            )
 
     trust_boost = st.checkbox(_t("confirm_trust_boost"), key=f"trust_{session_id}")
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if confirmed or cancelled or skipped:
         choice = "confirmed" if confirmed else ("cancelled" if cancelled else "skipped")
@@ -262,21 +301,29 @@ def build_confirm_callback(session_id: str):
         start_time = time.time()
 
         try:
-            from opc_manager.progress_emitter import ProgressEmitter, EventType, ProgressEvent
+            from opc_manager.progress_emitter import (
+                ProgressEmitter,
+                EventType,
+                ProgressEvent,
+            )
 
             emitter = ProgressEmitter()
 
-            emitter.emit(ProgressEvent(
-                event_type=EventType.CONFIRM_REQUESTED,
-                session_id=session_id,
-                message=_t("confirm_need_confirm_op", intent_type=request.intent_type),
-                progress_pct=0,
-                detail={
-                    "intent_type": request.intent_type,
-                    "confidence": request.confidence,
-                    "risk_level": request.risk_level.value,
-                },
-            ))
+            emitter.emit(
+                ProgressEvent(
+                    event_type=EventType.CONFIRM_REQUESTED,
+                    session_id=session_id,
+                    message=_t(
+                        "confirm_need_confirm_op", intent_type=request.intent_type
+                    ),
+                    progress_pct=0,
+                    detail={
+                        "intent_type": request.intent_type,
+                        "confidence": request.confidence,
+                        "risk_level": request.risk_level.value,
+                    },
+                )
+            )
         except Exception as e:
             logger.debug("[ConfirmationDialog] Failed to emit CONFIRM_REQUESTED: %s", e)
 
@@ -313,34 +360,46 @@ def build_confirm_callback(session_id: str):
             del st.session_state["pending_confirmation"]
 
         try:
-            from opc_manager.progress_emitter import ProgressEmitter, EventType, ProgressEvent
+            from opc_manager.progress_emitter import (
+                ProgressEmitter,
+                EventType,
+                ProgressEvent,
+            )
 
             emitter = ProgressEmitter()
 
             if confirmed:
                 event_type = EventType.CONFIRMED
                 progress_pct = 50
-                message = _t("confirm_user_confirmed_op", intent_type=request.intent_type)
+                message = _t(
+                    "confirm_user_confirmed_op", intent_type=request.intent_type
+                )
 
                 if trust_boost:
                     message += _t("confirm_trust_boosted")
-                    st.session_state[f"trust_boost_{session_id}_{request.intent_type}"] = True
+                    st.session_state[
+                        f"trust_boost_{session_id}_{request.intent_type}"
+                    ] = True
             else:
                 event_type = EventType.CONFIRM_REJECTED
                 progress_pct = 0
-                message = _t("confirm_user_cancelled_op", intent_type=request.intent_type)
+                message = _t(
+                    "confirm_user_cancelled_op", intent_type=request.intent_type
+                )
 
-            emitter.emit(ProgressEvent(
-                event_type=event_type,
-                session_id=session_id,
-                message=message,
-                progress_pct=progress_pct,
-                detail={
-                    "method": method,
-                    "user_choice": user_choice,
-                    "trust_boost": trust_boost,
-                },
-            ))
+            emitter.emit(
+                ProgressEvent(
+                    event_type=event_type,
+                    session_id=session_id,
+                    message=message,
+                    progress_pct=progress_pct,
+                    detail={
+                        "method": method,
+                        "user_choice": user_choice,
+                        "trust_boost": trust_boost,
+                    },
+                )
+            )
         except Exception as e:
             logger.debug("[ConfirmationDialog] Failed to emit result event: %s", e)
 

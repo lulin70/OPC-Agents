@@ -83,7 +83,8 @@ def render_result_card(
     task_type = task_type or "general_chat"
     config = TASK_TYPE_CONFIG.get(task_type, TASK_TYPE_CONFIG["general_chat"])
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <style>
     .result-card {{
         background: white;
@@ -171,7 +172,9 @@ def render_result_card(
         }}
     }}
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     with st.container():
         _render_card_header(task_type, config)
@@ -187,7 +190,9 @@ def render_result_card(
 
             _render_content_preview(content, max_chars=200)
 
-            metadata = (deliverable_record or {}).get("meta", {}) if deliverable_record else {}
+            metadata = (
+                (deliverable_record or {}).get("meta", {}) if deliverable_record else {}
+            )
             if metadata or deliverable_record:
                 _render_metadata_bar(metadata, deliverable_record)
 
@@ -205,7 +210,8 @@ def _render_card_header(task_type: str, config: Dict[str, str]) -> None:
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div class="result-card">
         <div class="card-header">
             <span style="font-size: 24px;">{config['icon']}</span>
@@ -215,7 +221,9 @@ def _render_card_header(task_type: str, config: Dict[str, str]) -> None:
             </span>
         </div>
         <div class="card-body">
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 def _render_metadata_bar(
@@ -266,14 +274,17 @@ def _render_metadata_bar(
 
     for i, (icon, text) in enumerate(items):
         with cols[i % num_cols]:
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div class="metadata-bar" style="padding: 8px 12px;">
                 <div class="metadata-item">
                     <span>{icon}</span>
                     <span>{text}</span>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
     st.markdown("</div></div>", unsafe_allow_html=True)
 
@@ -312,10 +323,18 @@ def _render_action_buttons(
                 key=f"dl_main_{hash(filepath)}",
             )
         else:
-            st.button(_t("rc_download_deliverable"), disabled=True, help=_t("rc_file_not_exist"))
+            st.button(
+                _t("rc_download_deliverable"),
+                disabled=True,
+                help=_t("rc_file_not_exist"),
+            )
 
     with col_copy:
-        if st.button(_t("rc_copy_content"), key=f"copy_{hash(filepath)}", use_container_width=True):
+        if st.button(
+            _t("rc_copy_content"),
+            key=f"copy_{hash(filepath)}",
+            use_container_width=True,
+        ):
             st.session_state[f"clipboard_{hash(filepath)}"] = content
             st.success(_t("rc_copied"))
             st.balloons()
@@ -339,7 +358,11 @@ def _render_action_buttons(
             label = FORMAT_LABELS.get(fmt, fmt.upper())
             if has_columns and len(btn_cols) > 0:
                 with btn_cols[i % max(len(btn_cols), 1)]:
-                    if st.button(label, key=f"export_{fmt}_{hash(filepath)}", use_container_width=True):
+                    if st.button(
+                        label,
+                        key=f"export_{fmt}_{hash(filepath)}",
+                        use_container_width=True,
+                    ):
                         try:
                             from frontend.components.shared import _get_export_bytes
 
@@ -358,7 +381,11 @@ def _render_action_buttons(
                             logger.error("[result_cards] 导出失败: %s", e)
                             st.error(_t("rc_export_error", error=str(e)))
             else:
-                st.button(label, key=f"export_{fmt}_{hash(filepath)}", use_container_width=True)
+                st.button(
+                    label,
+                    key=f"export_{fmt}_{hash(filepath)}",
+                    use_container_width=True,
+                )
 
 
 def _render_content_preview(content: str, max_chars: int = 200) -> None:
@@ -379,13 +406,21 @@ def _render_content_preview(content: str, max_chars: int = 200) -> None:
         truncated = content[:max_chars] + "..."
         st.markdown(truncated)
 
-        if st.button(_t("rc_expand_all"), key=f"btn_expand_{preview_key}", use_container_width=True):
+        if st.button(
+            _t("rc_expand_all"),
+            key=f"btn_expand_{preview_key}",
+            use_container_width=True,
+        ):
             st.session_state[preview_key] = True
             st.rerun()
     else:
         st.markdown(content)
 
-        if st.button(_t("rc_collapse"), key=f"btn_collapse_{preview_key}", use_container_width=True):
+        if st.button(
+            _t("rc_collapse"),
+            key=f"btn_collapse_{preview_key}",
+            use_container_width=True,
+        ):
             st.session_state[preview_key] = False
             st.rerun()
 
@@ -409,7 +444,13 @@ def _extract_data_insights(content: str) -> List[str]:
     percentage_pattern = r"(\d+(?:\.\d+)?%)"
     percentages = re.findall(percentage_pattern, content)
     if percentages:
-        insights.append(_t("rc_found_pct_points", count=len(percentages), items=', '.join(percentages[:5])))
+        insights.append(
+            _t(
+                "rc_found_pct_points",
+                count=len(percentages),
+                items=", ".join(percentages[:5]),
+            )
+        )
 
     number_patterns = [
         (r"(\d+(?:\.\d+)?\s*(?:万|亿|元|美元|欧元|人民币))", _t("rc_amount_data")),
@@ -420,12 +461,30 @@ def _extract_data_insights(content: str) -> List[str]:
     for pattern, label in number_patterns:
         matches = re.findall(pattern, content)
         if matches and len(insights) < 5:
-            insights.append(_t("rc_data_label", label=label, match=matches[0], suffix=' 等' if len(matches) > 1 else ''))
+            insights.append(
+                _t(
+                    "rc_data_label",
+                    label=label,
+                    match=matches[0],
+                    suffix=" 等" if len(matches) > 1 else "",
+                )
+            )
 
-    trend_words = ["增长", "下降", "上升", "下滑", "提升", "降低", "增加", "减少", "涨幅", "跌幅"]
+    trend_words = [
+        "增长",
+        "下降",
+        "上升",
+        "下滑",
+        "提升",
+        "降低",
+        "增加",
+        "减少",
+        "涨幅",
+        "跌幅",
+    ]
     found_trends = [word for word in trend_words if word in content]
     if found_trends:
-        insights.append(_t("rc_trend_keywords", words=', '.join(found_trends[:4])))
+        insights.append(_t("rc_trend_keywords", words=", ".join(found_trends[:4])))
 
     return insights
 
@@ -463,10 +522,10 @@ def validate_deliverable_record(record: Dict[str, Any]) -> Tuple[bool, str]:
 
     missing = [field for field in required_fields if field not in record]
     if missing:
-        return False, _t("rc_missing_fields", fields=', '.join(missing))
+        return False, _t("rc_missing_fields", fields=", ".join(missing))
 
     if not record.get("filepath") or not os.path.exists(record["filepath"]):
-        return False, _t("rc_file_not_found", path=record.get('filepath', ''))
+        return False, _t("rc_file_not_found", path=record.get("filepath", ""))
 
     if not record.get("task_type"):
         return False, _t("rc_task_type_empty")

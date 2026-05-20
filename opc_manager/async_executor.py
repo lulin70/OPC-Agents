@@ -308,7 +308,9 @@ class AsyncTaskExecutor:
                         task.status = TaskStatus.FAILED
                         task.completed_at = time.time()
                         task.error_message = f"Task RUNNING for {running_elapsed:.0f}s (timeout: {self.default_timeout}s)"
-                        logger.warning("[AsyncTaskExecutor] RUNNING timeout: %s", task_id)
+                        logger.warning(
+                            "[AsyncTaskExecutor] RUNNING timeout: %s", task_id
+                        )
                         self._schedule_retry(task)
 
             return {
@@ -350,7 +352,9 @@ class AsyncTaskExecutor:
             task = self._tasks.get(task_id)
 
             if not task:
-                logger.warning("[AsyncTaskExecutor] Cancel failed: task %s not found", task_id)
+                logger.warning(
+                    "[AsyncTaskExecutor] Cancel failed: task %s not found", task_id
+                )
                 return False
 
             if task.status not in [TaskStatus.PENDING, TaskStatus.RUNNING]:
@@ -379,7 +383,11 @@ class AsyncTaskExecutor:
         with self._lock:
             active = []
             for task in self._tasks.values():
-                if task.status in [TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.RETRYING]:
+                if task.status in [
+                    TaskStatus.PENDING,
+                    TaskStatus.RUNNING,
+                    TaskStatus.RETRYING,
+                ]:
                     active.append(
                         {
                             "task_id": task.task_id,
@@ -426,7 +434,9 @@ class AsyncTaskExecutor:
             task = self._tasks.get(task_id)
 
         if not task:
-            logger.error("[AsyncTaskExecutor] Worker startup failed: task %s not found", task_id)
+            logger.error(
+                "[AsyncTaskExecutor] Worker startup failed: task %s not found", task_id
+            )
             return
 
         if task.cancel_event.is_set():
@@ -450,7 +460,9 @@ class AsyncTaskExecutor:
                 with self._lock:
                     task.status = TaskStatus.CANCELLED
                     task.completed_at = time.time()
-                logger.info("[AsyncTaskExecutor] Task cancelled before execution: %s", task_id)
+                logger.info(
+                    "[AsyncTaskExecutor] Task cancelled before execution: %s", task_id
+                )
                 return
 
             result = execute_func(
@@ -469,7 +481,10 @@ class AsyncTaskExecutor:
                     if task.cancel_event.is_set():
                         task.status = TaskStatus.CANCELLED
                         task.completed_at = time.time()
-                        logger.info("[AsyncTaskExecutor] Task cancelled after completion: %s", task_id)
+                        logger.info(
+                            "[AsyncTaskExecutor] Task cancelled after completion: %s",
+                            task_id,
+                        )
                         return
                     is_success = result.get("success", True)
                     task.status = TaskStatus.DONE if is_success else TaskStatus.FAILED
@@ -511,7 +526,9 @@ class AsyncTaskExecutor:
             with self._lock:
                 task.status = TaskStatus.CANCELLED
                 task.completed_at = time.time()
-            logger.info("[AsyncTaskExecutor] Task interrupted and cancelled: %s", task_id)
+            logger.info(
+                "[AsyncTaskExecutor] Task interrupted and cancelled: %s", task_id
+            )
 
         except Exception as e:
             with self._lock:
@@ -591,7 +608,9 @@ class AsyncTaskExecutor:
             del self._tasks[tid]
 
         if to_remove:
-            logger.debug("[AsyncTaskExecutor] Cleaned up %s old task records", len(to_remove))
+            logger.debug(
+                "[AsyncTaskExecutor] Cleaned up %s old task records", len(to_remove)
+            )
 
     def _schedule_retry(self, task: AsyncTask):
         if task.cancel_event.is_set():
@@ -637,7 +656,9 @@ class AsyncTaskExecutor:
                     task.error_message = None
                     logger.info(
                         "[AsyncTaskExecutor] Retry deferred for %s: concurrency limit reached (%d/%d)",
-                        task.task_id, running_count, self.max_concurrent,
+                        task.task_id,
+                        running_count,
+                        self.max_concurrent,
                     )
                     return
                 task.status = TaskStatus.PENDING
@@ -684,7 +705,9 @@ class AsyncTaskExecutor:
                     task.status = TaskStatus.FAILED
                     task.completed_at = now
                     task.error_message = f"Zombie scan: PENDING for {elapsed:.0f}s"
-                    logger.warning("[AsyncTaskExecutor] Zombie PENDING: %s", task.task_id)
+                    logger.warning(
+                        "[AsyncTaskExecutor] Zombie PENDING: %s", task.task_id
+                    )
                     retry_candidates.append(task)
 
                 elif task.status == TaskStatus.RUNNING:
@@ -693,8 +716,12 @@ class AsyncTaskExecutor:
                         if running_elapsed > self.default_timeout:
                             task.status = TaskStatus.FAILED
                             task.completed_at = now
-                            task.error_message = f"Zombie scan: RUNNING for {running_elapsed:.0f}s"
-                            logger.warning("[AsyncTaskExecutor] Zombie RUNNING: %s", task.task_id)
+                            task.error_message = (
+                                f"Zombie scan: RUNNING for {running_elapsed:.0f}s"
+                            )
+                            logger.warning(
+                                "[AsyncTaskExecutor] Zombie RUNNING: %s", task.task_id
+                            )
                             retry_candidates.append(task)
 
         for task in retry_candidates:
@@ -746,7 +773,9 @@ class AsyncTaskExecutor:
                 verify_json = json.dumps(data, indent=2)
                 verify_checksum = hashlib.sha256(verify_json.encode()).hexdigest()
                 if verify_checksum != saved_checksum:
-                    logger.warning("[AsyncTaskExecutor] State file checksum mismatch, discarding")
+                    logger.warning(
+                        "[AsyncTaskExecutor] State file checksum mismatch, discarding"
+                    )
                     state_file.unlink(missing_ok=True)
                     return
 
@@ -762,7 +791,9 @@ class AsyncTaskExecutor:
                         created_at=task_data.get("created_at", time.time()),
                         retry_count=task_data.get("retry_count", 0),
                         max_retries=task_data.get("max_retries", self.max_retries),
-                        error_message="Recovered from crash (previous state: {})".format(status_str),
+                        error_message="Recovered from crash (previous state: {})".format(
+                            status_str
+                        ),
                     )
                     self._tasks[task.task_id] = task
                     recovered_tasks.append(task)

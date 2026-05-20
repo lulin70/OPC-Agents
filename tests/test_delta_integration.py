@@ -26,14 +26,17 @@ class TestStrategistBrainLLM(unittest.TestCase):
 
     def test_llm_intent_understanding_success(self):
         from opc_manager.strategist_brain import StrategistBrain, IntentType
+
         mock_llm = MagicMock()
-        llm_response = json.dumps({
-            "goal": "分析竞品市场",
-            "intent_type": "analysis",
-            "confidence": 0.9,
-            "sub_intents": ["搜索竞品信息", "分析竞品数据"],
-            "constraints": ["需要真实数据"]
-        })
+        llm_response = json.dumps(
+            {
+                "goal": "分析竞品市场",
+                "intent_type": "analysis",
+                "confidence": 0.9,
+                "sub_intents": ["搜索竞品信息", "分析竞品数据"],
+                "constraints": ["需要真实数据"],
+            }
+        )
         mock_llm.complete.return_value = llm_response
         mock_llm.generate.return_value = llm_response
         brain = StrategistBrain(llm_service=mock_llm)
@@ -43,6 +46,7 @@ class TestStrategistBrainLLM(unittest.TestCase):
 
     def test_llm_intent_understanding_fallback(self):
         from opc_manager.strategist_brain import StrategistBrain, IntentType
+
         mock_llm = MagicMock()
         mock_llm.complete.side_effect = Exception("LLM error")
         mock_llm.generate.side_effect = Exception("LLM error")
@@ -52,14 +56,29 @@ class TestStrategistBrainLLM(unittest.TestCase):
 
     def test_llm_plan_generation(self):
         from opc_manager.strategist_brain import StrategistBrain, Intent
+
         mock_llm = MagicMock()
-        llm_response = json.dumps({
-            "steps": [
-                {"skill_id": "search", "description": "搜索信息", "parameters": {"query": "AI趋势"}},
-                {"skill_id": "analysis", "description": "分析数据", "parameters": {}},
-                {"skill_id": "output_result", "description": "输出结果", "parameters": {}}
-            ]
-        })
+        llm_response = json.dumps(
+            {
+                "steps": [
+                    {
+                        "skill_id": "search",
+                        "description": "搜索信息",
+                        "parameters": {"query": "AI趋势"},
+                    },
+                    {
+                        "skill_id": "analysis",
+                        "description": "分析数据",
+                        "parameters": {},
+                    },
+                    {
+                        "skill_id": "output_result",
+                        "description": "输出结果",
+                        "parameters": {},
+                    },
+                ]
+            }
+        )
         mock_llm.complete.return_value = llm_response
         mock_llm.generate.return_value = llm_response
         brain = StrategistBrain(llm_service=mock_llm)
@@ -69,6 +88,7 @@ class TestStrategistBrainLLM(unittest.TestCase):
 
     def test_no_llm_uses_keyword_matching(self):
         from opc_manager.strategist_brain import StrategistBrain, IntentType
+
         brain = StrategistBrain(llm_service=None)
         intent = brain.understand_intent("写一份商业计划书")
         self.assertEqual(intent.type, IntentType.CREATION)
@@ -79,41 +99,44 @@ class TestReflectorBrainLLM(unittest.TestCase):
 
     def test_llm_evaluation_success(self):
         from opc_manager.reflector_brain import ReflectorBrain, EvaluationResult
+
         mock_llm = MagicMock()
-        llm_response = json.dumps({
-            "quality_score": 0.85,
-            "result_level": "GOOD",
-            "deviation_analysis": "内容充实，结构清晰",
-            "key_findings": ["数据来源可靠", "分析有深度"],
-            "improvement_suggestion": "可补充竞品对比"
-        })
+        llm_response = json.dumps(
+            {
+                "quality_score": 0.85,
+                "result_level": "GOOD",
+                "deviation_analysis": "内容充实，结构清晰",
+                "key_findings": ["数据来源可靠", "分析有深度"],
+                "improvement_suggestion": "可补充竞品对比",
+            }
+        )
         mock_llm.complete.return_value = llm_response
         mock_llm.generate.return_value = llm_response
         brain = ReflectorBrain(llm_service=mock_llm)
         evaluation = brain.evaluate_result(
             {"success": True, "data": {"content": "这是一份详细的分析报告..."}},
-            {"goal": "分析市场趋势"}
+            {"goal": "分析市场趋势"},
         )
         self.assertGreater(evaluation.quality_score, 0.5)
 
     def test_llm_evaluation_fallback(self):
         from opc_manager.reflector_brain import ReflectorBrain
+
         mock_llm = MagicMock()
         mock_llm.complete.side_effect = Exception("LLM error")
         mock_llm.generate.side_effect = Exception("LLM error")
         brain = ReflectorBrain(llm_service=mock_llm)
         evaluation = brain.evaluate_result(
-            {"success": True, "data": {"content": "内容"}},
-            {"goal": "分析"}
+            {"success": True, "data": {"content": "内容"}}, {"goal": "分析"}
         )
         self.assertIsNotNone(evaluation.quality_score)
 
     def test_no_llm_uses_rule_evaluation(self):
         from opc_manager.reflector_brain import ReflectorBrain
+
         brain = ReflectorBrain(llm_service=None)
         evaluation = brain.evaluate_result(
-            {"success": True, "data": {"content": "内容"}},
-            {"goal": "分析"}
+            {"success": True, "data": {"content": "内容"}}, {"goal": "分析"}
         )
         self.assertIsNotNone(evaluation)
 
@@ -123,6 +146,7 @@ class TestPerformanceMonitor(unittest.TestCase):
 
     def test_record_metric(self):
         from opc_manager.performance_monitor import PerformanceMonitor
+
         monitor = PerformanceMonitor()
         monitor.record("agent_loop", 1500.0, success=True)
         monitor.record("agent_loop", 2500.0, success=True)
@@ -131,13 +155,18 @@ class TestPerformanceMonitor(unittest.TestCase):
 
     def test_sla_check(self):
         from opc_manager.performance_monitor import PerformanceMonitor
+
         monitor = PerformanceMonitor()
         monitor.record("agent_loop", 1000.0, success=True)
         sla = monitor.check_sla()
         self.assertTrue(sla["single_request"])
 
     def test_sla_breach(self):
-        from opc_manager.performance_monitor import PerformanceMonitor, SLA_SINGLE_REQUEST_MS
+        from opc_manager.performance_monitor import (
+            PerformanceMonitor,
+            SLA_SINGLE_REQUEST_MS,
+        )
+
         monitor = PerformanceMonitor()
         monitor.record("agent_loop", SLA_SINGLE_REQUEST_MS + 1000, success=True)
         sla = monitor.check_sla()
@@ -145,6 +174,7 @@ class TestPerformanceMonitor(unittest.TestCase):
 
     def test_lru_cache(self):
         from opc_manager.performance_monitor import LRUCache
+
         cache = LRUCache(max_size=3, ttl=60)
         cache.put("key1", "value1")
         self.assertEqual(cache.get("key1"), "value1")
@@ -152,6 +182,7 @@ class TestPerformanceMonitor(unittest.TestCase):
 
     def test_lru_cache_eviction(self):
         from opc_manager.performance_monitor import LRUCache
+
         cache = LRUCache(max_size=2, ttl=60)
         cache.put("a", "1")
         cache.put("b", "2")
@@ -161,6 +192,7 @@ class TestPerformanceMonitor(unittest.TestCase):
 
     def test_lru_cache_stats(self):
         from opc_manager.performance_monitor import LRUCache
+
         cache = LRUCache(max_size=10, ttl=60)
         cache.put("k", "v")
         cache.get("k")
@@ -177,9 +209,10 @@ class TestPluginExamples(unittest.TestCase):
         plugin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "plugins")
         sys.path.insert(0, plugin_dir)
         import text_summarizer
+
         result = text_summarizer.summarize(
             "这是第一句话。这是第二句话。这是第三句话。这是第四句话。这是第五句话。",
-            max_length=50
+            max_length=50,
         )
         self.assertIn("summary", result)
         self.assertLessEqual(result["summary_length"], 60)
@@ -189,10 +222,10 @@ class TestPluginExamples(unittest.TestCase):
         plugin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "plugins")
         sys.path.insert(0, plugin_dir)
         import data_converter
-        result = data_converter.json_to_table([
-            {"name": "AI", "score": 95},
-            {"name": "ML", "score": 88}
-        ])
+
+        result = data_converter.json_to_table(
+            [{"name": "AI", "score": 95}, {"name": "ML", "score": 88}]
+        )
         self.assertIn("table", result)
         self.assertEqual(result["rows"], 2)
         self.assertIn("|", result["table"])
@@ -200,14 +233,21 @@ class TestPluginExamples(unittest.TestCase):
 
     def test_plugin_hot_load(self):
         from opc_manager.plugin_system import PluginManager, PluginManifest
+
         tmpdir = tempfile.mkdtemp(prefix="test_hotload_")
         plugin_file = os.path.join(tmpdir, "hot_plugin.py")
         with open(plugin_file, "w") as f:
-            f.write("def initialize(config): pass\ndef run(x=0): return x*2\ndef shutdown(): pass\n")
+            f.write(
+                "def initialize(config): pass\ndef run(x=0): return x*2\ndef shutdown(): pass\n"
+            )
         manager = PluginManager(plugin_dir=tmpdir)
         manifest = PluginManifest(
-            plugin_id="hot_test", name="Hot", version="1.0",
-            description="Hot load test", author="test", entry_point="hot_plugin.py"
+            plugin_id="hot_test",
+            name="Hot",
+            version="1.0",
+            description="Hot load test",
+            author="test",
+            entry_point="hot_plugin.py",
         )
         manager.register_plugin(manifest)
         result = manager.initialize_plugin("hot_test")
@@ -222,12 +262,14 @@ class TestMCPTransport(unittest.TestCase):
 
     def test_stdio_transport_creation(self):
         from opc_manager.mcp_transport import StdioTransport
+
         transport = StdioTransport()
         self.assertIsNotNone(transport.mcp_server)
 
     def test_sse_app_creation(self):
         try:
             from opc_manager.mcp_transport import SSE_AVAILABLE, create_sse_app
+
             if SSE_AVAILABLE:
                 app = create_sse_app()
                 self.assertIsNotNone(app)
@@ -247,6 +289,7 @@ class TestSkillMarketplaceAPI(unittest.TestCase):
     def test_api_endpoints_defined(self):
         try:
             from opc_manager.skill_marketplace_api import FASTAPI_AVAILABLE, app
+
             if FASTAPI_AVAILABLE and app:
                 routes = [r.path for r in app.routes]
                 self.assertIn("/api/v1/skills", routes)

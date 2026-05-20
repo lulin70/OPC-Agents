@@ -16,10 +16,22 @@ from opc_manager.i18n import t as _t
 logger = logging.getLogger(__name__)
 
 ALL_CATEGORIES = [
-    "CRM", "Finance", "Email", "Calendar", "Social",
-    "Knowledge", "Report", "Task", "Proposal", "Tax",
-    "Dashboard", "Competitor", "Pricing", "Invoice",
-    "Security", "Monitoring",
+    "CRM",
+    "Finance",
+    "Email",
+    "Calendar",
+    "Social",
+    "Knowledge",
+    "Report",
+    "Task",
+    "Proposal",
+    "Tax",
+    "Dashboard",
+    "Competitor",
+    "Pricing",
+    "Invoice",
+    "Security",
+    "Monitoring",
 ]
 
 SORT_OPTIONS = {
@@ -38,7 +50,10 @@ def _render_skill_marketplace_page():
     3. Detail view: Click card to see full info + install/uninstall button
     """
     try:
-        from opc_manager.skill_marketplace import SkillMarketplace, ExternalSkillMarketplace
+        from opc_manager.skill_marketplace import (
+            SkillMarketplace,
+            ExternalSkillMarketplace,
+        )
     except ImportError:
         st.warning(_t("mp_not_loaded"))
         return
@@ -81,7 +96,14 @@ def _render_marketplace_browse_v2(marketplace, external_mp):
             all_skills, search_query, selected_cats, sort_by
         )
 
-        st.caption(_t("mp_stats", total=total_skills, approved=approved, show=len(filtered_skills)))
+        st.caption(
+            _t(
+                "mp_stats",
+                total=total_skills,
+                approved=approved,
+                show=len(filtered_skills),
+            )
+        )
 
         if not filtered_skills:
             st.info(_t("mp_no_results"))
@@ -92,7 +114,9 @@ def _render_marketplace_browse_v2(marketplace, external_mp):
         cols = st.columns(3)
         for i, skill in enumerate(filtered_skills[:12]):
             with cols[i % 3]:
-                _render_skill_card_v2(skill, marketplace, external_mp, installed_versions)
+                _render_skill_card_v2(
+                    skill, marketplace, external_mp, installed_versions
+                )
 
     except Exception as e:
         st.error(_t("mp_load_error", error=e))
@@ -141,9 +165,11 @@ def _filter_and_sort_skills(skills, search_text, categories, sort_by):
 
     if search_text:
         q = search_text.lower()
-        filtered = [s for s in filtered
-                    if q in s.get("name", "").lower()
-                    or q in s.get("description", "").lower()]
+        filtered = [
+            s
+            for s in filtered
+            if q in s.get("name", "").lower() or q in s.get("description", "").lower()
+        ]
 
     if categories:
         filtered = [s for s in filtered if s.get("category", "") in categories]
@@ -153,7 +179,9 @@ def _filter_and_sort_skills(skills, search_text, categories, sort_by):
     elif sort_by == "name_desc":
         filtered = sorted(filtered, key=lambda s: s.get("name", ""), reverse=True)
     elif sort_by == "popular":
-        filtered.sort(key=lambda s: _simulate_install_count(s.get("skill_id", "")), reverse=True)
+        filtered.sort(
+            key=lambda s: _simulate_install_count(s.get("skill_id", "")), reverse=True
+        )
 
     return filtered
 
@@ -209,7 +237,11 @@ def _render_skill_card_v2(skill, marketplace, external_mp, installed_versions=No
         if update_available:
             st.markdown(_t("mp_update_available_notice"), unsafe_allow_html=True)
 
-        if st.button(_t("mp_btn_view_detail"), key=f"skill_detail_{skill_id}_{id(skill)}", use_container_width=True):
+        if st.button(
+            _t("mp_btn_view_detail"),
+            key=f"skill_detail_{skill_id}_{id(skill)}",
+            use_container_width=True,
+        ):
             st.session_state["selected_skill"] = skill
 
 
@@ -238,7 +270,9 @@ def _render_skill_detail(skill, marketplace, external_mp):
         st.markdown(f"{_t('mp_detail_category')}: {category}")
         st.markdown(f"{_t('mp_detail_version')}: {version}")
         st.markdown(f"{_t('mp_detail_author')}: {author}")
-        st.markdown(f"{_t('mp_detail_installs')}: {_t('mp_install_count_fmt', count=_simulate_install_count(skill_id))}")
+        st.markdown(
+            f"{_t('mp_detail_installs')}: {_t('mp_install_count_fmt', count=_simulate_install_count(skill_id))}"
+        )
         st.markdown(f"{_t('mp_detail_compat')}: {_t('mp_compat_version')}")
 
         if tags:
@@ -247,7 +281,11 @@ def _render_skill_detail(skill, marketplace, external_mp):
 
     with col2:
         if is_installed:
-            if st.button(_t("mp_btn_uninstall"), key=f"uninstall_detail_{skill_id}", type="secondary"):
+            if st.button(
+                _t("mp_btn_uninstall"),
+                key=f"uninstall_detail_{skill_id}",
+                type="secondary",
+            ):
                 try:
                     result = external_mp.uninstall_skill(skill_id)
                     if result.get("success"):
@@ -260,19 +298,25 @@ def _render_skill_detail(skill, marketplace, external_mp):
                 except Exception as e:
                     st.error(_t("mp_uninstall_failed") + f": {e}")
             if update_available:
-                if st.button(_t("mp_btn_update"), key=f"update_detail_{skill_id}", type="primary"):
+                if st.button(
+                    _t("mp_btn_update"), key=f"update_detail_{skill_id}", type="primary"
+                ):
                     try:
                         result = external_mp.install_skill(skill_id, confirmed=True)
                         if result.get("success"):
                             _save_installed_version(skill_id, version)
-                            st.success(_t("mp_update_success", old=installed_ver, new=version))
+                            st.success(
+                                _t("mp_update_success", old=installed_ver, new=version)
+                            )
                             st.rerun()
                         else:
                             st.error(result.get("error", _t("mp_update_failed")))
                     except Exception as e:
                         st.error(_t("mp_update_failed") + f": {e}")
         else:
-            if st.button(_t("mp_btn_install"), key=f"install_detail_{skill_id}", type="primary"):
+            if st.button(
+                _t("mp_btn_install"), key=f"install_detail_{skill_id}", type="primary"
+            ):
                 try:
                     result = external_mp.install_skill(skill_id, confirmed=True)
                     if result.get("success"):
@@ -297,7 +341,11 @@ def _render_my_skills_v2(marketplace, external_mp):
     """Render installed/manageable skills list with version pinning (V2)."""
     try:
         installed_result = external_mp.list_installed()
-        installed = installed_result.get("skills", []) if isinstance(installed_result, dict) else []
+        installed = (
+            installed_result.get("skills", [])
+            if isinstance(installed_result, dict)
+            else []
+        )
     except Exception as e:
         logger.warning("[marketplace] list_installed failed: %s", e)
         installed = []
@@ -319,16 +367,20 @@ def _render_my_skills_v2(marketplace, external_mp):
         with st.expander(f"📦 {skill_name} v{pinned_version or skill_version}"):
             col_info, col_action = st.columns([3, 1])
             with col_info:
-                st.json({
-                    _t("mp_json_name"): skill.get("name"),
-                    _t("mp_json_version"): pinned_version or skill.get("version"),
-                    _t("mp_json_source"): skill.get("source", "-"),
-                    _t("mp_json_status"): skill.get("status"),
-                    _t("mp_json_trust"): skill.get("trust_level", "-"),
-                    _t("mp_json_installed_at"): skill.get("installed_at", "-"),
-                })
+                st.json(
+                    {
+                        _t("mp_json_name"): skill.get("name"),
+                        _t("mp_json_version"): pinned_version or skill.get("version"),
+                        _t("mp_json_source"): skill.get("source", "-"),
+                        _t("mp_json_status"): skill.get("status"),
+                        _t("mp_json_trust"): skill.get("trust_level", "-"),
+                        _t("mp_json_installed_at"): skill.get("installed_at", "-"),
+                    }
+                )
             with col_action:
-                if st.button(_t("mp_btn_uninstall"), key=f"uninstall_{skill_id or id(skill)}"):
+                if st.button(
+                    _t("mp_btn_uninstall"), key=f"uninstall_{skill_id or id(skill)}"
+                ):
                     try:
                         result = external_mp.uninstall_skill(skill_id)
                         if result.get("success"):
@@ -344,6 +396,7 @@ def _render_my_skills_v2(marketplace, external_mp):
 def _get_installed_versions_file():
     """Get path to installed versions tracking file."""
     import os
+
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "data")
     os.makedirs(data_dir, exist_ok=True)
     return os.path.join(data_dir, "installed_skills.json")
@@ -353,6 +406,7 @@ def _load_installed_versions(external_mp):
     """Load installed skill versions from tracking file."""
     import json
     import os
+
     filepath = _get_installed_versions_file()
     versions = {}
     if os.path.exists(filepath):
@@ -363,7 +417,11 @@ def _load_installed_versions(external_mp):
             pass
     try:
         installed_result = external_mp.list_installed()
-        installed_list = installed_result.get("skills", []) if isinstance(installed_result, dict) else []
+        installed_list = (
+            installed_result.get("skills", [])
+            if isinstance(installed_result, dict)
+            else []
+        )
         for s in installed_list:
             sid = s.get("skill_id", "")
             if sid and sid not in versions:
@@ -376,6 +434,7 @@ def _load_installed_versions(external_mp):
 def _save_installed_version(skill_id, version):
     """Save an installed skill's version pin."""
     import json
+
     versions = _load_installed_versions_for_write()
     versions[skill_id] = version
     filepath = _get_installed_versions_file()
@@ -389,6 +448,7 @@ def _save_installed_version(skill_id, version):
 def _remove_installed_version(skill_id):
     """Remove a skill's version pin record."""
     import json
+
     versions = _load_installed_versions_for_write()
     versions.pop(skill_id, None)
     filepath = _get_installed_versions_file()
@@ -403,6 +463,7 @@ def _load_installed_versions_for_write():
     """Load versions without merging external (for write operations)."""
     import json
     import os
+
     filepath = _get_installed_versions_file()
     if os.path.exists(filepath):
         try:
@@ -493,28 +554,33 @@ def _execute_global_search(query: str) -> list:
     for d in deliverables:
         content = str(d.get("content", "")) + str(d.get("metadata", ""))
         if q_lower in content.lower():
-            results.append({
-                "type": "deliverable",
-                "title": d.get("title", "成果物"),
-                "summary": content[:150],
-                "score": _simple_match_score(q_lower, content),
-                "link": None,
-            })
+            results.append(
+                {
+                    "type": "deliverable",
+                    "title": d.get("title", "成果物"),
+                    "summary": content[:150],
+                    "score": _simple_match_score(q_lower, content),
+                    "link": None,
+                }
+            )
 
     try:
         from opc_manager.audit_log import get_audit_log
+
         audit = get_audit_log()
         logs = audit.query(limit=50)
         for log in logs:
             combined = f"{log.get('operation_type', '')} {log.get('input_summary', '')} {log.get('output_summary', '')}"
             if q_lower in combined.lower():
-                results.append({
-                    "type": "audit",
-                    "title": f"[{log.get('operation_type', 'operation')}]",
-                    "summary": log.get("input_summary", "")[:100],
-                    "score": _simple_match_score(q_lower, combined),
-                    "link": None,
-                })
+                results.append(
+                    {
+                        "type": "audit",
+                        "title": f"[{log.get('operation_type', 'operation')}]",
+                        "summary": log.get("input_summary", "")[:100],
+                        "score": _simple_match_score(q_lower, combined),
+                        "link": None,
+                    }
+                )
     except Exception as e:
         logger.warning("[marketplace] global_search audit_log query failed: %s", e)
 
@@ -522,13 +588,15 @@ def _execute_global_search(query: str) -> list:
     for msg in messages[-50:]:
         content = str(msg.get("content", ""))
         if q_lower in content.lower():
-            results.append({
-                "type": "chat",
-                "title": content[:60] + "..." if len(content) > 60 else content,
-                "summary": "",
-                "score": _simple_match_score(q_lower, content),
-                "link": None,
-            })
+            results.append(
+                {
+                    "type": "chat",
+                    "title": content[:60] + "..." if len(content) > 60 else content,
+                    "summary": "",
+                    "score": _simple_match_score(q_lower, content),
+                    "link": None,
+                }
+            )
 
     results.sort(key=lambda x: x.get("score", 0), reverse=True)
     return results[:30]

@@ -34,15 +34,26 @@ def _create_settings_page():
     5. 👤 Profile — User info, company, timezone, language
     """
     from opc_manager.i18n import t as _t
+
     try:
         from opc_manager.settings import get_settings
+
         settings = get_settings()
     except ImportError:
         st.error(_t("settings_module_not_ready"))
         return
 
     st.markdown(f"## {_t('settings_page_title')}")
-    settings_tabs = st.tabs([_t("settings_llm"), _t("settings_smtp"), _t("settings_api_keys"), _t("settings_security"), _t("settings_profile"), _t("settings_backup")])
+    settings_tabs = st.tabs(
+        [
+            _t("settings_llm"),
+            _t("settings_smtp"),
+            _t("settings_api_keys"),
+            _t("settings_security"),
+            _t("settings_profile"),
+            _t("settings_backup"),
+        ]
+    )
 
     with settings_tabs[0]:
         _render_llm_settings(settings)
@@ -66,6 +77,7 @@ def _create_settings_page():
 def _render_llm_settings(settings):
     """Render LLM configuration tab"""
     from opc_manager.i18n import t as _t
+
     st.markdown(f"### {_t('settings_llm')}")
 
     llm_config = settings.llm.__dict__
@@ -74,7 +86,14 @@ def _render_llm_settings(settings):
         provider = st.radio(
             _t("llm_provider"),
             ["MokaAI", "OpenAI", "智谱GLM", "Ollama"],
-            index=["MokaAI", "OpenAI", "智谱GLM", "Ollama"].index(llm_config.get("provider", "MokaAI")) if llm_config.get("provider", "MokaAI") in ["MokaAI", "OpenAI", "智谱GLM", "Ollama"] else 0,
+            index=(
+                ["MokaAI", "OpenAI", "智谱GLM", "Ollama"].index(
+                    llm_config.get("provider", "MokaAI")
+                )
+                if llm_config.get("provider", "MokaAI")
+                in ["MokaAI", "OpenAI", "智谱GLM", "Ollama"]
+                else 0
+            ),
             help=_t("settings_llm_provider_help"),
         )
 
@@ -124,7 +143,9 @@ def _render_llm_settings(settings):
 
         col_test, col_save = st.columns([1, 1])
         with col_test:
-            test_clicked = st.form_submit_button(_t("llm_test_connection"), type="secondary")
+            test_clicked = st.form_submit_button(
+                _t("llm_test_connection"), type="secondary"
+            )
         with col_save:
             save_clicked = st.form_submit_button(_t("llm_save"), type="primary")
 
@@ -154,16 +175,33 @@ def _render_llm_settings(settings):
 def _render_smtp_settings(settings):
     """Render SMTP configuration tab"""
     from opc_manager.i18n import t as _t
+
     st.markdown(f"### {_t('settings_smtp_heading')}")
 
     smtp_config = settings.smtp.__dict__
 
     SMTP_PRESETS = {
         _t("settings_smtp_preset_custom"): {},
-        _t("settings_smtp_preset_qq"): {"host": "smtp.qq.com", "port": 587, "tls": True},
-        _t("settings_smtp_preset_163"): {"host": "smtp.163.com", "port": 465, "tls": True},
-        _t("settings_smtp_preset_gmail"): {"host": "smtp.gmail.com", "port": 587, "tls": True},
-        _t("settings_smtp_preset_outlook"): {"host": "smtp.office365.com", "port": 587, "tls": True},
+        _t("settings_smtp_preset_qq"): {
+            "host": "smtp.qq.com",
+            "port": 587,
+            "tls": True,
+        },
+        _t("settings_smtp_preset_163"): {
+            "host": "smtp.163.com",
+            "port": 465,
+            "tls": True,
+        },
+        _t("settings_smtp_preset_gmail"): {
+            "host": "smtp.gmail.com",
+            "port": 587,
+            "tls": True,
+        },
+        _t("settings_smtp_preset_outlook"): {
+            "host": "smtp.office365.com",
+            "port": 587,
+            "tls": True,
+        },
     }
 
     with st.form("smtp_config_form"):
@@ -239,10 +277,16 @@ def _render_smtp_settings(settings):
             with st.spinner(_t("settings_smtp_testing")):
                 test_result = settings.test_smtp_connection()
                 if test_result["success"]:
-                    st.success(f"✅ {_t('settings_smtp_success', latency=test_result['latency_ms'])}")
-                    st.info(f"{_t('settings_smtp_server_response')}: {test_result['message']}")
+                    st.success(
+                        f"✅ {_t('settings_smtp_success', latency=test_result['latency_ms'])}"
+                    )
+                    st.info(
+                        f"{_t('settings_smtp_server_response')}: {test_result['message']}"
+                    )
                 else:
-                    st.error(f"❌ {_t('settings_smtp_failed', msg=test_result['message'])}")
+                    st.error(
+                        f"❌ {_t('settings_smtp_failed', msg=test_result['message'])}"
+                    )
 
         if save_clicked:
             new_config = {
@@ -264,6 +308,7 @@ def _render_smtp_settings(settings):
 def _render_api_keys_settings(settings):
     """Render API Keys management tab"""
     from opc_manager.i18n import t as _t
+
     st.markdown(f"### {_t('settings_apikeys_heading')}")
 
     st.info(_t("settings_apikeys_info"))
@@ -278,8 +323,14 @@ def _render_api_keys_settings(settings):
             masked = "****" + llm_key[-4:] if len(llm_key) > 4 else "****"
             col_val, col_copy = st.columns([3, 1])
             with col_val:
-                st.text_input(_t("settings_apikeys_masked"), value=masked, disabled=True)
-                st.caption(f"{_t('settings_apikeys_last4')}: `{llm_key[-4:]}`" if len(llm_key) >= 4 else _t("settings_apikeys_not_shown"))
+                st.text_input(
+                    _t("settings_apikeys_masked"), value=masked, disabled=True
+                )
+                st.caption(
+                    f"{_t('settings_apikeys_last4')}: `{llm_key[-4:]}`"
+                    if len(llm_key) >= 4
+                    else _t("settings_apikeys_not_shown")
+                )
             with col_copy:
                 if st.button(_t("settings_apikeys_copy_key"), key="copy_llm_key"):
                     st.clipboard_text(llm_key)
@@ -288,13 +339,21 @@ def _render_api_keys_settings(settings):
             st.warning(_t("settings_apikeys_no_llm"))
             st.caption(_t("settings_apikeys_goto_llm"))
 
-    with st.expander(f"📧 {_t('settings_apikeys_smtp_pass')}", expanded=bool(smtp_pass)):
+    with st.expander(
+        f"📧 {_t('settings_apikeys_smtp_pass')}", expanded=bool(smtp_pass)
+    ):
         if smtp_pass:
             masked = "****" + smtp_pass[-4:] if len(smtp_pass) > 4 else "****"
             col_val, col_copy = st.columns([3, 1])
             with col_val:
-                st.text_input(_t("settings_apikeys_pass_masked"), value=masked, disabled=True)
-                st.caption(f"{_t('settings_apikeys_last4')}: `{smtp_pass[-4:]}`" if len(smtp_pass) >= 4 else _t("settings_apikeys_not_shown"))
+                st.text_input(
+                    _t("settings_apikeys_pass_masked"), value=masked, disabled=True
+                )
+                st.caption(
+                    f"{_t('settings_apikeys_last4')}: `{smtp_pass[-4:]}`"
+                    if len(smtp_pass) >= 4
+                    else _t("settings_apikeys_not_shown")
+                )
             with col_copy:
                 if st.button(_t("settings_apikeys_copy_pass"), key="copy_smtp_pass"):
                     st.clipboard_text(smtp_pass)
@@ -313,6 +372,7 @@ def _render_api_keys_settings(settings):
 def _render_security_settings(settings):
     """Render Security settings tab"""
     from opc_manager.i18n import t as _t
+
     st.markdown(f"### {_t('settings_security_heading')}")
 
     security = settings.security
@@ -331,9 +391,15 @@ def _render_security_settings(settings):
     st.markdown(_t("settings_encryption_status"))
     st.markdown(f"- {_t('settings_status_label')}: :{status_color}[{status_text}]")
     if security.auto_generated:
-        st.markdown(f"- {_t('settings_gen_method')}: {_t('settings_gen_method_csprng')}")
-    st.markdown(f"- {_t('settings_storage_location')}: `.env.local` {_t('settings_storage_ignored')}")
-    st.markdown(f"- {_t('settings_key_length')}: 256{_t('settings_bits')} (64{_t('settings_hex_chars')})")
+        st.markdown(
+            f"- {_t('settings_gen_method')}: {_t('settings_gen_method_csprng')}"
+        )
+    st.markdown(
+        f"- {_t('settings_storage_location')}: `.env.local` {_t('settings_storage_ignored')}"
+    )
+    st.markdown(
+        f"- {_t('settings_key_length')}: 256{_t('settings_bits')} (64{_t('settings_hex_chars')})"
+    )
 
     st.divider()
 
@@ -354,6 +420,7 @@ def _render_security_settings(settings):
 def _render_profile_settings(settings):
     """Render Profile settings tab"""
     from opc_manager.i18n import t as _t
+
     st.markdown(f"### {_t('settings_profile_heading')}")
 
     profile = settings.profile.__dict__
@@ -393,7 +460,11 @@ def _render_profile_settings(settings):
             timezone = st.selectbox(
                 _t("profile_timezone"),
                 TIMEZONES,
-                index=TIMEZONES.index(profile.get("timezone", "Asia/Shanghai")) if profile.get("timezone", "Asia/Shanghai") in TIMEZONES else 0,
+                index=(
+                    TIMEZONES.index(profile.get("timezone", "Asia/Shanghai"))
+                    if profile.get("timezone", "Asia/Shanghai") in TIMEZONES
+                    else 0
+                ),
                 help=_t("settings_profile_tz_help"),
             )
         with col_lang:
@@ -436,11 +507,19 @@ def _render_data_backup_settings():
     - Export data in JSON/CSV/ZIP formats
     """
     from opc_manager.i18n import t as _t
+
     st.markdown(f"### {_t('settings_backup_heading')}")
 
     st.info(_t("settings_backup_info"))
 
-    backup_tabs = st.tabs([_t("settings_backup_tab_create"), _t("settings_backup_tab_list"), _t("settings_backup_tab_export"), _t("settings_backup_tab_restore")])
+    backup_tabs = st.tabs(
+        [
+            _t("settings_backup_tab_create"),
+            _t("settings_backup_tab_list"),
+            _t("settings_backup_tab_export"),
+            _t("settings_backup_tab_restore"),
+        ]
+    )
 
     with backup_tabs[0]:
         _render_create_backup_tab()
@@ -467,24 +546,35 @@ def _render_create_backup_tab():
 
     col_create, _ = st.columns([1, 2])
     with col_create:
-        if st.button(_t("settings_backup_create_btn"), type="primary", use_container_width=True):
+        if st.button(
+            _t("settings_backup_create_btn"), type="primary", use_container_width=True
+        ):
             with st.spinner(_t("settings_backup_creating")):
                 try:
                     from opc_manager.data_backup import get_backup_manager
+
                     manager = get_backup_manager()
                     backup_path, manifest = manager.create_backup(
                         include_attachments=include_attachments
                     )
 
-                    st.success(f"✅ {_t('settings_backup_created', name=backup_path.name)}")
-                    st.json({
-                        _t("settings_backup_json_filename"): backup_path.name,
-                        _t("settings_backup_json_size"): f"{manifest.total_size_bytes / (1024*1024):.2f} MB",
-                        _t("settings_backup_json_files"): manifest.total_files,
-                        _t("settings_backup_json_version"): manifest.version,
-                        _t("settings_backup_json_checksum"): f"{manifest.checksum_sha256[:16]}...",
-                        _t("settings_backup_json_time"): manifest.created_at,
-                    })
+                    st.success(
+                        f"✅ {_t('settings_backup_created', name=backup_path.name)}"
+                    )
+                    st.json(
+                        {
+                            _t("settings_backup_json_filename"): backup_path.name,
+                            _t(
+                                "settings_backup_json_size"
+                            ): f"{manifest.total_size_bytes / (1024*1024):.2f} MB",
+                            _t("settings_backup_json_files"): manifest.total_files,
+                            _t("settings_backup_json_version"): manifest.version,
+                            _t(
+                                "settings_backup_json_checksum"
+                            ): f"{manifest.checksum_sha256[:16]}...",
+                            _t("settings_backup_json_time"): manifest.created_at,
+                        }
+                    )
                     st.balloons()
                 except Exception as e:
                     logger.error("[frontend] Create backup error: %s", e)
@@ -497,6 +587,7 @@ def _render_backup_list_tab():
 
     try:
         from opc_manager.data_backup import get_backup_manager
+
         manager = get_backup_manager()
         backups = manager.list_backups()
 
@@ -509,7 +600,7 @@ def _render_backup_list_tab():
         for idx, backup in enumerate(backups):
             with st.expander(
                 f"📄 {backup['filename']} — {backup['size_mb']} MB ({backup['created_at'][:10]})",
-                expanded=(idx == 0)
+                expanded=(idx == 0),
             ):
                 col_dl, col_del, _ = st.columns([1, 1, 2])
 
@@ -528,7 +619,11 @@ def _render_backup_list_tab():
                         )
 
                 with col_del:
-                    if st.button(_t("settings_backup_delete"), key=f"del_backup_{idx}", use_container_width=True):
+                    if st.button(
+                        _t("settings_backup_delete"),
+                        key=f"del_backup_{idx}",
+                        use_container_width=True,
+                    ):
                         if manager.delete_backup(backup["path"]):
                             st.success(_t("settings_backup_deleted"))
                             st.rerun()
@@ -553,10 +648,15 @@ def _render_export_data_tab():
     format_col1, format_col2, format_col3 = st.columns(3)
 
     with format_col1:
-        if st.button(_t("settings_export_json"), use_container_width=True, help=_t("settings_export_json_help")):
+        if st.button(
+            _t("settings_export_json"),
+            use_container_width=True,
+            help=_t("settings_export_json_help"),
+        ):
             with st.spinner(_t("settings_exporting")):
                 try:
                     from opc_manager.data_backup import get_backup_manager
+
                     manager = get_backup_manager()
                     json_data = manager.export_data(format_type="json")
                     st.download_button(
@@ -570,13 +670,20 @@ def _render_export_data_tab():
                     st.success(_t("settings_export_json_done"))
                 except Exception as e:
                     logger.error("[frontend] Export JSON error: %s", e)
-                    st.error(f"❌ {_t('settings_export_failed', fmt='JSON', error=str(e))}")
+                    st.error(
+                        f"❌ {_t('settings_export_failed', fmt='JSON', error=str(e))}"
+                    )
 
     with format_col2:
-        if st.button(_t("settings_export_csv"), use_container_width=True, help=_t("settings_export_csv_help")):
+        if st.button(
+            _t("settings_export_csv"),
+            use_container_width=True,
+            help=_t("settings_export_csv_help"),
+        ):
             with st.spinner(_t("settings_exporting")):
                 try:
                     from opc_manager.data_backup import get_backup_manager
+
                     manager = get_backup_manager()
                     csv_data = manager.export_data(format_type="csv")
                     st.download_button(
@@ -590,13 +697,20 @@ def _render_export_data_tab():
                     st.success(_t("settings_export_csv_done"))
                 except Exception as e:
                     logger.error("[frontend] Export CSV error: %s", e)
-                    st.error(f"❌ {_t('settings_export_failed', fmt='CSV', error=str(e))}")
+                    st.error(
+                        f"❌ {_t('settings_export_failed', fmt='CSV', error=str(e))}"
+                    )
 
     with format_col3:
-        if st.button(_t("settings_export_zip"), use_container_width=True, help=_t("settings_export_zip_help")):
+        if st.button(
+            _t("settings_export_zip"),
+            use_container_width=True,
+            help=_t("settings_export_zip_help"),
+        ):
             with st.spinner(_t("settings_exporting")):
                 try:
                     from opc_manager.data_backup import get_backup_manager
+
                     manager = get_backup_manager()
                     zip_data = manager.export_data(format_type="zip")
                     st.download_button(
@@ -610,7 +724,9 @@ def _render_export_data_tab():
                     st.success(_t("settings_export_zip_done"))
                 except Exception as e:
                     logger.error("[frontend] Export ZIP error: %s", e)
-                    st.error(f"❌ {_t('settings_export_failed', fmt='ZIP', error=str(e))}")
+                    st.error(
+                        f"❌ {_t('settings_export_failed', fmt='ZIP', error=str(e))}"
+                    )
 
     st.divider()
     st.caption(_t("settings_export_format_hint"))
@@ -629,10 +745,12 @@ def _render_restore_data_tab():
 
     if uploaded_file:
         _size_kb = uploaded_file.size / 1024
-        st.info(f"📄 {_t('settings_backup_file_selected', name=uploaded_file.name, size=f'{_size_kb:.1f}')}")
+        st.info(
+            f"📄 {_t('settings_backup_file_selected', name=uploaded_file.name, size=f'{_size_kb:.1f}')}"
+        )
 
         # Save uploaded file to temp location (sanitize filename)
-        safe_name = re.sub(r'[^\w\-.]', '_', uploaded_file.name)[:100]
+        safe_name = re.sub(r"[^\w\-.]", "_", uploaded_file.name)[:100]
         temp_dir = Path(_WORKSPACE_DIR) / "data" / "temp"
         temp_dir.mkdir(parents=True, exist_ok=True)
         temp_path = temp_dir / f"restore_{safe_name}"
@@ -657,18 +775,27 @@ def _render_restore_data_tab():
                 with st.spinner(_t("settings_backup_restoring")):
                     try:
                         from opc_manager.data_backup import get_backup_manager
+
                         manager = get_backup_manager()
                         result = manager.restore_backup(str(temp_path), confirm=True)
 
                         if result["success"]:
-                            st.success(f"✅ {_t('settings_backup_restore_success', files=result.get('restored_files', 0))}")
-                            st.json({
-                                _t("settings_backup_restored_files"): result.get("restored_files", 0),
-                            })
+                            st.success(
+                                f"✅ {_t('settings_backup_restore_success', files=result.get('restored_files', 0))}"
+                            )
+                            st.json(
+                                {
+                                    _t("settings_backup_restored_files"): result.get(
+                                        "restored_files", 0
+                                    ),
+                                }
+                            )
                             st.balloons()
                             st.warning(_t("settings_backup_refresh_hint"))
                         else:
-                            st.error(f"❌ {_t('settings_backup_restore_failed', error=result.get('error', _t('settings_unknown_error')))}")
+                            st.error(
+                                f"❌ {_t('settings_backup_restore_failed', error=result.get('error', _t('settings_unknown_error')))}"
+                            )
 
                         # Cleanup temp file
                         if temp_path.exists():
@@ -676,4 +803,6 @@ def _render_restore_data_tab():
 
                     except Exception as e:
                         logger.error("[frontend] Restore error: %s", e)
-                        st.error(f"❌ {_t('settings_backup_restore_error', error=str(e))}")
+                        st.error(
+                            f"❌ {_t('settings_backup_restore_error', error=str(e))}"
+                        )

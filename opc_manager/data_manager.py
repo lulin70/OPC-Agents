@@ -13,7 +13,9 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = os.environ.get("OPC_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"))
+DATA_DIR = os.environ.get(
+    "OPC_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+)
 DB_PATH = os.path.join(DATA_DIR, "opc_data.db")
 BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 
@@ -33,7 +35,9 @@ def _get_encryption_key() -> bytes:
     if key_str:
         return hashlib.sha256(key_str.encode()).digest()
     if _fallback_key is None:
-        logger.critical("[SECURITY] OPC_ENCRYPTION_KEY not set! Using auto-generated session key. Data encrypted with this key cannot be decrypted after restart!")
+        logger.critical(
+            "[SECURITY] OPC_ENCRYPTION_KEY not set! Using auto-generated session key. Data encrypted with this key cannot be decrypted after restart!"
+        )
         _fallback_key = os.urandom(32)
     return _fallback_key
 
@@ -43,8 +47,11 @@ def encrypt_field(plaintext: str) -> str:
         return ""
     key = _get_encryption_key()
     if not os.environ.get(_ENCRYPTION_KEY_ENV, ""):
-        logger.warning("[SECURITY] Encrypting with session key - data will not survive restart!")
+        logger.warning(
+            "[SECURITY] Encrypting with session key - data will not survive restart!"
+        )
     from cryptography.fernet import Fernet
+
     fernet_key = base64.urlsafe_b64encode(key)
     f = Fernet(fernet_key)
     return f.encrypt(plaintext.encode()).decode()
@@ -56,6 +63,7 @@ def decrypt_field(ciphertext: str) -> Optional[str]:
     try:
         key = _get_encryption_key()
         from cryptography.fernet import Fernet
+
         fernet_key = base64.urlsafe_b64encode(key)
         f = Fernet(fernet_key)
         return f.decrypt(ciphertext.encode()).decode()
@@ -88,6 +96,7 @@ def _ensure_db(func):
         if not _db_initialized:
             init_db()
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -339,7 +348,10 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
             _migrate_v4_to_v5(conn)
         if current < 6:
             _migrate_v5_to_v6(conn)
-        conn.execute("INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', ?)", (str(_db_version),))
+        conn.execute(
+            "INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', ?)",
+            (str(_db_version),),
+        )
         logger.info("[DataManager] Migrated DB from v%d to v%d", current, _db_version)
 
 
@@ -350,12 +362,18 @@ def _migrate_v2_to_v3(conn: sqlite3.Connection) -> None:
     _add_column_if_not_exists(conn, "external_skills", "downloads", "INTEGER DEFAULT 0")
     _add_column_if_not_exists(conn, "external_skills", "rating", "REAL DEFAULT 0.0")
     _add_column_if_not_exists(conn, "interaction_log", "session_id", "TEXT DEFAULT ''")
-    _add_column_if_not_exists(conn, "interaction_log", "duration_ms", "REAL DEFAULT 0.0")
-    _add_column_if_not_exists(conn, "interaction_log", "error_message", "TEXT DEFAULT ''")
+    _add_column_if_not_exists(
+        conn, "interaction_log", "duration_ms", "REAL DEFAULT 0.0"
+    )
+    _add_column_if_not_exists(
+        conn, "interaction_log", "error_message", "TEXT DEFAULT ''"
+    )
 
 
 def _migrate_v3_to_v4(conn: sqlite3.Connection) -> None:
-    _add_column_if_not_exists(conn, "calendar_events", "duration_min", "INTEGER DEFAULT 60")
+    _add_column_if_not_exists(
+        conn, "calendar_events", "duration_min", "INTEGER DEFAULT 60"
+    )
     _add_column_if_not_exists(conn, "calendar_events", "description", "TEXT DEFAULT ''")
     _add_column_if_not_exists(conn, "calendar_events", "repeat", "TEXT DEFAULT ''")
 
@@ -395,13 +413,20 @@ def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
     """)
 
 
-def _add_column_if_not_exists(conn: sqlite3.Connection, table: str, column: str, col_type: str) -> None:
+def _add_column_if_not_exists(
+    conn: sqlite3.Connection, table: str, column: str, col_type: str
+) -> None:
     try:
-        cols = [row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+        cols = [
+            row["name"]
+            for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+        ]
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
     except Exception as e:
-        logger.warning("[DataManager] Migration add column %s.%s failed: %s", table, column, e)
+        logger.warning(
+            "[DataManager] Migration add column %s.%s failed: %s", table, column, e
+        )
 
 
 def _seed_categories(conn: sqlite3.Connection) -> None:
@@ -409,13 +434,23 @@ def _seed_categories(conn: sqlite3.Connection) -> None:
     if count > 0:
         return
     income_cats = [
-        ("咨询费", "💼"), ("培训费", "🎓"), ("产品销售", "📦"),
-        ("课程收入", "📚"), ("广告分成", "📢"), ("版税/授权", "📜"), ("其他收入", "💰"),
+        ("咨询费", "💼"),
+        ("培训费", "🎓"),
+        ("产品销售", "📦"),
+        ("课程收入", "📚"),
+        ("广告分成", "📢"),
+        ("版税/授权", "📜"),
+        ("其他收入", "💰"),
     ]
     expense_cats = [
-        ("工具订阅", "🔧"), ("办公设备", "🖥️"), ("差旅交通", "🚗"),
-        ("设计素材", "🎨"), ("营销推广", "📣"), ("税费", "🧾"),
-        ("通讯网络", "📡"), ("其他支出", "💸"),
+        ("工具订阅", "🔧"),
+        ("办公设备", "🖥️"),
+        ("差旅交通", "🚗"),
+        ("设计素材", "🎨"),
+        ("营销推广", "📣"),
+        ("税费", "🧾"),
+        ("通讯网络", "📡"),
+        ("其他支出", "💸"),
     ]
     for name, icon in income_cats:
         conn.execute(
@@ -435,9 +470,24 @@ def _seed_templates(conn: sqlite3.Connection) -> None:
         return
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     templates = [
-        ("跟进邮件", "关于{topic}的跟进", "{name}您好，\n\n关于{topic}，想跟您同步一下最新进展。\n\n{content}\n\n期待您的回复。\n\n此致", "{name},{topic},{content}"),
-        ("感谢邮件", "感谢{event}", "{name}您好，\n\n非常感谢{event}，期待后续合作。\n\n此致", "{name},{event}"),
-        ("报价邮件", "{company} - 服务报价", "{name}您好，\n\n根据我们之前的沟通，以下是服务报价：\n\n{content}\n\n如有任何问题，请随时联系。\n\n此致", "{name},{company},{content}"),
+        (
+            "跟进邮件",
+            "关于{topic}的跟进",
+            "{name}您好，\n\n关于{topic}，想跟您同步一下最新进展。\n\n{content}\n\n期待您的回复。\n\n此致",
+            "{name},{topic},{content}",
+        ),
+        (
+            "感谢邮件",
+            "感谢{event}",
+            "{name}您好，\n\n非常感谢{event}，期待后续合作。\n\n此致",
+            "{name},{event}",
+        ),
+        (
+            "报价邮件",
+            "{company} - 服务报价",
+            "{name}您好，\n\n根据我们之前的沟通，以下是服务报价：\n\n{content}\n\n如有任何问题，请随时联系。\n\n此致",
+            "{name},{company},{content}",
+        ),
     ]
     for name, subject, body, variables in templates:
         conn.execute(
@@ -498,6 +548,7 @@ def backup_db() -> Optional[str]:
     backup_path = os.path.join(BACKUP_DIR, f"opc_data_{ts}.db")
     try:
         import shutil
+
         shutil.copy2(DB_PATH, backup_path)
         for old in sorted(Path(BACKUP_DIR).glob("opc_data_*.db"))[:-backup_count]:
             old.unlink()

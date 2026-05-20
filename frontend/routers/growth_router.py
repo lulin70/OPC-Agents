@@ -1,4 +1,5 @@
 """Growth/Flywheel page router — gamified user motivation system."""
+
 import streamlit as st
 
 from opc_manager.i18n import t as _t
@@ -47,4 +48,6 @@ def render_growth_page():
     if count == 0:
         st.info(f"💡 {_t('growth_empty_hint')}")
     elif level < 3:
-        st.success(f"🎯 {_t('growth_upgrade_hint', level_name=_t('growth_upgrade_target'))}")
+        st.success(
+            f"🎯 {_t('growth_upgrade_hint', level_name=_t('growth_upgrade_target'))}"
+        )

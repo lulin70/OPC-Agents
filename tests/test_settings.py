@@ -132,7 +132,7 @@ class TestLLMCRUD:
             api_key="test-key-123",
             model="glm-4",
             temperature=0.9,
-            max_tokens=8000
+            max_tokens=8000,
         )
 
         assert settings.llm.provider == "glm"
@@ -148,23 +148,21 @@ class TestLLMCRUD:
         """
         settings = get_settings()
         settings.update_llm(
-            provider="ollama",
-            base_url="http://localhost:11434",
-            model="llama3"
+            provider="ollama", base_url="http://localhost:11434", model="llama3"
         )
 
         settings_file = Path(SettingsManager.SETTINGS_FILE)
         assert settings_file.exists(), "Settings file should be created after update"
 
-        with open(settings_file, 'r') as f:
+        with open(settings_file, "r") as f:
             saved_data = json.load(f)
 
-        assert saved_data['llm']['provider'] == 'ollama'
-        assert saved_data['llm']['base_url'] == 'http://localhost:11434'
+        assert saved_data["llm"]["provider"] == "ollama"
+        assert saved_data["llm"]["base_url"] == "http://localhost:11434"
 
         SettingsManager._instance = None
         settings_reloaded = get_settings()
-        assert settings_reloaded.llm.provider == 'ollama'
+        assert settings_reloaded.llm.provider == "ollama"
 
 
 class TestSMTPCRUD:
@@ -195,7 +193,7 @@ class TestSMTPCRUD:
             username="user@example.com",
             password="secret-pass",
             tls=False,
-            from_email="sender@example.com"
+            from_email="sender@example.com",
         )
 
         assert result is True
@@ -217,7 +215,7 @@ class TestSMTPCRUD:
             port=587,
             username="test@gmail.com",
             password="pass123",
-            tls=True
+            tls=True,
         )
 
         SettingsManager._instance = None
@@ -244,7 +242,7 @@ class TestSMTPConnectionTest:
         assert "not configured" in result["message"].lower()
         assert result["latency_ms"] == 0
 
-    @patch('smtplib.SMTP')
+    @patch("smtplib.SMTP")
     def test_smtp_connection_success(self, mock_smtp_class, temp_settings_dir):
         """Verify: Returns success when SMTP connection succeeds
         Scenario: Configure valid SMTP, mock successful server connection
@@ -259,7 +257,7 @@ class TestSMTPConnectionTest:
             port=587,
             username="user@test.com",
             password="pass",
-            tls=True
+            tls=True,
         )
 
         result = settings.test_smtp_connection()
@@ -271,23 +269,23 @@ class TestSMTPConnectionTest:
         mock_server.login.assert_called_once_with("user@test.com", "pass")
         mock_server.quit.assert_called_once()
 
-    @patch('smtplib.SMTP')
+    @patch("smtplib.SMTP")
     def test_smtp_connection_auth_failure(self, mock_smtp_class, temp_settings_dir):
         """Verify: Handles authentication errors gracefully
         Scenario: Mock SMTP server raises SMTPAuthenticationError
         Expected: success=False, message mentions authentication failed
         """
         import smtplib
+
         mock_server = MagicMock()
-        mock_server.login.side_effect = smtplib.SMTPAuthenticationError(535, "Auth failed")
+        mock_server.login.side_effect = smtplib.SMTPAuthenticationError(
+            535, "Auth failed"
+        )
         mock_smtp_class.return_value = mock_server
 
         settings = get_settings()
         settings.update_smtp(
-            host="smtp.test.com",
-            port=587,
-            username="bad_user",
-            password="wrong_pass"
+            host="smtp.test.com", port=587, username="bad_user", password="wrong_pass"
         )
 
         result = settings.test_smtp_connection()
@@ -359,9 +357,12 @@ class TestAutoGenerateKey:
         settings = get_settings()
 
         assert settings.security.encryption_key != "", "Key should be auto-generated"
-        assert len(settings.security.encryption_key) == 64, "Key should be 256-bit (64 hex chars)"
-        assert all(c in '0123456789abcdef' for c in settings.security.encryption_key), \
-            "Key should contain only hex characters"
+        assert (
+            len(settings.security.encryption_key) == 64
+        ), "Key should be 256-bit (64 hex chars)"
+        assert all(
+            c in "0123456789abcdef" for c in settings.security.encryption_key
+        ), "Key should contain only hex characters"
 
     def test_auto_generated_flag_set(self, temp_settings_dir):
         """Verify: auto_generated flag is True after auto-generation
@@ -417,15 +418,17 @@ class TestAutoGenerateKey:
         key = settings.security.encryption_key
 
         assert len(key) == 64, "Key must be 256-bit (64 hex characters)"
-        assert all(c in '0123456789abcdef' for c in key), "Key must be valid hex"
+        assert all(c in "0123456789abcdef" for c in key), "Key must be valid hex"
 
         hex_chars = set(key)
-        assert len(hex_chars) >= 10, \
-            f"Key should have sufficient character diversity (got {len(hex_chars)} unique chars)"
+        assert (
+            len(hex_chars) >= 10
+        ), f"Key should have sufficient character diversity (got {len(hex_chars)} unique chars)"
 
-        byte_values = [int(key[i:i+2], 16) for i in range(0, 64, 2)]
-        assert min(byte_values) < 32 and max(byte_values) > 223, \
-            "Key bytes should span full 0-255 range (high entropy indicator)"
+        byte_values = [int(key[i : i + 2], 16) for i in range(0, 64, 2)]
+        assert (
+            min(byte_values) < 32 and max(byte_values) > 223
+        ), "Key bytes should span full 0-255 range (high entropy indicator)"
 
 
 class TestIsConfigured:
@@ -521,10 +524,10 @@ class TestExportMasking:
 
         exported = settings.export_settings()
 
-        assert exported["llm"]["api_key"] == "***", \
-            "API key should be masked in export"
-        assert settings.llm.api_key == "sk-real-secret-key-12345", \
-            "Original value should remain in memory"
+        assert exported["llm"]["api_key"] == "***", "API key should be masked in export"
+        assert (
+            settings.llm.api_key == "sk-real-secret-key-12345"
+        ), "Original value should remain in memory"
 
     def test_smtp_password_masked_in_export(self, temp_settings_dir):
         """Verify: SMTP password replaced with *** in export
@@ -536,8 +539,9 @@ class TestExportMasking:
 
         exported = settings.export_settings()
 
-        assert exported["smtp"]["password"] == "***", \
-            "Password should be masked in export"
+        assert (
+            exported["smtp"]["password"] == "***"
+        ), "Password should be masked in export"
 
     def test_non_sensitive_fields_unmasked(self, temp_settings_dir):
         """Verify: Non-sensitive fields exported with actual values
@@ -562,9 +566,11 @@ class TestExportMasking:
         exported = settings.export_settings()
 
         assert exported["security"]["has_key"] is True
-        assert "encryption_key" not in exported["security"] or \
-               exported["security"].get("encryption_key") != settings.security.encryption_key, \
-               "Actual encryption key should not appear in export"
+        assert (
+            "encryption_key" not in exported["security"]
+            or exported["security"].get("encryption_key")
+            != settings.security.encryption_key
+        ), "Actual encryption key should not appear in export"
 
     def test_profile_fully_exported(self, temp_settings_dir):
         """Verify: Profile settings fully exported (no masking needed)
@@ -576,7 +582,7 @@ class TestExportMasking:
             user_name="Alice",
             company_name="Acme Corp",
             timezone="America/New_York",
-            language="en_US"
+            language="en_US",
         )
 
         exported = settings.export_settings()
@@ -717,9 +723,14 @@ class TestCallbackNotification:
         settings = get_settings()
         calls_order = []
 
-        def cb1(cat): calls_order.append("cb1")
-        def cb2(cat): calls_order.append("cb2")
-        def cb3(cat): calls_order.append("cb3")
+        def cb1(cat):
+            calls_order.append("cb1")
+
+        def cb2(cat):
+            calls_order.append("cb2")
+
+        def cb3(cat):
+            calls_order.append("cb3")
 
         settings.register_callback(cb1)
         settings.register_callback(cb2)
@@ -788,7 +799,9 @@ class TestCallbackNotification:
 
         settings.update_smtp(tls=False)
 
-        assert len(calls) == 1, "Good callback should execute despite bad callback error"
+        assert (
+            len(calls) == 1
+        ), "Good callback should execute despite bad callback error"
 
 
 class TestThreadSafety:
@@ -819,8 +832,9 @@ class TestThreadSafety:
             t.join()
 
         assert len(errors) == 0, f"Concurrent reads caused errors: {errors}"
-        assert all(r == "thread-safe-provider" for r in results), \
-            "All reads should return consistent value"
+        assert all(
+            r == "thread-safe-provider" for r in results
+        ), "All reads should return consistent value"
 
     def test_concurrent_writes_safe(self, temp_settings_dir):
         """Verify: Multiple threads can safely write to different categories
@@ -934,14 +948,16 @@ class TestEncryptedStorage:
         settings.update_llm(api_key=plaintext_key)
 
         settings_file = Path(SettingsManager.SETTINGS_FILE)
-        with open(settings_file, 'r') as f:
+        with open(settings_file, "r") as f:
             saved_data = json.load(f)
 
-        stored_value = saved_data['llm']['api_key']
-        assert plaintext_key not in stored_value, \
-            "API key should not be stored as plaintext in JSON file"
-        assert len(stored_value) > len(plaintext_key), \
-            "Encrypted value should be longer than plaintext"
+        stored_value = saved_data["llm"]["api_key"]
+        assert (
+            plaintext_key not in stored_value
+        ), "API key should not be stored as plaintext in JSON file"
+        assert len(stored_value) > len(
+            plaintext_key
+        ), "Encrypted value should be longer than plaintext"
 
     def test_api_key_decrypted_on_load(self, temp_settings_dir):
         """Verify: Encrypted API key is correctly decrypted when loaded
@@ -955,8 +971,9 @@ class TestEncryptedStorage:
         SettingsManager._instance = None
         reloaded = get_settings()
 
-        assert reloaded.llm.api_key == plaintext_key, \
-            f"Decrypted key should match original (got '{reloaded.llm.api_key}')"
+        assert (
+            reloaded.llm.api_key == plaintext_key
+        ), f"Decrypted key should match original (got '{reloaded.llm.api_key}')"
 
     def test_smtp_password_encrypted_in_json(self, temp_settings_dir):
         """Verify: SMTP password is encrypted in JSON file
@@ -968,12 +985,13 @@ class TestEncryptedStorage:
         settings.update_smtp(password=plaintext_pass)
 
         settings_file = Path(SettingsManager.SETTINGS_FILE)
-        with open(settings_file, 'r') as f:
+        with open(settings_file, "r") as f:
             saved_data = json.load(f)
 
-        stored_value = saved_data['smtp']['password']
-        assert plaintext_pass not in stored_value, \
-            "Password should not be stored as plaintext in JSON file"
+        stored_value = saved_data["smtp"]["password"]
+        assert (
+            plaintext_pass not in stored_value
+        ), "Password should not be stored as plaintext in JSON file"
 
     def test_smtp_password_decrypted_on_load(self, temp_settings_dir):
         """Verify: SMTP password correctly decrypted on load
@@ -987,8 +1005,9 @@ class TestEncryptedStorage:
         SettingsManager._instance = None
         reloaded = get_settings()
 
-        assert reloaded.smtp.password == plaintext_pass, \
-            f"Decrypted password should match original (got '{reloaded.smtp.password}')"
+        assert (
+            reloaded.smtp.password == plaintext_pass
+        ), f"Decrypted password should match original (got '{reloaded.smtp.password}')"
 
     def test_auto_migration_plaintext_to_encrypted(self, temp_settings_dir):
         """Verify: Plaintext keys auto-migrated to encrypted format on first load
@@ -1007,7 +1026,7 @@ class TestEncryptedStorage:
                 "base_url": "",
                 "model": "",
                 "max_tokens": 4000,
-                "temperature": 0.7
+                "temperature": 0.7,
             },
             "smtp": {
                 "host": "",
@@ -1015,34 +1034,34 @@ class TestEncryptedStorage:
                 "username": "",
                 "password": "",
                 "tls": True,
-                "from_email": ""
+                "from_email": "",
             },
-            "security": {
-                "auto_generated": True
-            },
+            "security": {"auto_generated": True},
             "profile": {
                 "user_name": "",
                 "company_name": "",
                 "timezone": "Asia/Shanghai",
-                "language": "zh_CN"
-            }
+                "language": "zh_CN",
+            },
         }
 
-        with open(settings_file, 'w') as f:
+        with open(settings_file, "w") as f:
             json.dump(manual_data, f, indent=2)
 
         SettingsManager._instance = None
         settings = get_settings()
 
-        assert settings.llm.api_key == plaintext_key, \
-            "Migrated key should be accessible after decryption"
+        assert (
+            settings.llm.api_key == plaintext_key
+        ), "Migrated key should be accessible after decryption"
 
-        with open(settings_file, 'r') as f:
+        with open(settings_file, "r") as f:
             migrated_data = json.load(f)
 
-        stored_value = migrated_data['llm']['api_key']
-        assert plaintext_key not in stored_value, \
-            "After migration, key should be encrypted in JSON file"
+        stored_value = migrated_data["llm"]["api_key"]
+        assert (
+            plaintext_key not in stored_value
+        ), "After migration, key should be encrypted in JSON file"
 
     def test_invalid_ciphertext_handled_gracefully(self, temp_settings_dir):
         """Verify: Invalid/corrupt ciphertext returns empty string with warning
@@ -1061,7 +1080,7 @@ class TestEncryptedStorage:
                 "base_url": "",
                 "model": "",
                 "max_tokens": 4000,
-                "temperature": 0.7
+                "temperature": 0.7,
             },
             "smtp": {
                 "host": "",
@@ -1069,27 +1088,26 @@ class TestEncryptedStorage:
                 "username": "",
                 "password": "",
                 "tls": True,
-                "from_email": ""
+                "from_email": "",
             },
-            "security": {
-                "auto_generated": True
-            },
+            "security": {"auto_generated": True},
             "profile": {
                 "user_name": "",
                 "company_name": "",
                 "timezone": "Asia/Shanghai",
-                "language": "zh_CN"
-            }
+                "language": "zh_CN",
+            },
         }
 
-        with open(settings_file, 'w') as f:
+        with open(settings_file, "w") as f:
             json.dump(corrupt_data, f, indent=2)
 
         SettingsManager._instance = None
         settings = get_settings()
 
-        assert settings.llm.api_key == "", \
-            "Invalid ciphertext should result in empty string"
+        assert (
+            settings.llm.api_key == ""
+        ), "Invalid ciphertext should result in empty string"
 
     def test_all_sensitive_fields_encrypted(self, temp_settings_dir):
         """Verify: Both LLM api_key and SMTP password are encrypted
@@ -1101,16 +1119,16 @@ class TestEncryptedStorage:
         settings.update_smtp(password="smtp-test-password")
 
         settings_file = Path(SettingsManager.SETTINGS_FILE)
-        with open(settings_file, 'r') as f:
+        with open(settings_file, "r") as f:
             saved_data = json.load(f)
 
-        llm_stored = saved_data['llm']['api_key']
-        smtp_stored = saved_data['smtp']['password']
+        llm_stored = saved_data["llm"]["api_key"]
+        smtp_stored = saved_data["smtp"]["password"]
 
-        assert "sk-llm-test-key" not in llm_stored, \
-            "LLM api_key should be encrypted"
-        assert "smtp-test-password" not in smtp_stored, \
-            "SMTP password should be encrypted"
+        assert "sk-llm-test-key" not in llm_stored, "LLM api_key should be encrypted"
+        assert (
+            "smtp-test-password" not in smtp_stored
+        ), "SMTP password should be encrypted"
 
     def test_empty_sensitive_fields_not_encrypted(self, temp_settings_dir):
         """Verify: Empty sensitive fields remain empty (no encryption needed)
@@ -1123,13 +1141,13 @@ class TestEncryptedStorage:
         if not settings_file.exists():
             return
 
-        with open(settings_file, 'r') as f:
+        with open(settings_file, "r") as f:
             saved_data = json.load(f)
 
-        assert saved_data['llm']['api_key'] == "", \
-            "Empty api_key should remain empty"
-        assert saved_data['smtp']['password'] == "", \
-            "Empty password should remain empty"
+        assert saved_data["llm"]["api_key"] == "", "Empty api_key should remain empty"
+        assert (
+            saved_data["smtp"]["password"] == ""
+        ), "Empty password should remain empty"
 
 
 if __name__ == "__main__":

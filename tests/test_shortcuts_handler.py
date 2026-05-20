@@ -37,18 +37,20 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("OPC_DATA_DIR", str(db_dir))
     monkeypatch.setenv("OPC_ENCRYPTION_KEY", "test-key-for-encryption-32chars!!")
     import opc_manager.data_manager as dm
+
     _orig_initialized = dm._db_initialized
     from opc_manager.data_manager import _local
-    _orig_conn = getattr(_local, 'conn', None)
+
+    _orig_conn = getattr(_local, "conn", None)
     dm._db_initialized = False
-    if hasattr(_local, 'conn') and _local.conn is not None:
+    if hasattr(_local, "conn") and _local.conn is not None:
         try:
             _local.conn.close()
         except Exception:
             pass
         _local.conn = None
     yield db_dir
-    if hasattr(_local, 'conn') and _local.conn is not None:
+    if hasattr(_local, "conn") and _local.conn is not None:
         try:
             _local.conn.close()
         except Exception:
@@ -124,10 +126,10 @@ class TestQuickTask:
     def test_quick_task_valid_input_calls_llm(self, MockLLM, temp_db):
         mock_instance = MockLLM.return_value
         mock_instance.generate.return_value = "这是AI生成的回复内容"
-        
+
         handler = ShortcutsHandler()
         result = handler.quick_task("写一封邮件")
-        
+
         assert result.success is True
         assert "任务完成" in result.message
         assert "这是AI生成的回复内容" in result.message
@@ -138,10 +140,10 @@ class TestQuickTask:
     def test_quick_task_llm_returns_empty(self, MockLLM, temp_db):
         mock_instance = MockLLM.return_value
         mock_instance.generate.return_value = ""
-        
+
         handler = ShortcutsHandler()
         result = handler.quick_task("测试任务")
-        
+
         assert result.success is False
         assert "未返回有效结果" in result.message
 
@@ -150,18 +152,21 @@ class TestQuickTask:
         mock_instance = MockLLM.return_value
         long_response = "x" * 1000
         mock_instance.generate.return_value = long_response
-        
+
         handler = ShortcutsHandler()
         result = handler.quick_task("长回复测试")
-        
+
         assert result.success is True
         assert len(result.message) <= 500 + len("任务完成:\n")
 
-    @patch("opc_manager.simple_llm_service.SimpleLLMService", side_effect=Exception("API连接失败"))
+    @patch(
+        "opc_manager.simple_llm_service.SimpleLLMService",
+        side_effect=Exception("API连接失败"),
+    )
     def test_quick_task_exception_handled_gracefully(self, MockLLM, temp_db):
         handler = ShortcutsHandler()
         result = handler.quick_task("触发异常")
-        
+
         assert result.success is False
         assert "执行失败" in result.message
         assert "API连接失败" in result.message
@@ -173,7 +178,7 @@ class TestQueryStatus:
     def test_query_status_returns_structured_output(self, temp_db):
         handler = ShortcutsHandler()
         result = handler.query_status()
-        
+
         assert result.success is True
         assert "今日状态" in result.message
         assert "📋 任务数:" in result.message
@@ -184,35 +189,37 @@ class TestQueryStatus:
 
     def test_query_status_increments_with_new_tasks(self, temp_db):
         from opc_manager.data_manager import execute_write, gen_id
+
         handler = ShortcutsHandler()
         before = handler.query_status()
-        
+
         today = __import__("datetime").date.today().isoformat()
         for i in range(3):
             execute_write(
                 "INSERT INTO tasks (id, title, status, created_at) VALUES (?,?,?,?)",
-                (gen_id(), f"qs_task_{i}", "done", f"{today}T12:00:00")
+                (gen_id(), f"qs_task_{i}", "done", f"{today}T12:00:00"),
             )
-        
+
         after = handler.query_status()
         assert after.data["tasks"] == before.data["tasks"] + 3
 
     def test_query_status_increments_with_income(self, temp_db):
         from opc_manager.data_manager import execute_write, gen_id
+
         handler = ShortcutsHandler()
         before = handler.query_status()
-        
+
         today = __import__("datetime").date.today().isoformat()
         now = __import__("datetime").datetime.now().isoformat()
         execute_write(
             "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-            (gen_id(), "income", 5000, "咨询费", "咨询费", today, "qs_client", now)
+            (gen_id(), "income", 5000, "咨询费", "咨询费", today, "qs_client", now),
         )
         execute_write(
             "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-            (gen_id(), "income", 3000, "服务费", "服务费", today, "qs_client2", now)
+            (gen_id(), "income", 3000, "服务费", "服务费", today, "qs_client2", now),
         )
-        
+
         after = handler.query_status()
         assert after.data["income"] == before.data["income"] + 8000.0
 
@@ -234,7 +241,7 @@ class TestCreateDeliverable:
     def test_create_deliverable_creates_record(self, temp_db):
         handler = ShortcutsHandler()
         result = handler.create_deliverable(title="Q2季度报告", dtype="report")
-        
+
         assert result.success is True
         assert "Q2季度报告" in result.message
         assert "📊报告" in result.message
@@ -244,10 +251,11 @@ class TestCreateDeliverable:
 
     def test_create_deliverable_stored_in_db(self, temp_db):
         from opc_manager.data_manager import execute_query, gen_id
+
         unique_title = f"db验证_{gen_id()[:8]}"
         handler = ShortcutsHandler()
         handler.create_deliverable(title=unique_title, dtype="document")
-        
+
         rows = execute_query("SELECT * FROM tasks WHERE title=?", (unique_title,))
         assert len(rows) == 1
         assert rows[0]["status"] == "done"
@@ -266,13 +274,14 @@ class TestCreateDeliverable:
 
     def test_create_deliverable_with_content(self, temp_db):
         from opc_manager.data_manager import execute_query
+
         handler = ShortcutsHandler()
         handler.create_deliverable(
-            title="带内容的成果物",
-            dtype="document",
-            content="这是详细内容描述"
+            title="带内容的成果物", dtype="document", content="这是详细内容描述"
         )
-        rows = execute_query("SELECT description FROM tasks WHERE title='带内容的成果物'")
+        rows = execute_query(
+            "SELECT description FROM tasks WHERE title='带内容的成果物'"
+        )
         assert rows[0]["description"] == "这是详细内容描述"
 
 
@@ -293,7 +302,7 @@ class TestRecordIncome:
     def test_record_income_valid_amount(self, temp_db):
         handler = ShortcutsHandler()
         result = handler.record_income(amount=5000, client="张三", source="咨询费")
-        
+
         assert result.success is True
         assert "5,000" in result.message or "5000" in result.message
         assert "张三" in result.message
@@ -304,13 +313,14 @@ class TestRecordIncome:
     def test_record_income_stored_in_db(self, temp_db):
         from opc_manager.data_manager import execute_query, gen_id
         import time
+
         unique_amt = round(55555.55 + time.monotonic_ns() % 10000, 2)
         handler = ShortcutsHandler()
         handler.record_income(amount=unique_amt, client="李四db验证", source="项目费")
-        
+
         rows = execute_query(
             "SELECT * FROM finance_records WHERE type='income' AND amount=? AND note='李四db验证'",
-            (unique_amt,)
+            (unique_amt,),
         )
         assert len(rows) == 1
         assert rows[0]["note"] == "李四db验证"
@@ -318,7 +328,7 @@ class TestRecordIncome:
     def test_record_income_defaults_for_optional_fields(self, temp_db):
         handler = ShortcutsHandler()
         result = handler.record_income(amount=1000)
-        
+
         assert result.success is True
         assert "未知" in result.message
         assert "其他" in result.message
@@ -330,7 +340,7 @@ class TestDailyReport:
     def test_daily_report_empty_day(self, temp_db):
         handler = ShortcutsHandler()
         result = handler.daily_report()
-        
+
         assert result.success is True
         assert "OPC-Agent 日报" in result.message
         assert "今日收入" in result.message
@@ -342,34 +352,49 @@ class TestDailyReport:
 
     def test_daily_report_with_mixed_data(self, temp_db):
         from opc_manager.data_manager import execute_write, gen_id, execute_query
+
         today = __import__("datetime").date.today().isoformat()
         now = __import__("datetime").datetime.now().isoformat()
-        
+
         unique_tag = "dr_mix_" + gen_id()[:8]
         tid = gen_id()
         execute_write(
             "INSERT INTO tasks (id, title, status, tags, created_at) VALUES (?,?,?,?,?)",
-            (tid, f"重要任务_{unique_tag}", "in_progress", "", f"{today}T10:00:00")
+            (tid, f"重要任务_{unique_tag}", "in_progress", "", f"{today}T10:00:00"),
         )
         did = gen_id()
         execute_write(
             "INSERT INTO tasks (id, title, status, tags, created_at) VALUES (?,?,?,?,?)",
-            (did, f"周报文档_{unique_tag}", "done", f"deliverable:report", f"{today}T11:00:00")
+            (
+                did,
+                f"周报文档_{unique_tag}",
+                "done",
+                f"deliverable:report",
+                f"{today}T11:00:00",
+            ),
         )
         iid = gen_id()
         execute_write(
             "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-            (iid, "income", 6000, "咨询", "咨询", today, f"王五_{unique_tag}", now)
+            (iid, "income", 6000, "咨询", "咨询", today, f"王五_{unique_tag}", now),
         )
-        
+
         handler = ShortcutsHandler()
         result = handler.daily_report()
-        
+
         assert result.success is True
-        task_rows = execute_query("SELECT COUNT(*) as cnt FROM tasks WHERE title LIKE ?", (f"%{unique_tag}%",))
-        inc_rows = execute_query("SELECT COALESCE(SUM(amount),0) as total FROM finance_records WHERE note LIKE ?", (f"%{unique_tag}%",))
-        del_rows = execute_query("SELECT COUNT(*) as cnt FROM tasks WHERE tags LIKE 'deliverable:%' AND title LIKE ?", (f"%{unique_tag}%",))
-        
+        task_rows = execute_query(
+            "SELECT COUNT(*) as cnt FROM tasks WHERE title LIKE ?", (f"%{unique_tag}%",)
+        )
+        inc_rows = execute_query(
+            "SELECT COALESCE(SUM(amount),0) as total FROM finance_records WHERE note LIKE ?",
+            (f"%{unique_tag}%",),
+        )
+        del_rows = execute_query(
+            "SELECT COUNT(*) as cnt FROM tasks WHERE tags LIKE 'deliverable:%' AND title LIKE ?",
+            (f"%{unique_tag}%",),
+        )
+
         assert task_rows[0]["cnt"] >= 2
         assert inc_rows[0]["total"] >= 6000
         assert del_rows[0]["cnt"] >= 1
@@ -423,7 +448,12 @@ class TestCliArgumentParsing:
 
     def test_cli_create_deliverable_missing_title(self):
         proc = subprocess.run(
-            [sys.executable, "-m", "opc_manager.shortcuts_handler", "create_deliverable"],
+            [
+                sys.executable,
+                "-m",
+                "opc_manager.shortcuts_handler",
+                "create_deliverable",
+            ],
             capture_output=True,
             text=True,
             cwd="/Users/lin/trae_projects/OPC-Agents",

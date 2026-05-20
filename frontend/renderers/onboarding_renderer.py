@@ -1,4 +1,5 @@
 """Onboarding overlay renderer — extracted from app.py to fix NameError ordering bugs."""
+
 import streamlit as st
 import logging
 
@@ -11,13 +12,15 @@ def _show_onboarding_overlay():
     """Show onboarding overlay for first-time users."""
     try:
         from opc_manager.onboarding import get_onboarding, OnboardingStep
+
         onboard = get_onboarding()
 
         current = onboard.get_current_step()
         step_content = onboard.get_step_content(current)
         total_steps = onboard.TOTAL_STEPS
 
-        st.markdown("""
+        st.markdown(
+            """
         <style>
         .onboarding-overlay {
             position: fixed;
@@ -38,23 +41,30 @@ def _show_onboarding_overlay():
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
         </style>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         st.markdown("---")
-        st.markdown(f"# {step_content.get('icon', '🎉')} {step_content.get('title', _t('chat_onboard_welcome'))}")
+        st.markdown(
+            f"# {step_content.get('icon', '🎉')} {step_content.get('title', _t('chat_onboard_welcome'))}"
+        )
 
-        step_order = [OnboardingStep.WELCOME, OnboardingStep.LLM_CONFIG, OnboardingStep.SAMPLE_TASK]
+        step_order = [
+            OnboardingStep.WELCOME,
+            OnboardingStep.LLM_CONFIG,
+            OnboardingStep.SAMPLE_TASK,
+        ]
         try:
             current_index = step_order.index(current)
-            progress_dots = " ".join([
-                "●" if i == current_index else "○"
-                for i in range(total_steps)
-            ])
+            progress_dots = " ".join(
+                ["●" if i == current_index else "○" for i in range(total_steps)]
+            )
         except ValueError:
             progress_dots = "●" + " ○" * (total_steps - 1)
         st.markdown(f"<center>{progress_dots}</center>", unsafe_allow_html=True)
 
-        if step_content.get('description'):
+        if step_content.get("description"):
             st.markdown(f"\n{step_content['description']}\n")
 
         col_prev, col_next, col_skip = st.columns([1, 1, 1])
@@ -71,7 +81,7 @@ def _show_onboarding_overlay():
                         pass
 
         with col_next:
-            is_last = (current == OnboardingStep.SAMPLE_TASK)
+            is_last = current == OnboardingStep.SAMPLE_TASK
             btn_label = _t("onboard_done") if is_last else _t("onboard_next")
             if st.button(btn_label, type="primary", use_container_width=True):
                 if is_last:

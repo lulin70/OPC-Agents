@@ -20,13 +20,19 @@ def discover_llm_config() -> Dict[str, str]:
 
     config["api_key"] = os.environ.get("MOKA_API_KEY", "")
     if config["api_key"]:
-        config["base_url"] = os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1")
+        config["base_url"] = os.environ.get(
+            "MOKA_API_BASE", "https://api.moka-ai.com/v1"
+        )
         config["model"] = os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
         return config
 
     for env_key, env_url, env_model in [
         ("GLM_API_KEY", "https://open.bigmodel.cn/api/paas/v4", "glm-4"),
-        ("OPENAI_API_KEY", os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1"), "gpt-4"),
+        (
+            "OPENAI_API_KEY",
+            os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1"),
+            "gpt-4",
+        ),
     ]:
         key = os.environ.get(env_key, "").strip()
         if key:
@@ -50,41 +56,53 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
     providers = []
     moka_key = os.environ.get("MOKA_API_KEY", "").strip()
     if moka_key:
-        providers.append({
-            "api_key": moka_key,
-            "base_url": os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1"),
-            "model": os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6"),
-            "is_ollama": False,
-            "name": "moka",
-        })
+        providers.append(
+            {
+                "api_key": moka_key,
+                "base_url": os.environ.get(
+                    "MOKA_API_BASE", "https://api.moka-ai.com/v1"
+                ),
+                "model": os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6"),
+                "is_ollama": False,
+                "name": "moka",
+            }
+        )
     glm_key = os.environ.get("GLM_API_KEY", "").strip()
     if glm_key:
-        providers.append({
-            "api_key": glm_key,
-            "base_url": "https://open.bigmodel.cn/api/paas/v4",
-            "model": "glm-4",
-            "is_ollama": False,
-            "name": "glm",
-        })
+        providers.append(
+            {
+                "api_key": glm_key,
+                "base_url": "https://open.bigmodel.cn/api/paas/v4",
+                "model": "glm-4",
+                "is_ollama": False,
+                "name": "glm",
+            }
+        )
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if openai_key:
-        providers.append({
-            "api_key": openai_key,
-            "base_url": os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1"),
-            "model": "gpt-4",
-            "is_ollama": False,
-            "name": "openai",
-        })
+        providers.append(
+            {
+                "api_key": openai_key,
+                "base_url": os.environ.get(
+                    "OPENAI_API_BASE", "https://api.openai.com/v1"
+                ),
+                "model": "gpt-4",
+                "is_ollama": False,
+                "name": "openai",
+            }
+        )
     ollama_url = os.environ.get("OLLAMA_BASE_URL", "")
     ollama_enabled = os.environ.get("OLLAMA_ENABLED", "").lower() == "true"
     if ollama_enabled or ollama_url:
-        providers.append({
-            "api_key": "ollama",
-            "base_url": ollama_url or "http://localhost:11434",
-            "model": os.environ.get("OLLAMA_MODEL", "llama3"),
-            "is_ollama": True,
-            "name": "ollama",
-        })
+        providers.append(
+            {
+                "api_key": "ollama",
+                "base_url": ollama_url or "http://localhost:11434",
+                "model": os.environ.get("OLLAMA_MODEL", "llama3"),
+                "is_ollama": True,
+                "name": "ollama",
+            }
+        )
     return providers
 
 
@@ -116,9 +134,16 @@ class SimpleLLMService:
     def _record_provider_success(self, name: str) -> None:
         self._circuit_breaker.pop(name, None)
 
-    def _try_provider(self, provider: Dict[str, Any], prompt: str,
-                      system_prompt: str, max_tokens: int, timeout: int) -> Optional[str]:
+    def _try_provider(
+        self,
+        provider: Dict[str, Any],
+        prompt: str,
+        system_prompt: str,
+        max_tokens: int,
+        timeout: int,
+    ) -> Optional[str]:
         from opc_manager.utils import sanitize_for_llm, _llm_thread_semaphore
+
         name = provider.get("name", "unknown")
         if self._is_provider_circuit_open(name):
             logger.info("Skipping provider %s: circuit breaker open", name)
@@ -133,9 +158,13 @@ class SimpleLLMService:
                 svc._is_ollama = provider["is_ollama"]
                 svc._circuit_breaker = self._circuit_breaker
                 if svc._is_ollama:
-                    result = svc._call_ollama(prompt, system_prompt, max_tokens, timeout)
+                    result = svc._call_ollama(
+                        prompt, system_prompt, max_tokens, timeout
+                    )
                 else:
-                    result = svc._call_openai_compat(prompt, system_prompt, max_tokens, timeout)
+                    result = svc._call_openai_compat(
+                        prompt, system_prompt, max_tokens, timeout
+                    )
                 if result:
                     self._record_provider_success(name)
                     return result
@@ -146,12 +175,18 @@ class SimpleLLMService:
             logger.warning("Provider %s call failed: %s", name, e)
         return None
 
-    def complete(self, prompt: str, system_prompt: str = None,
-                 max_tokens: int = 500, timeout: int = LLM_CALL_TIMEOUT) -> Optional[str]:
+    def complete(
+        self,
+        prompt: str,
+        system_prompt: str = None,
+        max_tokens: int = 500,
+        timeout: int = LLM_CALL_TIMEOUT,
+    ) -> Optional[str]:
         if not self._api_key:
             return None
 
         from opc_manager.utils import sanitize_for_llm, _llm_thread_semaphore
+
         prompt = sanitize_for_llm(prompt, 2000)
         if system_prompt:
             system_prompt = sanitize_for_llm(system_prompt, 500)
@@ -168,9 +203,13 @@ class SimpleLLMService:
                 _llm_thread_semaphore.acquire(timeout=30)
                 try:
                     if self._is_ollama:
-                        result = self._call_ollama(prompt, system_prompt, max_tokens, timeout)
+                        result = self._call_ollama(
+                            prompt, system_prompt, max_tokens, timeout
+                        )
                     else:
-                        result = self._call_openai_compat(prompt, system_prompt, max_tokens, timeout)
+                        result = self._call_openai_compat(
+                            prompt, system_prompt, max_tokens, timeout
+                        )
                     if result:
                         self._record_provider_success("primary")
                         return result
@@ -178,24 +217,34 @@ class SimpleLLMService:
                     _llm_thread_semaphore.release()
             except Exception as e:
                 self._record_provider_failure("primary")
-                logger.warning("LLM call attempt %s/%s failed: %s", attempt + 1, LLM_MAX_RETRIES, e)
+                logger.warning(
+                    "LLM call attempt %s/%s failed: %s", attempt + 1, LLM_MAX_RETRIES, e
+                )
                 if attempt < LLM_MAX_RETRIES - 1:
                     time.sleep(min(LLM_RETRY_BACKOFF ** (attempt + 1), 10))
 
         all_providers = _discover_all_providers()
         primary_key = self._api_key
         for provider in all_providers:
-            if provider["api_key"] == primary_key and provider["base_url"] == self._base_url:
+            if (
+                provider["api_key"] == primary_key
+                and provider["base_url"] == self._base_url
+            ):
                 continue
-            result = self._try_provider(provider, prompt, system_prompt, max_tokens, timeout)
+            result = self._try_provider(
+                provider, prompt, system_prompt, max_tokens, timeout
+            )
             if result:
-                logger.info("Fallback to provider %s succeeded", provider.get("name", "unknown"))
+                logger.info(
+                    "Fallback to provider %s succeeded", provider.get("name", "unknown")
+                )
                 return result
 
         return None
 
-    def _call_openai_compat(self, prompt: str, system_prompt: str,
-                            max_tokens: int, timeout: int) -> Optional[str]:
+    def _call_openai_compat(
+        self, prompt: str, system_prompt: str, max_tokens: int, timeout: int
+    ) -> Optional[str]:
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -222,8 +271,9 @@ class SimpleLLMService:
         content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         return content.strip() if content else None
 
-    def _call_ollama(self, prompt: str, system_prompt: str,
-                     max_tokens: int, timeout: int) -> Optional[str]:
+    def _call_ollama(
+        self, prompt: str, system_prompt: str, max_tokens: int, timeout: int
+    ) -> Optional[str]:
         payload = {
             "model": self._model,
             "prompt": prompt,
@@ -235,7 +285,8 @@ class SimpleLLMService:
 
         resp = requests.post(
             f"{self._base_url.rstrip('/')}/api/generate",
-            json=payload, timeout=(10, timeout),
+            json=payload,
+            timeout=(10, timeout),
         )
         resp.raise_for_status()
         data = resp.json()

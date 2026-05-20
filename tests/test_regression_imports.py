@@ -10,16 +10,16 @@ import os
 import re
 import pytest
 
-APP_PY = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'app.py')
+APP_PY = os.path.join(os.path.dirname(__file__), "..", "frontend", "app.py")
 
 
 def _get_app_source():
-    with open(APP_PY, 'r', encoding='utf-8') as f:
+    with open(APP_PY, "r", encoding="utf-8") as f:
         return f.read()
 
 
 def _parse_app():
-    return ast.parse(_get_app_source(), filename='app.py')
+    return ast.parse(_get_app_source(), filename="app.py")
 
 
 class TestFunctionDefinitionOrder:
@@ -36,7 +36,11 @@ class TestFunctionDefinitionOrder:
                 defs[node.name] = node.lineno
             elif isinstance(node, ast.Call):
                 func = node.func
-                if isinstance(func, ast.Name) and func.id.startswith('_') and not func.id.startswith('__'):
+                if (
+                    isinstance(func, ast.Name)
+                    and func.id.startswith("_")
+                    and not func.id.startswith("__")
+                ):
                     calls_with_line.append((func.id, node.lineno))
 
         problems = []
@@ -48,8 +52,11 @@ class TestFunctionDefinitionOrder:
                         f"  '{func_name}()' called at L{call_line} but defined LATER at L{def_line}"
                     )
 
-        assert len(problems) == 0, \
-            f"Forward-reference functions found ({len(problems)}):\n" + "\n".join(problems)
+        assert (
+            len(problems) == 0
+        ), f"Forward-reference functions found ({len(problems)}):\n" + "\n".join(
+            problems
+        )
 
     def test_no_phantom_function_calls(self):
         """A2: Every _xxx() call must be either defined locally OR imported."""
@@ -76,14 +83,21 @@ class TestFunctionDefinitionOrder:
         for node in ast.walk(tree):
             if isinstance(node, ast.Call):
                 func = node.func
-                if isinstance(func, ast.Name) and func.id.startswith('_') and not func.id.startswith('__'):
+                if (
+                    isinstance(func, ast.Name)
+                    and func.id.startswith("_")
+                    and not func.id.startswith("__")
+                ):
                     if func.id not in local_defs and func.id not in imported_names:
                         problematic_calls.append(
                             f"  '{func.id}'() at L{node.lineno} - NEITHER defined nor imported"
                         )
 
-        assert len(problematic_calls) == 0, \
-            f"Phantom function calls found ({len(problematic_calls)}):\n" + "\n".join(problematic_calls)
+        assert (
+            len(problematic_calls) == 0
+        ), f"Phantom function calls found ({len(problematic_calls)}):\n" + "\n".join(
+            problematic_calls
+        )
 
 
 class TestCriticalDependencies:
@@ -91,31 +105,50 @@ class TestCriticalDependencies:
 
     def test_read_file_is_available(self):
         source = _get_app_source()
-        has_in_app = 'read_file' in source or 'def read_file' in source or 'from.*import.*read_file' in source
+        has_in_app = (
+            "read_file" in source
+            or "def read_file" in source
+            or "from.*import.*read_file" in source
+        )
         if not has_in_app:
-            renderer_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'renderers', 'deliverables_renderer.py')
+            renderer_path = os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "frontend",
+                "renderers",
+                "deliverables_renderer.py",
+            )
             if os.path.exists(renderer_path):
                 with open(renderer_path) as f:
                     renderer_src = f.read()
-                has_in_renderer = 'read_file' in renderer_src or 'def read_file' in renderer_src or 'from.*import.*read_file' in renderer_src
+                has_in_renderer = (
+                    "read_file" in renderer_src
+                    or "def read_file" in renderer_src
+                    or "from.*import.*read_file" in renderer_src
+                )
                 if has_in_renderer:
                     return
-        assert has_in_app or has_in_renderer, \
-            "read_file() is used but neither defined nor imported in app.py or deliverables_renderer.py - will cause NameError"
+        assert (
+            has_in_app or has_in_renderer
+        ), "read_file() is used but neither defined nor imported in app.py or deliverables_renderer.py - will cause NameError"
 
     def test_t_function_is_imported_or_defined(self):
         """The i18n shorthand t() must be importable."""
         source = _get_app_source()
-        has_t_import = bool(re.search(r'(from\s+\S+\s+import\s+.*\bt\b)|(import\s+\S*\bt\b)', source))
-        has_t_def = 'def t(' in source or 'def _t(' in source
-        assert has_t_import or has_t_def, \
-            "t() / _t() is used for i18n but neither imported nor defined - will cause NameError"
+        has_t_import = bool(
+            re.search(r"(from\s+\S+\s+import\s+.*\bt\b)|(import\s+\S*\bt\b)", source)
+        )
+        has_t_def = "def t(" in source or "def _t(" in source
+        assert (
+            has_t_import or has_t_def
+        ), "t() / _t() is used for i18n but neither imported nor defined - will cause NameError"
 
     def test_streamlit_is_imported(self):
         """streamlit as st must be imported (critical dependency)."""
         source = _get_app_source()
-        assert 'import streamlit' in source, \
-            "streamlit is not imported - all st.xxx calls will fail with NameError"
+        assert (
+            "import streamlit" in source
+        ), "streamlit is not imported - all st.xxx calls will fail with NameError"
 
 
 class TestImportStructure:
@@ -151,8 +184,9 @@ class TestImportStructure:
                     else:
                         seen_imports[name] = node.lineno
 
-        assert len(duplicates) == 0, \
-            f"Duplicate imports found ({len(duplicates)}):\n" + "\n".join(duplicates)
+        assert (
+            len(duplicates) == 0
+        ), f"Duplicate imports found ({len(duplicates)}):\n" + "\n".join(duplicates)
 
     def test_all_from_imports_have_valid_module_paths(self):
         """Every `from X import Y` should reference a plausible module path."""
@@ -161,15 +195,19 @@ class TestImportStructure:
 
         for node in ast.iter_child_nodes(tree):
             if isinstance(node, ast.ImportFrom) and node.module:
-                parts = node.module.split('.')
-                if any(part.startswith('_') and not part.startswith('__') for part in parts[:-1]):
+                parts = node.module.split(".")
+                if any(
+                    part.startswith("_") and not part.startswith("__")
+                    for part in parts[:-1]
+                ):
                     suspicious.append(
                         f"  L{node.lineno}: from {node.module} import ... "
                         "(private submodule path)"
                     )
 
-        assert len(suspicious) == 0, \
-            f"Suspicious import paths found:\n" + "\n".join(suspicious)
+        assert len(suspicious) == 0, f"Suspicious import paths found:\n" + "\n".join(
+            suspicious
+        )
 
 
 class TestFunctionCallConsistency:
@@ -195,11 +233,14 @@ class TestFunctionCallConsistency:
                     called_names.add(func.attr)
 
         dead_funcs = sorted(local_defs - called_names)
-        private_dead = [f for f in dead_funcs if f.startswith('_') and not f.startswith('__')]
+        private_dead = [
+            f for f in dead_funcs if f.startswith("_") and not f.startswith("__")
+        ]
 
-        assert len(private_dead) <= 5, \
-            f"Too many unused private functions ({len(private_dead)} > 5):\n" + \
-            "\n".join(f"  {f}" for f in private_dead)
+        assert len(private_dead) <= 5, (
+            f"Too many unused private functions ({len(private_dead)} > 5):\n"
+            + "\n".join(f"  {f}" for f in private_dead)
+        )
 
 
 class TestModuleLevelStatements:
@@ -211,11 +252,28 @@ class TestModuleLevelStatements:
         tree = _parse_app()
 
         allowed_module_level = {
-            'load_dotenv', 'init_monitoring', 'init_secure_storage',
-            'init_session_state', 'navigate',
-            'print', 'getattr', 'setattr', 'hasattr', 'isinstance',
-            'type', 'len', 'range', 'list', 'dict', 'set', 'tuple',
-            'open', 'super', 'property', 'classmethod', 'staticmethod',
+            "load_dotenv",
+            "init_monitoring",
+            "init_secure_storage",
+            "init_session_state",
+            "navigate",
+            "print",
+            "getattr",
+            "setattr",
+            "hasattr",
+            "isinstance",
+            "type",
+            "len",
+            "range",
+            "list",
+            "dict",
+            "set",
+            "tuple",
+            "open",
+            "super",
+            "property",
+            "classmethod",
+            "staticmethod",
         }
 
         module_level_calls = []
@@ -230,5 +288,8 @@ class TestModuleLevelStatements:
             if name not in allowed_module_level:
                 problems.append(f"  L{line}: {name}()")
 
-        assert len(problems) == 0, \
-            f"Module-level calls to non-builtin/non-imported functions:\n" + "\n".join(problems)
+        assert (
+            len(problems) == 0
+        ), f"Module-level calls to non-builtin/non-imported functions:\n" + "\n".join(
+            problems
+        )

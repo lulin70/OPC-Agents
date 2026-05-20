@@ -178,8 +178,12 @@ class TestI18NStringsCompleteness:
 
     def test_zh_cn_has_minimum_keys(self):
         required_keys = [
-            "nav_chat", "nav_settings", "settings_llm", "common_save",
-            "error_network", "onboarding_welcome_title",
+            "nav_chat",
+            "nav_settings",
+            "settings_llm",
+            "common_save",
+            "error_network",
+            "onboarding_welcome_title",
         ]
         for key in required_keys:
             assert key in I18N_STRINGS["zh_CN"]

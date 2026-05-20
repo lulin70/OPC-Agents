@@ -83,7 +83,9 @@ class ContentGenerationMixin:
                     "[TaskEngineV3] LLM degraded to template, using local template (with search data) instead"
                 )
         except Exception as e:
-            logger.warning("[TaskEngineV3] LLM generation failed, degrading to template: %s", e)
+            logger.warning(
+                "[TaskEngineV3] LLM generation failed, degrading to template: %s", e
+            )
         return None
 
     def _gen_real_report(
@@ -260,7 +262,12 @@ class ContentGenerationMixin:
         - SMART metrics provide example values (improve 30%/≥95%) for reference and adjustment
         """
         llm_content = self._try_llm_generate(
-            llm_query or query, search_results, "plan", business_type, is_follow_up=is_follow_up, title=query
+            llm_query or query,
+            search_results,
+            "plan",
+            business_type,
+            is_follow_up=is_follow_up,
+            title=query,
         )
         if llm_content:
             return llm_content

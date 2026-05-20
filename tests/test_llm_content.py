@@ -26,11 +26,12 @@ class TestRAGModeGeneration(unittest.TestCase):
     def setUp(self):
         self.generator = LLMEnhancedContentGenerator()
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
+            LLMEnhancedContentGenerator,
+            "_call_llm_api",
             return_value="# Test Report\n\nThis is a detailed test report with specific content about Q2 marketing strategy. "
-                         "The plan includes increasing MAU from 5000 to 10000 with a budget of 50000 CNY. "
-                         "Key actions include content marketing, SEO optimization, and community building. "
-                         * 5
+            "The plan includes increasing MAU from 5000 to 10000 with a budget of 50000 CNY. "
+            "Key actions include content marketing, SEO optimization, and community building. "
+            * 5,
         )
         self._llm_patcher.start()
 
@@ -93,10 +94,11 @@ class TestBusinessInfoInjection(unittest.TestCase):
     def setUp(self):
         self.generator = LLMEnhancedContentGenerator()
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
+            LLMEnhancedContentGenerator,
+            "_call_llm_api",
             return_value="# Business Plan\n\nAI writing assistant product with MAU 5000 to 10000 growth target. "
-                         "Budget 50000 CNY for Q2 marketing. Key metrics: conversion rate 5%, retention rate 80%. "
-                         * 5
+            "Budget 50000 CNY for Q2 marketing. Key metrics: conversion rate 5%, retention rate 80%. "
+            * 5,
         )
         self._llm_patcher.start()
 
@@ -152,12 +154,13 @@ class TestPlaceholderElimination(unittest.TestCase):
     def setUp(self):
         self.generator = LLMEnhancedContentGenerator()
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
+            LLMEnhancedContentGenerator,
+            "_call_llm_api",
             return_value="# Detailed Plan\n\n## Goals\nIncrease MAU from 5000 to 10000 by end of Q2 2026. "
-                         "## Timeline\nWeek 1 (Apr 1-7): Launch content marketing campaign. "
-                         "Week 2 (Apr 8-14): SEO optimization sprint. "
-                         "## Budget\nTotal budget: 50000 CNY. Content: 20000, Ads: 15000, Tools: 15000. "
-                         * 3
+            "## Timeline\nWeek 1 (Apr 1-7): Launch content marketing campaign. "
+            "Week 2 (Apr 8-14): SEO optimization sprint. "
+            "## Budget\nTotal budget: 50000 CNY. Content: 20000, Ads: 15000, Tools: 15000. "
+            * 3,
         )
         self._llm_patcher.start()
 
@@ -210,9 +213,10 @@ class TestLLMFallback(unittest.TestCase):
     def setUp(self):
         self.generator = LLMEnhancedContentGenerator()
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
+            LLMEnhancedContentGenerator,
+            "_call_llm_api",
             return_value="# Fallback Test\n\nDetailed content with specific data points about Q2 marketing. "
-                         "Budget: 50000 CNY. Target MAU: 10000. Timeline: 12 weeks. " * 5
+            "Budget: 50000 CNY. Target MAU: 10000. Timeline: 12 weeks. " * 5,
         )
         self._llm_patcher.start()
 
@@ -314,8 +318,11 @@ class TestQualityScoring(unittest.TestCase):
     def setUp(self):
         self.generator = LLMEnhancedContentGenerator()
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
-            return_value="# Comprehensive Analysis Report\n\n" + "Detailed analysis content with specific data points and actionable recommendations. " * 50
+            LLMEnhancedContentGenerator,
+            "_call_llm_api",
+            return_value="# Comprehensive Analysis Report\n\n"
+            + "Detailed analysis content with specific data points and actionable recommendations. "
+            * 50,
         )
         self._llm_patcher.start()
 
@@ -384,7 +391,8 @@ class TestGateCONTENT01(unittest.TestCase):
     def setUp(self):
         self.generator = LLMEnhancedContentGenerator()
         self._llm_patcher = patch.object(
-            LLMEnhancedContentGenerator, '_call_llm_api',
+            LLMEnhancedContentGenerator,
+            "_call_llm_api",
             return_value=(
                 "# Q2 Growth Plan\n\n"
                 "## Overview\nAI writing assistant product, current MAU 5000, target 10000.\n\n"
@@ -396,7 +404,7 @@ class TestGateCONTENT01(unittest.TestCase):
                 "- Week 3 (Apr 15-21): Community building with 2 AMAs\n"
                 "- Week 4 (Apr 22-30): Paid acquisition test with 10000 CNY budget\n\n"
                 "## Budget\nTotal: 50000 CNY\n- Content creation: 20000 CNY\n- Paid ads: 15000 CNY\n- Tools: 15000 CNY\n"
-            )
+            ),
         )
         self._llm_patcher.start()
 

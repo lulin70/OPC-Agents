@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class UndoRecordDisplay:
     """Display-ready representation of an undo record."""
+
     operation_id: str
     operation_type: str
     session_id: str
@@ -136,6 +137,7 @@ def _get_undo_manager():
     """Safe wrapper to get UndoManager instance."""
     try:
         from opc_manager.undo_manager import get_undo_manager
+
         return get_undo_manager()
     except ImportError:
         return None
@@ -148,9 +150,9 @@ def _get_current_session_id() -> str:
     """Get current session ID from session context."""
     try:
         session_ctx = st.session_state.get("session_ctx")
-        if session_ctx and hasattr(session_ctx, '_session_id'):
+        if session_ctx and hasattr(session_ctx, "_session_id"):
             return session_ctx._session_id
-        elif session_ctx and hasattr(session_ctx, 'session_id'):
+        elif session_ctx and hasattr(session_ctx, "session_id"):
             return session_ctx.session_id
     except Exception:
         pass
@@ -335,7 +337,9 @@ def _convert_to_display_record(record_dict: dict) -> UndoRecordDisplay:
     """
     display = UndoRecordDisplay(
         operation_id=record_dict.get("operation_id", ""),
-        operation_type=record_dict.get("type", record_dict.get("operation_type", "unknown")),
+        operation_type=record_dict.get(
+            "type", record_dict.get("operation_type", "unknown")
+        ),
         session_id=record_dict.get("session_id", ""),
         inverse_func_name=record_dict.get("inverse_func_name", ""),
         inverse_args=record_dict.get("inverse_args", {}),
@@ -352,7 +356,9 @@ def _convert_to_display_record(record_dict: dict) -> UndoRecordDisplay:
     return display
 
 
-def _render_undo_record(record: UndoRecordDisplay, index: int, show_actions: bool = True):
+def _render_undo_record(
+    record: UndoRecordDisplay, index: int, show_actions: bool = True
+):
     """Render a single undo record as a styled card.
 
     Visual design includes:
@@ -368,12 +374,15 @@ def _render_undo_record(record: UndoRecordDisplay, index: int, show_actions: boo
         index: Index for unique Streamlit keys
         show_actions: Whether to show action buttons
     """
-    op_config = OPERATION_TYPE_CONFIG.get(record.operation_type, {
-        "icon": "📝",
-        "label": "操作",
-        "color": "#6B7280",
-        "bg_color": "#F9FAFB",
-    })
+    op_config = OPERATION_TYPE_CONFIG.get(
+        record.operation_type,
+        {
+            "icon": "📝",
+            "label": "操作",
+            "color": "#6B7280",
+            "bg_color": "#F9FAFB",
+        },
+    )
     status_config = STATUS_CONFIG.get(record.status, STATUS_CONFIG["active"])
 
     remaining, percentage, status_text = _calculate_remaining_time(record)
@@ -388,7 +397,8 @@ def _render_undo_record(record: UndoRecordDisplay, index: int, show_actions: boo
         card_bg = "#F9FAFB"
         border_left = "#D1D5DB"
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="
         background: {card_bg};
         border-left: 4px solid {border_left};
@@ -417,14 +427,14 @@ def _render_undo_record(record: UndoRecordDisplay, index: int, show_actions: boo
             <span>{status_text}</span>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     if show_actions and record.status == "active":
         col_undo, col_space = st.columns([1, 3])
         with col_undo:
-            is_destructive = record.operation_type in (
-                "SOCIAL_PUBLISH",
-            )
+            is_destructive = record.operation_type in ("SOCIAL_PUBLISH",)
 
             btn_type = "secondary" if not is_destructive else None
             help_text = "此操作将执行逆操作恢复原始状态"
@@ -488,7 +498,8 @@ def _render_confirmation_dialog(
         - **结果**: 系统将执行逆操作 `{record.inverse_func_name}` 恢复到操作前的状态
         """
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="
         background: {bg_color};
         border: 2px solid {warning_color};
@@ -499,7 +510,9 @@ def _render_confirmation_dialog(
         <div style="font-size: 18px; margin-bottom: 8px;">{warning_icon}</div>
         {warning_text}
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     col_confirm, col_cancel = st.columns([1, 1])
 
@@ -553,6 +566,7 @@ def execute_undo(session_id: str, operation_id: str) -> dict:
     try:
         try:
             from opc_manager.progress_emitter import ProgressEmitter, EventType
+
             emitter = ProgressEmitter()
             emitter.emit(
                 session_id=session_id,
@@ -574,6 +588,7 @@ def execute_undo(session_id: str, operation_id: str) -> dict:
         if result.get("success"):
             try:
                 from opc_manager.progress_emitter import ProgressEmitter, EventType
+
                 emitter = ProgressEmitter()
                 emitter.emit(
                     session_id=session_id,
@@ -595,6 +610,7 @@ def execute_undo(session_id: str, operation_id: str) -> dict:
             error_msg = result.get("error", "未知错误")
             try:
                 from opc_manager.progress_emitter import ProgressEmitter, EventType
+
                 emitter = ProgressEmitter()
                 emitter.emit(
                     session_id=session_id,
@@ -632,7 +648,7 @@ def calculate_undo_stats(session_id: str) -> dict:
     stats = {"active": 0, "undone": 0, "expired": 0, "total": 0}
 
     try:
-        all_records = getattr(um, '_records', {}).get(session_id, [])
+        all_records = getattr(um, "_records", {}).get(session_id, [])
         stats["total"] = len(all_records)
 
         now = time.time()
@@ -672,7 +688,7 @@ def render_undo_stats(session_id: str) -> dict:
             label="🟢 可撤销",
             value=stats["active"],
             delta=None,
-            help="当前在时间窗口内且可执行撤销的操作数"
+            help="当前在时间窗口内且可执行撤销的操作数",
         )
 
     with col_undone:
@@ -680,7 +696,7 @@ def render_undo_stats(session_id: str) -> dict:
             label="⚪ 已撤销",
             value=stats["undone"],
             delta=None,
-            help="已经执行过撤销的操作数"
+            help="已经执行过撤销的操作数",
         )
 
     with col_expired:
@@ -688,7 +704,7 @@ def render_undo_stats(session_id: str) -> dict:
             label="🔴 已过期",
             value=stats["expired"],
             delta=None,
-            help="超过撤销窗口期的操作数"
+            help="超过撤销窗口期的操作数",
         )
 
     return stats
@@ -724,10 +740,12 @@ def render_undo_panel(session_id: str, expand: bool = False):
     um = _get_undo_manager()
     if not um:
         from opc_manager.i18n import t as _t
+
         st.info(_t("undo_not_ready"))
         return
 
-    st.markdown("""
+    st.markdown(
+        """
     <div style="
         background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
         border-left: 4px solid #6366F1;
@@ -739,7 +757,9 @@ def render_undo_panel(session_id: str, expand: bool = False):
         <strong style="color: #3730A3;">撤销历史</strong>
         <span style="color: #6366F1; font-size: 12px;">（最近可撤销的操作）</span>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     stats = render_undo_stats(session_id)
 
@@ -749,24 +769,32 @@ def render_undo_panel(session_id: str, expand: bool = False):
 
     all_records_raw = []
     try:
-        records_list = getattr(um, '_records', {}).get(session_id, [])
+        records_list = getattr(um, "_records", {}).get(session_id, [])
         for r in records_list:
-            all_records_raw.append({
-                "operation_id": r.operation_id,
-                "operation_type": r.operation_type.value if hasattr(r.operation_type, 'value') else str(r.operation_type),
-                "session_id": r.session_id,
-                "inverse_func_name": r.inverse_func_name,
-                "inverse_args": r.inverse_args,
-                "original_result": r.original_result,
-                "created_at": r.created_at,
-                "expires_at": r.expires_at,
-                "status": r.status,
-            })
+            all_records_raw.append(
+                {
+                    "operation_id": r.operation_id,
+                    "operation_type": (
+                        r.operation_type.value
+                        if hasattr(r.operation_type, "value")
+                        else str(r.operation_type)
+                    ),
+                    "session_id": r.session_id,
+                    "inverse_func_name": r.inverse_func_name,
+                    "inverse_args": r.inverse_args,
+                    "original_result": r.original_result,
+                    "created_at": r.created_at,
+                    "expires_at": r.expires_at,
+                    "status": r.status,
+                }
+            )
     except Exception as e:
         logger.warning("[undo_panel] Failed to get raw records: %s", e)
         return
 
-    sorted_records = sorted(all_records_raw, key=lambda x: x.get("created_at", 0), reverse=True)
+    sorted_records = sorted(
+        all_records_raw, key=lambda x: x.get("created_at", 0), reverse=True
+    )
 
     display_records = [_convert_to_display_record(r) for r in sorted_records]
 
@@ -784,7 +812,9 @@ def render_undo_panel(session_id: str, expand: bool = False):
             _render_undo_record(record, index=idx, show_actions=True)
             st.divider()
 
-    if len(display_records) > 5 and not (expand or st.session_state.get("show_all_undo", False)):
+    if len(display_records) > 5 and not (
+        expand or st.session_state.get("show_all_undo", False)
+    ):
         if st.button(
             f"查看全部 {len(display_records)} 条记录 ▼",
             key="show_more_undo",
@@ -868,31 +898,35 @@ def _generate_csv(records: List[UndoRecordDisplay]) -> str:
     output = io.StringIO()
     writer = csv.writer(output)
 
-    writer.writerow([
-        "操作ID",
-        "操作类型",
-        "描述",
-        "状态",
-        "创建时间",
-        "过期时间",
-        "剩余秒数",
-        "逆函数名",
-    ])
+    writer.writerow(
+        [
+            "操作ID",
+            "操作类型",
+            "描述",
+            "状态",
+            "创建时间",
+            "过期时间",
+            "剩余秒数",
+            "逆函数名",
+        ]
+    )
 
     for r in records:
         created_str = datetime.fromtimestamp(r.created_at).strftime("%Y-%m-%d %H:%M:%S")
         expires_str = datetime.fromtimestamp(r.expires_at).strftime("%Y-%m-%d %H:%M:%S")
 
-        writer.writerow([
-            r.operation_id,
-            r.operation_type,
-            r.description,
-            r.status,
-            created_str,
-            expires_str,
-            r.remaining_seconds,
-            r.inverse_func_name,
-        ])
+        writer.writerow(
+            [
+                r.operation_id,
+                r.operation_type,
+                r.description,
+                r.status,
+                created_str,
+                expires_str,
+                r.remaining_seconds,
+                r.inverse_func_name,
+            ]
+        )
 
     return output.getvalue()
 
@@ -909,19 +943,21 @@ def _generate_json(records: List[UndoRecordDisplay]) -> str:
     export_data = []
 
     for r in records:
-        export_data.append({
-            "operation_id": r.operation_id,
-            "operation_type": r.operation_type,
-            "description": r.description,
-            "status": r.status,
-            "created_at": datetime.fromtimestamp(r.created_at).isoformat(),
-            "expires_at": datetime.fromtimestamp(r.expires_at).isoformat(),
-            "remaining_seconds": r.remaining_seconds,
-            "time_ago": r.time_ago,
-            "inverse_func_name": r.inverse_func_name,
-            "inverse_args": r.inverse_args,
-            "original_result_summary": str(r.original_result)[:200],
-        })
+        export_data.append(
+            {
+                "operation_id": r.operation_id,
+                "operation_type": r.operation_type,
+                "description": r.description,
+                "status": r.status,
+                "created_at": datetime.fromtimestamp(r.created_at).isoformat(),
+                "expires_at": datetime.fromtimestamp(r.expires_at).isoformat(),
+                "remaining_seconds": r.remaining_seconds,
+                "time_ago": r.time_ago,
+                "inverse_func_name": r.inverse_func_name,
+                "inverse_args": r.inverse_args,
+                "original_result_summary": str(r.original_result)[:200],
+            }
+        )
 
     return json.dumps(export_data, ensure_ascii=False, indent=2)
 
@@ -973,7 +1009,8 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
             mins = remaining // 60
             time_hint = f"{mins}分钟"
 
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div style="
             background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
             border-left: 3px solid #10B981;
@@ -988,7 +1025,9 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
                 {op_icon} {op_label}
             </span>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         col_hint, col_view = st.columns([2, 1])
 
@@ -1036,8 +1075,12 @@ def render_batch_undo(session_id: str):
         return
 
     try:
-        records_list = getattr(um, '_records', {}).get(session_id, [])
-        active_records = [r for r in records_list if r.status == "active" and r.expires_at > time.time()]
+        records_list = getattr(um, "_records", {}).get(session_id, [])
+        active_records = [
+            r
+            for r in records_list
+            if r.status == "active" and r.expires_at > time.time()
+        ]
 
         if len(active_records) < 2:
             st.info("⚠️ 批量撤销需要至少2个可撤销的操作")
@@ -1050,17 +1093,23 @@ def render_batch_undo(session_id: str):
         selected_ids = []
 
         for idx, r in enumerate(active_records):
-            display = _convert_to_display_record({
-                "operation_id": r.operation_id,
-                "operation_type": r.operation_type.value if hasattr(r.operation_type, 'value') else str(r.operation_type),
-                "session_id": r.session_id,
-                "inverse_func_name": r.inverse_func_name,
-                "inverse_args": r.inverse_args,
-                "original_result": r.original_result,
-                "created_at": r.created_at,
-                "expires_at": r.expires_at,
-                "status": r.status,
-            })
+            display = _convert_to_display_record(
+                {
+                    "operation_id": r.operation_id,
+                    "operation_type": (
+                        r.operation_type.value
+                        if hasattr(r.operation_type, "value")
+                        else str(r.operation_type)
+                    ),
+                    "session_id": r.session_id,
+                    "inverse_func_name": r.inverse_func_name,
+                    "inverse_args": r.inverse_args,
+                    "original_result": r.original_result,
+                    "created_at": r.created_at,
+                    "expires_at": r.expires_at,
+                    "status": r.status,
+                }
+            )
 
             col_check, col_info = st.columns([1, 4])
 
@@ -1074,7 +1123,9 @@ def render_batch_undo(session_id: str):
 
             with col_info:
                 st.markdown(f"**{display.description}**")
-                st.caption(f"{display.time_ago} | {_calculate_remaining_time(display)[2]}")
+                st.caption(
+                    f"{display.time_ago} | {_calculate_remaining_time(display)[2]}"
+                )
 
         if selected_ids:
             st.divider()
@@ -1092,7 +1143,9 @@ def render_batch_undo(session_id: str):
 
                 for i, op_id in enumerate(selected_ids):
                     progress = int(((i + 1) / len(selected_ids)) * 100)
-                    progress_bar.progress(progress, text=f"正在撤销 ({i+1}/{len(selected_ids)})...")
+                    progress_bar.progress(
+                        progress, text=f"正在撤销 ({i+1}/{len(selected_ids)})..."
+                    )
 
                     result = execute_undo(session_id, op_id)
                     if result["success"]:
@@ -1103,7 +1156,9 @@ def render_batch_undo(session_id: str):
 
                 progress_bar.progress(100, text="✅ 批量撤销完成!")
 
-                st.success(f"✅ 批量撤销完成: 成功 {success_count} 个, 失败 {fail_count} 个")
+                st.success(
+                    f"✅ 批量撤销完成: 成功 {success_count} 个, 失败 {fail_count} 个"
+                )
                 time.sleep(1)
                 st.rerun()
         else:

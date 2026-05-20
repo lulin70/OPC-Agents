@@ -68,7 +68,9 @@ class ConfigManager:
                 if val:
                     model_config[key] = val
             if model_name == "ollama":
-                ollama_enabled = os.environ.get("OLLAMA_ENABLED", "").strip().lower() in ("1", "true", "yes")
+                ollama_enabled = os.environ.get(
+                    "OLLAMA_ENABLED", ""
+                ).strip().lower() in ("1", "true", "yes")
                 if "base_url" not in model_config and not ollama_enabled:
                     continue
                 if "base_url" not in model_config and ollama_enabled:

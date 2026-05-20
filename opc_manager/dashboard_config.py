@@ -49,7 +49,7 @@ class PanelConfig:
         return {"enabled": self.enabled, "order": self.order}
 
     @classmethod
-    def from_dict(cls, d: dict) -> 'PanelConfig':
+    def from_dict(cls, d: dict) -> "PanelConfig":
         return cls(
             enabled=d.get("enabled", True),
             order=d.get("order", 0),
@@ -60,10 +60,12 @@ class PanelConfig:
 class DashboardConfig:
     layout: LayoutType = LayoutType.FOCUSED
     density: DensityLevel = DensityLevel.STANDARD
-    panels: Dict[str, PanelConfig] = field(default_factory=lambda: {
-        pid: PanelConfig(enabled=True, order=i)
-        for i, pid in enumerate(ALL_PANEL_IDS)
-    })
+    panels: Dict[str, PanelConfig] = field(
+        default_factory=lambda: {
+            pid: PanelConfig(enabled=True, order=i)
+            for i, pid in enumerate(ALL_PANEL_IDS)
+        }
+    )
 
     def save(self, path: Optional[Path] = None) -> None:
         target = path or DEFAULT_CONFIG_PATH
@@ -73,11 +75,13 @@ class DashboardConfig:
             "density": self.density.value,
             "panels": {pid: cfg.to_dict() for pid, cfg in self.panels.items()},
         }
-        target.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        target.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         logger.info("[dashboard_config] Saved config to %s", target)
 
     @classmethod
-    def load(cls, path: Optional[Path] = None) -> 'DashboardConfig':
+    def load(cls, path: Optional[Path] = None) -> "DashboardConfig":
         target = path or DEFAULT_CONFIG_PATH
         if not target.exists():
             logger.info("[dashboard_config] No config at %s, using defaults", target)
@@ -92,10 +96,16 @@ class DashboardConfig:
                 if pid in panels_raw and isinstance(panels_raw[pid], dict):
                     panels[pid] = PanelConfig.from_dict(panels_raw[pid])
                 else:
-                    panels[pid] = PanelConfig(enabled=True, order=ALL_PANEL_IDS.index(pid))
+                    panels[pid] = PanelConfig(
+                        enabled=True, order=ALL_PANEL_IDS.index(pid)
+                    )
             return cls(layout=layout, density=density, panels=panels)
         except (json.JSONDecodeError, ValueError, TypeError) as exc:
-            logger.warning("[dashboard_config] Corrupted config at %s (%s), using defaults", target, exc)
+            logger.warning(
+                "[dashboard_config] Corrupted config at %s (%s), using defaults",
+                target,
+                exc,
+            )
             return cls()
 
     def get_enabled_panels(self) -> List[str]:

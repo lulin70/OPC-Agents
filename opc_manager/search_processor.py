@@ -170,7 +170,10 @@ STOP_WORDS_EN = {
 }
 
 _BUILTIN_KB_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "data", "knowledge", "builtin_knowledge.json"
+    os.path.dirname(os.path.dirname(__file__)),
+    "data",
+    "knowledge",
+    "builtin_knowledge.json",
 )
 
 
@@ -211,6 +214,7 @@ def _ensure_jieba():
     if not _jieba_initialized:
         try:
             import jieba
+
             jieba.setLogLevel(logging.WARNING)
             _jieba_initialized = True
         except ImportError:
@@ -280,7 +284,9 @@ class SearchResultProcessor:
         original_count = len(raw_results)
 
         if not raw_results:
-            logger.warning("[SearchResultProcessor] Input results empty, trying KB fallback")
+            logger.warning(
+                "[SearchResultProcessor] Input results empty, trying KB fallback"
+            )
             fallback_results = self._fallback_to_knowledge_base(query)
             processing_time = (time.time() - start_time) * 1000
             return ProcessedResult(
@@ -303,7 +309,9 @@ class SearchResultProcessor:
             scored = self._score_relevance(query, filtered, keywords)
 
             if len(scored) < self.min_results and original_count >= self.min_results:
-                logger.info("[SearchResultProcessor] Insufficient relevant results, enabling KB fallback")
+                logger.info(
+                    "[SearchResultProcessor] Insufficient relevant results, enabling KB fallback"
+                )
                 fallback_results = self._fallback_to_knowledge_base(query)
                 scored = fallback_results + scored
 
@@ -326,7 +334,10 @@ class SearchResultProcessor:
             )
 
         except Exception as e:
-            logger.error("[SearchResultProcessor] Processing exception, degrading to original results: %s", e)
+            logger.error(
+                "[SearchResultProcessor] Processing exception, degrading to original results: %s",
+                e,
+            )
             processing_time = (time.time() - start_time) * 1000
             return ProcessedResult(
                 results=raw_results,
@@ -508,7 +519,9 @@ class SearchResultProcessor:
 
         return filtered
 
-    def _score_relevance(self, query: str, results: List[Dict], keywords: List[str] = None) -> List[Dict]:
+    def _score_relevance(
+        self, query: str, results: List[Dict], keywords: List[str] = None
+    ) -> List[Dict]:
         """Simplified TF-IDF scoring: title weight ×2 + snippet overlap
 
         Scoring formula:
@@ -603,7 +616,9 @@ class SearchResultProcessor:
         return fallback_entries
 
     def _search_file_knowledge_base(self, query: str) -> List[Dict]:
-        kb_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "knowledge")
+        kb_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "data", "knowledge"
+        )
         if not os.path.isdir(kb_dir):
             return []
 
@@ -624,6 +639,7 @@ class SearchResultProcessor:
                 continue
 
             from opc_manager.utils import sanitize_for_llm
+
             content = sanitize_for_llm(content, 1500)
             content_lower = content.lower()
             title = os.path.splitext(filename)[0]
@@ -633,16 +649,22 @@ class SearchResultProcessor:
 
             if match_count > 0 or title_match > 0:
                 snippet = content[:200].replace("\n", " ").strip()
-                entries.append({
-                    "title": title,
-                    "snippet": snippet,
-                    "href": f"file://knowledge/{filename}",
-                    "_kb_match_score": total_score,
-                })
+                entries.append(
+                    {
+                        "title": title,
+                        "snippet": snippet,
+                        "href": f"file://knowledge/{filename}",
+                        "_kb_match_score": total_score,
+                    }
+                )
 
         entries.sort(key=lambda x: x.get("_kb_match_score", 0), reverse=True)
         for entry in entries:
             entry.pop("_kb_match_score", None)
         if entries:
-            logger.info("[SearchResultProcessor] File KB matched %s entries for '%s'", len(entries), query)
+            logger.info(
+                "[SearchResultProcessor] File KB matched %s entries for '%s'",
+                len(entries),
+                query,
+            )
         return entries[:10]

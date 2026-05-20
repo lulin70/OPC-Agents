@@ -19,7 +19,13 @@ from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass, field
 import logging
 
-from opc_manager.skill_registry import SkillRegistry, Skill, SkillCategory, SkillInput, SkillOutput
+from opc_manager.skill_registry import (
+    SkillRegistry,
+    Skill,
+    SkillCategory,
+    SkillInput,
+    SkillOutput,
+)
 from opc_manager.scenario_engine_v2 import ScenarioEngineV2, ScenarioConfig
 
 logger = logging.getLogger(__name__)
@@ -28,6 +34,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ScenarioSkillMapping:
     """场景到技能的映射关系"""
+
     scenario_id: str
     skill_id: str
     skill_name: str
@@ -39,7 +46,7 @@ class ScenarioSkillMapping:
 
 class ScenarioToSkillMigrator:
     """场景到技能迁移器"""
-    
+
     # 预定义的场景到技能映射
     MAPPINGS: List[ScenarioSkillMapping] = [
         ScenarioSkillMapping(
@@ -50,15 +57,21 @@ class ScenarioToSkillMigrator:
             inputs=[
                 SkillInput(name="product_name", type="str", description="产品名称"),
                 SkillInput(name="target_market", type="str", description="目标市场"),
-                SkillInput(name="launch_date", type="str", description="发布日期（可选）"),
+                SkillInput(
+                    name="launch_date", type="str", description="发布日期（可选）"
+                ),
             ],
             outputs=[
-                SkillOutput(name="market_research", type="str", description="市场调研报告"),
+                SkillOutput(
+                    name="market_research", type="str", description="市场调研报告"
+                ),
                 SkillOutput(name="product_doc", type="str", description="产品需求文档"),
-                SkillOutput(name="marketing_plan", type="str", description="营销推广方案"),
+                SkillOutput(
+                    name="marketing_plan", type="str", description="营销推广方案"
+                ),
                 SkillOutput(name="full_plan", type="str", description="完整发布方案"),
             ],
-            description="完整的新产品发布流程，从市场调研到最终发布"
+            description="完整的新产品发布流程，从市场调研到最终发布",
         ),
         ScenarioSkillMapping(
             scenario_id="write_report",
@@ -68,14 +81,16 @@ class ScenarioToSkillMigrator:
             inputs=[
                 SkillInput(name="report_type", type="str", description="报告类型"),
                 SkillInput(name="topic", type="str", description="报告主题"),
-                SkillInput(name="data_sources", type="list", description="数据源列表（可选）"),
+                SkillInput(
+                    name="data_sources", type="list", description="数据源列表（可选）"
+                ),
             ],
             outputs=[
                 SkillOutput(name="data_package", type="str", description="数据资料包"),
                 SkillOutput(name="analysis_result", type="str", description="分析结果"),
                 SkillOutput(name="final_report", type="str", description="完整报告"),
             ],
-            description="自动收集数据、分析并生成专业报告"
+            description="自动收集数据、分析并生成专业报告",
         ),
         ScenarioSkillMapping(
             scenario_id="organize_meeting",
@@ -84,15 +99,19 @@ class ScenarioToSkillMigrator:
             category=SkillCategory.OPERATION,
             inputs=[
                 SkillInput(name="topic", type="str", description="会议主题"),
-                SkillInput(name="participants", type="list", description="参会人员列表"),
-                SkillInput(name="preferred_time", type="str", description="期望时间（可选）"),
+                SkillInput(
+                    name="participants", type="list", description="参会人员列表"
+                ),
+                SkillInput(
+                    name="preferred_time", type="str", description="期望时间（可选）"
+                ),
             ],
             outputs=[
                 SkillOutput(name="time安排", type="str", description="会议时间安排"),
                 SkillOutput(name="invitation", type="str", description="会议邀请"),
                 SkillOutput(name="materials", type="str", description="会议材料包"),
             ],
-            description="自动协调时间、发送邀请、准备会议材料"
+            description="自动协调时间、发送邀请、准备会议材料",
         ),
         ScenarioSkillMapping(
             scenario_id="content_calendar",
@@ -105,11 +124,13 @@ class ScenarioToSkillMigrator:
                 SkillInput(name="period", type="str", description="规划周期"),
             ],
             outputs=[
-                SkillOutput(name="hotspot_analysis", type="str", description="热点分析"),
+                SkillOutput(
+                    name="hotspot_analysis", type="str", description="热点分析"
+                ),
                 SkillOutput(name="content_plan", type="str", description="内容规划表"),
                 SkillOutput(name="schedule", type="str", description="发布时间表"),
             ],
-            description="基于热点和粉丝画像，智能规划多平台内容发布计划"
+            description="基于热点和粉丝画像，智能规划多平台内容发布计划",
         ),
         ScenarioSkillMapping(
             scenario_id="digital_product_launch",
@@ -126,7 +147,7 @@ class ScenarioToSkillMigrator:
                 SkillOutput(name="landing_page", type="str", description="落地页文案"),
                 SkillOutput(name="promotion_plan", type="str", description="推广方案"),
             ],
-            description="针对数字产品（SaaS/工具/小程序）的发布流程"
+            description="针对数字产品（SaaS/工具/小程序）的发布流程",
         ),
         ScenarioSkillMapping(
             scenario_id="feedback_analysis",
@@ -139,11 +160,15 @@ class ScenarioToSkillMigrator:
                 SkillInput(name="time_range", type="str", description="时间范围"),
             ],
             outputs=[
-                SkillOutput(name="sentiment_report", type="str", description="情感分析报告"),
+                SkillOutput(
+                    name="sentiment_report", type="str", description="情感分析报告"
+                ),
                 SkillOutput(name="issue_summary", type="str", description="问题汇总"),
-                SkillOutput(name="improvement_suggestions", type="str", description="改进建议"),
+                SkillOutput(
+                    name="improvement_suggestions", type="str", description="改进建议"
+                ),
             ],
-            description="分析用户反馈，提取关键洞察和改进建议"
+            description="分析用户反馈，提取关键洞察和改进建议",
         ),
         ScenarioSkillMapping(
             scenario_id="consulting_proposal",
@@ -152,7 +177,9 @@ class ScenarioToSkillMigrator:
             category=SkillCategory.OPERATION,
             inputs=[
                 SkillInput(name="client_industry", type="str", description="客户行业"),
-                SkillInput(name="problem_description", type="str", description="问题描述"),
+                SkillInput(
+                    name="problem_description", type="str", description="问题描述"
+                ),
                 SkillInput(name="budget", type="str", description="预算范围（可选）"),
             ],
             outputs=[
@@ -160,7 +187,7 @@ class ScenarioToSkillMigrator:
                 SkillOutput(name="proposal", type="str", description="咨询方案"),
                 SkillOutput(name="cost_estimate", type="str", description="费用估算"),
             ],
-            description="为客户提供专业咨询方案和建议"
+            description="为客户提供专业咨询方案和建议",
         ),
         ScenarioSkillMapping(
             scenario_id="ecommerce_ops",
@@ -169,15 +196,23 @@ class ScenarioToSkillMigrator:
             category=SkillCategory.ANALYSIS,
             inputs=[
                 SkillInput(name="platform", type="str", description="电商平台"),
-                SkillInput(name="analysis_dimension", type="str", description="分析维度"),
+                SkillInput(
+                    name="analysis_dimension", type="str", description="分析维度"
+                ),
                 SkillInput(name="time_period", type="str", description="时间周期"),
             ],
             outputs=[
-                SkillOutput(name="sales_analysis", type="str", description="销售数据分析"),
-                SkillOutput(name="inventory_report", type="str", description="库存报告"),
-                SkillOutput(name="optimization_suggestions", type="str", description="优化建议"),
+                SkillOutput(
+                    name="sales_analysis", type="str", description="销售数据分析"
+                ),
+                SkillOutput(
+                    name="inventory_report", type="str", description="库存报告"
+                ),
+                SkillOutput(
+                    name="optimization_suggestions", type="str", description="优化建议"
+                ),
             ],
-            description="分析电商运营数据，提供优化建议"
+            description="分析电商运营数据，提供优化建议",
         ),
         ScenarioSkillMapping(
             scenario_id="project_deliverable",
@@ -194,7 +229,7 @@ class ScenarioToSkillMigrator:
                 SkillOutput(name="schedule", type="str", description="项目进度表"),
                 SkillOutput(name="deliverables", type="str", description="交付物清单"),
             ],
-            description="管理项目交付流程，确保按时完成"
+            description="管理项目交付流程，确保按时完成",
         ),
     ]
 
@@ -205,27 +240,31 @@ class ScenarioToSkillMigrator:
 
     def _create_skill_executor(self, scenario_id: str) -> Callable:
         """创建技能执行器"""
+
         async def execute(**kwargs) -> Dict[str, Any]:
             scenario_config = self.scenario_engine._load_scenarios().get(scenario_id)
             if not scenario_config:
                 return {"success": False, "error": f"场景 {scenario_id} 不存在"}
-            
+
             return {
                 "success": True,
                 "data": {
                     "scenario_id": scenario_id,
-                    "workflow_steps": [step.to_dict() for step in scenario_config.workflow_steps],
+                    "workflow_steps": [
+                        step.to_dict() for step in scenario_config.workflow_steps
+                    ],
                     "deliverable": scenario_config.deliverable_template.name,
                     "estimated_duration": scenario_config.estimated_duration,
-                    "input_params": kwargs
-                }
+                    "input_params": kwargs,
+                },
             }
+
         return execute
 
     def migrate_all(self) -> Dict[str, bool]:
         """迁移所有场景为技能"""
         results = {}
-        
+
         for mapping in self.MAPPINGS:
             try:
                 skill = Skill(
@@ -235,21 +274,25 @@ class ScenarioToSkillMigrator:
                     category=mapping.category,
                     inputs=mapping.inputs,
                     outputs=mapping.outputs,
-                    execute=self._create_skill_executor(mapping.scenario_id)
+                    execute=self._create_skill_executor(mapping.scenario_id),
                 )
-                
+
                 success = self.skill_registry.register_skill(skill)
                 results[mapping.skill_id] = success
-                
+
                 if success:
-                    logger.info("场景 %s 已成功迁移为技能 %s", mapping.scenario_id, mapping.skill_id)
+                    logger.info(
+                        "场景 %s 已成功迁移为技能 %s",
+                        mapping.scenario_id,
+                        mapping.skill_id,
+                    )
                 else:
                     logger.warning("场景 %s 迁移失败", mapping.scenario_id)
-                    
+
             except Exception as e:
                 logger.error("迁移场景 %s 时出错: %s", mapping.scenario_id, str(e))
                 results[mapping.skill_id] = False
-        
+
         return results
 
     def migrate_by_id(self, scenario_id: str) -> bool:
@@ -258,7 +301,7 @@ class ScenarioToSkillMigrator:
         if not mapping:
             logger.error("未找到场景 %s 的映射", scenario_id)
             return False
-        
+
         try:
             skill = Skill(
                 skill_id=mapping.skill_id,
@@ -267,9 +310,9 @@ class ScenarioToSkillMigrator:
                 category=mapping.category,
                 inputs=mapping.inputs,
                 outputs=mapping.outputs,
-                execute=self._create_skill_executor(mapping.scenario_id)
+                execute=self._create_skill_executor(mapping.scenario_id),
             )
-            
+
             success = self.skill_registry.register_skill(skill)
             if success:
                 logger.info("场景 %s 已成功迁移为技能", scenario_id)
@@ -281,13 +324,21 @@ class ScenarioToSkillMigrator:
     def get_migration_status(self) -> Dict[str, Any]:
         """获取迁移状态"""
         registered_skills = self.skill_registry.list_all_skills()
-        scenario_skills = [s for s in registered_skills if s.skill_id in [m.skill_id for m in self.MAPPINGS]]
-        
+        scenario_skills = [
+            s
+            for s in registered_skills
+            if s.skill_id in [m.skill_id for m in self.MAPPINGS]
+        ]
+
         return {
             "total_scenarios": len(self.MAPPINGS),
             "migrated_skills": len(scenario_skills),
             "migrated_ids": [s.skill_id for s in scenario_skills],
-            "not_migrated": [m.skill_id for m in self.MAPPINGS if m.skill_id not in [s.skill_id for s in scenario_skills]]
+            "not_migrated": [
+                m.skill_id
+                for m in self.MAPPINGS
+                if m.skill_id not in [s.skill_id for s in scenario_skills]
+            ],
         }
 
 

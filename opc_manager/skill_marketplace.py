@@ -12,7 +12,9 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "marketplace")
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "data", "marketplace"
+)
 
 SANDBOX_TIMEOUT_SECONDS = 30
 SANDBOX_MAX_MEMORY_MB = 256
@@ -51,7 +53,9 @@ class MarketplaceSkill:
     version: str
     category: str
     author: str
-    permissions: List[PermissionLevel] = field(default_factory=lambda: [PermissionLevel.READ])
+    permissions: List[PermissionLevel] = field(
+        default_factory=lambda: [PermissionLevel.READ]
+    )
     dependencies: List[str] = field(default_factory=list)
     status: SkillStatus = SkillStatus.PENDING
     created_at: float = 0.0
@@ -69,7 +73,9 @@ class MarketplaceSkill:
 class APIKey:
     key_hash: str
     name: str
-    permissions: List[PermissionLevel] = field(default_factory=lambda: [PermissionLevel.READ])
+    permissions: List[PermissionLevel] = field(
+        default_factory=lambda: [PermissionLevel.READ]
+    )
     created_at: float = 0.0
     rate_limit: int = 100
     salt: str = ""
@@ -125,9 +131,11 @@ class SkillMarketplace:
                 for k, v in data.items():
                     perms = [PermissionLevel(p) for p in v.get("permissions", ["read"])]
                     api_key_obj = APIKey(
-                        key_hash=v["key_hash"], name=v["name"],
-                        permissions=perms, created_at=v.get("created_at", 0),
-                        rate_limit=v.get("rate_limit", 100)
+                        key_hash=v["key_hash"],
+                        name=v["name"],
+                        permissions=perms,
+                        created_at=v.get("created_at", 0),
+                        rate_limit=v.get("rate_limit", 100),
                     )
                     api_key_obj.salt = v.get("salt", "")
                     self._api_keys[k] = api_key_obj
@@ -142,14 +150,18 @@ class SkillMarketplace:
                     perms = [PermissionLevel(p) for p in v.get("permissions", ["read"])]
                     deps = v.get("dependencies", [])
                     self._skills[k] = MarketplaceSkill(
-                        skill_id=v["skill_id"], name=v["name"],
-                        description=v["description"], version=v["version"],
-                        category=v["category"], author=v["author"],
-                        permissions=perms, dependencies=deps,
+                        skill_id=v["skill_id"],
+                        name=v["name"],
+                        description=v["description"],
+                        version=v["version"],
+                        category=v["category"],
+                        author=v["author"],
+                        permissions=perms,
+                        dependencies=deps,
                         status=SkillStatus(v.get("status", "pending")),
                         created_at=v.get("created_at", 0),
                         updated_at=v.get("updated_at", 0),
-                        config=v.get("config", {})
+                        config=v.get("config", {}),
                     )
             except Exception as e:
                 logger.warning("加载技能数据失败: %s", e)
@@ -159,10 +171,12 @@ class SkillMarketplace:
             keys_data = {}
             for k, v in self._api_keys.items():
                 keys_data[k] = {
-                    "key_hash": v.key_hash, "name": v.name,
+                    "key_hash": v.key_hash,
+                    "name": v.name,
                     "permissions": [p.value for p in v.permissions],
-                    "created_at": v.created_at, "rate_limit": v.rate_limit,
-                    "salt": v.salt
+                    "created_at": v.created_at,
+                    "rate_limit": v.rate_limit,
+                    "salt": v.salt,
                 }
             with open(self._api_keys_file, "w") as f:
                 json.dump(keys_data, f, ensure_ascii=False, indent=2)
@@ -173,29 +187,34 @@ class SkillMarketplace:
             skills_data = {}
             for k, v in self._skills.items():
                 skills_data[k] = {
-                    "skill_id": v.skill_id, "name": v.name,
-                    "description": v.description, "version": v.version,
-                    "category": v.category, "author": v.author,
+                    "skill_id": v.skill_id,
+                    "name": v.name,
+                    "description": v.description,
+                    "version": v.version,
+                    "category": v.category,
+                    "author": v.author,
                     "permissions": [p.value for p in v.permissions],
                     "dependencies": v.dependencies,
                     "status": v.status.value,
-                    "created_at": v.created_at, "updated_at": v.updated_at,
-                    "config": v.config
+                    "created_at": v.created_at,
+                    "updated_at": v.updated_at,
+                    "config": v.config,
                 }
             with open(self._skills_file, "w") as f:
                 json.dump(skills_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.warning("保存技能数据失败: %s", e)
 
-    def create_api_key(self, name: str, permissions: List[PermissionLevel],
-                       rate_limit: int = 100) -> str:
+    def create_api_key(
+        self, name: str, permissions: List[PermissionLevel], rate_limit: int = 100
+    ) -> str:
         import secrets
+
         raw_key = f"opc_{secrets.token_hex(16)}"
         salt = secrets.token_hex(8)
         key_hash = hashlib.sha256(f"{salt}:{raw_key}".encode()).hexdigest()
         self._api_keys[key_hash] = APIKey(
-            key_hash=key_hash, name=name,
-            permissions=permissions, rate_limit=rate_limit
+            key_hash=key_hash, name=name, permissions=permissions, rate_limit=rate_limit
         )
         self._api_keys[key_hash].salt = salt
         self._save_data()
@@ -215,7 +234,11 @@ class SkillMarketplace:
         key_info = self.authenticate(api_key)
         if not key_info:
             return False
-        perm_order = {PermissionLevel.READ: 0, PermissionLevel.WRITE: 1, PermissionLevel.EXECUTE: 2}
+        perm_order = {
+            PermissionLevel.READ: 0,
+            PermissionLevel.WRITE: 1,
+            PermissionLevel.EXECUTE: 2,
+        }
         return any(
             perm_order.get(p, 0) >= perm_order.get(required, 0)
             for p in key_info.permissions
@@ -229,7 +252,11 @@ class SkillMarketplace:
         skill.status = SkillStatus.PENDING
         self._skills[skill.skill_id] = skill
         self._save_data()
-        return {"success": True, "skill_id": skill.skill_id, "status": skill.status.value}
+        return {
+            "success": True,
+            "skill_id": skill.skill_id,
+            "status": skill.status.value,
+        }
 
     def approve_skill(self, skill_id: str, api_key: str) -> Dict[str, Any]:
         if not self.check_permission(api_key, PermissionLevel.WRITE):
@@ -242,8 +269,9 @@ class SkillMarketplace:
         self._save_data()
         return {"success": True, "skill_id": skill_id, "status": "approved"}
 
-    def discover_skills(self, category: Optional[str] = None,
-                        keyword: Optional[str] = None) -> List[Dict[str, Any]]:
+    def discover_skills(
+        self, category: Optional[str] = None, keyword: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         results = []
         for skill in self._skills.values():
             if skill.status != SkillStatus.APPROVED:
@@ -254,14 +282,16 @@ class SkillMarketplace:
                 kw = keyword.lower()
                 if kw not in skill.name.lower() and kw not in skill.description.lower():
                     continue
-            results.append({
-                "skill_id": skill.skill_id,
-                "name": skill.name,
-                "description": skill.description,
-                "version": skill.version,
-                "category": skill.category,
-                "author": skill.author,
-            })
+            results.append(
+                {
+                    "skill_id": skill.skill_id,
+                    "name": skill.name,
+                    "description": skill.description,
+                    "version": skill.version,
+                    "category": skill.category,
+                    "author": skill.author,
+                }
+            )
         return results
 
     def get_skill(self, skill_id: str) -> Optional[Dict[str, Any]]:
@@ -280,8 +310,9 @@ class SkillMarketplace:
             "config": skill.config,
         }
 
-    def execute_skill(self, skill_id: str, parameters: Dict[str, Any],
-                      api_key: str) -> Dict[str, Any]:
+    def execute_skill(
+        self, skill_id: str, parameters: Dict[str, Any], api_key: str
+    ) -> Dict[str, Any]:
         if not self.check_permission(api_key, PermissionLevel.EXECUTE):
             return {"success": False, "error": "权限不足：需要EXECUTE权限"}
         skill = self._skills.get(skill_id)
@@ -292,9 +323,11 @@ class SkillMarketplace:
 
         try:
             from .skill_registry import SkillRegistry
-            if not hasattr(self, '_skill_registry') or self._skill_registry is None:
+
+            if not hasattr(self, "_skill_registry") or self._skill_registry is None:
                 self._skill_registry = SkillRegistry()
             import asyncio
+
             try:
                 loop = asyncio.get_running_loop()
             except RuntimeError:
@@ -302,10 +335,11 @@ class SkillMarketplace:
 
             if loop and loop.is_running():
                 import concurrent.futures
+
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                     future = pool.submit(
                         asyncio.run,
-                        self._skill_registry.execute_skill(skill_id, **parameters)
+                        self._skill_registry.execute_skill(skill_id, **parameters),
                     )
                     exec_result = future.result(timeout=60)
             else:
@@ -344,8 +378,12 @@ class SkillMarketplace:
     def get_stats(self) -> Dict[str, Any]:
         return {
             "total_skills": len(self._skills),
-            "approved_skills": sum(1 for s in self._skills.values() if s.status == SkillStatus.APPROVED),
-            "pending_skills": sum(1 for s in self._skills.values() if s.status == SkillStatus.PENDING),
+            "approved_skills": sum(
+                1 for s in self._skills.values() if s.status == SkillStatus.APPROVED
+            ),
+            "pending_skills": sum(
+                1 for s in self._skills.values() if s.status == SkillStatus.PENDING
+            ),
             "total_api_keys": len(self._api_keys),
             "categories": self.list_categories(),
         }
@@ -354,8 +392,12 @@ class SkillMarketplace:
 class ExternalSkillMarketplace:
 
     REGISTRIES = {
-        "opc_official": os.environ.get("OPC_REGISTRY_URL", "https://registry.opc-agents.dev/skills"),
-        "github": os.environ.get("OPC_GITHUB_REGISTRY_URL", "https://api.github.com/search/repositories"),
+        "opc_official": os.environ.get(
+            "OPC_REGISTRY_URL", "https://registry.opc-agents.dev/skills"
+        ),
+        "github": os.environ.get(
+            "OPC_GITHUB_REGISTRY_URL", "https://api.github.com/search/repositories"
+        ),
         "mcp_hub": os.environ.get("OPC_MCP_HUB_URL", "https://mcphub.io/api/servers"),
     }
 
@@ -370,6 +412,7 @@ class ExternalSkillMarketplace:
 
     def _load_installed_skills(self) -> None:
         from opc_manager.data_manager import execute_query
+
         try:
             rows = execute_query("SELECT * FROM external_skills")
             for row in rows:
@@ -395,15 +438,22 @@ class ExternalSkillMarketplace:
     def search_skills(self, query: str, category: str = "") -> Dict[str, Any]:
         results = []
         for skill_id, skill_data in self._installed_skills.items():
-            if query.lower() not in skill_data.get("name", "").lower() and \
-               query.lower() not in skill_data.get("description", "").lower():
+            if (
+                query.lower() not in skill_data.get("name", "").lower()
+                and query.lower() not in skill_data.get("description", "").lower()
+            ):
                 continue
-            if category and skill_data.get("config", {}).get("category", "") != category:
+            if (
+                category
+                and skill_data.get("config", {}).get("category", "") != category
+            ):
                 continue
-            results.append({
-                **skill_data,
-                "source_type": "local",
-            })
+            results.append(
+                {
+                    **skill_data,
+                    "source_type": "local",
+                }
+            )
 
         remote_results = self._search_remote_registries(query, category)
         for r in remote_results:
@@ -421,7 +471,9 @@ class ExternalSkillMarketplace:
             "total": len(results),
         }
 
-    def _search_remote_registries(self, query: str, category: str = "") -> List[Dict[str, Any]]:
+    def _search_remote_registries(
+        self, query: str, category: str = ""
+    ) -> List[Dict[str, Any]]:
         results = []
         try:
             import urllib.request
@@ -430,43 +482,57 @@ class ExternalSkillMarketplace:
             for registry_name, registry_url in self.REGISTRIES.items():
                 try:
                     if registry_name == "github":
-                        params = urllib.parse.urlencode({
-                            "q": f"{query} opc-skill",
-                            "per_page": 5,
-                        })
+                        params = urllib.parse.urlencode(
+                            {
+                                "q": f"{query} opc-skill",
+                                "per_page": 5,
+                            }
+                        )
                         url = f"{registry_url}?{params}"
                     else:
-                        params = urllib.parse.urlencode({"q": query, "category": category})
+                        params = urllib.parse.urlencode(
+                            {"q": query, "category": category}
+                        )
                         url = f"{registry_url}?{params}"
 
-                    req = urllib.request.Request(url, headers={"User-Agent": "OPC-Agents/1.0"})
-                    with urllib.request.urlopen(req, timeout=5, context=self._ssl_context) as resp:
+                    req = urllib.request.Request(
+                        url, headers={"User-Agent": "OPC-Agents/1.0"}
+                    )
+                    with urllib.request.urlopen(
+                        req, timeout=5, context=self._ssl_context
+                    ) as resp:
                         data = json.loads(resp.read().decode())
 
                     if registry_name == "github" and "items" in data:
                         for item in data["items"][:5]:
-                            results.append({
-                                "skill_id": f"github_{item.get('id', '')}",
-                                "name": item.get("name", ""),
-                                "description": item.get("description", ""),
-                                "source": registry_name,
-                                "version": "latest",
-                                "downloads": item.get("stargazers_count", 0),
-                                "rating": 0.0,
-                                "url": item.get("html_url", ""),
-                            })
+                            results.append(
+                                {
+                                    "skill_id": f"github_{item.get('id', '')}",
+                                    "name": item.get("name", ""),
+                                    "description": item.get("description", ""),
+                                    "source": registry_name,
+                                    "version": "latest",
+                                    "downloads": item.get("stargazers_count", 0),
+                                    "rating": 0.0,
+                                    "url": item.get("html_url", ""),
+                                }
+                            )
                     elif isinstance(data, list):
                         for item in data[:5]:
-                            results.append({
-                                "skill_id": item.get("id", item.get("skill_id", "")),
-                                "name": item.get("name", ""),
-                                "description": item.get("description", ""),
-                                "source": registry_name,
-                                "version": item.get("version", "1.0.0"),
-                                "downloads": item.get("downloads", 0),
-                                "rating": item.get("rating", 0.0),
-                                "config": item.get("config", {}),
-                            })
+                            results.append(
+                                {
+                                    "skill_id": item.get(
+                                        "id", item.get("skill_id", "")
+                                    ),
+                                    "name": item.get("name", ""),
+                                    "description": item.get("description", ""),
+                                    "source": registry_name,
+                                    "version": item.get("version", "1.0.0"),
+                                    "downloads": item.get("downloads", 0),
+                                    "rating": item.get("rating", 0.0),
+                                    "config": item.get("config", {}),
+                                }
+                            )
                 except Exception as e:
                     logger.debug("搜索注册表 %s 失败: %s", registry_name, e)
                     continue
@@ -475,8 +541,9 @@ class ExternalSkillMarketplace:
 
         return results
 
-    def install_skill(self, skill_id: str, source: str = "opc_official",
-                      confirmed: bool = False) -> Dict[str, Any]:
+    def install_skill(
+        self, skill_id: str, source: str = "opc_official", confirmed: bool = False
+    ) -> Dict[str, Any]:
         if skill_id in self._installed_skills:
             return {"success": False, "error": f"技能已安装: {skill_id}"}
 
@@ -489,7 +556,10 @@ class ExternalSkillMarketplace:
         )
 
         if trust_level == TrustLevel.UNVERIFIED:
-            return {"success": False, "error": f"技能 {skill_id} 信任等级为UNVERIFIED，禁止安装"}
+            return {
+                "success": False,
+                "error": f"技能 {skill_id} 信任等级为UNVERIFIED，禁止安装",
+            }
 
         if not confirmed:
             permissions_required = skill_info.get("config", {}).get("permissions", [])
@@ -508,13 +578,20 @@ class ExternalSkillMarketplace:
 
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         from opc_manager.data_manager import execute_write, gen_id
+
         record_id = gen_id()
         execute_write(
             "INSERT INTO external_skills (id, name, description, source, version, skill_config, trust_level, installed_at) VALUES (?,?,?,?,?,?,?,?)",
-            (record_id, skill_info.get("name", skill_id), skill_info.get("description", ""),
-             source, skill_info.get("version", "1.0.0"),
-             json.dumps(skill_info.get("config", {}), ensure_ascii=False),
-             trust_level.value, now)
+            (
+                record_id,
+                skill_info.get("name", skill_id),
+                skill_info.get("description", ""),
+                source,
+                skill_info.get("version", "1.0.0"),
+                json.dumps(skill_info.get("config", {}), ensure_ascii=False),
+                trust_level.value,
+                now,
+            ),
         )
 
         self._installed_skills[skill_id] = {
@@ -545,9 +622,12 @@ class ExternalSkillMarketplace:
 
         try:
             import urllib.request
+
             url = f"{registry_url}/{skill_id}"
             req = urllib.request.Request(url, headers={"User-Agent": "OPC-Agents/1.0"})
-            with urllib.request.urlopen(req, timeout=10, context=self._ssl_context) as resp:
+            with urllib.request.urlopen(
+                req, timeout=10, context=self._ssl_context
+            ) as resp:
                 data = json.loads(resp.read().decode())
             return data
         except Exception as e:
@@ -566,6 +646,7 @@ class ExternalSkillMarketplace:
             return {"success": False, "error": f"技能未安装: {skill_id}"}
 
         from opc_manager.data_manager import execute_write
+
         execute_write("DELETE FROM external_skills WHERE id=?", (skill_id,))
 
         skill_data = self._installed_skills.pop(skill_id)
@@ -589,41 +670,52 @@ class ExternalSkillMarketplace:
         results = []
 
         for server_id, server_info in self._mcp_connections.items():
-            if query.lower() in server_info.name.lower() or \
-               query.lower() in server_info.description.lower():
-                results.append({
-                    "server_id": server_info.server_id,
-                    "name": server_info.name,
-                    "description": server_info.description,
-                    "url": server_info.url,
-                    "capabilities": server_info.capabilities,
-                    "trust_level": server_info.trust_level.value,
-                    "connected": server_info.connected,
-                    "source_type": "local",
-                })
+            if (
+                query.lower() in server_info.name.lower()
+                or query.lower() in server_info.description.lower()
+            ):
+                results.append(
+                    {
+                        "server_id": server_info.server_id,
+                        "name": server_info.name,
+                        "description": server_info.description,
+                        "url": server_info.url,
+                        "capabilities": server_info.capabilities,
+                        "trust_level": server_info.trust_level.value,
+                        "connected": server_info.connected,
+                        "source_type": "local",
+                    }
+                )
 
         try:
             import urllib.request
             import urllib.parse
+
             mcp_url = self.REGISTRIES.get("mcp_hub", "")
             if mcp_url:
                 params = urllib.parse.urlencode({"q": query})
                 url = f"{mcp_url}?{params}"
-                req = urllib.request.Request(url, headers={"User-Agent": "OPC-Agents/1.0"})
-                with urllib.request.urlopen(req, timeout=5, context=self._ssl_context) as resp:
+                req = urllib.request.Request(
+                    url, headers={"User-Agent": "OPC-Agents/1.0"}
+                )
+                with urllib.request.urlopen(
+                    req, timeout=5, context=self._ssl_context
+                ) as resp:
                     data = json.loads(resp.read().decode())
                 if isinstance(data, list):
                     for item in data[:10]:
-                        results.append({
-                            "server_id": item.get("id", ""),
-                            "name": item.get("name", ""),
-                            "description": item.get("description", ""),
-                            "url": item.get("url", ""),
-                            "capabilities": item.get("capabilities", []),
-                            "trust_level": item.get("trust_level", "unverified"),
-                            "connected": False,
-                            "source_type": "remote",
-                        })
+                        results.append(
+                            {
+                                "server_id": item.get("id", ""),
+                                "name": item.get("name", ""),
+                                "description": item.get("description", ""),
+                                "url": item.get("url", ""),
+                                "capabilities": item.get("capabilities", []),
+                                "trust_level": item.get("trust_level", "unverified"),
+                                "connected": False,
+                                "source_type": "remote",
+                            }
+                        )
         except Exception as e:
             logger.debug("搜索MCP Hub失败: %s", e)
 
@@ -634,7 +726,9 @@ class ExternalSkillMarketplace:
             "total": len(results),
         }
 
-    def connect_mcp(self, server_url: str, capabilities: List[str] = None) -> Dict[str, Any]:
+    def connect_mcp(
+        self, server_url: str, capabilities: List[str] = None
+    ) -> Dict[str, Any]:
         if not server_url.startswith("https://"):
             return {"success": False, "error": "MCP服务器URL必须使用HTTPS"}
 
@@ -644,8 +738,11 @@ class ExternalSkillMarketplace:
 
         try:
             from opc_manager.mcp_protocol import MCPClient
+
             client = MCPClient(server_url)
-            discovered_tools = client.list_tools() if hasattr(client, 'list_tools') else []
+            discovered_tools = (
+                client.list_tools() if hasattr(client, "list_tools") else []
+            )
         except ImportError:
             discovered_tools = []
             logger.debug("MCPClient不可用，跳过工具发现")
@@ -653,7 +750,9 @@ class ExternalSkillMarketplace:
             logger.warning("MCP连接失败: %s", e)
             return {"success": False, "error": f"MCP连接失败: {str(e)}"}
 
-        caps = capabilities or [t.get("name", "") for t in discovered_tools if isinstance(t, dict)]
+        caps = capabilities or [
+            t.get("name", "") for t in discovered_tools if isinstance(t, dict)
+        ]
         server_info = MCPServerInfo(
             server_id=server_id,
             name=server_url.split("//")[-1].split("/")[0],
@@ -685,12 +784,17 @@ class ExternalSkillMarketplace:
             permissions = config.get("permissions", [])
             dangerous_perms = {"filesystem:full", "network:full", "system:full"}
             if dangerous_perms.intersection(set(permissions)):
-                logger.warning("技能请求危险权限: %s", dangerous_perms.intersection(set(permissions)))
+                logger.warning(
+                    "技能请求危险权限: %s",
+                    dangerous_perms.intersection(set(permissions)),
+                )
                 return False
 
         return True
 
-    def _get_trust_level(self, source: str, downloads: int, rating: float) -> TrustLevel:
+    def _get_trust_level(
+        self, source: str, downloads: int, rating: float
+    ) -> TrustLevel:
         if source == "opc_official":
             return TrustLevel.OFFICIAL
         if source == "github" and downloads >= 100:
@@ -701,10 +805,20 @@ class ExternalSkillMarketplace:
             return TrustLevel.COMMUNITY
         return TrustLevel.UNVERIFIED
 
-    def _log_audit(self, action: str, skill_id: str, source: str, trust_level: str) -> None:
-        logger.info("[AUDIT] action=%s skill_id=%s source=%s trust_level=%s", action, skill_id, source, trust_level)
+    def _log_audit(
+        self, action: str, skill_id: str, source: str, trust_level: str
+    ) -> None:
+        logger.info(
+            "[AUDIT] action=%s skill_id=%s source=%s trust_level=%s",
+            action,
+            skill_id,
+            source,
+            trust_level,
+        )
 
-    def execute_in_sandbox(self, skill_id: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_in_sandbox(
+        self, skill_id: str, parameters: Dict[str, Any]
+    ) -> Dict[str, Any]:
         skill_data = self._installed_skills.get(skill_id)
         if not skill_data:
             return {"success": False, "error": f"技能未安装: {skill_id}"}
@@ -712,13 +826,17 @@ class ExternalSkillMarketplace:
         config = skill_data.get("config", {})
         entry_point = config.get("entry_point", "")
         if not entry_point:
-            return {"success": True, "data": {"goal": parameters.get("goal", ""), "sandbox": True}}
+            return {
+                "success": True,
+                "data": {"goal": parameters.get("goal", ""), "sandbox": True},
+            }
 
         self._check_network_whitelist(config)
 
         try:
             cmd = [
-                "python3", "-c",
+                "python3",
+                "-c",
                 f"import json,sys; params=json.loads(sys.stdin.read()); exec(open('{entry_point}').read())",
             ]
             input_json = json.dumps(parameters, ensure_ascii=False)
@@ -730,8 +848,13 @@ class ExternalSkillMarketplace:
                 timeout=SANDBOX_TIMEOUT_SECONDS,
             )
             if result.returncode != 0:
-                logger.warning("Sandbox execution failed for %s: %s", skill_id, result.stderr[:200])
-                return {"success": False, "error": f"沙箱执行失败: {result.stderr[:200]}"}
+                logger.warning(
+                    "Sandbox execution failed for %s: %s", skill_id, result.stderr[:200]
+                )
+                return {
+                    "success": False,
+                    "error": f"沙箱执行失败: {result.stderr[:200]}",
+                }
             try:
                 output = json.loads(result.stdout)
                 return {"success": True, "data": output}
@@ -739,7 +862,10 @@ class ExternalSkillMarketplace:
                 return {"success": True, "data": {"output": result.stdout[:1000]}}
         except subprocess.TimeoutExpired:
             logger.warning("Sandbox timeout for %s", skill_id)
-            return {"success": False, "error": f"沙箱执行超时 ({SANDBOX_TIMEOUT_SECONDS}s)"}
+            return {
+                "success": False,
+                "error": f"沙箱执行超时 ({SANDBOX_TIMEOUT_SECONDS}s)",
+            }
         except Exception as e:
             logger.warning("Sandbox error for %s: %s", skill_id, e)
             return {"success": False, "error": f"沙箱执行异常: {str(e)}"}
@@ -749,9 +875,13 @@ class ExternalSkillMarketplace:
         config_hosts = config.get("allowed_hosts", [])
         if config_hosts:
             for host in config_hosts:
-                if host in allowed_hosts or any(host.endswith("." + d) for d in allowed_hosts):
+                if host in allowed_hosts or any(
+                    host.endswith("." + d) for d in allowed_hosts
+                ):
                     continue
-                logger.warning("[SANDBOX] Non-whitelisted host in skill config: %s", host)
+                logger.warning(
+                    "[SANDBOX] Non-whitelisted host in skill config: %s", host
+                )
 
     def get_external_skill(self, skill_id: str) -> Optional[Dict[str, Any]]:
         return self._installed_skills.get(skill_id)

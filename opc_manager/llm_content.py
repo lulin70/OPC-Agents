@@ -72,6 +72,7 @@ FORBIDDEN_PATTERNS = [
     "要記入",
 ]
 
+
 def _sanitize_url(url: str) -> str:
     """Sanitize URL to prevent javascript: and non-HTTP scheme injection
 
@@ -90,10 +91,12 @@ def _sanitize_url(url: str) -> str:
     if lower.startswith(("javascript:", "data:", "vbscript:", "blob:")):
         return ""
     from urllib.parse import urlparse
+
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https", ""):
         return ""
     return url
+
 
 BUSINESS_INFO_PATTERNS = {
     "product_name": r"(?:AI|SaaS|B2C|B2B)?[\u4e00-\u9fff]{2,8}(?:助手|平台|系统|工具|服务|软件|产品|应用)",
@@ -260,7 +263,9 @@ class LLMEnhancedContentGenerator:
                     result.placeholder_count = self._count_placeholders(result.content)
 
                 result.content = self._redact_secrets(result.content)
-                result = self._quality_gate(result, business_info, has_search_results=bool(search_results))
+                result = self._quality_gate(
+                    result, business_info, has_search_results=bool(search_results)
+                )
 
                 logger.info(
                     f"[LLMContentGen] LLM generation succeeded: "
@@ -293,7 +298,9 @@ class LLMEnhancedContentGenerator:
         fallback_result.quality_score = self._calculate_quality_score(fallback_result)
 
         fallback_result.content = self._redact_secrets(fallback_result.content)
-        fallback_result = self._quality_gate(fallback_result, business_info, has_search_results=bool(search_results))
+        fallback_result = self._quality_gate(
+            fallback_result, business_info, has_search_results=bool(search_results)
+        )
 
         logger.info(
             f"[LLMContentGen] Using degraded (template) mode: "
@@ -376,7 +383,11 @@ class LLMEnhancedContentGenerator:
             if title_clean or snippet_clean:
                 context_lines.append(f"[资料{i}] {title_clean}: {snippet_clean[:200]}")
 
-        return "\n".join(context_lines) if context_lines else "No valid search data available."
+        return (
+            "\n".join(context_lines)
+            if context_lines
+            else "No valid search data available."
+        )
 
     def _try_llm_generation(
         self,
@@ -503,9 +514,18 @@ class LLMEnhancedContentGenerator:
             else "(未检测到具体业务信息)"
         )
 
-        safe_input = user_input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        safe_business = business_str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        safe_context = re.sub(r"</?\w+[^>]*>", "", context).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        safe_input = (
+            user_input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
+        safe_business = (
+            business_str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
+        safe_context = (
+            re.sub(r"</?\w+[^>]*>", "", context)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
 
         persona = self.BUSINESS_TYPE_PERSONAS.get(
             business_type, self.BUSINESS_TYPE_PERSONAS.get("content_creator")
@@ -578,13 +598,18 @@ class LLMEnhancedContentGenerator:
 
             api_key, api_base, model = self._get_llm_config()
             if not api_base:
-                logger.info("[LLMContentGen] No LLM backend configured, skipping LLM call")
+                logger.info(
+                    "[LLMContentGen] No LLM backend configured, skipping LLM call"
+                )
                 return None
 
             payload = {
                 "model": model,
                 "messages": [
-                    {"role": "system", "content": "You are a professional business consultant. Respond in the same language as the user's input. CRITICAL RULES: 1) Never skip key analysis sections with excuses like 'due to time constraints' or 'for brevity'. 2) Never fabricate data — if data is unavailable, explicitly state 'data source needed' rather than making up numbers. 3) Never give hollow suggestions like 'further research recommended' — always provide at least one concrete, actionable step."},
+                    {
+                        "role": "system",
+                        "content": "You are a professional business consultant. Respond in the same language as the user's input. CRITICAL RULES: 1) Never skip key analysis sections with excuses like 'due to time constraints' or 'for brevity'. 2) Never fabricate data — if data is unavailable, explicitly state 'data source needed' rather than making up numbers. 3) Never give hollow suggestions like 'further research recommended' — always provide at least one concrete, actionable step.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 "temperature": 0.7,
@@ -598,7 +623,9 @@ class LLMEnhancedContentGenerator:
                 headers["Authorization"] = f"Bearer {api_key}"
 
             if not api_base.startswith("https://"):
-                logger.warning("[LLMContentGen] API base URL is not HTTPS: %s", api_base)
+                logger.warning(
+                    "[LLMContentGen] API base URL is not HTTPS: %s", api_base
+                )
 
             response = requests.post(
                 endpoint,
@@ -630,12 +657,15 @@ class LLMEnhancedContentGenerator:
 
     def _get_llm_config(self) -> Tuple[Optional[str], str, str]:
         from opc_manager.simple_llm_service import discover_llm_config
+
         config = discover_llm_config()
         api_key = config["api_key"] or None
         api_base = config["base_url"]
         model = config["model"]
         if api_key or api_base:
-            logger.info("[LLMContentGen] Using LLM config: base=%s, model=%s", api_base, model)
+            logger.info(
+                "[LLMContentGen] Using LLM config: base=%s, model=%s", api_base, model
+            )
         return api_key, api_base, model
 
     def _get_llm_api_key(self) -> Optional[str]:
@@ -677,7 +707,8 @@ class LLMEnhancedContentGenerator:
         content = content.replace("{search_context}", context)
         content = content.replace("{user_query}", user_input)
         content = content.replace(
-            "{goals}", ", ".join(business_info["targets"]) or "Based on user requirements"
+            "{goals}",
+            ", ".join(business_info["targets"]) or "Based on user requirements",
         )
         content = content.replace("{topic}", user_input)
 
@@ -728,7 +759,11 @@ class LLMEnhancedContentGenerator:
             parts.append(f"关键数据: {', '.join(info['numbers'])}")
         if info["targets"]:
             parts.append(f"目标: {', '.join(info['targets'])}")
-        return "\n".join(parts) if parts else "(Please supplement based on user requirements)"
+        return (
+            "\n".join(parts)
+            if parts
+            else "(Please supplement based on user requirements)"
+        )
 
     def _enforce_structure(self, content: str, template: str) -> str:
         """Force template structure to ensure LLM output doesn't deviate too far from skeleton
@@ -779,7 +814,20 @@ class LLMEnhancedContentGenerator:
             if pattern in cleaned:
                 replacement = (
                     "(auto-filled)"
-                    if pattern in ["___", "TBD", "tbd", "TODO", "FIXME", "placeholder", "to be determined", "to be filled", "後で", "未定", "要記入"]
+                    if pattern
+                    in [
+                        "___",
+                        "TBD",
+                        "tbd",
+                        "TODO",
+                        "FIXME",
+                        "placeholder",
+                        "to be determined",
+                        "to be filled",
+                        "後で",
+                        "未定",
+                        "要記入",
+                    ]
                     else ""
                 )
                 cleaned = cleaned.replace(pattern, replacement)
@@ -861,8 +909,10 @@ class LLMEnhancedContentGenerator:
         return max(0, min(100, score))
 
     def _quality_gate(
-        self, result: "GenerationResult", business_info: Dict[str, List[str]],
-        has_search_results: bool = False
+        self,
+        result: "GenerationResult",
+        business_info: Dict[str, List[str]],
+        has_search_results: bool = False,
     ) -> "GenerationResult":
         """Deliverable quality gate — reject low-quality output
 
@@ -896,10 +946,10 @@ class LLMEnhancedContentGenerator:
             failures.append(f"length={len(result.content)}<300")
 
         if has_search_results:
-            has_source = bool(
-                re.search(r"https?://\S+", result.content)
-            ) or bool(
-                re.search(r"来源|参考|引用|出处|source|ref", result.content, re.IGNORECASE)
+            has_source = bool(re.search(r"https?://\S+", result.content)) or bool(
+                re.search(
+                    r"来源|参考|引用|出处|source|ref", result.content, re.IGNORECASE
+                )
             )
             if not has_source:
                 failures.append("no_data_source")
@@ -908,9 +958,7 @@ class LLMEnhancedContentGenerator:
 
         if not result.quality_gate_passed:
             reason = ", ".join(failures)
-            logger.warning(
-                f"[LLMContentGen] Quality gate FAILED: {reason}"
-            )
+            logger.warning(f"[LLMContentGen] Quality gate FAILED: {reason}")
             result.content += (
                 f"\n\n---\n> ⚠️ 质量提示：此交付物未通过质量门禁（{reason}），"
                 f"内容可能不够完整。建议通过多轮对话补充细节。"
@@ -931,15 +979,15 @@ class LLMEnhancedContentGenerator:
             Content with secrets replaced by [REDACTED]
         """
         patterns = [
-            (r'sk-proj-[a-zA-Z0-9]{20,}', '[REDACTED-API-KEY]'),
-            (r'sk-[a-zA-Z0-9]{20,}', '[REDACTED-API-KEY]'),
-            (r'ghp_[a-zA-Z0-9]{36}', '[REDACTED-GITHUB-TOKEN]'),
-            (r'gho_[a-zA-Z0-9]{36}', '[REDACTED-GITHUB-TOKEN]'),
-            (r'ghs_[a-zA-Z0-9]{36}', '[REDACTED-GITHUB-TOKEN]'),
-            (r'glm-[a-zA-Z0-9]{20,}', '[REDACTED-GLM-KEY]'),
-            (r'moka/[a-zA-Z0-9\-]{10,}', '[REDACTED-MOKA-KEY]'),
-            (r'AKIA[0-9A-Z]{16}', '[REDACTED-AWS-KEY]'),
-            (r'Bearer\s+[a-zA-Z0-9\-._~+/]+=*', '[REDACTED-BEARER-TOKEN]'),
+            (r"sk-proj-[a-zA-Z0-9]{20,}", "[REDACTED-API-KEY]"),
+            (r"sk-[a-zA-Z0-9]{20,}", "[REDACTED-API-KEY]"),
+            (r"ghp_[a-zA-Z0-9]{36}", "[REDACTED-GITHUB-TOKEN]"),
+            (r"gho_[a-zA-Z0-9]{36}", "[REDACTED-GITHUB-TOKEN]"),
+            (r"ghs_[a-zA-Z0-9]{36}", "[REDACTED-GITHUB-TOKEN]"),
+            (r"glm-[a-zA-Z0-9]{20,}", "[REDACTED-GLM-KEY]"),
+            (r"moka/[a-zA-Z0-9\-]{10,}", "[REDACTED-MOKA-KEY]"),
+            (r"AKIA[0-9A-Z]{16}", "[REDACTED-AWS-KEY]"),
+            (r"Bearer\s+[a-zA-Z0-9\-._~+/]+=*", "[REDACTED-BEARER-TOKEN]"),
         ]
         for pattern, replacement in patterns:
             content = re.sub(pattern, replacement, content)

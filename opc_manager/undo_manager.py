@@ -13,12 +13,12 @@ import logging
 import threading
 import time
 
-
 logger = logging.getLogger(__name__)
 
 
 class OperationType(Enum):
     """Types of operations that can be undone."""
+
     EMAIL_SEND = "email_send"
     RECORD_INCOME = "record_income"
     RECORD_EXPENSE = "record_expense"
@@ -82,6 +82,7 @@ class UndoRecord:
         expires_at: Timestamp when undo window expires.
         status: Current status ('active', 'undone', 'expired').
     """
+
     operation_id: str
     operation_type: OperationType
     session_id: str
@@ -119,11 +120,18 @@ class UndoManager:
         if not session_id or not isinstance(session_id, str):
             raise ValueError("session_id must be a non-empty string")
         if len(session_id) > MAX_SESSION_ID_LENGTH:
-            raise ValueError(f"session_id exceeds maximum length of {MAX_SESSION_ID_LENGTH}")
+            raise ValueError(
+                f"session_id exceeds maximum length of {MAX_SESSION_ID_LENGTH}"
+            )
 
-    def push(self, session_id: str, op_type: OperationType,
-             inverse_func: str, inverse_args: dict,
-             original_result: dict) -> str:
+    def push(
+        self,
+        session_id: str,
+        op_type: OperationType,
+        inverse_func: str,
+        inverse_args: dict,
+        original_result: dict,
+    ) -> str:
         """Push a new undo record.
 
         Args:
@@ -161,7 +169,7 @@ class UndoManager:
             records = self._records[session_id]
             records.append(record)
             if len(records) > self.MAX_PER_SESSION:
-                self._records[session_id] = records[-self.MAX_PER_SESSION:]
+                self._records[session_id] = records[-self.MAX_PER_SESSION :]
 
         return record.operation_id
 
@@ -216,9 +224,14 @@ class UndoManager:
         try:
             func = self._resolve_inverse(record.inverse_func_name)
             if func is None:
-                return {"success": False, "error": f"Unknown inverse function: {record.inverse_func_name}"}
+                return {
+                    "success": False,
+                    "error": f"Unknown inverse function: {record.inverse_func_name}",
+                }
             result = func(**record.inverse_args)
-            logger.info("Undo succeeded: %s (%s)", operation_id, record.inverse_func_name)
+            logger.info(
+                "Undo succeeded: %s (%s)", operation_id, record.inverse_func_name
+            )
             return {"success": True, "operation_id": operation_id, "result": result}
         except (KeyError, TypeError) as e:
             logger.error("Undo parameter error: %s - %s", operation_id, e)
@@ -227,7 +240,12 @@ class UndoManager:
             logger.error("Undo I/O error: %s - %s", operation_id, e)
             return {"success": False, "error": f"I/O error: {e}"}
         except Exception as e:
-            logger.error("Undo failed for operation %s (%s): %s", operation_id, record.inverse_func_name, e)
+            logger.error(
+                "Undo failed for operation %s (%s): %s",
+                operation_id,
+                record.inverse_func_name,
+                e,
+            )
             return {"success": False, "error": f"Undo failed for {operation_id}: {e}"}
 
     def list_undoable(self, session_id: str) -> List[dict]:
@@ -246,13 +264,17 @@ class UndoManager:
             for r in self._records.get(session_id, []):
                 if r.status == "active":
                     remaining = max(0, int(r.expires_at - now))
-                    results.append({
-                        "operation_id": r.operation_id,
-                        "type": r.operation_type.value,
-                        "created_at": r.created_at,
-                        "remaining_seconds": remaining,
-                        "original_summary": str(r.original_result)[:ORIGINAL_SUMMARY_TRUNCATE],
-                    })
+                    results.append(
+                        {
+                            "operation_id": r.operation_id,
+                            "type": r.operation_type.value,
+                            "created_at": r.created_at,
+                            "remaining_seconds": remaining,
+                            "original_summary": str(r.original_result)[
+                                :ORIGINAL_SUMMARY_TRUNCATE
+                            ],
+                        }
+                    )
         return sorted(results, key=lambda x: x["created_at"], reverse=True)
 
     def cleanup_expired(self):
@@ -260,8 +282,11 @@ class UndoManager:
         now = time.time()
         with self._lock:
             for sid in list(self._records.keys()):
-                self._records[sid] = [r for r in self._records[sid]
-                                       if r.status == "active" and r.expires_at > now]
+                self._records[sid] = [
+                    r
+                    for r in self._records[sid]
+                    if r.status == "active" and r.expires_at > now
+                ]
                 if not self._records[sid]:
                     del self._records[sid]
 
@@ -269,6 +294,7 @@ class UndoManager:
     def _gen_id() -> str:
         """Generate a unique operation ID."""
         import uuid
+
         return uuid.uuid4().hex[:12]
 
     @staticmethod
@@ -287,9 +313,17 @@ class UndoManager:
         if func_name not in ALLOWED_FUNC_NAMES:
             raise ValueError(f"Unauthorized inverse function: {func_name}")
 
-        from opc_manager import (finance_skill, crm_skill, email_skill,
-                                  calendar_skill, proposal_skill,
-                                  invoice_skill, social_skill, task_skill)
+        from opc_manager import (
+            finance_skill,
+            crm_skill,
+            email_skill,
+            calendar_skill,
+            proposal_skill,
+            invoice_skill,
+            social_skill,
+            task_skill,
+        )
+
         mapping = {
             "undo_record_income": finance_skill.undo_record_income,
             "undo_record_expense": finance_skill.undo_record_expense,

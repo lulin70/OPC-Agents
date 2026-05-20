@@ -49,6 +49,7 @@ MAX_CACHE_SIZE_KB = 50
 @dataclass
 class CompletionItem:
     """Single completion suggestion item"""
+
     text: str
     display_text: str
     source: str  # "history" | "skill" | "template" | "contact"
@@ -64,14 +65,46 @@ class CompletionItem:
 
 
 COMPLETION_TEMPLATES = [
-    {"text": _t("ac_tmpl_write_report", topic="{topic}"), "display": _t("ac_tmpl_write_report_display"), "desc": _t("ac_tmpl_write_report_desc")},
-    {"text": _t("ac_tmpl_data_analysis", metric="{metric}"), "display": _t("ac_tmpl_data_analysis_display"), "desc": _t("ac_tmpl_data_analysis_desc")},
-    {"text": _t("ac_tmpl_record_income", amount="{amount}", project="{project}"), "display": _t("ac_tmpl_record_income_display"), "desc": _t("ac_tmpl_record_income_desc")},
-    {"text": _t("ac_tmpl_send_email", client="{client}", subject="{subject}"), "display": _t("ac_tmpl_send_email_display"), "desc": _t("ac_tmpl_send_email_desc")},
-    {"text": _t("ac_tmpl_create_task", task_title="{task_title}"), "display": _t("ac_tmpl_create_task_display"), "desc": _t("ac_tmpl_create_task_desc")},
-    {"text": _t("ac_tmpl_monthly_report"), "display": _t("ac_tmpl_monthly_report_display"), "desc": _t("ac_tmpl_monthly_report_desc")},
-    {"text": _t("ac_tmpl_search_info", keyword="{keyword}"), "display": _t("ac_tmpl_search_info_display"), "desc": _t("ac_tmpl_search_info_desc")},
-    {"text": _t("ac_tmpl_gen_plan", type="{type}"), "display": _t("ac_tmpl_gen_plan_display"), "desc": _t("ac_tmpl_gen_plan_desc")},
+    {
+        "text": _t("ac_tmpl_write_report", topic="{topic}"),
+        "display": _t("ac_tmpl_write_report_display"),
+        "desc": _t("ac_tmpl_write_report_desc"),
+    },
+    {
+        "text": _t("ac_tmpl_data_analysis", metric="{metric}"),
+        "display": _t("ac_tmpl_data_analysis_display"),
+        "desc": _t("ac_tmpl_data_analysis_desc"),
+    },
+    {
+        "text": _t("ac_tmpl_record_income", amount="{amount}", project="{project}"),
+        "display": _t("ac_tmpl_record_income_display"),
+        "desc": _t("ac_tmpl_record_income_desc"),
+    },
+    {
+        "text": _t("ac_tmpl_send_email", client="{client}", subject="{subject}"),
+        "display": _t("ac_tmpl_send_email_display"),
+        "desc": _t("ac_tmpl_send_email_desc"),
+    },
+    {
+        "text": _t("ac_tmpl_create_task", task_title="{task_title}"),
+        "display": _t("ac_tmpl_create_task_display"),
+        "desc": _t("ac_tmpl_create_task_desc"),
+    },
+    {
+        "text": _t("ac_tmpl_monthly_report"),
+        "display": _t("ac_tmpl_monthly_report_display"),
+        "desc": _t("ac_tmpl_monthly_report_desc"),
+    },
+    {
+        "text": _t("ac_tmpl_search_info", keyword="{keyword}"),
+        "display": _t("ac_tmpl_search_info_display"),
+        "desc": _t("ac_tmpl_search_info_desc"),
+    },
+    {
+        "text": _t("ac_tmpl_gen_plan", type="{type}"),
+        "display": _t("ac_tmpl_gen_plan_display"),
+        "desc": _t("ac_tmpl_gen_plan_desc"),
+    },
 ]
 
 SKILL_CATEGORY_ICONS = {
@@ -101,7 +134,9 @@ def load_completion_cache() -> Dict[str, Dict]:
         if CACHE_FILE.exists():
             file_size_kb = CACHE_FILE.stat().st_size / 1024
             if file_size_kb > MAX_CACHE_SIZE_KB:
-                logger.warning(f"[autocomplete] Cache file too large ({file_size_kb:.1f}KB), resetting")
+                logger.warning(
+                    f"[autocomplete] Cache file too large ({file_size_kb:.1f}KB), resetting"
+                )
                 return {}
 
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
@@ -131,7 +166,7 @@ def save_completion_cache(cache: Dict[str, Dict]) -> None:
             sorted_items = sorted(
                 cache.items(),
                 key=lambda x: (x[1].get("frequency", 0), x[1].get("last_used", 0)),
-                reverse=True
+                reverse=True,
             )
             cache = dict(sorted_items[:100])
             logger.info("[autocomplete] Cache trimmed to top 100 items")
@@ -176,15 +211,14 @@ def _get_pinyin_initials(text: str) -> str:
     """
     try:
         from pypinyin import lazy_pinyin
+
         return "".join([word[0].upper() for word in lazy_pinyin(text) if word])
     except ImportError:
         return ""
 
 
 def filter_completions(
-    query: str,
-    all_items: List[CompletionItem],
-    max_results: int = 8
+    query: str, all_items: List[CompletionItem], max_results: int = 8
 ) -> List[CompletionItem]:
     """Filter and rank completion items based on user query.
 
@@ -241,7 +275,9 @@ def filter_completions(
 
             frequency_factor = 1.0 + min(frequency * 0.1, 2.0)
 
-            days_since_last_used = (current_time - last_used) / 86400 if last_used > 0 else 30
+            days_since_last_used = (
+                (current_time - last_used) / 86400 if last_used > 0 else 30
+            )
             time_decay = max(0.3, 1.0 / (1.0 + days_since_last_used * 0.05))
 
             final_score = match_score * frequency_factor * time_decay
@@ -254,8 +290,7 @@ def filter_completions(
 
 
 def _render_history_suggestions(
-    history: List[Dict],
-    max_show: int = 5
+    history: List[Dict], max_show: int = 5
 ) -> List[CompletionItem]:
     """Render history-based suggestions from chat history.
 
@@ -270,7 +305,8 @@ def _render_history_suggestions(
     seen_texts = set()
 
     user_messages = [
-        msg for msg in history
+        msg
+        for msg in history
         if msg.get("role") == "user" and msg.get("content", "").strip()
     ]
 
@@ -278,11 +314,13 @@ def _render_history_suggestions(
         content = msg["content"].strip()
         if content not in seen_texts and len(content) <= 200:
             seen_texts.add(content)
-            items.append(CompletionItem(
-                text=content,
-                display_text=content[:50] + ("..." if len(content) > 50 else ""),
-                source="history"
-            ))
+            items.append(
+                CompletionItem(
+                    text=content,
+                    display_text=content[:50] + ("..." if len(content) > 50 else ""),
+                    source="history",
+                )
+            )
             if len(items) >= max_show:
                 break
 
@@ -305,15 +343,21 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
 
         category_groups = {}
         for skill in skills:
-            cat_name = skill.category.value if hasattr(skill.category, 'value') else str(skill.category)
+            cat_name = (
+                skill.category.value
+                if hasattr(skill.category, "value")
+                else str(skill.category)
+            )
             icon = SKILL_CATEGORY_ICONS.get(cat_name, "📌")
             display_text = f"{icon} {skill.name}"
 
-            items.append(CompletionItem(
-                text=_t("ac_use_skill", name=skill.name),
-                display_text=display_text,
-                source="skill"
-            ))
+            items.append(
+                CompletionItem(
+                    text=_t("ac_use_skill", name=skill.name),
+                    display_text=display_text,
+                    source="skill",
+                )
+            )
 
             if cat_name not in category_groups:
                 category_groups[cat_name] = []
@@ -324,16 +368,24 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
     except Exception as e:
         logger.warning(f"[autocomplete] Failed to load skills: {e}")
         default_skills = [
-            (_t("ac_default_skill_search"), "🔍"), (_t("ac_default_skill_analysis"), "📊"), (_t("ac_default_skill_content"), "✍️"),
-            (_t("ac_default_skill_email"), "📧"), (_t("ac_default_skill_finance"), "💰"), (_t("ac_default_skill_crm"), "👥"),
-            (_t("ac_default_skill_report"), "📝"), (_t("ac_default_skill_schedule"), "📅"), (_t("ac_default_skill_todo"), "✅"),
+            (_t("ac_default_skill_search"), "🔍"),
+            (_t("ac_default_skill_analysis"), "📊"),
+            (_t("ac_default_skill_content"), "✍️"),
+            (_t("ac_default_skill_email"), "📧"),
+            (_t("ac_default_skill_finance"), "💰"),
+            (_t("ac_default_skill_crm"), "👥"),
+            (_t("ac_default_skill_report"), "📝"),
+            (_t("ac_default_skill_schedule"), "📅"),
+            (_t("ac_default_skill_todo"), "✅"),
         ]
         for name, icon in default_skills:
-            items.append(CompletionItem(
-                text=_t("ac_use_skill", name=name),
-                display_text=f"{icon} {name}",
-                source="skill"
-            ))
+            items.append(
+                CompletionItem(
+                    text=_t("ac_use_skill", name=name),
+                    display_text=f"{icon} {name}",
+                    source="skill",
+                )
+            )
 
     return items
 
@@ -347,11 +399,13 @@ def _render_template_suggestions() -> List[CompletionItem]:
     items = []
 
     for template in COMPLETION_TEMPLATES:
-        items.append(CompletionItem(
-            text=template["text"],
-            display_text=template["display"],
-            source="template"
-        ))
+        items.append(
+            CompletionItem(
+                text=template["text"],
+                display_text=template["display"],
+                source="template",
+            )
+        )
 
     return items
 
@@ -379,11 +433,11 @@ def _render_contact_suggestions(query: str = "") -> List[CompletionItem]:
         for customer in customers[:10]:
             name = customer.get("name", "")
             if name:
-                items.append(CompletionItem(
-                    text=f"@{name}",
-                    display_text=f"👤 {name}",
-                    source="contact"
-                ))
+                items.append(
+                    CompletionItem(
+                        text=f"@{name}", display_text=f"👤 {name}", source="contact"
+                    )
+                )
 
     except Exception as e:
         logger.debug(f"[autocomplete] Contacts not available: {e}")
@@ -391,7 +445,9 @@ def _render_contact_suggestions(query: str = "") -> List[CompletionItem]:
     return items
 
 
-def _get_all_completion_items(session_history: List[Dict] = None) -> List[CompletionItem]:
+def _get_all_completion_items(
+    session_history: List[Dict] = None,
+) -> List[CompletionItem]:
     """Gather all available completion items from all sources.
 
     Args:
@@ -412,10 +468,7 @@ def _get_all_completion_items(session_history: List[Dict] = None) -> List[Comple
 
 
 def render_autocomplete_input(
-    label: str,
-    key: str,
-    session_history: List[Dict] = None,
-    **kwargs
+    label: str, key: str, session_history: List[Dict] = None, **kwargs
 ) -> str:
     """Render an enhanced autocomplete input component.
 
@@ -451,7 +504,8 @@ def render_autocomplete_input(
         User input string (empty string if no input)
     """
     # 移动端响应式 CSS：紧凑建议列表和触摸友好区域
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     @media (max-width: 768px) {
         /* 建议列表在小屏幕更紧凑 */
@@ -476,7 +530,9 @@ def render_autocomplete_input(
         }
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     state_key = f"{key}_autocomplete"
 
@@ -547,7 +603,7 @@ def _render_default_suggestions(session_history: List[Dict] = None) -> None:
                     item.display_text,
                     key=f"hist_def_{item.text[:20]}_{i}",
                     use_container_width=True,
-                    help=_t("ac_click_to_fill")
+                    help=_t("ac_click_to_fill"),
                 ):
                     _apply_selection(item.text)
 
@@ -561,7 +617,7 @@ def _render_default_suggestions(session_history: List[Dict] = None) -> None:
                     item.display_text,
                     key=f"skill_def_{item.text[:15]}_{i}",
                     use_container_width=True,
-                    help=item.text
+                    help=item.text,
                 ):
                     _apply_selection(item.text)
 
@@ -575,15 +631,13 @@ def _render_default_suggestions(session_history: List[Dict] = None) -> None:
                         item.display_text,
                         key=f"tmpl_def_{item.text[:15]}_{i}",
                         use_container_width=True,
-                        help=item.text
+                        help=item.text,
                     ):
                         _apply_selection(item.text)
 
 
 def _render_filtered_suggestions(
-    query: str,
-    session_history: List[Dict],
-    base_key: str
+    query: str, session_history: List[Dict], base_key: str
 ) -> None:
     """Render filtered suggestions based on current input.
 
@@ -615,7 +669,7 @@ def _render_filtered_suggestions(
                 button_label,
                 key=f"sug_{base_key}_{item.source}_{item.text[:15]}_{i}",
                 use_container_width=True,
-                help=_t("ac_source_click_fill", source=item.source)
+                help=_t("ac_source_click_fill", source=item.source),
             ):
                 _apply_selection(item.text)
                 update_completion_frequency(item.text)
@@ -649,9 +703,7 @@ def get_autocomplete_stats() -> Dict[str, Any]:
     total_usage = sum(item.get("frequency", 0) for item in cache.values())
 
     most_used = sorted(
-        cache.items(),
-        key=lambda x: x[1].get("frequency", 0),
-        reverse=True
+        cache.items(), key=lambda x: x[1].get("frequency", 0), reverse=True
     )[:5]
 
     return {
@@ -659,7 +711,9 @@ def get_autocomplete_stats() -> Dict[str, Any]:
         "total_usage_count": total_usage,
         "top_completions": most_used,
         "cache_file_exists": CACHE_FILE.exists(),
-        "cache_size_kb": round(CACHE_FILE.stat().st_size / 1024, 1) if CACHE_FILE.exists() else 0,
+        "cache_size_kb": (
+            round(CACHE_FILE.stat().st_size / 1024, 1) if CACHE_FILE.exists() else 0
+        ),
     }
 
 

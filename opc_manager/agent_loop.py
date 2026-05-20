@@ -20,7 +20,13 @@ import uuid
 
 from .strategist_brain import StrategistBrain, Intent, ExecutionPlan
 from .executor_brain import ExecutorBrain, ExecutionResult
-from .reflector_brain import ReflectorBrain, Evaluation, NextAction, NextActionType, CorrectionStrategy
+from .reflector_brain import (
+    ReflectorBrain,
+    Evaluation,
+    NextAction,
+    NextActionType,
+    CorrectionStrategy,
+)
 from .consensus_engine import ConsensusEngine, Opinion, OpinionType, DecisionType
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
@@ -41,7 +47,9 @@ MAX_REFLECT_ROUNDS = int(os.environ.get("OPC_MAX_REFLECT_ROUNDS", "3"))
 RETRY_BACKOFF_BASE = 2
 RETRY_BACKOFF_CAP = 10
 PAUSE_TIMEOUT_SECONDS = int(os.environ.get("OPC_PAUSE_TIMEOUT_SECONDS", "1800"))
-AGENT_LOOP_TIMEOUT_SECONDS = int(os.environ.get("OPC_AGENT_LOOP_TIMEOUT_SECONDS", "120"))
+AGENT_LOOP_TIMEOUT_SECONDS = int(
+    os.environ.get("OPC_AGENT_LOOP_TIMEOUT_SECONDS", "120")
+)
 
 QUALITY_THRESHOLD_CORRECTION = 0.6
 QUALITY_THRESHOLD_CONSENSUS = 0.7
@@ -83,24 +91,33 @@ class AgentContext:
 
 class AgentLoop:
 
-    def __init__(self,
-                 strategist_brain: StrategistBrain = None,
-                 executor_brain: ExecutorBrain = None,
-                 reflector_brain: ReflectorBrain = None,
-                 consensus_engine: ConsensusEngine = None,
-                 skill_registry: SkillRegistry = None,
-                 tool_system: ToolSystem = None,
-                 session_manager: SessionContextManager = None,
-                 task_engine_adapter: TaskEngineAdapter = None,
-                 llm_service=None,
-                 max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
-                 max_retry_per_step: int = MAX_RETRY_PER_STEP):
+    def __init__(
+        self,
+        strategist_brain: StrategistBrain = None,
+        executor_brain: ExecutorBrain = None,
+        reflector_brain: ReflectorBrain = None,
+        consensus_engine: ConsensusEngine = None,
+        skill_registry: SkillRegistry = None,
+        tool_system: ToolSystem = None,
+        session_manager: SessionContextManager = None,
+        task_engine_adapter: TaskEngineAdapter = None,
+        llm_service=None,
+        max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
+        max_retry_per_step: int = MAX_RETRY_PER_STEP,
+    ):
         self.task_engine_adapter = task_engine_adapter or TaskEngineAdapter()
         self.llm_service = llm_service
-        self.strategist_brain = strategist_brain or StrategistBrain(llm_service=llm_service)
+        self.strategist_brain = strategist_brain or StrategistBrain(
+            llm_service=llm_service
+        )
         self.skill_registry = skill_registry or SkillRegistry()
-        self.executor_brain = executor_brain or ExecutorBrain(skill_registry=self.skill_registry, task_engine_adapter=self.task_engine_adapter)
-        self.reflector_brain = reflector_brain or ReflectorBrain(llm_service=llm_service)
+        self.executor_brain = executor_brain or ExecutorBrain(
+            skill_registry=self.skill_registry,
+            task_engine_adapter=self.task_engine_adapter,
+        )
+        self.reflector_brain = reflector_brain or ReflectorBrain(
+            llm_service=llm_service
+        )
         self.consensus_engine = consensus_engine or ConsensusEngine()
         self.tool_system = tool_system or ToolSystem()
         self.session_manager = session_manager or SessionContextManager()
@@ -113,14 +130,27 @@ class AgentLoop:
 
         self.contexts: BoundedDict = BoundedDict(max_size=MAX_CONTEXT_HISTORY)
 
-    async def run(self, user_input: str, context: Optional[Dict] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
+    async def run(
+        self,
+        user_input: str,
+        context: Optional[Dict] = None,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         logger.info("AgentLoop 开始执行: %s...", user_input[:50])
 
         if not user_input or not user_input.strip():
-            return {"success": False, "error": "用户输入不能为空", "message": "输入无效"}
+            return {
+                "success": False,
+                "error": "用户输入不能为空",
+                "message": "输入无效",
+            }
 
         if len(user_input) > MAX_USER_INPUT_LENGTH:
-            return {"success": False, "error": f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)", "message": "输入过长"}
+            return {
+                "success": False,
+                "error": f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)",
+                "message": "输入过长",
+            }
 
         run_start_time = time.time()
         _perf_start = time.time()
@@ -129,7 +159,7 @@ class AgentLoop:
         agent_context = AgentContext(
             task_id=task_id,
             user_input=user_input.strip(),
-            session_id=session_id or str(uuid.uuid4())
+            session_id=session_id or str(uuid.uuid4()),
         )
         self.contexts[task_id] = agent_context
 
@@ -146,16 +176,24 @@ class AgentLoop:
             if agent_context.cancel_requested:
                 agent_context.set_state(AgentState.CANCELLED)
                 if self.progress:
-                    self.progress.emit(ProgressEvent(
-                        event_type=EventType.CANCELLED,
-                        session_id=task_id,
-                        message="任务已取消",
-                    ))
+                    self.progress.emit(
+                        ProgressEvent(
+                            event_type=EventType.CANCELLED,
+                            session_id=task_id,
+                            message="任务已取消",
+                        )
+                    )
                 return self._build_result(agent_context, cancelled=True)
 
-            intent_type = agent_context.intent.type.name if agent_context.intent else "UNKNOWN"
+            intent_type = (
+                agent_context.intent.type.name if agent_context.intent else "UNKNOWN"
+            )
             goal = agent_context.intent.goal if agent_context.intent else ""
-            confidence = getattr(agent_context.intent, 'confidence', 0.85) if agent_context.intent else 0.85
+            confidence = (
+                getattr(agent_context.intent, "confidence", 0.85)
+                if agent_context.intent
+                else 0.85
+            )
             confirm_result = await self.confirmer.check_confirmation(
                 session_id=agent_context.session_id,
                 intent_type=intent_type,
@@ -183,24 +221,30 @@ class AgentLoop:
                 agent_context.set_state(AgentState.EXECUTING)
                 await self._phase_execute(agent_context)
                 has_results = bool(agent_context.execution_results)
-                all_failed = has_results and all(not r.get("success", False) for r in agent_context.execution_results)
+                all_failed = has_results and all(
+                    not r.get("success", False) for r in agent_context.execution_results
+                )
                 if not has_results or all_failed:
                     agent_context.set_state(AgentState.FAILED)
                     if self.progress:
-                        self.progress.emit(ProgressEvent(
-                            event_type=EventType.ERROR,
-                            session_id=task_id,
-                            message="执行步骤全部失败",
-                        ))
+                        self.progress.emit(
+                            ProgressEvent(
+                                event_type=EventType.ERROR,
+                                session_id=task_id,
+                                message="执行步骤全部失败",
+                            )
+                        )
                     return self._build_result(agent_context)
                 agent_context.set_state(AgentState.COMPLETED)
                 if self.progress:
-                    self.progress.emit(ProgressEvent(
-                        event_type=EventType.COMPLETE,
-                        session_id=task_id,
-                        message="全部完成!",
-                        progress_pct=100,
-                    ))
+                    self.progress.emit(
+                        ProgressEvent(
+                            event_type=EventType.COMPLETE,
+                            session_id=task_id,
+                            message="全部完成!",
+                            progress_pct=100,
+                        )
+                    )
                 return self._build_result(agent_context)
 
             deadline = time.time() + AGENT_LOOP_TIMEOUT_SECONDS
@@ -218,16 +262,18 @@ class AgentLoop:
                 event_type="task_completed",
                 step_id="final",
                 step_name="任务完成",
-                status="completed"
+                status="completed",
             )
 
             if self.progress:
-                self.progress.emit(ProgressEvent(
-                    event_type=EventType.COMPLETE,
-                    session_id=task_id,
-                    message="全部完成!",
-                    progress_pct=100,
-                ))
+                self.progress.emit(
+                    ProgressEvent(
+                        event_type=EventType.COMPLETE,
+                        session_id=task_id,
+                        message="全部完成!",
+                        progress_pct=100,
+                    )
+                )
 
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=True)
@@ -236,14 +282,16 @@ class AgentLoop:
         except Exception as e:
             agent_context.set_state(AgentState.FAILED)
             logger.error("AgentLoop 执行失败: %s", str(e))
-            
+
             if self.progress:
-                self.progress.emit(ProgressEvent(
-                    event_type=EventType.ERROR,
-                    session_id=task_id,
-                    message=f"执行失败: {str(e)}",
-                    detail={"error": str(e)},
-                ))
+                self.progress.emit(
+                    ProgressEvent(
+                        event_type=EventType.ERROR,
+                        session_id=task_id,
+                        message=f"执行失败: {str(e)}",
+                        detail={"error": str(e)},
+                    )
+                )
 
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=False)
@@ -252,12 +300,15 @@ class AgentLoop:
                 "task_id": task_id,
                 "session_id": agent_context.session_id,
                 "error": str(e),
-                "message": "执行失败"
+                "message": "执行失败",
             }
 
-    async def _reflect_loop(self, context: AgentContext,
-                            start_step: int = 0,
-                            deadline: Optional[float] = None) -> Optional[Dict[str, Any]]:
+    async def _reflect_loop(
+        self,
+        context: AgentContext,
+        start_step: int = 0,
+        deadline: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
         for reflect_round in range(self.max_reflect_rounds):
             if deadline and time.time() > deadline:
                 logger.warning("AgentLoop总超时，强制返回当前结果")
@@ -271,11 +322,13 @@ class AgentLoop:
             if context.cancel_requested:
                 context.set_state(AgentState.CANCELLED)
                 if self.progress:
-                    self.progress.emit(ProgressEvent(
-                        event_type=EventType.CANCELLED,
-                        session_id=context.task_id,
-                        message="任务已取消",
-                    ))
+                    self.progress.emit(
+                        ProgressEvent(
+                            event_type=EventType.CANCELLED,
+                            session_id=context.task_id,
+                            message="任务已取消",
+                        )
+                    )
                 return {"cancelled": True}
 
             context.set_state(AgentState.OBSERVING)
@@ -287,7 +340,9 @@ class AgentLoop:
             if next_action.action_type == NextActionType.CONTINUE:
                 break
             elif next_action.action_type == NextActionType.REVIEW:
-                logger.info("反思轮次 %s: 需要人工复核，终止自动循环", reflect_round + 1)
+                logger.info(
+                    "反思轮次 %s: 需要人工复核，终止自动循环", reflect_round + 1
+                )
                 break
             elif next_action.action_type == NextActionType.ABANDON:
                 context.set_state(AgentState.FAILED)
@@ -299,9 +354,18 @@ class AgentLoop:
                     "error": next_action.reason,
                     "message": "任务放弃",
                 }
-            elif next_action.action_type in (NextActionType.RETRY, NextActionType.ADJUST_STRATEGY):
-                logger.info("反思轮次 %s: %s，重新执行", reflect_round + 1, next_action.action_type.name)
-                context.execution_results = [r for r in context.execution_results if r.get("success", False)]
+            elif next_action.action_type in (
+                NextActionType.RETRY,
+                NextActionType.ADJUST_STRATEGY,
+            ):
+                logger.info(
+                    "反思轮次 %s: %s，重新执行",
+                    reflect_round + 1,
+                    next_action.action_type.name,
+                )
+                context.execution_results = [
+                    r for r in context.execution_results if r.get("success", False)
+                ]
                 context.current_step = 0
                 if next_action.action_type == NextActionType.ADJUST_STRATEGY:
                     context.set_state(AgentState.PLANNING)
@@ -312,14 +376,16 @@ class AgentLoop:
 
         return None
 
-    def _build_result(self, context: AgentContext, cancelled: bool = False) -> Dict[str, Any]:
+    def _build_result(
+        self, context: AgentContext, cancelled: bool = False
+    ) -> Dict[str, Any]:
         if cancelled:
             return {
                 "success": False,
                 "task_id": context.task_id,
                 "session_id": context.session_id,
                 "results": context.execution_results,
-                "message": "任务已取消"
+                "message": "任务已取消",
             }
 
         result_summary = ""
@@ -328,7 +394,9 @@ class AgentLoop:
             if last_result.get("success") and last_result.get("data"):
                 data = last_result["data"]
                 if isinstance(data, dict):
-                    result_summary = data.get("content", data.get("analysis_result", str(data)[:200]))
+                    result_summary = data.get(
+                        "content", data.get("analysis_result", str(data)[:200])
+                    )
                 else:
                     result_summary = str(data)[:200]
 
@@ -344,18 +412,22 @@ class AgentLoop:
             "task_id": context.task_id,
             "session_id": context.session_id,
             "results": context.execution_results,
-            "message": "执行完成"
+            "message": "执行完成",
         }
 
-    async def _phase_plan(self, context: AgentContext, conversation_history: Optional[List[Dict]] = None) -> None:
+    async def _phase_plan(
+        self, context: AgentContext, conversation_history: Optional[List[Dict]] = None
+    ) -> None:
         logger.info("Phase 1: 规划开始")
 
         if self.progress:
-            self.progress.emit(ProgressEvent(
-                event_type=EventType.PLAN_START,
-                session_id=context.task_id,
-                message="正在分析你的需求..."
-            ))
+            self.progress.emit(
+                ProgressEvent(
+                    event_type=EventType.PLAN_START,
+                    session_id=context.task_id,
+                    message="正在分析你的需求...",
+                )
+            )
 
         history = conversation_history or []
         loop = asyncio.get_running_loop()
@@ -364,6 +436,7 @@ class AgentLoop:
         memory_rules = {}
         try:
             from opc_manager.memory_bridge import get_memory_bridge
+
             _mb = get_memory_bridge()
             if _mb.enabled:
                 memory_rules = _mb.get_rules_for_context(context.user_input)
@@ -379,25 +452,28 @@ class AgentLoop:
         intent = await loop.run_in_executor(
             None,
             lambda: self.strategist_brain.understand_intent(
-                user_input=context.user_input,
-                context=plan_context
-            )
+                user_input=context.user_input, context=plan_context
+            ),
         )
         context.intent = intent
         logger.info("意图理解完成: %s - %s", intent.type.name, intent.goal)
 
         if self.progress:
-            self.progress.emit(ProgressEvent(
-                event_type=EventType.INTENT_DETECTED,
-                session_id=context.task_id,
-                message=f"意图识别: {intent.type.name} - {intent.goal[:50]}",
-                detail={"intent_type": intent.type.name, "confidence": getattr(intent, 'confidence', None)},
-                progress_pct=10
-            ))
+            self.progress.emit(
+                ProgressEvent(
+                    event_type=EventType.INTENT_DETECTED,
+                    session_id=context.task_id,
+                    message=f"意图识别: {intent.type.name} - {intent.goal[:50]}",
+                    detail={
+                        "intent_type": intent.type.name,
+                        "confidence": getattr(intent, "confidence", None),
+                    },
+                    progress_pct=10,
+                )
+            )
 
         plan = await loop.run_in_executor(
-            None,
-            lambda: self.strategist_brain.plan(intent)
+            None, lambda: self.strategist_brain.plan(intent)
         )
         context.plan = plan
         logger.info("计划制定完成: %s 个步骤", len(plan.steps))
@@ -415,38 +491,49 @@ class AgentLoop:
                 return
 
             context.current_step += 1
-            logger.info("执行步骤 %s/%s: %s", context.current_step, total_steps, step.description)
+            logger.info(
+                "执行步骤 %s/%s: %s",
+                context.current_step,
+                total_steps,
+                step.description,
+            )
 
             self.event_emitter.emit(
                 event_type="step_started",
                 step_id=step.id,
                 step_name=step.description,
-                status="running"
+                status="running",
             )
 
             if self.progress:
-                self.progress.emit(ProgressEvent(
-                    event_type=EventType.STEP_START,
-                    session_id=context.task_id,
-                    message=f"[执行脑] 执行步骤: {step.skill_id}",
-                    detail={"step_id": step.id, "skill_id": step.skill_id},
-                    progress_pct=int((i / total_steps) * 70) + 10,
-                ))
+                self.progress.emit(
+                    ProgressEvent(
+                        event_type=EventType.STEP_START,
+                        session_id=context.task_id,
+                        message=f"[执行脑] 执行步骤: {step.skill_id}",
+                        detail={"step_id": step.id, "skill_id": step.skill_id},
+                        progress_pct=int((i / total_steps) * 70) + 10,
+                    )
+                )
 
             step_start_time = time.time()
-            enriched_params = self._enrich_step_parameters(step.parameters, context.execution_results)
+            enriched_params = self._enrich_step_parameters(
+                step.parameters, context.execution_results
+            )
             result = await self._execute_step_with_retry(context, step, enriched_params)
             step_duration_ms = (time.time() - step_start_time) * 1000
 
-            context.execution_results.append({
-                "step_id": step.id,
-                "skill_id": step.skill_id,
-                "description": step.description,
-                "success": result.success,
-                "data": result.data,
-                "error": result.error,
-                "execution_time": result.execution_time
-            })
+            context.execution_results.append(
+                {
+                    "step_id": step.id,
+                    "skill_id": step.skill_id,
+                    "description": step.description,
+                    "success": result.success,
+                    "data": result.data,
+                    "error": result.error,
+                    "execution_time": result.execution_time,
+                }
+            )
 
             if result.success:
                 self.event_emitter.emit(
@@ -454,16 +541,18 @@ class AgentLoop:
                     step_id=step.id,
                     step_name=step.description,
                     status="completed",
-                    duration_ms=step_duration_ms
+                    duration_ms=step_duration_ms,
                 )
 
                 if self.progress:
-                    self.progress.emit(ProgressEvent(
-                        event_type=EventType.STEP_COMPLETE,
-                        session_id=context.task_id,
-                        message=f"✅ 步骤完成: {step.skill_id}",
-                        progress_pct=int(((i+1) / total_steps) * 70) + 10,
-                    ))
+                    self.progress.emit(
+                        ProgressEvent(
+                            event_type=EventType.STEP_COMPLETE,
+                            session_id=context.task_id,
+                            message=f"✅ 步骤完成: {step.skill_id}",
+                            progress_pct=int(((i + 1) / total_steps) * 70) + 10,
+                        )
+                    )
             else:
                 self.event_emitter.emit(
                     event_type="step_failed",
@@ -471,26 +560,50 @@ class AgentLoop:
                     step_name=step.description,
                     status="failed",
                     duration_ms=step_duration_ms,
-                    data={"error": result.error}
+                    data={"error": result.error},
                 )
-                logger.warning("步骤 %s 执行失败（已重试%s次）: %s", step.id, context.step_retry_counts.get(step.id, 0), result.error)
+                logger.warning(
+                    "步骤 %s 执行失败（已重试%s次）: %s",
+                    step.id,
+                    context.step_retry_counts.get(step.id, 0),
+                    result.error,
+                )
                 break
 
-    def _enrich_step_parameters(self, params: Dict, execution_results: List[Dict]) -> Dict:
+    def _enrich_step_parameters(
+        self, params: Dict, execution_results: List[Dict]
+    ) -> Dict:
         if not params or not execution_results:
             return params or {}
 
         enriched = dict(params)
         prev_result = execution_results[-1] if execution_results else None
-        prev_data = prev_result.get("data", {}) if prev_result and prev_result.get("success") else None
+        prev_data = (
+            prev_result.get("data", {})
+            if prev_result and prev_result.get("success")
+            else None
+        )
 
-        reference_keys = {"input", "content", "data", "source", "search_results", "analysis_results", "generated_report"}
+        reference_keys = {
+            "input",
+            "content",
+            "data",
+            "source",
+            "search_results",
+            "analysis_results",
+            "generated_report",
+        }
         for key in list(enriched.keys()):
             val = enriched[key]
             if isinstance(val, str) and val in reference_keys:
                 if prev_data:
                     if isinstance(prev_data, dict):
-                        content = prev_data.get("content", prev_data.get("results", prev_data.get("analysis_result", "")))
+                        content = prev_data.get(
+                            "content",
+                            prev_data.get(
+                                "results", prev_data.get("analysis_result", "")
+                            ),
+                        )
                         if content:
                             if isinstance(content, list):
                                 enriched[key] = str(content)[:500]
@@ -509,15 +622,19 @@ class AgentLoop:
 
         return enriched
 
-    async def _execute_step_with_retry(self, context: AgentContext, step, enriched_params: Dict = None) -> ExecutionResult:
+    async def _execute_step_with_retry(
+        self, context: AgentContext, step, enriched_params: Dict = None
+    ) -> ExecutionResult:
         step_retries = context.step_retry_counts.get(step.id, 0)
-        exec_params = enriched_params if enriched_params is not None else step.parameters
+        exec_params = (
+            enriched_params if enriched_params is not None else step.parameters
+        )
 
         result = await self.executor_brain.execute_step(
             step_id=step.id,
             skill_id=step.skill_id,
             parameters=exec_params,
-            context={"task_id": context.task_id}
+            context={"task_id": context.task_id},
         )
 
         while not result.success and step_retries < self.max_retry_per_step:
@@ -527,27 +644,36 @@ class AgentLoop:
             step_retries += 1
             context.step_retry_counts[step.id] = step_retries
             context.retry_count += 1
-            logger.info("步骤 %s 失败，重试第 %s/%s 次", step.id, step_retries, self.max_retry_per_step)
+            logger.info(
+                "步骤 %s 失败，重试第 %s/%s 次",
+                step.id,
+                step_retries,
+                self.max_retry_per_step,
+            )
 
-            await asyncio.sleep(min(RETRY_BACKOFF_BASE ** step_retries, RETRY_BACKOFF_CAP))
+            await asyncio.sleep(
+                min(RETRY_BACKOFF_BASE**step_retries, RETRY_BACKOFF_CAP)
+            )
 
             result = await self.executor_brain.execute_step(
                 step_id=step.id,
                 skill_id=step.skill_id,
                 parameters=exec_params,
-                context={"task_id": context.task_id}
+                context={"task_id": context.task_id},
             )
 
-            context.execution_results.append({
-                "step_id": step.id,
-                "skill_id": step.skill_id,
-                "description": f"{step.description} (重试#{step_retries})",
-                "success": result.success,
-                "data": result.data,
-                "error": result.error,
-                "execution_time": result.execution_time,
-                "retry": step_retries
-            })
+            context.execution_results.append(
+                {
+                    "step_id": step.id,
+                    "skill_id": step.skill_id,
+                    "description": f"{step.description} (重试#{step_retries})",
+                    "success": result.success,
+                    "data": result.data,
+                    "error": result.error,
+                    "execution_time": result.execution_time,
+                    "retry": step_retries,
+                }
+            )
 
         context.step_retry_counts[step.id] = step_retries
         return result
@@ -556,10 +682,17 @@ class AgentLoop:
         logger.info("Phase 3: 观察开始")
 
         total_steps = len(context.plan.steps) if context.plan else 0
-        completed_steps = sum(1 for r in context.execution_results if r.get("success", False))
+        completed_steps = sum(
+            1 for r in context.execution_results if r.get("success", False)
+        )
         total_time = sum(r.get("execution_time", 0) for r in context.execution_results)
 
-        logger.info("执行结果汇总: %s/%s 步骤完成，总耗时: %.2f秒", completed_steps, total_steps, total_time)
+        logger.info(
+            "执行结果汇总: %s/%s 步骤完成，总耗时: %.2f秒",
+            completed_steps,
+            total_steps,
+            total_time,
+        )
 
     def _build_overall_result(self, context: AgentContext) -> Dict[str, Any]:
         return {
@@ -567,21 +700,27 @@ class AgentLoop:
             "data": {
                 "results": context.execution_results,
                 "total_steps": len(context.execution_results),
-                "completed_steps": sum(1 for r in context.execution_results if r.get("success", False)),
-                "total_time": sum(r.get("execution_time", 0) for r in context.execution_results)
-            }
+                "completed_steps": sum(
+                    1 for r in context.execution_results if r.get("success", False)
+                ),
+                "total_time": sum(
+                    r.get("execution_time", 0) for r in context.execution_results
+                ),
+            },
         }
 
     async def _phase_reflect(self, context: AgentContext) -> NextAction:
         logger.info("Phase 4: 反思开始")
 
         if self.progress:
-            self.progress.emit(ProgressEvent(
-                event_type=EventType.REFLECT_START,
-                session_id=context.task_id,
-                message="[反思脑] 正在评估执行结果...",
-                progress_pct=85,
-            ))
+            self.progress.emit(
+                ProgressEvent(
+                    event_type=EventType.REFLECT_START,
+                    session_id=context.task_id,
+                    message="[反思脑] 正在评估执行结果...",
+                    progress_pct=85,
+                )
+            )
 
         overall_result = self._build_overall_result(context)
 
@@ -591,17 +730,21 @@ class AgentLoop:
         evaluation = await loop.run_in_executor(
             None,
             lambda: self.reflector_brain.evaluate_result(
-                actual_result=overall_result,
-                expected_intent=expected_intent
-            )
+                actual_result=overall_result, expected_intent=expected_intent
+            ),
         )
 
-        logger.info("评估结果: %s (质量评分: %.2f)", evaluation.result.name, evaluation.quality_score)
+        logger.info(
+            "评估结果: %s (质量评分: %.2f)",
+            evaluation.result.name,
+            evaluation.quality_score,
+        )
 
         # MemoryBridge: 质量不佳时记录失败经验
         if evaluation.quality_score < 0.5:
             try:
                 from opc_manager.memory_bridge import get_memory_bridge
+
                 _mb = get_memory_bridge()
                 if _mb.enabled:
                     _mb.record_failure(
@@ -617,37 +760,45 @@ class AgentLoop:
             lambda: self.reflector_brain.suggest_correction_strategy(
                 evaluation=evaluation,
                 execution_results=context.execution_results,
-                correction_count=context.correction_count
-            )
+                correction_count=context.correction_count,
+            ),
         )
 
         if correction_strategy is not None:
             logger.info("触发自动修正: %s", correction_strategy.value)
-            correction_result = await self._apply_correction(context, correction_strategy)
+            correction_result = await self._apply_correction(
+                context, correction_strategy
+            )
             if correction_result:
                 context.correction_count += 1
                 re_eval_data = self._build_overall_result(context)
                 re_eval = await loop.run_in_executor(
                     None,
                     lambda: self.reflector_brain.evaluate_result(
-                        actual_result=re_eval_data,
-                        expected_intent=expected_intent
-                    )
+                        actual_result=re_eval_data, expected_intent=expected_intent
+                    ),
                 )
-                logger.info("修正后评估: %s (质量评分: %.2f)", re_eval.result.name, re_eval.quality_score)
+                logger.info(
+                    "修正后评估: %s (质量评分: %.2f)",
+                    re_eval.result.name,
+                    re_eval.quality_score,
+                )
                 if re_eval.quality_score >= QUALITY_THRESHOLD_CORRECTION:
                     return NextAction(
                         action_type=NextActionType.CONTINUE,
                         reason=f"修正后质量达标(评分: {re_eval.quality_score:.2f})",
-                        confidence=re_eval.quality_score
+                        confidence=re_eval.quality_score,
                     )
 
-        if context.correction_count >= MAX_CORRECTION_ATTEMPTS and evaluation.quality_score < QUALITY_THRESHOLD_CORRECTION:
+        if (
+            context.correction_count >= MAX_CORRECTION_ATTEMPTS
+            and evaluation.quality_score < QUALITY_THRESHOLD_CORRECTION
+        ):
             logger.warning("修正%s次仍未达标，标记需人工复核", context.correction_count)
             return NextAction(
                 action_type=NextActionType.REVIEW,
                 reason=f"修正{context.correction_count}次后质量仍不达标(评分: {evaluation.quality_score:.2f})",
-                confidence=evaluation.quality_score
+                confidence=evaluation.quality_score,
             )
 
         plan_dict = None
@@ -657,30 +808,39 @@ class AgentLoop:
                     {"id": s.id, "skill_id": s.skill_id, "description": s.description}
                     for s in context.plan.steps
                 ],
-                "retry_count": context.retry_count
+                "retry_count": context.retry_count,
             }
 
         next_action = await loop.run_in_executor(
             None,
             lambda: self.reflector_brain.decide_next_action(
-                evaluation=evaluation,
-                plan=plan_dict
-            )
+                evaluation=evaluation, plan=plan_dict
+            ),
         )
 
-        consensus_decision = await self._consult_consensus(context, evaluation, next_action)
+        consensus_decision = await self._consult_consensus(
+            context, evaluation, next_action
+        )
         if consensus_decision is not None:
             return consensus_decision
 
         logger.info("决定下一步行动: %s", next_action.action_type.name)
         return next_action
 
-    def _make_step_result(self, step, result: ExecutionResult,
-                          description_suffix: str = "",
-                          correction_tag: str = "") -> Dict[str, Any]:
+    def _make_step_result(
+        self,
+        step,
+        result: ExecutionResult,
+        description_suffix: str = "",
+        correction_tag: str = "",
+    ) -> Dict[str, Any]:
         return {
             "step_id": step.id,
-            "skill_id": result.data.get("skill_id", step.skill_id) if isinstance(result.data, dict) and "skill_id" in result.data else step.skill_id,
+            "skill_id": (
+                result.data.get("skill_id", step.skill_id)
+                if isinstance(result.data, dict) and "skill_id" in result.data
+                else step.skill_id
+            ),
             "description": f"{step.description}{description_suffix}",
             "success": result.success,
             "data": result.data,
@@ -711,7 +871,9 @@ class AgentLoop:
         "ext_skill": "output_result",
     }
 
-    async def _apply_correction(self, context: AgentContext, strategy: CorrectionStrategy) -> bool:
+    async def _apply_correction(
+        self, context: AgentContext, strategy: CorrectionStrategy
+    ) -> bool:
         if not context.plan or not context.plan.steps:
             return False
 
@@ -732,7 +894,7 @@ class AgentLoop:
             step_id=last_step.id,
             skill_id=last_step.skill_id,
             parameters=last_step.parameters,
-            context={"task_id": context.task_id}
+            context={"task_id": context.task_id},
         )
         if context.execution_results:
             context.execution_results[-1] = self._make_step_result(
@@ -755,7 +917,7 @@ class AgentLoop:
             step_id=last_step.id,
             skill_id=last_step.skill_id,
             parameters=enriched_params,
-            context={"task_id": context.task_id}
+            context={"task_id": context.task_id},
         )
         if context.execution_results:
             context.execution_results[-1] = self._make_step_result(
@@ -772,7 +934,7 @@ class AgentLoop:
             step_id=last_step.id,
             skill_id=new_skill,
             parameters=last_step.parameters,
-            context={"task_id": context.task_id}
+            context={"task_id": context.task_id},
         )
         if context.execution_results:
             step_result = self._make_step_result(
@@ -788,7 +950,7 @@ class AgentLoop:
             step_id=last_step.id,
             skill_id=last_step.skill_id,
             parameters=last_step.parameters,
-            context={"task_id": context.task_id, "degrade": True}
+            context={"task_id": context.task_id, "degrade": True},
         )
         if context.execution_results:
             context.execution_results[-1] = self._make_step_result(
@@ -796,9 +958,12 @@ class AgentLoop:
             )
         return result.success
 
-    async def _consult_consensus(self, context: AgentContext,
-                           evaluation: Evaluation,
-                           reflector_action: NextAction) -> Optional[NextAction]:
+    async def _consult_consensus(
+        self,
+        context: AgentContext,
+        evaluation: Evaluation,
+        reflector_action: NextAction,
+    ) -> Optional[NextAction]:
         if evaluation.quality_score >= QUALITY_THRESHOLD_CONSENSUS:
             return None
 
@@ -813,7 +978,9 @@ class AgentLoop:
 
         executor_opinion = Opinion(
             brain_type="executor",
-            opinion_type=OpinionType.AGREE if context.retry_count < 2 else OpinionType.DISAGREE,
+            opinion_type=(
+                OpinionType.AGREE if context.retry_count < 2 else OpinionType.DISAGREE
+            ),
             reasoning=f"执行重试次数: {context.retry_count}",
             confidence=max(0.3, 1.0 - context.retry_count * 0.3),
         )
@@ -827,11 +994,9 @@ class AgentLoop:
             confidence=reflector_data["confidence"],
         )
 
-        decision = self.consensus_engine.collect_opinions([
-            strategist_opinion,
-            executor_opinion,
-            reflector_opinion
-        ])
+        decision = self.consensus_engine.collect_opinions(
+            [strategist_opinion, executor_opinion, reflector_opinion]
+        )
 
         await self._log_consensus_decision(context, evaluation, decision)
 
@@ -840,7 +1005,7 @@ class AgentLoop:
             return NextAction(
                 action_type=NextActionType.ABANDON,
                 reason=decision.reasoning,
-                confidence=decision.confidence
+                confidence=decision.confidence,
             )
 
         if decision.decision_type == DecisionType.ESCALATED:
@@ -848,19 +1013,21 @@ class AgentLoop:
             return NextAction(
                 action_type=NextActionType.REVIEW,
                 reason=decision.reasoning,
-                confidence=decision.confidence
+                confidence=decision.confidence,
             )
 
         return None
 
-    async def _log_consensus_decision(self, context: AgentContext,
-                                       evaluation: Evaluation,
-                                       decision) -> None:
+    async def _log_consensus_decision(
+        self, context: AgentContext, evaluation: Evaluation, decision
+    ) -> None:
         log_entry = {
             "task_id": context.task_id,
             "quality_score": evaluation.quality_score,
             "result_level": evaluation.result.name,
-            "decision_type": decision.decision_type.name if decision.decision_type else None,
+            "decision_type": (
+                decision.decision_type.name if decision.decision_type else None
+            ),
             "confidence": decision.confidence,
             "reasoning": decision.reasoning,
             "timestamp": time.time(),
@@ -868,11 +1035,21 @@ class AgentLoop:
 
         try:
             from opc_manager.data_manager import execute_write, init_db
+
             init_db()
             import json as _json
+
             execute_write(
                 "INSERT INTO consensus_decisions (id, timestamp, opinion_count, decision_type, approved, confidence, detail) VALUES (?,?,?,?,?,?,?)",
-                (context.task_id, log_entry["timestamp"], 3, log_entry["decision_type"] or "", 1 if log_entry["confidence"] >= 0.5 else 0, log_entry["confidence"], _json.dumps(log_entry, ensure_ascii=False)),
+                (
+                    context.task_id,
+                    log_entry["timestamp"],
+                    3,
+                    log_entry["decision_type"] or "",
+                    1 if log_entry["confidence"] >= 0.5 else 0,
+                    log_entry["confidence"],
+                    _json.dumps(log_entry, ensure_ascii=False),
+                ),
             )
         except Exception as e:
             logger.warning("共识日志写入失败: %s", e)
@@ -888,7 +1065,9 @@ class AgentLoop:
             "current_step": context.current_step,
             "total_steps": len(context.plan.steps) if context.plan else 0,
             "retry_count": context.retry_count,
-            "results": context.execution_results[-5:] if context.execution_results else []
+            "results": (
+                context.execution_results[-5:] if context.execution_results else []
+            ),
         }
 
     async def cancel_task(self, task_id: str) -> bool:
@@ -907,7 +1086,12 @@ class AgentLoop:
         if not context:
             return False
 
-        if context.state not in (AgentState.EXECUTING, AgentState.PLANNING, AgentState.OBSERVING, AgentState.REFLECTING):
+        if context.state not in (
+            AgentState.EXECUTING,
+            AgentState.PLANNING,
+            AgentState.OBSERVING,
+            AgentState.REFLECTING,
+        ):
             logger.warning("任务 %s 当前状态 %s 不可暂停", task_id, context.state.value)
             return False
 
@@ -922,9 +1106,15 @@ class AgentLoop:
             return {"success": False, "error": f"任务 {task_id} 不存在"}
 
         if context.state != AgentState.PAUSED:
-            return {"success": False, "error": f"任务 {task_id} 当前状态 {context.state.value} 不可恢复"}
+            return {
+                "success": False,
+                "error": f"任务 {task_id} 当前状态 {context.state.value} 不可恢复",
+            }
 
-        if context.paused_at and (time.time() - context.paused_at) > PAUSE_TIMEOUT_SECONDS:
+        if (
+            context.paused_at
+            and (time.time() - context.paused_at) > PAUSE_TIMEOUT_SECONDS
+        ):
             context.cancel_requested = True
             context.set_state(AgentState.CANCELLED)
             logger.warning("任务 %s 暂停超时，自动取消", task_id)
@@ -939,7 +1129,9 @@ class AgentLoop:
         deadline = time.time() + remaining_timeout
 
         try:
-            loop_result = await self._reflect_loop(context, start_step=resume_step, deadline=deadline)
+            loop_result = await self._reflect_loop(
+                context, start_step=resume_step, deadline=deadline
+            )
 
             if loop_result is not None:
                 if loop_result.get("cancelled"):
@@ -957,12 +1149,18 @@ class AgentLoop:
     def list_tasks(self) -> List[Dict[str, Any]]:
         tasks = []
         for task_id, context in self.contexts.items():
-            tasks.append({
-                "task_id": task_id,
-                "user_input": context.user_input[:50] + "..." if len(context.user_input) > 50 else context.user_input,
-                "state": context.state.value,
-                "current_step": context.current_step
-            })
+            tasks.append(
+                {
+                    "task_id": task_id,
+                    "user_input": (
+                        context.user_input[:50] + "..."
+                        if len(context.user_input) > 50
+                        else context.user_input
+                    ),
+                    "state": context.state.value,
+                    "current_step": context.current_step,
+                }
+            )
         return tasks
 
     def to_dict(self) -> Dict[str, Any]:
@@ -970,7 +1168,14 @@ class AgentLoop:
             "type": "agent_loop",
             "task_count": len(self.contexts),
             "active_tasks": sum(
-                1 for ctx in self.contexts.values()
-                if ctx.state in (AgentState.PLANNING, AgentState.EXECUTING, AgentState.OBSERVING, AgentState.REFLECTING)
-            )
+                1
+                for ctx in self.contexts.values()
+                if ctx.state
+                in (
+                    AgentState.PLANNING,
+                    AgentState.EXECUTING,
+                    AgentState.OBSERVING,
+                    AgentState.REFLECTING,
+                )
+            ),
         }

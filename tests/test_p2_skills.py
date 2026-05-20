@@ -14,7 +14,8 @@ class TestCompetitorSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -26,7 +27,8 @@ class TestCompetitorSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -96,7 +98,8 @@ class TestPricingSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -108,7 +111,8 @@ class TestPricingSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -140,7 +144,9 @@ class TestPricingSkill(unittest.TestCase):
     def test_calculate_hourly_pricing(self):
         from opc_manager.pricing_skill import calculate_pricing
 
-        result = calculate_pricing("小时费率", service_type="咨询", hours=10, level="senior")
+        result = calculate_pricing(
+            "小时费率", service_type="咨询", hours=10, level="senior"
+        )
         self.assertTrue(result["success"])
         self.assertEqual(result["price"], 10000.0)
 
@@ -202,7 +208,8 @@ class TestTaxReminderSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -214,7 +221,8 @@ class TestTaxReminderSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -288,7 +296,8 @@ class TestDashboardSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -300,7 +309,8 @@ class TestDashboardSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -316,9 +326,11 @@ class TestDashboardSkill(unittest.TestCase):
         mock_finance.return_value = {"income": 30000, "expense": 10000, "profit": 20000}
         mock_crm.return_value = {"total": 10, "active": 5}
         mock_silent.return_value = {"count": 2}
-        mock_tasks.return_value = {"tasks": [
-            {"title": "待办A", "status": "pending", "due_date": "2025-01-01"},
-        ]}
+        mock_tasks.return_value = {
+            "tasks": [
+                {"title": "待办A", "status": "pending", "due_date": "2025-01-01"},
+            ]
+        }
 
         from opc_manager.dashboard_skill import get_overview
 
@@ -331,8 +343,18 @@ class TestDashboardSkill(unittest.TestCase):
     @patch("opc_manager.dashboard_skill.get_trend")
     def test_get_finance_dashboard(self, mock_trend):
         mock_trend.return_value = [
-            {"year_month": "2025-04", "income": 30000, "expense": 10000, "profit": 20000},
-            {"year_month": "2025-05", "income": 35000, "expense": 12000, "profit": 23000},
+            {
+                "year_month": "2025-04",
+                "income": 30000,
+                "expense": 10000,
+                "profit": 20000,
+            },
+            {
+                "year_month": "2025-05",
+                "income": 35000,
+                "expense": 12000,
+                "profit": 23000,
+            },
         ]
 
         from opc_manager.dashboard_skill import get_finance_dashboard
@@ -344,7 +366,13 @@ class TestDashboardSkill(unittest.TestCase):
     @patch("opc_manager.dashboard_skill.get_silent_customers")
     @patch("opc_manager.dashboard_skill.get_customer_stats")
     def test_get_crm_dashboard(self, mock_stats, mock_silent):
-        mock_stats.return_value = {"total": 8, "active": 4, "potential": 2, "silent": 1, "lost": 1}
+        mock_stats.return_value = {
+            "total": 8,
+            "active": 4,
+            "potential": 2,
+            "silent": 1,
+            "lost": 1,
+        }
         mock_silent.return_value = {"count": 1, "customers": []}
 
         from opc_manager.dashboard_skill import get_crm_dashboard
@@ -355,10 +383,17 @@ class TestDashboardSkill(unittest.TestCase):
 
     @patch("opc_manager.dashboard_skill.list_tasks")
     def test_get_task_dashboard(self, mock_tasks):
-        mock_tasks.return_value = {"tasks": [
-            {"title": "任务A", "status": "pending", "priority": 0, "due_date": "2025-01-01"},
-            {"title": "任务B", "status": "done", "priority": 1},
-        ]}
+        mock_tasks.return_value = {
+            "tasks": [
+                {
+                    "title": "任务A",
+                    "status": "pending",
+                    "priority": 0,
+                    "due_date": "2025-01-01",
+                },
+                {"title": "任务B", "status": "done", "priority": 1},
+            ]
+        }
 
         from opc_manager.dashboard_skill import get_task_dashboard
 
@@ -370,20 +405,42 @@ class TestDashboardSkill(unittest.TestCase):
     @patch("opc_manager.dashboard_skill.get_crm_dashboard")
     @patch("opc_manager.dashboard_skill.get_finance_dashboard")
     @patch("opc_manager.dashboard_skill.get_overview")
-    def test_generate_dashboard_report(self, mock_overview, mock_finance, mock_crm, mock_tasks):
+    def test_generate_dashboard_report(
+        self, mock_overview, mock_finance, mock_crm, mock_tasks
+    ):
         mock_overview.return_value = {
-            "success": True, "date": "2025-05-14",
-            "finance": {"month_income": 30000, "month_expense": 10000, "month_profit": 20000},
-            "crm": {"total_customers": 10, "active_customers": 5, "silent_customers": 2},
+            "success": True,
+            "date": "2025-05-14",
+            "finance": {
+                "month_income": 30000,
+                "month_expense": 10000,
+                "month_profit": 20000,
+            },
+            "crm": {
+                "total_customers": 10,
+                "active_customers": 5,
+                "silent_customers": 2,
+            },
             "tasks": {"pending": 3, "overdue": 1},
         }
         mock_finance.return_value = {
-            "success": True, "trend": [
-                {"year_month": "2025-05", "income": 30000, "expense": 10000, "profit": 20000}
-            ]
+            "success": True,
+            "trend": [
+                {
+                    "year_month": "2025-05",
+                    "income": 30000,
+                    "expense": 10000,
+                    "profit": 20000,
+                }
+            ],
         }
         mock_crm.return_value = {"success": True, "total": 10, "by_status": {}}
-        mock_tasks.return_value = {"success": True, "total": 5, "overdue_count": 0, "overdue_tasks": []}
+        mock_tasks.return_value = {
+            "success": True,
+            "total": 5,
+            "overdue_count": 0,
+            "overdue_tasks": [],
+        }
 
         from opc_manager.dashboard_skill import generate_dashboard_report
 
@@ -398,7 +455,8 @@ class TestKnowledgeSkill(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -410,7 +468,8 @@ class TestKnowledgeSkill(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -421,7 +480,9 @@ class TestKnowledgeSkill(unittest.TestCase):
     def test_create_article(self):
         from opc_manager.knowledge_skill import create_article
 
-        result = create_article("AI工具推荐", "推荐5个AI工具...", tags="AI、工具", category="技术")
+        result = create_article(
+            "AI工具推荐", "推荐5个AI工具...", tags="AI、工具", category="技术"
+        )
         self.assertTrue(result["success"])
         self.assertGreater(result["word_count"], 0)
 
@@ -502,7 +563,8 @@ class TestSkillRegistryP2(unittest.TestCase):
     def setUpClass(cls):
         from opc_manager.data_manager import init_db
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -514,7 +576,8 @@ class TestSkillRegistryP2(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import opc_manager.data_manager as dm
-        if hasattr(dm._local, 'conn') and dm._local.conn:
+
+        if hasattr(dm._local, "conn") and dm._local.conn:
             try:
                 dm._local.conn.close()
             except Exception:
@@ -593,10 +656,21 @@ class TestSkillRegistryP2(unittest.TestCase):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
-        with patch("opc_manager.dashboard_skill.get_monthly_report", return_value={"income": 0, "expense": 0, "profit": 0}), \
-             patch("opc_manager.dashboard_skill.get_customer_stats", return_value={"total": 0, "active": 0}), \
-             patch("opc_manager.dashboard_skill.get_silent_customers", return_value={"count": 0}), \
-             patch("opc_manager.dashboard_skill.list_tasks", return_value={"tasks": []}):
+        with (
+            patch(
+                "opc_manager.dashboard_skill.get_monthly_report",
+                return_value={"income": 0, "expense": 0, "profit": 0},
+            ),
+            patch(
+                "opc_manager.dashboard_skill.get_customer_stats",
+                return_value={"total": 0, "active": 0},
+            ),
+            patch(
+                "opc_manager.dashboard_skill.get_silent_customers",
+                return_value={"count": 0},
+            ),
+            patch("opc_manager.dashboard_skill.list_tasks", return_value={"tasks": []}),
+        ):
             result = registry._execute_dashboard("看板")
         self.assertTrue(result["success"])
 

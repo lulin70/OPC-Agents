@@ -188,14 +188,17 @@ class TestCanUndo:
 class TestUndo:
     """Test suite for UndoManager.undo()."""
 
-    @patch.object(UndoManager, '_resolve_inverse')
+    @patch.object(UndoManager, "_resolve_inverse")
     def test_undo_success(self, mock_resolve, manager):
         mock_func = MagicMock(return_value={"undone": True})
         mock_resolve.return_value = mock_func
 
         op_id = manager.push(
-            "sess1", OperationType.EMAIL_SEND, "undo_send_email",
-            {"email_id": "em1"}, {"status": "sent"},
+            "sess1",
+            OperationType.EMAIL_SEND,
+            "undo_send_email",
+            {"email_id": "em1"},
+            {"status": "sent"},
         )
         result = manager.undo("sess1", op_id)
 
@@ -215,12 +218,10 @@ class TestUndo:
         result = manager.undo("sess1", "nonexistent")
         assert result["success"] is False
 
-    @patch.object(UndoManager, '_resolve_inverse')
+    @patch.object(UndoManager, "_resolve_inverse")
     def test_undo_invalid_func_name(self, mock_resolve, manager):
         mock_resolve.side_effect = ValueError("Unauthorized inverse function: bad_func")
-        op_id = manager.push(
-            "sess1", OperationType.EMAIL_SEND, "bad_func", {}, {}
-        )
+        op_id = manager.push("sess1", OperationType.EMAIL_SEND, "bad_func", {}, {})
         result = manager.undo("sess1", op_id)
         assert result["success"] is False
         assert "error" in result
@@ -232,6 +233,7 @@ class TestListUndoable:
     def test_list_returns_sorted_desc(self, manager):
         id1 = manager.push("sess1", OperationType.EMAIL_SEND, "f", {}, {})
         import time as _time
+
         _time.sleep(0.01)
         id2 = manager.push("sess1", OperationType.ADD_EVENT, "f", {}, {})
         items = manager.list_undoable("sess1")
@@ -250,7 +252,10 @@ class TestListUndoable:
 
     def test_list_includes_remaining_seconds(self, manager):
         op_id = manager.push(
-            "sess1", OperationType.EMAIL_SEND, "undo_send_email", {},
+            "sess1",
+            OperationType.EMAIL_SEND,
+            "undo_send_email",
+            {},
             {"summary": "test summary data"},
         )
         items = manager.list_undoable("sess1")
@@ -309,7 +314,7 @@ class TestGenId:
         op_id = UndoManager._gen_id()
         assert isinstance(op_id, str)
         assert len(op_id) == 12
-        assert all(c in '0123456789abcdef' for c in op_id)
+        assert all(c in "0123456789abcdef" for c in op_id)
 
     def test_gen_ids_are_unique(self):
         ids = {UndoManager._gen_id() for _ in range(100)}

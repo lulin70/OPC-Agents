@@ -10,9 +10,15 @@ from opc_manager.utils import parse_date_from_text
 logger = logging.getLogger(__name__)
 
 
-def add_event(title: str, date: str, time_str: str = "",
-              duration_min: int = 60, description: str = "",
-              reminder_min: int = 15, repeat: str = "") -> Dict[str, Any]:
+def add_event(
+    title: str,
+    date: str,
+    time_str: str = "",
+    duration_min: int = 60,
+    description: str = "",
+    reminder_min: int = 15,
+    repeat: str = "",
+) -> Dict[str, Any]:
     if not title.strip():
         return {"success": False, "error": "日程标题不能为空"}
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", date):
@@ -24,13 +30,26 @@ def add_event(title: str, date: str, time_str: str = "",
     try:
         execute_write(
             "INSERT INTO calendar_events (id,title,event_date,event_time,duration_min,description,repeat,reminder_min,status,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (event_id, title, date, time_str, duration_min, description, repeat, reminder_min, "active", now),
+            (
+                event_id,
+                title,
+                date,
+                time_str,
+                duration_min,
+                description,
+                repeat,
+                reminder_min,
+                "active",
+                now,
+            ),
         )
     except Exception as e:
         logger.warning("calendar_skill.add_event write failed: %s", e)
         return {"success": False, "error": f"保存失败: {e}"}
 
-    AuditLogger.log("calendar_event_created", {"id": event_id, "title": title, "date": date})
+    AuditLogger.log(
+        "calendar_event_created", {"id": event_id, "title": title, "date": date}
+    )
 
     return {
         "success": True,
@@ -105,7 +124,9 @@ def get_week_schedule(start_date: str = "") -> Dict[str, Any]:
             e["repeat"] = e.get("repeat", "")
             e["status"] = e.get("status", "active")
             events.append(e)
-        days.append({"success": True, "date": day_str, "events": events, "count": len(events)})
+        days.append(
+            {"success": True, "date": day_str, "events": events, "count": len(events)}
+        )
 
     return {"success": True, "start_date": start_date, "days": days}
 
@@ -161,7 +182,12 @@ def get_month_schedule(year_month: str = "") -> Dict[str, Any]:
         days.append({"date": day_str, "events": events, "count": len(events)})
         current += timedelta(days=1)
 
-    return {"success": True, "year_month": year_month, "days": days, "total_events": len(all_rows)}
+    return {
+        "success": True,
+        "year_month": year_month,
+        "days": days,
+        "total_events": len(all_rows),
+    }
 
 
 def cancel_event(event_id: str) -> Dict[str, Any]:
@@ -235,16 +261,17 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         return {"success": False, "error": "请提供日程ID来取消"}
 
     from opc_manager.utils import parse_date_from_text
+
     date = parse_date_from_text(goal)
     time_str = ""
-    m = re.search(r'(\d{1,2})[：:点](\d{1,2})?分?', goal)
+    m = re.search(r"(\d{1,2})[：:点](\d{1,2})?分?", goal)
     if m:
         hour = int(m.group(1))
         minute = int(m.group(2) or 0)
         if 0 <= hour <= 23 and 0 <= minute <= 59:
             time_str = f"{hour:02d}:{minute:02d}"
     if not time_str:
-        m = re.search(r'(上午|下午|晚上|早上|中午)(\d{1,2})点?', goal)
+        m = re.search(r"(上午|下午|晚上|早上|中午)(\d{1,2})点?", goal)
         if m:
             hour = int(m.group(2))
             if m.group(1) in ("下午", "晚上") and hour < 12:
@@ -252,10 +279,24 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
             if 0 <= hour <= 23:
                 time_str = f"{hour:02d}:00"
     title = goal
-    for kw in ["帮我安排", "帮我加", "日程", "提醒我", "安排", "今天", "明天", "后天", "下周",
-                "上午", "下午", "晚上", "早上", "中午"]:
+    for kw in [
+        "帮我安排",
+        "帮我加",
+        "日程",
+        "提醒我",
+        "安排",
+        "今天",
+        "明天",
+        "后天",
+        "下周",
+        "上午",
+        "下午",
+        "晚上",
+        "早上",
+        "中午",
+    ]:
         title = title.replace(kw, "")
-    title = re.sub(r'\d{1,2}[：:点]\d{0,2}分?', '', title)
+    title = re.sub(r"\d{1,2}[：:点]\d{0,2}分?", "", title)
     title = title.strip().strip("，。、的") or goal
 
     return add_event(title, date, time_str=time_str)
@@ -263,10 +304,22 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
 
 def undo_add_event(event_id=None, **kwargs):
     init_db()
-    rows = execute_query("SELECT * FROM calendar_events WHERE id=? AND status='active'", (event_id,)) if event_id else \
-           execute_query("SELECT * FROM calendar_events WHERE status='active' ORDER BY created_at DESC LIMIT 1")
+    rows = (
+        execute_query(
+            "SELECT * FROM calendar_events WHERE id=? AND status='active'", (event_id,)
+        )
+        if event_id
+        else execute_query(
+            "SELECT * FROM calendar_events WHERE status='active' ORDER BY created_at DESC LIMIT 1"
+        )
+    )
     if not rows:
         return {"success": False, "error": "未找到可撤销的日程"}
     target_id = event_id or rows[0]["id"]
-    execute_write("UPDATE calendar_events SET status='cancelled' WHERE id=?", (target_id,))
-    return {"success": True, "message": f"日程已撤销: {rows[0].get('title', target_id)}"}
+    execute_write(
+        "UPDATE calendar_events SET status='cancelled' WHERE id=?", (target_id,)
+    )
+    return {
+        "success": True,
+        "message": f"日程已撤销: {rows[0].get('title', target_id)}",
+    }

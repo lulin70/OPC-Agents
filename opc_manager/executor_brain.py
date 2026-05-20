@@ -71,9 +71,13 @@ class ExecutorBrain:
         self.task_engine_adapter = task_engine_adapter
         self.task_statuses: BoundedDict = BoundedDict(max_size=MAX_TASK_HISTORY)
 
-    async def execute_step(self, step_id: str, skill_id: str,
-                          parameters: Dict[str, Any],
-                          context: Optional[Dict] = None) -> ExecutionResult:
+    async def execute_step(
+        self,
+        step_id: str,
+        skill_id: str,
+        parameters: Dict[str, Any],
+        context: Optional[Dict] = None,
+    ) -> ExecutionResult:
         logger.info("开始执行步骤: %s, 技能: %s", step_id, skill_id)
 
         start_time = asyncio.get_running_loop().time()
@@ -98,7 +102,7 @@ class ExecutorBrain:
                     success=True,
                     data=result.data,
                     result_type=ExecutionResultType.SUCCESS,
-                    execution_time=execution_time
+                    execution_time=execution_time,
                 )
             else:
                 logger.warning("步骤 %s 执行失败: %s", step_id, result.error)
@@ -106,7 +110,7 @@ class ExecutorBrain:
                     success=False,
                     error=result.error,
                     result_type=ExecutionResultType.FAILURE,
-                    execution_time=execution_time
+                    execution_time=execution_time,
                 )
 
         except asyncio.TimeoutError:
@@ -116,7 +120,7 @@ class ExecutorBrain:
                 success=False,
                 error="执行超时",
                 result_type=ExecutionResultType.TIMEOUT,
-                execution_time=execution_time
+                execution_time=execution_time,
             )
         except Exception as e:
             execution_time = asyncio.get_running_loop().time() - start_time
@@ -125,11 +129,12 @@ class ExecutorBrain:
                 success=False,
                 error=str(e),
                 result_type=ExecutionResultType.FAILURE,
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
-    async def _execute_degraded(self, skill_id: str, parameters: Dict[str, Any],
-                                context: Optional[Dict]) -> ExecutionResult:
+    async def _execute_degraded(
+        self, skill_id: str, parameters: Dict[str, Any], context: Optional[Dict]
+    ) -> ExecutionResult:
         if self.task_engine_adapter:
             try:
                 result_dict = await self.task_engine_adapter.execute_skill_async(
@@ -155,30 +160,29 @@ class ExecutorBrain:
                     if isinstance(result, dict):
                         return ExecutionResult(
                             success=result.get("success", True),
-                            data=result.get("data", result)
+                            data=result.get("data", result),
                         )
                     return ExecutionResult(success=True, data={"result": result})
                 except Exception as e:
                     return ExecutionResult(
-                        success=False,
-                        error=f"降级技能执行异常: {str(e)}"
+                        success=False, error=f"降级技能执行异常: {str(e)}"
                     )
 
-        return ExecutionResult(
-            success=False,
-            error=f"降级模式无可用执行器: {skill_id}"
-        )
+        return ExecutionResult(success=False, error=f"降级模式无可用执行器: {skill_id}")
 
-    async def _execute_skill(self, skill_id: str, parameters: Dict[str, Any],
-                            context: Optional[Dict]) -> ExecutionResult:
+    async def _execute_skill(
+        self, skill_id: str, parameters: Dict[str, Any], context: Optional[Dict]
+    ) -> ExecutionResult:
         if self.skill_registry:
             skill = self.skill_registry.get_skill(skill_id)
             if skill is not None:
                 if not skill.enabled:
                     if self.task_engine_adapter:
                         try:
-                            result_dict = await self.task_engine_adapter.execute_skill_async(
-                                skill_id, parameters, context
+                            result_dict = (
+                                await self.task_engine_adapter.execute_skill_async(
+                                    skill_id, parameters, context
+                                )
                             )
                             return ExecutionResult(
                                 success=result_dict.get("success", False),
@@ -187,10 +191,11 @@ class ExecutorBrain:
                                 execution_time=result_dict.get("execution_time", 0),
                             )
                         except Exception as adapter_e:
-                            logger.warning("TaskEngineAdapter降级执行失败: %s", adapter_e)
+                            logger.warning(
+                                "TaskEngineAdapter降级执行失败: %s", adapter_e
+                            )
                     return ExecutionResult(
-                        success=False,
-                        error=f"技能已禁用: {skill_id}"
+                        success=False, error=f"技能已禁用: {skill_id}"
                     )
                 try:
                     if asyncio.iscoroutinefunction(skill.execute):
@@ -201,15 +206,19 @@ class ExecutorBrain:
                     if isinstance(result, dict):
                         exec_result = ExecutionResult(
                             success=result.get("success", True),
-                            data=result.get("data", result)
+                            data=result.get("data", result),
                         )
                     else:
-                        exec_result = ExecutionResult(success=True, data={"result": result})
+                        exec_result = ExecutionResult(
+                            success=True, data={"result": result}
+                        )
 
                     if not exec_result.success and self.task_engine_adapter:
                         try:
-                            result_dict = await self.task_engine_adapter.execute_skill_async(
-                                skill_id, parameters, context
+                            result_dict = (
+                                await self.task_engine_adapter.execute_skill_async(
+                                    skill_id, parameters, context
+                                )
                             )
                             fallback = ExecutionResult(
                                 success=result_dict.get("success", False),
@@ -218,17 +227,24 @@ class ExecutorBrain:
                                 execution_time=result_dict.get("execution_time", 0),
                             )
                             if fallback.success:
-                                logger.info("skill_registry失败，task_engine_adapter降级成功: %s", skill_id)
+                                logger.info(
+                                    "skill_registry失败，task_engine_adapter降级成功: %s",
+                                    skill_id,
+                                )
                                 return fallback
                         except Exception as adapter_e:
-                            logger.warning("TaskEngineAdapter降级执行失败: %s", adapter_e)
+                            logger.warning(
+                                "TaskEngineAdapter降级执行失败: %s", adapter_e
+                            )
 
                     return exec_result
                 except Exception as e:
                     if self.task_engine_adapter:
                         try:
-                            result_dict = await self.task_engine_adapter.execute_skill_async(
-                                skill_id, parameters, context
+                            result_dict = (
+                                await self.task_engine_adapter.execute_skill_async(
+                                    skill_id, parameters, context
+                                )
                             )
                             fallback = ExecutionResult(
                                 success=result_dict.get("success", False),
@@ -237,13 +253,17 @@ class ExecutorBrain:
                                 execution_time=result_dict.get("execution_time", 0),
                             )
                             if fallback.success:
-                                logger.info("skill_registry异常，task_engine_adapter降级成功: %s", skill_id)
+                                logger.info(
+                                    "skill_registry异常，task_engine_adapter降级成功: %s",
+                                    skill_id,
+                                )
                                 return fallback
                         except Exception as adapter_e:
-                            logger.warning("TaskEngineAdapter降级执行失败: %s", adapter_e)
+                            logger.warning(
+                                "TaskEngineAdapter降级执行失败: %s", adapter_e
+                            )
                     return ExecutionResult(
-                        success=False,
-                        error=f"技能执行异常: {str(e)}"
+                        success=False, error=f"技能执行异常: {str(e)}"
                     )
 
         if self.task_engine_adapter:
@@ -261,12 +281,12 @@ class ExecutorBrain:
                 logger.warning("TaskEngineAdapter执行失败: %s", e)
 
         return ExecutionResult(
-            success=False,
-            error=f"技能不存在且无可用执行器: {skill_id}"
+            success=False, error=f"技能不存在且无可用执行器: {skill_id}"
         )
 
-    async def execute_plan(self, plan_id: str, steps: List[Dict],
-                          context: Optional[Dict] = None) -> ExecutionResult:
+    async def execute_plan(
+        self, plan_id: str, steps: List[Dict], context: Optional[Dict] = None
+    ) -> ExecutionResult:
         logger.info("开始执行计划: %s, 步骤数: %s", plan_id, len(steps))
 
         task_id = f"task_{uuid.uuid4().hex[:8]}"
@@ -274,7 +294,7 @@ class ExecutorBrain:
             task_id=task_id,
             status=ExecutionStatusType.RUNNING,
             progress=0.0,
-            started_at=asyncio.get_running_loop().time()
+            started_at=asyncio.get_running_loop().time(),
         )
 
         try:
@@ -283,25 +303,31 @@ class ExecutorBrain:
             for i, step in enumerate(steps_copy, 1):
                 self.task_statuses[task_id].step_id = step.get("id")
                 self.task_statuses[task_id].progress = i / len(steps_copy)
-                self.task_statuses[task_id].message = f"正在执行步骤 {i}/{len(steps_copy)}: {step.get('description', '')}"
+                self.task_statuses[task_id].message = (
+                    f"正在执行步骤 {i}/{len(steps_copy)}: {step.get('description', '')}"
+                )
 
                 result = await self.execute_step(
                     step_id=step["id"],
                     skill_id=step["skill_id"],
                     parameters=step.get("parameters", {}),
-                    context=context
+                    context=context,
                 )
 
                 results.append(result)
 
                 if not result.success:
                     self.task_statuses[task_id].status = ExecutionStatusType.FAILED
-                    self.task_statuses[task_id].completed_at = asyncio.get_running_loop().time()
-                    self.task_statuses[task_id].message = f"步骤 {step['id']} 执行失败: {result.error}"
+                    self.task_statuses[task_id].completed_at = (
+                        asyncio.get_running_loop().time()
+                    )
+                    self.task_statuses[task_id].message = (
+                        f"步骤 {step['id']} 执行失败: {result.error}"
+                    )
                     return ExecutionResult(
                         success=False,
                         error=f"步骤 {step['id']} 执行失败: {result.error}",
-                        data={"results": results}
+                        data={"results": results},
                     )
 
             self.task_statuses[task_id].status = ExecutionStatusType.COMPLETED
@@ -311,8 +337,7 @@ class ExecutorBrain:
 
             logger.info("计划 %s 执行完成", plan_id)
             return ExecutionResult(
-                success=True,
-                data={"results": results, "task_id": task_id}
+                success=True, data={"results": results, "task_id": task_id}
             )
 
         except Exception as e:
@@ -320,10 +345,7 @@ class ExecutorBrain:
             self.task_statuses[task_id].completed_at = asyncio.get_running_loop().time()
             self.task_statuses[task_id].message = f"执行异常: {str(e)}"
             logger.error("计划 %s 执行异常: %s", plan_id, str(e))
-            return ExecutionResult(
-                success=False,
-                error=str(e)
-            )
+            return ExecutionResult(success=False, error=str(e))
 
     def get_execution_status(self, task_id: str) -> Optional[ExecutionStatus]:
         return self.task_statuses.get(task_id)
@@ -343,7 +365,4 @@ class ExecutorBrain:
         return False
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "type": "executor_brain",
-            "task_count": len(self.task_statuses)
-        }
+        return {"type": "executor_brain", "task_count": len(self.task_statuses)}

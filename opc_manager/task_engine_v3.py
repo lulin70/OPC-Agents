@@ -75,10 +75,16 @@ from urllib.parse import urlparse
 
 from opc_manager.skill_registry import SkillRegistry
 from opc_manager.task_content_generators import ContentGenerationMixin
-from opc_manager.task_types import TaskType, TaskResult, InputValidator, MAX_INPUT_LENGTH
+from opc_manager.task_types import (
+    TaskType,
+    TaskResult,
+    InputValidator,
+    MAX_INPUT_LENGTH,
+)
 
 try:
     from opc_manager.progress_emitter import ProgressEmitter, EventType, ProgressEvent
+
     _PROGRESS_EMITTER_AVAILABLE = True
 except ImportError:
     _PROGRESS_EMITTER_AVAILABLE = False
@@ -91,13 +97,19 @@ try:
         ParallelResult,
         MergeStrategy,
     )
+
     _PARALLEL_EXECUTOR_AVAILABLE = True
 except ImportError:
     _PARALLEL_EXECUTOR_AVAILABLE = False
 
 __all__ = [
-    "TaskEngineV3", "TaskType", "TaskResult", "InputValidator",
-    "IntentClassifier", "SearchCache", "task_engine_v3",
+    "TaskEngineV3",
+    "TaskType",
+    "TaskResult",
+    "InputValidator",
+    "IntentClassifier",
+    "SearchCache",
+    "task_engine_v3",
 ]
 
 if TYPE_CHECKING:
@@ -107,6 +119,7 @@ logger = logging.getLogger(__name__)
 
 SEARCH_CACHE_MAX_SIZE = 50
 SEARCH_CACHE_TTL_SECONDS = 300
+
 
 class SearchCache:
     """LRU search result cache — Key performance component for reducing duplicate network requests
@@ -164,7 +177,8 @@ class SearchCache:
             self._cache[key] = (time.time(), results)
             logger.info(
                 "[SearchCache] Write: %s... (cache size: %s)",
-                query[:30], len(self._cache),
+                query[:30],
+                len(self._cache),
             )
 
     @property
@@ -348,8 +362,12 @@ class IntentClassifier:
                 task_type: [re.compile(p, re.IGNORECASE) for p in patterns]
                 for task_type, patterns in cls.PATTERNS.items()
             }
-            cls._COMPILED_FOLLOW_UP = [re.compile(p, re.IGNORECASE) for p in cls.FOLLOW_UP_PATTERNS]
-            cls._COMPILED_NEW_TASK = [re.compile(p, re.IGNORECASE) for p in cls.NEW_TASK_PATTERNS]
+            cls._COMPILED_FOLLOW_UP = [
+                re.compile(p, re.IGNORECASE) for p in cls.FOLLOW_UP_PATTERNS
+            ]
+            cls._COMPILED_NEW_TASK = [
+                re.compile(p, re.IGNORECASE) for p in cls.NEW_TASK_PATTERNS
+            ]
 
     @classmethod
     def classify(cls, user_input: str) -> Tuple[TaskType, float]:
@@ -462,20 +480,27 @@ class TaskEngineV3(ContentGenerationMixin):
                 self.scenario_engine = ScenarioEngineV2()
                 logger.info("[TaskEngineV3] ScenarioEngineV2 initialized successfully")
             except Exception as e:
-                logger.warning("[TaskEngineV3] ScenarioEngineV2 initialization failed: %s", e)
+                logger.warning(
+                    "[TaskEngineV3] ScenarioEngineV2 initialization failed: %s", e
+                )
 
             try:
                 from opc_manager.llm_content import LLMEnhancedContentGenerator
 
                 self.llm_content_gen = LLMEnhancedContentGenerator()
                 if self.llm_content_gen.is_available():
-                    logger.info("[TaskEngineV3] LLMEnhancedContentGenerator initialized successfully")
+                    logger.info(
+                        "[TaskEngineV3] LLMEnhancedContentGenerator initialized successfully"
+                    )
                 else:
-                    logger.info("[TaskEngineV3] LLM unavailable, will use template mode")
+                    logger.info(
+                        "[TaskEngineV3] LLM unavailable, will use template mode"
+                    )
                     self.llm_content_gen = None
             except Exception as e:
                 logger.warning(
-                    "[TaskEngineV3] LLMEnhancedContentGenerator initialization failed: %s", e
+                    "[TaskEngineV3] LLMEnhancedContentGenerator initialization failed: %s",
+                    e,
                 )
                 self.llm_content_gen = None
 
@@ -515,7 +540,12 @@ class TaskEngineV3(ContentGenerationMixin):
                 detail=detail or {},
             )
             emitter.emit(event)
-            logger.debug("[TaskEngineV3] Emitted %s: %s (%s%%)", event_type.value, message, progress_pct)
+            logger.debug(
+                "[TaskEngineV3] Emitted %s: %s (%s%%)",
+                event_type.value,
+                message,
+                progress_pct,
+            )
         except Exception as e:
             logger.warning("[TaskEngineV3] 发射进度事件失败（不影响执行）: %s", e)
 
@@ -558,12 +588,21 @@ class TaskEngineV3(ContentGenerationMixin):
         """
         start_time = time.time()
 
-        session_id = getattr(session_ctx, '_session_id', None) or getattr(session_ctx, 'session_id', None) if session_ctx else None
-        self._emit_progress(session_id, EventType.PLAN_START, "🚀 任务执行开始", progress_pct=0)
+        session_id = (
+            getattr(session_ctx, "_session_id", None)
+            or getattr(session_ctx, "session_id", None)
+            if session_ctx
+            else None
+        )
+        self._emit_progress(
+            session_id, EventType.PLAN_START, "🚀 任务执行开始", progress_pct=0
+        )
 
         sanitized, validation_error = InputValidator.sanitize(user_input)
         if validation_error:
-            self._emit_progress(session_id, EventType.ERROR, f"❌ 输入校验失败: {validation_error}")
+            self._emit_progress(
+                session_id, EventType.ERROR, f"❌ 输入校验失败: {validation_error}"
+            )
             return TaskResult(
                 success=False,
                 content=f"⚠️ 输入校验未通过：{validation_error}",
@@ -594,7 +633,9 @@ class TaskEngineV3(ContentGenerationMixin):
             if history_context:
                 is_follow_up = IntentClassifier.is_follow_up(sanitized)
                 if is_follow_up:
-                    safe_history = history_context.replace("<", "&lt;").replace(">", "&gt;")
+                    safe_history = history_context.replace("<", "&lt;").replace(
+                        ">", "&gt;"
+                    )
                     enriched_input = (
                         f"<history_context>\n{safe_history}\n</history_context>\n\n"
                         f"[追问请求 — 用户要求基于已有内容补充或修改]\n"
@@ -621,12 +662,24 @@ class TaskEngineV3(ContentGenerationMixin):
                 task_type, confidence = IntentClassifier.classify(sanitized)
             logger.info(
                 "[TaskEngineV3] Intent: %s (confidence:%.2f, input length:%s)",
-                task_type.value, confidence, len(enriched_input),
+                task_type.value,
+                confidence,
+                len(enriched_input),
             )
-            self._emit_progress(session_id, EventType.INTENT_DETECTED, f"🔍 意图识别: {task_type.value}", progress_pct=10)
+            self._emit_progress(
+                session_id,
+                EventType.INTENT_DETECTED,
+                f"🔍 意图识别: {task_type.value}",
+                progress_pct=10,
+            )
 
             step_name = task_type.value.replace("_", " ").title()
-            self._emit_progress(session_id, EventType.STEP_START, f"⚡ 开始执行: {step_name}", progress_pct=15)
+            self._emit_progress(
+                session_id,
+                EventType.STEP_START,
+                f"⚡ 开始执行: {step_name}",
+                progress_pct=15,
+            )
 
             if task_type == TaskType.SCENARIO_BASED and self.scenario_engine:
                 result = self._execute_scenario_based(
@@ -641,6 +694,7 @@ class TaskEngineV3(ContentGenerationMixin):
                     logger.info("[TaskEngineV3] Using parallel content generation")
                     try:
                         import asyncio
+
                         loop = asyncio.get_running_loop()
                         parallel_content = loop.run_until_complete(
                             self._parallel_content_generation(sanitized, session_id)
@@ -653,19 +707,28 @@ class TaskEngineV3(ContentGenerationMixin):
                             metadata={"parallel_execution": True},
                         )
                     except Exception as e:
-                        logger.warning("[TaskEngineV3] Parallel generation failed, fallback: %s", e)
+                        logger.warning(
+                            "[TaskEngineV3] Parallel generation failed, fallback: %s", e
+                        )
                         result = self._execute_content_generation(
-                            sanitized, enriched_input, business_type, is_follow_up=is_follow_up
+                            sanitized,
+                            enriched_input,
+                            business_type,
+                            is_follow_up=is_follow_up,
                         )
                 else:
                     result = self._execute_content_generation(
-                        sanitized, enriched_input, business_type, is_follow_up=is_follow_up
+                        sanitized,
+                        enriched_input,
+                        business_type,
+                        is_follow_up=is_follow_up,
                     )
             elif task_type == TaskType.DATA_ANALYSIS:
                 if self._should_parallelize(sanitized, task_type):
                     logger.info("[TaskEngineV3] Using parallel data analysis")
                     try:
                         import asyncio
+
                         loop = asyncio.get_running_loop()
                         parallel_content = loop.run_until_complete(
                             self._parallel_data_analysis(sanitized, session_id)
@@ -678,22 +741,37 @@ class TaskEngineV3(ContentGenerationMixin):
                             metadata={"parallel_execution": True},
                         )
                     except Exception as e:
-                        logger.warning("[TaskEngineV3] Parallel analysis failed, fallback: %s", e)
+                        logger.warning(
+                            "[TaskEngineV3] Parallel analysis failed, fallback: %s", e
+                        )
                         result = self._execute_data_analysis(
-                            sanitized, enriched_input, business_type, is_follow_up=is_follow_up
+                            sanitized,
+                            enriched_input,
+                            business_type,
+                            is_follow_up=is_follow_up,
                         )
                 else:
                     result = self._execute_data_analysis(
-                        sanitized, enriched_input, business_type, is_follow_up=is_follow_up
+                        sanitized,
+                        enriched_input,
+                        business_type,
+                        is_follow_up=is_follow_up,
                     )
             elif task_type == TaskType.BUSINESS_OPERATION:
                 result = self._execute_business_operation(
                     sanitized, enriched_input, business_type, is_follow_up=is_follow_up
                 )
             else:
-                result = self._execute_general_chat(sanitized, enriched_input, is_follow_up=is_follow_up)
+                result = self._execute_general_chat(
+                    sanitized, enriched_input, is_follow_up=is_follow_up
+                )
 
-            self._emit_progress(session_id, EventType.STEP_COMPLETE, f"✅ 执行完成: {step_name}", progress_pct=90)
+            self._emit_progress(
+                session_id,
+                EventType.STEP_COMPLETE,
+                f"✅ 执行完成: {step_name}",
+                progress_pct=90,
+            )
 
             if is_follow_up and result.success and result.content:
                 result.content = (
@@ -713,20 +791,28 @@ class TaskEngineV3(ContentGenerationMixin):
                     )
                     logger.debug("[TaskEngineV3] Recorded to session history")
                 except Exception as e:
-                    logger.warning("[TaskEngineV3] Failed to record session history (doesn't affect result): %s", e)
+                    logger.warning(
+                        "[TaskEngineV3] Failed to record session history (doesn't affect result): %s",
+                        e,
+                    )
 
             cache_stats = self._search_cache.stats
             if cache_stats["hits"] + cache_stats["misses"] > 0:
                 logger.info(
                     "[TaskEngineV3] Search cache stats: hits %s/%s",
-                    cache_stats["hits"], cache_stats["hits"] + cache_stats["misses"],
+                    cache_stats["hits"],
+                    cache_stats["hits"] + cache_stats["misses"],
                 )
-            self._emit_progress(session_id, EventType.COMPLETE, "🎉 任务执行完成", progress_pct=100)
+            self._emit_progress(
+                session_id, EventType.COMPLETE, "🎉 任务执行完成", progress_pct=100
+            )
             return result
 
         except Exception as e:
             logger.error("[TaskEngineV3] Execution failed: %s", e, exc_info=True)
-            self._emit_progress(session_id, EventType.ERROR, f"❌ 执行异常: {str(e)[:100]}")
+            self._emit_progress(
+                session_id, EventType.ERROR, f"❌ 执行异常: {str(e)[:100]}"
+            )
             return TaskResult(
                 success=False,
                 content="⚠️ 任务执行遇到问题，请稍后重试或调整需求描述",
@@ -779,7 +865,10 @@ class TaskEngineV3(ContentGenerationMixin):
             try:
                 from opc_manager.search_processor import SearchResultProcessor
 
-                if not hasattr(self, '_search_processor') or self._search_processor is None:
+                if (
+                    not hasattr(self, "_search_processor")
+                    or self._search_processor is None
+                ):
                     self._search_processor = SearchResultProcessor()
                 processor = self._search_processor
                 processed = processor.process(query, raw_results)
@@ -788,16 +877,21 @@ class TaskEngineV3(ContentGenerationMixin):
                 if processed.fallback_used:
                     logger.info(
                         "[TaskEngineV3] Search '%s...' used KB fallback (%s items)",
-                        query[:30], len(results),
+                        query[:30],
+                        len(results),
                     )
                 elif len(results) != len(raw_results):
                     logger.info(
                         "[TaskEngineV3] Search '%s...' after processing: %s→%s items (filtered %s irrelevant)",
-                        query[:30], len(raw_results), results, len(raw_results) - len(results),
+                        query[:30],
+                        len(raw_results),
+                        results,
+                        len(raw_results) - len(results),
                     )
             except Exception as proc_error:
                 logger.warning(
-                    "[TaskEngineV3] SearchResultProcessor failed (using raw results): %s", proc_error
+                    "[TaskEngineV3] SearchResultProcessor failed (using raw results): %s",
+                    proc_error,
                 )
                 results = raw_results
 
@@ -807,7 +901,11 @@ class TaskEngineV3(ContentGenerationMixin):
                 for r in results
                 if r.get("href")
             ]
-            logger.info("[TaskEngineV3] Search '%s...' returned %s results", query[:40], len(results))
+            logger.info(
+                "[TaskEngineV3] Search '%s...' returned %s results",
+                query[:40],
+                len(results),
+            )
         except Exception as e:
             logger.error("[TaskEngineV3] Search failed: %s", e)
         return results, sources
@@ -832,7 +930,11 @@ class TaskEngineV3(ContentGenerationMixin):
         return clean.strip() or user_input
 
     def _execute_info_collection(
-        self, search_query: str, llm_query: str = None, business_type: str = None, is_follow_up: bool = False
+        self,
+        search_query: str,
+        llm_query: str = None,
+        business_type: str = None,
+        is_follow_up: bool = False,
     ) -> TaskResult:
         """Path A: Information collection — Real web search + structured research report
 
@@ -921,7 +1023,11 @@ class TaskEngineV3(ContentGenerationMixin):
         )
 
     def _execute_content_generation(
-        self, search_query: str, llm_query: str = None, business_type: str = None, is_follow_up: bool = False
+        self,
+        search_query: str,
+        llm_query: str = None,
+        business_type: str = None,
+        is_follow_up: bool = False,
     ) -> TaskResult:
         """Path B: Content generation — Search reference materials first, then generate specific document
 
@@ -958,15 +1064,30 @@ class TaskEngineV3(ContentGenerationMixin):
 
         if is_report:
             content = self._gen_real_report(
-                search_query, context_lines, results, business_type, is_follow_up=is_follow_up, llm_query=llm_query
+                search_query,
+                context_lines,
+                results,
+                business_type,
+                is_follow_up=is_follow_up,
+                llm_query=llm_query,
             )
         elif is_plan or is_proposal:
             content = self._gen_real_plan(
-                search_query, context_lines, results, business_type, is_follow_up=is_follow_up, llm_query=llm_query
+                search_query,
+                context_lines,
+                results,
+                business_type,
+                is_follow_up=is_follow_up,
+                llm_query=llm_query,
             )
         else:
             content = self._gen_real_content(
-                search_query, context_lines, results, business_type, is_follow_up=is_follow_up, llm_query=llm_query
+                search_query,
+                context_lines,
+                results,
+                business_type,
+                is_follow_up=is_follow_up,
+                llm_query=llm_query,
             )
 
         return TaskResult(
@@ -978,7 +1099,11 @@ class TaskEngineV3(ContentGenerationMixin):
         )
 
     def _execute_data_analysis(
-        self, search_query: str, llm_query: str = None, business_type: str = None, is_follow_up: bool = False
+        self,
+        search_query: str,
+        llm_query: str = None,
+        business_type: str = None,
+        is_follow_up: bool = False,
     ) -> TaskResult:
         """Path C: Data analysis — SWOT framework + search data + action recommendations
 
@@ -1081,7 +1206,11 @@ class TaskEngineV3(ContentGenerationMixin):
         )
 
     def _execute_scenario_based(
-        self, search_query: str, llm_query: str = None, business_type: str = None, is_follow_up: bool = False
+        self,
+        search_query: str,
+        llm_query: str = None,
+        business_type: str = None,
+        is_follow_up: bool = False,
     ) -> TaskResult:
         """Path D: Scenario execution — Multi-step workflow based on ScenarioEngineV2
 
@@ -1270,7 +1399,11 @@ class TaskEngineV3(ContentGenerationMixin):
             return f"*{desc}*（已纳入工作流，执行中）"
 
     def _execute_business_operation(
-        self, search_query: str, llm_query: str = None, business_type: str = None, is_follow_up: bool = False
+        self,
+        search_query: str,
+        llm_query: str = None,
+        business_type: str = None,
+        is_follow_up: bool = False,
     ) -> TaskResult:
         if llm_query is None:
             llm_query = search_query
@@ -1279,12 +1412,20 @@ class TaskEngineV3(ContentGenerationMixin):
             skill = registry.get_skill("execute_operation")
             if skill and skill.enabled:
                 import asyncio as _asyncio
+
                 try:
                     loop = _asyncio.get_running_loop()
                     skill_result = None
                 except RuntimeError:
                     skill_result = _asyncio.run(
-                        registry.execute_skill("execute_operation", operation=search_query, parameters={"goal": search_query, "business_type": business_type})
+                        registry.execute_skill(
+                            "execute_operation",
+                            operation=search_query,
+                            parameters={
+                                "goal": search_query,
+                                "business_type": business_type,
+                            },
+                        )
                     )
                     if skill_result and skill_result.get("success"):
                         content = str(skill_result.get("data", ""))
@@ -1295,8 +1436,12 @@ class TaskEngineV3(ContentGenerationMixin):
                             deliverable_format="Markdown",
                         )
         except Exception as e:
-            logger.warning("[TaskEngineV3] BUSINESS_OPERATION SkillRegistry failed: %s", e)
-        return self._execute_info_collection(search_query, llm_query, business_type, is_follow_up=is_follow_up)
+            logger.warning(
+                "[TaskEngineV3] BUSINESS_OPERATION SkillRegistry failed: %s", e
+            )
+        return self._execute_info_collection(
+            search_query, llm_query, business_type, is_follow_up=is_follow_up
+        )
 
     def _execute_general_chat(
         self, search_query: str, llm_query: str = None, is_follow_up: bool = False
@@ -1369,16 +1514,23 @@ class TaskEngineV3(ContentGenerationMixin):
             "💡 **納品できる成果物**：\n\n"
             "| あなたの指示 | 納品物 |\n"
             "|-------------|--------|\n"
-            '| 「XXトレンドを収集」 | 実際の検索結果＋構造化調査レポート(.md) |\n'
-            '| 「XXプランを作成」 | 完全な実行計画(.md)、目標/タイムライン/リソース/リスク付き |\n'
-            '| 「XXを分析」 | SWOT分析＋具体的なアクションリスト(.md) |\n'
+            "| 「XXトレンドを収集」 | 実際の検索結果＋構造化調査レポート(.md) |\n"
+            "| 「XXプランを作成」 | 完全な実行計画(.md)、目標/タイムライン/リソース/リスク付き |\n"
+            "| 「XXを分析」 | SWOT分析＋具体的なアクションリスト(.md) |\n"
             "| シナリオボタンをクリック | マルチステップワークフロー＋各ステップの成果物(.md) |\n\n"
             "全ての成果物はダウンロードしてすぐに使えます！"
         )
 
         greeting_keywords = {
             "zh": ["你好", "您好", "嗨"],
-            "en": ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"],
+            "en": [
+                "hello",
+                "hi",
+                "hey",
+                "good morning",
+                "good afternoon",
+                "good evening",
+            ],
             "jp": ["こんにちは", "おはよう", "こんばんは"],
         }
         help_keywords = {
@@ -1391,14 +1543,18 @@ class TaskEngineV3(ContentGenerationMixin):
             if any(kw in query_lower for kw in keywords):
                 greeting_map = {"zh": greeting_zh, "en": greeting_en, "jp": greeting_jp}
                 return TaskResult(
-                    success=True, content=greeting_map[lang], task_type=TaskType.GENERAL_CHAT
+                    success=True,
+                    content=greeting_map[lang],
+                    task_type=TaskType.GENERAL_CHAT,
                 )
 
         for lang, keywords in help_keywords.items():
             if any(kw in query_lower for kw in keywords):
                 help_map = {"zh": help_zh, "en": help_en, "jp": help_jp}
                 return TaskResult(
-                    success=True, content=help_map[lang], task_type=TaskType.GENERAL_CHAT
+                    success=True,
+                    content=help_map[lang],
+                    task_type=TaskType.GENERAL_CHAT,
                 )
 
         default = (
@@ -1420,20 +1576,23 @@ class TaskEngineV3(ContentGenerationMixin):
 
     def _get_parallel_executor(self) -> Optional[ParallelExecutor]:
         """Get or create ParallelExecutor instance (lazy initialization)
-        
+
         Design intent:
         - ParallelExecutor only created when actually needed (saves resources)
         - Configured with safe defaults to avoid API rate limits
         - Progress callback integrated for real-time monitoring
-        
+
         Returns:
             ParallelExecutor instance if available, None if parallelization disabled
         """
         if not _PARALLEL_EXECUTOR_AVAILABLE:
             return None
-        
+
         if self._parallel_executor is None:
-            def progress_callback(session_id: str, completed: int, total: int, task_result):
+
+            def progress_callback(
+                session_id: str, completed: int, total: int, task_result
+            ):
                 if _PROGRESS_EMITTER_AVAILABLE and session_id:
                     try:
                         emitter = ProgressEmitter()
@@ -1443,108 +1602,133 @@ class TaskEngineV3(ContentGenerationMixin):
                             session_id=session_id,
                             message=f"并行任务 {completed}/{total} 完成",
                             progress_pct=pct,
-                            detail={"task_index": completed, "success": task_result.success},
+                            detail={
+                                "task_index": completed,
+                                "success": task_result.success,
+                            },
                         )
                         emitter.emit(event)
                     except Exception as e:
-                        logger.warning("[TaskEngineV3] Parallel progress emit failed: %s", e)
-            
+                        logger.warning(
+                            "[TaskEngineV3] Parallel progress emit failed: %s", e
+                        )
+
             self._parallel_executor = ParallelExecutor(
                 max_concurrent=3,
                 default_timeout=60.0,
                 progress_callback=progress_callback,
             )
-        
+
         return self._parallel_executor
 
     def _should_parallelize(self, prompt: str, task_type: TaskType = None) -> bool:
         """Intelligent decision: should this task be parallelized?
-        
+
         Uses heuristic rules to determine if parallel execution would be beneficial.
         Balances potential speedup against overhead cost.
-        
+
         Decision rules (in priority order):
         1. Prompt length > 200 chars → Complex task worth parallelizing (~30% of cases)
         2. Contains multi-dimensional keywords → Analysis needs multiple data sources
         3. Scenario workflow with multiple steps → Steps may have independent sub-tasks
         4. Data analysis type → Naturally suited for multi-dimensional parallel analysis
         5. Content generation with search → Pre-retrieval can be parallelized
-        
+
         Conservative approach:
         - Default to False (backward compatible)
         - Only enable when clear benefit exists
         - Avoid parallelizing simple/fast tasks (overhead > benefit)
-        
+
         Args:
             prompt: User's input prompt text
             task_type: Optional task type classification
-        
+
         Returns:
             True if parallelization recommended, False otherwise
         """
         if not prompt or not prompt.strip():
             return False
-        
+
         if not _PARALLEL_EXECUTOR_AVAILABLE:
             return False
-        
+
         clean_prompt = prompt.strip()
-        
+
         if len(clean_prompt) > 200:
-            logger.debug("[TaskEngineV3] Parallelize: prompt length %s > 200", len(clean_prompt))
+            logger.debug(
+                "[TaskEngineV3] Parallelize: prompt length %s > 200", len(clean_prompt)
+            )
             return True
-        
+
         parallel_keywords = [
-            "对比", "比较", "综合", "多维", "各方面",
-            "分析.*趋势", "分析.*数据", "市场.*分析",
-            "竞品.*分析", "用户.*反馈", "多角度",
-            "compare", "analyze", "comprehensive", "multi-dimensional",
+            "对比",
+            "比较",
+            "综合",
+            "多维",
+            "各方面",
+            "分析.*趋势",
+            "分析.*数据",
+            "市场.*分析",
+            "竞品.*分析",
+            "用户.*反馈",
+            "多角度",
+            "compare",
+            "analyze",
+            "comprehensive",
+            "multi-dimensional",
         ]
-        
+
         import re
+
         for kw in parallel_keywords:
             if re.search(kw, clean_prompt, re.IGNORECASE):
                 logger.debug("[TaskEngineV3] Parallelize: matched keyword '%s'", kw)
                 return True
-        
+
         if task_type == TaskType.DATA_ANALYSIS:
             logger.debug("[TaskEngineV3] Parallelize: DATA_ANALYSIS task type")
             return True
-        
+
         if task_type == TaskType.CONTENT_GENERATION and any(
             kw in clean_prompt for kw in ["报告", "方案", "计划", "report", "plan"]
         ):
-            logger.debug("[TaskEngineV3] Parallelize: CONTENT_GENERATION with document keywords")
+            logger.debug(
+                "[TaskEngineV3] Parallelize: CONTENT_GENERATION with document keywords"
+            )
             return True
-        
+
         return False
 
-    async def _parallel_content_generation(self, prompt: str, session_id: str = "") -> str:
+    async def _parallel_content_generation(
+        self, prompt: str, session_id: str = ""
+    ) -> str:
         """Parallelized content generation workflow
-        
+
         Optimizes content generation by:
         1. Parallel pre-retrieval: Multiple simultaneous searches for different aspects
         2. Context merging: Combine all retrieved information
         3. Single LLM call: Generate content with rich context (avoids multiple LLM calls)
-        
+
         Speedup mechanism:
         - Serial: Search1(5s) → Search2(5s) → Search3(5s) → Generate(10s) = 25s
         - Parallel: [Search1+Search2+Search3](5s) → Generate(10s) = 15s (40% faster)
-        
+
         Args:
             prompt: Original user prompt for content generation
             session_id: Session ID for progress tracking
-        
+
         Returns:
             Generated content string (or fallback to serial if parallel fails)
         """
         executor = self._get_parallel_executor()
         if not executor:
-            logger.warning("[TaskEngineV3] Parallel executor unavailable, falling back to serial")
+            logger.warning(
+                "[TaskEngineV3] Parallel executor unavailable, falling back to serial"
+            )
             return await self._serial_content_generation(prompt, session_id)
-        
+
         base_query = self._extract_search_query(prompt)
-        
+
         search_tasks = [
             TaskSpec(
                 func=lambda q=base_query + " 方案 案例": self._search(q, max_results=3),
@@ -1552,7 +1736,9 @@ class TaskEngineV3(ContentGenerationMixin):
                 timeout=15.0,
             ),
             TaskSpec(
-                func=lambda q=base_query + " 最佳实践 模板": self._search(q, max_results=3),
+                func=lambda q=base_query + " 最佳实践 模板": self._search(
+                    q, max_results=3
+                ),
                 description="最佳实践搜索",
                 timeout=15.0,
             ),
@@ -1562,7 +1748,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 timeout=15.0,
             ),
         ]
-        
+
         try:
             if _PROGRESS_EMITTER_AVAILABLE and session_id:
                 self._emit_progress(
@@ -1571,13 +1757,13 @@ class TaskEngineV3(ContentGenerationMixin):
                     f"🚀 开始并行预检索 ({len(search_tasks)}个搜索任务)",
                     progress_pct=20,
                 )
-            
+
             parallel_result = await executor.execute_parallel(
                 search_tasks,
                 session_id=session_id,
                 merge_strategy=MergeStrategy.MERGE,
             )
-            
+
             if _PROGRESS_EMITTER_AVAILABLE and session_id:
                 self._emit_progress(
                     session_id,
@@ -1591,10 +1777,10 @@ class TaskEngineV3(ContentGenerationMixin):
                         "task_count": len(search_tasks),
                     },
                 )
-            
+
             all_results = []
             all_sources = []
-            
+
             for task_result in parallel_result.results:
                 if task_result.success and task_result.result:
                     results, sources = task_result.result
@@ -1602,7 +1788,7 @@ class TaskEngineV3(ContentGenerationMixin):
                         all_results.extend(results)
                     if sources:
                         all_sources.extend(sources)
-            
+
             context_lines = []
             if all_results:
                 context_lines.append("> **并行预检索结果**（来自多个信息源）:\n")
@@ -1614,16 +1800,17 @@ class TaskEngineV3(ContentGenerationMixin):
                         body = r.get("body", "") or r.get("snippet", "")
                         context_lines.append(f"{i}. **{title}**: {body[:180]}\n")
                 context_lines.append("\n---\n\n")
-            
+
             logger.info(
                 "[TaskEngineV3] Parallel pre-retrieval collected %s results from %s searches",
-                len(all_results), parallel_result.success_count,
+                len(all_results),
+                parallel_result.success_count,
             )
-            
+
             content = self._gen_real_content(
                 prompt, context_lines, all_results, None, llm_query=prompt
             )
-            
+
             result_metadata = {
                 "parallel_execution": True,
                 "parallel_tasks": len(search_tasks),
@@ -1632,12 +1819,12 @@ class TaskEngineV3(ContentGenerationMixin):
                 "total_parallel_time_ms": parallel_result.total_time_ms,
                 "sources_count": len(all_sources),
             }
-            
-            if hasattr(self, '_last_metadata'):
+
+            if hasattr(self, "_last_metadata"):
                 self._last_metadata.update(result_metadata)
-            
+
             return content
-            
+
         except Exception as e:
             logger.error("[TaskEngineV3] Parallel content generation failed: %s", e)
             if _PROGRESS_EMITTER_AVAILABLE and session_id:
@@ -1648,16 +1835,18 @@ class TaskEngineV3(ContentGenerationMixin):
                 )
             return await self._serial_content_generation(prompt, session_id)
 
-    async def _serial_content_generation(self, prompt: str, session_id: str = "") -> str:
+    async def _serial_content_generation(
+        self, prompt: str, session_id: str = ""
+    ) -> str:
         """Fallback serial content generation (original behavior)
-        
+
         Preserved for backward compatibility and error degradation.
         """
         results, sources = self._search(
             self._extract_search_query(prompt) + " 方案 案例 最佳实践 模板",
             max_results=5,
         )
-        
+
         context_lines = []
         if results:
             context_lines.append("> 参考资料（来自网络搜索）：\n")
@@ -1666,7 +1855,7 @@ class TaskEngineV3(ContentGenerationMixin):
                     f"{i}. **{r.get('title', '')}**: {r.get('body', '')[:200]}\n"
                 )
             context_lines.append("\n---\n\n")
-        
+
         content = self._gen_real_content(
             prompt, context_lines, results, None, llm_query=prompt
         )
@@ -1674,51 +1863,59 @@ class TaskEngineV3(ContentGenerationMixin):
 
     async def _parallel_data_analysis(self, prompt: str, session_id: str = "") -> str:
         """Parallelized data analysis workflow
-        
+
         Accelerates multi-dimensional analysis by running different analysis
         dimensions simultaneously instead of sequentially.
-        
+
         Typical dimensions:
         - Trend analysis (历史趋势、发展方向)
         - Comparative analysis (竞品对比、行业对标)
         - Anomaly detection (异常识别、风险点)
-        
+
         Speedup mechanism:
         - Serial: Trend(8s) → Compare(8s) → Anomaly(6s) → Merge(4s) = 26s
         - Parallel: [Trend+Compare+Anomaly](8s) → Merge(4s) = 12s (54% faster)
-        
+
         Args:
             prompt: Original user prompt for data analysis
             session_id: Session ID for progress tracking
-        
+
         Returns:
             Analysis result string (or fallback to serial if parallel fails)
         """
         executor = self._get_parallel_executor()
         if not executor:
-            logger.warning("[TaskEngineV3] Parallel executor unavailable for data analysis")
+            logger.warning(
+                "[TaskEngineV3] Parallel executor unavailable for data analysis"
+            )
             return self._execute_data_analysis_serial(prompt, session_id).content
-        
+
         base_query = self._extract_search_query(prompt)
-        
+
         analysis_tasks = [
             TaskSpec(
-                func=lambda q=base_query + " 趋势 发展 历史数据": self._search(q, max_results=3),
+                func=lambda q=base_query + " 趋势 发展 历史数据": self._search(
+                    q, max_results=3
+                ),
                 description="趋势分析搜索",
                 timeout=15.0,
             ),
             TaskSpec(
-                func=lambda q=base_query + " 对比 竞品 行业标杆": self._search(q, max_results=3),
+                func=lambda q=base_query + " 对比 竞品 行业标杆": self._search(
+                    q, max_results=3
+                ),
                 description="对比分析搜索",
                 timeout=15.0,
             ),
             TaskSpec(
-                func=lambda q=base_query + " 风险 问题 挑战": self._search(q, max_results=3),
+                func=lambda q=base_query + " 风险 问题 挑战": self._search(
+                    q, max_results=3
+                ),
                 description="风险识别搜索",
                 timeout=15.0,
             ),
         ]
-        
+
         try:
             if _PROGRESS_EMITTER_AVAILABLE and session_id:
                 self._emit_progress(
@@ -1727,13 +1924,13 @@ class TaskEngineV3(ContentGenerationMixin):
                     f"📊 开始并行多维度分析 ({len(analysis_tasks)}个分析维度)",
                     progress_pct=20,
                 )
-            
+
             parallel_result = await executor.execute_parallel(
                 analysis_tasks,
                 session_id=session_id,
                 merge_strategy=MergeStrategy.MERGE,
             )
-            
+
             if _PROGRESS_EMITTER_AVAILABLE and session_id:
                 self._emit_progress(
                     session_id,
@@ -1747,52 +1944,60 @@ class TaskEngineV3(ContentGenerationMixin):
                         "dimensions_analyzed": parallel_result.success_count,
                     },
                 )
-            
+
             dimension_results = {}
             dimension_names = ["趋势分析", "对比分析", "风险识别"]
-            
+
             for i, task_result in enumerate(parallel_result.results):
                 if task_result.success and task_result.result:
                     results, sources = task_result.result
-                    dimension_key = dimension_names[i] if i < len(dimension_names) else f"维度{i+1}"
+                    dimension_key = (
+                        dimension_names[i] if i < len(dimension_names) else f"维度{i+1}"
+                    )
                     dimension_results[dimension_key] = {
                         "results": results,
                         "sources": sources,
-                        "findings": [
-                            f"**{r.get('title', '')}**: {r.get('body', '')[:150]}"
-                            for r in results[:3]
-                        ] if results else ["需要基于实际数据进行量化分析"],
+                        "findings": (
+                            [
+                                f"**{r.get('title', '')}**: {r.get('body', '')[:150]}"
+                                for r in results[:3]
+                            ]
+                            if results
+                            else ["需要基于实际数据进行量化分析"]
+                        ),
                     }
-            
+
             lines = []
             lines.append(f"# 📊 「{prompt}」深度并行分析\n")
-            lines.append(f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')} | 并行维度: {len(dimension_results)}\n\n")
-            
+            lines.append(
+                f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')} | 并行维度: {len(dimension_results)}\n\n"
+            )
+
             for dim_name, dim_data in dimension_results.items():
                 lines.append(f"## {dim_name}\n\n")
                 if dim_data.get("findings"):
                     for finding in dim_data["findings"]:
                         lines.append(f"- {finding}\n")
                 lines.append("\n")
-            
+
             lines.append("## 综合洞察\n\n")
             lines.append(
                 f"基于以上 {len(dimension_results)} 个维度的并行分析，提炼以下关键洞察：\n\n"
             )
-            
+
             all_findings = []
             for dim_data in dimension_results.values():
                 if dim_data.get("findings"):
                     all_findings.extend(dim_data["findings"])
-            
+
             unique_findings = list(set(all_findings))[:5]
             for i, finding in enumerate(unique_findings, 1):
                 lines.append(f"{i}. {finding}\n")
-            
+
             lines.append("\n---\n*由 OPC-Agents 并行分析引擎驱动*\n")
-            
+
             content = "".join(lines)
-            
+
             result_metadata = {
                 "parallel_execution": True,
                 "analysis_dimensions": len(analysis_tasks),
@@ -1800,14 +2005,15 @@ class TaskEngineV3(ContentGenerationMixin):
                 "speedup_factor": parallel_result.speedup_factor,
                 "total_analysis_time_ms": parallel_result.total_time_ms,
             }
-            
+
             logger.info(
                 "[TaskEngineV3] Parallel data analysis completed: %s dimensions in %.0fms",
-                parallel_result.success_count, parallel_result.total_time_ms,
+                parallel_result.success_count,
+                parallel_result.total_time_ms,
             )
-            
+
             return content
-            
+
         except Exception as e:
             logger.error("[TaskEngineV3] Parallel data analysis failed: %s", e)
             if _PROGRESS_EMITTER_AVAILABLE and session_id:
@@ -1818,7 +2024,9 @@ class TaskEngineV3(ContentGenerationMixin):
                 )
             return self._execute_data_analysis_serial(prompt, session_id).content
 
-    def _execute_data_analysis_serial(self, search_query: str, session_id: str = None) -> TaskResult:
+    def _execute_data_analysis_serial(
+        self, search_query: str, session_id: str = None
+    ) -> TaskResult:
         """Serial data analysis fallback (preserves original behavior)"""
         return self._execute_data_analysis(search_query)
 

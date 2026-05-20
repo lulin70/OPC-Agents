@@ -26,6 +26,7 @@ _DEFAULT_TAX_CALENDAR = [
 
 try:
     from opc_manager.utils import load_json_data
+
     TAX_CALENDAR = load_json_data("data/knowledge/tax_calendar.json")
 except Exception as e:
     logger.debug("[TaxReminderSkill] Load tax calendar failed: %s", e)
@@ -39,8 +40,12 @@ def get_tax_calendar(month: int = 0) -> Dict[str, Any]:
     upcoming = []
     for e in entries:
         deadline_str = f"{time.strftime('%Y')}-{month:02d}-{e['deadline']:02d}"
-        remaining = (time.strptime(deadline_str, "%Y-%m-%d").tm_yday - time.localtime().tm_yday)
-        upcoming.append({**e, "deadline_date": deadline_str, "days_remaining": remaining})
+        remaining = (
+            time.strptime(deadline_str, "%Y-%m-%d").tm_yday - time.localtime().tm_yday
+        )
+        upcoming.append(
+            {**e, "deadline_date": deadline_str, "days_remaining": remaining}
+        )
 
     next_month = month + 1 if month < 12 else 1
     next_entries = [e for e in TAX_CALENDAR if e["month"] == next_month]
@@ -74,12 +79,14 @@ def check_upcoming_deadlines(days_ahead: int = 30) -> Dict[str, Any]:
             continue
 
         if 0 <= days_remaining <= days_ahead:
-            upcoming.append({
-                **entry,
-                "deadline_date": deadline_date,
-                "days_remaining": days_remaining,
-                "urgency": _urgency_level(days_remaining),
-            })
+            upcoming.append(
+                {
+                    **entry,
+                    "deadline_date": deadline_date,
+                    "days_remaining": days_remaining,
+                    "urgency": _urgency_level(days_remaining),
+                }
+            )
 
     upcoming.sort(key=lambda x: x["days_remaining"])
 
@@ -92,8 +99,9 @@ def check_upcoming_deadlines(days_ahead: int = 30) -> Dict[str, Any]:
     }
 
 
-def create_reminder(task: str, deadline: str, tax_type: str = "增值税",
-                    amount_estimate: float = 0) -> Dict[str, Any]:
+def create_reminder(
+    task: str, deadline: str, tax_type: str = "增值税", amount_estimate: float = 0
+) -> Dict[str, Any]:
     if not task.strip():
         return {"success": False, "error": "提醒任务不能为空"}
     if not _validate_date(deadline):
@@ -166,12 +174,14 @@ def get_tax_checklist(month: int = 0) -> Dict[str, Any]:
 
     checklist = []
     for d in deadlines:
-        checklist.append({
-            "task": d["task"],
-            "deadline": d.get("deadline_date", f"每月{d['deadline']}日"),
-            "type": d.get("type", ""),
-            "status": "pending",
-        })
+        checklist.append(
+            {
+                "task": d["task"],
+                "deadline": d.get("deadline_date", f"每月{d['deadline']}日"),
+                "type": d.get("type", ""),
+                "status": "pending",
+            }
+        )
 
     existing = list_reminders(status="completed")
     completed_tasks = {r["task"] for r in existing.get("reminders", [])}

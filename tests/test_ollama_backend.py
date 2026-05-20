@@ -37,9 +37,7 @@ class TestOllamaBackendConfig(unittest.TestCase):
     def test_ollama_backend_default_url(self):
         from opc_manager.llm_service import OllamaBackend, LLMConfig, LLMProvider
 
-        config = LLMConfig(
-            provider=LLMProvider.OLLAMA, model="llama3", base_url=None
-        )
+        config = LLMConfig(provider=LLMProvider.OLLAMA, model="llama3", base_url=None)
         backend = OllamaBackend(config)
         self.assertEqual(backend.base_url, "http://localhost:11434")
 
@@ -92,9 +90,15 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
     def setUp(self):
         self._original_env = {}
         for key in [
-            "MOKA_API_KEY", "MOKA_API_BASE", "MOKA_MODEL",
-            "GLM_API_KEY", "OPENAI_API_KEY", "OPENAI_API_BASE",
-            "OLLAMA_BASE_URL", "OLLAMA_MODEL", "OLLAMA_ENABLED",
+            "MOKA_API_KEY",
+            "MOKA_API_BASE",
+            "MOKA_MODEL",
+            "GLM_API_KEY",
+            "OPENAI_API_KEY",
+            "OPENAI_API_BASE",
+            "OLLAMA_BASE_URL",
+            "OLLAMA_MODEL",
+            "OLLAMA_ENABLED",
         ]:
             self._original_env[key] = os.environ.get(key)
 
@@ -107,8 +111,11 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
 
     def _clear_llm_env(self):
         for key in [
-            "MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY",
-            "OLLAMA_BASE_URL", "OLLAMA_ENABLED",
+            "MOKA_API_KEY",
+            "GLM_API_KEY",
+            "OPENAI_API_KEY",
+            "OLLAMA_BASE_URL",
+            "OLLAMA_ENABLED",
         ]:
             os.environ.pop(key, None)
 
@@ -215,8 +222,14 @@ class TestOllamaCallLLMAPI(unittest.TestCase):
 
     def setUp(self):
         self._original_env = {}
-        for key in ["MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY",
-                     "OLLAMA_BASE_URL", "OLLAMA_MODEL", "OLLAMA_ENABLED"]:
+        for key in [
+            "MOKA_API_KEY",
+            "GLM_API_KEY",
+            "OPENAI_API_KEY",
+            "OLLAMA_BASE_URL",
+            "OLLAMA_MODEL",
+            "OLLAMA_ENABLED",
+        ]:
             self._original_env[key] = os.environ.get(key)
 
     def tearDown(self):
@@ -227,8 +240,13 @@ class TestOllamaCallLLMAPI(unittest.TestCase):
                 os.environ[key] = val
 
     def _clear_llm_env(self):
-        for key in ["MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY",
-                     "OLLAMA_BASE_URL", "OLLAMA_ENABLED"]:
+        for key in [
+            "MOKA_API_KEY",
+            "GLM_API_KEY",
+            "OPENAI_API_KEY",
+            "OLLAMA_BASE_URL",
+            "OLLAMA_ENABLED",
+        ]:
             os.environ.pop(key, None)
 
     @patch("requests.post")
@@ -332,8 +350,14 @@ class TestOllamaConfigDefaultSelection(unittest.TestCase):
 
     def setUp(self):
         self._original_env = {}
-        for key in ["MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY",
-                     "OLLAMA_BASE_URL", "OLLAMA_MODEL", "OLLAMA_ENABLED"]:
+        for key in [
+            "MOKA_API_KEY",
+            "GLM_API_KEY",
+            "OPENAI_API_KEY",
+            "OLLAMA_BASE_URL",
+            "OLLAMA_MODEL",
+            "OLLAMA_ENABLED",
+        ]:
             self._original_env[key] = os.environ.get(key)
 
     def tearDown(self):
@@ -344,8 +368,13 @@ class TestOllamaConfigDefaultSelection(unittest.TestCase):
                 os.environ[key] = val
 
     def _clear_llm_env(self):
-        for key in ["MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY",
-                     "OLLAMA_BASE_URL", "OLLAMA_ENABLED"]:
+        for key in [
+            "MOKA_API_KEY",
+            "GLM_API_KEY",
+            "OPENAI_API_KEY",
+            "OLLAMA_BASE_URL",
+            "OLLAMA_ENABLED",
+        ]:
             os.environ.pop(key, None)
 
     def test_ollama_selected_when_only_ollama_configured(self):
@@ -511,20 +540,32 @@ class TestOllamaLLMServiceIntegration(unittest.TestCase):
     """LLMService with Ollama provider integration tests"""
 
     def test_switch_to_ollama_provider(self):
-        from opc_manager.llm_service import LLMService, LLMConfig, LLMProvider, OllamaBackend
+        from opc_manager.llm_service import (
+            LLMService,
+            LLMConfig,
+            LLMProvider,
+            OllamaBackend,
+        )
 
         config = LLMConfig(provider=LLMProvider.MOKA, api_key="test-key")
         service = LLMService(config)
 
         self.assertNotIsInstance(service.backend, OllamaBackend)
 
-        service.switch_provider(LLMProvider.OLLAMA, base_url="http://localhost:11434", model="llama3")
+        service.switch_provider(
+            LLMProvider.OLLAMA, base_url="http://localhost:11434", model="llama3"
+        )
 
         self.assertIsInstance(service.backend, OllamaBackend)
         self.assertEqual(service.config.provider, LLMProvider.OLLAMA)
 
     def test_create_ollama_backend_directly(self):
-        from opc_manager.llm_service import LLMService, LLMConfig, LLMProvider, OllamaBackend
+        from opc_manager.llm_service import (
+            LLMService,
+            LLMConfig,
+            LLMProvider,
+            OllamaBackend,
+        )
 
         config = LLMConfig(
             provider=LLMProvider.OLLAMA,

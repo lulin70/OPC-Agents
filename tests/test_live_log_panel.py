@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 try:
     import psutil
+
     psutil_available = True
 except ImportError:
     psutil_available = False
@@ -66,7 +67,8 @@ def reset_cache_singleton():
     LogCache._instance = None
     global _log_cache_instance
     import frontend.components.live_log_panel as module
-    original_instance = getattr(module, '_log_cache_instance', None)
+
+    original_instance = getattr(module, "_log_cache_instance", None)
     module._log_cache_instance = None
     yield
     LogCache._instance = original
@@ -132,7 +134,9 @@ class TestLogEntryDataStructure:
         entry = create_sample_entry(
             level="ERROR",
             message="Critical error",
-            extra={"traceback": "Traceback (most recent call last):\n  File 'test.py', line 1"},
+            extra={
+                "traceback": "Traceback (most recent call last):\n  File 'test.py', line 1"
+            },
         )
         html = entry.to_html()
         assert "错误详情" in html or "error" in html.lower()
@@ -217,10 +221,18 @@ class TestCollectAppLogs:
 
     @pytest.mark.skip(reason="File system mocking complexity - tested in integration")
     def test_valid_log_file_parsed_correctly(self):
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.log', delete=False, encoding='utf-8') as f:
-            f.write("2024-01-15 10:30:00 - opc_manager.app - INFO - Application started\n")
-            f.write("2024-01-15 10:30:01 - opc_manager.engine - DEBUG - Processing request\n")
-            f.write("2024-01-15 10:30:02 - opc_manager.audit - WARNING - Slow response detected\n")
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".log", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(
+                "2024-01-15 10:30:00 - opc_manager.app - INFO - Application started\n"
+            )
+            f.write(
+                "2024-01-15 10:30:01 - opc_manager.engine - DEBUG - Processing request\n"
+            )
+            f.write(
+                "2024-01-15 10:30:02 - opc_manager.audit - WARNING - Slow response detected\n"
+            )
             temp_file = f.name
 
         try:
@@ -253,7 +265,9 @@ class TestCollectEngineLogs:
 
     @pytest.mark.skip(reason="File system mocking complexity - tested in integration")
     def test_engine_logs_with_opc_manager_content(self):
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.log', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".log", delete=False, encoding="utf-8"
+        ) as f:
             f.write("2024-01-15 11:00:00 | INFO | TaskEngineV3 executing task\n")
             f.write("2024-01-15 11:00:01 | DEBUG | AgentLoop processing step\n")
             temp_file = f.name
@@ -352,7 +366,7 @@ class TestCollectProgressLogs:
                 "message": "Task completed successfully",
                 "timestamp": time.time(),
                 "progress": 100,
-            }
+            },
         ]
         MockEmitter.return_value = mock_emitter
 
@@ -425,22 +439,42 @@ class TestCollectAllLogs:
     @patch("frontend.components.live_log_panel.collect_progress_logs", return_value=[])
     @patch("frontend.components.live_log_panel.collect_audit_logs", return_value=[])
     @patch("frontend.components.live_log_panel.collect_engine_logs", return_value=[])
-    @patch("frontend.components.live_log_panel.collect_app_logs", return_value=[
-        create_sample_entry(level="INFO"),
-        create_sample_entry(level="WARNING"),
-    ])
+    @patch(
+        "frontend.components.live_log_panel.collect_app_logs",
+        return_value=[
+            create_sample_entry(level="INFO"),
+            create_sample_entry(level="WARNING"),
+        ],
+    )
     def test_aggregation_from_all_sources(self, mock_app, *args):
         logs = collect_all_logs()
         assert len(logs) == 2
         assert all(l.source == "app" for l in logs)
 
     def test_result_limited_to_default_display_limit(self):
-        many_entries = [create_sample_entry(timestamp=time.time() + i) for i in range(200)]
-        with patch("frontend.components.live_log_panel.collect_app_logs", return_value=many_entries):
-            with patch("frontend.components.live_log_panel.collect_engine_logs", return_value=[]):
-                with patch("frontend.components.live_log_panel.collect_audit_logs", return_value=[]):
-                    with patch("frontend.components.live_log_panel.collect_progress_logs", return_value=[]):
-                        with patch("frontend.components.live_log_panel.collect_system_logs", return_value=[]):
+        many_entries = [
+            create_sample_entry(timestamp=time.time() + i) for i in range(200)
+        ]
+        with patch(
+            "frontend.components.live_log_panel.collect_app_logs",
+            return_value=many_entries,
+        ):
+            with patch(
+                "frontend.components.live_log_panel.collect_engine_logs",
+                return_value=[],
+            ):
+                with patch(
+                    "frontend.components.live_log_panel.collect_audit_logs",
+                    return_value=[],
+                ):
+                    with patch(
+                        "frontend.components.live_log_panel.collect_progress_logs",
+                        return_value=[],
+                    ):
+                        with patch(
+                            "frontend.components.live_log_panel.collect_system_logs",
+                            return_value=[],
+                        ):
                             logs = collect_all_logs()
                             assert len(logs) <= DEFAULT_DISPLAY_LIMIT
 
@@ -450,11 +484,26 @@ class TestCollectAllLogs:
         recent_entry = create_sample_entry(timestamp=time.time())
         old_entry = create_sample_entry(timestamp=old_ts)
 
-        with patch("frontend.components.live_log_panel.collect_app_logs", return_value=[recent_entry]):
-            with patch("frontend.components.live_log_panel.collect_engine_logs", return_value=[old_entry]):
-                with patch("frontend.components.live_log_panel.collect_audit_logs", return_value=[]):
-                    with patch("frontend.components.live_log_panel.collect_progress_logs", return_value=[]):
-                        with patch("frontend.components.live_log_panel.collect_system_logs", return_value=[]):
+        with patch(
+            "frontend.components.live_log_panel.collect_app_logs",
+            return_value=[recent_entry],
+        ):
+            with patch(
+                "frontend.components.live_log_panel.collect_engine_logs",
+                return_value=[old_entry],
+            ):
+                with patch(
+                    "frontend.components.live_log_panel.collect_audit_logs",
+                    return_value=[],
+                ):
+                    with patch(
+                        "frontend.components.live_log_panel.collect_progress_logs",
+                        return_value=[],
+                    ):
+                        with patch(
+                            "frontend.components.live_log_panel.collect_system_logs",
+                            return_value=[],
+                        ):
                             logs = collect_all_logs(since_timestamp=time.time() - 60)
                             assert any(l.timestamp == time.time() for l in logs)
                             assert not any(l.timestamp == old_ts for l in logs)
@@ -466,11 +515,25 @@ class TestCollectAllLogs:
             create_sample_entry(timestamp=1700000002.0),
         ]
 
-        with patch("frontend.components.live_log_panel.collect_app_logs", return_value=entries):
-            with patch("frontend.components.live_log_panel.collect_engine_logs", return_value=[]):
-                with patch("frontend.components.live_log_panel.collect_audit_logs", return_value=[]):
-                    with patch("frontend.components.live_log_panel.collect_progress_logs", return_value=[]):
-                        with patch("frontend.components.live_log_panel.collect_system_logs", return_value=[]):
+        with patch(
+            "frontend.components.live_log_panel.collect_app_logs", return_value=entries
+        ):
+            with patch(
+                "frontend.components.live_log_panel.collect_engine_logs",
+                return_value=[],
+            ):
+                with patch(
+                    "frontend.components.live_log_panel.collect_audit_logs",
+                    return_value=[],
+                ):
+                    with patch(
+                        "frontend.components.live_log_panel.collect_progress_logs",
+                        return_value=[],
+                    ):
+                        with patch(
+                            "frontend.components.live_log_panel.collect_system_logs",
+                            return_value=[],
+                        ):
                             logs = collect_all_logs()
                             timestamps = [l.timestamp for l in logs]
                             assert timestamps == sorted(timestamps)
@@ -495,7 +558,10 @@ class TestLogCache:
 
     def test_update_trims_to_max_entries(self):
         cache = LogCache()
-        entries = [create_sample_entry(timestamp=time.time() + i) for i in range(MAX_CACHE_ENTRIES + 100)]
+        entries = [
+            create_sample_entry(timestamp=time.time() + i)
+            for i in range(MAX_CACHE_ENTRIES + 100)
+        ]
         cache.update(entries)
         assert cache.size <= MAX_CACHE_ENTRIES
 
@@ -697,9 +763,13 @@ class TestFilterLogic:
     def test_combined_filters(self):
         logs = [
             create_sample_entry(level="DEBUG", source="app", message="Debug info"),
-            create_sample_entry(level="INFO", source="engine", message="Engine started"),
+            create_sample_entry(
+                level="INFO", source="engine", message="Engine started"
+            ),
             create_sample_entry(level="ERROR", source="app", message="App error"),
-            create_sample_entry(level="WARNING", source="audit", message="Audit warning"),
+            create_sample_entry(
+                level="WARNING", source="audit", message="Audit warning"
+            ),
         ]
 
         min_level_pos = LOG_LEVEL_ORDER.index("WARNING")
@@ -761,15 +831,32 @@ class TestPerformance:
     """Test suite for performance benchmarks."""
 
     def test_collect_1000_entries_under_100ms(self):
-        large_batch = [create_sample_entry(timestamp=time.time() + i * 0.001) for i in range(1000)]
+        large_batch = [
+            create_sample_entry(timestamp=time.time() + i * 0.001) for i in range(1000)
+        ]
 
         start_time = time.perf_counter()
 
-        with patch("frontend.components.live_log_panel.collect_app_logs", return_value=large_batch[:300]):
-            with patch("frontend.components.live_log_panel.collect_engine_logs", return_value=large_batch[300:500]):
-                with patch("frontend.components.live_log_panel.collect_audit_logs", return_value=large_batch[500:700]):
-                    with patch("frontend.components.live_log_panel.collect_progress_logs", return_value=large_batch[700:900]):
-                        with patch("frontend.components.live_log_panel.collect_system_logs", return_value=large_batch[900:1000]):
+        with patch(
+            "frontend.components.live_log_panel.collect_app_logs",
+            return_value=large_batch[:300],
+        ):
+            with patch(
+                "frontend.components.live_log_panel.collect_engine_logs",
+                return_value=large_batch[300:500],
+            ):
+                with patch(
+                    "frontend.components.live_log_panel.collect_audit_logs",
+                    return_value=large_batch[500:700],
+                ):
+                    with patch(
+                        "frontend.components.live_log_panel.collect_progress_logs",
+                        return_value=large_batch[700:900],
+                    ):
+                        with patch(
+                            "frontend.components.live_log_panel.collect_system_logs",
+                            return_value=large_batch[900:1000],
+                        ):
                             logs = collect_all_logs()
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000
@@ -788,7 +875,9 @@ class TestPerformance:
         assert cache.size <= MAX_CACHE_ENTRIES
 
     def test_export_large_dataset_performance(self):
-        large_logs = [create_sample_entry(message=f"Log entry {i}") for i in range(1000)]
+        large_logs = [
+            create_sample_entry(message=f"Log entry {i}") for i in range(1000)
+        ]
 
         start_time = time.perf_counter()
         export_data = export_logs(large_logs, format="json")

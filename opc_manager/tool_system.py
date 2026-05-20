@@ -23,8 +23,21 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 
 ALLOWED_COMMANDS = {
-    "ls", "cat", "head", "tail", "wc", "echo", "pwd", "whoami",
-    "date", "df", "du", "find", "grep", "sort", "uniq",
+    "ls",
+    "cat",
+    "head",
+    "tail",
+    "wc",
+    "echo",
+    "pwd",
+    "whoami",
+    "date",
+    "df",
+    "du",
+    "find",
+    "grep",
+    "sort",
+    "uniq",
 }
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -42,6 +55,7 @@ def _ensure_allowed_dirs() -> None:
         os.path.join(_PROJECT_ROOT, "output"),
         os.path.join(_PROJECT_ROOT, "logs"),
     ]
+
 
 INPUT_LENGTH_LIMITS = {
     "user_input": 10000,
@@ -127,6 +141,7 @@ class AuditLogger:
                 except Exception as e:
                     logger.warning("[ToolSystem] Writer loop error: %s", e)
                     break
+
         cls._writer_task = asyncio.create_task(_writer())
 
     @classmethod
@@ -188,8 +203,9 @@ class AuditLogger:
             logger.error("审计日志写入失败: %s", e)
 
     @classmethod
-    def query(cls, event_type: str = None,
-              start_time: str = None, end_time: str = None) -> List[Dict]:
+    def query(
+        cls, event_type: str = None, start_time: str = None, end_time: str = None
+    ) -> List[Dict]:
         results = []
         try:
             with open(cls._log_file, "r") as f:
@@ -273,7 +289,9 @@ class Tool:
                     errors.append(f"参数 {param.name} 应为字典类型")
 
                 if param.allowed_values and value not in param.allowed_values:
-                    errors.append(f"参数 {param.name} 的值 {value} 不在允许范围内: {param.allowed_values}")
+                    errors.append(
+                        f"参数 {param.name} 的值 {value} 不在允许范围内: {param.allowed_values}"
+                    )
 
         return errors
 
@@ -295,10 +313,16 @@ class ToolSystem:
             category=ToolCategory.FILE,
             parameters=[
                 ToolParameter(name="file_path", type="str", description="文件路径"),
-                ToolParameter(name="encoding", type="str", required=False, default="utf-8", description="文件编码")
+                ToolParameter(
+                    name="encoding",
+                    type="str",
+                    required=False,
+                    default="utf-8",
+                    description="文件编码",
+                ),
             ],
             execute=self._execute_file_read,
-            permission=PermissionLevel.USER
+            permission=PermissionLevel.USER,
         )
         self.register_tool(file_read_tool)
 
@@ -310,11 +334,23 @@ class ToolSystem:
             parameters=[
                 ToolParameter(name="file_path", type="str", description="文件路径"),
                 ToolParameter(name="content", type="str", description="文件内容"),
-                ToolParameter(name="encoding", type="str", required=False, default="utf-8", description="文件编码"),
-                ToolParameter(name="overwrite", type="bool", required=False, default=False, description="是否覆盖")
+                ToolParameter(
+                    name="encoding",
+                    type="str",
+                    required=False,
+                    default="utf-8",
+                    description="文件编码",
+                ),
+                ToolParameter(
+                    name="overwrite",
+                    type="bool",
+                    required=False,
+                    default=False,
+                    description="是否覆盖",
+                ),
             ],
             execute=self._execute_file_write,
-            permission=PermissionLevel.USER
+            permission=PermissionLevel.USER,
         )
         self.register_tool(file_write_tool)
 
@@ -325,10 +361,15 @@ class ToolSystem:
             category=ToolCategory.FILE,
             parameters=[
                 ToolParameter(name="dir_path", type="str", description="目录路径"),
-                ToolParameter(name="pattern", type="str", required=False, description="文件名匹配模式")
+                ToolParameter(
+                    name="pattern",
+                    type="str",
+                    required=False,
+                    description="文件名匹配模式",
+                ),
             ],
             execute=self._execute_file_list,
-            permission=PermissionLevel.USER
+            permission=PermissionLevel.USER,
         )
         self.register_tool(file_list_tool)
 
@@ -339,10 +380,16 @@ class ToolSystem:
             category=ToolCategory.SEARCH,
             parameters=[
                 ToolParameter(name="query", type="str", description="搜索查询词"),
-                ToolParameter(name="max_results", type="int", required=False, default=10, description="最大结果数")
+                ToolParameter(
+                    name="max_results",
+                    type="int",
+                    required=False,
+                    default=10,
+                    description="最大结果数",
+                ),
             ],
             execute=self._execute_web_search,
-            permission=PermissionLevel.PUBLIC
+            permission=PermissionLevel.PUBLIC,
         )
         self.register_tool(search_tool)
 
@@ -355,10 +402,15 @@ class ToolSystem:
                 ToolParameter(name="to", type="str", description="收件人邮箱"),
                 ToolParameter(name="subject", type="str", description="邮件主题"),
                 ToolParameter(name="body", type="str", description="邮件内容"),
-                ToolParameter(name="attachments", type="list", required=False, description="附件路径列表")
+                ToolParameter(
+                    name="attachments",
+                    type="list",
+                    required=False,
+                    description="附件路径列表",
+                ),
             ],
             execute=self._execute_send_email,
-            permission=PermissionLevel.USER
+            permission=PermissionLevel.USER,
         )
         self.register_tool(email_tool)
 
@@ -369,10 +421,12 @@ class ToolSystem:
             category=ToolCategory.SYSTEM,
             parameters=[
                 ToolParameter(name="command", type="str", description="命令字符串"),
-                ToolParameter(name="cwd", type="str", required=False, description="工作目录")
+                ToolParameter(
+                    name="cwd", type="str", required=False, description="工作目录"
+                ),
             ],
             execute=self._execute_run_command,
-            permission=PermissionLevel.ADMIN
+            permission=PermissionLevel.ADMIN,
         )
         self.register_tool(command_tool)
 
@@ -412,7 +466,12 @@ class ToolSystem:
     def list_all_tools(self) -> List[Tool]:
         return list(self.tools.values())
 
-    async def call_tool(self, tool_id: str, user_permission: PermissionLevel = PermissionLevel.PUBLIC, **kwargs) -> Dict[str, Any]:
+    async def call_tool(
+        self,
+        tool_id: str,
+        user_permission: PermissionLevel = PermissionLevel.PUBLIC,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """调用工具
 
         注意：当前权限模型中 user_permission 由调用方传入，适用于受信任的内部调用场景。
@@ -426,7 +485,10 @@ class ToolSystem:
             return {"success": False, "error": f"工具已禁用: {tool_id}"}
 
         if not self._check_permission(user_permission, tool.permission):
-            return {"success": False, "error": f"权限不足: 需要 {tool.permission.value} 权限"}
+            return {
+                "success": False,
+                "error": f"权限不足: 需要 {tool.permission.value} 权限",
+            }
 
         validation_errors = tool.validate_parameters(kwargs)
         if validation_errors:
@@ -437,7 +499,9 @@ class ToolSystem:
                 result = await tool.execute(**kwargs)
             else:
                 loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(None, lambda: tool.execute(**kwargs))
+                result = await loop.run_in_executor(
+                    None, lambda: tool.execute(**kwargs)
+                )
 
             return {"success": True, "data": result}
 
@@ -445,11 +509,13 @@ class ToolSystem:
             logger.error("工具调用异常: %s, 错误: %s", tool_id, str(e))
             return {"success": False, "error": str(e)}
 
-    def _check_permission(self, user_permission: PermissionLevel, required_permission: PermissionLevel) -> bool:
+    def _check_permission(
+        self, user_permission: PermissionLevel, required_permission: PermissionLevel
+    ) -> bool:
         permission_order = [
             PermissionLevel.PUBLIC.value,
             PermissionLevel.USER.value,
-            PermissionLevel.ADMIN.value
+            PermissionLevel.ADMIN.value,
         ]
 
         user_level = permission_order.index(user_permission.value)
@@ -468,48 +534,67 @@ class ToolSystem:
                     "name": t.name,
                     "category": t.category.value,
                     "permission": t.permission.value,
-                    "description": t.description
+                    "description": t.description,
                 }
                 for tid, t in self.tools.items()
-            }
+            },
         }
 
-    async def _execute_file_read(self, file_path: str, encoding: str = "utf-8") -> Dict[str, Any]:
+    async def _execute_file_read(
+        self, file_path: str, encoding: str = "utf-8"
+    ) -> Dict[str, Any]:
         try:
             _validate_input_length("file_path", file_path)
             safe_path = _validate_path(file_path)
             loop = asyncio.get_running_loop()
-            content = await loop.run_in_executor(None, self._read_file_sync, safe_path, encoding)
-            AuditLogger.log("PATH_ACCESS_GRANTED", {
-                "operation": "read",
-                "file_path": safe_path,
-            })
+            content = await loop.run_in_executor(
+                None, self._read_file_sync, safe_path, encoding
+            )
+            AuditLogger.log(
+                "PATH_ACCESS_GRANTED",
+                {
+                    "operation": "read",
+                    "file_path": safe_path,
+                },
+            )
             return {"content": content, "file_path": safe_path}
         except ValueError as e:
-            AuditLogger.log("PATH_REJECTED", {
-                "operation": "read",
-                "file_path": file_path,
-                "reason": str(e),
-            })
+            AuditLogger.log(
+                "PATH_REJECTED",
+                {
+                    "operation": "read",
+                    "file_path": file_path,
+                    "reason": str(e),
+                },
+            )
             raise Exception(f"路径校验失败: {str(e)}")
         except Exception as e:
             raise Exception(f"文件读取失败: {str(e)}")
 
     @staticmethod
     def _read_file_sync(safe_path: str, encoding: str) -> str:
-        with open(safe_path, 'r', encoding=encoding) as f:
+        with open(safe_path, "r", encoding=encoding) as f:
             return f.read()
 
-    async def _execute_file_write(self, file_path: str, content: str, encoding: str = "utf-8", overwrite: bool = False) -> Dict[str, Any]:
+    async def _execute_file_write(
+        self,
+        file_path: str,
+        content: str,
+        encoding: str = "utf-8",
+        overwrite: bool = False,
+    ) -> Dict[str, Any]:
         try:
             _validate_input_length("file_path", file_path)
             safe_path = _validate_path(file_path)
         except ValueError as e:
-            AuditLogger.log("PATH_REJECTED", {
-                "operation": "write",
-                "file_path": file_path,
-                "reason": str(e),
-            })
+            AuditLogger.log(
+                "PATH_REJECTED",
+                {
+                    "operation": "write",
+                    "file_path": file_path,
+                    "reason": str(e),
+                },
+            )
             raise Exception(f"路径校验失败: {str(e)}")
 
         if os.path.exists(safe_path) and not overwrite:
@@ -521,35 +606,47 @@ class ToolSystem:
 
         try:
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, self._write_file_sync, safe_path, content, encoding)
-            AuditLogger.log("PATH_ACCESS_GRANTED", {
-                "operation": "write",
-                "file_path": safe_path,
-            })
+            await loop.run_in_executor(
+                None, self._write_file_sync, safe_path, content, encoding
+            )
+            AuditLogger.log(
+                "PATH_ACCESS_GRANTED",
+                {
+                    "operation": "write",
+                    "file_path": safe_path,
+                },
+            )
             return {"success": True, "file_path": safe_path}
         except Exception as e:
             raise Exception(f"文件写入失败: {str(e)}")
 
     @staticmethod
     def _write_file_sync(safe_path: str, content: str, encoding: str) -> None:
-        with open(safe_path, 'w', encoding=encoding) as f:
+        with open(safe_path, "w", encoding=encoding) as f:
             f.write(content)
 
-    async def _execute_file_list(self, dir_path: str, pattern: str = None) -> Dict[str, Any]:
+    async def _execute_file_list(
+        self, dir_path: str, pattern: str = None
+    ) -> Dict[str, Any]:
         try:
             _validate_input_length("file_path", dir_path)
             safe_path = _validate_path(dir_path)
         except ValueError as e:
-            AuditLogger.log("PATH_REJECTED", {
-                "operation": "list",
-                "file_path": dir_path,
-                "reason": str(e),
-            })
+            AuditLogger.log(
+                "PATH_REJECTED",
+                {
+                    "operation": "list",
+                    "file_path": dir_path,
+                    "reason": str(e),
+                },
+            )
             raise Exception(f"路径校验失败: {str(e)}")
 
         try:
             loop = asyncio.get_running_loop()
-            file_info = await loop.run_in_executor(None, self._list_files_sync, safe_path, pattern)
+            file_info = await loop.run_in_executor(
+                None, self._list_files_sync, safe_path, pattern
+            )
             return {"files": file_info, "directory": safe_path}
         except Exception as e:
             raise Exception(f"文件列表获取失败: {str(e)}")
@@ -562,28 +659,40 @@ class ToolSystem:
         file_info = []
         for filename in files:
             full_path = os.path.join(safe_path, filename)
-            file_info.append({
-                "name": filename,
-                "path": full_path,
-                "is_dir": os.path.isdir(full_path),
-                "size": os.path.getsize(full_path) if os.path.isfile(full_path) else 0
-            })
+            file_info.append(
+                {
+                    "name": filename,
+                    "path": full_path,
+                    "is_dir": os.path.isdir(full_path),
+                    "size": (
+                        os.path.getsize(full_path) if os.path.isfile(full_path) else 0
+                    ),
+                }
+            )
         return file_info
 
-    async def _execute_web_search(self, query: str, max_results: int = 10) -> Dict[str, Any]:
+    async def _execute_web_search(
+        self, query: str, max_results: int = 10
+    ) -> Dict[str, Any]:
         return {
             "query": query,
             "results": [
-                {"title": f"搜索结果 {i}", "url": f"https://example.com/result/{i}", "snippet": f"这是搜索结果 {i} 的摘要内容"}
+                {
+                    "title": f"搜索结果 {i}",
+                    "url": f"https://example.com/result/{i}",
+                    "snippet": f"这是搜索结果 {i} 的摘要内容",
+                }
                 for i in range(min(max_results, 5))
             ],
-            "total": min(max_results, 5)
+            "total": min(max_results, 5),
         }
 
-    async def _execute_send_email(self, to: str, subject: str, body: str, attachments: list = None) -> Dict[str, Any]:
+    async def _execute_send_email(
+        self, to: str, subject: str, body: str, attachments: list = None
+    ) -> Dict[str, Any]:
         to = to.replace("\r", "").replace("\n", "")
         subject = subject.replace("\r", "").replace("\n", "")
-        if not to or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', to):
+        if not to or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", to):
             return {"sent": False, "error": f"Invalid email address: {to}"}
 
         smtp_host = os.environ.get("OPC_SMTP_HOST", "")
@@ -599,17 +708,29 @@ class ToolSystem:
                 result = await loop.run_in_executor(
                     None,
                     self._send_smtp_sync,
-                    smtp_host, smtp_port, smtp_user, smtp_pass,
-                    smtp_from, to, subject, body, smtp_tls, attachments,
+                    smtp_host,
+                    smtp_port,
+                    smtp_user,
+                    smtp_pass,
+                    smtp_from,
+                    to,
+                    subject,
+                    body,
+                    smtp_tls,
+                    attachments,
                 )
                 if result.get("sent"):
                     logger.info("Email sent via SMTP to %s", to)
                     return result
-                logger.warning("SMTP send failed: %s, falling back to log", result.get('error'))
+                logger.warning(
+                    "SMTP send failed: %s, falling back to log", result.get("error")
+                )
             except Exception as e:
                 logger.warning("SMTP send exception: %s, falling back to log", e)
 
-        notification_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "notifications")
+        notification_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "data", "notifications"
+        )
         timestamp = int(time.time() * 1000)
         filename = f"notification_{timestamp}.json"
         filepath = os.path.join(notification_dir, filename)
@@ -627,7 +748,9 @@ class ToolSystem:
 
         try:
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, self._write_notification_sync, filepath, notification)
+            await loop.run_in_executor(
+                None, self._write_notification_sync, filepath, notification
+            )
             logger.info("Notification logged: %s", filepath)
         except Exception as e:
             logger.warning("Failed to log notification: %s", e)
@@ -642,9 +765,18 @@ class ToolSystem:
         }
 
     @staticmethod
-    def _send_smtp_sync(host: str, port: int, user: str, password: str,
-                        from_addr: str, to_addr: str, subject: str,
-                        body: str, use_tls: bool, attachments: list = None) -> Dict[str, Any]:
+    def _send_smtp_sync(
+        host: str,
+        port: int,
+        user: str,
+        password: str,
+        from_addr: str,
+        to_addr: str,
+        subject: str,
+        body: str,
+        use_tls: bool,
+        attachments: list = None,
+    ) -> Dict[str, Any]:
         import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
@@ -683,7 +815,9 @@ class ToolSystem:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(notification, f, ensure_ascii=False, indent=2)
 
-    async def _execute_run_command(self, command: str, cwd: str = None) -> Dict[str, Any]:
+    async def _execute_run_command(
+        self, command: str, cwd: str = None
+    ) -> Dict[str, Any]:
         try:
             _validate_input_length("command_arg", command)
             parts = shlex.split(command)
@@ -692,11 +826,16 @@ class ToolSystem:
 
             base_cmd = os.path.basename(parts[0])
             if base_cmd not in ALLOWED_COMMANDS:
-                AuditLogger.log("COMMAND_REJECTED", {
-                    "command": command,
-                    "reason": f"命令不被允许: {base_cmd}",
-                })
-                raise ValueError(f"命令不被允许: {base_cmd}，允许的命令: {', '.join(sorted(ALLOWED_COMMANDS))}")
+                AuditLogger.log(
+                    "COMMAND_REJECTED",
+                    {
+                        "command": command,
+                        "reason": f"命令不被允许: {base_cmd}",
+                    },
+                )
+                raise ValueError(
+                    f"命令不被允许: {base_cmd}，允许的命令: {', '.join(sorted(ALLOWED_COMMANDS))}"
+                )
 
             proc = await asyncio.create_subprocess_exec(
                 *parts,
@@ -705,23 +844,28 @@ class ToolSystem:
                 stderr=asyncio.subprocess.PIPE,
             )
             try:
-                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=COMMAND_TIMEOUT_SECONDS)
+                stdout, stderr = await asyncio.wait_for(
+                    proc.communicate(), timeout=COMMAND_TIMEOUT_SECONDS
+                )
             except asyncio.TimeoutError:
                 proc.kill()
                 raise Exception("命令执行超时")
 
-            AuditLogger.log("COMMAND_EXECUTED", {
-                "command": command,
-                "cwd": cwd,
-                "return_code": proc.returncode,
-            })
+            AuditLogger.log(
+                "COMMAND_EXECUTED",
+                {
+                    "command": command,
+                    "cwd": cwd,
+                    "return_code": proc.returncode,
+                },
+            )
 
             return {
                 "command": command,
                 "cwd": cwd or os.getcwd(),
                 "stdout": stdout.decode("utf-8", errors="replace"),
                 "stderr": stderr.decode("utf-8", errors="replace"),
-                "return_code": proc.returncode
+                "return_code": proc.returncode,
             }
         except ValueError as e:
             raise Exception(f"命令验证失败: {str(e)}")

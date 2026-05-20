@@ -10,17 +10,48 @@ from opc_manager.tool_system import AuditLogger
 logger = logging.getLogger(__name__)
 
 _DEFAULT_PLATFORMS = {
-    "小红书": {"max_title": 20, "max_body": 1000, "style": "种草风", "emoji": True, "tags": True},
-    "公众号": {"max_title": 64, "max_body": 20000, "style": "专业深度", "emoji": False, "tags": False},
-    "推特": {"max_title": 0, "max_body": 280, "style": "简洁有力", "emoji": True, "tags": True},
-    "微博": {"max_title": 0, "max_body": 2000, "style": "话题互动", "emoji": True, "tags": True},
-    "知乎": {"max_title": 50, "max_body": 50000, "style": "干货长文", "emoji": False, "tags": False},
+    "小红书": {
+        "max_title": 20,
+        "max_body": 1000,
+        "style": "种草风",
+        "emoji": True,
+        "tags": True,
+    },
+    "公众号": {
+        "max_title": 64,
+        "max_body": 20000,
+        "style": "专业深度",
+        "emoji": False,
+        "tags": False,
+    },
+    "推特": {
+        "max_title": 0,
+        "max_body": 280,
+        "style": "简洁有力",
+        "emoji": True,
+        "tags": True,
+    },
+    "微博": {
+        "max_title": 0,
+        "max_body": 2000,
+        "style": "话题互动",
+        "emoji": True,
+        "tags": True,
+    },
+    "知乎": {
+        "max_title": 50,
+        "max_body": 50000,
+        "style": "干货长文",
+        "emoji": False,
+        "tags": False,
+    },
 }
 
 
 def _load_platforms() -> dict:
     try:
         from opc_manager.utils import load_json_data
+
         data = load_json_data("data/knowledge/social_platforms.json")
         for k, v in data.items():
             if "emoji" in v:
@@ -39,6 +70,7 @@ PLATFORMS = _load_platforms()
 def _generate_with_llm(platform, topic, key_points, tone):
     try:
         from opc_manager.simple_llm_service import SimpleLLMService
+
         svc = SimpleLLMService()
         if not svc.is_available():
             return None
@@ -73,11 +105,15 @@ def _generate_with_llm(platform, topic, key_points, tone):
     return None
 
 
-def generate_content(platform: str, topic: str, key_points: str = "",
-                     tone: str = "") -> Dict[str, Any]:
+def generate_content(
+    platform: str, topic: str, key_points: str = "", tone: str = ""
+) -> Dict[str, Any]:
     platform = platform.strip()
     if platform not in PLATFORMS:
-        return {"success": False, "error": f"不支持的平台: {platform}，支持: {list(PLATFORMS.keys())}"}
+        return {
+            "success": False,
+            "error": f"不支持的平台: {platform}，支持: {list(PLATFORMS.keys())}",
+        }
 
     cfg = PLATFORMS[platform]
     style = tone or cfg["style"]
@@ -85,8 +121,14 @@ def generate_content(platform: str, topic: str, key_points: str = "",
     llm_result = _generate_with_llm(platform, topic, key_points, tone)
     if llm_result:
         title = llm_result.get("title", _generate_title(platform, topic, cfg))
-        body = llm_result.get("body", _generate_body(platform, topic, key_points, style, cfg))
-        tags = llm_result.get("tags", _generate_tags(platform, topic)) if cfg["tags"] else []
+        body = llm_result.get(
+            "body", _generate_body(platform, topic, key_points, style, cfg)
+        )
+        tags = (
+            llm_result.get("tags", _generate_tags(platform, topic))
+            if cfg["tags"]
+            else []
+        )
     else:
         title = _generate_title(platform, topic, cfg)
         body = _generate_body(platform, topic, key_points, style, cfg)
@@ -98,13 +140,24 @@ def generate_content(platform: str, topic: str, key_points: str = "",
     try:
         execute_write(
             "INSERT INTO social_content (id,platform,topic,title,body,tags,status,created_at) VALUES (?,?,?,?,?,?,?,?)",
-            (content_id, platform, topic, title, body, json.dumps(tags, ensure_ascii=False), "draft", now),
+            (
+                content_id,
+                platform,
+                topic,
+                title,
+                body,
+                json.dumps(tags, ensure_ascii=False),
+                "draft",
+                now,
+            ),
         )
     except Exception as e:
         logger.warning("social_skill.generate_content write failed: %s", e)
         return {"success": False, "error": f"保存失败: {e}"}
 
-    AuditLogger.log("social_content_generated", {"platform": platform, "topic": topic[:30]})
+    AuditLogger.log(
+        "social_content_generated", {"platform": platform, "topic": topic[:30]}
+    )
 
     return {
         "success": True,
@@ -162,8 +215,14 @@ def mark_published(content_id: str) -> Dict[str, Any]:
         return {"success": False, "error": f"更新失败: {e}"}
 
     record = dict(rows[0])
-    AuditLogger.log("social_content_published", {"id": content_id, "platform": record.get("platform")})
-    return {"success": True, "message": f"内容已标记为已发布: {record.get('title', content_id)}"}
+    AuditLogger.log(
+        "social_content_published",
+        {"id": content_id, "platform": record.get("platform")},
+    )
+    return {
+        "success": True,
+        "message": f"内容已标记为已发布: {record.get('title', content_id)}",
+    }
 
 
 def _generate_title(platform: str, topic: str, cfg: dict) -> str:
@@ -180,15 +239,19 @@ def _generate_title(platform: str, topic: str, cfg: dict) -> str:
     return f"【{topic}】一人公司实战分享：请在此补充关于{topic}的核心观点、实操方法和注意事项。建议从以下角度展开：1) 为什么{topic}对一人公司重要；2) 具体执行步骤和工具推荐；3) 常见误区和避坑建议。"
 
 
-def _generate_body(platform: str, topic: str, key_points: str, style: str, cfg: dict) -> str:
-    points = key_points.split("、") if key_points else ["核心要点", "实操方法", "注意事项"]
+def _generate_body(
+    platform: str, topic: str, key_points: str, style: str, cfg: dict
+) -> str:
+    points = (
+        key_points.split("、") if key_points else ["核心要点", "实操方法", "注意事项"]
+    )
 
     if platform == "小红书":
         body = f"✨ {topic}干货来啦！\n\n"
         for i, p in enumerate(points[:5], 1):
             body += f"{i}️⃣ {p}\n\n"
         body += "💡 以上就是我的经验分享，觉得有用的话点个赞吧～\n\n"
-        return body[:cfg["max_body"]]
+        return body[: cfg["max_body"]]
 
     elif platform == "公众号":
         body = f"# {topic}\n\n"
@@ -199,15 +262,15 @@ def _generate_body(platform: str, topic: str, key_points: str, style: str, cfg: 
         body += "## 实操建议\n\n"
         body += "1. 从小处着手，逐步优化\n2. 数据驱动决策\n3. 善用工具提升效率\n\n"
         body += "---\n*本文由OPC-Agents辅助生成*"
-        return body[:cfg["max_body"]]
+        return body[: cfg["max_body"]]
 
     elif platform == "推特":
         body = f"{topic} | 一人公司实战: {' / '.join(points[:3])}"
-        return body[:cfg["max_body"]]
+        return body[: cfg["max_body"]]
 
     elif platform == "微博":
         body = f"#{topic}# 一人公司实战分享：{'、'.join(points[:4])}。关注我，持续分享一人公司运营干货！"
-        return body[:cfg["max_body"]]
+        return body[: cfg["max_body"]]
 
     elif platform == "知乎":
         body = f"# {topic}\n\n"
@@ -216,7 +279,7 @@ def _generate_body(platform: str, topic: str, key_points: str, style: str, cfg: 
         for p in points[:6]:
             body += f"### {p}\n\n基于实际运营经验的具体做法和分析。\n\n"
         body += "---\n*以上为个人实战经验，欢迎交流讨论。*"
-        return body[:cfg["max_body"]]
+        return body[: cfg["max_body"]]
 
     return topic
 
@@ -256,7 +319,19 @@ def _extract_topic(goal, platform_name):
             return m.group(1).strip()
 
     topic = goal
-    for kw in ["帮我发", "帮我写", "生成", "发布", "内容", platform_name, "的", "到", "上", "一篇", "一个"]:
+    for kw in [
+        "帮我发",
+        "帮我写",
+        "生成",
+        "发布",
+        "内容",
+        platform_name,
+        "的",
+        "到",
+        "上",
+        "一篇",
+        "一个",
+    ]:
         topic = topic.replace(kw, "")
     return topic.strip().strip("，。、") or "今日分享"
 
@@ -283,7 +358,16 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     if any(kw in goal for kw in ["已发", "发布完成", "已发布"]):
         platform_name = platform
         name = goal
-        for kw in ["已发", "发布完成", "已发布", platform_name, "的", "内容", "帖子", "文章"]:
+        for kw in [
+            "已发",
+            "发布完成",
+            "已发布",
+            platform_name,
+            "的",
+            "内容",
+            "帖子",
+            "文章",
+        ]:
             name = name.replace(kw, "")
         name = name.strip().strip("，。、的")
         if name:
@@ -293,7 +377,10 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
             )
             if rows:
                 return mark_published(rows[0]["id"])
-        return {"success": False, "error": "请提供内容ID来标记发布，或指定更明确的主题关键词"}
+        return {
+            "success": False,
+            "error": "请提供内容ID来标记发布，或指定更明确的主题关键词",
+        }
 
     topic = _extract_topic(goal, platform)
 
@@ -303,11 +390,22 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
 def undo_publish_content(content_id=None, **kwargs):
     init_db()
     if content_id:
-        rows = execute_query("SELECT * FROM social_content WHERE id=? AND status='published'", (content_id,))
+        rows = execute_query(
+            "SELECT * FROM social_content WHERE id=? AND status='published'",
+            (content_id,),
+        )
     else:
-        rows = execute_query("SELECT * FROM social_content WHERE status='published' ORDER BY created_at DESC LIMIT 1")
+        rows = execute_query(
+            "SELECT * FROM social_content WHERE status='published' ORDER BY created_at DESC LIMIT 1"
+        )
     if not rows:
         return {"success": False, "error": "未找到可撤销的发布内容"}
     target_id = content_id or rows[0]["id"]
-    execute_write("UPDATE social_content SET status='draft', published_at=NULL WHERE id=?", (target_id,))
-    return {"success": True, "message": f"发布内容已撤回: {rows[0].get('title', target_id)}"}
+    execute_write(
+        "UPDATE social_content SET status='draft', published_at=NULL WHERE id=?",
+        (target_id,),
+    )
+    return {
+        "success": True,
+        "message": f"发布内容已撤回: {rows[0].get('title', target_id)}",
+    }

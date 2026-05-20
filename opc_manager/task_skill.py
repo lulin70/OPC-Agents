@@ -9,12 +9,26 @@ from opc_manager.utils import parse_date_from_text
 
 logger = logging.getLogger(__name__)
 
-PRIORITY_MAP = {"紧急": 0, "重要": 1, "普通": 2, "低": 3, "urgent": 0, "important": 1, "normal": 2, "low": 3}
+PRIORITY_MAP = {
+    "紧急": 0,
+    "重要": 1,
+    "普通": 2,
+    "低": 3,
+    "urgent": 0,
+    "important": 1,
+    "normal": 2,
+    "low": 3,
+}
 PRIORITY_LABELS = {0: "P0紧急", 1: "P1重要", 2: "P2普通", 3: "P3低"}
 
 
-def create_task(title: str, description: str = "", priority: int = 2,
-                due_date: str = "", tags: str = "") -> Dict[str, Any]:
+def create_task(
+    title: str,
+    description: str = "",
+    priority: int = 2,
+    due_date: str = "",
+    tags: str = "",
+) -> Dict[str, Any]:
     if not title.strip():
         return {"success": False, "error": "待办标题不能为空"}
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -28,6 +42,7 @@ def create_task(title: str, description: str = "", priority: int = 2,
         if due_date:
             try:
                 from opc_manager.calendar_skill import add_event
+
                 add_event(title=f"任务截止: {title}", date=due_date, time_str="09:00")
             except Exception as e:
                 logger.warning("auto sync calendar failed: %s", e)
@@ -46,7 +61,10 @@ def complete_task(task_id: str = "", title_keyword: str = "") -> Dict[str, Any]:
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     try:
         if task_id:
-            rows = execute_query("SELECT id, title FROM tasks WHERE id=? AND status='pending'", (task_id,))
+            rows = execute_query(
+                "SELECT id, title FROM tasks WHERE id=? AND status='pending'",
+                (task_id,),
+            )
         else:
             rows = execute_query(
                 "SELECT id, title FROM tasks WHERE title LIKE ? AND status='pending'",
@@ -55,7 +73,11 @@ def complete_task(task_id: str = "", title_keyword: str = "") -> Dict[str, Any]:
         if not rows:
             return {"success": False, "error": "未找到匹配的待办"}
         if len(rows) > 1:
-            return {"success": False, "error": f"匹配到{len(rows)}个待办，请更精确指定", "matches": rows}
+            return {
+                "success": False,
+                "error": f"匹配到{len(rows)}个待办，请更精确指定",
+                "matches": rows,
+            }
         r = rows[0]
         execute_write(
             "UPDATE tasks SET status='done', completed_at=? WHERE id=?",
@@ -70,8 +92,9 @@ def complete_task(task_id: str = "", title_keyword: str = "") -> Dict[str, Any]:
 _TASK_WHERE_COLUMNS = {"status", "due_date", "priority"}
 
 
-def list_tasks(status: str = None, due_date: str = "", priority_max: int = -1,
-               limit: int = 50) -> Dict[str, Any]:
+def list_tasks(
+    status: str = None, due_date: str = "", priority_max: int = -1, limit: int = 50
+) -> Dict[str, Any]:
     conditions = []
     params: list = []
     if status == "all":
@@ -130,7 +153,17 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["完成", "做了", "搞定了", "交了"]):
         keyword = goal
-        for kw in ["完成", "搞定了", "做完了", "帮我完成", "标记完成", "做了", "交了", "帮我", "的"]:
+        for kw in [
+            "完成",
+            "搞定了",
+            "做完了",
+            "帮我完成",
+            "标记完成",
+            "做了",
+            "交了",
+            "帮我",
+            "的",
+        ]:
             keyword = keyword.replace(kw, "")
         keyword = keyword.strip().strip("，。、的") or goal
         return complete_task(title_keyword=keyword)
@@ -174,14 +207,18 @@ def undo_complete_task(task_id=None, title_keyword=None, **kwargs):
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     try:
         if task_id:
-            rows = execute_query("SELECT id, title FROM tasks WHERE id=? AND status='done'", (task_id,))
+            rows = execute_query(
+                "SELECT id, title FROM tasks WHERE id=? AND status='done'", (task_id,)
+            )
         elif title_keyword:
             rows = execute_query(
                 "SELECT id, title FROM tasks WHERE title LIKE ? AND status='done'",
                 (f"%{title_keyword}%",),
             )
         else:
-            rows = execute_query("SELECT id, title FROM tasks WHERE status='done' ORDER BY completed_at DESC LIMIT 1")
+            rows = execute_query(
+                "SELECT id, title FROM tasks WHERE status='done' ORDER BY completed_at DESC LIMIT 1"
+            )
         if not rows:
             return {"success": False, "error": "未找到可撤销的已完成任务"}
         r = rows[0]

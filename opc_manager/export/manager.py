@@ -32,26 +32,39 @@ class ExportManager:
     def can_export(self, skill_id: str, fmt: ExportFormat) -> bool:
         return fmt in self.get_supported_formats(skill_id)
 
-    def export_sync(self, data: ResultData, fmt: ExportFormat,
-                    template_id: Optional[str] = None, **opts) -> bytes:
+    def export_sync(
+        self,
+        data: ResultData,
+        fmt: ExportFormat,
+        template_id: Optional[str] = None,
+        **opts,
+    ) -> bytes:
         exporter = self._exporters.get(fmt)
         if not exporter:
             raise ValueError(f"Unsupported format: {fmt}")
         template = self._load_template(template_id, fmt) if template_id else None
         return exporter.export(data, template=template, **opts)
 
-    async def export_async(self, data: ResultData, fmt: ExportFormat,
-                           template_id: Optional[str] = None, **opts) -> bytes:
+    async def export_async(
+        self,
+        data: ResultData,
+        fmt: ExportFormat,
+        template_id: Optional[str] = None,
+        **opts,
+    ) -> bytes:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None,
-            self.export_sync, data, fmt, template_id, opts)
+        return await loop.run_in_executor(
+            None, self.export_sync, data, fmt, template_id, opts
+        )
 
     def _load_template(self, template_id: str, fmt: ExportFormat) -> str:
         safe_template_id = os.path.basename(template_id)
-        template_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'templates', fmt.value)
+        template_dir = os.path.join(
+            os.path.dirname(__file__), "..", "data", "templates", fmt.value
+        )
         path = os.path.join(template_dir, f"{safe_template_id}.j2")
         if os.path.exists(path):
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return f.read()
         return ""
 
@@ -60,6 +73,7 @@ class ExportManager:
         from .exporters.excel_exporter import ExcelExporter
         from .exporters.word_exporter import WordExporter
         from .exporters.image_exporter import ImageExporter
+
         self.register_exporter(ExportFormat.PDF, PDFExporter())
         self.register_exporter(ExportFormat.EXCEL, ExcelExporter())
         self.register_exporter(ExportFormat.WORD, WordExporter())

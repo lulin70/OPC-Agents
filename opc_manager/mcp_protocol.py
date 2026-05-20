@@ -91,9 +91,19 @@ class MCPServer:
             input_schema={
                 "type": "object",
                 "properties": {
-                    "user_input": {"type": "string", "description": "User's task description"},
-                    "business_type": {"type": "string", "description": "Business type hint"},
-                    "mode": {"type": "string", "enum": ["quality", "fast"], "default": "quality"},
+                    "user_input": {
+                        "type": "string",
+                        "description": "User's task description",
+                    },
+                    "business_type": {
+                        "type": "string",
+                        "description": "Business type hint",
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["quality", "fast"],
+                        "default": "quality",
+                    },
                 },
                 "required": ["user_input"],
             },
@@ -117,7 +127,10 @@ class MCPServer:
                 "type": "object",
                 "properties": {
                     "topic": {"type": "string", "description": "Analysis topic"},
-                    "analysis_type": {"type": "string", "enum": ["swot", "competitive", "market"]},
+                    "analysis_type": {
+                        "type": "string",
+                        "enum": ["swot", "competitive", "market"],
+                    },
                 },
                 "required": ["topic"],
             },
@@ -129,7 +142,10 @@ class MCPServer:
                 "type": "object",
                 "properties": {
                     "topic": {"type": "string", "description": "Content topic"},
-                    "content_type": {"type": "string", "enum": ["report", "plan", "proposal", "email"]},
+                    "content_type": {
+                        "type": "string",
+                        "enum": ["report", "plan", "proposal", "email"],
+                    },
                 },
                 "required": ["topic"],
             },
@@ -158,7 +174,11 @@ class MCPServer:
             description="Generate a business analysis prompt",
             arguments=[
                 {"name": "topic", "description": "Analysis topic", "required": True},
-                {"name": "type", "description": "Analysis type (swot/competitive/market)", "required": False},
+                {
+                    "name": "type",
+                    "description": "Analysis type (swot/competitive/market)",
+                    "required": False,
+                },
             ],
         )
         self._prompts["content_creation"] = MCPPrompt(
@@ -166,7 +186,11 @@ class MCPServer:
             description="Generate a content creation prompt",
             arguments=[
                 {"name": "topic", "description": "Content topic", "required": True},
-                {"name": "format", "description": "Output format (report/plan/proposal)", "required": False},
+                {
+                    "name": "format",
+                    "description": "Output format (report/plan/proposal)",
+                    "required": False,
+                },
             ],
         )
 
@@ -226,16 +250,27 @@ class MCPServer:
         arguments = params.get("arguments", {})
 
         if not tool_name:
-            return {"content": [{"type": "text", "text": "Missing tool name"}], "isError": True}
+            return {
+                "content": [{"type": "text", "text": "Missing tool name"}],
+                "isError": True,
+            }
 
         if tool_name not in self._tools:
-            return {"content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}], "isError": True}
+            return {
+                "content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}],
+                "isError": True,
+            }
 
         tool = self._tools[tool_name]
         required_params = tool.input_schema.get("required", [])
         for rp in required_params:
             if rp not in arguments:
-                return {"content": [{"type": "text", "text": f"Missing required parameter: {rp}"}], "isError": True}
+                return {
+                    "content": [
+                        {"type": "text", "text": f"Missing required parameter: {rp}"}
+                    ],
+                    "isError": True,
+                }
 
         if tool_name == "execute_task":
             user_input = arguments.get("user_input", "")
@@ -243,10 +278,12 @@ class MCPServer:
                 matched_skills = self.skill_registry.find_by_intent(user_input)
                 if matched_skills:
                     import asyncio
+
                     try:
                         loop = asyncio.get_event_loop()
                         if loop.is_running():
                             import concurrent.futures
+
                             with concurrent.futures.ThreadPoolExecutor() as pool:
                                 future = pool.submit(
                                     asyncio.run,
@@ -254,7 +291,7 @@ class MCPServer:
                                         matched_skills[0].skill_id,
                                         context=None,
                                         goal=user_input,
-                                    )
+                                    ),
                                 )
                                 result = future.result(timeout=30)
                         else:
@@ -267,27 +304,55 @@ class MCPServer:
                             )
                         if result.get("success") and result.get("data"):
                             data = result["data"]
-                            content = data.get("content", "") if isinstance(data, dict) else str(data)
+                            content = (
+                                data.get("content", "")
+                                if isinstance(data, dict)
+                                else str(data)
+                            )
                             if content:
                                 return {"content": [{"type": "text", "text": content}]}
                     except Exception as e:
-                        logger.warning("SkillRegistry execute failed, falling back to task_engine_adapter: %s", e)
+                        logger.warning(
+                            "SkillRegistry execute failed, falling back to task_engine_adapter: %s",
+                            e,
+                        )
             if self.task_engine_adapter:
                 result = self.task_engine_adapter.execute_skill(
                     skill_id="content_generation",
                     parameters={"query": user_input, "goal": user_input},
                 )
                 content = result.get("data", {}).get("content", "")
-                return {"content": [{"type": "text", "text": content or "No content generated"}]}
+                return {
+                    "content": [
+                        {"type": "text", "text": content or "No content generated"}
+                    ]
+                }
 
         if tool_name == "search_web" and self.task_engine_adapter:
             result = self.task_engine_adapter.execute_skill(
                 skill_id="search",
-                parameters={"query": arguments.get("query", ""), "max_results": arguments.get("max_results", 5)},
+                parameters={
+                    "query": arguments.get("query", ""),
+                    "max_results": arguments.get("max_results", 5),
+                },
             )
-            return {"content": [{"type": "text", "text": json.dumps(result.get("data", {}), ensure_ascii=False)}]}
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": json.dumps(result.get("data", {}), ensure_ascii=False),
+                    }
+                ]
+            }
 
-        return {"content": [{"type": "text", "text": f"Tool {tool_name} executed with args: {arguments}"}]}
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"Tool {tool_name} executed with args: {arguments}",
+                }
+            ]
+        }
 
     def _handle_resources_list(self, params: Dict) -> Dict[str, Any]:
         return {"resources": [r.to_dict() for r in self._resources.values()]}
@@ -296,8 +361,20 @@ class MCPServer:
         uri = params.get("uri", "")
         if uri == "opc://skills" and self.skill_registry:
             skills = self.skill_registry.list_skills()
-            return {"contents": [{"uri": uri, "mimeType": "application/json", "text": json.dumps(skills, ensure_ascii=False)}]}
-        return {"contents": [{"uri": uri, "mimeType": "text/plain", "text": f"Resource: {uri}"}]}
+            return {
+                "contents": [
+                    {
+                        "uri": uri,
+                        "mimeType": "application/json",
+                        "text": json.dumps(skills, ensure_ascii=False),
+                    }
+                ]
+            }
+        return {
+            "contents": [
+                {"uri": uri, "mimeType": "text/plain", "text": f"Resource: {uri}"}
+            ]
+        }
 
     def _handle_prompts_list(self, params: Dict) -> Dict[str, Any]:
         return {"prompts": [p.to_dict() for p in self._prompts.values()]}
@@ -309,7 +386,15 @@ class MCPServer:
             return {"description": f"Unknown prompt: {name}", "messages": []}
         args = params.get("arguments", {})
         topic = args.get("topic", "")
-        messages = [{"role": "user", "content": {"type": "text", "text": f"请帮我{prompt.description}：{topic}"}}]
+        messages = [
+            {
+                "role": "user",
+                "content": {
+                    "type": "text",
+                    "text": f"请帮我{prompt.description}：{topic}",
+                },
+            }
+        ]
         return {"description": prompt.description, "messages": messages}
 
     def register_tool(self, tool: MCPTool) -> None:

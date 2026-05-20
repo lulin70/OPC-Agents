@@ -1,4 +1,5 @@
 """Deliverables list renderer — extracted from app.py to fix NameError ordering bugs."""
+
 import streamlit as st
 import os
 import logging
@@ -32,19 +33,30 @@ def _render_deliverables_list():
 
         st.divider()
 
-        search_query = st.text_input(_t("del_search"), placeholder=_t("del_search_placeholder"), key="deliverable_search")
+        search_query = st.text_input(
+            _t("del_search"),
+            placeholder=_t("del_search_placeholder"),
+            key="deliverable_search",
+        )
 
         filtered_deliverables = st.session_state.deliverables
         if search_query:
             search_lower = search_query.lower()
             filtered_deliverables = [
-                d for d in st.session_state.deliverables
+                d
+                for d in st.session_state.deliverables
                 if search_lower in d.get("prompt", "").lower()
                 or search_lower in d.get("filename", "").lower()
                 or search_lower in d.get("task_type", "").lower()
             ]
-        match_suffix = _t("del_match_count", count=len(filtered_deliverables)) if search_query else ""
-        st.caption(_t("del_count", count=len(st.session_state.deliverables)) + match_suffix)
+        match_suffix = (
+            _t("del_match_count", count=len(filtered_deliverables))
+            if search_query
+            else ""
+        )
+        st.caption(
+            _t("del_count", count=len(st.session_state.deliverables)) + match_suffix
+        )
 
         for i, d in enumerate(filtered_deliverables):
             with st.expander(f"📄 {d['filename']}", expanded=(i == 0)):

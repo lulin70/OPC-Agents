@@ -102,7 +102,11 @@ def generate_monthly_report(year_month: str = "") -> Dict[str, Any]:
     done_tasks = list_tasks(status="done")
     pending_count = pending_tasks.get("count", 0)
     done_count = done_tasks.get("count", 0)
-    overdue_tasks = [t for t in pending_tasks.get("tasks", []) if t.get("due_date") and t["due_date"] < time.strftime("%Y-%m-%d")]
+    overdue_tasks = [
+        t
+        for t in pending_tasks.get("tasks", [])
+        if t.get("due_date") and t["due_date"] < time.strftime("%Y-%m-%d")
+    ]
     overdue_count = len(overdue_tasks)
 
     md += "\n## 任务概况\n\n"
@@ -120,6 +124,7 @@ def generate_annual_report(year: str = "") -> Dict[str, Any]:
         year = time.strftime("%Y")
 
     from opc_manager.data_manager import execute_query
+
     rows = execute_query(
         "SELECT substr(date,1,7) as ym, type, SUM(amount) as total "
         "FROM finance_records WHERE date LIKE ? GROUP BY ym, type ORDER BY ym",
@@ -129,7 +134,12 @@ def generate_annual_report(year: str = "") -> Dict[str, Any]:
     for r in rows:
         ym = r["ym"]
         if ym not in monthly_data:
-            monthly_data[ym] = {"year_month": ym, "income": 0.0, "expense": 0.0, "profit": 0.0}
+            monthly_data[ym] = {
+                "year_month": ym,
+                "income": 0.0,
+                "expense": 0.0,
+                "profit": 0.0,
+            }
         if r["type"] == "income":
             monthly_data[ym]["income"] = round(r["total"], 2)
         else:
@@ -189,7 +199,19 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["年报", "年度", "年总结", "年报告"]):
         return generate_annual_report()
-    if any(kw in goal for kw in ["月报", "月度", "月总结", "月报告", "经营报告", "经营分析", "经营状况", "业务报告"]):
+    if any(
+        kw in goal
+        for kw in [
+            "月报",
+            "月度",
+            "月总结",
+            "月报告",
+            "经营报告",
+            "经营分析",
+            "经营状况",
+            "业务报告",
+        ]
+    ):
         return generate_monthly_report()
     return generate_weekly_report()
 

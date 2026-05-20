@@ -1,4 +1,5 @@
 """Page routing system for OPC-Agents frontend."""
+
 from enum import Enum
 
 
@@ -44,19 +45,25 @@ def navigate(page_key: PageKey):
     """Dispatch to the correct page renderer."""
     if page_key == PageKey.CHAT:
         from .chat_router import render_chat_page
+
         render_chat_page()
     elif page_key == PageKey.DELIVERABLES:
         from .deliverables_router import render_deliverables_page
+
         render_deliverables_page()
     elif page_key == PageKey.DASHBOARD:
         from .dashboard_router import render_dashboard_page
+
         render_dashboard_page()
     elif page_key == PageKey.GROWTH:
         from .growth_router import render_growth_page
+
         render_growth_page()
     elif page_key == PageKey.MARKETPLACE:
         from .marketplace_router import render_marketplace_page
+
         render_marketplace_page()
     elif page_key == PageKey.SETTINGS:
         from .settings_router import render_settings_page
+
         render_settings_page()

@@ -25,12 +25,15 @@ class TestDockerfile:
 
     def test_dockerfile_version_label(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()
-        assert 'version="0.2.1"' in content or "version=0.2.1" in content, \
-            "Dockerfile LABEL version should be 0.2.1"
+        assert (
+            'version="0.2.1"' in content or "version=0.2.1" in content
+        ), "Dockerfile LABEL version should be 0.2.1"
 
     def test_dockerfile_python_base(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()
-        assert "python:3.11-slim" in content, "Dockerfile should use python:3.11-slim base"
+        assert (
+            "python:3.11-slim" in content
+        ), "Dockerfile should use python:3.11-slim base"
 
 
 class TestDockerCompose:
@@ -45,10 +48,12 @@ class TestDockerCompose:
         data = yaml.safe_load(yml.read_text())
         svc = data["services"]["opc-agents"]
         volumes = svc.get("volumes", [])
-        assert any("data" in str(v) for v in volumes), \
-            "docker-compose.yml must mount data volume"
-        assert any(".env" in str(v) for v in volumes), \
-            "docker-compose.yml must mount .env file"
+        assert any(
+            "data" in str(v) for v in volumes
+        ), "docker-compose.yml must mount data volume"
+        assert any(
+            ".env" in str(v) for v in volumes
+        ), "docker-compose.yml must mount .env file"
 
     def test_compose_has_healthcheck(self):
         yml = PROJECT_ROOT / "docker-compose.yml"
@@ -69,8 +74,9 @@ class TestDockerCompose:
         dev_yml = PROJECT_ROOT / "docker-compose.dev.yml"
         data = yaml.safe_load(dev_yml.read_text())
         volumes = data["services"]["opc-agents"].get("volumes", [])
-        assert any("./:/app" in str(v) for v in volumes), \
-            "Dev compose must mount source for live editing"
+        assert any(
+            "./:/app" in str(v) for v in volumes
+        ), "Dev compose must mount source for live editing"
 
 
 class TestDockerignore:
@@ -86,8 +92,9 @@ class TestDockerignore:
 
     def test_dockerignore_covers_env_local(self):
         content = (PROJECT_ROOT / ".dockerignore").read_text()
-        assert ".env.local" in content or "__pycache__" in content, \
-            ".dockerignore must cover sensitive/local files"
+        assert (
+            ".env.local" in content or "__pycache__" in content
+        ), ".dockerignore must cover sensitive/local files"
 
     def test_dockerignore_covers_pycache(self):
         content = (PROJECT_ROOT / ".dockerignore").read_text()
@@ -108,6 +115,7 @@ class TestThemeCSS:
     @staticmethod
     def _get_css_func():
         from frontend.components.shared import _get_theme_css
+
         return _get_theme_css
 
     def test_dark_theme_css_valid(self):
@@ -156,16 +164,25 @@ class TestThemeConfigs:
     @staticmethod
     def _get_configs():
         from frontend.components.shared import THEME_CONFIGS
+
         return THEME_CONFIGS
 
     def test_all_five_themes_exist(self):
         cfg = self._get_configs()
         expected = {"light", "dark", "sunset", "forest", "ocean"}
-        assert set(cfg.keys()) == expected, f"Must have exactly these themes: {expected}"
+        assert (
+            set(cfg.keys()) == expected
+        ), f"Must have exactly these themes: {expected}"
 
     def test_each_theme_has_required_keys(self):
         cfg = self._get_configs()
-        required = {"backgroundColor", "secondaryBackgroundColor", "textColor", "font", "primaryColor"}
+        required = {
+            "backgroundColor",
+            "secondaryBackgroundColor",
+            "textColor",
+            "font",
+            "primaryColor",
+        }
         for name, config in cfg.items():
             missing = required - set(config.keys())
             assert not missing, f"Theme '{name}' missing keys: {missing}"
@@ -174,10 +191,16 @@ class TestThemeConfigs:
         cfg = self._get_configs()
         hex_pattern = re.compile(r"^#[0-9A-Fa-f]{6}$")
         for name, config in cfg.items():
-            for key in ("backgroundColor", "secondaryBackgroundColor", "textColor", "primaryColor"):
+            for key in (
+                "backgroundColor",
+                "secondaryBackgroundColor",
+                "textColor",
+                "primaryColor",
+            ):
                 val = config[key]
-                assert hex_pattern.match(val), \
-                    f"Theme '{name}'.{key}='{val}' is not a valid hex color"
+                assert hex_pattern.match(
+                    val
+                ), f"Theme '{name}'.{key}='{val}' is not a valid hex color"
 
 
 class TestQuickStartGuide:
@@ -186,6 +209,7 @@ class TestQuickStartGuide:
     @staticmethod
     def _get_guide():
         from opc_manager.onboarding import QUICK_START_GUIDE
+
         return QUICK_START_GUIDE
 
     def test_guide_is_string(self):
@@ -206,15 +230,22 @@ class TestQuickStartGuide:
 
     def test_guide_in_completed_step(self):
         from opc_manager.onboarding import OnboardingManager
+
         mgr = OnboardingManager()
-        content = mgr.get_step_content(mgr.get_step_content.__self__.COMPLETED if False else None)
-        completed_content = mgr.get_step_content(
-            type('Obj', (object,), {'value': 'completed'})()
-        ) if False else None
+        content = mgr.get_step_content(
+            mgr.get_step_content.__self__.COMPLETED if False else None
+        )
+        completed_content = (
+            mgr.get_step_content(type("Obj", (object,), {"value": "completed"})())
+            if False
+            else None
+        )
         from opc_manager.onboarding import OnboardingStep
+
         step_content = mgr.get_step_content(OnboardingStep.COMPLETED)
-        assert "quick_start_guide" in step_content, \
-            "Completed step must include quick_start_guide"
+        assert (
+            "quick_start_guide" in step_content
+        ), "Completed step must include quick_start_guide"
 
 
 class TestStartScript:

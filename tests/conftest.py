@@ -20,15 +20,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "e2e: Real API calls (slow, validates real system)")
-    config.addinivalue_line("markers", "e2e_search: Real DuckDuckGo search (no API key needed)")
+    config.addinivalue_line(
+        "markers", "e2e: Real API calls (slow, validates real system)"
+    )
+    config.addinivalue_line(
+        "markers", "e2e_search: Real DuckDuckGo search (no API key needed)"
+    )
     config.addinivalue_line("markers", "e2e_llm: Real LLM API call (requires API key)")
 
 
 def pytest_collection_modifyitems(config, items):
     skip_e2e = os.environ.get("SKIP_E2E", "1")
     if skip_e2e == "1":
-        skip_e2e_marker = pytest.mark.skip(reason="E2E tests skipped (set SKIP_E2E=0 to run)")
+        skip_e2e_marker = pytest.mark.skip(
+            reason="E2E tests skipped (set SKIP_E2E=0 to run)"
+        )
         for item in items:
             if "e2e" in item.keywords:
                 item.add_marker(skip_e2e_marker)

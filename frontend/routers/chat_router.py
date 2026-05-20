@@ -1,4 +1,5 @@
 """Chat page router — main interaction interface with scenario buttons, input, execution, results."""
+
 import streamlit as st
 import os
 import re
@@ -11,20 +12,33 @@ from opc_manager.i18n import t as _t
 from opc_manager.monitoring import track_event, track_error
 
 from frontend.routers.base_router import (
-    DEMO_MODE, _is_demo_mode, _has_api_key, _get_demo_dashboard_data,
-    PERSONA_MAP, SCENARIOS_CORE, SCENARIOS_MORE,
-    safe_detect, safe_get_persona, safe_track_flywheel,
-    _save_chat_history, _sync_execute_task, _WORKSPACE_DIR,
+    DEMO_MODE,
+    _is_demo_mode,
+    _has_api_key,
+    _get_demo_dashboard_data,
+    PERSONA_MAP,
+    SCENARIOS_CORE,
+    SCENARIOS_MORE,
+    safe_detect,
+    safe_get_persona,
+    safe_track_flywheel,
+    _save_chat_history,
+    _sync_execute_task,
+    _WORKSPACE_DIR,
 )
 from frontend.components.shared import (
     _maybe_show_shortcut_hints,
-    _get_current_session_id, _get_phase_from_event,
-    _render_progress_indicator, _render_quick_undo_button,
-    show_success, show_error,
+    _get_current_session_id,
+    _get_phase_from_event,
+    _render_progress_indicator,
+    _render_quick_undo_button,
+    show_success,
+    show_error,
 )
 from frontend.components.input_autocomplete import render_autocomplete_input
 from frontend.components.confirmation_dialog import (
-    render_confirmation_dialog, check_pending_confirmation,
+    render_confirmation_dialog,
+    check_pending_confirmation,
     clear_pending_confirmation,
 )
 from frontend.components.undo_panel import render_mini_undo_hint
@@ -35,7 +49,8 @@ logger = logging.getLogger(__name__)
 def render_chat_page():
     """Main chat page — core user interaction interface."""
     # 移动端响应式 CSS
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     @media (max-width: 768px) {
         /* 场景按钮在小屏幕单列显示 */
@@ -57,7 +72,9 @@ def render_chat_page():
         }
     }
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     _maybe_show_shortcut_hints()
     if DEMO_MODE:
@@ -77,18 +94,19 @@ def render_chat_page():
         demo = _get_demo_dashboard_data()
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric(_t("chat_demo_monthly_income"), f"¥{demo['financial_summary']['income']:,}")
+            st.metric(
+                _t("chat_demo_monthly_income"),
+                f"¥{demo['financial_summary']['income']:,}",
+            )
         with col2:
-            st.metric(_t("chat_demo_task_rate"), demo['task_completion']['rate'])
+            st.metric(_t("chat_demo_task_rate"), demo["task_completion"]["rate"])
         with col3:
-            st.metric(_t("chat_demo_income_growth"), demo['income_trend']['growth'])
+            st.metric(_t("chat_demo_income_growth"), demo["income_trend"]["growth"])
         st.markdown("---")
         st.caption(f"💡 {_t('chat_demo_api_hint')}")
         st.stop()
     if len(st.session_state.messages) > 0:
-        st.caption(
-            f"💡 {_t('chat_history_saved')}"
-        )
+        st.caption(f"💡 {_t('chat_history_saved')}")
     if len(st.session_state.messages) == 0:
         st.markdown(f"## {_t('chat_welcome_title')}")
         st.markdown(
@@ -96,9 +114,7 @@ def render_chat_page():
             f"**{_t('chat_welcome_desc_3')}** — {_t('chat_welcome_desc_4')}"
         )
 
-        st.markdown(
-            f"**{_t('chat_usage_steps')}**"
-        )
+        st.markdown(f"**{_t('chat_usage_steps')}**")
 
         has_api_key = _has_api_key()
         if not has_api_key:
@@ -106,8 +122,7 @@ def render_chat_page():
                 f"⚠️ **{_t('chat_template_mode')}** — {_t('chat_template_mode_desc')}"
             )
             with st.expander(f"📖 {_t('chat_how_to_get_key')}", expanded=True):
-                st.markdown(
-                    f"""
+                st.markdown(f"""
 **{_t('chat_3step_config')}:**
 
 1. {_t('chat_step1_visit')}
@@ -115,8 +130,7 @@ def render_chat_page():
 3. {_t('chat_step3_fill_key')}
 
 {_t('chat_config_note')}
-"""
-                )
+""")
         else:
             st.success(f"✅ {_t('chat_ai_ready')}")
 
@@ -132,7 +146,7 @@ def render_chat_page():
                     use_container_width=True,
                 ):
                     st.session_state.pending_prompt = sc.get(
-                        "prompt", _t("scenario_execute_core", name=_t(sc['title']))
+                        "prompt", _t("scenario_execute_core", name=_t(sc["title"]))
                     )
                     st.rerun()
 
@@ -150,7 +164,7 @@ def render_chat_page():
                     use_container_width=True,
                 ):
                     st.session_state.pending_prompt = sc.get(
-                        "prompt", _t("scenario_execute_more", name=_t(sc['title']))
+                        "prompt", _t("scenario_execute_more", name=_t(sc["title"]))
                     )
                     st.rerun()
 
@@ -160,6 +174,7 @@ def render_chat_page():
             if msg.get("deliverable_path"):
                 real_path = os.path.realpath(msg["deliverable_path"])
                 from frontend.routers.base_router import DELIVERABLES_DIR
+
                 if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
                     continue
                 file_content = None
@@ -235,6 +250,7 @@ def render_chat_page():
         is_follow_up = False
         if session_ctx and session_ctx.get_turn_count() > 0:
             from opc_manager.task_engine_v3 import IntentClassifier
+
             is_follow_up = IntentClassifier.is_follow_up(prompt)
             if is_follow_up:
                 st.info(_t("chat_followup_detected"))
@@ -256,17 +272,21 @@ def render_chat_page():
             st.error(_t("chat_system_busy"))
             st.stop()
 
-        logger.debug("[frontend] 任务已提交: %s (异步模式%s)", task_id, "，追问模式" if is_follow_up else "")
+        logger.debug(
+            "[frontend] 任务已提交: %s (异步模式%s)",
+            task_id,
+            "，追问模式" if is_follow_up else "",
+        )
 
         with st.chat_message("assistant"):
-            status_container = st.status(
-                _t("chat_task_submitted"), expanded=True
-            )
+            status_container = st.status(_t("chat_task_submitted"), expanded=True)
 
             cancel_col, _ = st.columns([1, 4])
             with cancel_col:
                 if st.button(
-                    _t("chat_cancel_task"), key=f"cancel_{task_id}", use_container_width=True
+                    _t("chat_cancel_task"),
+                    key=f"cancel_{task_id}",
+                    use_container_width=True,
                 ):
                     if executor.cancel(task_id):
                         st.warning(_t("chat_task_cancelled"))
@@ -318,23 +338,36 @@ def render_chat_page():
                     if session_id and session_id != "default":
                         try:
                             from opc_manager.progress_emitter import ProgressEmitter
+
                             emitter = ProgressEmitter()
                             history = emitter.get_history(session_id)
                             if history:
                                 latest = history[-1]
-                                real_progress = latest.get("progress", latest.get("progress_pct"))
+                                real_progress = latest.get(
+                                    "progress", latest.get("progress_pct")
+                                )
                                 real_message = latest.get("message", "")
-                                real_event_type = latest.get("event", latest.get("event_type", ""))
+                                real_event_type = latest.get(
+                                    "event", latest.get("event_type", "")
+                                )
                         except Exception as e:
-                            logger.debug("[frontend] 读取真实进度失败，回退到估算: %s", e)
+                            logger.debug(
+                                "[frontend] 读取真实进度失败，回退到估算: %s", e
+                            )
 
                     if real_progress is not None:
                         progress_pct = min(real_progress, 100)
                         phase_hint = real_message or phase_hint
                         if real_event_type:
-                            phase_icon, phase_name = _get_phase_from_event(real_event_type)
+                            phase_icon, phase_name = _get_phase_from_event(
+                                real_event_type
+                            )
                     else:
-                        phase_icon, phase_name, phase_hint = "⚡", _t("chat_status_executing"), _t("chat_status_processing")
+                        phase_icon, phase_name, phase_hint = (
+                            "⚡",
+                            _t("chat_status_executing"),
+                            _t("chat_status_processing"),
+                        )
                         for phase_start, phase_end, icon, hint in EXECUTION_PHASES:
                             if phase_start <= elapsed < phase_end:
                                 phase_icon, phase_name, phase_hint = (
@@ -359,7 +392,11 @@ def render_chat_page():
                         progress_pct = min(int((elapsed / estimated_total) * 100), 95)
 
                     status_container.update(
-                        label=f"{phase_icon} {phase_name} ({elapsed:.0f}s / {_t('chat_estimated_remaining')}{remaining:.0f}s)" if real_progress is None else f"{phase_icon} {phase_name}",
+                        label=(
+                            f"{phase_icon} {phase_name} ({elapsed:.0f}s / {_t('chat_estimated_remaining')}{remaining:.0f}s)"
+                            if real_progress is None
+                            else f"{phase_icon} {phase_name}"
+                        ),
                         state="running",
                     )
                     progress_placeholder.progress(
@@ -375,7 +412,9 @@ def render_chat_page():
                     continue
 
                 elif current_status == "done":
-                    status_container.update(label=_t("chat_task_done"), state="complete")
+                    status_container.update(
+                        label=_t("chat_task_done"), state="complete"
+                    )
 
                     track_event(
                         "task_completed",
@@ -387,10 +426,14 @@ def render_chat_page():
 
                     result_content = task_status.get("result_content")
                     result_filepath = task_status.get("result_filepath")
-                    result_deliverable_record = task_status.get("result_deliverable_record")
+                    result_deliverable_record = task_status.get(
+                        "result_deliverable_record"
+                    )
 
                     if result_deliverable_record:
-                        st.session_state.deliverables.insert(0, result_deliverable_record)
+                        st.session_state.deliverables.insert(
+                            0, result_deliverable_record
+                        )
 
                     if result_content:
                         from frontend.components.result_cards import render_result_card
@@ -401,40 +444,102 @@ def render_chat_page():
                             deliverable_record=result_deliverable_record,
                             filepath=result_filepath,
                         )
-                        show_success(f"{_t('chat_deliverable_created')}: {os.path.basename(result_filepath) if result_filepath else _t('chat_task_complete')}")
+                        show_success(
+                            f"{_t('chat_deliverable_created')}: {os.path.basename(result_filepath) if result_filepath else _t('chat_task_complete')}"
+                        )
 
                         feedback_key = f"fb_{task_id}"
-                        safe_task_id = re.sub(r'[^\w-]', '', task_id)
+                        safe_task_id = re.sub(r"[^\w-]", "", task_id)
                         if feedback_key not in st.session_state.quality_feedback:
                             fb_cols = st.columns([1, 1, 6])
                             with fb_cols[0]:
-                                if st.button(_t("chat_feedback_good"), key=f"good_{task_id}"):
-                                    st.session_state.quality_feedback[feedback_key] = "good"
+                                if st.button(
+                                    _t("chat_feedback_good"), key=f"good_{task_id}"
+                                ):
+                                    st.session_state.quality_feedback[feedback_key] = (
+                                        "good"
+                                    )
                                     try:
-                                        os.makedirs(os.path.join(_WORKSPACE_DIR, "data", "feedback"), exist_ok=True)
-                                        with open(os.path.join(_WORKSPACE_DIR, "data", "feedback", f"{safe_task_id}.json"), "w") as f:
-                                            json.dump({"task_id": task_id, "feedback": "good", "timestamp": time.time()}, f)
+                                        os.makedirs(
+                                            os.path.join(
+                                                _WORKSPACE_DIR, "data", "feedback"
+                                            ),
+                                            exist_ok=True,
+                                        )
+                                        with open(
+                                            os.path.join(
+                                                _WORKSPACE_DIR,
+                                                "data",
+                                                "feedback",
+                                                f"{safe_task_id}.json",
+                                            ),
+                                            "w",
+                                        ) as f:
+                                            json.dump(
+                                                {
+                                                    "task_id": task_id,
+                                                    "feedback": "good",
+                                                    "timestamp": time.time(),
+                                                },
+                                                f,
+                                            )
                                     except Exception:
                                         pass
                                     st.success(_t("chat_feedback_thanks"))
                                     st.rerun()
                             with fb_cols[1]:
-                                if st.button(_t("chat_feedback_bad"), key=f"bad_{task_id}"):
-                                    st.session_state.quality_feedback[feedback_key] = "bad"
+                                if st.button(
+                                    _t("chat_feedback_bad"), key=f"bad_{task_id}"
+                                ):
+                                    st.session_state.quality_feedback[feedback_key] = (
+                                        "bad"
+                                    )
                                     try:
-                                        os.makedirs(os.path.join(_WORKSPACE_DIR, "data", "feedback"), exist_ok=True)
-                                        with open(os.path.join(_WORKSPACE_DIR, "data", "feedback", f"{safe_task_id}.json"), "w") as f:
-                                            json.dump({"task_id": task_id, "feedback": "bad", "timestamp": time.time()}, f)
+                                        os.makedirs(
+                                            os.path.join(
+                                                _WORKSPACE_DIR, "data", "feedback"
+                                            ),
+                                            exist_ok=True,
+                                        )
+                                        with open(
+                                            os.path.join(
+                                                _WORKSPACE_DIR,
+                                                "data",
+                                                "feedback",
+                                                f"{safe_task_id}.json",
+                                            ),
+                                            "w",
+                                        ) as f:
+                                            json.dump(
+                                                {
+                                                    "task_id": task_id,
+                                                    "feedback": "bad",
+                                                    "timestamp": time.time(),
+                                                },
+                                                f,
+                                            )
                                     except Exception:
                                         pass
                                     st.info(_t("chat_feedback_improve"))
                                     st.rerun()
-                        elif st.session_state.quality_feedback.get(feedback_key) == "good":
+                        elif (
+                            st.session_state.quality_feedback.get(feedback_key)
+                            == "good"
+                        ):
                             st.caption(_t("chat_feedback_good_caption"))
-                        elif st.session_state.quality_feedback.get(feedback_key) == "bad":
+                        elif (
+                            st.session_state.quality_feedback.get(feedback_key) == "bad"
+                        ):
                             st.caption(_t("chat_feedback_bad_caption"))
 
-                        _render_quick_undo_button(task_id, result_deliverable_record.get("task_type") if result_deliverable_record else None)
+                        _render_quick_undo_button(
+                            task_id,
+                            (
+                                result_deliverable_record.get("task_type")
+                                if result_deliverable_record
+                                else None
+                            ),
+                        )
 
                         session_id = _get_current_session_id()
                         render_mini_undo_hint(session_id, task_id=task_id)
@@ -460,7 +565,9 @@ def render_chat_page():
                                 st.success(
                                     f"✅ {_t('chat_file_generated')}: {os.path.basename(result_filepath)} ({size_kb}KB)"
                                 )
-                                show_success(f"{_t('chat_deliverable_generated')}: {os.path.basename(result_filepath)}")
+                                show_success(
+                                    f"{_t('chat_deliverable_generated')}: {os.path.basename(result_filepath)}"
+                                )
 
                         msg_record = {
                             "role": "assistant",
@@ -477,14 +584,28 @@ def render_chat_page():
                             generate_suggestions,
                             render_suggestion_panel,
                         )
+
                         suggestion_context = build_context_from_session(
-                            last_task_type=task_status.get("task_type", "") or result_deliverable_record.get("task_type", ""),
+                            last_task_type=task_status.get("task_type", "")
+                            or result_deliverable_record.get("task_type", ""),
                             last_result={
-                                "execution_time_ms": result_deliverable_record.get("execution_time_ms", 0) if result_deliverable_record else 0,
-                                "sources_count": result_deliverable_record.get("sources_count", 0) if result_deliverable_record else 0,
+                                "execution_time_ms": (
+                                    result_deliverable_record.get(
+                                        "execution_time_ms", 0
+                                    )
+                                    if result_deliverable_record
+                                    else 0
+                                ),
+                                "sources_count": (
+                                    result_deliverable_record.get("sources_count", 0)
+                                    if result_deliverable_record
+                                    else 0
+                                ),
                             },
                             deliverables=st.session_state.get("deliverables", []),
-                            feedback_history=list(st.session_state.get("quality_feedback", {}).items()),
+                            feedback_history=list(
+                                st.session_state.get("quality_feedback", {}).items()
+                            ),
                         )
 
                         suggestion_context["session_id"] = session_id
@@ -498,30 +619,66 @@ def render_chat_page():
                     error_msg = task_status.get("error_message", _t("error_unknown"))
 
                     if task_status.get("_cancelled_by_user"):
-                        status_container.update(label=_t("chat_status_cancelled"), state="complete")
+                        status_container.update(
+                            label=_t("chat_status_cancelled"), state="complete"
+                        )
                         st.info(_t("chat_cancelled_by_user"))
                         clear_pending_confirmation()
                         break
 
                     status_container.update(label=_t("chat_task_failed"), state="error")
 
-                    track_error(
-                        Exception(error_msg), {"mode": "async"}
-                    )
+                    track_error(Exception(error_msg), {"mode": "async"})
 
                     FRIENDLY_ERRORS = {
-                        "timeout": (_t("chat_err_timeout_title"), _t("chat_err_timeout_hint")),
-                        "connection": (_t("chat_err_network_title"), _t("chat_err_network_hint")),
-                        "api_key": (_t("chat_err_apikey_title"), _t("chat_err_apikey_hint")),
-                        "incorrect api key": (_t("chat_err_apikey_title"), _t("chat_err_apikey_hint")),
-                        "authentication": (_t("chat_err_auth_title"), _t("chat_err_auth_hint")),
-                        "rate_limit": (_t("chat_err_ratelimit_title"), _t("chat_err_ratelimit_hint")),
-                        "rate limit": (_t("chat_err_ratelimit_title"), _t("chat_err_ratelimit_hint")),
-                        "429": (_t("chat_err_ratelimit_title"), _t("chat_err_ratelimit_hint")),
-                        "server_error": (_t("chat_err_server_title"), _t("chat_err_server_hint")),
-                        "500": (_t("chat_err_server_title"), _t("chat_err_server_hint")),
-                        "502": (_t("chat_err_server_title"), _t("chat_err_server_hint")),
-                        "503": (_t("chat_err_server_title"), _t("chat_err_server_hint")),
+                        "timeout": (
+                            _t("chat_err_timeout_title"),
+                            _t("chat_err_timeout_hint"),
+                        ),
+                        "connection": (
+                            _t("chat_err_network_title"),
+                            _t("chat_err_network_hint"),
+                        ),
+                        "api_key": (
+                            _t("chat_err_apikey_title"),
+                            _t("chat_err_apikey_hint"),
+                        ),
+                        "incorrect api key": (
+                            _t("chat_err_apikey_title"),
+                            _t("chat_err_apikey_hint"),
+                        ),
+                        "authentication": (
+                            _t("chat_err_auth_title"),
+                            _t("chat_err_auth_hint"),
+                        ),
+                        "rate_limit": (
+                            _t("chat_err_ratelimit_title"),
+                            _t("chat_err_ratelimit_hint"),
+                        ),
+                        "rate limit": (
+                            _t("chat_err_ratelimit_title"),
+                            _t("chat_err_ratelimit_hint"),
+                        ),
+                        "429": (
+                            _t("chat_err_ratelimit_title"),
+                            _t("chat_err_ratelimit_hint"),
+                        ),
+                        "server_error": (
+                            _t("chat_err_server_title"),
+                            _t("chat_err_server_hint"),
+                        ),
+                        "500": (
+                            _t("chat_err_server_title"),
+                            _t("chat_err_server_hint"),
+                        ),
+                        "502": (
+                            _t("chat_err_server_title"),
+                            _t("chat_err_server_hint"),
+                        ),
+                        "503": (
+                            _t("chat_err_server_title"),
+                            _t("chat_err_server_hint"),
+                        ),
                     }
 
                     error_lower = error_msg.lower()
@@ -534,7 +691,9 @@ def render_chat_page():
                             friendly_hint = hint
                             break
 
-                    prompt_short = html.escape(prompt[:40] + ("..." if len(prompt) > 40 else ""))
+                    prompt_short = html.escape(
+                        prompt[:40] + ("..." if len(prompt) > 40 else "")
+                    )
                     safe_error = html.escape(error_msg[:300])
 
                     st.error(friendly_title)
@@ -558,7 +717,9 @@ def render_chat_page():
                     break
 
                 elif current_status == "cancelled":
-                    status_container.update(label=_t("chat_status_cancelled"), state="complete")
+                    status_container.update(
+                        label=_t("chat_status_cancelled"), state="complete"
+                    )
                     st.info(_t("chat_cancelled_by_user"))
                     break
 

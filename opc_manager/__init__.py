@@ -10,14 +10,14 @@ from .strategist_brain import (
     Constraint,
     ConstraintType,
     ExecutionPlan,
-    Step
+    Step,
 )
 from .executor_brain import (
     ExecutorBrain,
     ExecutionResult,
     ExecutionStatus,
     ExecutionStatusType,
-    ExecutionResultType
+    ExecutionResultType,
 )
 from .reflector_brain import (
     ReflectorBrain,
@@ -25,14 +25,14 @@ from .reflector_brain import (
     EvaluationResult,
     NextAction,
     NextActionType,
-    CorrectionStrategy
+    CorrectionStrategy,
 )
 from .consensus_engine import (
     ConsensusEngine,
     Opinion,
     OpinionType,
     Decision,
-    DecisionType
+    DecisionType,
 )
 from .skill_registry import (
     SkillRegistry,
@@ -40,24 +40,14 @@ from .skill_registry import (
     SkillCategory,
     SkillInput,
     SkillOutput,
-    SkillContext
+    SkillContext,
 )
-from .tool_system import (
-    ToolSystem,
-    Tool,
-    ToolCategory,
-    ToolParameter,
-    PermissionLevel
-)
-from .agent_loop import (
-    AgentLoop,
-    AgentContext,
-    AgentState
-)
+from .tool_system import ToolSystem, Tool, ToolCategory, ToolParameter, PermissionLevel
+from .agent_loop import AgentLoop, AgentContext, AgentState
 from .scenario_migrator import (
     ScenarioToSkillMigrator,
     migrate_scenarios_to_skills,
-    get_migration_status
+    get_migration_status,
 )
 from .utils import BoundedDict, EventEmitter, Event
 from .skill_marketplace import (
@@ -65,7 +55,7 @@ from .skill_marketplace import (
     ExternalSkillMarketplace,
     ExternalSkill,
     MCPServerInfo,
-    TrustLevel
+    TrustLevel,
 )
 from .user_profile import UserProfile
 from .settings import (
@@ -84,7 +74,6 @@ __all__ = [
     "get_version",
     "get_version_info",
     "get_version_string",
-    
     # 策略脑
     "StrategistBrain",
     "Intent",
@@ -93,14 +82,12 @@ __all__ = [
     "ConstraintType",
     "ExecutionPlan",
     "Step",
-    
     # 执行脑
     "ExecutorBrain",
     "ExecutionResult",
     "ExecutionStatus",
     "ExecutionStatusType",
     "ExecutionResultType",
-    
     # 反思脑
     "ReflectorBrain",
     "Evaluation",
@@ -108,14 +95,12 @@ __all__ = [
     "NextAction",
     "NextActionType",
     "CorrectionStrategy",
-    
     # 共识引擎
     "ConsensusEngine",
     "Opinion",
     "OpinionType",
     "Decision",
     "DecisionType",
-    
     # 技能注册表
     "SkillRegistry",
     "Skill",
@@ -123,39 +108,32 @@ __all__ = [
     "SkillInput",
     "SkillOutput",
     "SkillContext",
-    
     # 工具调用框架
     "ToolSystem",
     "Tool",
     "ToolCategory",
     "ToolParameter",
     "PermissionLevel",
-    
     # 执行循环
     "AgentLoop",
     "AgentContext",
     "AgentState",
-    
     # 场景迁移器
     "ScenarioToSkillMigrator",
     "migrate_scenarios_to_skills",
     "get_migration_status",
-    
     # 公共工具
     "BoundedDict",
     "EventEmitter",
     "Event",
-
     # 外部技能市场
     "SkillMarketplace",
     "ExternalSkillMarketplace",
     "ExternalSkill",
     "MCPServerInfo",
     "TrustLevel",
-
     # 用户画像
     "UserProfile",
-
     # 设置管理器 (v0.2.0)
     "SettingsManager",
     "SettingsCategory",

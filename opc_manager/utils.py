@@ -25,7 +25,10 @@ LLM_CONCURRENCY_LIMIT = 5
 _llm_thread_semaphore = threading.Semaphore(LLM_CONCURRENCY_LIMIT)
 
 _INJECTION_PATTERNS = [
-    re.compile(r"(?i)(ignore|忽略)\s*(previous|之前的|above)\s*(instruction|指令|prompt)", re.IGNORECASE),
+    re.compile(
+        r"(?i)(ignore|忽略)\s*(previous|之前的|above)\s*(instruction|指令|prompt)",
+        re.IGNORECASE,
+    ),
     re.compile(r"(?i)system\s*:", re.IGNORECASE),
     re.compile(r"(?i)(you\s+are\s+now|你现在是)", re.IGNORECASE),
     re.compile(r"(?i)(forget|忘记)\s*(everything|所有|previous|之前的)", re.IGNORECASE),
@@ -37,15 +40,15 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
     depth = 0
     start = -1
     for i, ch in enumerate(text):
-        if ch == '{':
+        if ch == "{":
             if depth == 0:
                 start = i
             depth += 1
-        elif ch == '}':
+        elif ch == "}":
             if depth > 0:
                 depth -= 1
             if depth == 0 and start >= 0:
-                candidate = text[start:i + 1]
+                candidate = text[start : i + 1]
                 try:
                     return json.loads(candidate)
                 except json.JSONDecodeError:
@@ -54,15 +57,17 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
     return None
 
 
-def call_llm_service(llm_service, prompt: str, max_tokens: int = 500, timeout: int = 15) -> Optional[str]:
+def call_llm_service(
+    llm_service, prompt: str, max_tokens: int = 500, timeout: int = 15
+) -> Optional[str]:
     if not llm_service:
         return None
     try:
-        if hasattr(llm_service, 'complete'):
+        if hasattr(llm_service, "complete"):
             return llm_service.complete(prompt, max_tokens=max_tokens, timeout=timeout)
-        elif hasattr(llm_service, 'generate'):
+        elif hasattr(llm_service, "generate"):
             return llm_service.generate(prompt, max_tokens=max_tokens, timeout=timeout)
-        elif hasattr(llm_service, '_call_llm_api'):
+        elif hasattr(llm_service, "_call_llm_api"):
             return llm_service._call_llm_api(prompt)
     except Exception as e:
         logger.warning("LLM调用失败: %s", e)
@@ -89,7 +94,7 @@ def parse_date_from_text(text: str, default: str = "") -> str:
         if days_ahead == 0:
             days_ahead = 7
         return (d + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
-    m = re.search(r'(\d{4})[年/\-](\d{1,2})[月/\-](\d{1,2})', text)
+    m = re.search(r"(\d{4})[年/\-](\d{1,2})[月/\-](\d{1,2})", text)
     if m:
         return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
     return default if default else today
@@ -193,8 +198,15 @@ class EventEmitter:
         self._subscribers: List[asyncio.Queue] = []
         self._max_queue_size = max_queue_size
 
-    def emit(self, event_type: str, step_id: str, step_name: str,
-             status: str, duration_ms: float = 0.0, data: Optional[dict] = None) -> None:
+    def emit(
+        self,
+        event_type: str,
+        step_id: str,
+        step_name: str,
+        status: str,
+        duration_ms: float = 0.0,
+        data: Optional[dict] = None,
+    ) -> None:
         event = Event(
             event_type=event_type,
             step_id=step_id,
@@ -202,7 +214,7 @@ class EventEmitter:
             status=status,
             timestamp=time.time(),
             duration_ms=duration_ms,
-            data=data
+            data=data,
         )
         for queue in self._subscribers:
             try:

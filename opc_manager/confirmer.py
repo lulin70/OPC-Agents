@@ -12,12 +12,12 @@ from typing import Awaitable, Callable, Optional
 import logging
 import time
 
-
 logger = logging.getLogger(__name__)
 
 
 class RiskLevel(Enum):
     """Risk levels for operation classification."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -38,6 +38,7 @@ class ConfirmationRequest:
         created_at: Timestamp when request was created.
         unified_category: Optional UnifiedTaskCategory for new dual-engine system.
     """
+
     session_id: str
     intent_type: str
     goal: str
@@ -88,6 +89,7 @@ def _get_unified_risk_map():
                 UnifiedTaskCategory,
                 get_risk_level as _get_unified_risk_level,
             )
+
             _UNIFIED_RISK_MAP = {
                 category: _get_unified_risk_level(category)
                 for category in UnifiedTaskCategory
@@ -101,9 +103,11 @@ def _get_all_unified_categories():
     """Get list of UnifiedTaskCategory values for pattern matching."""
     try:
         from .unified_types import UnifiedTaskCategory
+
         return list(UnifiedTaskCategory)
     except ImportError:
         return []
+
 
 THRESHOLDS = {
     RiskLevel.LOW: 0.70,
@@ -120,8 +124,17 @@ MAX_PARAM_VALUE_LENGTH = 50
 MAX_TRUST_SCORE = 10
 
 SENSITIVE_PATTERNS = [
-    'password', 'passwd', 'pwd', 'secret', 'api_key', 'apikey',
-    'token', 'auth', 'credential', 'private_key', 'access_key',
+    "password",
+    "passwd",
+    "pwd",
+    "secret",
+    "api_key",
+    "apikey",
+    "token",
+    "auth",
+    "credential",
+    "private_key",
+    "access_key",
 ]
 
 
@@ -162,15 +175,18 @@ class Confirmer:
             RiskLevel enum value
         """
         # Try unified category first (new dual-engine system)
-        if intent_type.startswith("info_search") or \
-           intent_type.startswith("data_query") or \
-           intent_type.startswith("document_writing") or \
-           intent_type in [cat.value for cat in _get_all_unified_categories()]:
+        if (
+            intent_type.startswith("info_search")
+            or intent_type.startswith("data_query")
+            or intent_type.startswith("document_writing")
+            or intent_type in [cat.value for cat in _get_all_unified_categories()]
+        ):
             try:
                 from .unified_types import (
                     UnifiedTaskCategory,
                     get_risk_level as _get_unified_risk_level,
                 )
+
                 unified_cat = UnifiedTaskCategory(intent_type)
                 return _get_unified_risk_level(unified_cat)
             except (ValueError, ImportError):
@@ -191,6 +207,7 @@ class Confirmer:
             RiskLevel enum value
         """
         from .unified_types import get_risk_level as _get_unified_risk_level
+
         return _get_unified_risk_level(unified_category)
 
     def get_effective_threshold(self, intent_type: str, session_id: str) -> float:
@@ -199,11 +216,18 @@ class Confirmer:
         bonus = self._trust_scores.get(key, 0) * TRUST_BONUS_PER_CONFIRMATION
         return max(base - bonus, TRUST_MIN_THRESHOLD)
 
-    async def check_confirmation(self, session_id: str, intent_type: str,
-                                  goal: str, confidence: float,
-                                  params: dict = None,
-                                  confirm_callback: Callable[[ConfirmationRequest], Awaitable[ConfirmationResult]] = None,
-                                  unified_category=None) -> ConfirmationResult:
+    async def check_confirmation(
+        self,
+        session_id: str,
+        intent_type: str,
+        goal: str,
+        confidence: float,
+        params: dict = None,
+        confirm_callback: Callable[
+            [ConfirmationRequest], Awaitable[ConfirmationResult]
+        ] = None,
+        unified_category=None,
+    ) -> ConfirmationResult:
         """Check if operation requires user confirmation.
 
         Args:
@@ -263,7 +287,9 @@ class Confirmer:
 
     def _record_success(self, session_id: str, intent_type: str):
         key = (session_id, intent_type)
-        self._trust_scores[key] = min(self._trust_scores.get(key, 0) + 1, MAX_TRUST_SCORE)
+        self._trust_scores[key] = min(
+            self._trust_scores.get(key, 0) + 1, MAX_TRUST_SCORE
+        )
 
     def get_confirmation_card(self, request: ConfirmationRequest) -> dict:
         """Generate confirmation card data for UI display.
@@ -279,7 +305,11 @@ class Confirmer:
             "goal": request.goal[:MAX_GOAL_DISPLAY_CHARS],
             "confidence": f"{request.confidence:.0%}",
             "risk_level": request.risk_level.value,
-            "params": {k: str(v)[:MAX_PARAM_VALUE_LENGTH] for k, v in request.extracted_params.items() if v},
+            "params": {
+                k: str(v)[:MAX_PARAM_VALUE_LENGTH]
+                for k, v in request.extracted_params.items()
+                if v
+            },
             "threshold": f"{self.get_effective_threshold(request.intent_type, request.session_id):.0%}",
         }
 
@@ -291,6 +321,7 @@ class Confirmer:
                     get_category_label,
                     get_category_icon,
                 )
+
                 unified_cat = UnifiedTaskCategory(request.unified_category)
                 card["unified_category"] = {
                     "value": request.unified_category,
