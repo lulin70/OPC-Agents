@@ -22,44 +22,36 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Cache pip packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-v4-${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-v4-
-
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
 
-    - name: Check code formatting with Black
+    - name: Lint with flake8
+      run: |
+        flake8 opc_manager/ frontend/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Check formatting with Black
       run: |
         pip install "black>=25.0,<26.0"
         black --check opc_manager/ frontend/ tests/
-
-    - name: Lint with Flake8
-      run: |
-        flake8 opc_manager/ frontend/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 opc_manager/ frontend/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
 
     - name: Security scan with Bandit
       run: |
         pip install bandit
         bandit -r opc_manager/ -ll -ii
 
-    - name: Security audit
-      run: |
-        pip install pip-audit
-        pip-audit --desc --ignore-vuln PYSEC-2023-228
-      continue-on-error: true
-
     - name: Run tests
       run: |
-        PYTHONPATH=. pytest --tb=short -q
+        PYTHONPATH=. pytest --tb=short -q --junitxml=test-results.xml
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: test-results.xml
 
     - name: Verify version consistency
       run: |
