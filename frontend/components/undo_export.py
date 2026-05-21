@@ -91,8 +91,16 @@ def _generate_csv(records: List[UndoRecordDisplay]) -> str:
     )
 
     for r in records:
-        created_str = datetime.fromtimestamp(r.created_at).strftime("%Y-%m-%d %H:%M:%S")
-        expires_str = datetime.fromtimestamp(r.expires_at).strftime("%Y-%m-%d %H:%M:%S")
+        created_str = (
+            datetime.fromtimestamp(r.created_at).strftime("%Y-%m-%d %H:%M:%S")
+            if r.created_at > 0
+            else "N/A"
+        )
+        expires_str = (
+            datetime.fromtimestamp(r.expires_at).strftime("%Y-%m-%d %H:%M:%S")
+            if r.expires_at > 0
+            else "N/A"
+        )
 
         writer.writerow(
             [
@@ -128,8 +136,16 @@ def _generate_json(records: List[UndoRecordDisplay]) -> str:
                 "operation_type": r.operation_type,
                 "description": r.description,
                 "status": r.status,
-                "created_at": datetime.fromtimestamp(r.created_at).isoformat(),
-                "expires_at": datetime.fromtimestamp(r.expires_at).isoformat(),
+                "created_at": (
+                    datetime.fromtimestamp(r.created_at).isoformat()
+                    if r.created_at > 0
+                    else "N/A"
+                ),
+                "expires_at": (
+                    datetime.fromtimestamp(r.expires_at).isoformat()
+                    if r.expires_at > 0
+                    else "N/A"
+                ),
                 "remaining_seconds": r.remaining_seconds,
                 "time_ago": r.time_ago,
                 "inverse_func_name": r.inverse_func_name,

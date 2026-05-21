@@ -22,6 +22,30 @@ from opc_manager.error_handler import ErrorHandler, UserFriendlyError
 
 logger = logging.getLogger(__name__)
 
+MIME_MAP = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "png": "image/png",
+    "html": "text/html",
+    "md": "text/markdown",
+    "txt": "text/plain",
+    "csv": "text/csv",
+    "json": "application/json",
+}
+
+EXT_MAP = {
+    "pdf": "pdf",
+    "docx": "docx",
+    "xlsx": "xlsx",
+    "png": "png",
+    "html": "html",
+    "md": "md",
+    "txt": "txt",
+    "csv": "csv",
+    "json": "json",
+}
+
 __all__ = [
     "_get_export_bytes",
     "_do_get_export_bytes",
@@ -59,42 +83,17 @@ def _do_get_export_bytes(content: str, fmt: str) -> tuple:
     format_enum = ExportFormat(fmt)
     data = ResultData(content=content, metadata={"title": "Export"})
     file_bytes = manager.export_sync(data, format_enum)
-    mime_map = {
-        "pdf": "application/pdf",
-        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "png": "image/png",
-        "html": "text/html",
-        "md": "text/markdown",
-    }
-    ext_map = {
-        "pdf": "pdf",
-        "docx": "docx",
-        "xlsx": "xlsx",
-        "png": "png",
-        "html": "html",
-        "md": "md",
-    }
     return (
         file_bytes,
-        mime_map.get(fmt, "application/octet-stream"),
-        ext_map.get(fmt, "bin"),
+        MIME_MAP.get(fmt, "application/octet-stream"),
+        EXT_MAP.get(fmt, "bin"),
     )
 
 
 def _get_mime_type(filepath: str) -> str:
     """根据文件扩展名获取MIME类型"""
-    ext = os.path.splitext(filepath)[1].lower()
-    return {
-        ".pdf": "application/pdf",
-        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".md": "text/markdown",
-        ".txt": "text/plain",
-        ".zip": "application/zip",
-    }.get(ext, "application/octet-stream")
+    ext = os.path.splitext(filepath)[1].lower().lstrip(".")
+    return MIME_MAP.get(ext, "application/octet-stream")
 
 
 def _render_batch_export_section(DELIVERABLES_DIR):
@@ -212,7 +211,7 @@ def _render_single_export_buttons(item: dict, item_id: str):
             _export_single_with_preview(item, "png", item_id)
 
 
-def _render_export_preview(item_data: dict, format_type: str):
+def _render_export_preview(item_data: dict, format_type: str, item_id: str = ""):
     st.subheader(_t("export_preview_title"))
 
     col_info, col_preview = st.columns([1, 2])
@@ -249,25 +248,30 @@ def _render_export_preview(item_data: dict, format_type: str):
             _t("content_preview"), value=content_preview, height=200, disabled=True
         )
 
+    preview_key = f"preview_{format_type}_{item_id}"
     col_confirm, col_cancel = st.columns([1, 1])
     with col_confirm:
         if st.button(
             "✅ " + _t("confirm_export"),
             type="primary",
-            key=f"confirm_export_{format_type}",
+            key=f"confirm_export_{format_type}_{item_id}",
         ):
-            return True
+            st.session_state[f"preview_confirmed_{format_type}_{item_id}"] = True
     with col_cancel:
-        if st.button(_t("cancel"), key=f"cancel_export_{format_type}"):
-            return False
-
-    return None
+        if st.button(_t("cancel"), key=f"cancel_export_{format_type}_{item_id}"):
+            st.session_state[f"preview_confirmed_{format_type}_{item_id}"] = False
 
 
 def _export_single_with_preview(item: dict, fmt: str, item_id: str):
     filepath = item.get("filepath", "")
     if not filepath or not os.path.exists(filepath):
         st.error(_t("file_not_exists"))
+        return
+
+    confirm_key = f"preview_confirmed_{fmt}_{item_id}"
+    if st.session_state.get(confirm_key, False):
+        st.session_state[confirm_key] = False
+        _export_single(item, fmt)
         return
 
     try:
@@ -280,11 +284,10 @@ def _export_single_with_preview(item: dict, fmt: str, item_id: str):
             "metadata": item.get("metadata", item.get("meta", {})),
         }
 
-        preview_result = _render_export_preview(item_data, fmt)
+        _render_export_preview(item_data, fmt, item_id)
 
-        if preview_result is True:
-            _export_single(item, fmt)
-        elif preview_result is False:
+        if st.session_state.get(confirm_key) is False:
+            st.session_state[confirm_key] = None
             st.info(_t("export_cancelled"))
     except Exception as e:
         st.error(_t("preview_failed", error=e))

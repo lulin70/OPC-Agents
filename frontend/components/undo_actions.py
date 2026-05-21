@@ -129,7 +129,7 @@ def calculate_undo_stats(session_id: str) -> dict:
     stats = {"active": 0, "undone": 0, "expired": 0, "total": 0}
 
     try:
-        all_records = getattr(um, "_records", {}).get(session_id, [])
+        all_records = um.get_session_records(session_id)
         stats["total"] = len(all_records)
 
         now = time.time()

@@ -1246,6 +1246,7 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "time_minutes_ago": "{mins}分钟前",
         "time_hours_ago": "{hours}小时前",
         "time_days_ago": "{days}天前",
+        "operation_log_details": "操作日志详情",
     },
     "en_US": {
         "nav_chat": "💬 Chat",
@@ -2479,6 +2480,7 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "time_minutes_ago": "{mins} min ago",
         "time_hours_ago": "{hours} hr ago",
         "time_days_ago": "{days} days ago",
+        "operation_log_details": "Operation Log Details",
     },
     "ja_JP": {
         "nav_chat": "💬 チャット",
@@ -3712,6 +3714,7 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "time_minutes_ago": "{mins}分前",
         "time_hours_ago": "{hours}時間前",
         "time_days_ago": "{days}日前",
+        "operation_log_details": "操作ログ詳細",
     },
 }
 

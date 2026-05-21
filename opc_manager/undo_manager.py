@@ -277,6 +277,19 @@ class UndoManager:
                     )
         return sorted(results, key=lambda x: x["created_at"], reverse=True)
 
+    def get_session_records(self, session_id: str) -> List[UndoRecord]:
+        """Get all undo records for a session.
+
+        Args:
+            session_id: Session identifier.
+
+        Returns:
+            List of UndoRecord objects for the session.
+        """
+        self._validate_session_id(session_id)
+        with self._lock:
+            return list(self._records.get(session_id, []))
+
     def cleanup_expired(self):
         """Remove all expired undo records."""
         now = time.time()

@@ -574,7 +574,7 @@ class TestRenderUndoStats:
         record2.status = "active"
         record2.expires_at = now + 3600
 
-        mock_manager._records = {"sess1": [record1, record2]}
+        mock_manager.get_session_records.return_value = [record1, record2]
         mock_get_manager.return_value = mock_manager
 
         stats = calculate_undo_stats("sess1")
@@ -598,7 +598,11 @@ class TestRenderUndoStats:
         expired_rec.status = "active"
         expired_rec.expires_at = now - 10
 
-        mock_manager._records = {"sess1": [active_rec, undone_rec, expired_rec]}
+        mock_manager.get_session_records.return_value = [
+            active_rec,
+            undone_rec,
+            expired_rec,
+        ]
         mock_get_manager.return_value = mock_manager
 
         stats = calculate_undo_stats("sess1")
@@ -610,7 +614,7 @@ class TestRenderUndoStats:
     @patch("frontend.components.undo_actions._get_undo_manager")
     def test_stats_empty_session(self, mock_get_manager):
         mock_manager = MagicMock()
-        mock_manager._records = {}
+        mock_manager.get_session_records.return_value = []
         mock_get_manager.return_value = mock_manager
 
         stats = calculate_undo_stats("empty_sess")

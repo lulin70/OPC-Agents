@@ -29,14 +29,14 @@ def _isolate_data_dir(tmp_path, monkeypatch):
     data_dir = str(tmp_path / "data")
     os.makedirs(data_dir, exist_ok=True)
     monkeypatch.setenv("OPC_DATA_DIR", data_dir)
-    # Also reset the data_manager module-level globals so they pick up the new path
+    # Use monkeypatch instead of direct assignment
     import opc_manager.data_manager as dm
 
-    dm.DATA_DIR = data_dir
-    dm.DB_PATH = os.path.join(data_dir, "opc_data.db")
-    dm.BACKUP_DIR = os.path.join(data_dir, "backups")
-    dm._db_initialized = False
-    dm._local = threading.local()
+    monkeypatch.setattr(dm, "DATA_DIR", data_dir)
+    monkeypatch.setattr(dm, "DB_PATH", os.path.join(data_dir, "opc_data.db"))
+    monkeypatch.setattr(dm, "BACKUP_DIR", os.path.join(data_dir, "backups"))
+    monkeypatch.setattr(dm, "_db_initialized", False)
+    monkeypatch.setattr(dm, "_local", threading.local())
     dm._local.conn = None
     return data_dir
 

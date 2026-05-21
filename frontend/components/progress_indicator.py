@@ -190,7 +190,7 @@ def _render_progress_indicator(session_id: str):
 
         _render_timeline(history)
 
-        with st.expander("📋 操作日志详情", expanded=False):
+        with st.expander("📋 " + _t("operation_log_details"), expanded=False):
             for evt in reversed(history[-10:]):
                 etype = evt.get("event", evt.get("event_type", "UNKNOWN"))
                 epct = evt.get("progress", evt.get("progress_pct", 0))

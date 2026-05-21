@@ -208,9 +208,15 @@ def _filter_and_sort_skills(skills, search_text, categories, sort_by):
     return filtered
 
 
-def _simulate_install_count(skill_id):
-    """Simulate install count based on skill_id hash for demo purposes."""
-    return int(hashlib.md5(skill_id.encode()).hexdigest()[:8], 16) % 10000
+def _simulate_install_count(skill_id: str) -> int:
+    """Generate deterministic simulated install count for demo purposes.
+
+    TODO: Replace with real install count from database when analytics are implemented.
+    """
+    import hashlib
+
+    hash_val = int(hashlib.sha256(skill_id.encode()).hexdigest()[:8], 16)
+    return (hash_val % 900) + 100  # 100-999 range
 
 
 def _render_skill_card_v2(
