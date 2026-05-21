@@ -28,80 +28,98 @@ __all__ = [
     "_auto_refresh_progress",
 ]
 
+EVENT_TYPE_CONFIG = {
+    "PLAN_START": {
+        "label": _t("event_plan_start"),
+        "phase": "planning",
+        "emoji": "🎯",
+    },
+    "INTENT_DETECTED": {
+        "label": _t("event_intent_detected"),
+        "phase": "intent",
+        "emoji": "🔍",
+    },
+    "CONFIRM_REQUESTED": {
+        "label": _t("event_confirm_requested"),
+        "phase": "confirm",
+        "emoji": "❓",
+    },
+    "CONFIRMED": {
+        "label": _t("event_confirmed"),
+        "phase": "confirm",
+        "emoji": "✅",
+    },
+    "STEP_START": {
+        "label": _t("event_step_start"),
+        "phase": "executing",
+        "emoji": "⚙️",
+    },
+    "STEP_PROGRESS": {
+        "label": _t("event_step_progress"),
+        "phase": "executing",
+        "emoji": "🔄",
+    },
+    "STEP_COMPLETE": {
+        "label": _t("event_step_complete"),
+        "phase": "executing",
+        "emoji": "✅",
+    },
+    "COLLAB_START": {
+        "label": _t("event_collab_start"),
+        "phase": "collab",
+        "emoji": "🤝",
+    },
+    "REFLECT_START": {
+        "label": _t("event_reflect_start"),
+        "phase": "reflect",
+        "emoji": "💭",
+    },
+    "COMPLETE": {
+        "label": _t("event_complete"),
+        "phase": "complete",
+        "emoji": "🎉",
+    },
+    "ERROR": {
+        "label": _t("event_error"),
+        "phase": "error",
+        "emoji": "❌",
+    },
+    "CANCELLED": {
+        "label": _t("event_cancelled"),
+        "phase": "cancelled",
+        "emoji": "⏹️",
+    },
+}
+
 
 def _event_type_label(event_type: str) -> str:
-    labels = {
-        "PLAN_START": _t("event_plan_start"),
-        "INTENT_DETECTED": _t("event_intent_detected"),
-        "CONFIRM_REQUESTED": _t("event_confirm_requested"),
-        "CONFIRMED": _t("event_confirmed"),
-        "STEP_START": _t("event_step_start"),
-        "STEP_PROGRESS": _t("event_step_progress"),
-        "STEP_COMPLETE": _t("event_step_complete"),
-        "COLLAB_START": _t("event_collab_start"),
-        "REFLECT_START": _t("event_reflect_start"),
-        "COMPLETE": _t("event_complete"),
-        "ERROR": _t("event_error"),
-        "CANCELLED": _t("event_cancelled"),
-        "plan_start": _t("event_plan_start"),
-        "intent_detected": _t("event_intent_detected"),
-        "confirm_requested": _t("event_confirm_requested"),
-        "confirmed": _t("event_confirmed"),
-        "step_start": _t("event_step_start"),
-        "step_progress": _t("event_step_progress"),
-        "step_complete": _t("event_step_complete"),
-        "collab_start": _t("event_collab_start"),
-        "reflect_start": _t("event_reflect_start"),
-        "complete": _t("event_complete"),
-        "error": _t("event_error"),
-        "cancelled": _t("event_cancelled"),
-    }
-    return labels.get(event_type, event_type.replace("_", " ").title())
+    cfg = EVENT_TYPE_CONFIG.get(
+        event_type, EVENT_TYPE_CONFIG.get(event_type.upper(), {})
+    )
+    return cfg.get("label", event_type.replace("_", " ").title())
 
 
 def _get_phase_from_event(event_type: str) -> tuple:
-    phase_mapping = {
-        "plan_start": ("🚀", _t("phase_task_start")),
-        "intent_detected": ("🔍", _t("phase_intent_detected")),
-        "step_start": ("⚡", _t("phase_executing")),
-        "step_progress": ("⚡", _t("phase_executing")),
-        "step_complete": ("✅", _t("event_step_complete")),
+    cfg = EVENT_TYPE_CONFIG.get(
+        event_type, EVENT_TYPE_CONFIG.get(event_type.upper(), {})
+    )
+    phase = cfg.get("phase", "unknown")
+    phase_labels = {
+        "planning": ("🚀", _t("phase_task_start")),
+        "intent": ("🔍", _t("phase_intent_detected")),
+        "executing": ("⚡", _t("phase_executing")),
         "complete": ("✅", _t("phase_task_complete")),
         "error": ("❌", _t("phase_exec_error")),
+        "cancelled": ("⏹️", _t("event_cancelled")),
     }
-    event_key = event_type.lower().replace("-", "_")
-    return phase_mapping.get(event_key, ("⚡", _t("phase_executing")))
+    return phase_labels.get(phase, ("⚡", _t("phase_executing")))
 
 
 def _event_emoji(event_type: str) -> str:
-    """获取事件类型对应的emoji"""
-    emojis = {
-        "PLAN_START": "🎯",
-        "INTENT_DETECTED": "🔍",
-        "CONFIRM_REQUESTED": "❓",
-        "CONFIRMED": "✅",
-        "STEP_START": "⚙️",
-        "STEP_PROGRESS": "🔄",
-        "STEP_COMPLETE": "✅",
-        "COLLAB_START": "🤝",
-        "REFLECT_START": "💭",
-        "COMPLETE": "🎉",
-        "ERROR": "❌",
-        "CANCELLED": "⏹️",
-        "plan_start": "🎯",
-        "intent_detected": "🔍",
-        "confirm_requested": "❓",
-        "confirmed": "✅",
-        "step_start": "⚙️",
-        "step_progress": "🔄",
-        "step_complete": "✅",
-        "collab_start": "🤝",
-        "reflect_start": "💭",
-        "complete": "🎉",
-        "error": "❌",
-        "cancelled": "⏹️",
-    }
-    return emojis.get(event_type, "📌")
+    cfg = EVENT_TYPE_CONFIG.get(
+        event_type, EVENT_TYPE_CONFIG.get(event_type.upper(), {})
+    )
+    return cfg.get("emoji", "📌")
 
 
 def _render_progress_indicator(session_id: str):
