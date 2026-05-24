@@ -184,17 +184,20 @@ class SettingsManager:
             self._initialized = True
 
     def _init_fernet(self) -> None:
-        """Initialize Fernet cipher using OPC_ENCRYPTION_KEY.
+        """Initialize Fernet cipher using encryption key.
 
-        Uses the encryption key from security settings or environment.
+        Uses the encryption key from security settings (in-memory).
+        Falls back to os.environ only for externally-set env vars (e.g., docker-compose).
         If key is unavailable, encryption is disabled (plaintext mode).
         """
         try:
             from cryptography.fernet import Fernet
 
-            key = self._security.encryption_key or os.environ.get(
-                "OPC_ENCRYPTION_KEY", ""
-            )
+            # 优先使用进程内存储的密钥，不主动从 os.environ 读取
+            key = self._security.encryption_key
+            if not key:
+                # 仅回退读取外部设置的环境变量（兼容 docker/start.sh 部署）
+                key = os.environ.get("OPC_ENCRYPTION_KEY", "")
             if not key:
                 logger.warning(
                     "[SettingsManager] No encryption key available, sensitive fields stored as plaintext"
@@ -290,6 +293,7 @@ class SettingsManager:
 
             self._decrypt_sensitive_fields()
             self._migrate_plaintext_to_encrypted()
+            self._fallback_to_env_vars()
 
             logger.info("Settings loaded from %s", self._settings_file)
 
@@ -388,6 +392,41 @@ class SettingsManager:
         except Exception as e:
             logger.error("[SettingsManager] Failed to migrate plaintext keys: %s", e)
 
+    def _fallback_to_env_vars(self) -> None:
+        """Fill empty LLM settings from environment variables.
+
+        When settings.json has no api_key/provider/base_url/model,
+        fall back to environment variables so that keys configured via
+        .env or SecureKeyStore are visible in the Settings page.
+        """
+        if not self._llm.api_key:
+            for env_key in ("MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY"):
+                val = os.environ.get(env_key, "").strip()
+                if val:
+                    self._llm.api_key = val
+                    if env_key == "MOKA_API_KEY":
+                        self._llm.provider = self._llm.provider or "moka"
+                        self._llm.base_url = self._llm.base_url or os.environ.get(
+                            "MOKA_API_BASE", "https://api.moka-ai.com/v1"
+                        )
+                        self._llm.model = self._llm.model or os.environ.get(
+                            "MOKA_MODEL", "moka/claude-sonnet-4-6"
+                        )
+                    elif env_key == "GLM_API_KEY":
+                        self._llm.provider = self._llm.provider or "glm"
+                        self._llm.base_url = self._llm.base_url or "https://open.bigmodel.cn/api/paas/v4"
+                        self._llm.model = self._llm.model or "glm-4"
+                    elif env_key == "OPENAI_API_KEY":
+                        self._llm.provider = self._llm.provider or "openai"
+                        self._llm.base_url = self._llm.base_url or os.environ.get(
+                            "OPENAI_API_BASE", "https://api.openai.com/v1"
+                        )
+                        self._llm.model = self._llm.model or "gpt-4"
+                    break
+
+        if not self._llm.provider:
+            self._llm.provider = "moka"
+
     def _looks_like_encrypted(self, value: str) -> bool:
         """Check if a value appears to be a Fernet-encrypted token.
 
@@ -481,7 +520,7 @@ class SettingsManager:
         Security considerations:
         - Key generated via secrets module (CSPRNG)
         - Stored in .env.local (gitignored by default)
-        - Also set in os.environ for immediate use
+        - Kept in process memory only, NOT written to os.environ
         - Auto-generated flag prevents overwriting user-provided keys
         """
         if self._security.encryption_key and self._security.auto_generated:
@@ -496,7 +535,6 @@ class SettingsManager:
         if existing_key:
             self._security.encryption_key = existing_key
             self._security.auto_generated = True
-            os.environ["OPC_ENCRYPTION_KEY"] = existing_key
             logger.info("Reused existing encryption key from .env.local")
             return
 
@@ -522,7 +560,6 @@ class SettingsManager:
             lines.append("")
 
         env_local.write_text("\n".join(lines), encoding="utf-8")
-        os.environ["OPC_ENCRYPTION_KEY"] = key
         self._save_to_disk()
 
         logger.info("Auto-generated encryption key and saved to .env.local")
@@ -567,6 +604,124 @@ class SettingsManager:
         """Access user profile settings."""
         return self._profile
 
+    def _store_sensitive_key(self, name: str, value: str) -> None:
+        """安全存储敏感密钥到 SecureKeyStore，不写入 os.environ。
+
+        Args:
+            name: 密钥名称（如 MOKA_API_KEY）
+            value: 密钥值
+        """
+        try:
+            from opc_manager.secure_storage import SecureKeyStore
+
+            store = SecureKeyStore()
+            if store.is_available:
+                store.set_key(name, value)
+            else:
+                logger.warning(
+                    "[SettingsManager] SecureKeyStore 不可用，敏感密钥 %s 仅存储在内存中",
+                    name,
+                )
+        except Exception as e:
+            logger.warning(
+                "[SettingsManager] 存储密钥 %s 到 SecureKeyStore 失败: %s", name, e
+            )
+
+    def _retrieve_sensitive_key(self, name: str) -> Optional[str]:
+        """从 SecureKeyStore 安全获取敏感密钥。
+
+        Args:
+            name: 密钥名称
+
+        Returns:
+            密钥值，如果未找到返回 None
+        """
+        try:
+            from opc_manager.secure_storage import SecureKeyStore
+
+            store = SecureKeyStore()
+            if store.is_available:
+                return store.get_key(name)
+        except Exception as e:
+            logger.warning(
+                "[SettingsManager] 从 SecureKeyStore 获取密钥 %s 失败: %s", name, e
+            )
+        return None
+
+    def get_encryption_key(self) -> str:
+        """获取加密密钥，供其他模块使用（不通过 os.environ）。
+
+        Returns:
+            加密密钥字符串
+        """
+        return self._security.encryption_key
+
+    def get_api_key(self, provider: str = "moka") -> Optional[str]:
+        """获取指定提供商的 API 密钥（不通过 os.environ）。
+
+        Args:
+            provider: 提供商名称（moka/glm/openai）
+
+        Returns:
+            API 密钥字符串，未找到返回 None
+        """
+        key_map = {
+            "moka": "MOKA_API_KEY",
+            "glm": "GLM_API_KEY",
+            "openai": "OPENAI_API_KEY",
+        }
+        env_key = key_map.get(provider, f"{provider.upper()}_API_KEY")
+
+        # 优先从内存中的设置获取
+        if provider == "moka" and self._llm.api_key:
+            return self._llm.api_key
+
+        # 从 SecureKeyStore 获取
+        value = self._retrieve_sensitive_key(env_key)
+        if value:
+            return value
+
+        # 回退到 os.environ（兼容外部设置的环境变量）
+        return os.environ.get(env_key)
+
+    def get_llm_config(self) -> Dict[str, str]:
+        """获取完整的 LLM 配置（不通过 os.environ）。
+
+        Returns:
+            包含 api_key, base_url, model 的字典
+        """
+        config = {
+            "api_key": self._llm.api_key or self.get_api_key(self._llm.provider) or "",
+            "base_url": self._llm.base_url
+            or self._retrieve_sensitive_key("MOKA_API_BASE")
+            or os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1"),
+            "model": self._llm.model
+            or self._retrieve_sensitive_key("MOKA_MODEL")
+            or os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6"),
+        }
+        return config
+
+    def get_smtp_config(self) -> Dict[str, str]:
+        """获取 SMTP 配置（不通过 os.environ）。
+
+        Returns:
+            包含 host, port, username, password, tls, from_email 的字典
+        """
+        return {
+            "host": self._smtp.host
+            or self._retrieve_sensitive_key("OPC_SMTP_HOST")
+            or "",
+            "port": self._smtp.port,
+            "username": self._smtp.username
+            or self._retrieve_sensitive_key("OPC_SMTP_USER")
+            or "",
+            "password": self._smtp.password
+            or self._retrieve_sensitive_key("OPC_SMTP_PASS")
+            or "",
+            "tls": self._smtp.tls,
+            "from_email": self._smtp.from_email,
+        }
+
     def update_llm(self, **kwargs) -> bool:
         """Update LLM settings with validation and persistence.
 
@@ -593,11 +748,11 @@ class SettingsManager:
         self._notify_callbacks("llm")
 
         if kwargs.get("api_key"):
-            os.environ["MOKA_API_KEY"] = kwargs["api_key"]
+            self._store_sensitive_key("MOKA_API_KEY", kwargs["api_key"])
         if kwargs.get("base_url"):
-            os.environ["MOKA_API_BASE"] = kwargs["base_url"]
+            self._store_sensitive_key("MOKA_API_BASE", kwargs["base_url"])
         if kwargs.get("model"):
-            os.environ["MOKA_MODEL"] = kwargs["model"]
+            self._store_sensitive_key("MOKA_MODEL", kwargs["model"])
 
         return True
 
@@ -625,11 +780,11 @@ class SettingsManager:
         self._notify_callbacks("smtp")
 
         if kwargs.get("host"):
-            os.environ["OPC_SMTP_HOST"] = kwargs["host"]
+            self._store_sensitive_key("OPC_SMTP_HOST", kwargs["host"])
         if kwargs.get("username"):
-            os.environ["OPC_SMTP_USER"] = kwargs["username"]
+            self._store_sensitive_key("OPC_SMTP_USER", kwargs["username"])
         if kwargs.get("password"):
-            os.environ["OPC_SMTP_PASS"] = kwargs["password"]
+            self._store_sensitive_key("OPC_SMTP_PASS", kwargs["password"])
 
         return True
 

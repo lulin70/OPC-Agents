@@ -385,15 +385,18 @@ class TestAutoGenerateKey:
             content = env_local.read_text()
             assert f"OPC_ENCRYPTION_KEY={settings.security.encryption_key}" in content
 
-    def test_key_set_in_environment(self, temp_settings_dir):
-        """Verify: Key exported to os.environ for immediate use
+    def test_key_not_in_environment(self, temp_settings_dir):
+        """Verify: Key NOT exported to os.environ for security
         Scenario: After auto-generation, check os.environ
-        Expected: os.environ["OPC_ENCRYPTION_KEY"] matches settings value
+        Expected: os.environ["OPC_ENCRYPTION_KEY"] is NOT set by SettingsManager
+        (keys should only be accessible via SettingsManager.get_encryption_key())
         """
         settings = get_settings()
 
-        assert "OPC_ENCRYPTION_KEY" in os.environ
-        assert os.environ["OPC_ENCRYPTION_KEY"] == settings.security.encryption_key
+        # SettingsManager 不应主动将密钥写入 os.environ
+        assert os.environ.get("OPC_ENCRYPTION_KEY") != settings.security.encryption_key
+        # 但密钥应可通过 get_encryption_key() 方法获取
+        assert settings.get_encryption_key() == settings.security.encryption_key
 
     def test_key_persisted_across_restarts(self, temp_settings_dir):
         """Verify: Same key reused after process restart (reload from disk)

@@ -2,7 +2,7 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
-## [0.3.0] - 2026-05-20
+## [0.2.2] - 2026-05-21
 
 ### Architecture & Feature Sprint
 
@@ -65,9 +65,9 @@ All notable changes to OPC-Agents will be documented in this file.
 - **[High] Error logging**: Changed silent exception swallowing to `logger.warning()`
 
 #### Version Consistency (9 files updated)
-- README.md, Dockerfile, start.sh, install.sh → v0.3.0
-- i18n.py, mcp_protocol.py → v0.3.0
-- requirements.txt → v0.3.0
+- README.md, Dockerfile, start.sh, install.sh → v0.2.2
+- i18n.py, mcp_protocol.py → v0.2.2
+- requirements.txt → v0.2.2
 - pyproject.toml → carrymem upper bound widened to `<0.4.0`
 - Test assertions updated to match
 

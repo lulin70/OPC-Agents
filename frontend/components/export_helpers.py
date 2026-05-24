@@ -79,14 +79,24 @@ def _do_get_export_bytes(content: str, fmt: str) -> tuple:
     from opc_manager.export import ExportManager
     from opc_manager.export.models import ResultData, ExportFormat
 
+    # Check if WeasyPrint is available for PDF export
+    actual_fmt = fmt
+    if fmt == "pdf":
+        try:
+            import weasyprint  # noqa: F401
+        except ImportError:
+            actual_fmt = "html"
+            import streamlit as st
+            st.info("PDF 导出需要 WeasyPrint，当前已降级为 HTML 格式导出")
+
     manager = ExportManager()
-    format_enum = ExportFormat(fmt)
+    format_enum = ExportFormat(actual_fmt)
     data = ResultData(content=content, metadata={"title": "Export"})
     file_bytes = manager.export_sync(data, format_enum)
     return (
         file_bytes,
-        MIME_MAP.get(fmt, "application/octet-stream"),
-        EXT_MAP.get(fmt, "bin"),
+        MIME_MAP.get(actual_fmt, "application/octet-stream"),
+        EXT_MAP.get(actual_fmt, "bin"),
     )
 
 
@@ -134,10 +144,10 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
         _t("export_pdf_pack"): ExportFormat.PDF,
         _t("export_word_pack"): ExportFormat.WORD,
         _t("export_excel"): ExportFormat.EXCEL,
-        _t("export_md_archive"): ExportFormat.MD,
+        _t("export_md_archive"): ExportFormat.MARKDOWN,
     }
 
-    target_fmt = fmt_map.get(format_name, ExportFormat.MD)
+    target_fmt = fmt_map.get(format_name, ExportFormat.MARKDOWN)
     results = []
 
     for i, item in enumerate(deliverables):
@@ -313,7 +323,7 @@ def _export_single(item: dict, fmt: str):
             "excel": ExportFormat.EXCEL,
             "png": ExportFormat.IMAGE,
         }
-        target_fmt = fmt_map.get(fmt, ExportFormat.MD)
+        target_fmt = fmt_map.get(fmt, ExportFormat.MARKDOWN)
 
         rd = ResultData(
             content=content,

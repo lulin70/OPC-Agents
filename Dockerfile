@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 LABEL maintainer="OPC-Agents Team"
-LABEL version="0.3.0"
+LABEL version="0.2.2"
 LABEL description="AI-Powered Personal Business Assistant"
 
 WORKDIR /app

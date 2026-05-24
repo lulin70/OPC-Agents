@@ -24,8 +24,8 @@ echo "   当前 Python 版本：$python_version"
 major_version=$(echo $python_version | cut -d'.' -f1)
 minor_version=$(echo $python_version | cut -d'.' -f2)
 
-if [[ "$major_version" -lt 3 ]] || [[ "$major_version" -eq 3 && "$minor_version" -lt 9 ]]; then
-    echo -e "${RED}❌ 错误：需要 Python 3.9 或更高版本${NC}"
+if [[ "$major_version" -lt 3 ]] || [[ "$major_version" -eq 3 && "$minor_version" -lt 10 ]]; then
+    echo -e "${RED}❌ 错误：需要 Python 3.10 或更高版本${NC}"
     echo "   请访问 https://www.python.org/downloads/ 下载安装"
     exit 1
 fi
@@ -71,7 +71,7 @@ if [ ! -f ".env" ]; then
     else
         cat > .env << 'EOF'
 # OPC-Agents 配置文件
-# 版本: 0.3.0
+# 版本: 0.2.2
 
 # === LLM API 配置（至少配置一个）===
 # 推荐：MOKA AI（支持 Claude Sonnet 4）

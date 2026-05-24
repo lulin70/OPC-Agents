@@ -31,9 +31,22 @@ _fallback_key = None
 
 def _get_encryption_key() -> bytes:
     global _fallback_key
+
+    # 优先通过 SettingsManager 获取（不通过 os.environ）
+    try:
+        from opc_manager.settings import get_settings
+        settings = get_settings()
+        key_str = settings.get_encryption_key()
+        if key_str:
+            return hashlib.sha256(key_str.encode()).digest()
+    except Exception:
+        pass
+
+    # 回退到 os.environ（兼容外部设置的环境变量）
     key_str = os.environ.get(_ENCRYPTION_KEY_ENV, "")
     if key_str:
         return hashlib.sha256(key_str.encode()).digest()
+
     if _fallback_key is None:
         logger.critical(
             "[SECURITY] OPC_ENCRYPTION_KEY not set! Using auto-generated session key. Data encrypted with this key cannot be decrypted after restart!"

@@ -18,6 +18,18 @@ LLM_TOTAL_TIMEOUT = 90
 def discover_llm_config() -> Dict[str, str]:
     config = {"api_key": "", "base_url": "", "model": "", "is_ollama": False}
 
+    # 优先通过 SettingsManager 获取（不通过 os.environ）
+    try:
+        from opc_manager.settings import get_settings
+        settings = get_settings()
+        llm_config = settings.get_llm_config()
+        if llm_config.get("api_key"):
+            config.update(llm_config)
+            return config
+    except Exception:
+        pass
+
+    # 回退到 os.environ（兼容外部设置的环境变量）
     config["api_key"] = os.environ.get("MOKA_API_KEY", "")
     if config["api_key"]:
         config["base_url"] = os.environ.get(
@@ -54,15 +66,29 @@ def discover_llm_config() -> Dict[str, str]:
 
 def _discover_all_providers() -> List[Dict[str, Any]]:
     providers = []
-    moka_key = os.environ.get("MOKA_API_KEY", "").strip()
+
+    # 优先通过 SettingsManager 获取 moka 配置
+    moka_key = ""
+    moka_base_url = os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1")
+    moka_model = os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
+    try:
+        from opc_manager.settings import get_settings
+        settings = get_settings()
+        moka_key = settings.get_api_key("moka") or ""
+        llm_config = settings.get_llm_config()
+        if llm_config.get("base_url"):
+            moka_base_url = llm_config["base_url"]
+        if llm_config.get("model"):
+            moka_model = llm_config["model"]
+    except Exception:
+        moka_key = os.environ.get("MOKA_API_KEY", "").strip()
+
     if moka_key:
         providers.append(
             {
                 "api_key": moka_key,
-                "base_url": os.environ.get(
-                    "MOKA_API_BASE", "https://api.moka-ai.com/v1"
-                ),
-                "model": os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6"),
+                "base_url": moka_base_url,
+                "model": moka_model,
                 "is_ollama": False,
                 "name": "moka",
             }

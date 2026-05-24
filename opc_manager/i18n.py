@@ -1,5 +1,5 @@
 """
-Internationalization (i18n) Manager — v0.3.0
+Internationalization (i18n) Manager — v0.2.2
 
 Lightweight, self-built i18n system for OPC-Agents.
 Supports Chinese (zh_CN), English (en_US), and Japanese (ja_JP).
@@ -91,7 +91,7 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "mp_detail_compat": "**兼容性**",
         "mp_detail_tags": "**标签**",
         "mp_install_count_fmt": "**{count:,} 次**",
-        "mp_compat_version": "OPC-Agents v0.3.0+",
+        "mp_compat_version": "OPC-Agents v0.2.2+",
         "mp_btn_view_detail": "查看详情 →",
         "mp_btn_uninstall": "🗑️ 卸载",
         "mp_btn_update": "⬆️ 更新",
@@ -1325,7 +1325,7 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "mp_detail_compat": "**Compatibility**",
         "mp_detail_tags": "**Tags**",
         "mp_install_count_fmt": "**{count:,} times**",
-        "mp_compat_version": "OPC-Agents v0.3.0+",
+        "mp_compat_version": "OPC-Agents v0.2.2+",
         "mp_btn_view_detail": "View Details →",
         "mp_btn_uninstall": "🗑️ Uninstall",
         "mp_btn_update": "⬆️ Update",
@@ -2559,7 +2559,7 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "mp_detail_compat": "**互換性**",
         "mp_detail_tags": "**タグ**",
         "mp_install_count_fmt": "**{count:,} 回**",
-        "mp_compat_version": "OPC-Agents v0.3.0+",
+        "mp_compat_version": "OPC-Agents v0.2.2+",
         "mp_btn_view_detail": "詳細を見る →",
         "mp_btn_uninstall": "🗑️ アンインストール",
         "mp_btn_update": "⬆️ 更新",
@@ -3732,10 +3732,18 @@ class I18nManager:
     def locale(self) -> str:
         return self._locale
 
+    # Map short locale codes to full codes
+    _LOCALE_ALIASES = {
+        "zh": "zh_CN", "cn": "zh_CN", "chinese": "zh_CN",
+        "en": "en_US", "us": "en_US", "english": "en_US",
+        "ja": "ja_JP", "jp": "ja_JP", "japanese": "ja_JP",
+    }
+
     @locale.setter
     def locale(self, value: str):
-        if value in self.SUPPORTED_LOCALES:
-            self._locale = value
+        resolved = self._LOCALE_ALIASES.get(value, value)
+        if resolved in self.SUPPORTED_LOCALES:
+            self._locale = resolved
         else:
             logger.warning(
                 "Unsupported locale: %s, falling back to %s", value, self.DEFAULT_LOCALE

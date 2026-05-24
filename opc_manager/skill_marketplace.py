@@ -1,4 +1,5 @@
 import hashlib
+import importlib.util
 import json
 import logging
 import os
@@ -123,6 +124,7 @@ class SkillMarketplace:
         self._api_keys: Dict[str, APIKey] = {}
         self._skills: Dict[str, MarketplaceSkill] = {}
         self._load_data()
+        self._seed_default_skills()
 
     def _load_data(self) -> None:
         if os.path.exists(self._api_keys_file):
@@ -166,6 +168,93 @@ class SkillMarketplace:
                     )
             except Exception as e:
                 logger.warning("加载技能数据失败: %s", e)
+
+    def _seed_default_skills(self) -> None:
+        """Populate default skills when marketplace is empty.
+
+        Ensures first-time users see pre-installed skills instead of
+        an empty marketplace. Only seeds if no skills exist yet.
+        """
+        if self._skills:
+            return
+
+        defaults = [
+            MarketplaceSkill(
+                skill_id="proposal_skill",
+                name="方案撰写",
+                description="根据用户需求自动生成商业方案、营销方案、产品方案等专业文档",
+                version="1.0.0",
+                category="内容创作",
+                author="OPC-Agents",
+                permissions=[PermissionLevel.READ, PermissionLevel.EXECUTE],
+                status=SkillStatus.APPROVED,
+            ),
+            MarketplaceSkill(
+                skill_id="report_skill",
+                name="报告生成",
+                description="自动生成数据分析报告、市场调研报告、财务报告等",
+                version="1.0.0",
+                category="数据分析",
+                author="OPC-Agents",
+                permissions=[PermissionLevel.READ, PermissionLevel.EXECUTE],
+                status=SkillStatus.APPROVED,
+            ),
+            MarketplaceSkill(
+                skill_id="invoice_skill",
+                name="发票管理",
+                description="管理发票开具、记录和统计，支持收入支出追踪",
+                version="1.0.0",
+                category="财务管理",
+                author="OPC-Agents",
+                permissions=[PermissionLevel.READ, PermissionLevel.WRITE],
+                status=SkillStatus.APPROVED,
+            ),
+            MarketplaceSkill(
+                skill_id="email_skill",
+                name="邮件助手",
+                description="撰写和发送专业商务邮件，支持模板和跟进提醒",
+                version="1.0.0",
+                category="沟通协作",
+                author="OPC-Agents",
+                permissions=[PermissionLevel.READ, PermissionLevel.EXECUTE],
+                status=SkillStatus.APPROVED,
+            ),
+            MarketplaceSkill(
+                skill_id="social_skill",
+                name="社媒运营",
+                description="生成社交媒体内容、排期发布、数据分析与优化建议",
+                version="1.0.0",
+                category="内容创作",
+                author="OPC-Agents",
+                permissions=[PermissionLevel.READ, PermissionLevel.EXECUTE],
+                status=SkillStatus.APPROVED,
+            ),
+            MarketplaceSkill(
+                skill_id="dashboard_skill",
+                name="仪表盘",
+                description="可视化展示业务数据、收入趋势、客户健康度和任务完成情况",
+                version="1.0.0",
+                category="数据分析",
+                author="OPC-Agents",
+                permissions=[PermissionLevel.READ],
+                status=SkillStatus.APPROVED,
+            ),
+            MarketplaceSkill(
+                skill_id="finance_skill",
+                name="财务分析",
+                description="收入支出分析、现金流预测、利润率计算和财务报表生成",
+                version="1.0.0",
+                category="财务管理",
+                author="OPC-Agents",
+                permissions=[PermissionLevel.READ, PermissionLevel.EXECUTE],
+                status=SkillStatus.APPROVED,
+            ),
+        ]
+
+        for skill in defaults:
+            self._skills[skill.skill_id] = skill
+        self._save_data()
+        logger.info("已预置 %d 个默认技能", len(defaults))
 
     def _save_data(self) -> None:
         try:
@@ -817,6 +906,64 @@ class ExternalSkillMarketplace:
             trust_level,
         )
 
+    def _validate_entry_point(self, entry_point: str) -> bool:
+        """验证 entry_point 路径是否在允许的目录内，防止路径遍历攻击。
+
+        允许的目录:
+        - data/marketplace/external_skills/ (外部技能目录)
+        - data/custom_skills/ (自定义技能目录)
+        - plugins/ (插件目录)
+
+        Returns:
+            True 如果路径安全，False 如果路径非法
+        """
+        if not entry_point:
+            return False
+
+        # 解析为绝对路径，消除 .. 和符号链接
+        resolved = os.path.realpath(entry_point)
+
+        # 检查路径遍历：不允许包含 ..
+        if ".." in os.path.normpath(entry_point):
+            logger.warning(
+                "[SECURITY] entry_point contains path traversal: %s", entry_point
+            )
+            return False
+
+        # 必须是 .py 文件
+        if not resolved.endswith(".py"):
+            logger.warning(
+                "[SECURITY] entry_point is not a Python file: %s", entry_point
+            )
+            return False
+
+        # 文件必须存在
+        if not os.path.isfile(resolved):
+            logger.warning(
+                "[SECURITY] entry_point file does not exist: %s", entry_point
+            )
+            return False
+
+        # 定义允许的根目录
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        allowed_dirs = [
+            os.path.realpath(os.path.join(project_root, "data", "marketplace", "external_skills")),
+            os.path.realpath(os.path.join(project_root, "data", "custom_skills")),
+            os.path.realpath(os.path.join(project_root, "plugins")),
+        ]
+
+        # 验证路径在允许的目录内
+        for allowed_dir in allowed_dirs:
+            if resolved.startswith(allowed_dir + os.sep) or resolved == allowed_dir:
+                return True
+
+        logger.warning(
+            "[SECURITY] entry_point outside allowed directories: %s (resolved: %s)",
+            entry_point,
+            resolved,
+        )
+        return False
+
     def execute_in_sandbox(
         self, skill_id: str, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -832,35 +979,41 @@ class ExternalSkillMarketplace:
                 "data": {"goal": parameters.get("goal", ""), "sandbox": True},
             }
 
+        # 验证 entry_point 路径安全性
+        if not self._validate_entry_point(entry_point):
+            return {
+                "success": False,
+                "error": f"entry_point 路径不合法，仅允许 data/custom_skills/、data/marketplace/external_skills/、plugins/ 目录下的文件: {entry_point}",
+            }
+
         self._check_network_whitelist(config)
 
         try:
-            cmd = [
-                "python3",
-                "-c",
-                f"import json,sys; params=json.loads(sys.stdin.read()); exec(open('{entry_point}').read())",
-            ]
-            input_json = json.dumps(parameters, ensure_ascii=False)
-            result = subprocess.run(
-                cmd,
-                input=input_json,
-                capture_output=True,
-                text=True,
-                timeout=SANDBOX_TIMEOUT_SECONDS,
+            # 使用 importlib 安全加载替代 exec(open().read())
+            spec = importlib.util.spec_from_file_location(
+                f"skill_{skill_id}", entry_point
             )
-            if result.returncode != 0:
-                logger.warning(
-                    "Sandbox execution failed for %s: %s", skill_id, result.stderr[:200]
-                )
+            if spec is None or spec.loader is None:
                 return {
                     "success": False,
-                    "error": f"沙箱执行失败: {result.stderr[:200]}",
+                    "error": f"无法加载技能模块: {entry_point}",
                 }
-            try:
-                output = json.loads(result.stdout)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            # 调用模块的 run 函数（标准技能入口）
+            if hasattr(module, "run"):
+                output = module.run(parameters)
+            else:
+                return {
+                    "success": False,
+                    "error": f"技能模块缺少 run() 入口函数: {entry_point}",
+                }
+
+            if isinstance(output, dict):
                 return {"success": True, "data": output}
-            except json.JSONDecodeError:
-                return {"success": True, "data": {"output": result.stdout[:1000]}}
+            else:
+                return {"success": True, "data": {"output": str(output)[:1000]}}
         except subprocess.TimeoutExpired:
             logger.warning("Sandbox timeout for %s", skill_id)
             return {

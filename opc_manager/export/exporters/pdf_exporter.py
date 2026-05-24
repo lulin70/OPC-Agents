@@ -69,5 +69,22 @@ class PDFExporter:
         """
 
     def _fallback_pdf(self, data):
-        html = f"<html><body><pre>{data.content}</pre></body></html>"
-        return html.encode("utf-8")
+        """When WeasyPrint is unavailable, generate an HTML file with .html extension
+        instead of a fake PDF. The caller should handle this gracefully."""
+        html_content = self._md_to_html(data, None)
+        full_html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>OPC-Agents Export</title>
+<style>{self._get_default_css()}</style>
+</head>
+<body>
+{html_content}
+<p style="color:#999;font-size:12px;margin-top:40px;border-top:1px solid #eee;padding-top:10px;">
+Note: PDF generation requires WeasyPrint. This file was exported as HTML instead.
+Install WeasyPrint for native PDF support.
+</p>
+</body>
+</html>"""
+        return full_html.encode("utf-8")

@@ -1,19 +1,19 @@
-> **状态更新 (2026-05-20)**: v0.3.0 架构与功能冲刺已完成。前端模块化(11新模块，3个大文件各减少59-83%)，LLM响应缓存层，技能市场评分系统，26个E2E集成测试。1911测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
+> **状态更新 (2026-05-20)**: v0.2.2 架构与功能冲刺已完成。前端模块化(11新模块，3个大文件各减少59-83%)，LLM响应缓存层，技能市场评分系统，26个E2E集成测试。1911测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
 
-# OPC-Agents v0.3.0 Roadmap
+# OPC-Agents v0.2.2 Roadmap
 
 **Created**: 2026-05-16
-**Last Updated**: 2026-05-20 (v0.3.0 ARCHITECTURE + FEATURE SPRINT)
+**Last Updated**: 2026-05-20 (v0.2.2 ARCHITECTURE + FEATURE SPRINT)
 **Based on**: v0.2.0 post-release evaluation → **v0.2.0 FINAL** (1822+ tests, 5 iterations completed)
-**Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.3.0 Architecture Sprint COMPLETED
+**Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.2.2 Architecture Sprint COMPLETED
 
 ---
 
-## 📊 Current State (v0.3.0)
+## 📊 Current State (v0.2.2)
 
 | Metric | Value |
 |--------|-------|
-| Version | 0.3.0 (released 2026-05-20) |
+| Version | 0.2.2 (released 2026-05-20) |
 | Tests | **1911** passed, 30 skipped, 0 failed |
 | CI/CD | ✅ GitHub Actions passing (Python 3.10/3.11/3.12) |
 | Security | Bandit 0 High/Medium, all P0/P1 fixed, Fernet encryption at rest |
@@ -96,7 +96,7 @@
 
 **v0.2.2 Summary**: All blockers resolved, CI/CD green, 0 tech debt, 1860 tests passing
 
-### v0.3.0 Architecture & Feature Sprint ✅ (2026-05-20)
+### v0.2.2 Architecture & Feature Sprint ✅ (2026-05-20)
 
 #### P0-5: Frontend Modularization (11 new modules)
 - shared.py: 1195 → ~200 lines (83% reduction)
@@ -117,13 +117,13 @@
 - Auto-updates external_skills.rating column
 - Frontend star display + rating sort option
 
-**v0.3.0 Summary**: 1911 tests, 11 new modules, LLM cache, skill ratings, 26 E2E tests
+**v0.2.2 Summary**: 1911 tests, 11 new modules, LLM cache, skill ratings, 26 E2E tests
 
 ---
 
 ## 🏆 v0.2.0 FINAL Status Summary
 
-| Metric | Planned (v0.3.0 Roadmap) | Actual (v0.2.0 FINAL + Iter5) | Status |
+| Metric | Planned (v0.2.2 Roadmap) | Actual (v0.2.0 FINAL + Iter5) | Status |
 |--------|--------------------------|-------------------------------|--------|
 | Test count | 900+ target | **1822+** | ✅ +102% over target |
 | Max module size | <400 lines | **<400 lines** (largest ~1311→extracted) | ✅ Met |
@@ -134,11 +134,11 @@
 | Security issues | 0 open | **0 open** | ✅ Maintained |
 | Core UX workflows | N/A (new in Iter5) | **10 improvements** | ✅ New capability |
 
-**Conclusion**: All P0, P1, and most P2 items from the original v0.3.0 roadmap were **completed within v0.2.0 without a version bump**, plus the entire Core Workflow Revolution (10 improvements, 596 tests). The v0.3.0 roadmap should now focus on NEW items not yet addressed.
+**Conclusion**: All P0, P1, and most P2 items from the original v0.2.2 roadmap were **completed within v0.2.0 without a version bump**, plus the entire Core Workflow Revolution (10 improvements, 596 tests). The v0.2.2 roadmap should now focus on NEW items not yet addressed.
 
 ---
 
-## 🎯 v0.3.0 Vision: "Production Hardening + Experience Polish"
+## 🎯 v0.2.2 Vision: "Production Hardening + Experience Polish"
 
 **Theme**: From "usable" to "delightful" — focus on stability, performance, and user delight
 
@@ -152,7 +152,7 @@
 
 ---
 
-## 📋 v0.3.0 Feature Backlog
+## 📋 v0.2.2 Feature Backlog
 
 ### P0 — Must Have (Production Readiness)
 
@@ -163,7 +163,7 @@
 #### ~~P0-2: Frontend Code Split~~ ✅ COMPLETED in Iteration 1
 **Status**: DONE — app.py 3834→1687 lines (-56%)
 **Result**: 7 new module files (pages/settings_page, pages/dashboard_page, pages/marketplace_page, components/shared, __init__×3)
-**Remaining**: app.py at ~1687 lines (could further split in v0.3.0)
+**Remaining**: app.py at ~1687 lines (could further split in v0.2.2)
 
 #### ~~P0-3: API Key Encryption at Rest~~ ✅ COMPLETED in Iteration 2
 **Status**: DONE — Fernet encryption with existing encryption key (+8 tests)
@@ -173,15 +173,15 @@
 **Status**: DONE — task_engine_v3.py 1857→1311 (-29%), skill_registry.py 1105→376 (-66%), scenario_engine_v2.py 1150→275 (-76%)
 **Result**: All large modules refactored, extracted task_types, content_generators, skill_models, skill_builtin, skill_executors, scenario_definitions
 
-### NEW P0 Items for v0.3.0 (not yet started)
+### NEW P0 Items for v0.2.2 — ✅ COMPLETED
 
-#### P0-5: Frontend Further Modularization
-**Scope**: Split remaining monolithic functions from app.py (target <800 lines)
-**Effort**: Sprint 1
+#### ~~P0-5: Frontend Further Modularization~~ ✅ COMPLETED in v0.2.2
+**Status**: DONE — 11 new modules, shared.py 83%, timeline_view.py 81%, undo_panel.py 59% reduction
+**Result**: All backward-compatible re-exports maintained
 
-#### P0-6: Comprehensive Integration Test Suite
-**Scope**: Cross-module integration tests for all new extracted modules
-**Effort**: Sprint 1-2
+#### ~~P0-6: Comprehensive Integration Test Suite~~ ✅ COMPLETED in v0.2.2
+**Status**: DONE — 26 E2E tests covering 8 categories
+**Result**: onboarding, task execution, knowledge bridge, marketplace, data management, LLM cache, i18n, security
 
 ### P1 — Should Have (UX & Reliability)
 
@@ -202,15 +202,15 @@
 #### ~~P1-5: i18n Japanese Support~~ ✅ COMPLETED in Iteration 4
 **Status**: DONE — ja_JP locale with 58 translation keys (+11 tests)
 
-### NEW P1 Items for v0.3.0 (not yet started)
+### NEW P1 Items for v0.2.2 — ✅ COMPLETED
 
-#### P1-6: LLM Response Caching Layer
-**Scope**: Identical prompt deduplication to reduce API costs and latency
-**Effort**: Sprint 2
+#### ~~P1-6: LLM Response Caching Layer~~ ✅ COMPLETED in v0.2.2
+**Status**: DONE — SQLite-backed cache with SHA256 key, 7-day TTL, hit tracking
+**Result**: Integrated into SimpleLLMService + LLMEnhancedContentGenerator, thread-safe
 
-#### P1-7: Skill Marketplace Rating/Review System
-**Scope**: Basic star rating + text reviews for installed skills
-**Effort**: Sprint 2-3
+#### ~~P1-7: Skill Marketplace Rating/Review System~~ ✅ COMPLETED in v0.2.2
+**Status**: DONE — SkillReviewManager with 1-5 star ratings + text reviews
+**Result**: Auto-updates external_skills.rating column, frontend star display + rating sort
 
 #### P1-8: Auto-update Check Notification
 **Scope**: Notify users when skill updates are available
@@ -241,7 +241,7 @@
 
 ---
 
-## 🗓️ Sprint Plan (v0.3.0)
+## 🗓️ Sprint Plan (v0.2.2)
 
 ### Sprint 1: "Hardening Foundation" (Week 1-2)
 **Focus**: Test coverage, security, code organization
@@ -300,7 +300,7 @@
 
 ## 📈 Success Metrics
 
-| Metric | v0.2.0 (initial) | v0.2.0 FINAL + Iter5 (actual) | v0.3.0 (target) | Delta |
+| Metric | v0.2.0 (initial) | v0.2.0 FINAL + Iter5 (actual) | v0.2.2 (target) | Delta |
 |--------|------------------|-------------------------------|-----------------|-------|
 | Test count | 813 | **1822+** | 1200+ | ✅ +52% over target |
 | Max module size | 1857 lines (task_engine_v3) | **~1311 lines** (extracted) | <1000 lines | -24% |
@@ -342,5 +342,5 @@
 ---
 
 *Document generated as part of v0.2.0 post-release evaluation cycle*
-*Last updated: 2026-05-17 — All Sprint 1-3 items + Core Workflow Revolution (Iter5) reconciled as COMPLETED within v0.2.0*
-*Next review: After new v0.3.0 scope definition*
+*Last updated: 2026-05-21 — v0.2.2 Architecture & Feature Sprint COMPLETED, all P0/P1 items delivered*
+*Next review: After v0.2.2 release*

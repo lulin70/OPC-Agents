@@ -101,8 +101,15 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
             "OLLAMA_ENABLED",
         ]:
             self._original_env[key] = os.environ.get(key)
+        # Mock SettingsManager to avoid reading from disk (v0.2.2+ reads from SettingsManager first)
+        self._settings_patcher = patch(
+            "opc_manager.settings.get_settings",
+            side_effect=Exception("mocked: no settings in test"),
+        )
+        self._settings_patcher.start()
 
     def tearDown(self):
+        self._settings_patcher.stop()
         for key, val in self._original_env.items():
             if val is None:
                 os.environ.pop(key, None)
@@ -231,8 +238,15 @@ class TestOllamaCallLLMAPI(unittest.TestCase):
             "OLLAMA_ENABLED",
         ]:
             self._original_env[key] = os.environ.get(key)
+        # Mock SettingsManager to avoid reading from disk
+        self._settings_patcher = patch(
+            "opc_manager.settings.get_settings",
+            side_effect=Exception("mocked: no settings in test"),
+        )
+        self._settings_patcher.start()
 
     def tearDown(self):
+        self._settings_patcher.stop()
         for key, val in self._original_env.items():
             if val is None:
                 os.environ.pop(key, None)

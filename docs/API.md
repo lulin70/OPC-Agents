@@ -1,6 +1,6 @@
 # OPC-Agents API 文档
 
-> 版本: v0.2.0 FINAL | 最后更新: 2026-05-17 | 测试: 1126 passed, 0 failed, 21 skipped
+> 版本: v0.2.2 | 最后更新: 2026-05-21 | 测试: 1952 passed, 0 failed
 
 本文档列出 OPC-Agents 所有公开API，按模块分组。每个API包含函数签名、参数说明和返回值格式。
 

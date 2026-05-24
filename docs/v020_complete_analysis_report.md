@@ -164,7 +164,7 @@
 | **P0** | 4项 | ✅ Settings页 | ✅ 自动加密Key | ✅ SMTP UI | ✅ 企业微信 |
 | **P1** | 5项 | ✅ Onboarding | ✅ 友好错误 | ✅ 数据导入导出 | ✅ Dashboard模板化 |
 | **P2** | 8项 | — | i18n | 暗色模式/快捷键 | 其余5项 |
-| **v0.3.0** | 5项 | — | — | — | ❌ LLM降级/Plugin UI/评价系统/React迁移/移动App |
+| **v0.2.2** | 5项 | — | — | — | ❌ LLM降级/Plugin UI/评价系统/React迁移/移动App |
 
 ### 1.4 成功指标（KPIs）
 
@@ -412,7 +412,7 @@ WeChatGateway.handle_message()
 
 | 决策点 | 选择方案 | 替代方案 | 选择理由 |
 |--------|---------|---------|---------|
-| 前端框架 | 保持Streamlit | React/Vue | ✅ 已有代码基础；❌ v0.3.0再考虑迁移 |
+| 前端框架 | 保持Streamlit | React/Vue | ✅ 已有代码基础；❌ v0.2.2再考虑迁移 |
 | 设置存储 | `.secure_settings` (JSON) | SQLite数据库 | ✅ 简单够用；❌ 避免引入DB依赖 |
 | i18n方案 | 自建YAML语言包 | gettext/Babel | ✅ 轻量可控；❌ 无需复杂复数形式 |
 | 技能市场API | FastAPI子应用 | Flask Blueprint | ✅ 异步支持+自动文档；❌ 与FastAPI生态一致 |
@@ -595,7 +595,7 @@ class I18nSecurityWrapper:
 | Admin (默认) | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
 | Readonly | 🔴 Read-only | ❌ No | ❌ No | ✅ View only | ❌ No |
 
-> **注**: v0.2.0暂不支持多用户，权限控制预留接口供v0.3.0扩展
+> **注**: v0.2.0暂不支持多用户，权限控制预留接口供v0.2.2扩展
 
 ### 3.5 安全 Checklist（发布前必检）
 
@@ -2197,7 +2197,7 @@ pip-check --ignore-installed
 | Iteration 3 | Dashboard模板系统 + 性能优化 + scenario引擎重构 | +30 |
 | Iteration 4 | Apple Shortcuts(5动作) + ja_JP(58键) + Marketplace V2 | +88 |
 
-### D.6 未实现/遗留项目（建议纳入 v0.3.0）
+### D.6 未实现/遗留项目（建议纳入 v0.2.2）
 
 | 项目 | 优先级 | 建议 |
 |------|--------|------|
@@ -2220,7 +2220,7 @@ pip-check --ignore-installed
 
 *附录 D 生成时间: 2026-05-17*
 *触发事件: OPC-Agents v0.2.0 FINAL 文档对齐*
-*下次更新: v0.3.0 规划确认后*
+*下次更新: v0.2.2 规划确认后*
 
 ---
 
@@ -2531,7 +2531,7 @@ Source 5: Performance Log (耗时指标)
 
 *附录 E 生成时间: 2026-05-17*
 *触发事件: OPC-Agents v0.2.0 Iteration 5 (Core Workflow Revolution) 完成*
-*下次更新: v0.3.0 规划时评估后续工作流改进方向*
+*下次更新: v0.2.2 规划时评估后续工作流改进方向*
 
 ---
 

@@ -6,6 +6,13 @@ from typing import Optional, Dict, Type, Any
 from .models import ResultData, ExportFormat, SKILL_EXPORT_CAPABILITIES
 
 
+class MarkdownExporter:
+    """Simple pass-through exporter that returns content as UTF-8 bytes."""
+
+    def export(self, data, template=None, **opts) -> bytes:
+        return data.content.encode("utf-8")
+
+
 class ExportManager:
     _instance = None
     _lock = threading.Lock()
@@ -26,7 +33,10 @@ class ExportManager:
         self._exporters[format] = exporter
 
     def get_supported_formats(self, skill_id: str) -> list:
-        caps = SKILL_EXPORT_CAPABILITIES.get(skill_id, [ExportFormat.MARKDOWN])
+        caps = SKILL_EXPORT_CAPABILITIES.get(skill_id)
+        if caps is None:
+            # Unknown skill_id: return all registered formats as fallback
+            return list(self._exporters.keys())
         return [f for f in caps if f in self._exporters]
 
     def can_export(self, skill_id: str, fmt: ExportFormat) -> bool:
@@ -74,6 +84,7 @@ class ExportManager:
         from .exporters.word_exporter import WordExporter
         from .exporters.image_exporter import ImageExporter
 
+        self.register_exporter(ExportFormat.MARKDOWN, MarkdownExporter())
         self.register_exporter(ExportFormat.PDF, PDFExporter())
         self.register_exporter(ExportFormat.EXCEL, ExcelExporter())
         self.register_exporter(ExportFormat.WORD, WordExporter())

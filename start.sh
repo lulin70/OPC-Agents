@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OPC-Agents One-Click Launcher v0.3.0
+# OPC-Agents One-Click Launcher v0.2.2
 # Usage: ./start.sh
 
 set -e
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     🚀 OPC-Agents v0.3.0 Launcher       ║${NC}"
+echo -e "${BLUE}║     🚀 OPC-Agents v0.2.2 Launcher       ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -53,13 +53,28 @@ if [ ! -f ".env" ]; then
         cp .env.example .env
         echo -e "   📝 Created .env from template (please edit your API key)"
     else
-        cat > .env << 'EOF'
+        # Generate a proper encryption key for the user
+        GEN_KEY=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" 2>/dev/null || echo "")
+        if [ -n "$GEN_KEY" ]; then
+            cat > .env << EOF
 # OPC-Agents Configuration
-OPC_ENCRYPTION_KEY=auto-generate-on-first-run
+OPC_ENCRYPTION_KEY=${GEN_KEY}
 OPC_LOCALE=zh_CN
 OPC_DATA_DIR=./data
 EOF
-        echo -e "   📝 Created default .env"
+            echo -e "   📝 Created default .env with generated encryption key"
+        else
+            cat > .env << 'EOF'
+# OPC-Agents Configuration
+# WARNING: Without OPC_ENCRYPTION_KEY, encrypted data will be lost on restart!
+# Run: python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# Then paste the output as OPC_ENCRYPTION_KEY below.
+OPC_ENCRYPTION_KEY=
+OPC_LOCALE=zh_CN
+OPC_DATA_DIR=./data
+EOF
+            echo -e "   ⚠️  Created .env WITHOUT encryption key — please add one!"
+        fi
     fi
 else
     echo -e "   ✅ .env found"

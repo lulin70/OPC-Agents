@@ -64,13 +64,25 @@ def _get_backup_password() -> Optional[str]:
 
     Priority:
     1. OPC_BACKUP_PASSWORD
-    2. First 32 bytes of OPC_ENCRYPTION_KEY (if set)
-    3. None (no encryption)
+    2. SettingsManager encryption key (不通过 os.environ)
+    3. First 32 bytes of OPC_ENCRYPTION_KEY (if set in env)
+    4. None (no encryption)
     """
     password = os.environ.get("OPC_BACKUP_PASSWORD")
     if password:
         return password
 
+    # 优先通过 SettingsManager 获取加密密钥
+    try:
+        from opc_manager.settings import get_settings
+        settings = get_settings()
+        encryption_key = settings.get_encryption_key()
+        if encryption_key:
+            return encryption_key[:32]
+    except Exception:
+        pass
+
+    # 回退到 os.environ（兼容外部设置的环境变量）
     encryption_key = os.environ.get("OPC_ENCRYPTION_KEY", "")
     if encryption_key:
         return encryption_key[:32]
