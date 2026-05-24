@@ -2,6 +2,12 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.2.3] - 2026-05-24
+
+### Version Bump
+
+- Version unified to 0.2.3 across all files (VERSION, version.py, i18n.py, mcp_protocol.py, knowledge_bridge.py, app.py, start.sh, install.sh, .env.example, requirements.txt, requirements-dev.txt, Dockerfile, README.md, docs/, tests/)
+
 ## [0.2.2] - 2026-05-21
 
 ### Architecture & Feature Sprint
