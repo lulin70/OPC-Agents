@@ -187,8 +187,8 @@ class LogCache:
         if random.random() < 0.1:
             try:
                 self._executor.submit(self._persist)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("[LiveLog] Log persist failed: %s", e)
 
     def get_recent(self, limit: int = DEFAULT_DISPLAY_LIMIT) -> List[LogEntry]:
         """获取最近的日志条目"""
@@ -250,8 +250,8 @@ class LogCache:
         try:
             self._persist()
             self._executor.shutdown(wait=False)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[LiveLog] Executor shutdown failed: %s", e)
 
 
 _log_cache_instance = None
@@ -318,7 +318,8 @@ def collect_app_logs(since_timestamp: float = None) -> List[LogEntry]:
                                 module=name,
                             )
                         )
-                except Exception:
+                except Exception as e:
+                    logger.debug("[LiveLog] Log line processing skipped: %s", e)
                     continue
         except Exception as e:
             logger.debug("[collect_app_logs] failed to read %s: %s", log_file, e)
@@ -375,7 +376,8 @@ def collect_engine_logs(since_timestamp: float = None) -> List[LogEntry]:
                                 module="task_engine",
                             )
                         )
-                except Exception:
+                except Exception as e:
+                    logger.debug("[LiveLog] Log line processing skipped: %s", e)
                     continue
         except Exception as e:
             logger.debug("[collect_engine_logs] failed to read: %s", e)

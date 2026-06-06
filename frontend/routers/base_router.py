@@ -304,8 +304,8 @@ def _load_chat_history():
         if os.path.exists(CHAT_HISTORY_FILE):
             with open(CHAT_HISTORY_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[BaseRouter] JSON file loading failed: %s", e)
     return None
 
 

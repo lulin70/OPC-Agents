@@ -168,7 +168,8 @@ def check_has_active_undo_records(session_id: str) -> bool:
     try:
         undoable = um.list_undoable(session_id)
         return len(undoable) > 0
-    except Exception:
+    except Exception as e:
+        logger.warning("[UndoActions] Has undoable check failed: %s", e)
         return False
 
 
@@ -204,5 +205,6 @@ def get_latest_undo_record_info(session_id: str) -> Optional[dict]:
             "remaining_seconds": latest.get("remaining_seconds", 0),
             "description": latest.get("original_summary", ""),
         }
-    except Exception:
+    except Exception as e:
+        logger.warning("[UndoActions] Get undo info failed: %s", e)
         return None

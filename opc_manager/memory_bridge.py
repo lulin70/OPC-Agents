@@ -108,7 +108,8 @@ class MemoryBridge:
             )
             self._memory_count = count
             return count
-        except Exception:
+        except Exception as e:
+            logger.warning("[MemoryBridge] Memory count failed: %s", e)
             return self._memory_count
 
     @property
@@ -409,8 +410,8 @@ class MemoryBridge:
                     if isinstance(lesson_stats, dict)
                     else 0
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[MemoryBridge] Memory search failed: %s", e)
 
         return {
             "enabled": True,
@@ -427,10 +428,8 @@ class MemoryBridge:
             try:
                 if hasattr(self._cm, "close"):
                     self._cm.close()
-            except Exception:
-                pass
-
-    # ========== Phase 4: 飞轮机制 ==========
+            except Exception as e:
+                logger.warning("[MemoryBridge] CarryMem close failed: %s", e)
 
     def get_flywheel_status(self) -> Dict[str, Any]:
         """获取飞轮效应状态 — 衡量"越用越懂你"的程度
@@ -463,8 +462,8 @@ class MemoryBridge:
                 lesson_stats = engine.get_lesson_stats()
                 if isinstance(lesson_stats, dict):
                     metrics["confirmed_lessons"] = lesson_stats.get("accepted", 0)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[MemoryBridge] Lesson stats failed: %s", e)
 
         # 计算飞轮等级 (0-5)
         score = 0
@@ -513,8 +512,8 @@ class MemoryBridge:
                     suggestions.append("opc_legal_advisor")
                 elif "PRD" in action or "产品" in action:
                     suggestions.append("opc_prd_generation")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[MemoryBridge] Suggestion generation failed: %s", e)
 
         return list(set(suggestions))[:3]
 
@@ -559,8 +558,8 @@ class MemoryBridge:
                     export["memories"] = mem_result.get("memories", [])
                 elif isinstance(mem_result, list):
                     export["memories"] = mem_result
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[MemoryBridge] Memory export failed: %s", e)
 
         try:
             # 导出规则
@@ -569,10 +568,8 @@ class MemoryBridge:
                 rules_result = engine.export_rules()
                 if isinstance(rules_result, dict):
                     export["rules"] = rules_result.get("rules", [])
-        except Exception:
-            pass
-
-        return export
+        except Exception as e:
+            logger.warning("[MemoryBridge] Rules export failed: %s", e)
 
     def _try_auto_add_rule(self, suggestion: Any) -> None:
         """尝试自动添加规则建议（仅添加软规则，硬规则需用户确认）"""

@@ -117,6 +117,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Timeout constants (seconds)
+_PARALLEL_EXEC_TIMEOUT = 120
+_SKILL_EXEC_TIMEOUT = 120
+_DEFAULT_OPERATION_TIMEOUT = 60.0
+_HTTP_REQUEST_TIMEOUT = 15.0
+
 SEARCH_CACHE_MAX_SIZE = 50
 SEARCH_CACHE_TTL_SECONDS = 300
 
@@ -706,7 +712,7 @@ class TaskEngineV3(ContentGenerationMixin):
 
                         with ThreadPoolExecutor(max_workers=1) as executor:
                             future = executor.submit(_run_parallel)
-                            parallel_content = future.result(timeout=120)
+                            parallel_content = future.result(timeout=_PARALLEL_EXEC_TIMEOUT)
 
                         result = TaskResult(
                             success=True,
@@ -749,7 +755,7 @@ class TaskEngineV3(ContentGenerationMixin):
 
                         with ThreadPoolExecutor(max_workers=1) as executor:
                             future = executor.submit(_run_parallel_analysis)
-                            parallel_content = future.result(timeout=120)
+                            parallel_content = future.result(timeout=_PARALLEL_EXEC_TIMEOUT)
 
                         result = TaskResult(
                             success=True,
@@ -1448,7 +1454,7 @@ class TaskEngineV3(ContentGenerationMixin):
                                 },
                             )
                         )
-                        skill_result = future.result(timeout=120)
+                        skill_result = future.result(timeout=_SKILL_EXEC_TIMEOUT)
                 except RuntimeError:
                     skill_result = _asyncio.run(
                         registry.execute_skill(
@@ -1648,7 +1654,7 @@ class TaskEngineV3(ContentGenerationMixin):
 
             self._parallel_executor = ParallelExecutor(
                 max_concurrent=3,
-                default_timeout=60.0,
+                default_timeout=_DEFAULT_OPERATION_TIMEOUT,
                 progress_callback=progress_callback,
             )
 
@@ -1766,19 +1772,19 @@ class TaskEngineV3(ContentGenerationMixin):
             TaskSpec(
                 func=lambda q=base_query + " 方案 案例": self._search(q, max_results=3),
                 description="方案案例搜索",
-                timeout=15.0,
+                timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
                 func=lambda q=base_query + " 最佳实践 模板": self._search(
                     q, max_results=3
                 ),
                 description="最佳实践搜索",
-                timeout=15.0,
+                timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
                 func=lambda q=base_query + " 数据 趋势": self._search(q, max_results=3),
                 description="数据趋势搜索",
-                timeout=15.0,
+                timeout=_HTTP_REQUEST_TIMEOUT,
             ),
         ]
 
@@ -1931,21 +1937,21 @@ class TaskEngineV3(ContentGenerationMixin):
                     q, max_results=3
                 ),
                 description="趋势分析搜索",
-                timeout=15.0,
+                timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
                 func=lambda q=base_query + " 对比 竞品 行业标杆": self._search(
                     q, max_results=3
                 ),
                 description="对比分析搜索",
-                timeout=15.0,
+                timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
                 func=lambda q=base_query + " 风险 问题 挑战": self._search(
                     q, max_results=3
                 ),
                 description="风险识别搜索",
-                timeout=15.0,
+                timeout=_HTTP_REQUEST_TIMEOUT,
             ),
         ]
 

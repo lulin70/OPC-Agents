@@ -26,8 +26,8 @@ def discover_llm_config() -> Dict[str, str]:
         if llm_config.get("api_key"):
             config.update(llm_config)
             return config
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[SimpleLLM] Auto-config failed: %s", e)
 
     # 回退到 os.environ（兼容外部设置的环境变量）
     config["api_key"] = os.environ.get("MOKA_API_KEY", "")
@@ -80,8 +80,9 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
             moka_base_url = llm_config["base_url"]
         if llm_config.get("model"):
             moka_model = llm_config["model"]
-    except Exception:
+    except Exception as e:
         moka_key = os.environ.get("MOKA_API_KEY", "").strip()
+        logger.warning("[SimpleLLM] MOKA key extraction failed: %s", e)
 
     if moka_key:
         providers.append(

@@ -352,8 +352,8 @@ with st.sidebar:
         elif status["available"]:
             st.divider()
             st.caption("🧠 记忆未启用")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[App] Memory sidebar init failed: %s", e)
 
     # 知识库状态指示器
     try:
@@ -365,8 +365,8 @@ with st.sidebar:
             kb_type = kb_status.get("type", "")
             source_count = kb_status.get("source_count", kb_status.get("file_count", 0))
             st.markdown(f"📚 知识库({kb_type}) {source_count}篇")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[App] Knowledge base sidebar init failed: %s", e)
 
     st.divider()
     if "exec_mode" not in st.session_state:

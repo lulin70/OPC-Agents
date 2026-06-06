@@ -674,6 +674,8 @@ class ToolSystem:
     async def _execute_web_search(
         self, query: str, max_results: int = 10
     ) -> Dict[str, Any]:
+        # NOTE: Placeholder results returned when no search API is configured.
+        # Real search requires DuckDuckGo or other search provider.
         return {
             "query": query,
             "results": [

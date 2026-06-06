@@ -79,8 +79,8 @@ def _get_backup_password() -> Optional[str]:
         encryption_key = settings.get_encryption_key()
         if encryption_key:
             return encryption_key[:32]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[DataBackup] Failed to get encryption key from settings: %s", e)
 
     # 回退到 os.environ（兼容外部设置的环境变量）
     encryption_key = os.environ.get("OPC_ENCRYPTION_KEY", "")

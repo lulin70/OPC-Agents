@@ -40,7 +40,7 @@ def _get_current_session_id() -> str:
             return session_ctx._session_id
         elif session_ctx and hasattr(session_ctx, "session_id"):
             return session_ctx.session_id
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[SessionUtils] Session ID retrieval failed: %s", e)
 
     return st.session_state.get("session_id", "default")

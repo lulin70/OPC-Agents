@@ -488,8 +488,8 @@ def render_chat_page():
                                                 },
                                                 f,
                                             )
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logger.warning("[ChatRouter] Undo action failed: %s", e)
                                     st.success(_t("chat_feedback_thanks"))
                                     st.rerun()
                             with fb_cols[1]:
@@ -523,8 +523,8 @@ def render_chat_page():
                                                 },
                                                 f,
                                             )
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logger.warning("[ChatRouter] Undo action failed: %s", e)
                                     st.info(_t("chat_feedback_improve"))
                                     st.rerun()
                         elif (

@@ -39,8 +39,8 @@ def _get_encryption_key() -> Optional[bytes]:
         key_str = settings.get_encryption_key()
         if key_str:
             return hashlib.sha256(key_str.encode()).digest()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[DataManager] SHA256 key derivation failed: %s", e)
 
     # 回退到 os.environ（兼容外部设置的环境变量）
     key_str = os.environ.get(_ENCRYPTION_KEY_ENV, "")
@@ -99,7 +99,7 @@ def _get_conn() -> sqlite3.Connection:
         _local.conn = conn
         try:
             os.chmod(DB_PATH, stat.S_IRUSR | stat.S_IWUSR)
-        except Exception as e:
+        except OSError as e:
             logger.debug("[DataManager] chmod failed: %s", e)
     return _local.conn
 
@@ -446,7 +446,7 @@ def _add_column_if_not_exists(
         ]
         if column not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
-    except Exception as e:
+    except sqlite3.OperationalError as e:
         logger.warning(
             "[DataManager] Migration add column %s.%s failed: %s", table, column, e
         )
@@ -549,7 +549,7 @@ def execute_transaction(statements: List[tuple]) -> bool:
                 conn.execute(sql, params)
             conn.commit()
             return True
-        except Exception as e:
+        except sqlite3.Error as e:
             conn.rollback()
             logger.warning("[DataManager] Transaction failed: %s", e)
             return False
@@ -577,7 +577,7 @@ def backup_db() -> Optional[str]:
             old.unlink()
         logger.info("[DataManager] Backup created: %s", backup_path)
         return backup_path
-    except Exception as e:
+    except OSError as e:
         logger.warning("[DataManager] Backup failed: %s", e)
         return None
 

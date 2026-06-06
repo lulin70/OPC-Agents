@@ -7,8 +7,11 @@ Provides theme configuration and application extracted from shared.py:
 """
 
 import streamlit as st
+import logging
 
 __all__ = ["THEME_CONFIGS", "apply_theme", "_get_theme_css"]
+
+logger = logging.getLogger(__name__)
 
 
 THEME_CONFIGS = {
@@ -67,8 +70,8 @@ def apply_theme(theme_name: str):
             st.config.set_option("theme.base", "dark")
         elif theme_name == "light":
             st.config.set_option("theme.base", "light")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[ThemeManager] Theme setting failed: %s", e)
 
 
 def _get_theme_css(theme_name: str) -> str:

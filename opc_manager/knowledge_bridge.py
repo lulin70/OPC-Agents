@@ -107,8 +107,8 @@ class LocalFolderAdapter(KnowledgeAdapter):
                                 "size": len(content),
                             }
                         )
-                    except Exception:
-                        pass
+                    except (OSError, UnicodeDecodeError) as e:
+                        logger.warning("[KnowledgeBridge] Obsidian config parsing failed: %s", e)
         logger.info("[LocalFolder] 索引完成: %d 个文件", len(self._index))
 
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:
@@ -177,8 +177,8 @@ class ObsidianAdapter(LocalFolderAdapter):
 
                 with open(config_path, "r") as f:
                     self._obsidian_config = json.load(f)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("[KnowledgeBridge] Obsidian config loading failed: %s", e)
 
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:
         results = super().search(query, max_results)
@@ -213,7 +213,7 @@ class YuqueAdapter(KnowledgeAdapter):
             import urllib.request
             import json
 
-            url = f"https://www.yuque.com/api/v2/search?q={urllib.parse.quote(query)}&limit={max_results}"
+            url = f"{os.environ.get('YUQUE_API_BASE', 'https://www.yuque.com/api/v2')}/search?q={urllib.parse.quote(query)}&limit={max_results}"
             req = urllib.request.Request(
                 url,
                 headers={
@@ -274,8 +274,9 @@ class FeishuAdapter(KnowledgeAdapter):
             import urllib.request
             import json
 
-            url = (
-                "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+            url = os.environ.get(
+                "FEISHU_AUTH_URL",
+                "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
             )
             data = json.dumps(
                 {
@@ -304,7 +305,7 @@ class FeishuAdapter(KnowledgeAdapter):
             import urllib.request
             import json
 
-            url = f"https://open.feishu.cn/open-apis/suite/docs/search?query={urllib.parse.quote(query)}&page_size={max_results}"
+            url = f"{os.environ.get('FEISHU_SEARCH_URL', 'https://open.feishu.cn/open-apis/suite/docs/search')}?query={urllib.parse.quote(query)}&page_size={max_results}"
             req = urllib.request.Request(
                 url,
                 headers={
@@ -362,7 +363,7 @@ class NotionAdapter(KnowledgeAdapter):
             import urllib.request
             import json
 
-            url = "https://api.notion.com/v1/search"
+            url = f"{os.environ.get('NOTION_API_BASE', 'https://api.notion.com/v1')}/search"
             body = {"query": query, "page_size": max_results}
             if self._database_id:
                 body["filter"] = {"property": "object", "value": "page"}
@@ -447,7 +448,8 @@ class SiYuanAdapter(KnowledgeAdapter):
             with urllib.request.urlopen(req, timeout=3) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
                 return result.get("code", -1) == 0
-        except Exception:
+        except Exception as e:
+            logger.warning("[KnowledgeBridge] SiYuan API call failed: %s", e)
             return False
 
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:

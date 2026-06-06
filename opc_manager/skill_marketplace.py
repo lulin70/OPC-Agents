@@ -142,7 +142,7 @@ class SkillMarketplace:
                     )
                     api_key_obj.salt = v.get("salt", "")
                     self._api_keys[k] = api_key_obj
-            except Exception as e:
+            except (json.JSONDecodeError, OSError) as e:
                 logger.warning("加载API Keys失败: %s", e)
 
         if os.path.exists(self._skills_file):
@@ -166,7 +166,7 @@ class SkillMarketplace:
                         updated_at=v.get("updated_at", 0),
                         config=v.get("config", {}),
                     )
-            except Exception as e:
+            except (json.JSONDecodeError, OSError) as e:
                 logger.warning("加载技能数据失败: %s", e)
 
     def _seed_default_skills(self) -> None:
@@ -270,7 +270,7 @@ class SkillMarketplace:
                 }
             with open(self._api_keys_file, "w") as f:
                 json.dump(keys_data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
+        except OSError as e:
             logger.warning("保存API Keys失败: %s", e)
 
         try:
@@ -292,7 +292,7 @@ class SkillMarketplace:
                 }
             with open(self._skills_file, "w") as f:
                 json.dump(skills_data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
+        except OSError as e:
             logger.warning("保存技能数据失败: %s", e)
 
     def create_api_key(

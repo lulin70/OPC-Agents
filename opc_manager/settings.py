@@ -246,6 +246,7 @@ class SettingsManager:
             old_fernet = Fernet(old_fernet_key)
             return old_fernet.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
         except Exception:
+            logger.debug("[SettingsManager] Decryption failed for value, returning None")
             return None
 
     def _encrypt_value(self, plaintext: str) -> str:
@@ -283,6 +284,7 @@ class SettingsManager:
             decrypted = self._fernet.decrypt(ciphertext.encode("utf-8"))
             return decrypted.decode("utf-8")
         except Exception:
+            logger.debug("[SettingsManager] New-key decryption failed, trying old-key migration")
             # 新方式解密失败，尝试旧方式（truncate+pad 派生）进行迁移
             old_decrypted = self._decrypt_with_old_key(ciphertext)
             if old_decrypted is not None:

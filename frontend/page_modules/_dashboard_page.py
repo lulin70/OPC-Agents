@@ -446,8 +446,8 @@ def _get_dashboard_data():
         data["crm"]["silent"] = get_silent_customers()
         try:
             data["crm"]["customers"] = list_customers(limit=10).get("customers", [])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[Dashboard] CRM customer list failed: %s", e)
     except Exception as e:
         logger.debug("[frontend] CRM data error: %s", e)
 
@@ -734,8 +734,8 @@ def _render_client_health_panel(
                         health_status = _t("dash_health_attention")
                     elif days_since > 14:
                         health_status = _t("dash_health_normal")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("[Dashboard] Health check failed: %s", e)
 
             customer_data.append(
                 {
