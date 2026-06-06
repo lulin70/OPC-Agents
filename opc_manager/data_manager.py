@@ -29,7 +29,7 @@ _ENCRYPTION_KEY_ENV = "OPC_ENCRYPTION_KEY"
 _fallback_key = None
 
 
-def _get_encryption_key() -> bytes:
+def _get_encryption_key() -> Optional[bytes]:
     global _fallback_key
 
     # 优先通过 SettingsManager 获取（不通过 os.environ）
@@ -47,22 +47,23 @@ def _get_encryption_key() -> bytes:
     if key_str:
         return hashlib.sha256(key_str.encode()).digest()
 
+    # 无密钥时返回 None，调用方负责处理
     if _fallback_key is None:
-        logger.critical(
-            "[SECURITY] OPC_ENCRYPTION_KEY not set! Using auto-generated session key. Data encrypted with this key cannot be decrypted after restart!"
+        logger.warning(
+            "[SECURITY] OPC_ENCRYPTION_KEY not set. Sensitive data will be stored as plaintext. "
+            "Set OPC_ENCRYPTION_KEY environment variable for encryption support."
         )
-        _fallback_key = os.urandom(32)
-    return _fallback_key
+        _fallback_key = None  # 明确标记为无密钥
+    return None
 
 
 def encrypt_field(plaintext: str) -> str:
     if not plaintext:
         return ""
     key = _get_encryption_key()
-    if not os.environ.get(_ENCRYPTION_KEY_ENV, ""):
-        logger.warning(
-            "[SECURITY] Encrypting with session key - data will not survive restart!"
-        )
+    if key is None:
+        # 无密钥时明文存储
+        return plaintext
     from cryptography.fernet import Fernet
 
     fernet_key = base64.urlsafe_b64encode(key)
@@ -73,8 +74,11 @@ def encrypt_field(plaintext: str) -> str:
 def decrypt_field(ciphertext: str) -> Optional[str]:
     if not ciphertext:
         return ""
+    key = _get_encryption_key()
+    if key is None:
+        # 无密钥时返回原文（可能已经是明文）
+        return ciphertext
     try:
-        key = _get_encryption_key()
         from cryptography.fernet import Fernet
 
         fernet_key = base64.urlsafe_b64encode(key)

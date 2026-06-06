@@ -186,14 +186,14 @@ class UndoManager:
         self._validate_session_id(session_id)
         with self._lock:
             for r in self._records.get(session_id, []):
-                if r.operation_id == operation_id and r.status == "active":
-                    if time.time() < r.expires_at:
-                        return True, ""
-                    else:
+                if r.operation_id == operation_id:
+                    if r.status != "active":
+                        return False, f"Record is {r.status}"
+                    if time.time() >= r.expires_at:
                         r.status = "expired"
                         return False, "Undo window expired"
-                    return False, "Record not found or already undone"
-            return False, "Record not found or already undone"
+                    return True, ""
+            return False, "Record not found"
 
     def undo(self, session_id: str, operation_id: str) -> dict:
         """Execute undo for an operation.

@@ -6,12 +6,15 @@ Phase 1 MVP: Supports 3 core persona variants.
 """
 
 import os
+import logging
 import yaml
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 
 from opc_manager.business_types import BusinessType
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -98,8 +101,8 @@ class PersonaManager:
     def _load_config(self):
         """Load YAML configuration file"""
         if not os.path.exists(self.config_path):
-            print(
-                f"[PersonaManager] Warning: config file not found - {self.config_path}"
+            logger.warning(
+                "Config file not found - %s", self.config_path
             )
             self._load_fallback_config()
             return
@@ -127,19 +130,19 @@ class PersonaManager:
                     response_patterns=variant_config.get("response_patterns", {}),
                 )
 
-            print(
-                f"[PersonaManager] Successfully loaded {len(self.variants)} persona variants"
+            logger.info(
+                "Successfully loaded %d persona variants", len(self.variants)
             )
             for vid, v in self.variants.items():
-                print(f"  - [{v.emoji}] {v.display_name} ({vid})")
+                logger.info("  - [%s] %s (%s)", v.emoji, v.display_name, vid)
 
         except Exception as e:
-            print(f"[PersonaManager] Failed to load config: {e}")
+            logger.error("Failed to load config: %s", e)
             self._load_fallback_config()
 
     def _load_fallback_config(self):
         """Load fallback config when YAML file is unavailable"""
-        print("[PersonaManager] Using built-in default config")
+        logger.warning("Using built-in default config")
         self.base_persona = {
             "name": "总裁办秘书",
             "version": "2.1.0",
@@ -181,7 +184,7 @@ class PersonaManager:
             PersonaConfig: Persona config object, or None if not found
         """
         if business_type is None:
-            print("[PersonaManager] Error: business_type parameter cannot be None")
+            logger.error("business_type parameter cannot be None")
             return None
 
         type_key = business_type.value
@@ -194,11 +197,11 @@ class PersonaManager:
         persona = self.variants.get(type_key)
 
         if persona is None:
-            print(
-                f"[PersonaManager] No persona config found for business type {type_key}"
+            logger.warning(
+                "No persona config found for business type %s", type_key
             )
             available = list(self.variants.keys())
-            print(f"[PersonaManager] Available persona variants: {available}")
+            logger.info("Available persona variants: %s", available)
 
             if self.variants:
                 persona = list(self.variants.values())[0]
@@ -233,14 +236,14 @@ class PersonaManager:
 
             self._cache[user_id] = new_persona
 
-            print(f"[PersonaManager] User {user_id} persona switch successful")
-            print(f"  From: {old_type} → To: {new_business_type.value}")
-            print(f"  Reason: {reason}")
+            logger.info("User %s persona switch successful", user_id)
+            logger.info("  From: %s → To: %s", old_type, new_business_type.value)
+            logger.info("  Reason: %s", reason)
 
             return True
         else:
-            print(
-                f"[PersonaManager] User {user_id} persona switch failed: no config for {new_business_type.value}"
+            logger.error(
+                "User %s persona switch failed: no config for %s", user_id, new_business_type.value
             )
             return False
 
@@ -348,10 +351,10 @@ class PersonaManager:
         if user_id:
             if user_id in self._cache:
                 del self._cache[user_id]
-                print(f"[PersonaManager] Cleared cache for user {user_id}")
+                logger.info("Cleared cache for user %s", user_id)
         else:
             self._cache.clear()
-            print(f"[PersonaManager] Cleared all cache")
+            logger.info("Cleared all cache")
 
 
 if __name__ == "__main__":

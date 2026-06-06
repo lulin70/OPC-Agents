@@ -18,6 +18,7 @@ Usage:
     print(settings.llm.provider)  # "moka"
 """
 
+import hashlib
 import json
 import os
 import secrets
@@ -189,6 +190,9 @@ class SettingsManager:
         Uses the encryption key from security settings (in-memory).
         Falls back to os.environ only for externally-set env vars (e.g., docker-compose).
         If key is unavailable, encryption is disabled (plaintext mode).
+
+        Key derivation: SHA-256 hash (unified with data_manager.py).
+        Migration: If old-derivation encrypted data is found, re-encrypt with new key.
         """
         try:
             from cryptography.fernet import Fernet
@@ -204,7 +208,8 @@ class SettingsManager:
                 )
                 return
 
-            key_bytes = key.encode()[:32].ljust(32, b"\0")
+            # 统一使用 SHA-256 派生密钥（与 data_manager.py 一致）
+            key_bytes = hashlib.sha256(key.encode()).digest()
             fernet_key = base64.urlsafe_b64encode(key_bytes)
             self._fernet = Fernet(fernet_key)
             logger.debug("[SettingsManager] Fernet cipher initialized successfully")
@@ -219,6 +224,29 @@ class SettingsManager:
         except Exception as e:
             logger.error("[SettingsManager] Failed to initialize Fernet: %s", e)
             self._fernet = None
+
+    def _decrypt_with_old_key(self, ciphertext: str) -> Optional[str]:
+        """Try to decrypt using the old key derivation method (truncate+pad).
+
+        This is used for migration: data encrypted with the old method
+        (key.encode()[:32].ljust(32, b"\\0")) can still be decrypted
+        and then re-encrypted with the new SHA-256 method.
+        """
+        try:
+            from cryptography.fernet import Fernet
+
+            key = self._security.encryption_key
+            if not key:
+                key = os.environ.get("OPC_ENCRYPTION_KEY", "")
+            if not key:
+                return None
+
+            old_key_bytes = key.encode()[:32].ljust(32, b"\0")
+            old_fernet_key = base64.urlsafe_b64encode(old_key_bytes)
+            old_fernet = Fernet(old_fernet_key)
+            return old_fernet.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
+        except Exception:
+            return None
 
     def _encrypt_value(self, plaintext: str) -> str:
         """Encrypt a sensitive value using Fernet.
@@ -254,8 +282,15 @@ class SettingsManager:
         try:
             decrypted = self._fernet.decrypt(ciphertext.encode("utf-8"))
             return decrypted.decode("utf-8")
-        except Exception as e:
-            logger.debug("[SettingsManager] Decryption failed: %s", e)
+        except Exception:
+            # 新方式解密失败，尝试旧方式（truncate+pad 派生）进行迁移
+            old_decrypted = self._decrypt_with_old_key(ciphertext)
+            if old_decrypted is not None:
+                logger.info(
+                    "[SettingsManager] Migrated data from old key derivation to SHA-256"
+                )
+                return old_decrypted
+            logger.debug("[SettingsManager] Decryption failed with both new and old key")
             return None
 
     def _load_from_disk(self) -> None:
@@ -560,6 +595,7 @@ class SettingsManager:
             lines.append("")
 
         env_local.write_text("\n".join(lines), encoding="utf-8")
+        os.chmod(str(env_local), 0o600)  # 仅文件所有者可读写
         self._save_to_disk()
 
         logger.info("Auto-generated encryption key and saved to .env.local")

@@ -693,12 +693,21 @@ class TaskEngineV3(ContentGenerationMixin):
                 if self._should_parallelize(sanitized, task_type):
                     logger.info("[TaskEngineV3] Using parallel content generation")
                     try:
-                        import asyncio
+                        from concurrent.futures import ThreadPoolExecutor
 
-                        loop = asyncio.get_running_loop()
-                        parallel_content = loop.run_until_complete(
-                            self._parallel_content_generation(sanitized, session_id)
-                        )
+                        def _run_parallel():
+                            loop = asyncio.new_event_loop()
+                            try:
+                                return loop.run_until_complete(
+                                    self._parallel_content_generation(sanitized, session_id)
+                                )
+                            finally:
+                                loop.close()
+
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            future = executor.submit(_run_parallel)
+                            parallel_content = future.result(timeout=120)
+
                         result = TaskResult(
                             success=True,
                             content=parallel_content,
@@ -727,12 +736,21 @@ class TaskEngineV3(ContentGenerationMixin):
                 if self._should_parallelize(sanitized, task_type):
                     logger.info("[TaskEngineV3] Using parallel data analysis")
                     try:
-                        import asyncio
+                        from concurrent.futures import ThreadPoolExecutor
 
-                        loop = asyncio.get_running_loop()
-                        parallel_content = loop.run_until_complete(
-                            self._parallel_data_analysis(sanitized, session_id)
-                        )
+                        def _run_parallel_analysis():
+                            loop = asyncio.new_event_loop()
+                            try:
+                                return loop.run_until_complete(
+                                    self._parallel_data_analysis(sanitized, session_id)
+                                )
+                            finally:
+                                loop.close()
+
+                        with ThreadPoolExecutor(max_workers=1) as executor:
+                            future = executor.submit(_run_parallel_analysis)
+                            parallel_content = future.result(timeout=120)
+
                         result = TaskResult(
                             success=True,
                             content=parallel_content,
@@ -1414,8 +1432,23 @@ class TaskEngineV3(ContentGenerationMixin):
                 import asyncio as _asyncio
 
                 try:
-                    loop = _asyncio.get_running_loop()
-                    skill_result = None
+                    _asyncio.get_running_loop()
+                    # Already in async context, use thread pool
+                    from concurrent.futures import ThreadPoolExecutor
+
+                    with ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(
+                            _asyncio.run,
+                            registry.execute_skill(
+                                "execute_operation",
+                                operation=search_query,
+                                parameters={
+                                    "goal": search_query,
+                                    "business_type": business_type,
+                                },
+                            )
+                        )
+                        skill_result = future.result(timeout=120)
                 except RuntimeError:
                     skill_result = _asyncio.run(
                         registry.execute_skill(
@@ -1427,14 +1460,14 @@ class TaskEngineV3(ContentGenerationMixin):
                             },
                         )
                     )
-                    if skill_result and skill_result.get("success"):
-                        content = str(skill_result.get("data", ""))
-                        return TaskResult(
-                            success=True,
-                            content=content,
-                            task_type=TaskType.BUSINESS_OPERATION,
-                            deliverable_format="Markdown",
-                        )
+                if skill_result and skill_result.get("success"):
+                    content = str(skill_result.get("data", ""))
+                    return TaskResult(
+                        success=True,
+                        content=content,
+                        task_type=TaskType.BUSINESS_OPERATION,
+                        deliverable_format="Markdown",
+                    )
         except Exception as e:
             logger.warning(
                 "[TaskEngineV3] BUSINESS_OPERATION SkillRegistry failed: %s", e

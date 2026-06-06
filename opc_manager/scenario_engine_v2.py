@@ -6,6 +6,7 @@ This module re-exports all public symbols for backward compatibility.
 """
 
 from typing import Dict, List, Optional, Any
+import logging
 from datetime import datetime
 
 from opc_manager.business_types import BusinessType
@@ -18,6 +19,8 @@ from opc_manager.scenario_definitions import (
     ScenarioResult,
     BUILT_IN_SCENARIOS,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ScenarioEngineV2:
@@ -69,8 +72,8 @@ class ScenarioEngineV2:
                 )
                 detected_type = detection_result.business_type
             except Exception as e:
-                print(
-                    f"[ScenarioEngineV2] BusinessTypeDetector failed, using default type: {e}"
+                logger.error(
+                    "BusinessTypeDetector failed, using default type: %s", e
                 )
 
         candidates = []
@@ -108,7 +111,7 @@ class ScenarioEngineV2:
                     },
                 )
             except Exception as e:
-                print(f"[ScenarioEngineV2] PersonaManager failed: {e}")
+                logger.error("PersonaManager failed: %s", e)
 
         if not candidates:
             return ScenarioResult(
