@@ -1,6 +1,6 @@
 """Streamlit 前端 - OPC-Agents (成果物交付版) — Thin Dispatcher
 
-=== 架构说明（v0.2.4 重构后）===
+=== 架构说明（v0.2.5 重构后）===
 本文件仅负责：
 1. 导入所有依赖模块
 2. 页面配置（st.set_page_config）

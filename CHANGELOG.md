@@ -2,6 +2,47 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.2.5] - 2026-06-07
+
+### Security Hardening (5 Critical fixes)
+- **#1**: Unified encryption key derivation to sha256 in settings.py with migration fallback for old truncate+pad keys
+- **#2**: Replaced asyncio.get_running_loop().run_until_complete() with ThreadPoolExecutor in Streamlit context (task_engine_v3.py)
+- **#3**: Changed encryption key fallback from random session key to plaintext storage with security warning (data_manager.py)
+- **#4**: Set .env.local file permissions to 0o600 after writing encryption key (settings.py)
+- **#5**: Fixed undo_manager can_undo dead code that skipped expiration check
+
+### Code Quality (46 issues fixed from 7-dimension code review)
+- **Low (7)**: Mock URL fallback comment, 4 API URL env var overrides, 10 timeout constants extracted, 2 bare except logging
+- **High (25)**: Replaced all `except Exception: pass` with `logger.warning()` across 12 files
+- **Medium (9)**: Narrowed broad except to specific types (OSError, sqlite3.OperationalError, json.JSONDecodeError) in 3 files
+- Replaced 13 debug print() with logging in persona_manager and scenario_engine_v2
+
+### Architecture: AgentLoop Single Entry
+- Unified to AgentLoop as the sole execution entry point
+- AgentLoop.run() now returns TaskResult instead of Dict
+- ExecutorBrain uses TaskEngineV3 directly (no TaskEngineAdapter)
+- Removed exec_mode toggle from UI (always uses AgentLoop)
+- Removed execute_task_and_deliver (no triple fallback)
+- WeChat bridge updated for TaskResult format
+- TaskEngineAdapter deprecated (kept for backward compat)
+
+### LLM Concurrency Control
+- Added global async semaphore (get_llm_async_semaphore) in utils.py
+- LLMEnhancedContentGenerator._call_llm_api() now acquires thread semaphore
+- OpenAIBackend and OllamaBackend now acquire async semaphore
+- All LLM API calls bounded by LLM_CONCURRENCY_LIMIT=5
+
+### LLM JSON Parsing Hardening
+- extract_json_from_llm() now supports 3 extraction strategies:
+  1. Markdown code fence extraction (```json ... ```)
+  2. Brace-depth counter for JSON objects
+  3. Bracket-depth counter for JSON arrays
+
+### Bug Fixes
+- Fixed data_manager.py PRAGMA table_info tuple indexing (row["name"] → row[1])
+- Fixed shortcuts_handler.py: generate() → complete() (method didn't exist)
+- Fixed test_invalid_ciphertext_handled_gracefully with env var isolation
+
 ## [0.2.4] - 2026-05-24
 
 ### Version Bump

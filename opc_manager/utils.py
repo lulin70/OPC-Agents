@@ -46,6 +46,32 @@ _INJECTION_PATTERNS = [
 
 
 def extract_json_from_llm(text: str) -> Optional[dict]:
+    """Extract JSON from LLM output with multiple strategies.
+
+    Strategies (in order):
+    1. Extract from markdown code fences (```json ... ```)
+    2. Brace-depth counter for JSON objects
+    3. Bracket-depth counter for JSON arrays (returns first element if dict)
+    """
+    if not text:
+        return None
+
+    # Strategy 1: Markdown code fence extraction
+    _JSON_FENCE_RE = re.compile(
+        r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL
+    )
+    for match in _JSON_FENCE_RE.finditer(text):
+        candidate = match.group(1).strip()
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return parsed
+            if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
+                return parsed[0]
+        except json.JSONDecodeError:
+            continue
+
+    # Strategy 2: Brace-depth counter for JSON objects
     depth = 0
     start = -1
     for i, ch in enumerate(text):
@@ -63,6 +89,28 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
                 except json.JSONDecodeError:
                     start = -1
                     continue
+
+    # Strategy 3: Bracket-depth counter for JSON arrays
+    depth = 0
+    start = -1
+    for i, ch in enumerate(text):
+        if ch == "[":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "]":
+            if depth > 0:
+                depth -= 1
+            if depth == 0 and start >= 0:
+                candidate = text[start : i + 1]
+                try:
+                    parsed = json.loads(candidate)
+                    if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
+                        return parsed[0]
+                except json.JSONDecodeError:
+                    start = -1
+                    continue
+
     return None
 
 

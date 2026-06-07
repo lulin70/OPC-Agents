@@ -218,7 +218,7 @@ class YuqueAdapter(KnowledgeAdapter):
                 url,
                 headers={
                     "X-Auth-Token": self._token,
-                    "User-Agent": "OPC-Agents/0.2.4",
+                    "User-Agent": "OPC-Agents/0.2.5",
                 },
             )
             with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310

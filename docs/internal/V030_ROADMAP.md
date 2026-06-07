@@ -1,19 +1,19 @@
 > **状态更新 (2026-05-20)**: v0.2.2 架构与功能冲刺已完成。前端模块化(11新模块，3个大文件各减少59-83%)，LLM响应缓存层，技能市场评分系统，26个E2E集成测试。1911测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
 
-# OPC-Agents v0.2.4 Roadmap
+# OPC-Agents v0.2.5 Roadmap
 
 **Created**: 2026-05-16
-**Last Updated**: 2026-06-05 (v0.2.4 Security Hardening + Ecosystem Tools)
-**Based on**: v0.2.0 post-release evaluation → **v0.2.4** (1920+ tests, 7-dim code review completed)
-**Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.2.2-v0.2.4 Sprint COMPLETED
+**Last Updated**: 2026-06-07 (v0.2.5 Architecture Unification + Security Hardening + LLM Concurrency Control)
+**Based on**: v0.2.0 post-release evaluation → **v0.2.5** (1922+ tests, 7-dim code review + architecture refactoring completed)
+**Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.2.2-v0.2.5 Sprint COMPLETED
 
 ---
 
-## 📊 Current State (v0.2.4)
+## 📊 Current State (v0.2.5)
 
 | Metric | Value |
 |--------|-------|
-| Version | 0.2.4 (released 2026-05-24) |
+| Version | 0.2.5 (released 2026-06-07) |
 | Tests | **1920** passed, 29 skipped, 2 failed (settings known) |
 | CI/CD | ✅ GitHub Actions passing (Python 3.10/3.11/3.12) |
 | Security | Bandit 0 High/Medium, all P0/P1 fixed, Fernet encryption at rest |
@@ -342,7 +342,7 @@
 ---
 
 *Document generated as part of v0.2.0 post-release evaluation cycle*
-*Last updated: 2026-06-05 — v0.2.4 released (security hardening + ecosystem tools + 7-dim code review)*
+*Last updated: 2026-06-07 — v0.2.5 released (architecture unification + security hardening + LLM concurrency control)*
 *Next review: After v0.2.x feature planning*
 
 ---

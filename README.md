@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.2.4 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.2.5 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -267,7 +267,7 @@ OPC-Agents/
 │   ├── wechat_agent.py    # 💬 微信E2E智能体
 │   ├── wechat_gateway.py  # 💬 微信网关
 │   │
-│   ├── # === v0.2.4 新增：CarryMem + 知识库 + 飞轮 ===
+│   ├── # === v0.2.5 新增：CarryMem + 知识库 + 飞轮 ===
 │   ├── memory_bridge.py   # 🧠 MemoryBridge（CarryMem适配层，持久记忆+规则引擎+飞轮）
 │   ├── knowledge_bridge.py# 📚 KnowledgeBridge（6种知识库适配：Obsidian/语雀/飞书/Notion/思源/本地）
 │   │
