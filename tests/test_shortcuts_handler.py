@@ -125,7 +125,7 @@ class TestQuickTask:
     @patch("opc_manager.simple_llm_service.SimpleLLMService")
     def test_quick_task_valid_input_calls_llm(self, MockLLM, temp_db):
         mock_instance = MockLLM.return_value
-        mock_instance.generate.return_value = "这是AI生成的回复内容"
+        mock_instance.complete.return_value = "这是AI生成的回复内容"
 
         handler = ShortcutsHandler()
         result = handler.quick_task("写一封邮件")
@@ -134,12 +134,12 @@ class TestQuickTask:
         assert "任务完成" in result.message
         assert "这是AI生成的回复内容" in result.message
         assert result.data["action"] == "quick_task"
-        mock_instance.generate.assert_called_once()
+        mock_instance.complete.assert_called_once()
 
     @patch("opc_manager.simple_llm_service.SimpleLLMService")
     def test_quick_task_llm_returns_empty(self, MockLLM, temp_db):
         mock_instance = MockLLM.return_value
-        mock_instance.generate.return_value = ""
+        mock_instance.complete.return_value = ""
 
         handler = ShortcutsHandler()
         result = handler.quick_task("测试任务")
@@ -151,7 +151,7 @@ class TestQuickTask:
     def test_quick_task_output_truncated_at_500(self, MockLLM, temp_db):
         mock_instance = MockLLM.return_value
         long_response = "x" * 1000
-        mock_instance.generate.return_value = long_response
+        mock_instance.complete.return_value = long_response
 
         handler = ShortcutsHandler()
         result = handler.quick_task("长回复测试")

@@ -23,6 +23,15 @@ EVENT_QUEUE_MAX_SIZE = 1000
 LLM_CONCURRENCY_LIMIT = 5
 
 _llm_thread_semaphore = threading.Semaphore(LLM_CONCURRENCY_LIMIT)
+_llm_async_semaphore: Optional[asyncio.Semaphore] = None
+
+
+def get_llm_async_semaphore() -> asyncio.Semaphore:
+    """Get or create the global async LLM concurrency semaphore."""
+    global _llm_async_semaphore
+    if _llm_async_semaphore is None:
+        _llm_async_semaphore = asyncio.Semaphore(LLM_CONCURRENCY_LIMIT)
+    return _llm_async_semaphore
 
 _INJECTION_PATTERNS = [
     re.compile(

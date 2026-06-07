@@ -12,6 +12,7 @@ import random
 import json
 import logging
 from datetime import datetime
+from .utils import get_llm_async_semaphore
 
 logger = logging.getLogger(__name__)
 
@@ -97,13 +98,15 @@ class OpenAIBackend(LLMBackend):
         messages.append({"role": "user", "content": prompt})
 
         try:
-            response = await client.chat.completions.create(
-                model=self.config.model,
-                messages=messages,
-                max_tokens=self.config.max_tokens,
-                temperature=self.config.temperature,
-                timeout=self.config.timeout_seconds,
-            )
+            sem = get_llm_async_semaphore()
+            async with sem:
+                response = await client.chat.completions.create(
+                    model=self.config.model,
+                    messages=messages,
+                    max_tokens=self.config.max_tokens,
+                    temperature=self.config.temperature,
+                    timeout=self.config.timeout_seconds,
+                )
             latency_ms = (time.time() - start) * 1000
             return LLMResponse(
                 content=response.choices[0].message.content,
@@ -158,10 +161,12 @@ class OllamaBackend(LLMBackend):
         if system_prompt:
             payload["system"] = system_prompt
 
-        async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
-            resp = await client.post(f"{self.base_url}/api/generate", json=payload)
-            resp.raise_for_status()
-            data = resp.json()
+        sem = get_llm_async_semaphore()
+        async with sem:
+            async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
+                resp = await client.post(f"{self.base_url}/api/generate", json=payload)
+                resp.raise_for_status()
+                data = resp.json()
 
         latency_ms = (time.time() - start) * 1000
         return LLMResponse(

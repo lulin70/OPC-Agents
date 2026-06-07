@@ -90,7 +90,7 @@ class ShortcutsHandler:
 - 如果需要结构化信息，使用清晰的格式
 - 保持简洁专业"""
 
-            response = llm.generate(prompt)
+            response = llm.complete(prompt)
 
             if response and response.strip():
                 return ShortcutResult(

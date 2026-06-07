@@ -44,6 +44,7 @@ import time
 import logging
 from typing import Dict, List, Optional, Any, Tuple, Callable
 from dataclasses import dataclass, field
+from .utils import _llm_thread_semaphore
 
 logger = logging.getLogger(__name__)
 
@@ -643,12 +644,13 @@ class LLMEnhancedContentGenerator:
                     "[LLMContentGen] API base URL is not HTTPS: %s", api_base
                 )
 
-            response = requests.post(
-                endpoint,
-                headers=headers,
-                json=payload,
-                timeout=self.llm_timeout,
-            )
+            with _llm_thread_semaphore:
+                response = requests.post(
+                    endpoint,
+                    headers=headers,
+                    json=payload,
+                    timeout=self.llm_timeout,
+                )
 
             if response.status_code == 200:
                 data = response.json()
