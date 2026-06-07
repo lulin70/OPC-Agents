@@ -36,6 +36,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
 
+from .embedding_service import EmbeddingService, cosine_similarity
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +79,9 @@ class LocalFolderAdapter(KnowledgeAdapter):
     def __init__(self, folder_path: str):
         self._path = os.path.expanduser(folder_path)
         self._index: List[Dict[str, Any]] = []
+        self._embedding_svc = EmbeddingService()
         if os.path.isdir(self._path):
+            self._embedding_svc.init_cache(self._path)
             self._build_index()
 
     def _build_index(self):
@@ -111,31 +115,54 @@ class LocalFolderAdapter(KnowledgeAdapter):
                         logger.warning("[KnowledgeBridge] Obsidian config parsing failed: %s", e)
         logger.info("[LocalFolder] 索引完成: %d 个文件", len(self._index))
 
+        # Generate embeddings for semantic search
+        if self._embedding_svc.enabled and self._index:
+            logger.info("[LocalFolder] Generating embeddings for %d documents...", len(self._index))
+            for entry in self._index:
+                # Use title + first 500 chars for embedding
+                embed_text = f"{entry['title']} {entry['content'][:500]}"
+                entry["embedding"] = self._embedding_svc.embed(embed_text)
+            embedded_count = sum(1 for e in self._index if e.get("embedding"))
+            logger.info("[LocalFolder] Embeddings generated: %d/%d", embedded_count, len(self._index))
+
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:
         results = []
         query_lower = query.lower()
         query_terms = set(query_lower.split())
 
+        # Get query embedding for semantic search
+        query_embedding = None
+        if self._embedding_svc.enabled:
+            query_embedding = self._embedding_svc.embed(query)
+
         for entry in self._index:
+            # --- Keyword score (existing logic) ---
             title_lower = entry["title"].lower()
             content_lower = entry["content"][:2000].lower()
 
-            # 计算相关性
-            score = 0.0
-            # 标题匹配（权重最高）
+            kw_score = 0.0
             if query_lower in title_lower:
-                score += 0.5
-            # 标题词匹配
+                kw_score += 0.5
             title_terms = set(title_lower.split())
-            score += len(query_terms & title_terms) * 0.2
-            # 内容匹配
+            kw_score += len(query_terms & title_terms) * 0.2
             for term in query_terms:
                 if term in content_lower:
-                    score += 0.1
-            # 标签匹配
+                    kw_score += 0.1
             for tag in entry.get("tags", []):
                 if tag.lower() in query_terms:
-                    score += 0.15
+                    kw_score += 0.15
+
+            # --- Semantic score ---
+            sem_score = 0.0
+            if query_embedding and entry.get("embedding"):
+                sem_score = cosine_similarity(query_embedding, entry["embedding"])
+
+            # --- Hybrid score ---
+            # Semantic gets 60% weight when available, keyword 40%
+            if query_embedding is not None:
+                score = 0.4 * min(kw_score, 1.0) + 0.6 * sem_score
+            else:
+                score = min(kw_score, 1.0)
 
             if score > 0:
                 results.append(
@@ -145,7 +172,7 @@ class LocalFolderAdapter(KnowledgeAdapter):
                         source=entry["path"],
                         source_type="local",
                         tags=entry.get("tags", []),
-                        relevance_score=min(score, 1.0),
+                        relevance_score=round(score, 4),
                     )
                 )
 
