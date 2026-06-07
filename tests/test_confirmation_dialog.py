@@ -232,7 +232,7 @@ class TestBuildConfirmCallback:
             risk_level=RiskLevel.HIGH,
         )
 
-        result = asyncio.get_event_loop().run_until_complete(cb(request))
+        result = asyncio.run(cb(request))
         assert isinstance(result, ConfirmationResult)
         assert result.confirmed is True
         assert result.method == "user"
@@ -257,7 +257,7 @@ class TestBuildConfirmCallback:
             risk_level=RiskLevel.HIGH,
         )
 
-        result = asyncio.get_event_loop().run_until_complete(cb(request))
+        result = asyncio.run(cb(request))
         assert result.confirmed is False
         assert result.method == "cancel"
 
@@ -281,7 +281,7 @@ class TestBuildConfirmCallback:
             risk_level=RiskLevel.HIGH,
         )
 
-        result = asyncio.get_event_loop().run_until_complete(cb(request))
+        result = asyncio.run(cb(request))
         assert result.confirmed is True
         assert result.method == "skipped"
         assert f"trust_boost_skip_session_SOCIAL" in st.session_state
@@ -302,7 +302,7 @@ class TestBuildConfirmCallback:
             risk_level=RiskLevel.HIGH,
         )
 
-        result = asyncio.get_event_loop().run_until_complete(cb(request))
+        result = asyncio.run(cb(request))
         assert result.confirmed is False
         assert result.method == "pending"
         assert "pending_confirmation" in st.session_state
@@ -329,7 +329,7 @@ class TestBuildConfirmCallback:
         )
 
         start = time.time()
-        result = asyncio.get_event_loop().run_until_complete(cb(request))
+        result = asyncio.run(cb(request))
         elapsed = time.time() - start
 
         assert result.latency_ms >= 0
@@ -684,7 +684,7 @@ class TestProgressEmitterIntegration:
             if "confirmation_choice_emit_test_session" in st.session_state:
                 del st.session_state["confirmation_choice_emit_test_session"]
 
-            asyncio.get_event_loop().run_until_complete(cb(request))
+            asyncio.run(cb(request))
 
             mock_emitter.emit.assert_called()
             call_args = mock_emitter.emit.call_args[0][0]
@@ -716,7 +716,7 @@ class TestProgressEmitterIntegration:
                 risk_level=RiskLevel.HIGH,
             )
 
-            asyncio.get_event_loop().run_until_complete(cb(request))
+            asyncio.run(cb(request))
 
             mock_emitter.emit.assert_called()
             emit_calls = mock_emitter.emit.call_args_list
@@ -750,7 +750,7 @@ class TestProgressEmitterIntegration:
                 risk_level=RiskLevel.HIGH,
             )
 
-            asyncio.get_event_loop().run_until_complete(cb(request))
+            asyncio.run(cb(request))
 
             mock_emitter.emit.assert_called()
             emit_calls = mock_emitter.emit.call_args_list

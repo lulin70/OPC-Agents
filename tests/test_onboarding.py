@@ -357,13 +357,14 @@ class TestStatePersistence(unittest.TestCase):
 
     def test_creates_data_directory_if_not_exists(self):
         """保存状态时如果data目录不存在应自动创建"""
-        if self.manager._state_file.exists():
-            self.manager._state_file.unlink()
-        if self.manager._state_file.parent.exists():
-            shutil.rmtree(self.manager._state_file.parent)
-
-        self.manager.advance_to_step(OnboardingStep.LLM_CONFIG)
-        self.assertTrue(self.manager._state_file.parent.exists())
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_file = Path(tmpdir) / "data" / "onboarding.json"
+            with patch.object(OnboardingManager, "STATE_FILE", str(state_file)):
+                mgr = OnboardingManager()
+                self.assertFalse(state_file.parent.exists())
+                mgr.advance_to_step(OnboardingStep.LLM_CONFIG)
+                self.assertTrue(state_file.parent.exists())
 
 
 class TestConcurrentAccess(unittest.TestCase):

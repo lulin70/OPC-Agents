@@ -479,7 +479,7 @@ class TestOllamaBackendAsyncComplete(unittest.TestCase):
                 client_instance.__aexit__ = AsyncMock(return_value=False)
                 return await backend.complete("test prompt")
 
-        result = asyncio.get_event_loop().run_until_complete(run_test())
+        result = asyncio.run(run_test())
 
         self.assertEqual(result.content, "Generated text from Ollama")
         self.assertEqual(result.provider, LLMProvider.OLLAMA)
@@ -518,7 +518,7 @@ class TestOllamaBackendAsyncComplete(unittest.TestCase):
                     "test prompt", system_prompt="You are a helpful assistant"
                 )
 
-        result = asyncio.get_event_loop().run_until_complete(run_test())
+        result = asyncio.run(run_test())
 
         call_args = mock_post.call_args
         payload = call_args.kwargs.get("json") or call_args[1].get("json")
@@ -547,7 +547,7 @@ class TestOllamaBackendAsyncComplete(unittest.TestCase):
                 return await backend.complete("test prompt")
 
         with self.assertRaises(httpx.ConnectError):
-            asyncio.get_event_loop().run_until_complete(run_test())
+            asyncio.run(run_test())
 
 
 class TestOllamaLLMServiceIntegration(unittest.TestCase):
