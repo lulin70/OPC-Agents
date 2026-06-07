@@ -1,0 +1,10 @@
+{
+  "type": "email",
+  "to": "user@example.com",
+  "subject": "test",
+  "body": "hi",
+  "attachments": [],
+  "timestamp": 1780826182864,
+  "status": "logged",
+  "note": "SMTP not configured. Notification logged to file. Configure OPC_SMTP_HOST/USER/PASS for actual email delivery."
+}
