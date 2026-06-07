@@ -1,4 +1,8 @@
 """
+DEPRECATED: TaskEngineAdapter is deprecated since v0.2.5.
+AgentLoop now uses TaskEngineV3 directly via ExecutorBrain.
+This module is kept for backward compatibility only.
+
 TaskEngineAdapter — ExecutorBrain与TaskEngineV3之间的适配器
 
 将三贤者架构的skill_id映射到TaskEngineV3的执行方法，

@@ -39,13 +39,11 @@ from .mcp_protocol import MCPServer
 
 
 def create_mcp_server() -> MCPServer:
-    from .task_engine_adapter import TaskEngineAdapter
     from .task_engine_v3 import task_engine_v3
     from .skill_registry import SkillRegistry
 
-    adapter = TaskEngineAdapter(task_engine=task_engine_v3)
     skill_registry = SkillRegistry()
-    return MCPServer(task_engine_adapter=adapter, skill_registry=skill_registry)
+    return MCPServer(task_engine=task_engine_v3, skill_registry=skill_registry)
 
 
 if SSE_AVAILABLE:

@@ -31,7 +31,7 @@ from .consensus_engine import ConsensusEngine, Opinion, OpinionType, DecisionTyp
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
 from .session_context import SessionContextManager
-from .task_engine_adapter import TaskEngineAdapter
+from .task_engine_v3 import TaskEngineV3, TaskType, TaskResult
 from .utils import BoundedDict, EventEmitter
 from .performance_monitor import get_performance_monitor
 from .confirmer import Confirmer
@@ -100,12 +100,12 @@ class AgentLoop:
         skill_registry: SkillRegistry = None,
         tool_system: ToolSystem = None,
         session_manager: SessionContextManager = None,
-        task_engine_adapter: TaskEngineAdapter = None,
+        task_engine=None,
         llm_service=None,
         max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
         max_retry_per_step: int = MAX_RETRY_PER_STEP,
     ):
-        self.task_engine_adapter = task_engine_adapter or TaskEngineAdapter()
+        self.task_engine = task_engine or TaskEngineV3()
         self.llm_service = llm_service
         self.strategist_brain = strategist_brain or StrategistBrain(
             llm_service=llm_service
@@ -113,7 +113,7 @@ class AgentLoop:
         self.skill_registry = skill_registry or SkillRegistry()
         self.executor_brain = executor_brain or ExecutorBrain(
             skill_registry=self.skill_registry,
-            task_engine_adapter=self.task_engine_adapter,
+            task_engine=self.task_engine,
         )
         self.reflector_brain = reflector_brain or ReflectorBrain(
             llm_service=llm_service
@@ -135,22 +135,14 @@ class AgentLoop:
         user_input: str,
         context: Optional[Dict] = None,
         session_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> TaskResult:
         logger.info("AgentLoop 开始执行: %s...", user_input[:50])
 
         if not user_input or not user_input.strip():
-            return {
-                "success": False,
-                "error": "用户输入不能为空",
-                "message": "输入无效",
-            }
+            return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error="用户输入不能为空")
 
         if len(user_input) > MAX_USER_INPUT_LENGTH:
-            return {
-                "success": False,
-                "error": f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)",
-                "message": "输入过长",
-            }
+            return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error=f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)")
 
         run_start_time = time.time()
         _perf_start = time.time()
@@ -203,17 +195,7 @@ class AgentLoop:
             )
             if not confirm_result.confirmed and confirm_result.method != "no_callback":
                 agent_context.set_state(AgentState.CONFIRMATION_NEEDED)
-                return {
-                    "success": False,
-                    "task_id": task_id,
-                    "session_id": agent_context.session_id,
-                    "confirmation_required": True,
-                    "intent_type": intent_type,
-                    "goal": goal,
-                    "confidence": confidence,
-                    "confirm_method": confirm_result.method,
-                    "message": "需要用户确认后才能执行",
-                }
+                return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error="需要用户确认后才能执行")
 
             skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
 
@@ -295,13 +277,7 @@ class AgentLoop:
 
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=False)
-            return {
-                "success": False,
-                "task_id": task_id,
-                "session_id": agent_context.session_id,
-                "error": str(e),
-                "message": "执行失败",
-            }
+            return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error=str(e))
 
     async def _reflect_loop(
         self,
@@ -378,27 +354,39 @@ class AgentLoop:
 
     def _build_result(
         self, context: AgentContext, cancelled: bool = False
-    ) -> Dict[str, Any]:
+    ) -> TaskResult:
         if cancelled:
-            return {
-                "success": False,
-                "task_id": context.task_id,
-                "session_id": context.session_id,
-                "results": context.execution_results,
-                "message": "任务已取消",
-            }
+            return TaskResult(
+                success=False,
+                content="",
+                task_type=TaskType.GENERAL_CHAT,
+                error="任务已取消",
+            )
+
+        results = context.execution_results
+        content = ""
+        sources = []
+        task_type = TaskType.GENERAL_CHAT
+        execution_time_ms = 0
+
+        if results:
+            last = results[-1]
+            data = last.get("data", {})
+            if isinstance(data, dict):
+                content = data.get("content", "")
+                sources = data.get("sources", [])
+                tt_str = data.get("task_type", "")
+                for tt in TaskType:
+                    if tt.value == tt_str:
+                        task_type = tt
+                        break
+            elif isinstance(data, str):
+                content = data
+            execution_time_ms = sum(r.get("execution_time", 0) for r in results) * 1000
 
         result_summary = ""
-        if context.execution_results:
-            last_result = context.execution_results[-1]
-            if last_result.get("success") and last_result.get("data"):
-                data = last_result["data"]
-                if isinstance(data, dict):
-                    result_summary = data.get(
-                        "content", data.get("analysis_result", str(data)[:200])
-                    )
-                else:
-                    result_summary = str(data)[:200]
+        if content:
+            result_summary = content[:200]
 
         if context.session_id and result_summary:
             self.session_manager.add_turn(
@@ -407,13 +395,16 @@ class AgentLoop:
                 task_type=context.intent.type.value if context.intent else None,
             )
 
-        return {
-            "success": True,
-            "task_id": context.task_id,
-            "session_id": context.session_id,
-            "results": context.execution_results,
-            "message": "执行完成",
-        }
+        success = any(r.get("success", False) for r in results) if results else False
+
+        return TaskResult(
+            success=success,
+            content=content,
+            task_type=task_type,
+            sources=sources,
+            execution_time_ms=execution_time_ms,
+            error="" if success else "执行失败",
+        )
 
     async def _phase_plan(
         self, context: AgentContext, conversation_history: Optional[List[Dict]] = None

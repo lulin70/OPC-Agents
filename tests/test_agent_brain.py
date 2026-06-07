@@ -346,7 +346,7 @@ class TestAgentLoop:
         result = await loop.run("帮我搜索资料")
 
         assert result is not None
-        assert "task_id" in result
+        assert result.success
 
     def test_get_task_status(self):
         """测试获取任务状态"""
@@ -568,7 +568,8 @@ class TestPHASE3EndToEnd:
     async def test_pause_task(self):
         loop = AgentLoop()
         result = await loop.run("帮我搜索AI趋势")
-        task_id = result["task_id"]
+        # TaskResult doesn't carry task_id; verify via contexts
+        task_id = loop.contexts.keys()[0]
         paused = await loop.pause_task(task_id)
         assert paused is False
 
@@ -616,14 +617,20 @@ class TestPHASE3EndToEnd:
     async def test_run_with_session_id(self):
         loop = AgentLoop()
         result = await loop.run("帮我搜索AI趋势", session_id="test-session-001")
-        assert result["session_id"] == "test-session-001"
+        assert result.success
+        # Verify session_id was stored in the context
+        ctx = next(iter(loop.contexts.values()))
+        assert ctx.session_id == "test-session-001"
 
     @pytest.mark.asyncio
     async def test_run_generates_session_id(self):
         loop = AgentLoop()
         result = await loop.run("帮我搜索AI趋势")
-        assert result["session_id"] is not None
-        assert len(result["session_id"]) > 0
+        assert result.success
+        # Verify a session_id was auto-generated in the context
+        ctx = next(iter(loop.contexts.values()))
+        assert ctx.session_id is not None
+        assert len(ctx.session_id) > 0
 
 
 if __name__ == "__main__":

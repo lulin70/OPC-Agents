@@ -16,11 +16,63 @@ import uuid
 import logging
 
 from .utils import BoundedDict
+from .task_engine_v3 import TaskEngineV3, TaskType
+from .strategist_brain import IntentType
 
 logger = logging.getLogger(__name__)
 
 MAX_TASK_HISTORY = 100
 COMMAND_TIMEOUT_SECONDS = 30
+
+INTENT_TO_TASK_MAP: Dict[IntentType, TaskType] = {
+    IntentType.SEARCH: TaskType.INFO_COLLECTION,
+    IntentType.ANALYSIS: TaskType.DATA_ANALYSIS,
+    IntentType.CREATION: TaskType.CONTENT_GENERATION,
+    IntentType.OPERATION: TaskType.BUSINESS_OPERATION,
+    IntentType.NOTIFICATION: TaskType.GENERAL_CHAT,
+    IntentType.COMBINED: TaskType.CONTENT_GENERATION,
+    IntentType.UNKNOWN: TaskType.GENERAL_CHAT,
+    IntentType.EMAIL: TaskType.BUSINESS_OPERATION,
+    IntentType.FINANCE: TaskType.BUSINESS_OPERATION,
+    IntentType.TASK: TaskType.BUSINESS_OPERATION,
+    IntentType.CRM: TaskType.BUSINESS_OPERATION,
+    IntentType.SOCIAL: TaskType.CONTENT_GENERATION,
+    IntentType.PROPOSAL: TaskType.CONTENT_GENERATION,
+    IntentType.INVOICE: TaskType.BUSINESS_OPERATION,
+    IntentType.REPORT: TaskType.CONTENT_GENERATION,
+    IntentType.CALENDAR: TaskType.BUSINESS_OPERATION,
+    IntentType.COMPETITOR: TaskType.DATA_ANALYSIS,
+    IntentType.PRICING: TaskType.DATA_ANALYSIS,
+    IntentType.TAX_REMINDER: TaskType.BUSINESS_OPERATION,
+    IntentType.DASHBOARD: TaskType.DATA_ANALYSIS,
+    IntentType.KNOWLEDGE: TaskType.INFO_COLLECTION,
+    IntentType.EXTENDED_SKILL: TaskType.BUSINESS_OPERATION,
+}
+
+SKILL_TO_TASK_MAP: Dict[str, TaskType] = {
+    "search": TaskType.INFO_COLLECTION,
+    "analysis": TaskType.DATA_ANALYSIS,
+    "content_generation": TaskType.CONTENT_GENERATION,
+    "execute_operation": TaskType.BUSINESS_OPERATION,
+    "send_notification": TaskType.GENERAL_CHAT,
+    "intent_analysis": TaskType.INFO_COLLECTION,
+    "output_result": TaskType.CONTENT_GENERATION,
+    "email": TaskType.BUSINESS_OPERATION,
+    "finance": TaskType.BUSINESS_OPERATION,
+    "task_manager": TaskType.BUSINESS_OPERATION,
+    "crm": TaskType.BUSINESS_OPERATION,
+    "social_publish": TaskType.CONTENT_GENERATION,
+    "proposal": TaskType.CONTENT_GENERATION,
+    "invoice": TaskType.BUSINESS_OPERATION,
+    "report": TaskType.CONTENT_GENERATION,
+    "calendar": TaskType.BUSINESS_OPERATION,
+    "competitor_watch": TaskType.DATA_ANALYSIS,
+    "pricing": TaskType.DATA_ANALYSIS,
+    "tax_reminder": TaskType.BUSINESS_OPERATION,
+    "dashboard": TaskType.DATA_ANALYSIS,
+    "knowledge_mgmt": TaskType.INFO_COLLECTION,
+    "ext_skill": TaskType.BUSINESS_OPERATION,
+}
 
 
 class ExecutionStatusType(Enum):
@@ -65,10 +117,10 @@ class ExecutionStatus:
 
 class ExecutorBrain:
 
-    def __init__(self, skill_registry=None, tool_system=None, task_engine_adapter=None):
+    def __init__(self, skill_registry=None, tool_system=None, task_engine=None):
         self.skill_registry = skill_registry
         self.tool_system = tool_system
-        self.task_engine_adapter = task_engine_adapter
+        self.task_engine = task_engine or TaskEngineV3()
         self.task_statuses: BoundedDict = BoundedDict(max_size=MAX_TASK_HISTORY)
 
     async def execute_step(
@@ -135,16 +187,32 @@ class ExecutorBrain:
     async def _execute_degraded(
         self, skill_id: str, parameters: Dict[str, Any], context: Optional[Dict]
     ) -> ExecutionResult:
-        if self.task_engine_adapter:
+        if self.task_engine:
             try:
-                result_dict = await self.task_engine_adapter.execute_skill_async(
-                    skill_id, parameters, context
+                task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
+                user_input = parameters.get("query", parameters.get("goal", parameters.get("user_input", parameters.get("input", parameters.get("content", "")))))
+                if not user_input:
+                    return ExecutionResult(success=False, error=f"No input for skill: {skill_id}")
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: self.task_engine.execute(
+                        user_input=user_input,
+                        session_ctx=parameters.get("session_ctx"),
+                        business_type=parameters.get("business_type"),
+                        task_type_hint=task_type,
+                    )
                 )
                 return ExecutionResult(
-                    success=result_dict.get("success", False),
-                    data=result_dict.get("data", {}),
-                    error=result_dict.get("error"),
-                    execution_time=result_dict.get("execution_time", 0),
+                    success=result.success,
+                    data={
+                        "content": result.content,
+                        "sources": result.sources or [],
+                        "task_type": result.task_type.value if result.task_type else None,
+                        "deliverable_format": result.deliverable_format,
+                    },
+                    error=result.error,
+                    execution_time=result.execution_time_ms / 1000.0 if result.execution_time_ms else 0,
                 )
             except Exception as e:
                 logger.warning("降级执行失败: %s", e)
@@ -177,22 +245,36 @@ class ExecutorBrain:
             skill = self.skill_registry.get_skill(skill_id)
             if skill is not None:
                 if not skill.enabled:
-                    if self.task_engine_adapter:
+                    if self.task_engine:
                         try:
-                            result_dict = (
-                                await self.task_engine_adapter.execute_skill_async(
-                                    skill_id, parameters, context
+                            task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
+                            user_input = parameters.get("query", parameters.get("goal", parameters.get("user_input", parameters.get("input", parameters.get("content", "")))))
+                            if not user_input:
+                                return ExecutionResult(success=False, error=f"技能已禁用且无输入: {skill_id}")
+                            loop = asyncio.get_running_loop()
+                            result = await loop.run_in_executor(
+                                None,
+                                lambda: self.task_engine.execute(
+                                    user_input=user_input,
+                                    session_ctx=parameters.get("session_ctx"),
+                                    business_type=parameters.get("business_type"),
+                                    task_type_hint=task_type,
                                 )
                             )
                             return ExecutionResult(
-                                success=result_dict.get("success", False),
-                                data=result_dict.get("data", {}),
-                                error=result_dict.get("error"),
-                                execution_time=result_dict.get("execution_time", 0),
+                                success=result.success,
+                                data={
+                                    "content": result.content,
+                                    "sources": result.sources or [],
+                                    "task_type": result.task_type.value if result.task_type else None,
+                                    "deliverable_format": result.deliverable_format,
+                                },
+                                error=result.error,
+                                execution_time=result.execution_time_ms / 1000.0 if result.execution_time_ms else 0,
                             )
                         except Exception as adapter_e:
                             logger.warning(
-                                "TaskEngineAdapter降级执行失败: %s", adapter_e
+                                "TaskEngineV3降级执行失败: %s", adapter_e
                             )
                     return ExecutionResult(
                         success=False, error=f"技能已禁用: {skill_id}"
@@ -213,72 +295,114 @@ class ExecutorBrain:
                             success=True, data={"result": result}
                         )
 
-                    if not exec_result.success and self.task_engine_adapter:
+                    if not exec_result.success and self.task_engine:
                         try:
-                            result_dict = (
-                                await self.task_engine_adapter.execute_skill_async(
-                                    skill_id, parameters, context
+                            task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
+                            user_input = parameters.get("query", parameters.get("goal", parameters.get("user_input", parameters.get("input", parameters.get("content", "")))))
+                            if user_input:
+                                loop = asyncio.get_running_loop()
+                                te_result = await loop.run_in_executor(
+                                    None,
+                                    lambda: self.task_engine.execute(
+                                        user_input=user_input,
+                                        session_ctx=parameters.get("session_ctx"),
+                                        business_type=parameters.get("business_type"),
+                                        task_type_hint=task_type,
+                                    )
                                 )
-                            )
-                            fallback = ExecutionResult(
-                                success=result_dict.get("success", False),
-                                data=result_dict.get("data", {}),
-                                error=result_dict.get("error"),
-                                execution_time=result_dict.get("execution_time", 0),
-                            )
-                            if fallback.success:
-                                logger.info(
-                                    "skill_registry失败，task_engine_adapter降级成功: %s",
-                                    skill_id,
+                                fallback = ExecutionResult(
+                                    success=te_result.success,
+                                    data={
+                                        "content": te_result.content,
+                                        "sources": te_result.sources or [],
+                                        "task_type": te_result.task_type.value if te_result.task_type else None,
+                                        "deliverable_format": te_result.deliverable_format,
+                                    },
+                                    error=te_result.error,
+                                    execution_time=te_result.execution_time_ms / 1000.0 if te_result.execution_time_ms else 0,
                                 )
-                                return fallback
+                                if fallback.success:
+                                    logger.info(
+                                        "skill_registry失败，task_engine降级成功: %s",
+                                        skill_id,
+                                    )
+                                    return fallback
                         except Exception as adapter_e:
                             logger.warning(
-                                "TaskEngineAdapter降级执行失败: %s", adapter_e
+                                "TaskEngineV3降级执行失败: %s", adapter_e
                             )
 
                     return exec_result
                 except Exception as e:
-                    if self.task_engine_adapter:
+                    if self.task_engine:
                         try:
-                            result_dict = (
-                                await self.task_engine_adapter.execute_skill_async(
-                                    skill_id, parameters, context
+                            task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
+                            user_input = parameters.get("query", parameters.get("goal", parameters.get("user_input", parameters.get("input", parameters.get("content", "")))))
+                            if user_input:
+                                loop = asyncio.get_running_loop()
+                                te_result = await loop.run_in_executor(
+                                    None,
+                                    lambda: self.task_engine.execute(
+                                        user_input=user_input,
+                                        session_ctx=parameters.get("session_ctx"),
+                                        business_type=parameters.get("business_type"),
+                                        task_type_hint=task_type,
+                                    )
                                 )
-                            )
-                            fallback = ExecutionResult(
-                                success=result_dict.get("success", False),
-                                data=result_dict.get("data", {}),
-                                error=result_dict.get("error"),
-                                execution_time=result_dict.get("execution_time", 0),
-                            )
-                            if fallback.success:
-                                logger.info(
-                                    "skill_registry异常，task_engine_adapter降级成功: %s",
-                                    skill_id,
+                                fallback = ExecutionResult(
+                                    success=te_result.success,
+                                    data={
+                                        "content": te_result.content,
+                                        "sources": te_result.sources or [],
+                                        "task_type": te_result.task_type.value if te_result.task_type else None,
+                                        "deliverable_format": te_result.deliverable_format,
+                                    },
+                                    error=te_result.error,
+                                    execution_time=te_result.execution_time_ms / 1000.0 if te_result.execution_time_ms else 0,
                                 )
-                                return fallback
+                                if fallback.success:
+                                    logger.info(
+                                        "skill_registry异常，task_engine降级成功: %s",
+                                        skill_id,
+                                    )
+                                    return fallback
                         except Exception as adapter_e:
                             logger.warning(
-                                "TaskEngineAdapter降级执行失败: %s", adapter_e
+                                "TaskEngineV3降级执行失败: %s", adapter_e
                             )
                     return ExecutionResult(
                         success=False, error=f"技能执行异常: {str(e)}"
                     )
 
-        if self.task_engine_adapter:
+        if self.task_engine:
             try:
-                result_dict = await self.task_engine_adapter.execute_skill_async(
-                    skill_id, parameters, context
+                task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
+                user_input = parameters.get("query", parameters.get("goal", parameters.get("user_input", parameters.get("input", parameters.get("content", "")))))
+                if not user_input:
+                    return ExecutionResult(success=False, error=f"技能不存在且无输入: {skill_id}")
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: self.task_engine.execute(
+                        user_input=user_input,
+                        session_ctx=parameters.get("session_ctx"),
+                        business_type=parameters.get("business_type"),
+                        task_type_hint=task_type,
+                    )
                 )
                 return ExecutionResult(
-                    success=result_dict.get("success", False),
-                    data=result_dict.get("data", {}),
-                    error=result_dict.get("error"),
-                    execution_time=result_dict.get("execution_time", 0),
+                    success=result.success,
+                    data={
+                        "content": result.content,
+                        "sources": result.sources or [],
+                        "task_type": result.task_type.value if result.task_type else None,
+                        "deliverable_format": result.deliverable_format,
+                    },
+                    error=result.error,
+                    execution_time=result.execution_time_ms / 1000.0 if result.execution_time_ms else 0,
                 )
             except Exception as e:
-                logger.warning("TaskEngineAdapter执行失败: %s", e)
+                logger.warning("TaskEngineV3执行失败: %s", e)
 
         return ExecutionResult(
             success=False, error=f"技能不存在且无可用执行器: {skill_id}"

@@ -8,7 +8,7 @@ MCPProtocol — Model Context Protocol 支持
 - 提示词模板（MCP prompts/list → PersonaManager）
 
 架构位置：
-  MCP客户端 → MCPServer → SkillRegistry / TaskEngineAdapter / PersonaManager
+  MCP客户端 → MCPServer → SkillRegistry / TaskEngineV3 / PersonaManager
 
 参考规范：https://spec.modelcontextprotocol.io/specification/2024-11-05/
 """
@@ -74,9 +74,9 @@ class MCPPrompt:
 
 class MCPServer:
 
-    def __init__(self, skill_registry=None, task_engine_adapter=None):
+    def __init__(self, skill_registry=None, task_engine=None):
         self.skill_registry = skill_registry
-        self.task_engine_adapter = task_engine_adapter
+        self.task_engine = task_engine
         self._tools: Dict[str, MCPTool] = {}
         self._resources: Dict[str, MCPResource] = {}
         self._prompts: Dict[str, MCPPrompt] = {}
@@ -313,34 +313,31 @@ class MCPServer:
                                 return {"content": [{"type": "text", "text": content}]}
                     except Exception as e:
                         logger.warning(
-                            "SkillRegistry execute failed, falling back to task_engine_adapter: %s",
+                            "SkillRegistry execute failed, falling back to task_engine: %s",
                             e,
                         )
-            if self.task_engine_adapter:
-                result = self.task_engine_adapter.execute_skill(
-                    skill_id="content_generation",
-                    parameters={"query": user_input, "goal": user_input},
+            if self.task_engine:
+                result = self.task_engine.execute(
+                    user_input=user_input,
+                    task_type_hint=None,
                 )
-                content = result.get("data", {}).get("content", "")
+                content = result.content or ""
                 return {
                     "content": [
                         {"type": "text", "text": content or "No content generated"}
                     ]
                 }
 
-        if tool_name == "search_web" and self.task_engine_adapter:
-            result = self.task_engine_adapter.execute_skill(
-                skill_id="search",
-                parameters={
-                    "query": arguments.get("query", ""),
-                    "max_results": arguments.get("max_results", 5),
-                },
+        if tool_name == "search_web" and self.task_engine:
+            result = self.task_engine.execute(
+                user_input=arguments.get("query", ""),
+                task_type_hint=None,
             )
             return {
                 "content": [
                     {
                         "type": "text",
-                        "text": json.dumps(result.get("data", {}), ensure_ascii=False),
+                        "text": result.content or "",
                     }
                 ]
             }

@@ -457,33 +457,21 @@ def save_deliverable(
 
 
 def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
-    """Execute task via AgentLoop (Three-Sage Architecture) with fallback to TaskEngineV3"""
-    import os as _os
+    """Execute task via AgentLoop (Three-Sage Architecture)"""
     import asyncio
-
-    use_agent_loop = st.session_state.get("exec_mode", _t("mode_quality")) == _t(
-        "mode_quality"
-    )
-
-    if not use_agent_loop:
-        return execute_task_and_deliver(
-            prompt, session_ctx=session_ctx, business_type=business_type
-        )
 
     try:
         from opc_manager.agent_loop import AgentLoop
-        from opc_manager.task_engine_adapter import TaskEngineAdapter
         from opc_manager.task_engine_v3 import task_engine_v3
 
         if "agent_loop" not in st.session_state:
-            adapter = TaskEngineAdapter(task_engine=task_engine_v3)
             from opc_manager.simple_llm_service import SimpleLLMService
             from opc_manager.skill_registry import SkillRegistry
 
             simple_llm = SimpleLLMService()
             skill_registry = SkillRegistry()
             st.session_state.agent_loop = AgentLoop(
-                task_engine_adapter=adapter,
+                task_engine=task_engine_v3,
                 llm_service=simple_llm,
                 skill_registry=skill_registry,
             )
@@ -491,7 +479,7 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
         loop = asyncio.new_event_loop()
         try:
-            result_dict = loop.run_until_complete(
+            task_result = loop.run_until_complete(
                 agent_loop.run(
                     prompt,
                     session_id=(
@@ -509,38 +497,15 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
         finally:
             loop.close()
 
-        if not result_dict.get("success"):
-            logger.warning("[frontend] AgentLoop执行失败，降级到TaskEngineV3")
-            return execute_task_and_deliver(
-                prompt, session_ctx=session_ctx, business_type=business_type
-            )
-
-        from opc_manager.task_engine_adapter import TaskEngineAdapter as TEA
-
-        task_result = TEA.dict_to_task_result(result_dict)
+        if not task_result.success:
+            logger.warning("[frontend] AgentLoop执行失败: %s", task_result.error)
+            return None, False, None, None, None
 
         if not task_result.content:
-            results = result_dict.get("results", [])
-            if results:
-                last = results[-1]
-                data = last.get("data", {})
-                if isinstance(data, dict):
-                    task_result.content = data.get("content", "")
-                elif isinstance(data, str):
-                    task_result.content = data
+            logger.warning("[frontend] AgentLoop返回空内容")
+            return None, False, None, None, None
 
-        if not task_result.content:
-            logger.warning("[frontend] AgentLoop返回空内容，降级到TaskEngineV3")
-            return execute_task_and_deliver(
-                prompt, session_ctx=session_ctx, business_type=business_type
-            )
-
-        from opc_manager.task_engine_v3 import TaskType
-
-        if (
-            task_result.task_type == TaskType.GENERAL_CHAT
-            and len(task_result.content) < 300
-        ):
+        if task_result.task_type.value == "general_chat" and len(task_result.content) < 300:
             return task_result.content, True, None, "general_chat", None
 
         meta_lines = []
@@ -553,6 +518,8 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
         meta_lines.append("🧠 三贤者架构执行")
         if task_result.sources:
             meta_lines.append(f"🔗 信息来源: {len(task_result.sources)} 条")
+        if task_result.deliverable_format:
+            meta_lines.append(f"📦 格式: {task_result.deliverable_format}")
 
         meta_str = "\n".join(meta_lines)
         content_with_meta = f"{task_result.content}\n\n---\n*{meta_str}*"
@@ -579,99 +546,8 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
     except Exception as e:
         import traceback
-
         tb = traceback.format_exc()
-        logger.warning("[frontend] AgentLoop异常，降级到TaskEngineV3: %s\n%s", e, tb)
-        return execute_task_and_deliver(
-            prompt, session_ctx=session_ctx, business_type=business_type
-        )
-
-
-def execute_task_and_deliver(prompt, session_ctx=None, business_type=None):
-    """Execute task pipeline — from user input to file delivery"""
-    try:
-        logger.debug("[frontend] 开始执行任务: %s", prompt[:50])
-        from opc_manager.task_engine_v3 import task_engine_v3, TaskType
-
-        engine = task_engine_v3
-
-        result = engine.execute(
-            prompt,
-            session_ctx=session_ctx,
-            business_type=business_type,
-        )
-        logger.debug(
-            f"[frontend] 任务执行完成: success={result.success}, content_len={len(result.content) if result.content else 0}"
-        )
-
-        if not result.success:
-            logger.debug("[frontend] 任务标记为失败: %s", result.error)
-            return None, False, None, None, None
-
-        if not result.content:
-            logger.debug("[frontend] 内容为空!")
-            return None, False, None, None, None
-
-        if result.task_type == TaskType.GENERAL_CHAT and len(result.content) < 300:
-            logger.debug("[frontend] 闲聊/短回复，不生成成果物文件")
-            return result.content, True, None, "general_chat", None
-
-        meta_lines = []
-        if result.execution_time_ms:
-            meta_lines.append(f"⏱️ 执行耗时: {result.execution_time_ms:.0f}ms")
-        task_type_label = _t(
-            _TASK_TYPE_LABELS.get(result.task_type.name, _TASK_TYPE_GENERIC)
-        )
-        meta_lines.append(f"📌 任务类型: {task_type_label}")
-        if result.sources:
-            meta_lines.append(f"🔗 信息来源: {len(result.sources)} 条")
-        if result.deliverable_format:
-            meta_lines.append(f"📦 格式: {result.deliverable_format}")
-
-        meta_str = "\n".join(meta_lines)
-
-        has_api_key = _has_api_key()
-        mode_tag = ""
-        if not has_api_key:
-            mode_tag = f"\n\n> {_t('mode_template')}"
-        else:
-            from opc_manager.simple_llm_service import SimpleLLMService
-
-            svc = SimpleLLMService()
-            if svc.is_available():
-                mode_tag = f"\n\n> {_t('mode_ai')}"
-            else:
-                mode_tag = f"\n\n> {_t('mode_rule')}"
-
-        content_with_meta = f"{result.content}{mode_tag}\n\n---\n*{meta_str}*"
-
-        logger.debug("[frontend] 准备保存文件...")
-        filepath, deliverable_record = save_deliverable(
-            content=content_with_meta,
-            prompt=prompt,
-            task_type=result.task_type.value,
-            meta={
-                "sources_count": len(result.sources) if result.sources else 0,
-                "format": result.deliverable_format,
-                "execution_time_ms": result.execution_time_ms,
-                "success": result.success,
-            },
-        )
-        logger.debug("[frontend] 文件已保存: %s", filepath)
-
-        return (
-            content_with_meta,
-            result.success,
-            filepath,
-            result.task_type.value,
-            deliverable_record,
-        )
-
-    except Exception as e:
-        import traceback
-
-        tb = traceback.format_exc()
-        logger.debug("[frontend] execute_task_and_deliver error: %s\n%s", e, tb)
+        logger.error("[frontend] AgentLoop异常: %s\n%s", e, tb)
         return None, False, None, None, None
 
 

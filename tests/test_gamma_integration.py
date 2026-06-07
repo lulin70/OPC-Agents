@@ -535,11 +535,10 @@ class TestAgentLoopIntegration(unittest.TestCase):
         os.environ["OPC_SKIP_REFLECT"] = "true"
         try:
             from opc_manager.agent_loop import AgentLoop
-            from opc_manager.task_engine_adapter import TaskEngineAdapter
+            from opc_manager.task_engine_v3 import TaskEngineV3
 
-            adapter = TaskEngineAdapter(task_engine=MagicMock())
-            adapter.task_engine.execute = MagicMock()
-            adapter.task_engine.execute.return_value = MagicMock(
+            mock_engine = MagicMock(spec=TaskEngineV3)
+            mock_engine.execute.return_value = MagicMock(
                 success=True,
                 content="fast result",
                 task_type=TaskType.GENERAL_CHAT,
@@ -549,21 +548,20 @@ class TestAgentLoopIntegration(unittest.TestCase):
                 deliverable_format="text",
                 search_results=[],
             )
-            loop_instance = AgentLoop(task_engine_adapter=adapter)
+            loop_instance = AgentLoop(task_engine=mock_engine)
             result = asyncio.new_event_loop().run_until_complete(
                 loop_instance.run("test fast mode")
             )
-            self.assertTrue(result["success"])
+            self.assertTrue(result.success)
         finally:
             os.environ.pop("OPC_SKIP_REFLECT", None)
 
     def test_agent_loop_with_task_engine_adapter(self):
         from opc_manager.agent_loop import AgentLoop
-        from opc_manager.task_engine_adapter import TaskEngineAdapter
+        from opc_manager.task_engine_v3 import TaskEngineV3
 
-        adapter = TaskEngineAdapter(task_engine=MagicMock())
-        adapter.task_engine.execute = MagicMock()
-        adapter.task_engine.execute.return_value = MagicMock(
+        mock_engine = MagicMock(spec=TaskEngineV3)
+        mock_engine.execute.return_value = MagicMock(
             success=True,
             content="adapter result",
             task_type=TaskType.CONTENT_GENERATION,
@@ -573,13 +571,13 @@ class TestAgentLoopIntegration(unittest.TestCase):
             deliverable_format="markdown",
             search_results=[],
         )
-        loop_instance = AgentLoop(task_engine_adapter=adapter)
+        loop_instance = AgentLoop(task_engine=mock_engine)
         os.environ["OPC_SKIP_REFLECT"] = "true"
         try:
             result = asyncio.new_event_loop().run_until_complete(
                 loop_instance.run("test adapter integration")
             )
-            self.assertTrue(result["success"])
+            self.assertTrue(result.success)
         finally:
             os.environ.pop("OPC_SKIP_REFLECT", None)
 

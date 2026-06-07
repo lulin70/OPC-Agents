@@ -63,7 +63,16 @@ class WeChatAgentBridge:
                 content="抱歉，处理您的请求时出现了错误，请稍后重试。"
             )
 
-    def _format_response(self, result: dict) -> WeChatResponse:
+    def _format_response(self, result) -> WeChatResponse:
+        # Handle TaskResult (new unified return type)
+        from opc_manager.task_engine_v3 import TaskResult
+        if isinstance(result, TaskResult):
+            if not result.success:
+                return WeChatResponse(content=result.error or "执行失败")
+            content = result.content or ""
+            return WeChatResponse(content=str(content)[:500])
+
+        # Legacy dict format (shouldn't happen but safe fallback)
         if not result.get("success"):
             if result.get("confirmation_required"):
                 card = WeChatGateway.build_confirmation_card(

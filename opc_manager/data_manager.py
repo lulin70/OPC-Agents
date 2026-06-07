@@ -441,7 +441,7 @@ def _add_column_if_not_exists(
 ) -> None:
     try:
         cols = [
-            row["name"]
+            row[1]
             for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
         ]
         if column not in cols:

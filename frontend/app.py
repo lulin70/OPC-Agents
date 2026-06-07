@@ -369,15 +369,6 @@ with st.sidebar:
         logger.warning("[App] Knowledge base sidebar init failed: %s", e)
 
     st.divider()
-    if "exec_mode" not in st.session_state:
-        st.session_state.exec_mode = _t("mode_quality")
-    exec_mode = st.radio(
-        _t("exec_mode"),
-        [_t("mode_quality"), _t("mode_fast")],
-        index=0 if st.session_state.exec_mode == _t("mode_quality") else 1,
-        help=_t("exec_mode_help"),
-    )
-    st.session_state.exec_mode = exec_mode
 
     st.divider()
     st.markdown(_t("tools_section"))
