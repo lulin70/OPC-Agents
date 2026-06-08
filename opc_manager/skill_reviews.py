@@ -273,7 +273,7 @@ class SkillReviewManager:
                 FROM skill_reviews
                 WHERE skill_id IN ({placeholders}) AND status = 'active'
                 GROUP BY skill_id
-            """,
+            """,  # nosec B608 — placeholders are "?" only, values parameterized
                 skill_ids,
             ).fetchall()
             return {row[0]: round(row[1], 1) for row in rows}
