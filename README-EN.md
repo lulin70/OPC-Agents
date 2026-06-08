@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.2.0 | **Status**: Beta | **License**: MIT
+> **Version**: v0.2.5 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -71,7 +71,7 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - At least one LLM API Key (recommended: [MOKA](https://moka-ai.com))
 
 ### Option 1: pip Install
@@ -140,7 +140,7 @@ docker compose up -d
 |-------|----------|
 | Page shows "Template Mode" | Check if API Key is filled in `.env` |
 | Port in use | `opc-agents -- --server.port 8502` |
-| Wrong Python version | Requires Python 3.9+, run `python3 --version` to check |
+| Wrong Python version | Requires Python 3.10+, run `python3 --version` to check |
 | Dependency install fails | Try `pip install --upgrade pip` and retry |
 
 ## Project Structure
@@ -232,7 +232,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # Test suite (39 test files, 1126 tests, 100% pass)
+├── tests/                 # Test suite (69 test files, 2572 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
@@ -251,7 +251,7 @@ OPC-Agents/
 # Install dev dependencies
 pip install -r requirements-dev.txt
 
-# Run all tests (1126 test cases)
+# Run all tests (2572 test cases)
 PYTHONPATH=. pytest tests/ -v
 
 # Run with coverage report
@@ -267,6 +267,9 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 2572 tests / 69 files |
+| **0.2.4** | **2026-05-25** | **Memory + Knowledge Enhancement** — CarryMem deep integration + knowledge search optimization + notification system + extended tests |
+| **0.2.3** | **2026-05-22** | **CarryMem Integration** — Cross-session persistent memory (MemoryBridge) + rule engine + flywheel mechanism + LLM cache + skill scoring |
 | **0.2.0** | **2026-05-17** | **FINAL** — Product Release: Unified settings + onboarding + data backup/restore + error handling + WeChat E2E + modular dashboard + i18n tri-lingual + Skill Marketplace V2 + global search + Apple Shortcuts + API Key encryption (Fernet) + code modularization refactor (84 modules / 39 test files / 1126 tests) |
 | 0.1.9-delta | 2026-05-09 | Real-run verification: Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring |
 | 0.1.9-gamma | 2026-05-09 | Refactoring: Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor |

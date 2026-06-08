@@ -364,4 +364,4 @@ pip install --upgrade -r requirements.txt
 ---
 
 *最終更新: 2026-05-17*
-*バージョン: v0.2.0 FINAL*
+*バージョン: v0.2.5*

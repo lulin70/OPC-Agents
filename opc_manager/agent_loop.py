@@ -235,7 +235,12 @@ class AgentLoop:
             if loop_result is not None:
                 if loop_result.get("cancelled"):
                     return self._build_result(agent_context, cancelled=True)
-                return loop_result
+                return TaskResult(
+                    success=loop_result.get("success", False),
+                    content="",
+                    task_type=TaskType.GENERAL_CHAT,
+                    error=loop_result.get("error", ""),
+                )
 
             agent_context.set_state(AgentState.COMPLETED)
             logger.info("AgentLoop 执行完成: %s", task_id)
@@ -349,6 +354,17 @@ class AgentLoop:
                 continue
         else:
             logger.warning("反思循环已达上限 %s 次", self.max_reflect_rounds)
+            if context.execution_results and not all(
+                r.get("success", False) for r in context.execution_results
+            ):
+                context.set_state(AgentState.FAILED)
+                return {
+                    "success": False,
+                    "task_id": context.task_id,
+                    "session_id": context.session_id,
+                    "results": context.execution_results,
+                    "error": "反思循环已达上限，且执行结果存在失败",
+                }
 
         return None
 
@@ -395,7 +411,7 @@ class AgentLoop:
                 task_type=context.intent.type.value if context.intent else None,
             )
 
-        success = any(r.get("success", False) for r in results) if results else False
+        success = all(r.get("success", False) for r in results) if results else False
 
         return TaskResult(
             success=success,
@@ -1127,7 +1143,12 @@ class AgentLoop:
             if loop_result is not None:
                 if loop_result.get("cancelled"):
                     return self._build_result(context, cancelled=True)
-                return loop_result
+                return TaskResult(
+                    success=loop_result.get("success", False),
+                    content="",
+                    task_type=TaskType.GENERAL_CHAT,
+                    error=loop_result.get("error", ""),
+                )
 
             context.set_state(AgentState.COMPLETED)
             return self._build_result(context)

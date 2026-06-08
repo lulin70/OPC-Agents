@@ -148,6 +148,15 @@ class ExecutorBrain:
 
             execution_time = asyncio.get_running_loop().time() - start_time
 
+            if result is None:
+                logger.error("步骤 %s 执行返回None", step_id)
+                return ExecutionResult(
+                    success=False,
+                    error="执行返回空结果",
+                    result_type=ExecutionResultType.FAILURE,
+                    execution_time=execution_time,
+                )
+
             if result.success:
                 logger.info("步骤 %s 执行成功，耗时: %.2fs", step_id, execution_time)
                 return ExecutionResult(

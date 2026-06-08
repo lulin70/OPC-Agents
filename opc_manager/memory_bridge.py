@@ -571,6 +571,8 @@ class MemoryBridge:
         except Exception as e:
             logger.warning("[MemoryBridge] Rules export failed: %s", e)
 
+        return export
+
     def _try_auto_add_rule(self, suggestion: Any) -> None:
         """尝试自动添加规则建议（仅添加软规则，硬规则需用户确认）"""
         if not suggestion:

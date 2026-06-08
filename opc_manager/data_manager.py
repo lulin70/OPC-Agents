@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import sqlite3
 import stat
 import threading
@@ -436,16 +437,28 @@ def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
     )
 
 
+_IDENTIFIER_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
+
+
+def _validate_identifier(name: str) -> str:
+    """Validate SQL identifier to prevent injection in dynamic SQL."""
+    if not _IDENTIFIER_RE.match(name):
+        raise ValueError(f"Invalid SQL identifier: {name!r}")
+    return name
+
+
 def _add_column_if_not_exists(
     conn: sqlite3.Connection, table: str, column: str, col_type: str
 ) -> None:
     try:
+        safe_table = _validate_identifier(table)
+        safe_column = _validate_identifier(column)
         cols = [
             row[1]
-            for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+            for row in conn.execute(f"PRAGMA table_info({safe_table})").fetchall()
         ]
-        if column not in cols:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+        if safe_column not in cols:
+            conn.execute(f"ALTER TABLE {safe_table} ADD COLUMN {safe_column} {col_type}")
     except sqlite3.OperationalError as e:
         logger.warning(
             "[DataManager] Migration add column %s.%s failed: %s", table, column, e

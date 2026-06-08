@@ -28,12 +28,12 @@ for /f "tokens=1,2 delims=." %%a in ("%PYVER%") do (
 )
 
 if %MAJOR% LSS 3 (
-    echo ❌ 错误：需要 Python 3.9 或更高版本
+    echo ❌ 错误：需要 Python 3.10 或更高版本
     pause
     exit /b 1
 )
-if %MAJOR% EQU 3 if %MINOR% LSS 9 (
-    echo ❌ 错误：需要 Python 3.9 或更高版本
+if %MAJOR% EQU 3 if %MINOR% LSS 10 (
+    echo ❌ 错误：需要 Python 3.10 或更高版本
     pause
     exit /b 1
 )

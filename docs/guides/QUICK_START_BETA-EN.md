@@ -364,4 +364,4 @@ Thank you for your participation! We value your feedback:
 ---
 
 *Last updated: 2026-05-17*
-*Version: v0.2.0 FINAL*
+*Version: v0.2.5*

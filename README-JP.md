@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.2.0 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.2.5 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -71,7 +71,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ### 前提条件
 
-- Python 3.9+
+- Python 3.10+
 - 少なくとも1つのLLM APIキー（推奨: [MOKA](https://moka-ai.com)）
 
 ### 方法1：pipインストール
@@ -126,7 +126,7 @@ cp .env.example .env
 |------|--------|
 | ページに「テンプレートモード」と表示 | `.env`ファイルにAPIキーが入力されているか確認 |
 | ポートが使用中 | `opc-agents -- --server.port 8502` |
-| Pythonバージョンが違う | Python 3.9+が必要、`python3 --version`で確認 |
+| Pythonバージョンが違う | Python 3.10+が必要、`python3 --version`で確認 |
 | 依存パッケージのインストール失敗 | `pip install --upgrade pip`を試してから再実行 |
 
 ## プロジェクト構成
@@ -218,7 +218,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # テストスイート（39テストファイル、1126テスト、100%合格）
+├── tests/                 # テストスイート（69テストファイル、2572テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
@@ -237,7 +237,7 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行（1126テストケース）
+# 全テストを実行（2572テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行
@@ -253,6 +253,9 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| **0.2.5** | **2026-06-07** | **アーキテクチャ統合+セキュリティ強化** — アーキテクチャ統合リファクター+LLM同時実行制御+セキュリティ強化+2572テスト/69ファイル |
+| **0.2.4** | **2026-05-25** | **記憶+ナレッジベース強化** — CarryMem深層統合+ナレッジ検索最適化+通知システム+拡張テスト |
+| **0.2.3** | **2026-05-22** | **CarryMem統合** — クロスセッション永続記憶(MemoryBridge)+ルールエンジン+フライホイール機構+LLMキャッシュ+スキルスコアリング |
 | **0.2.0** | **2026-05-17** | **FINAL** — 製品リリース：統一設定管理+初回ガイド+データバックアップ/リストア+エラー処理+WeChat E2E+モジュラーダッシュボード+i18n 3言語+スキルマーケットV2+グローバル検索+Apple Shortcuts+API Key暗号化(Fernet)+コードモジュラー化リファクター（84モジュール/39テストファイル/1126テスト） |
 | 0.1.9-delta | 2026-05-09 | 実動作検証：三賢者LLM駆動+スキルマーケットFastAPI+MCP転送+プラグイン例+エディタUI+パフォーマンス監視 |
 | 0.1.9-gamma | 2026-05-09 | リファクタリング：三賢者統合+スキルマーケットAPI+MCPプロトコル+プラグインシステム+スキルエディタ |
