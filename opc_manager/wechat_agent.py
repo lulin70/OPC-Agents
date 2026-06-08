@@ -66,6 +66,7 @@ class WeChatAgentBridge:
     def _format_response(self, result) -> WeChatResponse:
         # Handle TaskResult (new unified return type)
         from opc_manager.task_engine_v3 import TaskResult
+
         if isinstance(result, TaskResult):
             if not result.success:
                 return WeChatResponse(content=result.error or "执行失败")

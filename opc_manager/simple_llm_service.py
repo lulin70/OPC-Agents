@@ -21,6 +21,7 @@ def discover_llm_config() -> Dict[str, str]:
     # 优先通过 SettingsManager 获取（不通过 os.environ）
     try:
         from opc_manager.settings import get_settings
+
         settings = get_settings()
         llm_config = settings.get_llm_config()
         if llm_config.get("api_key"):
@@ -73,6 +74,7 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
     moka_model = os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
     try:
         from opc_manager.settings import get_settings
+
         settings = get_settings()
         moka_key = settings.get_api_key("moka") or ""
         llm_config = settings.get_llm_config()

@@ -33,6 +33,7 @@ def get_llm_async_semaphore() -> asyncio.Semaphore:
         _llm_async_semaphore = asyncio.Semaphore(LLM_CONCURRENCY_LIMIT)
     return _llm_async_semaphore
 
+
 _INJECTION_PATTERNS = [
     re.compile(
         r"(?i)(ignore|忽略)\s*(previous|之前的|above)\s*(instruction|指令|prompt)",
@@ -57,9 +58,7 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
         return None
 
     # Strategy 1: Markdown code fence extraction
-    _JSON_FENCE_RE = re.compile(
-        r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL
-    )
+    _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL)
     for match in _JSON_FENCE_RE.finditer(text):
         candidate = match.group(1).strip()
         try:
@@ -105,7 +104,11 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
                 candidate = text[start : i + 1]
                 try:
                     parsed = json.loads(candidate)
-                    if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
+                    if (
+                        isinstance(parsed, list)
+                        and parsed
+                        and isinstance(parsed[0], dict)
+                    ):
                         return parsed[0]
                 except json.JSONDecodeError:
                     start = -1

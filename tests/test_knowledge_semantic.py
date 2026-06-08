@@ -1,10 +1,15 @@
 """Unit tests for KnowledgeBridge semantic search and degradation."""
+
 import os
 import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
-from opc_manager.knowledge_bridge import KnowledgeBridge, LocalFolderAdapter, KnowledgeEntry
+from opc_manager.knowledge_bridge import (
+    KnowledgeBridge,
+    LocalFolderAdapter,
+    KnowledgeEntry,
+)
 
 
 class TestLocalFolderKeywordFallback(unittest.TestCase):
@@ -14,14 +19,19 @@ class TestLocalFolderKeywordFallback(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
         # Create test markdown files
         with open(os.path.join(self.tmpdir, "marketing.md"), "w") as f:
-            f.write("# Marketing Strategy\n\nWe need to focus on digital marketing channels.\n#marketing #strategy")
+            f.write(
+                "# Marketing Strategy\n\nWe need to focus on digital marketing channels.\n#marketing #strategy"
+            )
         with open(os.path.join(self.tmpdir, "tech.md"), "w") as f:
-            f.write("# Technical Architecture\n\nThe system uses microservices.\n#tech #architecture")
+            f.write(
+                "# Technical Architecture\n\nThe system uses microservices.\n#tech #architecture"
+            )
         with open(os.path.join(self.tmpdir, "notes.txt"), "w") as f:
             f.write("Random notes about nothing specific.")
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     @patch.dict(os.environ, {"OPC_EMBEDDING_ENABLED": "false"})
@@ -58,12 +68,17 @@ class TestLocalFolderSemanticSearch(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         with open(os.path.join(self.tmpdir, "sales.md"), "w") as f:
-            f.write("# Sales Revenue\n\nQuarterly revenue exceeded expectations.\n#sales #revenue")
+            f.write(
+                "# Sales Revenue\n\nQuarterly revenue exceeded expectations.\n#sales #revenue"
+            )
         with open(os.path.join(self.tmpdir, "dev.md"), "w") as f:
-            f.write("# Development Sprint\n\nCompleted all planned features.\n#dev #sprint")
+            f.write(
+                "# Development Sprint\n\nCompleted all planned features.\n#dev #sprint"
+            )
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     @patch("opc_manager.embedding_service.requests.get")
@@ -78,6 +93,7 @@ class TestLocalFolderSemanticSearch(unittest.TestCase):
 
         # Mock embeddings - sales doc gets higher similarity to "revenue" query
         call_count = [0]
+
         def mock_embed_side_effect(*args, **kwargs):
             call_count[0] += 1
             mock_r = MagicMock()
@@ -109,12 +125,15 @@ class TestKnowledgeBridgeIntegration(unittest.TestCase):
         self.assertFalse(kb.enabled)
         self.assertEqual(kb.search("test"), [])
 
-    @patch.dict(os.environ, {
-        "OPC_KB_ENABLED": "true",
-        "OPC_KB_TYPE": "local",
-        "OPC_KB_PATH": "/nonexistent",
-        "OPC_EMBEDDING_ENABLED": "false",
-    })
+    @patch.dict(
+        os.environ,
+        {
+            "OPC_KB_ENABLED": "true",
+            "OPC_KB_TYPE": "local",
+            "OPC_KB_PATH": "/nonexistent",
+            "OPC_EMBEDDING_ENABLED": "false",
+        },
+    )
     def test_nonexistent_path(self):
         kb = KnowledgeBridge()
         # Should still initialize but with empty results

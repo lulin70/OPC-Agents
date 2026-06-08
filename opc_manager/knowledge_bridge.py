@@ -112,18 +112,27 @@ class LocalFolderAdapter(KnowledgeAdapter):
                             }
                         )
                     except (OSError, UnicodeDecodeError) as e:
-                        logger.warning("[KnowledgeBridge] Obsidian config parsing failed: %s", e)
+                        logger.warning(
+                            "[KnowledgeBridge] Obsidian config parsing failed: %s", e
+                        )
         logger.info("[LocalFolder] 索引完成: %d 个文件", len(self._index))
 
         # Generate embeddings for semantic search
         if self._embedding_svc.enabled and self._index:
-            logger.info("[LocalFolder] Generating embeddings for %d documents...", len(self._index))
+            logger.info(
+                "[LocalFolder] Generating embeddings for %d documents...",
+                len(self._index),
+            )
             for entry in self._index:
                 # Use title + first 500 chars for embedding
                 embed_text = f"{entry['title']} {entry['content'][:500]}"
                 entry["embedding"] = self._embedding_svc.embed(embed_text)
             embedded_count = sum(1 for e in self._index if e.get("embedding"))
-            logger.info("[LocalFolder] Embeddings generated: %d/%d", embedded_count, len(self._index))
+            logger.info(
+                "[LocalFolder] Embeddings generated: %d/%d",
+                embedded_count,
+                len(self._index),
+            )
 
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:
         results = []
@@ -205,7 +214,9 @@ class ObsidianAdapter(LocalFolderAdapter):
                 with open(config_path, "r") as f:
                     self._obsidian_config = json.load(f)
             except Exception as e:
-                logger.warning("[KnowledgeBridge] Obsidian config loading failed: %s", e)
+                logger.warning(
+                    "[KnowledgeBridge] Obsidian config loading failed: %s", e
+                )
 
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:
         results = super().search(query, max_results)

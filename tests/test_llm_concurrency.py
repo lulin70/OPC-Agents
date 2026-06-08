@@ -1,4 +1,5 @@
 """Unit tests for LLM concurrency control (semaphores)."""
+
 import asyncio
 import threading
 import time
@@ -41,7 +42,9 @@ class TestThreadSemaphore(unittest.TestCase):
                     active_count -= 1
 
         # Start all threads; they will block on start_event while holding semaphore
-        threads = [threading.Thread(target=worker) for _ in range(LLM_CONCURRENCY_LIMIT + 3)]
+        threads = [
+            threading.Thread(target=worker) for _ in range(LLM_CONCURRENCY_LIMIT + 3)
+        ]
         for t in threads:
             t.start()
         # Give threads time to acquire semaphore up to the limit

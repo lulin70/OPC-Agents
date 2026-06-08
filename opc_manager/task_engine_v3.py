@@ -705,14 +705,18 @@ class TaskEngineV3(ContentGenerationMixin):
                             loop = asyncio.new_event_loop()
                             try:
                                 return loop.run_until_complete(
-                                    self._parallel_content_generation(sanitized, session_id)
+                                    self._parallel_content_generation(
+                                        sanitized, session_id
+                                    )
                                 )
                             finally:
                                 loop.close()
 
                         with ThreadPoolExecutor(max_workers=1) as executor:
                             future = executor.submit(_run_parallel)
-                            parallel_content = future.result(timeout=_PARALLEL_EXEC_TIMEOUT)
+                            parallel_content = future.result(
+                                timeout=_PARALLEL_EXEC_TIMEOUT
+                            )
 
                         result = TaskResult(
                             success=True,
@@ -755,7 +759,9 @@ class TaskEngineV3(ContentGenerationMixin):
 
                         with ThreadPoolExecutor(max_workers=1) as executor:
                             future = executor.submit(_run_parallel_analysis)
-                            parallel_content = future.result(timeout=_PARALLEL_EXEC_TIMEOUT)
+                            parallel_content = future.result(
+                                timeout=_PARALLEL_EXEC_TIMEOUT
+                            )
 
                         result = TaskResult(
                             success=True,
@@ -1452,7 +1458,7 @@ class TaskEngineV3(ContentGenerationMixin):
                                     "goal": search_query,
                                     "business_type": business_type,
                                 },
-                            )
+                            ),
                         )
                         skill_result = future.result(timeout=_SKILL_EXEC_TIMEOUT)
                 except RuntimeError:

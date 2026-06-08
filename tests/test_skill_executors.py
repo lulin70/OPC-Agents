@@ -23,6 +23,7 @@ from opc_manager.skill_models import SkillContext
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_mixin(
     llm_service=None,
     search_processor=None,
@@ -41,7 +42,9 @@ def _make_mixin(
     mixin._content_generator = None
     mixin._collab_in_progress = False
     # Stub methods from SkillRegistry that mixin methods call via self
-    mixin.execute_skill = AsyncMock(return_value={"success": True, "data": {"results": []}})
+    mixin.execute_skill = AsyncMock(
+        return_value={"success": True, "data": {"results": []}}
+    )
     mixin._execute_collaborative = MagicMock(return_value=None)
     return mixin
 
@@ -84,6 +87,7 @@ def _make_mock_tool_system():
 # Test: _execute_intent_analysis
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteIntentAnalysis(unittest.TestCase):
     """测试意图分析执行器"""
 
@@ -114,6 +118,7 @@ class TestExecuteIntentAnalysis(unittest.TestCase):
 # Test: _execute_search
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteSearch(unittest.TestCase):
     """测试搜索执行器"""
 
@@ -137,12 +142,12 @@ class TestExecuteSearch(unittest.TestCase):
 
     def test_cleans_query_special_chars(self):
         """清理查询中的特殊字符"""
-        result = _run(self.mixin._execute_search('test<>&"\'query'))
+        result = _run(self.mixin._execute_search("test<>&\"'query"))
         self.assertIn("results", result)
 
     def test_empty_query_returns_empty(self):
         """空查询返回空结果"""
-        result = _run(self.mixin._execute_search('  <>&"\'  '))
+        result = _run(self.mixin._execute_search("  <>&\"'  "))
         self.assertEqual(result["results"], [])
         self.assertEqual(result["count"], 0)
 
@@ -181,6 +186,7 @@ class TestExecuteSearch(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _do_web_search
 # ---------------------------------------------------------------------------
+
 
 class TestDoWebSearch(unittest.TestCase):
     """测试 Web 搜索底层方法"""
@@ -225,6 +231,7 @@ class TestDoWebSearch(unittest.TestCase):
 # Test: _execute_analysis
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteAnalysis(unittest.TestCase):
     """测试分析执行器"""
 
@@ -255,12 +262,19 @@ class TestExecuteAnalysis(unittest.TestCase):
         """LLM 分析正常路径"""
         gen_result = MagicMock()
         gen_result.success = True
-        gen_result.content = json.dumps({
-            "summary": "市场分析摘要",
-            "key_findings": ["发现1"],
-            "swot": {"strengths": ["S1"], "weaknesses": [], "opportunities": [], "threats": []},
-            "action_items": ["行动1"],
-        })
+        gen_result.content = json.dumps(
+            {
+                "summary": "市场分析摘要",
+                "key_findings": ["发现1"],
+                "swot": {
+                    "strengths": ["S1"],
+                    "weaknesses": [],
+                    "opportunities": [],
+                    "threats": [],
+                },
+                "action_items": ["行动1"],
+            }
+        )
         mock_llm.return_value = gen_result
 
         result = _run(self.mixin._execute_analysis(goal="市场分析"))
@@ -295,6 +309,7 @@ class TestExecuteAnalysis(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _execute_content_generation
 # ---------------------------------------------------------------------------
+
 
 class TestExecuteContentGeneration(unittest.TestCase):
     """测试内容生成执行器"""
@@ -343,6 +358,7 @@ class TestExecuteContentGeneration(unittest.TestCase):
 # Test: _execute_operation
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteOperation(unittest.TestCase):
     """测试操作执行器"""
 
@@ -352,13 +368,23 @@ class TestExecuteOperation(unittest.TestCase):
 
     def test_happy_path_read_file(self):
         """read_file 操作正常路径"""
-        result = _run(self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"}))
-        self.tool_system.call_tool.assert_called_once_with("file_read", {"path": "/tmp/test.txt"})
+        result = _run(
+            self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"})
+        )
+        self.tool_system.call_tool.assert_called_once_with(
+            "file_read", {"path": "/tmp/test.txt"}
+        )
 
     def test_happy_path_write_file(self):
         """write_file 操作正常路径"""
-        result = _run(self.mixin._execute_operation("write_file", {"path": "/tmp/out.txt", "content": "hi"}))
-        self.tool_system.call_tool.assert_called_once_with("file_write", {"path": "/tmp/out.txt", "content": "hi"})
+        result = _run(
+            self.mixin._execute_operation(
+                "write_file", {"path": "/tmp/out.txt", "content": "hi"}
+            )
+        )
+        self.tool_system.call_tool.assert_called_once_with(
+            "file_write", {"path": "/tmp/out.txt", "content": "hi"}
+        )
 
     def test_unsupported_operation(self):
         """不支持的操作返回错误"""
@@ -369,7 +395,9 @@ class TestExecuteOperation(unittest.TestCase):
     def test_tool_system_exception(self):
         """工具系统异常时返回错误"""
         self.tool_system.call_tool.side_effect = Exception("tool error")
-        result = _run(self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"}))
+        result = _run(
+            self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"})
+        )
         self.assertFalse(result["success"])
         self.assertIn("tool error", result["error"])
 
@@ -390,6 +418,7 @@ class TestExecuteOperation(unittest.TestCase):
 # Test: _execute_notification
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteNotification(unittest.TestCase):
     """测试通知执行器"""
 
@@ -399,7 +428,9 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_happy_path(self):
         """正常发送通知"""
-        result = _run(self.mixin._execute_notification("测试消息", recipient="user@example.com"))
+        result = _run(
+            self.mixin._execute_notification("测试消息", recipient="user@example.com")
+        )
         self.tool_system.call_tool.assert_called_once()
         call_args = self.tool_system.call_tool.call_args
         self.assertEqual(call_args[0][0], "send_email")
@@ -408,7 +439,11 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_cleans_recipient_newlines(self):
         """清理收件人中的换行符（防止头部注入）"""
-        result = _run(self.mixin._execute_notification("消息", recipient="user@test.com\r\nBCC:evil@bad.com"))
+        result = _run(
+            self.mixin._execute_notification(
+                "消息", recipient="user@test.com\r\nBCC:evil@bad.com"
+            )
+        )
         call_args = self.tool_system.call_tool.call_args
         cleaned_to = call_args[0][1]["to"]
         self.assertNotIn("\r", cleaned_to)
@@ -424,12 +459,16 @@ class TestExecuteNotification(unittest.TestCase):
     def test_tool_system_exception(self):
         """工具系统异常时返回错误"""
         self.tool_system.call_tool.side_effect = Exception("email error")
-        result = _run(self.mixin._execute_notification("消息", recipient="user@test.com"))
+        result = _run(
+            self.mixin._execute_notification("消息", recipient="user@test.com")
+        )
         self.assertFalse(result["success"])
 
     def test_default_subject(self):
         """默认邮件主题"""
-        result = _run(self.mixin._execute_notification("消息", recipient="user@test.com"))
+        result = _run(
+            self.mixin._execute_notification("消息", recipient="user@test.com")
+        )
         call_args = self.tool_system.call_tool.call_args
         self.assertEqual(call_args[0][1]["subject"], "OPC-Agents 通知")
 
@@ -437,6 +476,7 @@ class TestExecuteNotification(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _execute_output
 # ---------------------------------------------------------------------------
+
 
 class TestExecuteOutput(unittest.TestCase):
     """测试输出执行器"""
@@ -466,6 +506,7 @@ class TestExecuteOutput(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _call_llm_generate
 # ---------------------------------------------------------------------------
+
 
 class TestCallLLMGenerate(unittest.TestCase):
     """测试 LLM 生成调用"""
@@ -521,6 +562,7 @@ class TestCallLLMGenerate(unittest.TestCase):
 # Test: _get_analysis_template
 # ---------------------------------------------------------------------------
 
+
 class TestGetAnalysisTemplate(unittest.TestCase):
     """测试分析模板获取"""
 
@@ -545,6 +587,7 @@ class TestGetAnalysisTemplate(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _get_content_template
 # ---------------------------------------------------------------------------
+
 
 class TestGetContentTemplate(unittest.TestCase):
     """测试内容模板获取"""
@@ -586,6 +629,7 @@ class TestGetContentTemplate(unittest.TestCase):
 # Test: _parse_analysis_result
 # ---------------------------------------------------------------------------
 
+
 class TestParseAnalysisResult(unittest.TestCase):
     """测试分析结果解析"""
 
@@ -594,12 +638,19 @@ class TestParseAnalysisResult(unittest.TestCase):
 
     def test_parse_json_content(self):
         """解析 JSON 格式的分析结果"""
-        content = json.dumps({
-            "summary": "摘要",
-            "key_findings": ["发现1"],
-            "swot": {"strengths": ["S1"], "weaknesses": ["W1"], "opportunities": ["O1"], "threats": ["T1"]},
-            "action_items": ["行动1"],
-        })
+        content = json.dumps(
+            {
+                "summary": "摘要",
+                "key_findings": ["发现1"],
+                "swot": {
+                    "strengths": ["S1"],
+                    "weaknesses": ["W1"],
+                    "opportunities": ["O1"],
+                    "threats": ["T1"],
+                },
+                "action_items": ["行动1"],
+            }
+        )
         result = self.mixin._parse_analysis_result(content, "测试")
         self.assertEqual(result["summary"], "摘要")
         self.assertEqual(result["key_findings"], ["发现1"])
@@ -657,6 +708,7 @@ class TestParseAnalysisResult(unittest.TestCase):
 # Test: _rule_based_analysis
 # ---------------------------------------------------------------------------
 
+
 class TestRuleBasedAnalysis(unittest.TestCase):
     """测试规则引擎分析"""
 
@@ -674,7 +726,9 @@ class TestRuleBasedAnalysis(unittest.TestCase):
 
     def test_includes_data_summary(self):
         """包含数据概览"""
-        result = self.mixin._rule_based_analysis("市场分析", ["数据1", "数据2", "数据3", "数据4", "数据5", "数据6"])
+        result = self.mixin._rule_based_analysis(
+            "市场分析", ["数据1", "数据2", "数据3", "数据4", "数据5", "数据6"]
+        )
         self.assertIn("数据1", result["analysis_result"])
         self.assertIn("数据5", result["analysis_result"])
 
@@ -692,6 +746,7 @@ class TestRuleBasedAnalysis(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _rule_based_content_generation
 # ---------------------------------------------------------------------------
+
 
 class TestRuleBasedContentGeneration(unittest.TestCase):
     """测试规则引擎内容生成"""
@@ -716,6 +771,7 @@ class TestRuleBasedContentGeneration(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: Domain skill delegation
 # ---------------------------------------------------------------------------
+
 
 class TestDomainSkillDelegation(unittest.TestCase):
     """测试领域技能委托
@@ -827,13 +883,16 @@ class TestDomainSkillDelegation(unittest.TestCase):
 # Test: Error propagation
 # ---------------------------------------------------------------------------
 
+
 class TestErrorPropagation(unittest.TestCase):
     """测试错误传播 — 异常不被静默吞掉"""
 
     def setUp(self):
         self.mixin = _make_mixin()
 
-    @patch("opc_manager.email_skill.execute_goal", side_effect=RuntimeError("email crash"))
+    @patch(
+        "opc_manager.email_skill.execute_goal", side_effect=RuntimeError("email crash")
+    )
     def test_email_error_propagates(self, mock_exec):
         """邮件技能异常应传播"""
         with self.assertRaises(RuntimeError):
@@ -866,6 +925,7 @@ class TestErrorPropagation(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: Input validation
 # ---------------------------------------------------------------------------
+
 
 class TestInputValidation(unittest.TestCase):
     """测试输入验证"""
@@ -911,6 +971,7 @@ class TestInputValidation(unittest.TestCase):
 # Test: Async execution paths
 # ---------------------------------------------------------------------------
 
+
 class TestAsyncExecutionPaths(unittest.TestCase):
     """测试异步执行路径"""
 
@@ -927,7 +988,9 @@ class TestAsyncExecutionPaths(unittest.TestCase):
 
     def test_content_generation_is_async(self):
         """_execute_content_generation 是异步方法"""
-        self.assertTrue(asyncio.iscoroutinefunction(self.mixin._execute_content_generation))
+        self.assertTrue(
+            asyncio.iscoroutinefunction(self.mixin._execute_content_generation)
+        )
 
     def test_operation_is_async(self):
         """_execute_operation 是异步方法"""
@@ -947,7 +1010,9 @@ class TestAsyncExecutionPaths(unittest.TestCase):
 
     def test_intent_analysis_is_sync(self):
         """_execute_intent_analysis 是同步方法"""
-        self.assertFalse(asyncio.iscoroutinefunction(self.mixin._execute_intent_analysis))
+        self.assertFalse(
+            asyncio.iscoroutinefunction(self.mixin._execute_intent_analysis)
+        )
 
     def test_output_is_sync(self):
         """_execute_output 是同步方法"""
@@ -957,6 +1022,7 @@ class TestAsyncExecutionPaths(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _execute_crm (complex delegation)
 # ---------------------------------------------------------------------------
+
 
 class TestExecuteCRM(unittest.TestCase):
     """测试 CRM 技能的复杂委托逻辑"""
@@ -973,9 +1039,13 @@ class TestExecuteCRM(unittest.TestCase):
 
     @patch("opc_manager.crm_skill.get_customer")
     @patch("opc_manager.crm_skill.execute_goal")
-    def test_crm_with_email_triggers_collaborative(self, mock_crm_exec, mock_get_customer):
+    def test_crm_with_email_triggers_collaborative(
+        self, mock_crm_exec, mock_get_customer
+    ):
         """包含"发邮件"关键词时触发协作"""
-        self.mixin._execute_collaborative = MagicMock(return_value={"success": True, "collaborative": True})
+        self.mixin._execute_collaborative = MagicMock(
+            return_value={"success": True, "collaborative": True}
+        )
         mock_get_customer.return_value = {"name": "张三", "email": "zhang@test.com"}
         result = self.mixin._execute_crm(goal="给张三发邮件")
         self.mixin._execute_collaborative.assert_called_once()
@@ -993,6 +1063,7 @@ class TestExecuteCRM(unittest.TestCase):
 # Test: _execute_finance (collaborative trigger)
 # ---------------------------------------------------------------------------
 
+
 class TestExecuteFinance(unittest.TestCase):
     """测试财务技能的协作触发"""
 
@@ -1009,7 +1080,9 @@ class TestExecuteFinance(unittest.TestCase):
     @patch("opc_manager.finance_skill.execute_goal")
     def test_tax_reminder_triggers_collaborative(self, mock_finance_exec):
         """报税/提醒关键词触发协作"""
-        self.mixin._execute_collaborative = MagicMock(return_value={"success": True, "collaborative": True})
+        self.mixin._execute_collaborative = MagicMock(
+            return_value={"success": True, "collaborative": True}
+        )
         result = self.mixin._execute_finance(goal="报税提醒")
         self.mixin._execute_collaborative.assert_called_once()
 

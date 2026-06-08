@@ -36,6 +36,7 @@ def _get_encryption_key() -> Optional[bytes]:
     # 优先通过 SettingsManager 获取（不通过 os.environ）
     try:
         from opc_manager.settings import get_settings
+
         settings = get_settings()
         key_str = settings.get_encryption_key()
         if key_str:
@@ -437,7 +438,7 @@ def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
     )
 
 
-_IDENTIFIER_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _validate_identifier(name: str) -> str:
@@ -458,7 +459,9 @@ def _add_column_if_not_exists(
             for row in conn.execute(f"PRAGMA table_info({safe_table})").fetchall()
         ]
         if safe_column not in cols:
-            conn.execute(f"ALTER TABLE {safe_table} ADD COLUMN {safe_column} {col_type}")
+            conn.execute(
+                f"ALTER TABLE {safe_table} ADD COLUMN {safe_column} {col_type}"
+            )
     except sqlite3.OperationalError as e:
         logger.warning(
             "[DataManager] Migration add column %s.%s failed: %s", table, column, e

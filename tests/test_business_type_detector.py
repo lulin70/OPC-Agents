@@ -72,7 +72,9 @@ class TestDetectorInit(unittest.TestCase):
     def test_keyword_database_has_all_business_types(self):
         detector = BusinessTypeDetectorV2()
         for bt in BusinessType:
-            self.assertIn(bt, detector.type_keywords, f"Missing keywords for {bt.value}")
+            self.assertIn(
+                bt, detector.type_keywords, f"Missing keywords for {bt.value}"
+            )
 
     def test_pattern_database_has_all_business_types(self):
         detector = BusinessTypeDetectorV2()
@@ -88,7 +90,13 @@ class TestDetectorInit(unittest.TestCase):
     def test_keyword_config_structure(self):
         """Each keyword config should have required sub-keys."""
         detector = BusinessTypeDetectorV2()
-        required_keys = {"name", "emoji", "weight", "primary_keywords", "secondary_keywords"}
+        required_keys = {
+            "name",
+            "emoji",
+            "weight",
+            "primary_keywords",
+            "secondary_keywords",
+        }
         for bt, config in detector.type_keywords.items():
             for key in required_keys:
                 self.assertIn(key, config, f"Missing '{key}' in config for {bt.value}")
@@ -636,7 +644,9 @@ class TestExtractMatchedKeywords(unittest.TestCase):
     def test_extracts_primary_keywords(self):
         config = self.detector.type_keywords[BusinessType.ECOMMERCE]
         # _extract_matched_keywords_enhanced expects text already lowercased
-        matched = self.detector._extract_matched_keywords_enhanced("电商店铺gmv", config)
+        matched = self.detector._extract_matched_keywords_enhanced(
+            "电商店铺gmv", config
+        )
         self.assertIn("电商", matched)
         self.assertIn("店铺", matched)
         self.assertIn("GMV", matched)

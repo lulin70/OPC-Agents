@@ -29,12 +29,11 @@ from opc_manager.memory_bridge import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_mock_carrymem():
     """创建一个模拟 CarryMem 实例"""
     cm = MagicMock()
-    cm.build_context.return_value = {
-        "system_prompt": "历史记忆：用户偏好简洁风格"
-    }
+    cm.build_context.return_value = {"system_prompt": "历史记忆：用户偏好简洁风格"}
     cm.classify_and_remember.return_value = {}
     cm.recall_memories.return_value = {"total": 5, "memories": []}
     cm.close.return_value = None
@@ -63,7 +62,9 @@ def _make_mock_rule_engine():
     match2.match_type = "keyword"
 
     engine.match.return_value = [match1, match2]
-    engine.inject.return_value = "[规则约束]\n- 使用数据驱动方案\n- 必须合规审查\n[/规则约束]"
+    engine.inject.return_value = (
+        "[规则约束]\n- 使用数据驱动方案\n- 必须合规审查\n[/规则约束]"
+    )
     engine.get_stats.return_value = {"total_active": 3, "auto_promotion": 1}
     engine.get_lesson_stats.return_value = {"pending": 2, "accepted": 1}
     engine.extract_failure_lessons.return_value = {"lessons_found": 1}
@@ -98,6 +99,7 @@ def _create_enabled_bridge():
 # ---------------------------------------------------------------------------
 # Test: is_memory_enabled
 # ---------------------------------------------------------------------------
+
 
 class TestIsMemoryEnabled(unittest.TestCase):
     """测试记忆功能启用判断"""
@@ -142,6 +144,7 @@ class TestIsMemoryEnabled(unittest.TestCase):
 # Test: _get_db_path
 # ---------------------------------------------------------------------------
 
+
 class TestGetDbPath(unittest.TestCase):
     """测试数据库路径获取"""
 
@@ -160,6 +163,7 @@ class TestGetDbPath(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: MemoryBridge 初始化与降级
 # ---------------------------------------------------------------------------
+
 
 class TestMemoryBridgeInit(unittest.TestCase):
     """测试 MemoryBridge 初始化及降级"""
@@ -183,7 +187,9 @@ class TestMemoryBridgeInit(unittest.TestCase):
     @patch("opc_manager.memory_bridge.is_memory_enabled", return_value=True)
     @patch("opc_manager.memory_bridge.CarryMem")
     @patch("opc_manager.memory_bridge._CARRYMEM_AVAILABLE", True)
-    @patch("opc_manager.memory_bridge._get_db_path", return_value="/tmp/test_opc/mem.db")
+    @patch(
+        "opc_manager.memory_bridge._get_db_path", return_value="/tmp/test_opc/mem.db"
+    )
     @patch("os.makedirs")
     def test_init_success(self, mock_makedirs, mock_db_path, mock_cm_cls, mock_enabled):
         """正常初始化成功"""
@@ -196,6 +202,7 @@ class TestMemoryBridgeInit(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: NullMemoryProvider 降级回退
 # ---------------------------------------------------------------------------
+
 
 class TestNullMemoryProviderFallback(unittest.TestCase):
     """测试当 CarryMem 不可用时的 NullMemoryProvider 行为
@@ -232,7 +239,9 @@ class TestNullMemoryProviderFallback(unittest.TestCase):
 
     def test_get_rules_for_context_returns_defaults(self):
         result = self.bridge.get_rules_for_context("输入")
-        self.assertEqual(result, {"rules_prompt": "", "rules": [], "has_hard_rules": False})
+        self.assertEqual(
+            result, {"rules_prompt": "", "rules": [], "has_hard_rules": False}
+        )
 
     def test_get_pending_lessons_returns_empty(self):
         self.assertEqual(self.bridge.get_pending_lessons(), [])
@@ -272,6 +281,7 @@ class TestNullMemoryProviderFallback(unittest.TestCase):
 # Test: build_context — 记忆检索与 prompt 注入
 # ---------------------------------------------------------------------------
 
+
 class TestBuildContext(unittest.TestCase):
     """测试记忆检索与 prompt 注入"""
 
@@ -299,7 +309,9 @@ class TestBuildContext(unittest.TestCase):
 
     def test_passes_max_memories_and_max_tokens(self):
         """传递 max_memories 和 max_tokens 参数"""
-        with patch.dict(os.environ, {"CARRYMEM_MAX_MEMORIES": "5", "CARRYMEM_MAX_TOKENS": "1000"}):
+        with patch.dict(
+            os.environ, {"CARRYMEM_MAX_MEMORIES": "5", "CARRYMEM_MAX_TOKENS": "1000"}
+        ):
             self.bridge.build_context("测试")
             self.bridge._cm.build_context.assert_called_once_with(
                 context="测试", max_memories=5, max_tokens=1000
@@ -327,6 +339,7 @@ class TestBuildContext(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: match_rules — 规则匹配与执行
 # ---------------------------------------------------------------------------
+
 
 class TestMatchRules(unittest.TestCase):
     """测试规则匹配与执行"""
@@ -403,6 +416,7 @@ class TestMatchRules(unittest.TestCase):
 # Test: inject_rules_prompt
 # ---------------------------------------------------------------------------
 
+
 class TestInjectRulesPrompt(unittest.TestCase):
     """测试规则注入 prompt 生成"""
 
@@ -442,6 +456,7 @@ class TestInjectRulesPrompt(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: remember — 记忆存储
 # ---------------------------------------------------------------------------
+
 
 class TestRemember(unittest.TestCase):
     """测试记忆存储"""
@@ -513,6 +528,7 @@ class TestRemember(unittest.TestCase):
 # Test: record_failure — 失败经验提取
 # ---------------------------------------------------------------------------
 
+
 class TestRecordFailure(unittest.TestCase):
     """测试失败经验提取"""
 
@@ -582,6 +598,7 @@ class TestRecordFailure(unittest.TestCase):
 # Test: Token 预算管理
 # ---------------------------------------------------------------------------
 
+
 class TestTokenBudgetManagement(unittest.TestCase):
     """测试 Token 预算管理"""
 
@@ -619,6 +636,7 @@ class TestTokenBudgetManagement(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: get_rules_for_context
 # ---------------------------------------------------------------------------
+
 
 class TestGetRulesForContext(unittest.TestCase):
     """测试获取策略脑 context 的规则信息"""
@@ -661,6 +679,7 @@ class TestGetRulesForContext(unittest.TestCase):
 # Test: memory_count property
 # ---------------------------------------------------------------------------
 
+
 class TestMemoryCount(unittest.TestCase):
     """测试记忆计数"""
 
@@ -701,6 +720,7 @@ class TestMemoryCount(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: rule_engine property (懒加载)
 # ---------------------------------------------------------------------------
+
 
 class TestRuleEngineProperty(unittest.TestCase):
     """测试 rule_engine 懒加载"""
@@ -743,6 +763,7 @@ class TestRuleEngineProperty(unittest.TestCase):
 # Test: get_status
 # ---------------------------------------------------------------------------
 
+
 class TestGetStatus(unittest.TestCase):
     """测试记忆系统状态"""
 
@@ -778,6 +799,7 @@ class TestGetStatus(unittest.TestCase):
 # Test: get_flywheel_status
 # ---------------------------------------------------------------------------
 
+
 class TestGetFlywheelStatus(unittest.TestCase):
     """测试飞轮效应状态"""
 
@@ -790,7 +812,10 @@ class TestGetFlywheelStatus(unittest.TestCase):
         """新手等级（低指标）"""
         self.bridge._memory_count = 0
         # Override engine stats to return minimal values
-        self.mock_engine.get_stats.return_value = {"total_active": 0, "auto_promotion": 0}
+        self.mock_engine.get_stats.return_value = {
+            "total_active": 0,
+            "auto_promotion": 0,
+        }
         self.mock_engine.get_lesson_stats.return_value = {"accepted": 0, "pending": 0}
         result = self.bridge.get_flywheel_status()
         self.assertEqual(result["level"], 0)
@@ -799,7 +824,10 @@ class TestGetFlywheelStatus(unittest.TestCase):
     def test_expert_level(self):
         """专家等级（高指标）"""
         self.bridge._memory_count = 100
-        self.mock_engine.get_stats.return_value = {"total_active": 50, "auto_promotion": 10}
+        self.mock_engine.get_stats.return_value = {
+            "total_active": 50,
+            "auto_promotion": 10,
+        }
         self.mock_engine.get_lesson_stats.return_value = {"accepted": 10, "pending": 0}
         result = self.bridge.get_flywheel_status()
         self.assertGreaterEqual(result["level"], 3)
@@ -807,8 +835,14 @@ class TestGetFlywheelStatus(unittest.TestCase):
     def test_max_level_is_five(self):
         """等级上限为 5"""
         self.bridge._memory_count = 9999
-        self.mock_engine.get_stats.return_value = {"total_active": 9999, "auto_promotion": 9999}
-        self.mock_engine.get_lesson_stats.return_value = {"accepted": 9999, "pending": 0}
+        self.mock_engine.get_stats.return_value = {
+            "total_active": 9999,
+            "auto_promotion": 9999,
+        }
+        self.mock_engine.get_lesson_stats.return_value = {
+            "accepted": 9999,
+            "pending": 0,
+        }
         result = self.bridge.get_flywheel_status()
         self.assertLessEqual(result["level"], 5)
 
@@ -822,6 +856,7 @@ class TestGetFlywheelStatus(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: suggest_skills
 # ---------------------------------------------------------------------------
+
 
 class TestSuggestSkills(unittest.TestCase):
     """测试技能推荐"""
@@ -888,6 +923,7 @@ class TestSuggestSkills(unittest.TestCase):
 # Test: lesson management
 # ---------------------------------------------------------------------------
 
+
 class TestLessonManagement(unittest.TestCase):
     """测试教训管理"""
 
@@ -936,6 +972,7 @@ class TestLessonManagement(unittest.TestCase):
 # Test: cleanup_stale_memories
 # ---------------------------------------------------------------------------
 
+
 class TestCleanupStaleMemories(unittest.TestCase):
     """清理过时记忆"""
 
@@ -965,6 +1002,7 @@ class TestCleanupStaleMemories(unittest.TestCase):
 # Test: export_user_data
 # ---------------------------------------------------------------------------
 
+
 class TestExportUserData(unittest.TestCase):
     """测试用户数据导出
 
@@ -980,7 +1018,9 @@ class TestExportUserData(unittest.TestCase):
 
     def test_exports_calls_recall_memories(self):
         """导出时调用 recall_memories"""
-        self.bridge._memory_count = 5  # Avoid memory_count property calling recall_memories
+        self.bridge._memory_count = (
+            5  # Avoid memory_count property calling recall_memories
+        )
         self.bridge._cm.recall_memories.return_value = {"memories": ["m1", "m2"]}
         self.bridge.export_user_data()
         self.bridge._cm.recall_memories.assert_called_with(limit=1000)
@@ -1007,6 +1047,7 @@ class TestExportUserData(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: close
 # ---------------------------------------------------------------------------
+
 
 class TestClose(unittest.TestCase):
     """测试资源清理"""
@@ -1040,12 +1081,14 @@ class TestClose(unittest.TestCase):
 # Test: get_memory_bridge 单例
 # ---------------------------------------------------------------------------
 
+
 class TestGetMemoryBridge(unittest.TestCase):
     """测试模块级单例"""
 
     def test_returns_same_instance(self):
         """多次调用返回同一实例"""
         import opc_manager.memory_bridge as mb
+
         mb._instance = None  # 重置单例
         with patch("opc_manager.memory_bridge.is_memory_enabled", return_value=False):
             b1 = get_memory_bridge()
@@ -1057,6 +1100,7 @@ class TestGetMemoryBridge(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Test: _try_auto_add_rule
 # ---------------------------------------------------------------------------
+
 
 class TestTryAutoAddRule(unittest.TestCase):
     """测试自动添加规则"""

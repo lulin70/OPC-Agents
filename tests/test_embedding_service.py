@@ -1,4 +1,5 @@
 """Unit tests for EmbeddingService and cosine_similarity."""
+
 import os
 import struct
 import sqlite3
@@ -56,9 +57,7 @@ class TestEmbeddingServiceDetection(unittest.TestCase):
     def test_detect_available(self, mock_get):
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "models": [{"name": "nomic-embed-text:latest"}]
-        }
+        mock_resp.json.return_value = {"models": [{"name": "nomic-embed-text:latest"}]}
         mock_get.return_value = mock_resp
         svc = EmbeddingService()
         self.assertTrue(svc.enabled)
@@ -67,9 +66,7 @@ class TestEmbeddingServiceDetection(unittest.TestCase):
     def test_detect_model_not_found(self, mock_get):
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "models": [{"name": "llama3:latest"}]
-        }
+        mock_resp.json.return_value = {"models": [{"name": "llama3:latest"}]}
         mock_get.return_value = mock_resp
         svc = EmbeddingService()
         self.assertFalse(svc.enabled)
@@ -77,6 +74,7 @@ class TestEmbeddingServiceDetection(unittest.TestCase):
     @patch("opc_manager.embedding_service.requests.get")
     def test_detect_ollama_not_running(self, mock_get):
         import requests as req
+
         mock_get.side_effect = req.RequestException("Connection refused")
         svc = EmbeddingService()
         self.assertFalse(svc.enabled)
@@ -98,6 +96,7 @@ class TestEmbeddingServiceCache(unittest.TestCase):
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_init_cache_creates_db(self):

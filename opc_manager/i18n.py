@@ -3734,9 +3734,15 @@ class I18nManager:
 
     # Map short locale codes to full codes
     _LOCALE_ALIASES = {
-        "zh": "zh_CN", "cn": "zh_CN", "chinese": "zh_CN",
-        "en": "en_US", "us": "en_US", "english": "en_US",
-        "ja": "ja_JP", "jp": "ja_JP", "japanese": "ja_JP",
+        "zh": "zh_CN",
+        "cn": "zh_CN",
+        "chinese": "zh_CN",
+        "en": "en_US",
+        "us": "en_US",
+        "english": "en_US",
+        "ja": "ja_JP",
+        "jp": "ja_JP",
+        "japanese": "ja_JP",
     }
 
     @locale.setter

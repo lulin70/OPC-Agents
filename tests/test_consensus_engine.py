@@ -319,10 +319,12 @@ class TestConfidenceCalculation(unittest.TestCase):
         """Compromise decisions have confidence reduced by COMPROMISE_CONFIDENCE_FACTOR"""
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.CONDITIONAL, "a", 1.0,
-                          alternative="alt1"),
-            _make_opinion("executor", OpinionType.CONDITIONAL, "b", 1.0,
-                          alternative="alt2"),
+            _make_opinion(
+                "strategist", OpinionType.CONDITIONAL, "a", 1.0, alternative="alt1"
+            ),
+            _make_opinion(
+                "executor", OpinionType.CONDITIONAL, "b", 1.0, alternative="alt2"
+            ),
             _make_opinion("reflector", OpinionType.AGREE, "c", 1.0),
         ]
         decision = engine.collect_opinions(opinions)
@@ -423,8 +425,13 @@ class TestEdgeCases(unittest.TestCase):
     def test_conditional_with_no_disagree_is_compromise(self, mock_load, mock_log):
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.CONDITIONAL, "if X", 0.8,
-                          alternative="do X first"),
+            _make_opinion(
+                "strategist",
+                OpinionType.CONDITIONAL,
+                "if X",
+                0.8,
+                alternative="do X first",
+            ),
             _make_opinion("executor", OpinionType.AGREE, "ok", 0.9),
             _make_opinion("reflector", OpinionType.AGREE, "fine", 0.7),
         ]
@@ -438,11 +445,21 @@ class TestEdgeCases(unittest.TestCase):
         """Conditional + abstain (no agree majority, no disagree) → compromise"""
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.CONDITIONAL, "if X", 0.8,
-                          alternative="do X first"),
+            _make_opinion(
+                "strategist",
+                OpinionType.CONDITIONAL,
+                "if X",
+                0.8,
+                alternative="do X first",
+            ),
             _make_opinion("executor", OpinionType.ABSTAIN, "meh", 0.5),
-            _make_opinion("reflector", OpinionType.CONDITIONAL, "if Y", 0.7,
-                          alternative="do Y first"),
+            _make_opinion(
+                "reflector",
+                OpinionType.CONDITIONAL,
+                "if Y",
+                0.7,
+                alternative="do Y first",
+            ),
         ]
         decision = engine.collect_opinions(opinions)
         # agree=0, disagree=0, conditional=2 → compromise
@@ -458,10 +475,12 @@ class TestResolveConflict(unittest.TestCase):
     def test_compromise_found_with_alternatives(self, mock_load):
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.DISAGREE, "no", 0.9,
-                          alternative="plan B"),
-            _make_opinion("executor", OpinionType.DISAGREE, "nope", 0.8,
-                          alternative="plan B"),
+            _make_opinion(
+                "strategist", OpinionType.DISAGREE, "no", 0.9, alternative="plan B"
+            ),
+            _make_opinion(
+                "executor", OpinionType.DISAGREE, "nope", 0.8, alternative="plan B"
+            ),
             _make_opinion("reflector", OpinionType.AGREE, "ok", 0.7),
         ]
         decision = engine.resolve_conflict(opinions)
@@ -474,8 +493,9 @@ class TestResolveConflict(unittest.TestCase):
     def test_compromise_found_with_single_alternative(self, mock_load):
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.DISAGREE, "no", 0.9,
-                          alternative="plan C"),
+            _make_opinion(
+                "strategist", OpinionType.DISAGREE, "no", 0.9, alternative="plan C"
+            ),
             _make_opinion("executor", OpinionType.AGREE, "ok", 0.8),
         ]
         decision = engine.resolve_conflict(opinions)
@@ -514,8 +534,13 @@ class TestProposeRevision(unittest.TestCase):
     def test_suggestions_from_disagree(self, mock_load):
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.DISAGREE, "too risky", 0.9,
-                          alternative="safer approach"),
+            _make_opinion(
+                "strategist",
+                OpinionType.DISAGREE,
+                "too risky",
+                0.9,
+                alternative="safer approach",
+            ),
             _make_opinion("executor", OpinionType.AGREE, "ok", 0.8),
         ]
         result = engine.propose_revision(opinions)
@@ -529,8 +554,13 @@ class TestProposeRevision(unittest.TestCase):
     def test_next_steps_from_conditional(self, mock_load):
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.CONDITIONAL, "if X", 0.9,
-                          alternative="add tests"),
+            _make_opinion(
+                "strategist",
+                OpinionType.CONDITIONAL,
+                "if X",
+                0.9,
+                alternative="add tests",
+            ),
             _make_opinion("executor", OpinionType.AGREE, "ok", 0.8),
         ]
         result = engine.propose_revision(opinions)
@@ -563,7 +593,9 @@ class TestSerialization(unittest.TestCase):
     @patch.object(ConsensusEngine, "_load_decision_log_from_db")
     def test_from_dict(self, mock_load):
         engine = ConsensusEngine()
-        engine.from_dict({"veto_enabled": {"strategist": False, "executor": True, "reflector": True}})
+        engine.from_dict(
+            {"veto_enabled": {"strategist": False, "executor": True, "reflector": True}}
+        )
         self.assertFalse(engine.veto_enabled["strategist"])
         self.assertTrue(engine.veto_enabled["executor"])
 
@@ -670,7 +702,9 @@ class TestCheckVeto(unittest.TestCase):
         """confidence == VETO_MIN_CONFIDENCE should trigger veto"""
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.DISAGREE, "no", VETO_MIN_CONFIDENCE),
+            _make_opinion(
+                "strategist", OpinionType.DISAGREE, "no", VETO_MIN_CONFIDENCE
+            ),
         ]
         result = engine._check_veto(opinions)
         self.assertIsNotNone(result)
@@ -707,10 +741,12 @@ class TestFindCompromise(unittest.TestCase):
     def test_compromise_with_matching_alternatives(self, mock_load):
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.DISAGREE, "no", 0.9,
-                          alternative="plan B"),
-            _make_opinion("executor", OpinionType.DISAGREE, "nope", 0.8,
-                          alternative="plan B"),
+            _make_opinion(
+                "strategist", OpinionType.DISAGREE, "no", 0.9, alternative="plan B"
+            ),
+            _make_opinion(
+                "executor", OpinionType.DISAGREE, "nope", 0.8, alternative="plan B"
+            ),
         ]
         result = engine._find_compromise(opinions)
         self.assertEqual(result, "plan B")
@@ -719,10 +755,12 @@ class TestFindCompromise(unittest.TestCase):
     def test_compromise_with_different_alternatives(self, mock_load):
         engine = ConsensusEngine()
         opinions = [
-            _make_opinion("strategist", OpinionType.DISAGREE, "no", 0.9,
-                          alternative="plan A"),
-            _make_opinion("executor", OpinionType.DISAGREE, "nope", 0.8,
-                          alternative="plan B"),
+            _make_opinion(
+                "strategist", OpinionType.DISAGREE, "no", 0.9, alternative="plan A"
+            ),
+            _make_opinion(
+                "executor", OpinionType.DISAGREE, "nope", 0.8, alternative="plan B"
+            ),
         ]
         result = engine._find_compromise(opinions)
         # Returns first alternative when no majority

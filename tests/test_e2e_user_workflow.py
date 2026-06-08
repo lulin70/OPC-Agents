@@ -5,6 +5,7 @@ User Input → AgentLoop → StrategistBrain → ExecutorBrain → TaskEngineV3 
 
 This verifies the system works end-to-end as a real user would experience it.
 """
+
 import asyncio
 import os
 import unittest
@@ -52,7 +53,10 @@ class TestE2EContentGeneration(unittest.TestCase):
                     id="step_1",
                     skill_id="content_generation",
                     description="生成邮件内容",
-                    parameters={"query": "帮我写一封邮件给客户", "goal": "写一封邮件给客户"},
+                    parameters={
+                        "query": "帮我写一封邮件给客户",
+                        "goal": "写一封邮件给客户",
+                    },
                 )
             ],
         )
@@ -93,7 +97,10 @@ class TestE2EContentGeneration(unittest.TestCase):
                     id="step_1",
                     skill_id="analysis",
                     description="分析销售数据",
-                    parameters={"query": "分析本季度销售数据", "goal": "分析本季度销售数据"},
+                    parameters={
+                        "query": "分析本季度销售数据",
+                        "goal": "分析本季度销售数据",
+                    },
                 )
             ],
         )
@@ -134,22 +141,29 @@ class TestE2EErrorHandling(unittest.TestCase):
 class TestE2EKnowledgeSearch(unittest.TestCase):
     """E2E: User searches knowledge base with semantic search."""
 
-    @patch.dict(os.environ, {
-        "OPC_KB_ENABLED": "true",
-        "OPC_KB_TYPE": "local",
-        "OPC_EMBEDDING_ENABLED": "false",
-    })
+    @patch.dict(
+        os.environ,
+        {
+            "OPC_KB_ENABLED": "true",
+            "OPC_KB_TYPE": "local",
+            "OPC_EMBEDDING_ENABLED": "false",
+        },
+    )
     def test_knowledge_search_keyword_fallback(self):
         """Simulate: User searches knowledge base without Ollama."""
         import tempfile
         import shutil
+
         tmpdir = tempfile.mkdtemp()
         try:
             # Create a test knowledge file
             with open(os.path.join(tmpdir, "marketing_guide.md"), "w") as f:
-                f.write("# Product Guide\n\nThis product helps with marketing automation.\n#marketing #automation")
+                f.write(
+                    "# Product Guide\n\nThis product helps with marketing automation.\n#marketing #automation"
+                )
 
             from opc_manager.knowledge_bridge import KnowledgeBridge
+
             with patch.dict(os.environ, {"OPC_KB_PATH": tmpdir}):
                 kb = KnowledgeBridge()
                 if kb.enabled:
@@ -170,6 +184,7 @@ class TestE2EJsonParsingRobustness(unittest.TestCase):
     def test_llm_returns_json_in_code_fence(self):
         """LLM wraps JSON in markdown code fence."""
         from opc_manager.utils import extract_json_from_llm
+
         llm_output = '我分析了您的需求，以下是执行计划：\n```json\n{"steps": 3, "priority": "high"}\n```\n请确认。'
         result = extract_json_from_llm(llm_output)
         self.assertIsNotNone(result)
@@ -178,6 +193,7 @@ class TestE2EJsonParsingRobustness(unittest.TestCase):
     def test_llm_returns_bare_json(self):
         """LLM returns raw JSON without code fence."""
         from opc_manager.utils import extract_json_from_llm
+
         llm_output = '{"status": "completed", "items": 5}'
         result = extract_json_from_llm(llm_output)
         self.assertIsNotNone(result)
@@ -186,6 +202,7 @@ class TestE2EJsonParsingRobustness(unittest.TestCase):
     def test_llm_returns_json_array(self):
         """LLM returns a JSON array of objects."""
         from opc_manager.utils import extract_json_from_llm
+
         llm_output = '[{"task": "research"}, {"task": "write"}, {"task": "review"}]'
         result = extract_json_from_llm(llm_output)
         self.assertIsNotNone(result)

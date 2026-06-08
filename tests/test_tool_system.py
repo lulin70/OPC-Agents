@@ -81,74 +81,98 @@ class TestToolValidateParameters(unittest.TestCase):
         )
 
     def test_missing_required_param(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="query", type="str", required=True),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="query", type="str", required=True),
+            ]
+        )
         errors = tool.validate_parameters({})
         self.assertTrue(any("缺少必填参数" in e for e in errors))
 
     def test_wrong_type_str(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="q", type="str", required=True),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="q", type="str", required=True),
+            ]
+        )
         errors = tool.validate_parameters({"q": 123})
         self.assertTrue(any("字符串类型" in e for e in errors))
 
     def test_wrong_type_int(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="n", type="int", required=True),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="n", type="int", required=True),
+            ]
+        )
         errors = tool.validate_parameters({"n": "abc"})
         self.assertTrue(any("整数类型" in e for e in errors))
 
     def test_wrong_type_float(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="f", type="float", required=True),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="f", type="float", required=True),
+            ]
+        )
         errors = tool.validate_parameters({"f": "abc"})
         self.assertTrue(any("浮点数类型" in e for e in errors))
 
     def test_wrong_type_bool(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="b", type="bool", required=True),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="b", type="bool", required=True),
+            ]
+        )
         errors = tool.validate_parameters({"b": "yes"})
         self.assertTrue(any("布尔类型" in e for e in errors))
 
     def test_wrong_type_list(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="l", type="list", required=True),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="l", type="list", required=True),
+            ]
+        )
         errors = tool.validate_parameters({"l": "not a list"})
         self.assertTrue(any("列表类型" in e for e in errors))
 
     def test_wrong_type_dict(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="d", type="dict", required=True),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="d", type="dict", required=True),
+            ]
+        )
         errors = tool.validate_parameters({"d": [1, 2]})
         self.assertTrue(any("字典类型" in e for e in errors))
 
     def test_value_not_in_allowed_values(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="mode", type="str", required=True,
-                          allowed_values=["fast", "slow"]),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(
+                    name="mode",
+                    type="str",
+                    required=True,
+                    allowed_values=["fast", "slow"],
+                ),
+            ]
+        )
         errors = tool.validate_parameters({"mode": "medium"})
         self.assertTrue(any("不在允许范围内" in e for e in errors))
 
     def test_valid_parameters_no_errors(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="q", type="str", required=True),
-            ToolParameter(name="n", type="int", required=False, default=5),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="q", type="str", required=True),
+                ToolParameter(name="n", type="int", required=False, default=5),
+            ]
+        )
         errors = tool.validate_parameters({"q": "hello", "n": 10})
         self.assertEqual(errors, [])
 
     def test_optional_param_missing_no_error(self):
-        tool = self._tool_with_params([
-            ToolParameter(name="opt", type="str", required=False),
-        ])
+        tool = self._tool_with_params(
+            [
+                ToolParameter(name="opt", type="str", required=False),
+            ]
+        )
         errors = tool.validate_parameters({})
         self.assertEqual(errors, [])
 
@@ -245,31 +269,47 @@ class TestPermissionChecks(unittest.TestCase):
 
     def test_public_can_access_public(self):
         ts = ToolSystem(register_builtins=False)
-        self.assertTrue(ts._check_permission(PermissionLevel.PUBLIC, PermissionLevel.PUBLIC))
+        self.assertTrue(
+            ts._check_permission(PermissionLevel.PUBLIC, PermissionLevel.PUBLIC)
+        )
 
     def test_public_cannot_access_user(self):
         ts = ToolSystem(register_builtins=False)
-        self.assertFalse(ts._check_permission(PermissionLevel.PUBLIC, PermissionLevel.USER))
+        self.assertFalse(
+            ts._check_permission(PermissionLevel.PUBLIC, PermissionLevel.USER)
+        )
 
     def test_public_cannot_access_admin(self):
         ts = ToolSystem(register_builtins=False)
-        self.assertFalse(ts._check_permission(PermissionLevel.PUBLIC, PermissionLevel.ADMIN))
+        self.assertFalse(
+            ts._check_permission(PermissionLevel.PUBLIC, PermissionLevel.ADMIN)
+        )
 
     def test_user_can_access_public(self):
         ts = ToolSystem(register_builtins=False)
-        self.assertTrue(ts._check_permission(PermissionLevel.USER, PermissionLevel.PUBLIC))
+        self.assertTrue(
+            ts._check_permission(PermissionLevel.USER, PermissionLevel.PUBLIC)
+        )
 
     def test_user_can_access_user(self):
         ts = ToolSystem(register_builtins=False)
-        self.assertTrue(ts._check_permission(PermissionLevel.USER, PermissionLevel.USER))
+        self.assertTrue(
+            ts._check_permission(PermissionLevel.USER, PermissionLevel.USER)
+        )
 
     def test_user_cannot_access_admin(self):
         ts = ToolSystem(register_builtins=False)
-        self.assertFalse(ts._check_permission(PermissionLevel.USER, PermissionLevel.ADMIN))
+        self.assertFalse(
+            ts._check_permission(PermissionLevel.USER, PermissionLevel.ADMIN)
+        )
 
     def test_admin_can_access_all(self):
         ts = ToolSystem(register_builtins=False)
-        for perm in [PermissionLevel.PUBLIC, PermissionLevel.USER, PermissionLevel.ADMIN]:
+        for perm in [
+            PermissionLevel.PUBLIC,
+            PermissionLevel.USER,
+            PermissionLevel.ADMIN,
+        ]:
             self.assertTrue(ts._check_permission(PermissionLevel.ADMIN, perm))
 
 
@@ -281,9 +321,7 @@ class TestCallTool(unittest.TestCase):
 
     def test_call_nonexistent_tool(self):
         ts = ToolSystem(register_builtins=False)
-        result = asyncio.run(
-            ts.call_tool("nonexistent", PermissionLevel.PUBLIC)
-        )
+        result = asyncio.run(ts.call_tool("nonexistent", PermissionLevel.PUBLIC))
         self.assertFalse(result["success"])
         self.assertIn("不存在", result["error"])
 
@@ -291,9 +329,7 @@ class TestCallTool(unittest.TestCase):
         ts = ToolSystem(register_builtins=False)
         tool = _make_tool("disabled_tool", enabled=False)
         ts.register_tool(tool)
-        result = asyncio.run(
-            ts.call_tool("disabled_tool", PermissionLevel.PUBLIC)
-        )
+        result = asyncio.run(ts.call_tool("disabled_tool", PermissionLevel.PUBLIC))
         self.assertFalse(result["success"])
         self.assertIn("禁用", result["error"])
 
@@ -309,13 +345,14 @@ class TestCallTool(unittest.TestCase):
 
     def test_call_tool_validation_error(self):
         ts = ToolSystem(register_builtins=False)
-        tool = _make_tool("val_tool", params=[
-            ToolParameter(name="required_field", type="str", required=True),
-        ])
-        ts.register_tool(tool)
-        result = asyncio.run(
-            ts.call_tool("val_tool", PermissionLevel.PUBLIC)
+        tool = _make_tool(
+            "val_tool",
+            params=[
+                ToolParameter(name="required_field", type="str", required=True),
+            ],
         )
+        ts.register_tool(tool)
+        result = asyncio.run(ts.call_tool("val_tool", PermissionLevel.PUBLIC))
         self.assertFalse(result["success"])
         self.assertIn("缺少必填参数", result["error"])
 
@@ -371,9 +408,29 @@ class TestCommandAllowlist(unittest.TestCase):
             self.assertIn(cmd, ALLOWED_COMMANDS)
 
     def test_dangerous_commands_not_in_allowlist(self):
-        for cmd in ["rm", "rmdir", "mv", "cp", "chmod", "chown", "sudo", "dd",
-                     "mkfs", "format", "shutdown", "reboot", "kill", "curl", "wget",
-                     "bash", "sh", "python", "perl", "ruby", "node"]:
+        for cmd in [
+            "rm",
+            "rmdir",
+            "mv",
+            "cp",
+            "chmod",
+            "chown",
+            "sudo",
+            "dd",
+            "mkfs",
+            "format",
+            "shutdown",
+            "reboot",
+            "kill",
+            "curl",
+            "wget",
+            "bash",
+            "sh",
+            "python",
+            "perl",
+            "ruby",
+            "node",
+        ]:
             self.assertNotIn(cmd, ALLOWED_COMMANDS)
 
 
@@ -389,9 +446,7 @@ class TestCommandInjectionPrevention(unittest.TestCase):
 
     def _run_command(self, command: str):
         ts = ToolSystem(register_builtins=False)
-        return asyncio.run(
-            ts._execute_run_command(command)
-        )
+        return asyncio.run(ts._execute_run_command(command))
 
     def test_rm_rf_rejected(self):
         with self.assertRaises(Exception) as ctx:
@@ -410,9 +465,7 @@ class TestCommandInjectionPrevention(unittest.TestCase):
             mock_proc.returncode = 0
             mock_sp.return_value = mock_proc
             # Should NOT raise — base_cmd is 'ls' which is allowed
-            result = asyncio.run(
-                ts._execute_run_command("ls ; rm -rf /")
-            )
+            result = asyncio.run(ts._execute_run_command("ls ; rm -rf /"))
             self.assertEqual(result["return_code"], 0)
 
     def test_dollar_substitution_base_cmd_is_echo(self):
@@ -424,9 +477,7 @@ class TestCommandInjectionPrevention(unittest.TestCase):
             mock_proc.communicate = AsyncMock(return_value=(b"", b""))
             mock_proc.returncode = 0
             mock_sp.return_value = mock_proc
-            result = asyncio.run(
-                ts._execute_run_command("echo $(cat /etc/passwd)")
-            )
+            result = asyncio.run(ts._execute_run_command("echo $(cat /etc/passwd)"))
             self.assertEqual(result["return_code"], 0)
 
     def test_backtick_injection_base_cmd_is_echo(self):
@@ -438,9 +489,7 @@ class TestCommandInjectionPrevention(unittest.TestCase):
             mock_proc.communicate = AsyncMock(return_value=(b"", b""))
             mock_proc.returncode = 0
             mock_sp.return_value = mock_proc
-            result = asyncio.run(
-                ts._execute_run_command("echo `cat /etc/passwd`")
-            )
+            result = asyncio.run(ts._execute_run_command("echo `cat /etc/passwd`"))
             self.assertEqual(result["return_code"], 0)
 
     def test_pipe_injection_base_cmd_is_ls(self):
@@ -452,9 +501,7 @@ class TestCommandInjectionPrevention(unittest.TestCase):
             mock_proc.communicate = AsyncMock(return_value=(b"", b""))
             mock_proc.returncode = 0
             mock_sp.return_value = mock_proc
-            result = asyncio.run(
-                ts._execute_run_command("ls | rm -rf /")
-            )
+            result = asyncio.run(ts._execute_run_command("ls | rm -rf /"))
             self.assertEqual(result["return_code"], 0)
 
     def test_dangerous_base_cmd_rejected_regardless_of_injection(self):
@@ -496,15 +543,14 @@ class TestCommandInjectionPrevention(unittest.TestCase):
             mock_proc.communicate = AsyncMock(return_value=(b"file.txt\n", b""))
             mock_proc.returncode = 0
             mock_sp.return_value = mock_proc
-            result = asyncio.run(
-                ts._execute_run_command("ls")
-            )
+            result = asyncio.run(ts._execute_run_command("ls"))
             self.assertEqual(result["return_code"], 0)
 
     def test_shell_metacharacters_are_not_interpreted(self):
         """Verify that shlex.split + subprocess_exec neutralizes shell metacharacters.
         The injected payload becomes a literal argument, not a command."""
         import shlex
+
         # Semicolons, pipes, and subshells are split into literal tokens
         tokens = shlex.split("ls ; rm -rf /")
         self.assertEqual(tokens[0], "ls")  # base_cmd is safe
@@ -530,6 +576,7 @@ class TestPathValidation(unittest.TestCase):
 
     def test_path_within_allowed_dirs_accepted(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as safe_dir:
             _configure_allowed_dirs([safe_dir])
             result = _validate_path(os.path.join(safe_dir, "file.txt"))
@@ -549,16 +596,22 @@ class TestInputLengthValidation(unittest.TestCase):
 
     def test_exceeds_limit_raises(self):
         with self.assertRaises(ValueError) as ctx:
-            _validate_input_length("user_input", "x" * (INPUT_LENGTH_LIMITS["user_input"] + 1))
+            _validate_input_length(
+                "user_input", "x" * (INPUT_LENGTH_LIMITS["user_input"] + 1)
+            )
         self.assertIn("超出长度限制", str(ctx.exception))
 
     def test_command_arg_limit(self):
         with self.assertRaises(ValueError):
-            _validate_input_length("command_arg", "x" * (INPUT_LENGTH_LIMITS["command_arg"] + 1))
+            _validate_input_length(
+                "command_arg", "x" * (INPUT_LENGTH_LIMITS["command_arg"] + 1)
+            )
 
     def test_file_path_limit(self):
         with self.assertRaises(ValueError):
-            _validate_input_length("file_path", "x" * (INPUT_LENGTH_LIMITS["file_path"] + 1))
+            _validate_input_length(
+                "file_path", "x" * (INPUT_LENGTH_LIMITS["file_path"] + 1)
+            )
 
     def test_unknown_type_uses_default(self):
         # Unknown input type defaults to 10000
@@ -575,8 +628,11 @@ class TestToolSystemToDict(unittest.TestCase):
 
     def test_to_dict_structure(self):
         ts = ToolSystem(register_builtins=False)
-        ts.register_tool(_make_tool("t1", category=ToolCategory.SEARCH,
-                                     permission=PermissionLevel.PUBLIC))
+        ts.register_tool(
+            _make_tool(
+                "t1", category=ToolCategory.SEARCH, permission=PermissionLevel.PUBLIC
+            )
+        )
         d = ts.to_dict()
         self.assertEqual(d["type"], "tool_system")
         self.assertEqual(d["tool_count"], 1)
@@ -600,6 +656,7 @@ class TestAuditLogger(unittest.TestCase):
 
     def test_write_sync_creates_file(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = os.path.join(tmpdir, "audit.jsonl")
             AuditLogger.configure(log_file)
@@ -608,6 +665,7 @@ class TestAuditLogger(unittest.TestCase):
                 lines = f.readlines()
             self.assertEqual(len(lines), 1)
             import json
+
             record = json.loads(lines[0])
             self.assertEqual(record["event"], "test")
 
@@ -619,6 +677,7 @@ class TestAuditLogger(unittest.TestCase):
     def test_log_sync_path(self):
         """AuditLogger.log falls back to _write_sync when no event loop"""
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = os.path.join(tmpdir, "audit_sync.jsonl")
             AuditLogger.configure(log_file)
@@ -628,6 +687,7 @@ class TestAuditLogger(unittest.TestCase):
             AuditLogger._shutdown_event = None
             AuditLogger.log("TEST_EVENT", {"key": "value"})
             import json
+
             with open(log_file) as f:
                 record = json.loads(f.readline())
             self.assertEqual(record["event_type"], "TEST_EVENT")
@@ -648,9 +708,7 @@ class TestEmailValidation(unittest.TestCase):
 
     def test_empty_email_returns_error(self):
         ts = ToolSystem(register_builtins=False)
-        result = asyncio.run(
-            ts._execute_send_email(to="", subject="test", body="hi")
-        )
+        result = asyncio.run(ts._execute_send_email(to="", subject="test", body="hi"))
         self.assertFalse(result.get("sent", True))
 
     def test_valid_email_format(self):
@@ -672,9 +730,7 @@ class TestWebSearchPlaceholder(unittest.TestCase):
 
     def test_returns_placeholder_results(self):
         ts = ToolSystem(register_builtins=False)
-        result = asyncio.run(
-            ts._execute_web_search("test query", max_results=3)
-        )
+        result = asyncio.run(ts._execute_web_search("test query", max_results=3))
         self.assertEqual(result["query"], "test query")
         self.assertLessEqual(result["total"], 3)
         self.assertIsInstance(result["results"], list)

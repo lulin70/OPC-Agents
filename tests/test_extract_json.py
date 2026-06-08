@@ -1,4 +1,5 @@
 """Unit tests for extract_json_from_llm — 3-strategy extraction."""
+
 import unittest
 
 from opc_manager.utils import extract_json_from_llm
@@ -76,7 +77,7 @@ class TestExtractJsonBracketDepth(unittest.TestCase):
         self.assertEqual(result, {"name": "a"})
 
     def test_empty_array_returns_none(self):
-        text = '[]'
+        text = "[]"
         result = extract_json_from_llm(text)
         self.assertIsNone(result)
 

@@ -358,6 +358,7 @@ class TestStatePersistence(unittest.TestCase):
     def test_creates_data_directory_if_not_exists(self):
         """保存状态时如果data目录不存在应自动创建"""
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmpdir:
             state_file = Path(tmpdir) / "data" / "onboarding.json"
             with patch.object(OnboardingManager, "STATE_FILE", str(state_file)):

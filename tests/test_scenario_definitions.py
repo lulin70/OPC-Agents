@@ -313,9 +313,7 @@ class TestScenarioResult(unittest.TestCase):
         self.assertNotIn("scenario_id", d)
 
     def test_to_dict_with_candidates(self):
-        result = ScenarioResult(
-            matched=False, candidates=[{"id": "a", "score": 0.5}]
-        )
+        result = ScenarioResult(matched=False, candidates=[{"id": "a", "score": 0.5}])
         d = result.to_dict()
         self.assertIn("candidates", d)
         self.assertEqual(len(d["candidates"]), 1)
@@ -328,16 +326,27 @@ class TestBuiltInScenarioCompleteness(unittest.TestCase):
     """Verify every built-in scenario has all required attributes."""
 
     REQUIRED_SCENARIO_FIELDS = [
-        "id", "name", "description", "trigger_phrases",
-        "target_business_types", "workflow_steps", "estimated_duration",
+        "id",
+        "name",
+        "description",
+        "trigger_phrases",
+        "target_business_types",
+        "workflow_steps",
+        "estimated_duration",
         "deliverable_template",
     ]
 
     def test_all_scenarios_present(self):
         expected_ids = {
-            "launch_product", "write_report", "organize_meeting",
-            "content_calendar", "digital_product_launch", "feedback_analysis",
-            "consulting_proposal", "ecommerce_ops", "project_deliverable",
+            "launch_product",
+            "write_report",
+            "organize_meeting",
+            "content_calendar",
+            "digital_product_launch",
+            "feedback_analysis",
+            "consulting_proposal",
+            "ecommerce_ops",
+            "project_deliverable",
         }
         self.assertEqual(set(BUILT_IN_SCENARIOS.keys()), expected_ids)
 
@@ -410,7 +419,8 @@ class TestWorkflowStepIntegrity(unittest.TestCase):
         for sid, scenario in BUILT_IN_SCENARIOS.items():
             ids = [step.step_id for step in scenario.workflow_steps]
             self.assertEqual(
-                ids, list(range(1, len(ids) + 1)),
+                ids,
+                list(range(1, len(ids) + 1)),
                 f"Scenario '{sid}' has non-sequential step IDs: {ids}",
             )
 
@@ -420,7 +430,8 @@ class TestWorkflowStepIntegrity(unittest.TestCase):
             for step in scenario.workflow_steps:
                 for dep in step.dependencies:
                     self.assertIn(
-                        dep, valid_ids,
+                        dep,
+                        valid_ids,
                         f"Scenario '{sid}' step {step.step_id} has invalid dependency {dep}",
                     )
 
@@ -455,7 +466,8 @@ class TestReferentialIntegrity(unittest.TestCase):
         for sid, scenario in BUILT_IN_SCENARIOS.items():
             for bt in scenario.target_business_types:
                 self.assertIsInstance(
-                    bt, BusinessType,
+                    bt,
+                    BusinessType,
                     f"Scenario '{sid}' has invalid business type: {bt}",
                 )
 
@@ -466,7 +478,8 @@ class TestReferentialIntegrity(unittest.TestCase):
             types_with_scenarios.update(scenario.target_business_types)
         for bt in BusinessType:
             self.assertIn(
-                bt, types_with_scenarios,
+                bt,
+                types_with_scenarios,
                 f"BusinessType '{bt.value}' has no targeting scenario",
             )
 
@@ -519,17 +532,15 @@ class TestScenarioLookup(unittest.TestCase):
     def test_lookup_by_business_type(self):
         """Find all scenarios targeting a specific business type."""
         ecommerce_scenarios = [
-            s for s in BUILT_IN_SCENARIOS.values()
+            s
+            for s in BUILT_IN_SCENARIOS.values()
             if BusinessType.ECOMMERCE in s.target_business_types
         ]
         self.assertGreater(len(ecommerce_scenarios), 0)
 
     def test_lookup_by_name(self):
         """Find scenario by name."""
-        found = [
-            s for s in BUILT_IN_SCENARIOS.values()
-            if s.name == "电商运营优化"
-        ]
+        found = [s for s in BUILT_IN_SCENARIOS.values() if s.name == "电商运营优化"]
         self.assertEqual(len(found), 1)
         self.assertEqual(found[0].id, "ecommerce_ops")
 
@@ -648,7 +659,8 @@ class TestEdgeCases(unittest.TestCase):
     def test_unknown_business_type_scenario_lookup(self):
         """Looking up scenarios for a valid but uncommon type should still work."""
         scenarios = [
-            s for s in BUILT_IN_SCENARIOS.values()
+            s
+            for s in BUILT_IN_SCENARIOS.values()
             if BusinessType.AI_TOOL_BUILDER in s.target_business_types
         ]
         self.assertGreater(len(scenarios), 0)
@@ -667,7 +679,8 @@ class TestEdgeCases(unittest.TestCase):
         """All built-in scenarios should have deliverable template with sections."""
         for sid, scenario in BUILT_IN_SCENARIOS.items():
             self.assertGreater(
-                len(scenario.deliverable_template.sections), 0,
+                len(scenario.deliverable_template.sections),
+                0,
                 f"Scenario '{sid}' has empty deliverable sections",
             )
 

@@ -139,10 +139,20 @@ class AgentLoop:
         logger.info("AgentLoop 开始执行: %s...", user_input[:50])
 
         if not user_input or not user_input.strip():
-            return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error="用户输入不能为空")
+            return TaskResult(
+                success=False,
+                content="",
+                task_type=TaskType.GENERAL_CHAT,
+                error="用户输入不能为空",
+            )
 
         if len(user_input) > MAX_USER_INPUT_LENGTH:
-            return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error=f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)")
+            return TaskResult(
+                success=False,
+                content="",
+                task_type=TaskType.GENERAL_CHAT,
+                error=f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)",
+            )
 
         run_start_time = time.time()
         _perf_start = time.time()
@@ -195,7 +205,12 @@ class AgentLoop:
             )
             if not confirm_result.confirmed and confirm_result.method != "no_callback":
                 agent_context.set_state(AgentState.CONFIRMATION_NEEDED)
-                return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error="需要用户确认后才能执行")
+                return TaskResult(
+                    success=False,
+                    content="",
+                    task_type=TaskType.GENERAL_CHAT,
+                    error="需要用户确认后才能执行",
+                )
 
             skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
 
@@ -282,7 +297,9 @@ class AgentLoop:
 
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=False)
-            return TaskResult(success=False, content="", task_type=TaskType.GENERAL_CHAT, error=str(e))
+            return TaskResult(
+                success=False, content="", task_type=TaskType.GENERAL_CHAT, error=str(e)
+            )
 
     async def _reflect_loop(
         self,

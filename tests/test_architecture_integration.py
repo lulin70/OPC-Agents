@@ -3,6 +3,7 @@
 Verifies that the unified AgentLoop→TaskEngineV3→TaskResult pipeline works correctly,
 including the ExecutorBrain direct TaskEngineV3 integration (no TaskEngineAdapter).
 """
+
 import asyncio
 import unittest
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -78,6 +79,7 @@ class TestNoTaskEngineAdapterInPipeline(unittest.TestCase):
     def test_agent_loop_no_adapter_import(self):
         """AgentLoop should not reference TaskEngineAdapter."""
         import inspect
+
         source = inspect.getsource(AgentLoop)
         self.assertNotIn("TaskEngineAdapter", source)
         self.assertNotIn("task_engine_adapter", source)
@@ -85,6 +87,7 @@ class TestNoTaskEngineAdapterInPipeline(unittest.TestCase):
     def test_executor_brain_no_adapter_import(self):
         """ExecutorBrain should not reference TaskEngineAdapter."""
         import inspect
+
         source = inspect.getsource(ExecutorBrain)
         self.assertNotIn("TaskEngineAdapter", source)
         self.assertNotIn("task_engine_adapter", source)

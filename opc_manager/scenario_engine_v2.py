@@ -72,9 +72,7 @@ class ScenarioEngineV2:
                 )
                 detected_type = detection_result.business_type
             except Exception as e:
-                logger.error(
-                    "BusinessTypeDetector failed, using default type: %s", e
-                )
+                logger.error("BusinessTypeDetector failed, using default type: %s", e)
 
         candidates = []
         for scenario_id, config in self.scenarios.items():

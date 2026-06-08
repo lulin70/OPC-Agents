@@ -51,13 +51,19 @@ class EmbeddingService:
                 logger.info(
                     "[EmbeddingService] Model '%s' not found. Available: %s. "
                     "Run: ollama pull %s",
-                    self._model, ", ".join(models) or "(none)", self._model,
+                    self._model,
+                    ", ".join(models) or "(none)",
+                    self._model,
                 )
                 return False
-            logger.info("[EmbeddingService] Ollama embedding available: %s", self._model)
+            logger.info(
+                "[EmbeddingService] Ollama embedding available: %s", self._model
+            )
             return True
         except requests.RequestException:
-            logger.info("[EmbeddingService] Ollama not available, using keyword-only search")
+            logger.info(
+                "[EmbeddingService] Ollama not available, using keyword-only search"
+            )
             return False
 
     @property
@@ -71,14 +77,16 @@ class EmbeddingService:
         self._cache_db = os.path.join(cache_dir, EMBEDDING_CACHE_DB)
         try:
             conn = sqlite3.connect(self._cache_db)
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS embeddings (
                     content_hash TEXT PRIMARY KEY,
                     model TEXT NOT NULL,
                     embedding BLOB NOT NULL,
                     created_at REAL NOT NULL
                 )
-            """)
+            """
+            )
             conn.commit()
             conn.close()
         except sqlite3.Error as e:
@@ -101,6 +109,7 @@ class EmbeddingService:
             conn.close()
             if row:
                 import struct
+
                 data = row[0]
                 return list(struct.unpack(f"<{len(data)//4}f", data))
         except Exception:
@@ -114,6 +123,7 @@ class EmbeddingService:
         try:
             import struct
             import time
+
             blob = struct.pack(f"<{len(embedding)}f", *embedding)
             conn = sqlite3.connect(self._cache_db)
             conn.execute(

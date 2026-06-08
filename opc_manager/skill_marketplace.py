@@ -947,7 +947,9 @@ class ExternalSkillMarketplace:
         # 定义允许的根目录
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         allowed_dirs = [
-            os.path.realpath(os.path.join(project_root, "data", "marketplace", "external_skills")),
+            os.path.realpath(
+                os.path.join(project_root, "data", "marketplace", "external_skills")
+            ),
             os.path.realpath(os.path.join(project_root, "data", "custom_skills")),
             os.path.realpath(os.path.join(project_root, "plugins")),
         ]

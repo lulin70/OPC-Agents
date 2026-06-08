@@ -1075,7 +1075,9 @@ class TestEncryptedStorage:
         Expected: Loaded value is empty string (not crash)
         """
         # Valid base64 that decodes to 48+ bytes but is NOT a valid Fernet token
-        invalid_token = base64.urlsafe_b64encode(b"this-looks-like-encrypted-but-is-not-a-fernet-token-at-all-just-garbage-data").decode()
+        invalid_token = base64.urlsafe_b64encode(
+            b"this-looks-like-encrypted-but-is-not-a-fernet-token-at-all-just-garbage-data"
+        ).decode()
 
         settings_file = Path(SettingsManager.SETTINGS_FILE)
         settings_file.parent.mkdir(parents=True, exist_ok=True)

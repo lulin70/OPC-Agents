@@ -87,6 +87,7 @@ def _do_get_export_bytes(content: str, fmt: str) -> tuple:
         except ImportError:
             actual_fmt = "html"
             import streamlit as st
+
             st.info("PDF 导出需要 WeasyPrint，当前已降级为 HTML 格式导出")
 
     manager = ExportManager()

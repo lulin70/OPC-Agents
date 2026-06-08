@@ -505,7 +505,10 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
             logger.warning("[frontend] AgentLoop返回空内容")
             return None, False, None, None, None
 
-        if task_result.task_type.value == "general_chat" and len(task_result.content) < 300:
+        if (
+            task_result.task_type.value == "general_chat"
+            and len(task_result.content) < 300
+        ):
             return task_result.content, True, None, "general_chat", None
 
         meta_lines = []
@@ -546,6 +549,7 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
     except Exception as e:
         import traceback
+
         tb = traceback.format_exc()
         logger.error("[frontend] AgentLoop异常: %s\n%s", e, tb)
         return None, False, None, None, None

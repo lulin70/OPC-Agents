@@ -61,9 +61,9 @@ class TestDimensionScore(unittest.TestCase):
         """Verify weighted calculation: [0.25, 0.20, 0.20, 0.15, 0.20]"""
         ds = DimensionScore(
             content_quality=100,  # 0.25 * 100 = 25
-            audience_growth=0,    # 0.20 * 0 = 0
-            monetization=0,       # 0.20 * 0 = 0
-            cross_promotion=0,    # 0.15 * 0 = 0
+            audience_growth=0,  # 0.20 * 0 = 0
+            monetization=0,  # 0.20 * 0 = 0
+            cross_promotion=0,  # 0.15 * 0 = 0
             ecosystem_synergy=0,  # 0.20 * 0 = 0
         )
         self.assertAlmostEqual(ds.overall_score(), 25.0)
@@ -429,9 +429,7 @@ class TestDimensionScoreUpdates(unittest.TestCase):
 
     def test_cross_promotion_capped_at_90(self):
         for bt in BusinessType:
-            self.tracker.record_scenario_completion(
-                "user1", f"scenario_{bt.value}", bt
-            )
+            self.tracker.record_scenario_completion("user1", f"scenario_{bt.value}", bt)
         state = self.tracker.get_or_create_state("user1")
         self.assertLessEqual(state.dimension_scores.cross_promotion, 90)
 
@@ -604,7 +602,11 @@ class TestLevelProgressCalculation(unittest.TestCase):
     def test_level_3_returns_100(self):
         state = UserFlywheelState(
             user_id="u1",
-            active_types=[BusinessType.CONTENT_CREATOR, BusinessType.ECOMMERCE, BusinessType.AI_TOOL_BUILDER],
+            active_types=[
+                BusinessType.CONTENT_CREATOR,
+                BusinessType.ECOMMERCE,
+                BusinessType.AI_TOOL_BUILDER,
+            ],
         )
         state.current_level = FlywheelLevel.LEVEL_3
         progress = self.tracker._calculate_level_progress(state)
@@ -843,7 +845,9 @@ class TestHelperMethods(unittest.TestCase):
     def test_get_level_name(self):
         self.assertEqual(self.tracker._get_level_name(FlywheelLevel.LEVEL_1), "探索者")
         self.assertEqual(self.tracker._get_level_name(FlywheelLevel.LEVEL_2), "连接者")
-        self.assertEqual(self.tracker._get_level_name(FlywheelLevel.LEVEL_3), "生态构建者")
+        self.assertEqual(
+            self.tracker._get_level_name(FlywheelLevel.LEVEL_3), "生态构建者"
+        )
 
     def test_get_most_used_scenario(self):
         state = UserFlywheelState(user_id="u1")
@@ -932,7 +936,9 @@ class TestFlywheelTrackerDB(unittest.TestCase):
         mock_session.query.return_value.filter.return_value.first.return_value = None
         tracker = FlywheelTrackerDB(db_session=mock_session)
         # Mock the db_models import that happens inside _get_db_state and _save_to_db
-        with patch.dict("sys.modules", {"db_models": MagicMock(), "db_models.models": MagicMock()}):
+        with patch.dict(
+            "sys.modules", {"db_models": MagicMock(), "db_models.models": MagicMock()}
+        ):
             tracker.record_scenario_completion(
                 "user1", "content_calendar", BusinessType.CONTENT_CREATOR
             )

@@ -75,6 +75,7 @@ def _get_backup_password() -> Optional[str]:
     # 优先通过 SettingsManager 获取加密密钥
     try:
         from opc_manager.settings import get_settings
+
         settings = get_settings()
         encryption_key = settings.get_encryption_key()
         if encryption_key:

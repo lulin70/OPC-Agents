@@ -246,7 +246,9 @@ class SettingsManager:
             old_fernet = Fernet(old_fernet_key)
             return old_fernet.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
         except Exception:
-            logger.debug("[SettingsManager] Decryption failed for value, returning None")
+            logger.debug(
+                "[SettingsManager] Decryption failed for value, returning None"
+            )
             return None
 
     def _encrypt_value(self, plaintext: str) -> str:
@@ -284,7 +286,9 @@ class SettingsManager:
             decrypted = self._fernet.decrypt(ciphertext.encode("utf-8"))
             return decrypted.decode("utf-8")
         except Exception:
-            logger.debug("[SettingsManager] New-key decryption failed, trying old-key migration")
+            logger.debug(
+                "[SettingsManager] New-key decryption failed, trying old-key migration"
+            )
             # 新方式解密失败，尝试旧方式（truncate+pad 派生）进行迁移
             old_decrypted = self._decrypt_with_old_key(ciphertext)
             if old_decrypted is not None:
@@ -292,7 +296,9 @@ class SettingsManager:
                     "[SettingsManager] Migrated data from old key derivation to SHA-256"
                 )
                 return old_decrypted
-            logger.debug("[SettingsManager] Decryption failed with both new and old key")
+            logger.debug(
+                "[SettingsManager] Decryption failed with both new and old key"
+            )
             return None
 
     def _load_from_disk(self) -> None:
@@ -451,7 +457,9 @@ class SettingsManager:
                         )
                     elif env_key == "GLM_API_KEY":
                         self._llm.provider = self._llm.provider or "glm"
-                        self._llm.base_url = self._llm.base_url or "https://open.bigmodel.cn/api/paas/v4"
+                        self._llm.base_url = (
+                            self._llm.base_url or "https://open.bigmodel.cn/api/paas/v4"
+                        )
                         self._llm.model = self._llm.model or "glm-4"
                     elif env_key == "OPENAI_API_KEY":
                         self._llm.provider = self._llm.provider or "openai"
