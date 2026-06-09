@@ -160,17 +160,12 @@ DENSITY_LABELS = {
 
 
 def _is_demo_mode() -> bool:
-    data = _get_dashboard_data()
-    trend = data.get("finance", {}).get("trend", [])
-    customers = data.get("crm", {}).get("customers", [])
-    tasks_list = data.get("tasks", {}).get("list", [])
-    logs = data.get("audit_log", [])
-    return (
-        len(trend) == 0
-        and len(customers) == 0
-        and len(tasks_list) == 0
-        and len(logs) == 0
-    )
+    """Check if dashboard should show demo data.
+
+    Uses the demo_mode parameter already available in the render context
+    rather than making expensive backend calls.
+    """
+    return st.session_state.get("_dashboard_demo_mode", False)
 
 
 def _render_demo_badge():
@@ -204,6 +199,9 @@ def _render_dashboard_page(demo_mode: bool = False):
     - Mobile responsive: auto-switches to Minimal layout on small screens
     """
     st.markdown(f"## {_t('dash_title')}")
+
+    # Persist demo_mode so _is_demo_mode() can use it without backend calls
+    st.session_state._dashboard_demo_mode = demo_mode
 
     # 移动端响应式 CSS：小屏幕自动切换到单列布局
     st.markdown(

@@ -410,11 +410,7 @@ def _render_security_settings(settings):
 
     st.divider()
 
-    col_regenerate, _ = st.columns([1, 3])
-    with col_regenerate:
-        if st.button(_t("settings_regenerate_key"), type="secondary", disabled=True):
-            pass
-    st.caption(_t("settings_regenerate_warning"))
+    st.caption(f"⚠️ {_t('settings_regenerate_warning')}")
 
 
 def _render_profile_settings(settings):

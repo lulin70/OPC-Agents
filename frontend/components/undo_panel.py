@@ -224,7 +224,7 @@ def _render_confirmation_dialog(
             result = execute_undo(record.session_id, record.operation_id)
             if result["success"]:
                 st.success(f"✅ {result['message']}")
-                st.balloons()
+                st.toast("操作已撤销", icon="✅")
                 del st.session_state[f"pending_undo_{record.operation_id}"]
                 time.sleep(1)
                 st.rerun()
@@ -500,7 +500,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
                 result = execute_undo(session_id, op_id)
                 if result["success"]:
                     st.success(f"✅ {result['message']}")
-                    st.balloons()
+                    st.toast("操作已撤销", icon="✅")
                     time.sleep(1)
                     st.rerun()
                 else:

@@ -200,6 +200,9 @@ def render_result_card(
                 formats = ["pdf", "docx", "xlsx"]
                 _render_action_buttons(filepath, content, formats)
 
+        # Always close card-body and result-card divs
+        st.markdown("</div></div>", unsafe_allow_html=True)
+
 
 def _render_card_header(task_type: str, config: Dict[str, str]) -> None:
     """渲染卡片头部区域
@@ -286,8 +289,6 @@ def _render_metadata_bar(
                 unsafe_allow_html=True,
             )
 
-    st.markdown("</div></div>", unsafe_allow_html=True)
-
 
 def _render_action_buttons(
     filepath: str,
@@ -337,7 +338,7 @@ def _render_action_buttons(
         ):
             st.session_state[f"clipboard_{hash(filepath)}"] = content
             st.success(_t("rc_copied"))
-            st.balloons()
+            st.toast("已复制", icon="✅")
 
     if formats:
         st.markdown(_t("rc_other_formats"))

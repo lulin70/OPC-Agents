@@ -279,7 +279,7 @@ def _render_skill_card_v2(
 
         if st.button(
             _t("mp_btn_view_detail"),
-            key=f"skill_detail_{skill_id}_{id(skill)}",
+            key=f"skill_detail_{skill_id}_{hash(skill.get('name', ''))}",
             use_container_width=True,
         ):
             st.session_state["selected_skill"] = skill

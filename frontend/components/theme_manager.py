@@ -73,6 +73,10 @@ def apply_theme(theme_name: str):
     except Exception as e:
         logger.warning("[ThemeManager] Theme setting failed: %s", e)
 
+    css = _get_theme_css(theme_name)
+    if css:
+        st.markdown(css, unsafe_allow_html=True)
+
 
 def _get_theme_css(theme_name: str) -> str:
     """Return custom CSS for enhanced theme support."""

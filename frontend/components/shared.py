@@ -186,7 +186,7 @@ def _render_undo_panel():
                                         st.success(
                                             f"✅ {_t('undo_success', msg=result.get('message', ''))}"
                                         )
-                                        st.balloons()
+                                        st.toast("操作已撤销", icon="✅")
                                         _cached_list_undoable.clear()
                                         time.sleep(1)
                                         st.rerun()
@@ -371,7 +371,7 @@ def _render_quick_undo_button(task_id: str, operation_type: str = None):
                             st.success(
                                 f"✅ {_t('undo_success', msg=result.get('message', ''))}"
                             )
-                            st.balloons()
+                            st.toast("操作已撤销", icon="✅")
                             _cached_list_undoable.clear()
                             time.sleep(1)
                             st.rerun()

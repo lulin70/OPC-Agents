@@ -614,7 +614,7 @@ def execute_suggestion(suggestion: Suggestion) -> None:
                 st.session_state.user_input = prompt
                 st.session_state.auto_submit = True
                 st.success(_t("ss_ready_to_exec", title=suggestion.title))
-                st.balloons()
+                st.toast("建议已执行", icon="✅")
                 st.rerun()
             else:
                 st.info(_t("ss_suggestion_tip", desc=suggestion.description))

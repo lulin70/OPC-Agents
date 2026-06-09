@@ -175,90 +175,91 @@ def render_confirmation_dialog(request: dict) -> bool:
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div class="confirmation-dialog">', unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="confirmation-dialog">', unsafe_allow_html=True)
 
-    col_title = st.columns([1])
-    with col_title[0]:
-        st.markdown(
-            f'<div class="confirmation-title">{_t("confirm_risk_title")}</div>',
-            unsafe_allow_html=True,
-        )
-
-    st.divider()
-
-    goal_display = goal[:MAX_GOAL_LENGTH]
-    if len(goal) > MAX_GOAL_LENGTH:
-        goal_display += "..."
-
-    st.markdown(f"**{_t('confirm_operation_target')}:** `{goal_display}`")
-
-    st.markdown(f"**{_t('confirm_risk_assessment')}:**")
-
-    risk_badge = _render_risk_badge(risk_level)
-    conf_text = _render_confidence_bar(confidence, threshold)
-
-    col_type, col_conf, col_risk = st.columns(3)
-    with col_type:
-        st.metric(_t("confirm_operation_type"), intent_type)
-    with col_conf:
-        st.metric(_t("confirm_confidence"), f"{int(confidence*100)}%")
-    with col_risk:
-        st.markdown(f"**{_t('confirm_risk_level')}:** {risk_badge}")
-
-    if params:
-        st.markdown(f"**{_t('confirm_exec_params')}:**")
-        sanitized_params = _sanitize_params_display(params)
-        for param_key, param_value in sanitized_params.items():
-            st.caption(f"- {param_key}: `{param_value}`")
-
-    st.markdown(f"**{_t('confirm_ai_confidence')}:** {conf_text}")
-
-    st.divider()
-
-    btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 1.2])
-
-    confirmed = False
-    cancelled = False
-    skipped = False
-
-    with btn_col1:
-        if st.button(
-            _t("confirm_btn_confirm"),
-            type="primary",
-            key=f"confirm_{session_id}",
-            use_container_width=True,
-        ):
-            confirmed = True
-            logger.info(
-                "[ConfirmationDialog] User confirmed operation: %s", intent_type
+        col_title = st.columns([1])
+        with col_title[0]:
+            st.markdown(
+                f'<div class="confirmation-title">{_t("confirm_risk_title")}</div>',
+                unsafe_allow_html=True,
             )
 
-    with btn_col2:
-        if st.button(
-            _t("confirm_btn_cancel"),
-            key=f"cancel_{session_id}",
-            use_container_width=True,
-        ):
-            cancelled = True
-            logger.info(
-                "[ConfirmationDialog] User cancelled operation: %s", intent_type
-            )
+        st.divider()
 
-    with btn_col3:
-        if st.button(
-            _t("confirm_btn_skip_trust"),
-            key=f"skip_{session_id}",
-            use_container_width=True,
-        ):
-            skipped = True
-            logger.info(
-                "[ConfirmationDialog] User skipped and trusted operation: %s",
-                intent_type,
-            )
+        goal_display = goal[:MAX_GOAL_LENGTH]
+        if len(goal) > MAX_GOAL_LENGTH:
+            goal_display += "..."
 
-    trust_boost = st.checkbox(_t("confirm_trust_boost"), key=f"trust_{session_id}")
+        st.markdown(f"**{_t('confirm_operation_target')}:** `{goal_display}`")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"**{_t('confirm_risk_assessment')}:**")
+
+        risk_badge = _render_risk_badge(risk_level)
+        conf_text = _render_confidence_bar(confidence, threshold)
+
+        col_type, col_conf, col_risk = st.columns(3)
+        with col_type:
+            st.metric(_t("confirm_operation_type"), intent_type)
+        with col_conf:
+            st.metric(_t("confirm_confidence"), f"{int(confidence*100)}%")
+        with col_risk:
+            st.markdown(f"**{_t('confirm_risk_level')}:** {risk_badge}")
+
+        if params:
+            st.markdown(f"**{_t('confirm_exec_params')}:**")
+            sanitized_params = _sanitize_params_display(params)
+            for param_key, param_value in sanitized_params.items():
+                st.caption(f"- {param_key}: `{param_value}`")
+
+        st.markdown(f"**{_t('confirm_ai_confidence')}:** {conf_text}")
+
+        st.divider()
+
+        btn_col1, btn_col2, btn_col3 = st.columns([1, 1, 1.2])
+
+        confirmed = False
+        cancelled = False
+        skipped = False
+
+        with btn_col1:
+            if st.button(
+                _t("confirm_btn_confirm"),
+                type="primary",
+                key=f"confirm_{session_id}",
+                use_container_width=True,
+            ):
+                confirmed = True
+                logger.info(
+                    "[ConfirmationDialog] User confirmed operation: %s", intent_type
+                )
+
+        with btn_col2:
+            if st.button(
+                _t("confirm_btn_cancel"),
+                key=f"cancel_{session_id}",
+                use_container_width=True,
+            ):
+                cancelled = True
+                logger.info(
+                    "[ConfirmationDialog] User cancelled operation: %s", intent_type
+                )
+
+        with btn_col3:
+            if st.button(
+                _t("confirm_btn_skip_trust"),
+                key=f"skip_{session_id}",
+                use_container_width=True,
+            ):
+                skipped = True
+                logger.info(
+                    "[ConfirmationDialog] User skipped and trusted operation: %s",
+                    intent_type,
+                )
+
+        trust_boost = st.checkbox(_t("confirm_trust_boost"), key=f"trust_{session_id}")
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
     if confirmed or cancelled or skipped:
         choice = "confirmed" if confirmed else ("cancelled" if cancelled else "skipped")

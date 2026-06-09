@@ -22,8 +22,6 @@ def render_growth_page():
         st.caption(lv_desc)
     with col_count:
         st.metric(_t("growth_interactions"), count)
-    if count > 0:
-        st.metric(_t("growth_current_level"), f"Lv.{level}")
 
     st.divider()
     st.markdown(f"### {_t('growth_5d_health')}")
