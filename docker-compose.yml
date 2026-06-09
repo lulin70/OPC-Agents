@@ -9,11 +9,13 @@ services:
     volumes:
       # Persist data across container restarts
       - opc-data:/app/data
-      # Config file (create from example if not exists)
+      # Config file (auto-created from .env.example if not exists)
       - ./.env:/app/.env
     environment:
-      - OPC_LOCALE=zh_CN
-      - OPC_ENCRYPTION_KEY=${OPC_ENCRYPTION_KEY:-auto-generate}
+      - OPC_LOCALE=${OPC_LOCALE:-zh_CN}
+      - MOKA_API_KEY=${MOKA_API_KEY:-}
+      - GLM_API_KEY=${GLM_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]

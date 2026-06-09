@@ -40,8 +40,22 @@ from opc_manager.intent_types import IntentType
 
 
 def _run_async(coro):
-    """Helper to run async coroutines in tests."""
-    return asyncio.get_event_loop().run_until_complete(coro)
+    """Helper to run async coroutines in tests.
+
+    Uses asyncio.run() instead of deprecated get_event_loop() to avoid
+    event loop corruption when other tests (e.g. test_llm_concurrency)
+    call asyncio.run() which creates/destroys loops.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(asyncio.run, coro)
+            return future.result(timeout=30)
+    return asyncio.run(coro)
 
 
 # ===================================================================
