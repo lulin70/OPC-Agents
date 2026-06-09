@@ -621,8 +621,14 @@ def execute_suggestion(suggestion: Suggestion) -> None:
 
         elif suggestion.action_type == "navigate_tab":
             target_tab = suggestion.action_payload.get("target_tab", "")
-            if target_tab:
-                st.session_state.current_page = target_tab
+            tab_key_map = {
+                "📈 Dashboard": "dashboard",
+                "📊 Dashboard": "dashboard",
+                "📈 仪表盘": "dashboard",
+            }
+            nav_key = tab_key_map.get(target_tab, target_tab)
+            if nav_key:
+                st.session_state.main_page_navigation = nav_key
                 st.success(_t("ss_navigating_to", tab=target_tab))
                 st.rerun()
             else:
@@ -630,7 +636,7 @@ def execute_suggestion(suggestion: Suggestion) -> None:
 
         elif suggestion.action_type == "open_settings":
             section = suggestion.action_payload.get("section", "")
-            st.session_state.current_page = _t("ss_settings_tab")
+            st.session_state.main_page_navigation = "settings"
             if section:
                 st.session_state.settings_section = section
             st.success(_t("ss_open_settings", section=section or _t("ss_general")))

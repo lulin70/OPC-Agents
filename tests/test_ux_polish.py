@@ -135,19 +135,19 @@ class TestToastNotifications:
         sig_info = inspect.signature(show_info)
         assert "message" in sig_info.parameters
 
-    def test_success_toast_html_has_gradient(self):
+    def test_success_toast_uses_st_toast(self):
         from frontend.components.shared import show_success
         import inspect
 
         source = inspect.getsource(show_success)
-        assert "#10b981" in source or "gradient" in source.lower()
+        assert "st.toast" in source
 
-    def test_error_toast_html_is_red(self):
+    def test_error_toast_uses_st_toast(self):
         from frontend.components.shared import show_error
         import inspect
 
         source = inspect.getsource(show_error)
-        assert "#ef4444" in source or "#dc2626" in source
+        assert "st.toast" in source
 
 
 class TestExportPreview:

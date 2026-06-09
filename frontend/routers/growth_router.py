@@ -42,7 +42,6 @@ def render_growth_page():
         with c2:
             st.progress(score / 100)
         with c3:
-            color = "#4CAF50" if score >= 60 else ("#FF9800" if score >= 30 else "#ccc")
             st.metric(label=dim_label, value=score)
 
     if count == 0:

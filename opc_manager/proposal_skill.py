@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
+from opc_manager.utils import SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ def create_proposal(
     proposal_id = gen_id()
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     valid_until = time.strftime(
-        "%Y-%m-%d", time.localtime(time.time() + valid_days * 86400)
+        "%Y-%m-%d", time.localtime(time.time() + valid_days * SECONDS_PER_DAY)
     )
 
     proposal = {

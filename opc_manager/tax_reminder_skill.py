@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
+from opc_manager.utils import SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def check_upcoming_deadlines(days_ahead: int = 30) -> Dict[str, Any]:
         try:
             deadline_ts = time.mktime(time.strptime(deadline_date, "%Y-%m-%d"))
             now_ts = time.mktime(time.strptime(now, "%Y-%m-%d"))
-            days_remaining = int((deadline_ts - now_ts) / 86400)
+            days_remaining = int((deadline_ts - now_ts) / SECONDS_PER_DAY)
         except Exception as e:
             logger.debug("[TaxReminderSkill] Date parse failed: %s", e)
             continue

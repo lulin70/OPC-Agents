@@ -7,7 +7,6 @@ Supports Chinese (zh_CN), English (en_US), and Japanese (ja_JP).
 
 import json
 import logging
-from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -243,6 +242,12 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "current_persona": "**当前人格**",
         "style_label": "风格：",
         "deliverables_count": "**📦 已生成 {count} 个成果物**",
+        "sidebar_memory_info": "🧠 记忆 {count}条",
+        "sidebar_memory_rules": " | 规则 {count}条",
+        "sidebar_memory_pending": " | ⚠️{count}待审",
+        "sidebar_memory_disabled": "🧠 记忆未启用",
+        "sidebar_knowledge_info": "📚 知识库({type}) {count}篇",
+        "demo_badge_text": "🎮 Demo Data",
         "custom_skills_count": "**已创建 {count} 个自定义技能**",
         "nav_dashboard": "📈 仪表盘",
         "chat_demo_mode": "🎮 演示模式",
@@ -1477,6 +1482,12 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "current_persona": "**Current Persona**",
         "style_label": "Style: ",
         "deliverables_count": "**📦 {count} deliverable(s) generated**",
+        "sidebar_memory_info": "🧠 Memory {count} items",
+        "sidebar_memory_rules": " | Rules {count}",
+        "sidebar_memory_pending": " | ⚠️{count} pending",
+        "sidebar_memory_disabled": "🧠 Memory disabled",
+        "sidebar_knowledge_info": "📚 Knowledge({type}) {count} docs",
+        "demo_badge_text": "🎮 Demo Data",
         "custom_skills_count": "**{count} custom skill(s) created**",
         "nav_dashboard": "📈 Dashboard",
         "chat_demo_mode": "🎮 Demo Mode",
@@ -2711,6 +2722,12 @@ I18N_STRINGS: Dict[str, Dict[str, str]] = {
         "current_persona": "**現在のペルソナ**",
         "style_label": "スタイル：",
         "deliverables_count": "**📦 {count}個の成果物を生成**",
+        "sidebar_memory_info": "🧠 メモリ {count}件",
+        "sidebar_memory_rules": " | ルール {count}件",
+        "sidebar_memory_pending": " | ⚠️{count}件保留",
+        "sidebar_memory_disabled": "🧠 メモリ無効",
+        "sidebar_knowledge_info": "📚 ナレッジ({type}) {count}件",
+        "demo_badge_text": "🎮 Demo Data",
         "custom_skills_count": "**{count}個のカスタムスキルを作成**",
         "nav_dashboard": "📈 ダッシュボード",
         "chat_demo_mode": "🎮 デモモード",
@@ -3772,19 +3789,6 @@ class I18nManager:
             {"code": "en_US", "name": "English 🇺🇸"},
             {"code": "ja_JP", "name": "日本語 🇯🇵"},
         ]
-
-    @staticmethod
-    def format_date(locale: str, date_obj) -> str:
-        if locale == "ja_JP":
-            return date_obj.strftime("%Y年%m月%d日")
-        elif locale == "zh_CN":
-            return date_obj.strftime("%Y年%m月%d日")
-        else:
-            return date_obj.strftime("%Y-%m-%d")
-
-    @staticmethod
-    def format_number(locale: str, number) -> str:
-        return f"{number:,}"
 
 
 _i18n_instance: Optional[I18nManager] = None

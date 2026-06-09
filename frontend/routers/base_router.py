@@ -400,14 +400,14 @@ def safe_track_flywheel(type_value):
 
         scores = st.session_state.flywheel_scores
         dim_map = {
-            "content_creator": "dim_content_quality",
-            "digital_product": "dim_monetization",
-            "ai_tool_builder": "dim_cross_promotion",
-            "consultant": "dim_audience_growth",
-            "ecommerce": "dim_monetization",
-            "creative_work": "dim_content_quality",
+            "content_creator": "content_quality",
+            "digital_product": "monetization",
+            "ai_tool_builder": "cross_promotion",
+            "consultant": "audience_growth",
+            "ecommerce": "monetization",
+            "creative_work": "content_quality",
         }
-        dim_key = _t(dim_map.get(type_value, "dim_content_quality"))
+        dim_key = dim_map.get(type_value, "content_quality")
         scores[dim_key] = min(100, scores.get(dim_key, 0) + 8)
 
         avg = sum(scores.values()) / len(scores) if scores else 0

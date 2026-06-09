@@ -40,6 +40,10 @@ from .embedding_service import EmbeddingService, cosine_similarity
 
 logger = logging.getLogger(__name__)
 
+_HTTP_TIMEOUT_DEFAULT = 10
+_HTTP_TIMEOUT_SHORT = 3
+_HTTP_TIMEOUT_MEDIUM = 5
+
 
 @dataclass
 class KnowledgeEntry:
@@ -259,7 +263,9 @@ class YuqueAdapter(KnowledgeAdapter):
                     "User-Agent": "OPC-Agents/0.2.5",
                 },
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+            with urllib.request.urlopen(
+                req, timeout=_HTTP_TIMEOUT_DEFAULT
+            ) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
 
             results = []
@@ -325,7 +331,9 @@ class FeishuAdapter(KnowledgeAdapter):
             req = urllib.request.Request(
                 url, data=data, headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+            with urllib.request.urlopen(
+                req, timeout=_HTTP_TIMEOUT_DEFAULT
+            ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
             self._tenant_token = result.get("tenant_access_token", "")
             return self._tenant_token
@@ -351,7 +359,9 @@ class FeishuAdapter(KnowledgeAdapter):
                     "Content-Type": "application/json",
                 },
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+            with urllib.request.urlopen(
+                req, timeout=_HTTP_TIMEOUT_DEFAULT
+            ) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
 
             results = []
@@ -416,7 +426,9 @@ class NotionAdapter(KnowledgeAdapter):
                     "Content-Type": "application/json",
                 },
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+            with urllib.request.urlopen(
+                req, timeout=_HTTP_TIMEOUT_DEFAULT
+            ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
 
             entries = []
@@ -483,7 +495,9 @@ class SiYuanAdapter(KnowledgeAdapter):
             if self._token:
                 headers["Authorization"] = f"Token {self._token}"
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=3) as resp:  # nosec B310
+            with urllib.request.urlopen(
+                req, timeout=_HTTP_TIMEOUT_SHORT
+            ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
                 return result.get("code", -1) == 0
         except Exception as e:
@@ -506,7 +520,9 @@ class SiYuanAdapter(KnowledgeAdapter):
 
             data = json.dumps(body).encode()
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
+            with urllib.request.urlopen(
+                req, timeout=_HTTP_TIMEOUT_MEDIUM
+            ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
 
             entries = []

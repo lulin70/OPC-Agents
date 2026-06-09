@@ -333,7 +333,7 @@ def _render_api_keys_settings(settings):
                 )
             with col_copy:
                 if st.button(_t("settings_apikeys_copy_key"), key="copy_llm_key"):
-                    st.clipboard_text(llm_key)
+                    st.code(llm_key, language=None)
                     st.success(_t("settings_apikeys_copied"))
         else:
             st.warning(_t("settings_apikeys_no_llm"))
@@ -356,7 +356,7 @@ def _render_api_keys_settings(settings):
                 )
             with col_copy:
                 if st.button(_t("settings_apikeys_copy_pass"), key="copy_smtp_pass"):
-                    st.clipboard_text(smtp_pass)
+                    st.code(smtp_pass, language=None)
                     st.success(_t("settings_apikeys_copied"))
         else:
             st.warning(_t("settings_apikeys_no_smtp"))

@@ -13,6 +13,7 @@ from opc_manager.data_manager import (
     init_db,
 )
 from opc_manager.tool_system import AuditLogger
+from opc_manager.utils import SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
 
@@ -207,7 +208,7 @@ def add_deal(
 
 def get_silent_customers(days: int = SILENT_THRESHOLD_DAYS) -> Dict[str, Any]:
     cutoff = time.strftime(
-        "%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - days * 86400)
+        "%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - days * SECONDS_PER_DAY)
     )
     rows = execute_query(
         "SELECT * FROM customers WHERE last_contact<? AND status NOT IN ('lost') ORDER BY last_contact ASC",

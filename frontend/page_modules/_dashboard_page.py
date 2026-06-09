@@ -186,7 +186,7 @@ def _render_demo_badge():
         font-weight: 600;
         opacity: 0.85;
         margin-bottom: 8px;
-    ">🎮 Demo Data</div>
+    ">🎮 {_t('demo_badge_text')}</div>
     """,
         unsafe_allow_html=True,
     )
@@ -477,7 +477,7 @@ def _get_dashboard_data():
 
 def _render_demo_dashboard():
     """Render dashboard with sample/demo data for no-LLM mode."""
-    from frontend.app import _get_demo_dashboard_data
+    from frontend.routers.base_router import _get_demo_dashboard_data
 
     demo = _get_demo_dashboard_data()
 

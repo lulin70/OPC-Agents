@@ -175,7 +175,9 @@ def main():
             app = create_sse_app()
             start_sse_server(app, host=args.host, port=args.port)
         else:
-            print("SSE transport requires: pip install fastapi uvicorn sse-starlette")
+            logger.warning(
+                "SSE transport requires: pip install fastapi uvicorn sse-starlette"
+            )
             sys.exit(1)
 
 

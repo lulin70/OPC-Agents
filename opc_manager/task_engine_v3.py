@@ -66,13 +66,12 @@ import time
 import threading
 import logging
 import hashlib
-import copy
 from typing import Dict, List, Optional, Any, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import OrderedDict
-from urllib.parse import urlparse
 
+from opc_manager.utils import SECONDS_PER_DAY
 from opc_manager.skill_registry import SkillRegistry
 from opc_manager.task_content_generators import ContentGenerationMixin
 from opc_manager.task_types import (
@@ -1412,7 +1411,7 @@ class TaskEngineV3(ContentGenerationMixin):
 
         elif step_type in ("scheduling", "invitation"):
             today = time.strftime("%Y-%m-%d")
-            tomorrow = time.time() + 86400
+            tomorrow = time.time() + SECONDS_PER_DAY
             tomorrow_s = time.strftime("%Y-%m-%d", time.localtime(tomorrow))
             return (
                 f"### 安排详情\n\n"

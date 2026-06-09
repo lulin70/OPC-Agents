@@ -199,11 +199,11 @@ if "initialized" not in st.session_state:
     st.session_state.onboarding_step = 0
     st.session_state.quality_feedback = {}
     st.session_state.flywheel_scores = {
-        "内容质量": 0,
-        "受众增长": 0,
-        "变现能力": 0,
-        "跨域推广": 0,
-        "生态协同": 0,
+        "content_quality": 0,
+        "audience_growth": 0,
+        "monetization": 0,
+        "cross_promotion": 0,
+        "ecosystem_synergy": 0,
     }
     st.session_state.flywheel_level = 1
     st.session_state.achievements = []
@@ -343,15 +343,17 @@ with st.sidebar:
         status = _mb.get_status()
         if status["enabled"]:
             st.divider()
-            mem_info = f"🧠 记忆 {status['memory_count']}条"
+            mem_info = _t("sidebar_memory_info", count=status["memory_count"])
             if status.get("rule_count", 0) > 0:
-                mem_info += f" | 规则 {status['rule_count']}条"
+                mem_info += _t("sidebar_memory_rules", count=status["rule_count"])
             if status.get("pending_lessons", 0) > 0:
-                mem_info += f" | ⚠️{status['pending_lessons']}待审"
+                mem_info += _t(
+                    "sidebar_memory_pending", count=status["pending_lessons"]
+                )
             st.markdown(mem_info)
         elif status["available"]:
             st.divider()
-            st.caption("🧠 记忆未启用")
+            st.caption(_t("sidebar_memory_disabled"))
     except Exception as e:
         logger.warning("[App] Memory sidebar init failed: %s", e)
 
@@ -364,11 +366,9 @@ with st.sidebar:
         if kb_status["enabled"]:
             kb_type = kb_status.get("type", "")
             source_count = kb_status.get("source_count", kb_status.get("file_count", 0))
-            st.markdown(f"📚 知识库({kb_type}) {source_count}篇")
+            st.markdown(_t("sidebar_knowledge_info", type=kb_type, count=source_count))
     except Exception as e:
         logger.warning("[App] Knowledge base sidebar init failed: %s", e)
-
-    st.divider()
 
     st.divider()
     st.markdown(_t("tools_section"))

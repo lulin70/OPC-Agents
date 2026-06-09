@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
 from opc_manager.tax_reminder_skill import get_tax_calendar, TAX_CALENDAR
+from opc_manager.utils import SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,10 @@ def create_invoice(
     today_start = time.strftime("%Y-%m-%d")
     existing = execute_query(
         "SELECT invoice_no FROM invoices WHERE created_at >= ? AND created_at < ?",
-        (today_start, time.strftime("%Y-%m-%d", time.localtime(time.time() + 86400))),
+        (
+            today_start,
+            time.strftime("%Y-%m-%d", time.localtime(time.time() + SECONDS_PER_DAY)),
+        ),
     )
     seq = len(existing) + 1
     invoice_no = f"OPC{today_str}{seq:04d}"

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_MAX_SIZE = 100
 EVENT_QUEUE_MAX_SIZE = 1000
 LLM_CONCURRENCY_LIMIT = 5
+SECONDS_PER_DAY = 86400
 
 _llm_thread_semaphore = threading.Semaphore(LLM_CONCURRENCY_LIMIT)
 _llm_async_semaphore: Optional[asyncio.Semaphore] = None

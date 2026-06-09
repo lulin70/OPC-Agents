@@ -1,7 +1,6 @@
 """Tests for i18n module — v0.2.0 Sprint 4"""
 
 import pytest
-from datetime import date
 from opc_manager.i18n import I18nManager, I18N_STRINGS, get_i18n, t
 
 
@@ -216,30 +215,6 @@ class TestTranslationJapanese:
         manager = I18nManager()
         manager.locale = "ja_JP"
         assert "ようこそ" in manager.t("onboarding_welcome_title")
-
-
-class TestFormattingHelpers:
-    """Test locale-aware date/number formatting."""
-
-    def test_format_date_japanese(self):
-        result = I18nManager.format_date("ja_JP", date(2025, 6, 15))
-        assert result == "2025年06月15日"
-
-    def test_format_date_chinese(self):
-        result = I18nManager.format_date("zh_CN", date(2025, 6, 15))
-        assert result == "2025年06月15日"
-
-    def test_format_date_english(self):
-        result = I18nManager.format_date("en_US", date(2025, 6, 15))
-        assert result == "2025-06-15"
-
-    def test_format_number_japanese(self):
-        result = I18nManager.format_number("ja_JP", 1234567)
-        assert result == "1,234,567"
-
-    def test_format_number_english(self):
-        result = I18nManager.format_number("en_US", 1234567)
-        assert result == "1,234,567"
 
 
 class TestFallbackBehavior:

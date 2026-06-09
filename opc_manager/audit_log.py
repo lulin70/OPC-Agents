@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Any, Dict, List
 from collections import deque
 from queue import Queue, Empty
+from opc_manager.utils import SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ class AuditLog:
         status: str = "success",
         error_msg: str = "",
         user_id: str = "default",
-    ):
+    ) -> None:
         import uuid
 
         input_text = input_text or ""
@@ -195,7 +196,7 @@ class AuditLog:
                 )
         return results[:limit]
 
-    def get_stats(self, session_id: str = None) -> dict:
+    def get_stats(self, session_id: str = None) -> Dict[str, Any]:
         total = success = failed = 0
         total_duration = 0
         with self._lock:
@@ -216,14 +217,15 @@ class AuditLog:
             "avg_duration_ms": total_duration // max(total, 1),
         }
 
-    def cleanup(self, before_timestamp: float = None):
+    def cleanup(self, before_timestamp: float = None) -> int:
         if before_timestamp is None:
-            before_timestamp = time.time() - AUDIT_RETENTION_DAYS * 86400
+            before_timestamp = time.time() - AUDIT_RETENTION_DAYS * SECONDS_PER_DAY
         with self._lock:
             self._logs = deque(
                 [r for r in self._logs if r.timestamp >= before_timestamp],
                 maxlen=AUDIT_MAX_MEMORY_LOGS,
             )
+            return len(self._logs)
 
     def _start_background_writer(self):
         self._started = True
