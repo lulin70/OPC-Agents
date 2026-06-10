@@ -12,8 +12,12 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from enum import Enum
+import os
 
 logger = logging.getLogger(__name__)
+
+_ONBOARDING_MARKER = Path(os.path.expanduser("~/.opc-agents/onboarding_complete"))
+_SAMPLE_TASK_RESULT_MAX_LENGTH = 500
 
 
 QUICK_START_GUIDE = """
@@ -118,7 +122,13 @@ class OnboardingManager:
 
     @property
     def is_completed(self) -> bool:
-        return self._state.current_step == OnboardingStep.COMPLETED
+        if self._state.current_step == OnboardingStep.COMPLETED:
+            return True
+        # Check file-based marker for returning users
+        if _ONBOARDING_MARKER.exists():
+            self._state.current_step = OnboardingStep.COMPLETED
+            return True
+        return False
 
     @property
     def progress_pct(self) -> int:
@@ -241,6 +251,12 @@ class OnboardingManager:
         self._state.current_step = OnboardingStep.COMPLETED
         self._state.completed_at = time.time()
         self._save_state()
+        # Write file-based marker for returning users
+        try:
+            _ONBOARDING_MARKER.parent.mkdir(parents=True, exist_ok=True)
+            _ONBOARDING_MARKER.write_text(str(time.time()), encoding="utf-8")
+        except Exception as e:
+            logger.warning("Failed to write onboarding marker: %s", e)
         logger.info(
             "Onboarding completed in %.1fs",
             self._state.completed_at - self._state.started_at,
@@ -255,12 +271,17 @@ class OnboardingManager:
         self._state = OnboardingState()
         if self._state_file.exists():
             self._state_file.unlink()
+        try:
+            if _ONBOARDING_MARKER.exists():
+                _ONBOARDING_MARKER.unlink()
+        except Exception as e:
+            logger.warning("Failed to remove onboarding marker: %s", e)
         logger.info("Onboarding reset")
 
     def record_sample_task_result(self, result: str):
         """Record the result of the sample task."""
         if result is not None:
-            self._state.sample_task_result = str(result)[:500]  # truncate
+            self._state.sample_task_result = str(result)[:_SAMPLE_TASK_RESULT_MAX_LENGTH]  # truncate
         self._save_state()
 
 

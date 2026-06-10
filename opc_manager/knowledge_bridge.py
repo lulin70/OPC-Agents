@@ -76,6 +76,20 @@ class KnowledgeAdapter(ABC):
         """列出知识来源"""
         ...
 
+    def _urlopen_with_timeout(self, request, timeout: int = _HTTP_TIMEOUT_DEFAULT):
+        """Open URL with configurable timeout, propagating timeout errors clearly."""
+        import urllib.request
+        import socket
+
+        try:
+            return urllib.request.urlopen(request, timeout=timeout)  # nosec B310
+        except socket.timeout as e:
+            logger.warning("[KnowledgeBridge] HTTP request timed out after %ds: %s", timeout, e)
+            raise
+        except urllib.error.URLError as e:
+            logger.warning("[KnowledgeBridge] HTTP request failed: %s", e)
+            raise
+
 
 class LocalFolderAdapter(KnowledgeAdapter):
     """本地 Markdown 文件夹适配器 — 最简方案"""
@@ -263,7 +277,7 @@ class YuqueAdapter(KnowledgeAdapter):
                     "User-Agent": "OPC-Agents/0.2.5",
                 },
             )
-            with urllib.request.urlopen(
+            with self._urlopen_with_timeout(
                 req, timeout=_HTTP_TIMEOUT_DEFAULT
             ) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
@@ -331,7 +345,7 @@ class FeishuAdapter(KnowledgeAdapter):
             req = urllib.request.Request(
                 url, data=data, headers={"Content-Type": "application/json"}
             )
-            with urllib.request.urlopen(
+            with self._urlopen_with_timeout(
                 req, timeout=_HTTP_TIMEOUT_DEFAULT
             ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
@@ -359,7 +373,7 @@ class FeishuAdapter(KnowledgeAdapter):
                     "Content-Type": "application/json",
                 },
             )
-            with urllib.request.urlopen(
+            with self._urlopen_with_timeout(
                 req, timeout=_HTTP_TIMEOUT_DEFAULT
             ) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
@@ -426,7 +440,7 @@ class NotionAdapter(KnowledgeAdapter):
                     "Content-Type": "application/json",
                 },
             )
-            with urllib.request.urlopen(
+            with self._urlopen_with_timeout(
                 req, timeout=_HTTP_TIMEOUT_DEFAULT
             ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
@@ -495,7 +509,7 @@ class SiYuanAdapter(KnowledgeAdapter):
             if self._token:
                 headers["Authorization"] = f"Token {self._token}"
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(
+            with self._urlopen_with_timeout(
                 req, timeout=_HTTP_TIMEOUT_SHORT
             ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
@@ -520,7 +534,7 @@ class SiYuanAdapter(KnowledgeAdapter):
 
             data = json.dumps(body).encode()
             req = urllib.request.Request(url, data=data, headers=headers)
-            with urllib.request.urlopen(
+            with self._urlopen_with_timeout(
                 req, timeout=_HTTP_TIMEOUT_MEDIUM
             ) as resp:  # nosec B310
                 result = json.loads(resp.read().decode())
@@ -543,6 +557,8 @@ class SiYuanAdapter(KnowledgeAdapter):
             return []
 
     def get_status(self) -> Dict[str, Any]:
+        # Re-check availability on each status call
+        self._available = self._check_availability()
         return {
             "type": "siyuan",
             "available": self._available,

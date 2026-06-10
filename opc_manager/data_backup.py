@@ -212,11 +212,13 @@ class DataBackupManager:
 
         manifest.encrypted = encrypted
 
-        # Calculate checksum — 流式读取避免大文件OOM
+        # Calculate checksum of data files (excluding manifest) before writing manifest
         sha256 = hashlib.sha256()
-        with open(backup_path, "rb") as f:
-            for chunk in iter(lambda: f.read(65536), b""):
-                sha256.update(chunk)
+        for file_path, rel_path in sorted(files_to_backup):
+            sha256.update(str(rel_path).encode())
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(65536), b""):
+                    sha256.update(chunk)
         manifest.checksum_sha256 = sha256.hexdigest()
 
         # Save manifest inside zip
@@ -266,12 +268,39 @@ class DataBackupManager:
 
             # Read manifest and extract all files safely — prevent Zip Slip
             with zipfile.ZipFile(bp, "r") as zf:
-                if "manifest.json" in zf.namelist():
+                manifest_data = {}
+                namelist = zf.namelist()
+                if "manifest.json" in namelist:
                     manifest_data = json.loads(zf.read("manifest.json"))
                     logger.info(
                         "Restoring from backup: v%s, %d files",
                         manifest_data.get("version"),
                         manifest_data.get("total_files", "?"),
+                    )
+
+                # Verify backup integrity via checksum (data files only, not manifest)
+                expected_checksum = manifest_data.get("checksum_sha256", "")
+                if expected_checksum:
+                    sha256 = hashlib.sha256()
+                    # Sort by filename to match create_backup's sorted() order
+                    data_entries = sorted(
+                        [zi for zi in zf.infolist() if zi.filename != "manifest.json"],
+                        key=lambda zi: zi.filename,
+                    )
+                    for zip_info in data_entries:
+                        sha256.update(zip_info.filename.encode())
+                        sha256.update(zf.read(zip_info.filename))
+                    actual_checksum = sha256.hexdigest()
+                    if actual_checksum != expected_checksum:
+                        return {
+                            "success": False,
+                            "error": f"Backup integrity check failed: checksum mismatch "
+                            f"(expected {expected_checksum[:16]}..., got {actual_checksum[:16]}...)",
+                        }
+                    logger.info("Backup integrity verified: checksum OK")
+                else:
+                    logger.warning(
+                        "No checksum in manifest — skipping integrity verification"
                     )
 
                 for zip_info in zf.infolist():
@@ -287,12 +316,12 @@ class DataBackupManager:
                         continue
                     zf.extract(zip_info, data_dir)
 
+                restored_count = len([n for n in namelist if n != "manifest.json"])
+
             return {
                 "success": True,
                 "message": f"Restored from {bp.name}",
-                "restored_files": len(
-                    [n for n in zipfile.ZipFile(bp).namelist() if n != "manifest.json"]
-                ),
+                "restored_files": restored_count,
             }
         except Exception as e:
             logger.error("Restore failed: %s", e)

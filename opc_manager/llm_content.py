@@ -48,6 +48,8 @@ from .utils import _llm_thread_semaphore
 
 logger = logging.getLogger(__name__)
 
+MAX_LLM_OUTPUT_LENGTH = 50000
+
 FORBIDDEN_PATTERNS = [
     "___",
     "待填写",
@@ -71,6 +73,13 @@ FORBIDDEN_PATTERNS = [
     "後で",
     "未定",
     "要記入",
+]
+
+PROMPT_INJECTION_PATTERNS = [
+    "ignore previous instructions",
+    "disregard all above",
+    "you are now",
+    "new instructions:",
 ]
 
 
@@ -655,6 +664,13 @@ class LLMEnhancedContentGenerator:
             if response.status_code == 200:
                 data = response.json()
                 content = data["choices"][0]["message"]["content"]
+                if len(content) > MAX_LLM_OUTPUT_LENGTH:
+                    logger.warning(
+                        "[LLMContentGen] LLM output truncated: %d -> %d chars",
+                        len(content),
+                        MAX_LLM_OUTPUT_LENGTH,
+                    )
+                    content = content[:MAX_LLM_OUTPUT_LENGTH]
                 logger.info(
                     f"[LLMContentGen] LLM API call succeeded ({model}), returned {len(content)} chars"
                 )
@@ -1021,3 +1037,26 @@ class LLMEnhancedContentGenerator:
         for pattern, replacement in patterns:
             content = re.sub(pattern, replacement, content)
         return content
+
+    @staticmethod
+    def check_prompt_injection(text: str) -> List[str]:
+        """Check for common prompt injection patterns and log warnings.
+
+        Does NOT block content — only logs detected patterns for awareness.
+
+        Args:
+            text: Input text to check
+
+        Returns:
+            List of detected injection pattern strings (empty if none found)
+        """
+        detected = []
+        text_lower = text.lower()
+        for pattern in PROMPT_INJECTION_PATTERNS:
+            if pattern in text_lower:
+                detected.append(pattern)
+                logger.warning(
+                    "[LLMContentGen] Prompt injection pattern detected: '%s'",
+                    pattern,
+                )
+        return detected

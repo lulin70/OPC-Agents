@@ -558,6 +558,10 @@ class MemoryBridge:
                     export["memories"] = mem_result.get("memories", [])
                 elif isinstance(mem_result, list):
                     export["memories"] = mem_result
+        except MemoryError:
+            logger.error("[MemoryBridge] MemoryError during export — data too large, returning partial results")
+            export["memories"] = export.get("memories", [])[:100]
+            export["_warning"] = "Export truncated due to memory constraints"
         except Exception as e:
             logger.warning("[MemoryBridge] Memory export failed: %s", e)
 
@@ -568,6 +572,10 @@ class MemoryBridge:
                 rules_result = engine.export_rules()
                 if isinstance(rules_result, dict):
                     export["rules"] = rules_result.get("rules", [])
+        except MemoryError:
+            logger.error("[MemoryBridge] MemoryError during rules export — returning partial results")
+            export["rules"] = export.get("rules", [])[:50]
+            export["_warning"] = "Export truncated due to memory constraints"
         except Exception as e:
             logger.warning("[MemoryBridge] Rules export failed: %s", e)
 

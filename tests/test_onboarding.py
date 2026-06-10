@@ -37,8 +37,15 @@ class TestInitialState(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
         self.manager = OnboardingManager()
+        # Mock marker file to prevent false "completed" from user's real marker
+        self._marker_patch = patch(
+            "opc_manager.onboarding._ONBOARDING_MARKER",
+            Path(self.tmpdir) / ".onboarding_complete",
+        )
+        self._marker_patch.start()
 
     def tearDown(self):
+        self._marker_patch.stop()
         if self.manager._state_file.exists():
             self.manager._state_file.unlink()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
@@ -197,9 +204,16 @@ class TestProgressCalculation(unittest.TestCase):
     """OB-006: 进度百分比计算"""
 
     def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
         self.manager = OnboardingManager()
+        self._marker_patch = patch(
+            "opc_manager.onboarding._ONBOARDING_MARKER",
+            Path(self.tmpdir) / ".onboarding_complete",
+        )
+        self._marker_patch.start()
 
     def tearDown(self):
+        self._marker_patch.stop()
         if self.manager._state_file.exists():
             self.manager._state_file.unlink()
 

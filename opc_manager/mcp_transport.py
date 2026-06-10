@@ -54,8 +54,8 @@ if SSE_AVAILABLE:
 
         MCP_API_KEY = os.environ.get("MCP_API_KEY", "")
 
-        @app.get("/sse")
-        async def sse_endpoint(request: Request):
+        def _check_auth(request: Request):
+            """Check MCP_API_KEY authentication. Returns error response or None."""
             if MCP_API_KEY:
                 auth = request.headers.get("Authorization", "")
                 token = (
@@ -69,8 +69,15 @@ if SSE_AVAILABLE:
                     )
             else:
                 logger.warning(
-                    "MCP_API_KEY is empty — SSE endpoint is open without authentication (development mode only)"
+                    "MCP_API_KEY is empty — endpoint is open without authentication (development mode only)"
                 )
+            return None
+
+        @app.get("/sse")
+        async def sse_endpoint(request: Request):
+            auth_error = _check_auth(request)
+            if auth_error:
+                return auth_error
 
             async def event_generator():
                 yield {
@@ -87,21 +94,9 @@ if SSE_AVAILABLE:
 
         @app.post("/messages")
         async def handle_message(request: Request):
-            if MCP_API_KEY:
-                auth = request.headers.get("Authorization", "")
-                token = (
-                    auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
-                )
-                if not hmac.compare_digest(token, MCP_API_KEY):
-                    from fastapi.responses import JSONResponse
-
-                    return JSONResponse(
-                        status_code=401, content={"error": "Unauthorized"}
-                    )
-            else:
-                logger.warning(
-                    "MCP_API_KEY is empty — messages endpoint is open without authentication (development mode only)"
-                )
+            auth_error = _check_auth(request)
+            if auth_error:
+                return auth_error
             body = await request.json()
             result = mcp_server.handle_request(body)
             return result

@@ -191,7 +191,9 @@ class TestJourney1NewUserFirstExperience:
     def test_onboarding_starts_at_welcome(self, tmp_path):
         """Step 1: First launch → onboarding starts at WELCOME step."""
         state_file = tmp_path / "onboarding.json"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)):
+        fake_marker = tmp_path / ".onboarding_complete"
+        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
+             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
             mgr = OnboardingManager()
             assert not mgr.is_completed
             assert mgr.get_current_step() == OnboardingStep.WELCOME
@@ -235,7 +237,9 @@ class TestJourney1NewUserFirstExperience:
     def test_onboarding_progress_increases(self, tmp_path):
         """Progress percentage increases as user advances through steps."""
         state_file = tmp_path / "onboarding.json"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)):
+        fake_marker = tmp_path / ".onboarding_complete"
+        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
+             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
             mgr = OnboardingManager()
             initial_progress = mgr.progress_pct
             assert initial_progress == 0

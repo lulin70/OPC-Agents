@@ -26,9 +26,7 @@ from opc_manager.utils import (
 logger = logging.getLogger(__name__)
 
 ESTIMATED_TIME_PER_STEP = 30
-
-_cached_user_profile = None
-_cached_marketplace = None
+_CACHE_TTL = 300.0  # 5 minutes cache expiry
 
 
 class ConstraintType(Enum):
@@ -114,6 +112,9 @@ class StrategistBrain:
             llm_service: LLM服务实例，用于意图理解
         """
         self.llm_service = llm_service
+        self._cached_user_profile = None
+        self._cached_marketplace = None
+        self._cache_timestamp: float = 0.0
 
         self.intent_keywords = INTENT_KEYWORDS
 
@@ -265,13 +266,17 @@ class StrategistBrain:
     def _fallback_to_external(
         self, user_input: str, goal: str
     ) -> Optional[Dict[str, Any]]:
-        global _cached_user_profile, _cached_marketplace
+        import time as _time
+        if _time.time() - self._cache_timestamp > _CACHE_TTL:
+            self._cached_user_profile = None
+            self._cached_marketplace = None
+            self._cache_timestamp = _time.time()
         try:
             from opc_manager.user_profile import UserProfile
 
-            if _cached_user_profile is None:
-                _cached_user_profile = UserProfile()
-            preferred = _cached_user_profile.get_preference(
+            if self._cached_user_profile is None:
+                self._cached_user_profile = UserProfile()
+            preferred = self._cached_user_profile.get_preference(
                 f"preferred_skill:{user_input[:20]}"
             )
             if preferred:
@@ -285,9 +290,9 @@ class StrategistBrain:
         try:
             from opc_manager.skill_marketplace import ExternalSkillMarketplace
 
-            if _cached_marketplace is None:
-                _cached_marketplace = ExternalSkillMarketplace()
-            search_result = _cached_marketplace.search_skills(user_input)
+            if self._cached_marketplace is None:
+                self._cached_marketplace = ExternalSkillMarketplace()
+            search_result = self._cached_marketplace.search_skills(user_input)
             if search_result.get("success") and search_result.get("results"):
                 best_match = search_result["results"][0]
                 return {

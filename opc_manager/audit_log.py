@@ -56,6 +56,8 @@ AUDIT_MAX_MEMORY_LOGS = 1000
 AUDIT_WRITE_BATCH_SIZE = 10
 AUDIT_RETENTION_DAYS = 90
 AUDIT_MAX_QUERY_OUTPUT_LENGTH = 500
+MAX_AUDIT_ENTRIES = 10000
+AUDIT_MAX_DB_ROWS = 100000
 
 AUDIT_SENSITIVE_PATTERNS = [
     "password",
@@ -157,6 +159,8 @@ class AuditLog:
 
         if not self._started:
             self._start_background_writer()
+
+        self._cleanup_db_rows()
 
         return record.id
 
@@ -295,6 +299,28 @@ class AuditLog:
         t = threading.Thread(target=writer, daemon=True)
         t.start()
         logger.debug("AuditLog background writer started")
+
+    def _cleanup_db_rows(self) -> int:
+        """Prune audit_log table when row count exceeds MAX_AUDIT_ENTRIES."""
+        try:
+            from opc_manager.data_manager import init_db, execute_query, execute_write
+
+            init_db()
+            count_row = execute_query("SELECT COUNT(*) as cnt FROM audit_log")
+            count = count_row[0]["cnt"] if count_row else 0
+            if count > MAX_AUDIT_ENTRIES:
+                cutoff = count - MAX_AUDIT_ENTRIES
+                execute_write(
+                    "DELETE FROM audit_log WHERE rowid IN (SELECT rowid FROM audit_log ORDER BY rowid ASC LIMIT ?)",
+                    (cutoff,),
+                )
+                logger.info(
+                    "AuditLog pruned %d old rows (limit: %d)", cutoff, MAX_AUDIT_ENTRIES
+                )
+                return cutoff
+        except Exception as e:
+            logger.warning("AuditLog DB row cleanup failed: %s", e)
+        return 0
 
     def stop(self):
         self._stop_event.set()

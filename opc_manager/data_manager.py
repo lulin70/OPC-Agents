@@ -64,13 +64,17 @@ def encrypt_field(plaintext: str) -> str:
         return ""
     key = _get_encryption_key()
     if key is None:
-        # 无密钥时明文存储
+        # 无密钥时跳过加密，直接返回原文
         return plaintext
-    from cryptography.fernet import Fernet
+    try:
+        from cryptography.fernet import Fernet
 
-    fernet_key = base64.urlsafe_b64encode(key)
-    f = Fernet(fernet_key)
-    return f.encrypt(plaintext.encode()).decode()
+        fernet_key = base64.urlsafe_b64encode(key)
+        f = Fernet(fernet_key)
+        return f.encrypt(plaintext.encode()).decode()
+    except Exception as e:
+        logger.warning("[DataManager] Encryption failed, storing as plaintext: %s", e)
+        return plaintext
 
 
 def decrypt_field(ciphertext: str) -> Optional[str]:

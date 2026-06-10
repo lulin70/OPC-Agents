@@ -7,7 +7,7 @@ financial records, CRM actions, etc.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import logging
 import threading
@@ -51,6 +51,8 @@ UNDO_CLEANUP_INTERVAL = 3600
 DEFAULT_UNDO_WINDOW = 3600
 ORIGINAL_SUMMARY_TRUNCATE = 100
 MAX_SESSION_ID_LENGTH = 256
+MAX_UNDO_HISTORY = 100
+MAX_UNDO_STACK = 50
 
 ALLOWED_FUNC_NAMES = {
     "undo_record_income",
@@ -170,10 +172,22 @@ class UndoManager:
             records.append(record)
             if len(records) > self.MAX_PER_SESSION:
                 self._records[session_id] = records[-self.MAX_PER_SESSION :]
+            # Trim total undo stack across all sessions
+            total = sum(len(v) for v in self._records.values())
+            limit = MAX_UNDO_HISTORY
+            if total > limit:
+                sids = sorted(self._records.keys(), key=lambda s: min(r.created_at for r in self._records[s]))
+                while total > limit and sids:
+                    oldest_sid = sids[0]
+                    self._records[oldest_sid].pop(0)
+                    total -= 1
+                    if not self._records[oldest_sid]:
+                        del self._records[oldest_sid]
+                        sids.pop(0)
 
         return record.operation_id
 
-    def can_undo(self, session_id: str, operation_id: str) -> tuple:
+    def can_undo(self, session_id: str, operation_id: str) -> Tuple[bool, str]:
         """Check if an operation can be undone.
 
         Args:
@@ -195,7 +209,7 @@ class UndoManager:
                     return True, ""
             return False, "Record not found"
 
-    def undo(self, session_id: str, operation_id: str) -> dict:
+    def undo(self, session_id: str, operation_id: str) -> Dict[str, Any]:
         """Execute undo for an operation.
 
         Args:

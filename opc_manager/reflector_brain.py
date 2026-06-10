@@ -24,11 +24,11 @@ from opc_manager.utils import (
 logger = logging.getLogger(__name__)
 
 WEIGHT_SUCCESS = 0.3
-WEIGHT_DATA_COMPLETE_DICT = 0.3
-WEIGHT_DATA_COMPLETE_OTHER = 0.25
-WEIGHT_RELEVANCE = 0.2
-WEIGHT_TIMELY = 0.0
-WEIGHT_ALL_STEPS_DONE = 0.1
+WEIGHT_DATA_COMPLETE_DICT = 0.25
+WEIGHT_DATA_COMPLETE_OTHER = 0.2
+WEIGHT_RELEVANCE = 0.25
+WEIGHT_TIMELY = 0.05
+WEIGHT_ALL_STEPS_DONE = 0.15
 PENALTY_ERROR = 0.3
 MAX_RETRY_COUNT = 3
 CONFIDENCE_CAP = 0.95
@@ -354,24 +354,24 @@ class ReflectorBrain:
 
         # 检查执行状态
         if actual.get("success", False):
-            findings.append("✓ 执行成功")
+            findings.append("[OK] 执行成功")
         else:
-            findings.append("✗ 执行失败")
+            findings.append("[FAIL] 执行失败")
 
         # 检查数据完整性
         data = actual.get("data", {})
         if data and isinstance(data, dict):
-            findings.append(f"✓ 返回数据包含 {len(data)} 个字段")
+            findings.append(f"[OK] 返回数据包含 {len(data)} 个字段")
 
         # 检查执行时间
         execution_time = actual.get("execution_time", 0)
         if execution_time > 0:
-            findings.append(f"⏱️ 执行耗时: {execution_time:.2f}秒")
+            findings.append(f"[TIME] 执行耗时: {execution_time:.2f}秒")
 
         # 检查错误信息
         error = actual.get("error")
         if error:
-            findings.append(f"⚠️ 错误信息: {error}")
+            findings.append(f"[WARN] 错误信息: {error}")
 
         return findings
 

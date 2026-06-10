@@ -783,6 +783,16 @@ class SettingsManager:
             - Triggers registered callbacks
             - Persists to disk
         """
+        # Validate base_url before applying
+        if "base_url" in kwargs:
+            url = kwargs["base_url"]
+            if url and not (url.startswith("http://") or url.startswith("https://")):
+                logger.warning(
+                    "Invalid LLM_BASE_URL rejected (must start with http:// or https://): %s",
+                    url,
+                )
+                return False
+
         valid_fields = {k for k in dir(LLMSettings) if not k.startswith("_")}
         for k, v in kwargs.items():
             if k in valid_fields:
@@ -815,6 +825,15 @@ class SettingsManager:
             - Updates os.environ for email sending modules
             - Triggers callbacks and persists to disk
         """
+        # Validate port number before applying
+        if "port" in kwargs:
+            port = kwargs["port"]
+            if not isinstance(port, int) or port < 1 or port > 65535:
+                logger.warning(
+                    "Invalid SMTP port rejected (must be 1-65535): %s", port
+                )
+                return False
+
         valid_fields = {k for k in dir(SMTPSettings) if not k.startswith("_")}
         for k, v in kwargs.items():
             if k in valid_fields:

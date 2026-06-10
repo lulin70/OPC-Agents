@@ -16,7 +16,6 @@ DATA_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "data", "marketplace"
 )
 
-SANDBOX_TIMEOUT_SECONDS = 30
 SANDBOX_MAX_MEMORY_MB = 256
 NETWORK_WHITELIST = [
     "registry.opc-agents.dev",
@@ -867,6 +866,19 @@ class ExternalSkillMarketplace:
         if not isinstance(package_info, dict):
             return False
 
+        # Required fields check
+        required_fields = ["name", "version"]
+        for field in required_fields:
+            if not package_info.get(field):
+                logger.warning("技能包缺少必填字段: %s", field)
+                return False
+
+        # Version format check (semver-like)
+        version = package_info.get("version", "")
+        if not re.match(r"^\d+\.\d+\.\d+", version):
+            logger.warning("技能版本号格式无效: %s", version)
+            return False
+
         config = package_info.get("config", {})
         if isinstance(config, dict):
             permissions = config.get("permissions", [])
@@ -876,6 +888,25 @@ class ExternalSkillMarketplace:
                     "技能请求危险权限: %s",
                     dangerous_perms.intersection(set(permissions)),
                 )
+                return False
+
+            # Validate entry_point if present
+            entry_point = config.get("entry_point", "")
+            if entry_point and (".." in entry_point or entry_point.startswith("/")):
+                logger.warning("技能入口点路径不安全: %s", entry_point)
+                return False
+
+        # Checksum verification if provided
+        provided_checksum = package_info.get("checksum", "")
+        if provided_checksum and isinstance(provided_checksum, str):
+            content_to_verify = json.dumps(
+                {k: v for k, v in package_info.items() if k != "checksum"},
+                sort_keys=True,
+                ensure_ascii=False,
+            )
+            actual_checksum = hashlib.sha256(content_to_verify.encode()).hexdigest()
+            if not hmac.compare_digest(actual_checksum, provided_checksum):
+                logger.warning("技能包校验和不匹配")
                 return False
 
         return True
@@ -1018,7 +1049,7 @@ class ExternalSkillMarketplace:
             logger.warning("Sandbox timeout for %s", skill_id)
             return {
                 "success": False,
-                "error": f"沙箱执行超时 ({SANDBOX_TIMEOUT_SECONDS}s)",
+                "error": f"沙箱执行超时",
             }
         except Exception as e:
             logger.warning("Sandbox error for %s: %s", skill_id, e)

@@ -122,6 +122,13 @@ _SKILL_EXEC_TIMEOUT = 120
 _DEFAULT_OPERATION_TIMEOUT = 60.0
 _HTTP_REQUEST_TIMEOUT = 15.0
 
+# Search result count constants
+SEARCH_MAX_RESULTS_INFO = 8
+SEARCH_MAX_RESULTS_CONTENT = 5
+SEARCH_MAX_RESULTS_ANALYSIS = 5
+SEARCH_MAX_RESULTS_STEP = 5
+SEARCH_MAX_RESULTS_STEP_ANALYSIS = 3
+
 SEARCH_CACHE_MAX_SIZE = 50
 SEARCH_CACHE_TTL_SECONDS = 300
 
@@ -451,6 +458,8 @@ class TaskEngineV3(ContentGenerationMixin):
         self._initialized = False
         self._search_cache = SearchCache()
         self._parallel_executor = None
+        self._task_results: Dict[str, Dict[str, Any]] = {}
+        self._task_results_lock = threading.Lock()
 
     _init_lock = threading.Lock()
 
@@ -835,6 +844,13 @@ class TaskEngineV3(ContentGenerationMixin):
             self._emit_progress(
                 session_id, EventType.COMPLETE, "🎉 任务执行完成", progress_pct=100
             )
+            # Store task result for tracking
+            if session_id:
+                with self._task_results_lock:
+                    self._task_results[session_id] = {
+                        "result": result,
+                        "completed_at": time.time(),
+                    }
             return result
 
         except Exception as e:
@@ -982,7 +998,7 @@ class TaskEngineV3(ContentGenerationMixin):
         if llm_query is None:
             llm_query = search_query
         results, sources = self._search(
-            self._extract_search_query(search_query), max_results=8
+            self._extract_search_query(search_query), max_results=SEARCH_MAX_RESULTS_INFO
         )
 
         if not results:
@@ -1012,7 +1028,7 @@ class TaskEngineV3(ContentGenerationMixin):
         lines.append("---\n")
 
         lines.append("## 搜索结果摘要\n")
-        for i, r in enumerate(results[:8], 1):
+        for i, r in enumerate(results[:SEARCH_MAX_RESULTS_INFO], 1):
             title = r.get("title", "无标题")
             body = r.get("body", "无摘要") or r.get("snippet", "无摘要")
             href = InputValidator.sanitize_url(r.get("href", ""))
@@ -1027,7 +1043,7 @@ class TaskEngineV3(ContentGenerationMixin):
         key_topics = [r.get("title", "") for r in results[:5]]
         lines.append("## 核心要点提炼\n")
         lines.append(
-            f"基于以上 {min(len(results), 8)} 条搜索结果，提炼出以下关键信息：\n\n"
+            f"基于以上 {min(len(results), SEARCH_MAX_RESULTS_INFO)} 条搜索结果，提炼出以下关键信息：\n\n"
         )
         for i, topic in enumerate(key_topics, 1):
             lines.append(f"**{i}. {topic}**\n")
@@ -1075,7 +1091,7 @@ class TaskEngineV3(ContentGenerationMixin):
             llm_query = search_query
         results, sources = self._search(
             self._extract_search_query(search_query) + " 方案 案例 最佳实践 模板",
-            max_results=5,
+            max_results=SEARCH_MAX_RESULTS_CONTENT,
         )
 
         context_lines = []
@@ -1148,7 +1164,7 @@ class TaskEngineV3(ContentGenerationMixin):
             llm_query = search_query
         results, sources = self._search(
             self._extract_search_query(search_query) + " 数据 报告 趋势 对比",
-            max_results=5,
+            max_results=SEARCH_MAX_RESULTS_ANALYSIS,
         )
 
         lines = []
@@ -1332,10 +1348,10 @@ class TaskEngineV3(ContentGenerationMixin):
         desc = step.description
 
         if step_type in ("research", "data_collection"):
-            results, _ = self._search(self._extract_search_query(query), max_results=5)
+            results, _ = self._search(self._extract_search_query(query), max_results=SEARCH_MAX_RESULTS_STEP)
             if results:
                 items = []
-                for r in results[:5]:
+                for r in results[:SEARCH_MAX_RESULTS_STEP]:
                     title = r.get("title", "")
                     body = r.get("body", "") or r.get("snippet", "")
                     href = r.get("href", "")
@@ -1350,11 +1366,11 @@ class TaskEngineV3(ContentGenerationMixin):
 
         elif step_type == "analysis":
             results, _ = self._search(
-                self._extract_search_query(query) + " 分析 数据", max_results=3
+                self._extract_search_query(query) + " 分析 数据", max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
             )
             findings = []
             if results:
-                for r in results[:3]:
+                for r in results[:SEARCH_MAX_RESULTS_STEP_ANALYSIS]:
                     findings.append(
                         f"**{r.get('title', '')}**: {r.get('body', '')[:150]}"
                     )
@@ -1775,19 +1791,19 @@ class TaskEngineV3(ContentGenerationMixin):
 
         search_tasks = [
             TaskSpec(
-                func=lambda q=base_query + " 方案 案例": self._search(q, max_results=3),
+                func=lambda q=base_query + " 方案 案例": self._search(q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS),
                 description="方案案例搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
                 func=lambda q=base_query + " 最佳实践 模板": self._search(
-                    q, max_results=3
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
                 ),
                 description="最佳实践搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
-                func=lambda q=base_query + " 数据 趋势": self._search(q, max_results=3),
+                func=lambda q=base_query + " 数据 趋势": self._search(q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS),
                 description="数据趋势搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
@@ -1888,7 +1904,7 @@ class TaskEngineV3(ContentGenerationMixin):
         """
         results, sources = self._search(
             self._extract_search_query(prompt) + " 方案 案例 最佳实践 模板",
-            max_results=5,
+            max_results=SEARCH_MAX_RESULTS_CONTENT,
         )
 
         context_lines = []
@@ -1939,21 +1955,21 @@ class TaskEngineV3(ContentGenerationMixin):
         analysis_tasks = [
             TaskSpec(
                 func=lambda q=base_query + " 趋势 发展 历史数据": self._search(
-                    q, max_results=3
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
                 ),
                 description="趋势分析搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
                 func=lambda q=base_query + " 对比 竞品 行业标杆": self._search(
-                    q, max_results=3
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
                 ),
                 description="对比分析搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
                 func=lambda q=base_query + " 风险 问题 挑战": self._search(
-                    q, max_results=3
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
                 ),
                 description="风险识别搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
@@ -2073,6 +2089,32 @@ class TaskEngineV3(ContentGenerationMixin):
     ) -> TaskResult:
         """Serial data analysis fallback (preserves original behavior)"""
         return self._execute_data_analysis(search_query)
+
+    def cleanup_stale_results(self, max_age_seconds: int = 3600) -> int:
+        """Remove completed task results older than max_age_seconds.
+
+        Args:
+            max_age_seconds: Maximum age in seconds (default: 1 hour)
+
+        Returns:
+            Number of removed results
+        """
+        now = time.time()
+        removed = 0
+        with self._task_results_lock:
+            stale_keys = [
+                k
+                for k, v in self._task_results.items()
+                if now - v.get("completed_at", 0) > max_age_seconds
+            ]
+            for k in stale_keys:
+                del self._task_results[k]
+                removed += 1
+        if removed > 0:
+            logger.debug(
+                "[TaskEngineV3] Cleaned up %d stale task results", removed
+            )
+        return removed
 
 
 task_engine_v3 = TaskEngineV3()

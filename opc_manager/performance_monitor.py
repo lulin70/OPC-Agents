@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 SLA_SINGLE_REQUEST_MS = 60000
 SLA_REFLECT_LOOP_MS = 60000
+SLA_THRESHOLD_MS = 5000
 LLM_CACHE_TTL_SECONDS = 300
 LLM_CACHE_MAX_SIZE = 100
 
@@ -87,6 +88,10 @@ class LRUCache:
 
 class PerformanceMonitor:
 
+    # Configurable SLA thresholds (class-level constants)
+    SLA_SINGLE_REQUEST_MS = 60000
+    SLA_REFLECT_LOOP_MS = 60000
+
     PERSIST_FILE = os.path.join(
         os.path.dirname(os.path.dirname(__file__)), "data", "perf_metrics.json"
     )
@@ -102,6 +107,14 @@ class PerformanceMonitor:
     def record(
         self, operation: str, duration_ms: float, success: bool = True, **metadata
     ) -> None:
+        """Record a performance metric and check SLA thresholds.
+
+        Args:
+            operation: Operation name (e.g., 'agent_loop', 'reflect_loop').
+            duration_ms: Duration in milliseconds.
+            success: Whether the operation succeeded.
+            **metadata: Additional metadata to attach to the metric.
+        """
         metric = PerformanceMetric(
             operation=operation,
             duration_ms=duration_ms,
@@ -118,31 +131,59 @@ class PerformanceMonitor:
                 self._last_persist = now
                 should_persist = True
 
-        if operation == "agent_loop" and duration_ms > SLA_SINGLE_REQUEST_MS:
+        if operation == "agent_loop" and duration_ms > self.SLA_SINGLE_REQUEST_MS:
             logger.warning(
                 "SLA breach: agent_loop took %.0fms (SLA: %sms)",
                 duration_ms,
-                SLA_SINGLE_REQUEST_MS,
+                self.SLA_SINGLE_REQUEST_MS,
             )
-        if operation == "reflect_loop" and duration_ms > SLA_REFLECT_LOOP_MS:
+        if operation == "reflect_loop" and duration_ms > self.SLA_REFLECT_LOOP_MS:
             logger.warning(
                 "SLA breach: reflect_loop took %.0fms (SLA: %sms)",
                 duration_ms,
-                SLA_REFLECT_LOOP_MS,
+                self.SLA_REFLECT_LOOP_MS,
+            )
+
+        if duration_ms > SLA_THRESHOLD_MS:
+            logger.warning(
+                "[SLA] Operation '%s' exceeded threshold: %.0fms > %dms",
+                operation,
+                duration_ms,
+                SLA_THRESHOLD_MS,
             )
 
         if should_persist:
             self._persist_metrics()
 
     def cache_get(self, prompt: str) -> Optional[str]:
+        """Retrieve a cached LLM response by prompt hash.
+
+        Args:
+            prompt: The original prompt text.
+
+        Returns:
+            Cached response string, or None if not found or expired.
+        """
         key = LRUCache.make_key(prompt)
         return self._llm_cache.get(key)
 
     def cache_put(self, prompt: str, response: str) -> None:
+        """Store an LLM response in the cache.
+
+        Args:
+            prompt: The original prompt text.
+            response: The LLM response to cache.
+        """
         key = LRUCache.make_key(prompt)
         self._llm_cache.put(key, response)
 
     def get_stats(self) -> Dict[str, Any]:
+        """Compute and return aggregate performance statistics.
+
+        Returns:
+            Dict with total_operations count, per-operation stats (count, avg, max, min, p95),
+            and LLM cache statistics.
+        """
         if not self._metrics:
             return {"total_operations": 0}
 
@@ -173,17 +214,22 @@ class PerformanceMonitor:
         }
 
     def check_sla(self) -> Dict[str, Any]:
+        """Check whether recent operations meet SLA thresholds.
+
+        Returns:
+            Dict with 'single_request' and 'reflect_loop' boolean flags.
+        """
         sla_status = {"single_request": True, "reflect_loop": True}
         with self._lock:
             for m in self._metrics:
                 if (
                     m.operation == "agent_loop"
-                    and m.duration_ms > SLA_SINGLE_REQUEST_MS
+                    and m.duration_ms > self.SLA_SINGLE_REQUEST_MS
                 ):
                     sla_status["single_request"] = False
                 if (
                     m.operation == "reflect_loop"
-                    and m.duration_ms > SLA_REFLECT_LOOP_MS
+                    and m.duration_ms > self.SLA_REFLECT_LOOP_MS
                 ):
                     sla_status["reflect_loop"] = False
         return sla_status
