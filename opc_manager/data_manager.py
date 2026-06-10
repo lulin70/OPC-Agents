@@ -81,11 +81,36 @@ def decrypt_field(ciphertext: str) -> Optional[str]:
         # 无密钥时返回原文（可能已经是明文）
         return ciphertext
     try:
-        from cryptography.fernet import Fernet
+        from cryptography.fernet import Fernet, InvalidToken
 
         fernet_key = base64.urlsafe_b64encode(key)
         f = Fernet(fernet_key)
         return f.decrypt(ciphertext.encode()).decode()
+    except InvalidToken:
+        # Heuristic: Fernet ciphertext always starts with 'gAAAA' (base64 of version byte 0x80).
+        # If the value looks like a Fernet token (starts with gAAAA), it's a genuine
+        # decryption failure (wrong key). Otherwise, it was likely stored as plaintext
+        # before the encryption key was set — return as-is to avoid data loss.
+        if ciphertext.startswith("gAAAA"):
+            logger.error(
+                "[SECURITY] Decryption failed for Fernet token — wrong encryption key?"
+            )
+            return None
+        # Not a Fernet token — but could be garbage or old plaintext.
+        # Only return as plaintext if it looks like readable text (no special chars).
+        import unicodedata
+        printable_ratio = sum(
+            1 for c in ciphertext[:50]
+            if unicodedata.category(c).startswith(("L", "N", "P", "Zs")) or c in " \t\n"
+        ) / min(len(ciphertext), 50)
+        if printable_ratio > 0.8:
+            logger.warning(
+                "[SECURITY] Value is not a Fernet token — likely stored before "
+                "encryption key was set. Returning raw value."
+            )
+            return ciphertext
+        logger.error("[SECURITY] Decryption failed for non-printable value")
+        return None
     except Exception as e:
         logger.error("[SECURITY] Decryption failed: %s", e)
         return None
@@ -440,6 +465,21 @@ def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
 
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
+# SQL that must use parameterized queries (? placeholders).
+# Detects common injection patterns: string concatenation with quotes,
+# semicolons in values, and f-string interpolation markers.
+_UNSAFE_SQL_RE = re.compile(r"(?:'\s*\+\s*|;\s*(?:DROP|ALTER|CREATE|DELETE|INSERT|UPDATE)|\{.*\})")
+
+
+def _validate_sql(sql: str) -> None:
+    """Reject SQL that appears to use string concatenation or interpolation
+    instead of parameterized queries (? placeholders)."""
+    if _UNSAFE_SQL_RE.search(sql):
+        raise ValueError(
+            "Unsafe SQL detected — use parameterized queries with '?' placeholders. "
+            f"Rejected SQL: {sql[:100]}..."
+        )
+
 
 def _validate_identifier(name: str) -> str:
     """Validate SQL identifier to prevent injection in dynamic SQL."""
@@ -537,6 +577,7 @@ def _seed_templates(conn: sqlite3.Connection) -> None:
 
 @_ensure_db
 def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
+    _validate_sql(sql)
     with _db_lock:
         conn = _get_conn()
         cursor = conn.execute(sql, params)
@@ -546,6 +587,7 @@ def execute_query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
 
 @_ensure_db
 def execute_write(sql: str, params: tuple = (), many: bool = False) -> int:
+    _validate_sql(sql)
     with _db_lock:
         conn = _get_conn()
         if many:
@@ -562,6 +604,7 @@ def execute_transaction(statements: List[tuple]) -> bool:
         conn = _get_conn()
         try:
             for sql, params in statements:
+                _validate_sql(sql)
                 conn.execute(sql, params)
             conn.commit()
             return True
@@ -573,6 +616,7 @@ def execute_transaction(statements: List[tuple]) -> bool:
 
 @_ensure_db
 def execute_write_returning(sql: str, params: tuple = ()) -> str:
+    _validate_sql(sql)
     with _db_lock:
         conn = _get_conn()
         cursor = conn.execute(sql, params)

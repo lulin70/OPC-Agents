@@ -48,7 +48,7 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - ✅ **Knowledge Base Fallback** — 6 categories, 20 professional knowledge entries, auto-fallback when search fails
 - ✅ **File Delivery** — Auto-generates `.md` files with download button
 - ✅ **Security Protection** — Command whitelist + path validation + input length limit + audit log + input validation + Prompt injection defense + URL safety + error sanitization + encrypted API key storage
-- ✅ **Test Coverage** — 1126 test cases, 100% pass rate, CI auto-verification (covers settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler and all new modules)
+- ✅ **Test Coverage** — 2939 test cases, 100% pass rate, CI auto-verification (covers settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler and all new modules)
 - ✅ **Skill Marketplace API** — External skill registration/discovery/invocation, API Key auth + permission levels
 - ✅ **MCP Protocol Compatible** — Compatible with Microsoft Model Context Protocol standard, supports tools/resources/prompts
 - ✅ **Plugin System** — Community plugin hot-loading + sandbox isolation + lifecycle management
@@ -148,14 +148,16 @@ docker compose up -d
 ```
 OPC-Agents/
 ├── frontend/              # Streamlit frontend (modularized)
-│   ├── app.py             # Main UI router (1687 lines, routing only)
+│   ├── app.py             # Main UI router (579 lines, routing only)
 │   ├── components/        # Shared components
-│   │   └── shared.py      # 16 UI helper functions (639 lines)
-│   └── pages/             # Page modules
-│       ├── dashboard_page.py   # Dashboard page (578 lines + templates)
-│       ├── marketplace_page.py # Skill Marketplace V2 (547 lines)
-│       └── settings_page.py    # Settings management (666 lines)
-├── opc_manager/           # Core business logic (84 .py modules)
+│   │   └── shared.py      # 16 UI helper functions (384 lines)
+│   ├── page_modules/      # Page modules
+│   │   ├── dashboard_page.py   # Dashboard page (578 lines + templates)
+│   │   ├── marketplace_page.py # Skill Marketplace V2 (547 lines)
+│   │   └── settings_page.py    # Settings management (666 lines)
+│   ├── routers/            # Router modules
+│   └── renderers/          # Renderer modules
+├── opc_manager/           # Core business logic (92 .py modules)
 │   ├── cli.py             # CLI entry point (opc-agents command after pip install)
 │   ├── agent_loop.py      # Execution loop (Plan→Act→Observe→Reflect 4-phase closed loop)
 │   ├── strategist_brain.py# Strategist Brain (intent understanding + task planning + composite intent decomposition)
@@ -232,7 +234,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # Test suite (69 test files, 2572 tests, 100% pass)
+├── tests/                 # Test suite (76 test files, 2939 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
@@ -251,7 +253,7 @@ OPC-Agents/
 # Install dev dependencies
 pip install -r requirements-dev.txt
 
-# Run all tests (2572 test cases)
+# Run all tests (2939 test cases)
 PYTHONPATH=. pytest tests/ -v
 
 # Run with coverage report
@@ -261,13 +263,13 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **Test Coverage**: All 84 opc_manager modules + 8 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)
+> **Test Coverage**: All 92 opc_manager modules + 38 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)
 
 ## Version History
 
 | Version | Date | Milestone |
 |---------|------|-----------|
-| **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 2572 tests / 69 files |
+| **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 2939 tests / 76 files |
 | **0.2.4** | **2026-05-25** | **Memory + Knowledge Enhancement** — CarryMem deep integration + knowledge search optimization + notification system + extended tests |
 | **0.2.3** | **2026-05-22** | **CarryMem Integration** — Cross-session persistent memory (MemoryBridge) + rule engine + flywheel mechanism + LLM cache + skill scoring |
 | **0.2.0** | **2026-05-17** | **FINAL** — Product Release: Unified settings + onboarding + data backup/restore + error handling + WeChat E2E + modular dashboard + i18n tri-lingual + Skill Marketplace V2 + global search + Apple Shortcuts + API Key encryption (Fernet) + code modularization refactor (84 modules / 39 test files / 1126 tests) |

@@ -124,7 +124,7 @@ All notable changes to OPC-Agents will be documented in this file.
 - pyproject.toml → carrymem upper bound widened to `<0.4.0`
 - Test assertions updated to match
 
-## [0.2.2] - 2026-05-20
+## [0.2.2b] - 2026-05-20
 
 ### Quality Fix Sprint — All Blockers Resolved + Mobile + i18n + Security + CI/CD
 

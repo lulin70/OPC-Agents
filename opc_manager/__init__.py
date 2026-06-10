@@ -44,11 +44,7 @@ from .skill_registry import (
 )
 from .tool_system import ToolSystem, Tool, ToolCategory, ToolParameter, PermissionLevel
 from .agent_loop import AgentLoop, AgentContext, AgentState
-from .scenario_migrator import (
-    ScenarioToSkillMigrator,
-    migrate_scenarios_to_skills,
-    get_migration_status,
-)
+
 from .utils import BoundedDict, EventEmitter, Event
 from .skill_marketplace import (
     SkillMarketplace,
@@ -118,10 +114,6 @@ __all__ = [
     "AgentLoop",
     "AgentContext",
     "AgentState",
-    # 场景迁移器
-    "ScenarioToSkillMigrator",
-    "migrate_scenarios_to_skills",
-    "get_migration_status",
     # 公共工具
     "BoundedDict",
     "EventEmitter",

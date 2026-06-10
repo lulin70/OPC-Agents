@@ -125,7 +125,7 @@ SMTP_PRESETS = {
 
 
 class SettingsManager:
-    """Unified settings manager for OPC-Agents v0.2.1
+    """Unified settings manager for OPC-Agents v0.2.5
 
     Thread-safe singleton that manages all user-configurable settings.
     Supports runtime modification with JSON persistence and SecureKeyStore

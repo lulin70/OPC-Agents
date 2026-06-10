@@ -1,7 +1,7 @@
 # OPC-Agents Beta Quick Start Guide
 
 > **Version**: v0.2.5
-> **Updated**: 2026-05-16
+> **Updated**: 2026-06-09
 > **Status**: Beta
 
 ---
@@ -14,16 +14,14 @@
 
 Thank you for participating in the OPC-Agents Beta test! This guide will help you get started quickly.
 
-**Latest Updates (2026-05-17)**:
-- ✅ **v0.2.0 FINAL**: Product Release Final — Unified settings (5-tab) + first-run onboarding (3-step) + data backup/restore (ZIP/JSON/CSV+SHA256) + friendly error handling (9 exceptions→friendly messages) + WeChat E2E integration + modular dashboard (3×3×6=9 combos) + tri-lingual i18n (zh/en/ja 58+ keys) + Skill Marketplace V2 (detail/filter/version pinning) + global search + Apple Shortcuts (5 actions) + API Key encryption (Fernet) + code modularization refactor (frontend 8 modules / backend 84 modules / 1126 tests / 39 test files)
-- ✅ v0.1.9-delta: Real-run verification — Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring
-- ✅ v0.1.9-gamma: Refactoring — Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor
-- ✅ v0.1.9: End-to-end closed loop — auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context
-- ✅ v0.1.8: Core skill development — 6 skills upgraded from mock to real + search enhancement + LLM integration
-- ✅ v0.1.7: Three-Sage Architecture — Strategist Brain + Executor Brain + Reflector Brain + Consensus Engine + Skill Registry + Tool Framework
-- ✅ v0.1.6: First-time onboarding + Quality feedback + Deliverable search + Empty state examples
-- ✅ v0.1.5: Multi-turn follow-up + Quality gate + Output redaction + Ollama support + Protocol degradation
-- ✅ v0.1.2: Security hardening (XSS/Prompt injection) + Performance optimization + PyPI release
+**Latest Updates (2026-06-09)**:
+- ✅ **v0.2.5**: Architecture Unification + Security Hardening — AgentLoop single entry + LLM concurrency control + unified encryption key derivation + 7-dimension code review 46 fixes + 2939 tests / 76 files
+- ✅ **v0.2.4**: Version Unification + Memory Enhancement — CarryMem deep integration + knowledge search optimization + notification system
+- ✅ **v0.2.3**: CarryMem Integration — Cross-session persistent memory + rule engine + flywheel mechanism + LLM cache + skill scoring
+- ✅ **v0.2.2**: CarryMem + Knowledge Base + Flywheel — Frontend modularization (11 new modules) + LLM cache + skill ratings + 26 E2E tests
+- ✅ **v0.2.2b**: Quality Fix — i18n 315+ hardcoded string cleanup + backup AES encryption + export sanitization + MCP default localhost + CI security scan
+- ✅ **v0.2.1**: 8 OPC skills integration + tech debt cleanup (32 bare except + i18n 97 keys)
+- ✅ **v0.2.0 FINAL**: Product Release Final — Unified settings (5-tab) + first-run onboarding (3-step) + data backup/restore (ZIP/JSON/CSV+SHA256) + friendly error handling (9 exceptions→friendly messages) + WeChat E2E integration + modular dashboard (3×3×6=9 combos) + tri-lingual i18n (zh/en/ja 58+ keys) + Skill Marketplace V2 (detail/filter/version pinning) + global search + Apple Shortcuts (5 actions) + API Key encryption (Fernet) + code modularization refactor
 
 ---
 
@@ -363,5 +361,5 @@ Thank you for your participation! We value your feedback:
 
 ---
 
-*Last updated: 2026-05-17*
+*Last updated: 2026-06-09*
 *Version: v0.2.5*

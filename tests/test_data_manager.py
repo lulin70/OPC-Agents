@@ -92,8 +92,20 @@ class TestEncryptDecryptRoundTrip:
         assert decrypt_field("") == ""
 
     def test_decrypt_garbage_returns_none(self, temp_db):
-        result = decrypt_field("not-valid-ciphertext!!!")
+        # Fernet tokens always start with 'gAAAA' — garbage that looks like one should return None
+        result = decrypt_field("gAAAAAinvalid_fernet_token_that_will_fail_decryption_check==")
         assert result is None
+
+    def test_decrypt_plaintext_with_key_returns_raw(self, temp_db):
+        # When key is set but value was stored as plaintext (not Fernet token),
+        # it should be returned as-is to prevent data loss during key migration
+        from opc_manager.data_manager import _get_encryption_key
+        key = _get_encryption_key()
+        if key is None:
+            # No key set — skip this test (plaintext passthrough only matters with a key)
+            return
+        result = decrypt_field("some-plaintext-value")
+        assert result == "some-plaintext-value"
 
     def test_encrypt_unicode_content(self, temp_db):
         plaintext = "中文加密测试 🎉"

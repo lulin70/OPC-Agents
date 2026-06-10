@@ -151,6 +151,15 @@ class SimpleLLMService:
             self._model = model or config["model"]
             self._is_ollama = config["is_ollama"]
 
+        # Enforce HTTPS for non-Ollama providers (API keys must not be sent over plaintext HTTP)
+        if not self._is_ollama and self._base_url and self._base_url.startswith("http://"):
+            logger.warning(
+                "[SECURITY] API base URL uses plaintext HTTP: %s — "
+                "API keys will be transmitted unencrypted. "
+                "Please use HTTPS or set OLLAMA_ENABLED=true for local models.",
+                self._base_url,
+            )
+
     def is_available(self) -> bool:
         return bool(self._api_key)
 

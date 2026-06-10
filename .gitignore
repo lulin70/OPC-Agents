@@ -105,3 +105,9 @@ MagicMock/
 
 # Node
 node_modules/
+
+# Lock files
+requirements.lock
+
+# KDE
+.directory

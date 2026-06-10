@@ -12,7 +12,7 @@ class TaskRequest(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
     user_input: str = Field(
-        ..., min_length=1, max_length=2000, description="User input"
+        ..., min_length=1, max_length=10000, description="User input"
     )
     business_type: Optional[BusinessType] = Field(None, description="Business type")
     context: Optional[Dict[str, Any]] = Field(

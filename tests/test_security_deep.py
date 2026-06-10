@@ -762,14 +762,15 @@ class TestCryptographicSecurity:
             assert result == original
 
     def test_data_manager_decrypt_garbage_returns_none(self):
-        """Decrypting garbage with a valid key should return None, not crash."""
+        """Decrypting garbage that looks like a Fernet token with a valid key should return None."""
         from opc_manager.data_manager import decrypt_field
 
         with patch("opc_manager.data_manager._get_encryption_key") as mock_key:
             import hashlib
             mock_key.return_value = hashlib.sha256(b"test-key").digest()
 
-            result = decrypt_field("not-valid-fernet-data!!!")
+            # Fernet tokens start with 'gAAAA' — garbage matching this pattern returns None
+            result = decrypt_field("gAAAAAinvalid_fernet_token_that_will_fail_decryption==")
             assert result is None
 
     def test_data_manager_empty_string_encrypt(self):
@@ -989,14 +990,14 @@ class TestInputValidationBoundary:
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
-            TaskRequest(user_input="A" * 2001)
+            TaskRequest(user_input="A" * 10001)
 
     def test_task_request_at_max_length(self):
         from opc_manager.validators import TaskRequest
 
-        # Exactly 2000 chars should be accepted
-        t = TaskRequest(user_input="A" * 2000)
-        assert len(t.user_input) == 2000
+        # Exactly 10000 chars should be accepted
+        t = TaskRequest(user_input="A" * 10000)
+        assert len(t.user_input) == 10000
 
     def test_task_request_unicode(self):
         from opc_manager.validators import TaskRequest

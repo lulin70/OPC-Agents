@@ -48,7 +48,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 - ✅ **ナレッジベースフォールバック** — 6カテゴリ20件の専門知識、検索失敗時の自動フォールバック
 - ✅ **ファイル納品** — `.md`ファイルを自動生成、ダウンロードボタン付き
 - ✅ **セキュリティ保護** — コマンドホワイトリスト+パス検証+入力長制限+監査ログ+入力検証+プロンプトインジェクション防御+URL安全性+エラー秘匿化+APIキー暗号化ストレージ
-- ✅ **テストカバレッジ** — 1126テストケース、100%合格率、CI自動検証（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全モジュールをカバー）
+- ✅ **テストカバレッジ** — 2939テストケース、100%合格率、CI自動検証（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler等全モジュールをカバー）
 - ✅ **スキルマーケットAPI** — 外部スキル登録/発見/呼び出し、APIキー認証+権限レベル
 - ✅ **MCPプロトコル互換** — Microsoft Model Context Protocol標準互換、ツール/リソース/プロンプト対応
 - ✅ **プラグインシステム** — コミュニティプラグインのホットロード+サンドボックス隔離+ライフサイクル管理
@@ -134,14 +134,16 @@ cp .env.example .env
 ```
 OPC-Agents/
 ├── frontend/              # Streamlitフロントエンド（モジュラー化）
-│   ├── app.py             # メインUIルーター（1687行、ルーティングのみ）
+│   ├── app.py             # メインUIルーター（579行、ルーティングのみ）
 │   ├── components/        # 共有コンポーネント
-│   │   └── shared.py      # 16個のUIヘルパー関数（639行）
-│   └── pages/             # ページモジュール
-│       ├── dashboard_page.py   # ダッシュボードページ（578行+テンプレート）
-│       ├── marketplace_page.py # スキルマーケットV2（547行）
-│       └── settings_page.py    # 設定管理ページ（666行）
-├── opc_manager/           # コアビジネスロジック（84個の.pyモジュール）
+│   │   └── shared.py      # 16個のUIヘルパー関数（384行）
+│   ├── page_modules/      # ページモジュール
+│   │   ├── dashboard_page.py   # ダッシュボードページ（578行+テンプレート）
+│   │   ├── marketplace_page.py # スキルマーケットV2（547行）
+│   │   └── settings_page.py    # 設定管理ページ（666行）
+│   ├── routers/            # ルーターモジュール
+│   └── renderers/          # レンダラーモジュール
+├── opc_manager/           # コアビジネスロジック（92個の.pyモジュール）
 │   ├── cli.py             # CLIエントリポイント
 │   ├── agent_loop.py      # 実行ループ
 │   ├── strategist_brain.py# 戦略脳
@@ -218,7 +220,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # テストスイート（69テストファイル、2572テスト、100%合格）
+├── tests/                 # テストスイート（76テストファイル、2939テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
@@ -237,7 +239,7 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行（2572テストケース）
+# 全テストを実行（2939テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行
@@ -247,13 +249,13 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **テストカバレッジ範囲**：全84個のopc_managerモジュール + フロントエンド8モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **テストカバレッジ範囲**：全92個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## バージョン履歴
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
-| **0.2.5** | **2026-06-07** | **アーキテクチャ統合+セキュリティ強化** — アーキテクチャ統合リファクター+LLM同時実行制御+セキュリティ強化+2572テスト/69ファイル |
+| **0.2.5** | **2026-06-07** | **アーキテクチャ統合+セキュリティ強化** — アーキテクチャ統合リファクター+LLM同時実行制御+セキュリティ強化+2939テスト/76ファイル |
 | **0.2.4** | **2026-05-25** | **記憶+ナレッジベース強化** — CarryMem深層統合+ナレッジ検索最適化+通知システム+拡張テスト |
 | **0.2.3** | **2026-05-22** | **CarryMem統合** — クロスセッション永続記憶(MemoryBridge)+ルールエンジン+フライホイール機構+LLMキャッシュ+スキルスコアリング |
 | **0.2.0** | **2026-05-17** | **FINAL** — 製品リリース：統一設定管理+初回ガイド+データバックアップ/リストア+エラー処理+WeChat E2E+モジュラーダッシュボード+i18n 3言語+スキルマーケットV2+グローバル検索+Apple Shortcuts+API Key暗号化(Fernet)+コードモジュラー化リファクター（84モジュール/39テストファイル/1126テスト） |
