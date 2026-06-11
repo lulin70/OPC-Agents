@@ -1,7 +1,7 @@
 ARG VERSION=0.2.5
 
 # Stage 1: Builder — install build dependencies and compile
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /build
 
@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Stage 2: Runtime — copy only installed packages, no build tools
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 LABEL maintainer="OPC-Agents Team"
 LABEL version="${VERSION}"
