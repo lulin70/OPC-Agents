@@ -57,6 +57,35 @@ if SSE_AVAILABLE:
         mcp_server = create_mcp_server()
         app = FastAPI(title="OPC-Agents MCP SSE Endpoint", version=__version__)
 
+        # CORS: restrict to allowed origins only
+        from fastapi.middleware.cors import CORSMiddleware
+
+        _allowed_origins = os.environ.get(
+            "MCP_CORS_ORIGINS", "http://localhost:8501,http://localhost:8900"
+        ).split(",")
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=_allowed_origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Authorization", "Content-Type"],
+        )
+
+        # HTTPS enforcement (skip in development)
+        _enforce_https = os.environ.get("MCP_ENFORCE_HTTPS", "false").lower() == "true"
+
+        @app.middleware("http")
+        async def enforce_https_middleware(request, call_next):
+            if _enforce_https:
+                proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+                if proto != "https":
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(
+                        status_code=426,
+                        content={"error": "HTTPS required. Upgrade your connection."},
+                    )
+            return await call_next(request)
+
         MCP_API_KEY = os.environ.get("MCP_API_KEY", "")
 
         def _check_auth(request: Request):

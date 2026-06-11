@@ -158,6 +158,37 @@ def _get_theme_css(theme_name: str) -> str:
         [data-testid="stChatMessage"] {
             padding: 8px 4px !important;
         }
+        /* 表格横向滚动 */
+        .stDataFrame, [data-testid="stTable"] {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+        /* Tab 触摸目标增大 */
+        .stTabs [role="tab"] {
+            min-height: 44px !important;
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+        }
+        /* Selectbox 触摸友好 */
+        [data-testid="stSelectbox"] {
+            min-height: 44px !important;
+        }
+        /* 防止文字溢出 */
+        .stMarkdown, .stText {
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+        }
+    }
+    /* 平板适配 (768px-1024px) */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        [data-testid="stSidebar"] {
+            width: 240px !important;
+            min-width: 240px !important;
+        }
+        .block-container {
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+        }
     }
     """
     return base_css + mobile_css

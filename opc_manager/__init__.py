@@ -43,7 +43,8 @@ from .skill_registry import (
     SkillContext,
 )
 from .tool_system import ToolSystem, Tool, ToolCategory, ToolParameter, PermissionLevel
-from .agent_loop import AgentLoop, AgentContext, AgentState
+from .agent_loop import AgentLoop
+from .agent_context import AgentContext, AgentState
 
 from .utils import BoundedDict, EventEmitter, Event
 from .skill_marketplace import (

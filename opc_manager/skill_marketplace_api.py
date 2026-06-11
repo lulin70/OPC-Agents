@@ -60,6 +60,21 @@ if FASTAPI_AVAILABLE:
         allow_headers=["*"],
     )
 
+    # HTTPS enforcement (skip in development)
+    _enforce_https = os.environ.get("MARKETPLACE_ENFORCE_HTTPS", "false").lower() == "true"
+
+    @app.middleware("http")
+    async def enforce_https_middleware(request, call_next):
+        if _enforce_https:
+            proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+            if proto != "https":
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    status_code=426,
+                    content={"error": "HTTPS required. Upgrade your connection."},
+                )
+        return await call_next(request)
+
     marketplace = SkillMarketplace()
     external_marketplace = ExternalSkillMarketplace()
     _rate_limit_store: Dict[str, List[float]] = {}

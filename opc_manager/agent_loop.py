@@ -33,6 +33,8 @@ from .tool_system import ToolSystem
 from .session_context import SessionContextManager
 from .task_engine_v3 import TaskEngineV3, TaskType, TaskResult
 from .correction_manager import CorrectionManager, SKILL_FALLBACK_MAP
+from .agent_context import AgentContext, AgentState
+from .task_lifecycle import TaskLifecycleManager, ConsensusConsultant
 from .utils import BoundedDict, EventEmitter
 from .performance_monitor import get_performance_monitor
 from .confirmer import Confirmer
@@ -55,39 +57,6 @@ AGENT_LOOP_TIMEOUT_SECONDS = int(
 QUALITY_THRESHOLD_CORRECTION = 0.6
 QUALITY_THRESHOLD_CONSENSUS = 0.7
 MAX_CORRECTION_ATTEMPTS = 2
-
-
-class AgentState(Enum):
-    IDLE = "idle"
-    PLANNING = "planning"
-    EXECUTING = "executing"
-    OBSERVING = "observing"
-    REFLECTING = "reflecting"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-    PAUSED = "paused"
-    CONFIRMATION_NEEDED = "confirmation_needed"
-
-
-@dataclass
-class AgentContext:
-    task_id: str
-    user_input: str
-    state: AgentState = AgentState.IDLE
-    intent: Optional[Intent] = None
-    plan: Optional[ExecutionPlan] = None
-    execution_results: List[Dict] = field(default_factory=list)
-    current_step: int = 0
-    retry_count: int = 0
-    step_retry_counts: Dict[str, int] = field(default_factory=dict)
-    cancel_requested: bool = False
-    session_id: Optional[str] = None
-    correction_count: int = 0
-    paused_at: Optional[float] = None
-
-    def set_state(self, new_state: AgentState) -> None:
-        self.state = new_state
 
 
 class AgentLoop:
@@ -125,14 +94,17 @@ class AgentLoop:
         self.event_emitter = EventEmitter()
         self.confirmer = Confirmer()
         self.progress = ProgressEmitter()
+        self.contexts: BoundedDict = BoundedDict(max_size=MAX_CONTEXT_HISTORY)
         self._correction_manager = CorrectionManager(
             skill_registry=self.skill_registry, executor_brain=self.executor_brain
+        )
+        self._lifecycle = TaskLifecycleManager(self.contexts, self.executor_brain)
+        self._consensus_consultant = ConsensusConsultant(
+            self.strategist_brain, self.reflector_brain, self.consensus_engine
         )
 
         self.max_reflect_rounds = max_reflect_rounds
         self.max_retry_per_step = max_retry_per_step
-
-        self.contexts: BoundedDict = BoundedDict(max_size=MAX_CONTEXT_HISTORY)
 
     async def run(
         self,
@@ -847,7 +819,7 @@ class AgentLoop:
             ),
         )
 
-        consensus_decision = await self._consult_consensus(
+        consensus_decision = await self._consensus_consultant.consult(
             context, evaluation, next_action
         )
         if consensus_decision is not None:
@@ -856,175 +828,27 @@ class AgentLoop:
         logger.info("决定下一步行动: %s", next_action.action_type.name)
         return next_action
 
-    async def _consult_consensus(
-        self,
-        context: AgentContext,
-        evaluation: Evaluation,
-        reflector_action: NextAction,
-    ) -> Optional[NextAction]:
-        if evaluation.quality_score >= QUALITY_THRESHOLD_CONSENSUS:
-            return None
-
-        strategist_ctx = {"intent": context.intent}
-        strategist_data = self.strategist_brain.express_opinion(strategist_ctx)
-        strategist_opinion = Opinion(
-            brain_type=strategist_data["brain_type"],
-            opinion_type=OpinionType[strategist_data["opinion_type"]],
-            reasoning=strategist_data["reasoning"],
-            confidence=strategist_data["confidence"],
-        )
-
-        executor_opinion = Opinion(
-            brain_type="executor",
-            opinion_type=(
-                OpinionType.AGREE if context.retry_count < 2 else OpinionType.DISAGREE
-            ),
-            reasoning=f"执行重试次数: {context.retry_count}",
-            confidence=max(0.3, 1.0 - context.retry_count * 0.3),
-        )
-
-        reflector_ctx = {"evaluation": evaluation, "next_action": reflector_action}
-        reflector_data = self.reflector_brain.express_opinion(reflector_ctx)
-        reflector_opinion = Opinion(
-            brain_type=reflector_data["brain_type"],
-            opinion_type=OpinionType[reflector_data["opinion_type"]],
-            reasoning=reflector_data["reasoning"],
-            confidence=reflector_data["confidence"],
-        )
-
-        decision = self.consensus_engine.collect_opinions(
-            [strategist_opinion, executor_opinion, reflector_opinion]
-        )
-
-        await self._log_consensus_decision(context, evaluation, decision)
-
-        if decision.decision_type == DecisionType.VETOED:
-            logger.info("共识引擎否决: %s", decision.reasoning)
-            return NextAction(
-                action_type=NextActionType.ABANDON,
-                reason=decision.reasoning,
-                confidence=decision.confidence,
-            )
-
-        if decision.decision_type == DecisionType.ESCALATED:
-            logger.info("共识引擎升级: %s", decision.reasoning)
-            return NextAction(
-                action_type=NextActionType.REVIEW,
-                reason=decision.reasoning,
-                confidence=decision.confidence,
-            )
-
-        return None
-
-    async def _log_consensus_decision(
-        self, context: AgentContext, evaluation: Evaluation, decision
-    ) -> None:
-        log_entry = {
-            "task_id": context.task_id,
-            "quality_score": evaluation.quality_score,
-            "result_level": evaluation.result.name,
-            "decision_type": (
-                decision.decision_type.name if decision.decision_type else None
-            ),
-            "confidence": decision.confidence,
-            "reasoning": decision.reasoning,
-            "timestamp": time.time(),
-        }
-
-        try:
-            from opc_manager.data_manager import execute_write, init_db
-
-            init_db()
-            import json as _json
-
-            execute_write(
-                "INSERT INTO consensus_decisions (id, timestamp, opinion_count, decision_type, approved, confidence, detail) VALUES (?,?,?,?,?,?,?)",
-                (
-                    context.task_id,
-                    log_entry["timestamp"],
-                    3,
-                    log_entry["decision_type"] or "",
-                    1 if log_entry["confidence"] >= 0.5 else 0,
-                    log_entry["confidence"],
-                    _json.dumps(log_entry, ensure_ascii=False),
-                ),
-            )
-        except Exception as e:
-            logger.warning("共识日志写入失败: %s", e)
-
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
-        context = self.contexts.get(task_id)
-        if not context:
-            return None
-
-        return {
-            "task_id": task_id,
-            "state": context.state.value,
-            "current_step": context.current_step,
-            "total_steps": len(context.plan.steps) if context.plan else 0,
-            "retry_count": context.retry_count,
-            "results": (
-                context.execution_results[-5:] if context.execution_results else []
-            ),
-        }
+        return self._lifecycle.get_task_status(task_id)
 
     async def cancel_task(self, task_id: str) -> bool:
-        context = self.contexts.get(task_id)
-        if not context:
-            return False
-
-        context.cancel_requested = True
-        context.set_state(AgentState.CANCELLED)
-        await self.executor_brain.cancel_execution(task_id)
-        logger.info("任务已取消: %s", task_id)
-        return True
+        return await self._lifecycle.cancel_task(task_id)
 
     async def pause_task(self, task_id: str) -> bool:
-        context = self.contexts.get(task_id)
-        if not context:
-            return False
-
-        if context.state not in (
-            AgentState.EXECUTING,
-            AgentState.PLANNING,
-            AgentState.OBSERVING,
-            AgentState.REFLECTING,
-        ):
-            logger.warning("任务 %s 当前状态 %s 不可暂停", task_id, context.state.value)
-            return False
-
-        context.paused_at = time.time()
-        context.set_state(AgentState.PAUSED)
-        logger.info("任务已暂停: %s (步骤: %s)", task_id, context.current_step)
-        return True
+        return await self._lifecycle.pause_task(task_id)
 
     async def resume_task(self, task_id: str) -> Dict[str, Any]:
+        result = await self._lifecycle.resume_task(task_id)
+        if not result.get("success"):
+            return result
+
+        # If resume succeeded, continue the reflect loop
         context = self.contexts.get(task_id)
         if not context:
-            return {"success": False, "error": f"任务 {task_id} 不存在"}
+            return result
 
-        if context.state != AgentState.PAUSED:
-            return {
-                "success": False,
-                "error": f"任务 {task_id} 当前状态 {context.state.value} 不可恢复",
-            }
-
-        if (
-            context.paused_at
-            and (time.time() - context.paused_at) > PAUSE_TIMEOUT_SECONDS
-        ):
-            context.cancel_requested = True
-            context.set_state(AgentState.CANCELLED)
-            logger.warning("任务 %s 暂停超时，自动取消", task_id)
-            return {"success": False, "error": "暂停超时，任务已自动取消"}
-
-        context.paused_at = None
-        context.set_state(AgentState.EXECUTING)
-        resume_step = context.current_step
-        logger.info("任务已恢复: %s (从步骤 %s 继续)", task_id, resume_step)
-
-        remaining_timeout = AGENT_LOOP_TIMEOUT_SECONDS
-        deadline = time.time() + remaining_timeout
+        resume_step = result.pop("resume_step", context.current_step)
+        deadline = time.time() + AGENT_LOOP_TIMEOUT_SECONDS
 
         try:
             loop_result = await self._reflect_loop(
@@ -1050,35 +874,7 @@ class AgentLoop:
             return {"success": False, "task_id": task_id, "error": str(e)}
 
     def list_tasks(self) -> List[Dict[str, Any]]:
-        tasks = []
-        for task_id, context in self.contexts.items():
-            tasks.append(
-                {
-                    "task_id": task_id,
-                    "user_input": (
-                        context.user_input[:50] + "..."
-                        if len(context.user_input) > 50
-                        else context.user_input
-                    ),
-                    "state": context.state.value,
-                    "current_step": context.current_step,
-                }
-            )
-        return tasks
+        return self._lifecycle.list_tasks()
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "type": "agent_loop",
-            "task_count": len(self.contexts),
-            "active_tasks": sum(
-                1
-                for ctx in self.contexts.values()
-                if ctx.state
-                in (
-                    AgentState.PLANNING,
-                    AgentState.EXECUTING,
-                    AgentState.OBSERVING,
-                    AgentState.REFLECTING,
-                )
-            ),
-        }
+        return self._lifecycle.to_dict()
