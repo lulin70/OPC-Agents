@@ -4,6 +4,12 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [0.2.5] - 2026-06-07
 
+### DevSquad 7-Role Evaluation (67 issues fixed)
+- **P0 (5)**: TaskEngineV3 extraction, chat_router split, Dashboard caching, loading state, path traversal warning
+- **P1 (21)**: MCP auth, Marketplace API auth, cross-brain dependency, Growth coming soon, confirmation flow, CI Docker+pip-audit
+- **P2 (26)**: CorrectionManager extraction, circular fallback break, DataManager class, experimental moves, search disclaimer, Docker resource limits
+- **P3 (15)**: Multi-stage Dockerfile, audit sanitization, i18n keys, toast API, architecture docs
+
 ### Security Hardening (5 Critical fixes)
 - **#1**: Unified encryption key derivation to sha256 in settings.py with migration fallback for old truncate+pad keys
 - **#2**: Replaced asyncio.get_running_loop().run_until_complete() with ThreadPoolExecutor in Streamlit context (task_engine_v3.py)

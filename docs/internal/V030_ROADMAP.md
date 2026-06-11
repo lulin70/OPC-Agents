@@ -1,10 +1,10 @@
-> **状态更新 (2026-06-07)**: v0.2.5 架构统一+安全加固已完成。2572测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
+> **状态更新 (2026-06-07)**: v0.2.5 架构统一+安全加固已完成。2933测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
 
 # OPC-Agents v0.2.5 Roadmap
 
 **Created**: 2026-05-16
 **Last Updated**: 2026-06-07 (v0.2.5 Architecture Unification + Security Hardening + LLM Concurrency Control)
-**Based on**: v0.2.0 post-release evaluation → **v0.2.5** (2572+ tests, 7-dim code review + architecture refactoring completed)
+**Based on**: v0.2.0 post-release evaluation → **v0.2.5** (2933+ tests, 7-dim code review + architecture refactoring completed)
 **Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.2.2-v0.2.5 Sprint COMPLETED
 
 ---

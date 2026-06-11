@@ -433,9 +433,9 @@ class TestMigrationAddColumn:
         """Verify database migration chain from v2 to latest version completes."""
         from opc_manager.data_manager import _run_migrations, _get_conn
         # Run migrations on a fresh database
-        _run_migrations()
-        # Verify critical tables exist
         conn = _get_conn()
+        _run_migrations(conn)
+        # Verify critical tables exist
         tables = [row[0] for row in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         ).fetchall()]

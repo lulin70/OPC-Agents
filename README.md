@@ -246,7 +246,7 @@ OPC-Agents/
 │   │   └── settings_page.py    # 设置管理页（666行）
 │   ├── routers/            # 路由模块
 │   └── renderers/          # 渲染模块
-├── opc_manager/           # 核心业务逻辑（92个.py模块）
+├── opc_manager/           # 核心业务逻辑（88个.py模块）
 │   ├── cli.py             # CLI入口（pip install后opc-agents命令）
 │   ├── agent_loop.py      # 执行循环（Plan→Act→Observe→Reflect四阶段闭环）
 │   ├── strategist_brain.py# 策略脑（意图理解+任务规划+复合意图拆解）
@@ -266,12 +266,16 @@ OPC-Agents/
 │   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP，58+翻译键）
 │   ├── dashboard_config.py# 📊 DashboardConfig（3布局×3密度×6面板=9种组合）
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts集成（5个CLI动作）
-│   ├── wechat_agent.py    # 💬 微信E2E智能体
-│   ├── wechat_gateway.py  # 💬 微信网关
 │   │
 │   ├── # === v0.2.5 新增：CarryMem + 知识库 + 飞轮 ===
 │   ├── memory_bridge.py   # 🧠 MemoryBridge（CarryMem适配层，持久记忆+规则引擎+飞轮）
 │   ├── knowledge_bridge.py# 📚 KnowledgeBridge（6种知识库适配：Obsidian/语雀/飞书/Notion/思源/本地）
+│   ├── search_cache.py    # 🔍 搜索缓存（SQLite缓存+TTL+命中追踪）
+│   ├── intent_classifier.py # 🎯 意图分类器（轻量级意图路由）
+│   ├── correction_manager.py # 🔧 修正管理器（自动修正策略协调）
+│   ├── embedding_service.py # 📐 嵌入服务（向量嵌入+相似度计算）
+│   ├── llm_cache.py       # 🧊 LLM缓存（SQLite缓存+SHA256键+7天TTL+线程安全）
+│   ├── skill_reviews.py   # ⭐ 技能评分（1-5星+文字评价+聚合平均）
 │   │
 │   ├── # === v0.2.0 模块化提取 ===
 │   ├── task_types.py              # 从task_engine_v3提取的任务类型定义
@@ -281,8 +285,6 @@ OPC-Agents/
 │   ├── skill_executors.py         # SkillExecutorMixin（20个execute方法）
 │   ├── scenario_definitions.py    # 9个场景定义+dataclasses
 │   │
-│   ├── scenario_migrator.py# 场景迁移器（9场景→技能映射）
-│   ├── task_engine_adapter.py# TaskEngine适配器（三贤者↔TaskEngineV3桥接）
 │   ├── data_manager.py    # 数据管理（SQLite统一存储+AES加密+事务+迁移）
 │   ├── email_skill.py     # 📧 邮件技能（SMTP发送+模板+频率限制）
 │   ├── finance_skill.py   # 💰 财务技能（收支记录+月报+趋势）
@@ -329,6 +331,10 @@ OPC-Agents/
 │   ├── confirmer.py                  # 确认机制
 │   ├── progress_emitter.py           # 进度事件发射器
 │   └── version.py         # 版本号管理（SSOT）
+│   ├── experimental/      # 实验性模块（未纳入核心流程）
+│   │   ├── wechat_agent.py    # 💬 微信E2E智能体
+│   │   ├── wechat_gateway.py  # 💬 微信网关
+│   │   └── plugin_worker.py   # 🔌 插件工作器
 ├── opc_manager/api/        # API事件模块
 │   └── events.py          # 事件定义
 ├── opc_manager/export/     # 导出模块
@@ -374,7 +380,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **测试覆盖范围**：全部92个opc_manager模块 + 前端38模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **测试覆盖范围**：全部88个opc_manager模块 + 前端38模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## 版本历史
 

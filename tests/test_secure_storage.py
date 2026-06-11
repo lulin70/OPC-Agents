@@ -394,14 +394,15 @@ class TestKeyRotation(unittest.TestCase):
     def test_key_rotation_decrypts_old_data(self):
         """Verify that data encrypted with old key can be decrypted after key rotation."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            store1 = SecureKeyStore(base_dir=tmpdir)
+            storage_path = os.path.join(tmpdir, "secure_keys.json")
+            store1 = SecureKeyStore(storage_path=storage_path)
             if not store1.is_available:
                 self.skipTest("cryptography package not installed")
             store1.set_key("test_key", "secret_value")
 
-            # Simulate key rotation by creating new store with different master key
-            # The old encrypted data should still be accessible via migration
-            store2 = SecureKeyStore(base_dir=tmpdir)
+            # Simulate key rotation by creating new store with same path
+            # The encrypted data should still be accessible
+            store2 = SecureKeyStore(storage_path=storage_path)
             value = store2.get_key("test_key")
             # Value should be recoverable (either directly or via migration)
             assert value is not None

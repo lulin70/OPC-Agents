@@ -67,6 +67,30 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 - ✅ **🔐 API Key暗号化保存** — Fernet対称暗号化、自動生成キー（.env.local）、secure_storage強化
 - ✅ **🧩 コードモジュラー化リファクター** — フロントエンドを3834行モノリシックから8モジュールに分割、バックエンドからskill_models/skill_builtin/skill_executors/task_types/task_content_generators/scenario_definitions等を独立モジュールとして抽出
 
+## アクセラレーター
+
+これらの機能はコアフローを**より良く、より速く、使うほど強力に**します：
+
+| アクセラレーター | どのように成果を早く出すか |
+|----------------|------------------------|
+| 🧠 **クロスセッション記憶** | 好みとコンテキストを記憶、毎回の繰り返し説明不要（[CarryMem](https://github.com/lulin70/carrymem)が必要、`pip install opc-agents[memory]`） |
+| 🔄 **フライホイール成長** | 使うほどレベルアップ（🌱初心者→👑伝説）、出力品質が自動向上 |
+| 🏪 **スキルマーケット** | サードパーティスキルの検索・インストール、オンデマンドで能力拡張 |
+| 📚 **外部ナレッジベース** | Obsidian/語雀/飛書/Notion/思源ノートに接続、AIがプライベート資料を参照 |
+| 📜 **ルールエンジン** | 失敗経験を自動的にルール化、同じエラーを二度と繰り返さない |
+| ↩️ **アンドゥ機能** | 操作は取り消し可能、安心して大胆に使用 |
+| 🌐 **3言語切替** | 中国語/英語/日本語UIワンクリック切替 |
+| 🧊 **LLMキャッシュ** | 同じ質問は重複API呼び出しなし、時間とコストを節約 |
+
+## エコシステムツール
+
+特定のシナリオに遭遇？組み合わせて使うとさらに効果的：
+
+| シナリオ | 推奨ツール | 説明 |
+|---------|-----------|------|
+| AIに好みを記憶させたい | [CarryMem](https://github.com/lulin70/carrymem) | クロスセッション永続記憶エンジン、`pip install opc-agents[memory]`で有効化 |
+| 開発タスクで多役割協力が必要 | [DevSquad](https://github.com/lulin70/DevSquad) | 7役割AIチーム（アーキテクト/PM/セキュリティ/テスター/開発/DevOps/UI）、複雑な開発タスクの分解と協力 |
+
 ## クイックスタート
 
 ### 前提条件
@@ -78,16 +102,23 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents
+pip install opc-agents==0.2.5
 
-# 2. ワークスペースを作成し、APIキーを設定
+# 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
+pip install cryptography
+
+# 3. ワークスペースを作成し、APIキーを設定
 mkdir my-opc-workspace && cd my-opc-workspace
 echo "MOKA_API_KEY=your-key-here" > .env
 
 # （オプション）平文.envの代わりに暗号化ストレージを使用
 # python -m opc_manager.secure_storage set MOKA_API_KEY your-key-here
 
-# 3. 起動
+# 初回起動時に.env.localが自動生成（暗号化キーを含む、gitignoreで保護）
+# 暗号化キーを手動設定する場合：
+# echo "OPC_ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> .env.local
+
+# 4. 起動
 opc-agents
 ```
 
@@ -101,6 +132,9 @@ cd OPC-Agents
 chmod +x install.sh start.sh
 ./install.sh
 
+# 暗号化依存パッケージをインストール
+pip install cryptography
+
 # APIキーの設定
 cp .env.example .env
 # .envを編集し、MOKA APIキーを入力
@@ -108,6 +142,37 @@ cp .env.example .env
 # 起動
 ./start.sh
 ```
+
+### 方法3：Dockerデプロイ
+
+```bash
+docker compose up -d
+```
+
+| ポート | サービス | 説明 |
+|--------|---------|------|
+| 8501 | メインアプリ (Streamlit) | Web UI |
+| 8900 | スキルマーケットAPI (FastAPI) | REST API |
+| 8901 | MCP SSEエンドポイント | Model Context Protocol |
+
+### 環境変数
+
+| 変数 | 説明 | デフォルト |
+|------|------|-----------|
+| `OPC_DATA_DIR` | データ保存ディレクトリ | プロジェクトルート下の `data/` |
+| `OPC_ENCRYPTION_KEY` | AES暗号化キー（**必須設定**、未設定時は暗号化操作でRuntimeError発生） | なし（未設定時は暗号化拒否） |
+| `MOKA_API_KEY` | MOKA LLM APIキー | — |
+| `GLM_API_KEY` | 智譜GLM APIキー | — |
+| `OPENAI_API_KEY` | OpenAI APIキー | — |
+| `OLLAMA_BASE_URL` | Ollamaローカルモデルアドレス | — |
+| `OPC_SKIP_REFLECT` | リフレクション段階をスキップ（クイックモード） | `false` |
+| `CARRYMEM_ENABLED` | クロスセッション永続記憶を有効化 | `false` |
+| `CARRYMEM_DB_PATH` | CarryMemデータベースパス | `~/.opc-agents/memory.db` |
+| `OPC_KB_ENABLED` | 外部ナレッジベースを有効化 | `false` |
+| `OPC_KB_TYPE` | ナレッジベースタイプ | `local` |
+| `OPC_KB_PATH` | ナレッジベースパス（Obsidian/ローカル） | `~/knowledge` |
+
+> ⚠️ **セキュリティ注意**：`OPC_ENCRYPTION_KEY`は必須です。未設定時、`encrypt_field()`が`RuntimeError`をスローし、メールパスワードや顧客機密フィールド等の暗号化操作が失敗します。`.env`に強力なランダムキーを必ず設定してください。
 
 ### APIキーについて
 
@@ -128,6 +193,7 @@ cp .env.example .env
 | ポートが使用中 | `opc-agents -- --server.port 8502` |
 | Pythonバージョンが違う | Python 3.10+が必要、`python3 --version`で確認 |
 | 依存パッケージのインストール失敗 | `pip install --upgrade pip`を試してから再実行 |
+| 暗号化機能が利用不可 | `pip install cryptography`で暗号化依存パッケージをインストール |
 
 ## プロジェクト構成
 
@@ -143,7 +209,7 @@ OPC-Agents/
 │   │   └── settings_page.py    # 設定管理ページ（666行）
 │   ├── routers/            # ルーターモジュール
 │   └── renderers/          # レンダラーモジュール
-├── opc_manager/           # コアビジネスロジック（92個の.pyモジュール）
+├── opc_manager/           # コアビジネスロジック（88個の.pyモジュール）
 │   ├── cli.py             # CLIエントリポイント
 │   ├── agent_loop.py      # 実行ループ
 │   ├── strategist_brain.py# 戦略脳
@@ -162,8 +228,16 @@ OPC-Agents/
 │   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP、58+翻訳キー）
 │   ├── dashboard_config.py# 📊 DashboardConfig（3レイアウト×3密度×6パネル=9組合せ）
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts統合（5つのCLIアクション）
-│   ├── wechat_agent.py    # 💬 WeChat E2Eエージェント
-│   ├── wechat_gateway.py  # 💬 WeChatゲートウェイ
+│   │
+│   ├── # === v0.2.5 新規：CarryMem + ナレッジベース + フライホイール ===
+│   ├── memory_bridge.py   # 🧠 MemoryBridge（CarryMemアダプタ、永続記憶+ルールエンジン+フライホイール）
+│   ├── knowledge_bridge.py# 📚 KnowledgeBridge（6種KBアダプタ：Obsidian/語雀/飛書/Notion/思源/ローカル）
+│   ├── search_cache.py    # 🔍 検索キャッシュ（SQLiteキャッシュ+TTL+ヒット追跡）
+│   ├── intent_classifier.py # 🎯 インテント分類器（軽量インテントルーティング）
+│   ├── correction_manager.py # 🔧 修正マネージャー（自動修正戦略調整）
+│   ├── embedding_service.py # 📐 埋め込みサービス（ベクトル埋め込み+類似度計算）
+│   ├── llm_cache.py       # 🧊 LLMキャッシュ（SQLiteキャッシュ+SHA256キー+7日TTL+スレッドセーフ）
+│   ├── skill_reviews.py   # ⭐ スキルレビュー（1-5星+テキストレビュー+集計平均）
 │   │
 │   ├── # === v0.2.0 モジュラー抽出 ===
 │   ├── task_types.py              # task_engine_v3から抽出したタスクタイプ定義
@@ -173,8 +247,6 @@ OPC-Agents/
 │   ├── skill_executors.py         # SkillExecutorMixin（20個のexecuteメソッド）
 │   ├── scenario_definitions.py    # 9個のシナリオ定義+dataclasses
 │   │
-│   ├── scenario_migrator.py# シナリオ移行ツール
-│   ├── task_engine_adapter.py# TaskEngineアダプタ
 │   ├── skill_marketplace.py # スキルマーケットV2（検索/インストール/詳細/フィルター/バージョンピンニング）
 │   ├── skill_marketplace_api.py # スキルマーケットAPIサーバー
 │   ├── mcp_protocol.py      # MCPプロトコルサポート
@@ -204,6 +276,10 @@ OPC-Agents/
 │   ├── confirmer.py                  # 確認メカニズム
 │   ├── progress_emitter.py           # 進捗イベントエミッター
 │   └── version.py         # バージョン管理（SSOT）
+│   ├── experimental/      # 実験的モジュール（コアフロー外）
+│   │   ├── wechat_agent.py    # 💬 WeChat E2Eエージェント
+│   │   ├── wechat_gateway.py  # 💬 WeChatゲートウェイ
+│   │   └── plugin_worker.py   # 🔌 プラグインワーカー
 ├── opc_manager/api/        # APIイベントモジュール
 │   └── events.py          # イベント定義
 ├── opc_manager/export/     # エクスポートモジュール
@@ -249,7 +325,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **テストカバレッジ範囲**：全92個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **テストカバレッジ範囲**：全88個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## バージョン履歴
 
@@ -258,7 +334,10 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 | **0.2.5** | **2026-06-07** | **アーキテクチャ統合+セキュリティ強化** — アーキテクチャ統合リファクター+LLM同時実行制御+セキュリティ強化+2939テスト/76ファイル |
 | **0.2.4** | **2026-05-25** | **記憶+ナレッジベース強化** — CarryMem深層統合+ナレッジ検索最適化+通知システム+拡張テスト |
 | **0.2.3** | **2026-05-22** | **CarryMem統合** — クロスセッション永続記憶(MemoryBridge)+ルールエンジン+フライホイール機構+LLMキャッシュ+スキルスコアリング |
-| **0.2.0** | **2026-05-17** | **FINAL** — 製品リリース：統一設定管理+初回ガイド+データバックアップ/リストア+エラー処理+WeChat E2E+モジュラーダッシュボード+i18n 3言語+スキルマーケットV2+グローバル検索+Apple Shortcuts+API Key暗号化(Fernet)+コードモジュラー化リファクター（84モジュール/39テストファイル/1126テスト） |
+| **0.2.2** | **2026-05-21** | **CarryMem+ナレッジベース+フライホイール** — クロスセッション永続記憶+ルールエンジン+6種KBアダプタ+フライホイール機構+LLMキャッシュ+スキルレビュー+フロントエンドモジュラー化+E2Eテスト（1952テスト/56ファイル） |
+| **0.2.2** | **2026-05-20** | **品質修正** — i18n 315+ハードコードクリーンアップ+バックアップAES暗号化+エクスポート秘匿化+MCPデフォルトlocalhost+オンボーディング統合+モバイル対応+キーボードショートカット修正+CIセキュリティスキャン |
+| 0.2.1 | 2026-05-18 | 8個のOPCスキル統合+技術債務クリーンアップ（32 bare except+i18n 97キー） |
+| **0.2.0** | **2026-05-17** | **FINAL** — 製品リリース：統一設定管理+初回ガイド+データバックアップ/リストア+エラー処理+WeChat E2E+モジュラーダッシュボード+i18n 3言語+スキルマーケットV2+グローバル検索+Apple Shortcuts+API Key暗号化(Fernet)+コードモジュラー化リファクター（87モジュール/56テストファイル/1860テスト） |
 | 0.1.9-delta | 2026-05-09 | 実動作検証：三賢者LLM駆動+スキルマーケットFastAPI+MCP転送+プラグイン例+エディタUI+パフォーマンス監視 |
 | 0.1.9-gamma | 2026-05-09 | リファクタリング：三賢者統合+スキルマーケットAPI+MCPプロトコル+プラグインシステム+スキルエディタ |
 | 0.1.9 | 2026-05-09 | エンドツーエンドクローズドループ：自動修正+マルチスキルオーケストレーション+タスク一時停止/再開+進捗可視化+長セッションコンテキスト |

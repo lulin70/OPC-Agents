@@ -8,11 +8,11 @@ from opc_manager.i18n import t as _t
 def render_growth_page():
     """Growth flywheel page — gamified user motivation system."""
     st.markdown(_t("growth_title"))
-    scores = st.session_state.flywheel_scores
-    level = st.session_state.flywheel_level
-    count = st.session_state.scenario_count
+    scores = st.session_state.get("flywheel_scores", {})
+    level = st.session_state.get("flywheel_level", 1)
+    count = st.session_state.get("scenario_count", 0)
 
-    if all(v == 0 for v in scores.values()):
+    if not scores or all(v == 0 for v in scores.values()):
         st.info(
             _t("growth_coming_soon")
             if "growth_coming_soon" in dir(_t)

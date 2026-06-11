@@ -34,6 +34,12 @@
 - [knowledge_skill — 知识库技能](#knowledge_skill--知识库技能)
 - [skill_marketplace — 技能市场](#skill_marketplace--技能市场)
 - [user_profile — 用户画像](#user_profile--用户画像)
+- [search_cache — 搜索缓存（v0.2.5 新增）](#search_cache--搜索缓存)
+- [intent_classifier — 意图分类器（v0.2.5 新增）](#intent_classifier--意图分类器)
+- [correction_manager — 修正管理器（v0.2.5 新增）](#correction_manager--修正管理器)
+- [embedding_service — 嵌入服务（v0.2.5 新增）](#embedding_service--嵌入服务)
+- [llm_cache — LLM缓存（v0.2.2 新增）](#llm_cache--llm缓存)
+- [skill_reviews — 技能评分（v0.2.2 新增）](#skill_reviews--技能评分)
 
 ---
 

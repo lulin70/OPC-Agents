@@ -61,11 +61,35 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - ✅ **💬 WeChat E2E Integration** — WeChatAgent + WeChatGateway for WeChat-based task interaction
 - ✅ **📊 Modular Dashboard** — DashboardConfig (3 layouts × 3 densities × 6 panels), template system supports 9 combinations
 - ✅ **🌐 Tri-Lingual i18n** — I18nManager supports zh_CN/en_US/ja_JP, 58+ translation keys
-- ✅ **🛒 Skill Marketplace V2** — Detail panel + 16-category filter + version pinning,全新 UI experience
+- ✅ **🛒 Skill Marketplace V2** — Detail panel + 16-category filter + version pinning,all-new UI experience
 - ✅ **🔍 Global Search** — Cross-module unified search for skills/customers/articles/tasks in one place
 - ✅ **⌨️ Apple Shortcuts Integration** — 5 shortcut actions (quick_task/query_status/create_deliverable/record_income/daily_report)
 - ✅ **🔐 API Key Encryption at Rest** — Fernet symmetric encryption, auto-generated key (.env.local), enhanced secure_storage
 - ✅ **🧩 Code Modularization Refactor** — Frontend split from 3834-line monolithic into 8 modules; backend extracted skill_models/skill_builtin/skill_executors/task_types/task_content_generators/scenario_definitions as independent modules
+
+## Accelerators
+
+These features make the core workflow **better, faster, and stronger over time**:
+
+| Accelerator | How It Helps You Get Results Faster |
+|-------------|-------------------------------------|
+| 🧠 **Cross-Session Memory** | Remembers your preferences and context, no need to repeat every time (requires [CarryMem](https://github.com/lulin70/carrymem), `pip install opc-agents[memory]`) |
+| 🔄 **Flywheel Growth** | The more you use it, the higher your level (🌱Novice→👑Legend), output quality auto-improves |
+| 🏪 **Skill Marketplace** | Search and install third-party skills, expand capabilities on demand |
+| 📚 **External Knowledge Base** | Connect Obsidian/Yuque/Feishu/Notion/Siyuan Notes, AI references your private materials |
+| 📜 **Rule Engine** | Failed experiences auto-extracted as rules, same errors never repeated |
+| ↩️ **Undo Mechanism** | Operations are reversible, use boldly with confidence |
+| 🌐 **Tri-Lingual Switch** | Chinese/English/Japanese UI one-click switch |
+| 🧊 **LLM Cache** | Same questions don't trigger duplicate API calls, saves time and money |
+
+## Ecosystem Tools
+
+Encounter specific scenarios? Use these together for better results:
+
+| Scenario | Recommended Tool | Description |
+|----------|-----------------|-------------|
+| Want AI to remember your preferences | [CarryMem](https://github.com/lulin70/carrymem) | Cross-session persistent memory engine, `pip install opc-agents[memory]` to enable |
+| Have dev tasks needing multi-role collaboration | [DevSquad](https://github.com/lulin70/DevSquad) | 7-role AI team (Architect/PM/Security/Tester/Coder/DevOps/UI), complex dev task decomposition and collaboration |
 
 ## Quick Start
 
@@ -78,16 +102,23 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 
 ```bash
 # 1. Install
-pip install opc-agents
+pip install opc-agents==0.2.5
 
-# 2. Create workspace and configure API Key
+# 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
+pip install cryptography
+
+# 3. Create workspace and configure API Key
 mkdir my-opc-workspace && cd my-opc-workspace
 echo "MOKA_API_KEY=your-key-here" > .env
 
 # (Optional) Use encrypted storage instead of plaintext .env
 # python -m opc_manager.secure_storage set MOKA_API_KEY your-key-here
 
-# 3. Launch
+# First launch will auto-generate .env.local (contains encryption key, protected by gitignore)
+# To manually set encryption key:
+# echo "OPC_ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> .env.local
+
+# 4. Launch
 opc-agents
 ```
 
@@ -100,6 +131,9 @@ git clone https://github.com/lulin70/OPC-Agents.git
 cd OPC-Agents
 chmod +x install.sh start.sh
 ./install.sh
+
+# Install encryption dependency
+pip install cryptography
 
 # Configure API Key
 cp .env.example .env
@@ -120,6 +154,25 @@ docker compose up -d
 | 8501 | Main App (Streamlit) | Web UI |
 | 8900 | Skill Marketplace API (FastAPI) | REST API |
 | 8901 | MCP SSE Endpoint | Model Context Protocol |
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPC_DATA_DIR` | Data storage directory | `data/` under project root |
+| `OPC_ENCRYPTION_KEY` | AES encryption key (**must be set**, otherwise encryption operations throw RuntimeError) | None (encryption refused when unset) |
+| `MOKA_API_KEY` | MOKA LLM API key | — |
+| `GLM_API_KEY` | Zhipu GLM API key | — |
+| `OPENAI_API_KEY` | OpenAI API key | — |
+| `OLLAMA_BASE_URL` | Ollama local model address | — |
+| `OPC_SKIP_REFLECT` | Skip reflection phase (fast mode) | `false` |
+| `CARRYMEM_ENABLED` | Enable cross-session persistent memory | `false` |
+| `CARRYMEM_DB_PATH` | CarryMem database path | `~/.opc-agents/memory.db` |
+| `OPC_KB_ENABLED` | Enable external knowledge base | `false` |
+| `OPC_KB_TYPE` | Knowledge base type | `local` |
+| `OPC_KB_PATH` | Knowledge base path (Obsidian/local) | `~/knowledge` |
+
+> ⚠️ **Security Note**: `OPC_ENCRYPTION_KEY` is required. When unset, `encrypt_field()` will throw `RuntimeError`, causing email passwords, customer sensitive fields, and other encryption operations to fail. Make sure to set a strong random key in `.env`.
 
 ### About API Keys
 
@@ -142,6 +195,7 @@ docker compose up -d
 | Port in use | `opc-agents -- --server.port 8502` |
 | Wrong Python version | Requires Python 3.10+, run `python3 --version` to check |
 | Dependency install fails | Try `pip install --upgrade pip` and retry |
+| Encryption not available | Run `pip install cryptography` to install encryption dependency |
 
 ## Project Structure
 
@@ -157,7 +211,7 @@ OPC-Agents/
 │   │   └── settings_page.py    # Settings management (666 lines)
 │   ├── routers/            # Router modules
 │   └── renderers/          # Renderer modules
-├── opc_manager/           # Core business logic (92 .py modules)
+├── opc_manager/           # Core business logic (88 .py modules)
 │   ├── cli.py             # CLI entry point (opc-agents command after pip install)
 │   ├── agent_loop.py      # Execution loop (Plan→Act→Observe→Reflect 4-phase closed loop)
 │   ├── strategist_brain.py# Strategist Brain (intent understanding + task planning + composite intent decomposition)
@@ -176,8 +230,16 @@ OPC-Agents/
 │   ├── i18n.py            # 🌐 I18nManager (zh_CN/en_US/ja_JP, 58+ keys)
 │   ├── dashboard_config.py# 📊 DashboardConfig (3 layouts × 3 densities × 6 panels = 9 combos)
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts integration (5 CLI actions)
-│   ├── wechat_agent.py    # 💬 WeChat E2E agent
-│   ├── wechat_gateway.py  # 💬 WeChat gateway
+│   │
+│   ├── # === v0.2.5 New: CarryMem + Knowledge Base + Flywheel ===
+│   ├── memory_bridge.py   # 🧠 MemoryBridge (CarryMem adapter, persistent memory + rule engine + flywheel)
+│   ├── knowledge_bridge.py# 📚 KnowledgeBridge (6 KB adapters: Obsidian/Yuque/Feishu/Notion/Siyuan/Local)
+│   ├── search_cache.py    # 🔍 Search cache (SQLite cache + TTL + hit tracking)
+│   ├── intent_classifier.py # 🎯 Intent classifier (lightweight intent routing)
+│   ├── correction_manager.py # 🔧 Correction manager (auto-correction strategy coordination)
+│   ├── embedding_service.py # 📐 Embedding service (vector embedding + similarity computation)
+│   ├── llm_cache.py       # 🧊 LLM cache (SQLite cache + SHA256 key + 7-day TTL + thread-safe)
+│   ├── skill_reviews.py   # ⭐ Skill reviews (1-5 stars + text reviews + aggregated average)
 │   │
 │   ├── # === v0.2.0 Modular Extraction ===
 │   ├── task_types.py              # Task type definitions extracted from task_engine_v3
@@ -187,8 +249,6 @@ OPC-Agents/
 │   ├── skill_executors.py         # SkillExecutorMixin (20 execute methods)
 │   ├── scenario_definitions.py    # 9 scenario definitions + dataclasses
 │   │
-│   ├── scenario_migrator.py# Scenario Migrator (9 scenarios → skill mapping)
-│   ├── task_engine_adapter.py# TaskEngine adapter (Three-Sage ↔ TaskEngineV3 bridge)
 │   ├── skill_marketplace.py # Skill Marketplace V2 (search/install/detail/filter/version pinning + MCP discovery)
 │   ├── skill_marketplace_api.py # Skill Marketplace API server (FastAPI server)
 │   ├── mcp_protocol.py      # MCP protocol support (Model Context Protocol compatible)
@@ -218,6 +278,10 @@ OPC-Agents/
 │   ├── confirmer.py                  # Confirmation mechanism
 │   ├── progress_emitter.py           # Progress event emitter
 │   └── version.py         # Version management (SSOT)
+│   ├── experimental/      # Experimental modules (not in core flow)
+│   │   ├── wechat_agent.py    # 💬 WeChat E2E agent
+│   │   ├── wechat_gateway.py  # 💬 WeChat gateway
+│   │   └── plugin_worker.py   # 🔌 Plugin worker
 ├── opc_manager/api/        # API events module
 │   └── events.py          # Event definitions
 ├── opc_manager/export/     # Export module
@@ -263,7 +327,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **Test Coverage**: All 92 opc_manager modules + 38 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)
+> **Test Coverage**: All 88 opc_manager modules + 38 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)
 
 ## Version History
 
@@ -272,7 +336,10 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 | **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 2939 tests / 76 files |
 | **0.2.4** | **2026-05-25** | **Memory + Knowledge Enhancement** — CarryMem deep integration + knowledge search optimization + notification system + extended tests |
 | **0.2.3** | **2026-05-22** | **CarryMem Integration** — Cross-session persistent memory (MemoryBridge) + rule engine + flywheel mechanism + LLM cache + skill scoring |
-| **0.2.0** | **2026-05-17** | **FINAL** — Product Release: Unified settings + onboarding + data backup/restore + error handling + WeChat E2E + modular dashboard + i18n tri-lingual + Skill Marketplace V2 + global search + Apple Shortcuts + API Key encryption (Fernet) + code modularization refactor (84 modules / 39 test files / 1126 tests) |
+| **0.2.2** | **2026-05-21** | **CarryMem + Knowledge Base + Flywheel** — Cross-session persistent memory + rule engine + 6 KB adapters + flywheel mechanism + LLM cache + skill reviews + frontend modularization + E2E tests (1952 tests / 56 files) |
+| **0.2.2** | **2026-05-20** | **Quality Fix** — i18n 315+ hardcoded cleanup + backup AES encryption + export sanitization + MCP default localhost + Onboarding merge + mobile responsive + keyboard shortcuts fix + CI security scan |
+| 0.2.1 | 2026-05-18 | 8 OPC skills integrated + tech debt cleanup (32 bare except + i18n 97 keys) |
+| **0.2.0** | **2026-05-17** | **FINAL** — Product Release: Unified settings + onboarding + data backup/restore + error handling + WeChat E2E + modular dashboard + i18n tri-lingual + Skill Marketplace V2 + global search + Apple Shortcuts + API Key encryption (Fernet) + code modularization refactor (87 modules / 56 test files / 1860 tests) |
 | 0.1.9-delta | 2026-05-09 | Real-run verification: Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring |
 | 0.1.9-gamma | 2026-05-09 | Refactoring: Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor |
 | 0.1.9 | 2026-05-09 | End-to-end closed loop: auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context |

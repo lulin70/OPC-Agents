@@ -26,8 +26,9 @@ class TestDockerfile:
     def test_dockerfile_version_label(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()
         assert (
-            'version="0.2.5"' in content or "version=0.2.5" in content
-        ), "Dockerfile LABEL version should be 0.2.5"
+            'version="0.2.5"' in content or "version=0.2.5" in content or
+            'ARG VERSION=0.2.5' in content
+        ), "Dockerfile must define VERSION (hardcoded or via ARG)"
 
     def test_dockerfile_python_base(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()
@@ -51,9 +52,11 @@ class TestDockerCompose:
         assert any(
             "data" in str(v) for v in volumes
         ), "docker-compose.yml must mount data volume"
-        assert any(
-            ".env" in str(v) for v in volumes
-        ), "docker-compose.yml must mount .env file"
+        # env_file directive is preferred over volume mount for .env
+        env_file = svc.get("env_file", [])
+        has_env = any(".env" in str(e) for e in env_file)
+        has_env_volume = any(".env" in str(v) for v in volumes)
+        assert has_env or has_env_volume, "docker-compose.yml must reference .env (via env_file or volume)"
 
     def test_compose_has_healthcheck(self):
         yml = PROJECT_ROOT / "docker-compose.yml"

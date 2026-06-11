@@ -674,9 +674,18 @@ class DataManager:
     """
 
     def __init__(self, db_path: Optional[str] = None):
-        self._db_path = db_path
+        global DB_PATH, _db_initialized
         if db_path:
-            init_db(db_path)
+            DB_PATH = db_path
+            _db_initialized = False
+            # Reset thread-local connection so _get_conn() opens the new path
+            if hasattr(_local, "conn") and _local.conn is not None:
+                try:
+                    _local.conn.close()
+                except Exception:
+                    pass
+                _local.conn = None
+        init_db()
 
     def query(self, sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
         return execute_query(sql, params)

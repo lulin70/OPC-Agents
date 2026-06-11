@@ -53,7 +53,21 @@ class CorrectionManager:
             return False
         return await handler(context)
 
+    MAX_RETRY_ATTEMPTS = 3
+
     async def correct_retry(self, context) -> bool:
+        retry_count = sum(
+            1
+            for r in (context.execution_results or [])
+            if isinstance(r, dict) and r.get("correction") == "retry"
+        )
+        if retry_count >= self.MAX_RETRY_ATTEMPTS:
+            logger.warning(
+                "[CorrectionManager] Max retry attempts (%d) exceeded",
+                self.MAX_RETRY_ATTEMPTS,
+            )
+            return False
+
         last_step = context.plan.steps[-1]
         result = await self.executor_brain.execute_step(
             step_id=last_step.id,
