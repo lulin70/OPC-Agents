@@ -23,6 +23,8 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
+from opc_manager.i18n import t as _t
+
 # Re-export from sub-modules for backward compatibility
 from frontend.components.undo_display import *  # noqa: F401,F403
 from frontend.components.undo_export import *  # noqa: F401,F403
@@ -224,7 +226,7 @@ def _render_confirmation_dialog(
             result = execute_undo(record.session_id, record.operation_id)
             if result["success"]:
                 st.success(f"✅ {result['message']}")
-                st.toast("操作已撤销", icon="✅")
+                st.toast(_t("undo_success_toast"), icon="✅")
                 del st.session_state[f"pending_undo_{record.operation_id}"]
                 time.sleep(1)
                 st.rerun()
@@ -500,7 +502,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
                 result = execute_undo(session_id, op_id)
                 if result["success"]:
                     st.success(f"✅ {result['message']}")
-                    st.toast("操作已撤销", icon="✅")
+                    st.toast(_t("undo_success_toast"), icon="✅")
                     time.sleep(1)
                     st.rerun()
                 else:
@@ -620,8 +622,8 @@ def render_batch_undo(session_id: str):
                 time.sleep(1)
                 st.rerun()
         else:
-            st.caption("☝️ 请勾选上方要撤销的操作")
+            st.caption(_t("undo_select_hint"))
 
     except Exception as e:
         logger.error("[undo_panel] Batch undo error: %s", e)
-        st.error("❌ 批量撤销出错")
+        st.error(_t("undo_batch_error"))

@@ -11,10 +11,9 @@ import streamlit as st
 __all__ = ["show_success", "show_error", "show_info"]
 
 
-def show_success(message: str, icon: str = "✅", duration: int = 3):
-    """Show a success toast notification that auto-dismisses."""
+def show_success(message: str, icon: str = "✅"):
+    """Show a success toast notification."""
     st.toast(message, icon=icon)
-    return True
 
 
 def show_error(message: str, icon: str = "❌"):

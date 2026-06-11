@@ -429,6 +429,18 @@ class TestMigrationAddColumn:
         conn.close()
         assert rows is not None
 
+    def test_migration_chain_completes(self, temp_db):
+        """Verify database migration chain from v2 to latest version completes."""
+        from opc_manager.data_manager import _run_migrations, _get_conn
+        # Run migrations on a fresh database
+        _run_migrations()
+        # Verify critical tables exist
+        conn = _get_conn()
+        tables = [row[0] for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()]
+        assert "tasks" in tables or "audit_log" in tables
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

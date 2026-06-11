@@ -211,7 +211,7 @@ def _filter_and_sort_skills(skills, search_text, categories, sort_by):
 def _simulate_install_count(skill_id: str) -> int:
     """Generate deterministic simulated install count for demo purposes.
 
-    TODO: Replace with real install count from database when analytics are implemented.
+    # TODO(v0.3.0): Replace with real install count from database when analytics are implemented.
     """
     import hashlib
 

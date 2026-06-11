@@ -8,9 +8,10 @@ try:
 
     _ET_FROMSTRING = _safe_fromstring
 except ImportError:
-    import xml.etree.ElementTree as _ET  # noqa: S405  # fallback
-
-    _ET_FROMSTRING = _ET.fromstring
+    raise ImportError(
+        "defusedxml is required for WeChat integration. "
+        "Install it with: pip install defusedxml"
+    )
 from typing import Optional, Dict, Any, Callable, Awaitable
 from dataclasses import dataclass
 from enum import Enum

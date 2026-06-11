@@ -1,19 +1,30 @@
-FROM python:3.11-slim
+ARG VERSION=0.2.5
 
-LABEL maintainer="OPC-Agents Team"
-LABEL version="0.2.5"
-LABEL description="AI-Powered Personal Business Assistant"
+# Stage 1: Builder — install build dependencies and compile
+FROM python:3.11-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Install system dependencies for PDF/Word export
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libffi-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files first (for Docker layer caching)
+# Copy dependency files and install
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 2: Runtime — copy only installed packages, no build tools
+FROM python:3.11-slim
+
+LABEL maintainer="OPC-Agents Team"
+LABEL version="${VERSION}"
+LABEL description="AI-Powered Personal Business Assistant"
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /install /usr/local
 
 # Copy application code
 COPY . .
@@ -28,9 +39,9 @@ RUN mkdir -p /app/data
 # Expose Streamlit port
 EXPOSE 8501
 
-# Health check
+# Health check — verify both HTTP and database connectivity
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')" || exit 1
+    CMD curl -f http://localhost:8501/_stcore/health && python -c "from opc_manager.data_manager import execute_query; execute_query('SELECT 1')" || exit 1
 
 # Environment defaults
 ENV OPC_LOCALE=zh_CN \

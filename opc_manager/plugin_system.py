@@ -43,7 +43,7 @@ PLUGIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "plugins")
 PLUGIN_TIMEOUT_SECONDS = 30
 MAX_CONCURRENT_PLUGINS = 4
 
-_WORKER_PATH = os.path.join(os.path.dirname(__file__), "plugin_worker.py")
+_WORKER_PATH = os.path.join(os.path.dirname(__file__), "experimental", "plugin_worker.py")
 
 
 class PluginState(str, Enum):

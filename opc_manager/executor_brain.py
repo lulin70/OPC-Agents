@@ -17,62 +17,12 @@ import logging
 
 from .utils import BoundedDict
 from .task_engine_v3 import TaskEngineV3, TaskType
-from .strategist_brain import IntentType
+from .intent_types import IntentType, INTENT_TO_TASK_MAP, SKILL_TO_TASK_MAP
 
 logger = logging.getLogger(__name__)
 
 MAX_TASK_HISTORY = 100
 COMMAND_TIMEOUT_SECONDS = 30
-
-INTENT_TO_TASK_MAP: Dict[IntentType, TaskType] = {
-    IntentType.SEARCH: TaskType.INFO_COLLECTION,
-    IntentType.ANALYSIS: TaskType.DATA_ANALYSIS,
-    IntentType.CREATION: TaskType.CONTENT_GENERATION,
-    IntentType.OPERATION: TaskType.BUSINESS_OPERATION,
-    IntentType.NOTIFICATION: TaskType.GENERAL_CHAT,
-    IntentType.COMBINED: TaskType.CONTENT_GENERATION,
-    IntentType.UNKNOWN: TaskType.GENERAL_CHAT,
-    IntentType.EMAIL: TaskType.BUSINESS_OPERATION,
-    IntentType.FINANCE: TaskType.BUSINESS_OPERATION,
-    IntentType.TASK: TaskType.BUSINESS_OPERATION,
-    IntentType.CRM: TaskType.BUSINESS_OPERATION,
-    IntentType.SOCIAL: TaskType.CONTENT_GENERATION,
-    IntentType.PROPOSAL: TaskType.CONTENT_GENERATION,
-    IntentType.INVOICE: TaskType.BUSINESS_OPERATION,
-    IntentType.REPORT: TaskType.CONTENT_GENERATION,
-    IntentType.CALENDAR: TaskType.BUSINESS_OPERATION,
-    IntentType.COMPETITOR: TaskType.DATA_ANALYSIS,
-    IntentType.PRICING: TaskType.DATA_ANALYSIS,
-    IntentType.TAX_REMINDER: TaskType.BUSINESS_OPERATION,
-    IntentType.DASHBOARD: TaskType.DATA_ANALYSIS,
-    IntentType.KNOWLEDGE: TaskType.INFO_COLLECTION,
-    IntentType.EXTENDED_SKILL: TaskType.BUSINESS_OPERATION,
-}
-
-SKILL_TO_TASK_MAP: Dict[str, TaskType] = {
-    "search": TaskType.INFO_COLLECTION,
-    "analysis": TaskType.DATA_ANALYSIS,
-    "content_generation": TaskType.CONTENT_GENERATION,
-    "execute_operation": TaskType.BUSINESS_OPERATION,
-    "send_notification": TaskType.GENERAL_CHAT,
-    "intent_analysis": TaskType.INFO_COLLECTION,
-    "output_result": TaskType.CONTENT_GENERATION,
-    "email": TaskType.BUSINESS_OPERATION,
-    "finance": TaskType.BUSINESS_OPERATION,
-    "task_manager": TaskType.BUSINESS_OPERATION,
-    "crm": TaskType.BUSINESS_OPERATION,
-    "social_publish": TaskType.CONTENT_GENERATION,
-    "proposal": TaskType.CONTENT_GENERATION,
-    "invoice": TaskType.BUSINESS_OPERATION,
-    "report": TaskType.CONTENT_GENERATION,
-    "calendar": TaskType.BUSINESS_OPERATION,
-    "competitor_watch": TaskType.DATA_ANALYSIS,
-    "pricing": TaskType.DATA_ANALYSIS,
-    "tax_reminder": TaskType.BUSINESS_OPERATION,
-    "dashboard": TaskType.DATA_ANALYSIS,
-    "knowledge_mgmt": TaskType.INFO_COLLECTION,
-    "ext_skill": TaskType.BUSINESS_OPERATION,
-}
 
 
 class ExecutionStatusType(Enum):
@@ -139,20 +89,28 @@ class ExecutorBrain:
         if not self.task_engine:
             return None
         try:
-            task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
-            user_input = self._extract_user_input(parameters)
-            if not user_input:
-                return None
-            loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(
-                None,
-                lambda: self.task_engine.execute(
-                    user_input=user_input,
-                    session_ctx=parameters.get("session_ctx"),
-                    business_type=parameters.get("business_type"),
-                    task_type_hint=task_type,
-                ),
-            )
+            # Set fallback flag to prevent circular fallback
+            if hasattr(self.task_engine, '_in_fallback'):
+                self.task_engine._in_fallback = True
+            try:
+                task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
+                user_input = self._extract_user_input(parameters)
+                if not user_input:
+                    return None
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: self.task_engine.execute(
+                        user_input=user_input,
+                        session_ctx=parameters.get("session_ctx"),
+                        business_type=parameters.get("business_type"),
+                        task_type_hint=task_type,
+                    ),
+                )
+            finally:
+                # Always clear fallback flag
+                if hasattr(self.task_engine, '_in_fallback'):
+                    self.task_engine._in_fallback = False
             return ExecutionResult(
                 success=result.success,
                 data={

@@ -1,3 +1,6 @@
+# WARNING: This configuration mounts the entire source directory into the container.
+# DO NOT use in production — .env, .git, and other sensitive files are exposed.
+# Use docker-compose.yml for production deployments.
 version: '3.8'
 
 services:

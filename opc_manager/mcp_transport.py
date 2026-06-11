@@ -1,5 +1,10 @@
 """
-MCP Transport — SSE + stdio 传输层
+MCP Transport Layer — EXPERIMENTAL
+
+This module is experimental and not yet integrated into the main application flow.
+It may be removed or significantly changed in future versions.
+
+SSE + stdio 传输层：
 
 为MCPServer提供两种传输方式：
 1. SSE (Server-Sent Events) — HTTP长连接，适合Web客户端
@@ -56,20 +61,25 @@ if SSE_AVAILABLE:
 
         def _check_auth(request: Request):
             """Check MCP_API_KEY authentication. Returns error response or None."""
-            if MCP_API_KEY:
-                auth = request.headers.get("Authorization", "")
-                token = (
-                    auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
-                )
-                if not hmac.compare_digest(token, MCP_API_KEY):
-                    from fastapi.responses import JSONResponse
+            if not MCP_API_KEY:
+                from fastapi.responses import JSONResponse
 
-                    return JSONResponse(
-                        status_code=401, content={"error": "Unauthorized"}
-                    )
-            else:
-                logger.warning(
-                    "MCP_API_KEY is empty — endpoint is open without authentication (development mode only)"
+                logger.error(
+                    "MCP_API_KEY not configured — rejecting unauthenticated request"
+                )
+                return JSONResponse(
+                    status_code=401,
+                    content={"error": "MCP_API_KEY not configured — authentication required"},
+                )
+            auth = request.headers.get("Authorization", "")
+            token = (
+                auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+            )
+            if not hmac.compare_digest(token, MCP_API_KEY):
+                from fastapi.responses import JSONResponse
+
+                return JSONResponse(
+                    status_code=401, content={"error": "Unauthorized"}
                 )
             return None
 

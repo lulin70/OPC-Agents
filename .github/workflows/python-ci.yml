@@ -46,6 +46,16 @@ jobs:
       run: |
         PYTHONPATH=. pytest --tb=long -v --junitxml=test-results.xml 2>&1 | tee test-output.txt
 
+    - name: Verify Docker build
+      run: docker build -t opc-agents-test .
+      if: matrix.python-version == '3.11'
+
+    - name: Dependency vulnerability scan
+      run: |
+        pip install pip-audit
+        pip-audit --desc
+      if: matrix.python-version == '3.11'
+
     - name: Display test failures
       if: always()
       run: |

@@ -636,7 +636,7 @@ class ExternalSkillMarketplace:
 
         skill_info = self._fetch_skill_info(skill_id, source)
         if not skill_info:
-            return {"success": False, "error": f"未找到技能: {skill_id}"}
+            return {"success": False, "error": f"Cannot verify skill '{skill_id}' — registry unreachable"}
 
         trust_level = self._get_trust_level(
             source, skill_info.get("downloads", 0), skill_info.get("rating", 0.0)
@@ -719,14 +719,7 @@ class ExternalSkillMarketplace:
             return data
         except Exception as e:
             logger.debug("获取技能信息失败: %s", e)
-            return {
-                "skill_id": skill_id,
-                "name": skill_id,
-                "description": f"外部技能 {skill_id}",
-                "version": "1.0.0",
-                "source": source,
-                "config": {},
-            }
+            return None
 
     def uninstall_skill(self, skill_id: str) -> Dict[str, Any]:
         if skill_id not in self._installed_skills:

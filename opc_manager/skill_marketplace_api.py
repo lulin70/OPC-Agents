@@ -14,6 +14,7 @@ SkillMarketplaceAPI — FastAPI REST服务
   uvicorn opc_manager.skill_marketplace_api:app --host 0.0.0.0 --port 8900
 """
 
+import hashlib
 import logging
 import os
 import time
@@ -64,6 +65,9 @@ if FASTAPI_AVAILABLE:
     _rate_limit_store: Dict[str, List[float]] = {}
     MAX_REQUEST_BODY_BYTES = 1_000_000
 
+    def _rate_limit_key(api_key: str) -> str:
+        return hashlib.sha256(api_key.encode()).hexdigest()[:16]
+
     @app.middleware("http")
     async def limit_request_size(request, call_next):
         if request.method in ("POST", "PUT"):
@@ -101,12 +105,13 @@ if FASTAPI_AVAILABLE:
         if not key_info:
             raise HTTPException(status_code=401, detail="Invalid API key")
         now = time.time()
-        requests = _rate_limit_store.get(x_api_key, [])
+        rl_key = _rate_limit_key(x_api_key)
+        requests = _rate_limit_store.get(rl_key, [])
         requests = [t for t in requests if now - t < 60]
         if len(requests) >= key_info.rate_limit:
             raise HTTPException(status_code=429, detail="Rate limit exceeded")
         requests.append(now)
-        _rate_limit_store[x_api_key] = requests
+        _rate_limit_store[rl_key] = requests
         return x_api_key
 
     def _check_permission(api_key: str, required: PermissionLevel) -> None:
@@ -203,7 +208,7 @@ if FASTAPI_AVAILABLE:
         }
 
     @app.post("/api/v1/marketplace/{skill_id}/install")
-    async def install_skill(skill_id: str, source: str = "opc_official"):
+    async def install_skill(skill_id: str, source: str = "opc_official", api_key: str = Depends(_get_api_key)):
         result = external_marketplace.install_skill(skill_id, source)
         if not result.get("success") and not result.get("requires_confirmation"):
             raise HTTPException(
@@ -212,7 +217,7 @@ if FASTAPI_AVAILABLE:
         return result
 
     @app.delete("/api/v1/marketplace/{skill_id}/uninstall")
-    async def uninstall_skill(skill_id: str):
+    async def uninstall_skill(skill_id: str, api_key: str = Depends(_get_api_key)):
         result = external_marketplace.uninstall_skill(skill_id)
         if not result.get("success"):
             raise HTTPException(

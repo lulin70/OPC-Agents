@@ -75,6 +75,10 @@ OPC_DATA_DIR=./data
 EOF
             echo -e "   ⚠️  Created .env WITHOUT encryption key — please add one!"
         fi
+        # Write encryption key to .env.local (separate from .env template)
+        if [ -n "$GEN_KEY" ]; then
+            echo "OPC_ENCRYPTION_KEY=$GEN_KEY" >> .env.local
+        fi
     fi
 else
     echo -e "   ✅ .env found"

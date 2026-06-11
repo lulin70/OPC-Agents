@@ -46,35 +46,238 @@ from frontend.components.undo_panel import render_mini_undo_hint
 logger = logging.getLogger(__name__)
 
 
+def _save_feedback(task_id, feedback_type):
+    """Save user feedback for a task to JSON file and session state."""
+    feedback_key = f"fb_{task_id}"
+    st.session_state.quality_feedback[feedback_key] = feedback_type
+    safe_task_id = re.sub(r"[^\w-]", "", task_id)
+    try:
+        os.makedirs(
+            os.path.join(_WORKSPACE_DIR, "data", "feedback"),
+            exist_ok=True,
+        )
+        with open(
+            os.path.join(
+                _WORKSPACE_DIR, "data", "feedback", f"{safe_task_id}.json"
+            ),
+            "w",
+        ) as f:
+            json.dump(
+                {
+                    "task_id": task_id,
+                    "feedback": feedback_type,
+                    "timestamp": time.time(),
+                },
+                f,
+            )
+    except Exception as e:
+        logger.warning("[ChatRouter] Save feedback failed: %s", e)
+
+
+def _render_chat_history():
+    """Render chat message history with deliverable downloads."""
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            if msg.get("deliverable_path"):
+                real_path = os.path.realpath(msg["deliverable_path"])
+                from frontend.routers.base_router import DELIVERABLES_DIR
+
+                if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
+                    st.warning(
+                        f"⚠️ File path security check failed: {msg['deliverable_path']}"
+                    )
+                    continue
+                file_content = None
+                if os.path.exists(real_path):
+                    col_dl, col_info = st.columns([1, 3])
+                    with col_dl:
+                        with open(real_path, "r", encoding="utf-8") as f:
+                            file_content = f.read()
+                    st.download_button(
+                        label=_t("download_file"),
+                        data=file_content,
+                        file_name=os.path.basename(msg["deliverable_path"]),
+                        mime="text/markdown",
+                        key=f"dl_{msg.get('deliverable_id', id(msg))}",
+                        use_container_width=True,
+                    )
+                if file_content is not None:
+                    with col_info:
+                        size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
+                        st.caption(
+                            f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
+                        )
+
+
+def _render_chat_input():
+    """Render chat input area and return the user prompt, or None."""
+    pending = st.session_state.pop("pending_prompt", None)
+    if pending:
+        prompt = pending
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        _save_chat_history()
+        with st.chat_message("user"):
+            st.markdown(prompt)
+    elif prompt := render_autocomplete_input(
+        label=_t("chat_input_placeholder"),
+        key="user_input_main",
+        session_history=st.session_state.get("messages", []),
+    ):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        _save_chat_history()
+        with st.chat_message("user"):
+            st.markdown(prompt)
+    else:
+        prompt = None
+    return prompt
+
+
+def _handle_task_result(task_id, task_status, prompt, status_container):
+    """Handle task completion: display results, feedback, and suggestions."""
+    status_container.update(label=_t("chat_task_done"), state="complete")
+
+    track_event(
+        "task_completed",
+        {
+            "mode": "async",
+            "latency_ms": round(task_status.get("elapsed", 0) * 1000),
+        },
+    )
+
+    result_content = task_status.get("result_content")
+    result_filepath = task_status.get("result_filepath")
+    result_deliverable_record = task_status.get("result_deliverable_record")
+
+    if result_deliverable_record:
+        st.session_state.deliverables.insert(0, result_deliverable_record)
+
+    if result_content:
+        from frontend.components.result_cards import render_result_card
+
+        render_result_card(
+            content=result_content,
+            task_type=task_status.get("task_type"),
+            deliverable_record=result_deliverable_record,
+            filepath=result_filepath,
+        )
+        show_success(
+            f"{_t('chat_deliverable_created')}: {os.path.basename(result_filepath) if result_filepath else _t('chat_task_complete')}"
+        )
+
+        feedback_key = f"fb_{task_id}"
+        if feedback_key not in st.session_state.quality_feedback:
+            fb_cols = st.columns([1, 1, 6])
+            with fb_cols[0]:
+                if st.button(
+                    _t("chat_feedback_good"), key=f"good_{task_id}"
+                ):
+                    _save_feedback(task_id, "good")
+                    st.success(_t("chat_feedback_thanks"))
+                    st.rerun()
+            with fb_cols[1]:
+                if st.button(
+                    _t("chat_feedback_bad"), key=f"bad_{task_id}"
+                ):
+                    _save_feedback(task_id, "bad")
+                    st.info(_t("chat_feedback_improve"))
+                    st.rerun()
+        elif (
+            st.session_state.quality_feedback.get(feedback_key)
+            == "good"
+        ):
+            st.caption(_t("chat_feedback_good_caption"))
+        elif (
+            st.session_state.quality_feedback.get(feedback_key) == "bad"
+        ):
+            st.caption(_t("chat_feedback_bad_caption"))
+
+        _render_quick_undo_button(
+            task_id,
+            (
+                result_deliverable_record.get("task_type")
+                if result_deliverable_record
+                else None
+            ),
+        )
+
+        session_id = _get_current_session_id()
+        render_mini_undo_hint(session_id, task_id=task_id)
+
+        if result_filepath and os.path.exists(result_filepath):
+            col_dl, col_info = st.columns([1, 3])
+            with col_dl:
+                with open(result_filepath, "r", encoding="utf-8") as f:
+                    file_content = f.read()
+                st.download_button(
+                    label=_t("chat_download_deliverable"),
+                    data=file_content,
+                    file_name=os.path.basename(result_filepath),
+                    mime="text/markdown",
+                    key=f"dl_async_{int(time.time()*1000)}",
+                    use_container_width=True,
+                    type="primary",
+                )
+            with col_info:
+                size_kb = round(
+                    len(file_content.encode("utf-8")) / 1024, 1
+                )
+                st.success(
+                    f"✅ {_t('chat_file_generated')}: {os.path.basename(result_filepath)} ({size_kb}KB)"
+                )
+                show_success(
+                    f"{_t('chat_deliverable_generated')}: {os.path.basename(result_filepath)}"
+                )
+
+        msg_record = {
+            "role": "assistant",
+            "content": result_content,
+            "deliverable_id": f"{int(time.time()*1000)}",
+        }
+        if result_filepath and os.path.exists(result_filepath):
+            msg_record["deliverable_path"] = result_filepath
+        st.session_state.messages.append(msg_record)
+        _save_chat_history()
+
+        from frontend.components.smart_suggestions import (
+            build_context_from_session,
+            generate_suggestions,
+            render_suggestion_panel,
+        )
+
+        suggestion_context = build_context_from_session(
+            last_task_type=task_status.get("task_type", "")
+            or result_deliverable_record.get("task_type", ""),
+            last_result={
+                "execution_time_ms": (
+                    result_deliverable_record.get(
+                        "execution_time_ms", 0
+                    )
+                    if result_deliverable_record
+                    else 0
+                ),
+                "sources_count": (
+                    result_deliverable_record.get("sources_count", 0)
+                    if result_deliverable_record
+                    else 0
+                ),
+            },
+            deliverables=st.session_state.get("deliverables", []),
+            feedback_history=list(
+                st.session_state.get("quality_feedback", {}).items()
+            ),
+        )
+
+        suggestion_context["session_id"] = session_id
+
+        suggestions = generate_suggestions(suggestion_context)
+        if suggestions:
+            render_suggestion_panel(suggestions, max_show=3)
+
+
 def render_chat_page():
     """Main chat page — core user interaction interface."""
-    # 移动端响应式 CSS
-    st.markdown(
-        """
-    <style>
-    @media (max-width: 768px) {
-        /* 场景按钮在小屏幕单列显示 */
-        [data-testid="stHorizontalBlock"] > div {
-            flex-direction: column !important;
-            width: 100% !important;
-        }
-        /* 输入框区域增加触摸友好的间距 */
-        [data-testid="stChatInput"] {
-            padding: 12px 8px !important;
-        }
-        [data-testid="stChatInput"] textarea {
-            min-height: 48px !important;
-            font-size: 16px !important;
-        }
-        /* 聊天消息区域增加间距 */
-        [data-testid="stChatMessage"] {
-            padding: 8px 4px !important;
-        }
-    }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
+    # 移动端响应式 CSS 已由 theme_manager 统一注入
 
     _maybe_show_shortcut_hints()
     if DEMO_MODE:
@@ -172,35 +375,7 @@ def render_chat_page():
                     )
                     st.rerun()
 
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-            if msg.get("deliverable_path"):
-                real_path = os.path.realpath(msg["deliverable_path"])
-                from frontend.routers.base_router import DELIVERABLES_DIR
-
-                if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
-                    continue
-                file_content = None
-                if os.path.exists(real_path):
-                    col_dl, col_info = st.columns([1, 3])
-                    with col_dl:
-                        with open(real_path, "r", encoding="utf-8") as f:
-                            file_content = f.read()
-                    st.download_button(
-                        label=_t("download_file"),
-                        data=file_content,
-                        file_name=os.path.basename(msg["deliverable_path"]),
-                        mime="text/markdown",
-                        key=f"dl_{msg.get('deliverable_id', id(msg))}",
-                        use_container_width=True,
-                    )
-                if file_content is not None:
-                    with col_info:
-                        size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
-                        st.caption(
-                            f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
-                        )
+    _render_chat_history()
 
     if len(st.session_state.messages) == 0:
         with st.container():
@@ -217,24 +392,7 @@ def render_chat_page():
                         st.session_state.pending_prompt = query
                         st.rerun()
 
-    pending = st.session_state.pop("pending_prompt", None)
-    if pending:
-        prompt = pending
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        _save_chat_history()
-        with st.chat_message("user"):
-            st.markdown(prompt)
-    elif prompt := render_autocomplete_input(
-        label=_t("chat_input_placeholder"),
-        key="user_input_main",
-        session_history=st.session_state.get("messages", []),
-    ):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        _save_chat_history()
-        with st.chat_message("user"):
-            st.markdown(prompt)
-    else:
-        prompt = None
+    prompt = _render_chat_input()
 
     if prompt:
 
@@ -417,211 +575,7 @@ def render_chat_page():
                     continue
 
                 elif current_status == "done":
-                    status_container.update(
-                        label=_t("chat_task_done"), state="complete"
-                    )
-
-                    track_event(
-                        "task_completed",
-                        {
-                            "mode": "async",
-                            "latency_ms": round(task_status.get("elapsed", 0) * 1000),
-                        },
-                    )
-
-                    result_content = task_status.get("result_content")
-                    result_filepath = task_status.get("result_filepath")
-                    result_deliverable_record = task_status.get(
-                        "result_deliverable_record"
-                    )
-
-                    if result_deliverable_record:
-                        st.session_state.deliverables.insert(
-                            0, result_deliverable_record
-                        )
-
-                    if result_content:
-                        from frontend.components.result_cards import render_result_card
-
-                        render_result_card(
-                            content=result_content,
-                            task_type=task_status.get("task_type"),
-                            deliverable_record=result_deliverable_record,
-                            filepath=result_filepath,
-                        )
-                        show_success(
-                            f"{_t('chat_deliverable_created')}: {os.path.basename(result_filepath) if result_filepath else _t('chat_task_complete')}"
-                        )
-
-                        feedback_key = f"fb_{task_id}"
-                        safe_task_id = re.sub(r"[^\w-]", "", task_id)
-                        if feedback_key not in st.session_state.quality_feedback:
-                            fb_cols = st.columns([1, 1, 6])
-                            with fb_cols[0]:
-                                if st.button(
-                                    _t("chat_feedback_good"), key=f"good_{task_id}"
-                                ):
-                                    st.session_state.quality_feedback[feedback_key] = (
-                                        "good"
-                                    )
-                                    try:
-                                        os.makedirs(
-                                            os.path.join(
-                                                _WORKSPACE_DIR, "data", "feedback"
-                                            ),
-                                            exist_ok=True,
-                                        )
-                                        with open(
-                                            os.path.join(
-                                                _WORKSPACE_DIR,
-                                                "data",
-                                                "feedback",
-                                                f"{safe_task_id}.json",
-                                            ),
-                                            "w",
-                                        ) as f:
-                                            json.dump(
-                                                {
-                                                    "task_id": task_id,
-                                                    "feedback": "good",
-                                                    "timestamp": time.time(),
-                                                },
-                                                f,
-                                            )
-                                    except Exception as e:
-                                        logger.warning(
-                                            "[ChatRouter] Undo action failed: %s", e
-                                        )
-                                    st.success(_t("chat_feedback_thanks"))
-                                    st.rerun()
-                            with fb_cols[1]:
-                                if st.button(
-                                    _t("chat_feedback_bad"), key=f"bad_{task_id}"
-                                ):
-                                    st.session_state.quality_feedback[feedback_key] = (
-                                        "bad"
-                                    )
-                                    try:
-                                        os.makedirs(
-                                            os.path.join(
-                                                _WORKSPACE_DIR, "data", "feedback"
-                                            ),
-                                            exist_ok=True,
-                                        )
-                                        with open(
-                                            os.path.join(
-                                                _WORKSPACE_DIR,
-                                                "data",
-                                                "feedback",
-                                                f"{safe_task_id}.json",
-                                            ),
-                                            "w",
-                                        ) as f:
-                                            json.dump(
-                                                {
-                                                    "task_id": task_id,
-                                                    "feedback": "bad",
-                                                    "timestamp": time.time(),
-                                                },
-                                                f,
-                                            )
-                                    except Exception as e:
-                                        logger.warning(
-                                            "[ChatRouter] Undo action failed: %s", e
-                                        )
-                                    st.info(_t("chat_feedback_improve"))
-                                    st.rerun()
-                        elif (
-                            st.session_state.quality_feedback.get(feedback_key)
-                            == "good"
-                        ):
-                            st.caption(_t("chat_feedback_good_caption"))
-                        elif (
-                            st.session_state.quality_feedback.get(feedback_key) == "bad"
-                        ):
-                            st.caption(_t("chat_feedback_bad_caption"))
-
-                        _render_quick_undo_button(
-                            task_id,
-                            (
-                                result_deliverable_record.get("task_type")
-                                if result_deliverable_record
-                                else None
-                            ),
-                        )
-
-                        session_id = _get_current_session_id()
-                        render_mini_undo_hint(session_id, task_id=task_id)
-
-                        if result_filepath and os.path.exists(result_filepath):
-                            col_dl, col_info = st.columns([1, 3])
-                            with col_dl:
-                                with open(result_filepath, "r", encoding="utf-8") as f:
-                                    file_content = f.read()
-                                st.download_button(
-                                    label=_t("chat_download_deliverable"),
-                                    data=file_content,
-                                    file_name=os.path.basename(result_filepath),
-                                    mime="text/markdown",
-                                    key=f"dl_async_{int(time.time()*1000)}",
-                                    use_container_width=True,
-                                    type="primary",
-                                )
-                            with col_info:
-                                size_kb = round(
-                                    len(file_content.encode("utf-8")) / 1024, 1
-                                )
-                                st.success(
-                                    f"✅ {_t('chat_file_generated')}: {os.path.basename(result_filepath)} ({size_kb}KB)"
-                                )
-                                show_success(
-                                    f"{_t('chat_deliverable_generated')}: {os.path.basename(result_filepath)}"
-                                )
-
-                        msg_record = {
-                            "role": "assistant",
-                            "content": result_content,
-                            "deliverable_id": f"{int(time.time()*1000)}",
-                        }
-                        if result_filepath and os.path.exists(result_filepath):
-                            msg_record["deliverable_path"] = result_filepath
-                        st.session_state.messages.append(msg_record)
-                        _save_chat_history()
-
-                        from frontend.components.smart_suggestions import (
-                            build_context_from_session,
-                            generate_suggestions,
-                            render_suggestion_panel,
-                        )
-
-                        suggestion_context = build_context_from_session(
-                            last_task_type=task_status.get("task_type", "")
-                            or result_deliverable_record.get("task_type", ""),
-                            last_result={
-                                "execution_time_ms": (
-                                    result_deliverable_record.get(
-                                        "execution_time_ms", 0
-                                    )
-                                    if result_deliverable_record
-                                    else 0
-                                ),
-                                "sources_count": (
-                                    result_deliverable_record.get("sources_count", 0)
-                                    if result_deliverable_record
-                                    else 0
-                                ),
-                            },
-                            deliverables=st.session_state.get("deliverables", []),
-                            feedback_history=list(
-                                st.session_state.get("quality_feedback", {}).items()
-                            ),
-                        )
-
-                        suggestion_context["session_id"] = session_id
-
-                        suggestions = generate_suggestions(suggestion_context)
-                        if suggestions:
-                            render_suggestion_panel(suggestions, max_show=3)
+                    _handle_task_result(task_id, task_status, prompt, status_container)
                     break
 
                 elif current_status == "failed":

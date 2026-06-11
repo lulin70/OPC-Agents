@@ -17,13 +17,13 @@ Total: 27+ tests
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-from opc_manager.wechat_gateway import (
+from opc_manager.experimental.wechat_gateway import (
     WeChatGateway,
     WeChatMessage,
     WeChatResponse,
     WeChatMsgType,
 )
-from opc_manager.wechat_agent import WeChatAgentBridge
+from opc_manager.experimental.wechat_agent import WeChatAgentBridge
 from opc_manager.confirmer import ConfirmationRequest, ConfirmationResult, RiskLevel
 
 # ============================================================================

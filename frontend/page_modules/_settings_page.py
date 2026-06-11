@@ -33,8 +33,6 @@ def _create_settings_page():
     4. 🔒 Security — Encryption key status, regenerate option
     5. 👤 Profile — User info, company, timezone, language
     """
-    from opc_manager.i18n import t as _t
-
     try:
         from opc_manager.settings import get_settings
 
@@ -76,7 +74,6 @@ def _create_settings_page():
 
 def _render_llm_settings(settings):
     """Render LLM configuration tab"""
-    from opc_manager.i18n import t as _t
 
     st.markdown(f"### {_t('settings_llm')}")
 
@@ -174,7 +171,6 @@ def _render_llm_settings(settings):
 
 def _render_smtp_settings(settings):
     """Render SMTP configuration tab"""
-    from opc_manager.i18n import t as _t
 
     st.markdown(f"### {_t('settings_smtp_heading')}")
 
@@ -307,9 +303,6 @@ def _render_smtp_settings(settings):
 
 def _render_api_keys_settings(settings):
     """Render API Keys management tab"""
-    from opc_manager.i18n import t as _t
-
-    st.markdown(f"### {_t('settings_apikeys_heading')}")
 
     st.info(_t("settings_apikeys_info"))
 
@@ -371,7 +364,6 @@ def _render_api_keys_settings(settings):
 
 def _render_security_settings(settings):
     """Render Security settings tab"""
-    from opc_manager.i18n import t as _t
 
     st.markdown(f"### {_t('settings_security_heading')}")
 
@@ -415,7 +407,6 @@ def _render_security_settings(settings):
 
 def _render_profile_settings(settings):
     """Render Profile settings tab"""
-    from opc_manager.i18n import t as _t
 
     st.markdown(f"### {_t('settings_profile_heading')}")
 
@@ -502,7 +493,6 @@ def _render_data_backup_settings():
     - Restore from backup with confirmation
     - Export data in JSON/CSV/ZIP formats
     """
-    from opc_manager.i18n import t as _t
 
     st.markdown(f"### {_t('settings_backup_heading')}")
 
@@ -635,6 +625,45 @@ def _render_backup_list_tab():
         st.error(f"⚠️ {_t('settings_backup_list_failed', error=str(e))}")
 
 
+def _render_export_column(
+    fmt: str,
+    btn_label_key: str,
+    btn_help_key: str,
+    dl_label_key: str,
+    done_key: str,
+    mime: str,
+    file_ext: str,
+    filename_prefix: str,
+    dl_key: str,
+):
+    """Render a single export format column (JSON/CSV/ZIP)."""
+    if st.button(
+        _t(btn_label_key),
+        use_container_width=True,
+        help=_t(btn_help_key),
+    ):
+        with st.spinner(_t("settings_exporting")):
+            try:
+                from opc_manager.data_backup import get_backup_manager
+
+                manager = get_backup_manager()
+                data = manager.export_data(format_type=fmt)
+                st.download_button(
+                    label=_t(dl_label_key),
+                    data=data,
+                    file_name=f"{filename_prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{file_ext}",
+                    mime=mime,
+                    key=dl_key,
+                    use_container_width=True,
+                )
+                st.success(_t(done_key))
+            except Exception as e:
+                logger.error("[frontend] Export %s error: %s", fmt.upper(), e)
+                st.error(
+                    f"❌ {_t('settings_export_failed', fmt=fmt.upper(), error=str(e))}"
+                )
+
+
 def _render_export_data_tab():
     """Render the export data tab."""
     st.markdown(f"#### {_t('settings_backup_export_heading')}")
@@ -644,85 +673,43 @@ def _render_export_data_tab():
     format_col1, format_col2, format_col3 = st.columns(3)
 
     with format_col1:
-        if st.button(
-            _t("settings_export_json"),
-            use_container_width=True,
-            help=_t("settings_export_json_help"),
-        ):
-            with st.spinner(_t("settings_exporting")):
-                try:
-                    from opc_manager.data_backup import get_backup_manager
-
-                    manager = get_backup_manager()
-                    json_data = manager.export_data(format_type="json")
-                    st.download_button(
-                        label=_t("settings_download_json"),
-                        data=json_data,
-                        file_name=f"opc_agents_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                        mime="application/json",
-                        key="dl_export_json",
-                        use_container_width=True,
-                    )
-                    st.success(_t("settings_export_json_done"))
-                except Exception as e:
-                    logger.error("[frontend] Export JSON error: %s", e)
-                    st.error(
-                        f"❌ {_t('settings_export_failed', fmt='JSON', error=str(e))}"
-                    )
+        _render_export_column(
+            fmt="json",
+            btn_label_key="settings_export_json",
+            btn_help_key="settings_export_json_help",
+            dl_label_key="settings_download_json",
+            done_key="settings_export_json_done",
+            mime="application/json",
+            file_ext="json",
+            filename_prefix="opc_agents_export",
+            dl_key="dl_export_json",
+        )
 
     with format_col2:
-        if st.button(
-            _t("settings_export_csv"),
-            use_container_width=True,
-            help=_t("settings_export_csv_help"),
-        ):
-            with st.spinner(_t("settings_exporting")):
-                try:
-                    from opc_manager.data_backup import get_backup_manager
-
-                    manager = get_backup_manager()
-                    csv_data = manager.export_data(format_type="csv")
-                    st.download_button(
-                        label=_t("settings_download_csv"),
-                        data=csv_data,
-                        file_name=f"opc_agents_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv",
-                        key="dl_export_csv",
-                        use_container_width=True,
-                    )
-                    st.success(_t("settings_export_csv_done"))
-                except Exception as e:
-                    logger.error("[frontend] Export CSV error: %s", e)
-                    st.error(
-                        f"❌ {_t('settings_export_failed', fmt='CSV', error=str(e))}"
-                    )
+        _render_export_column(
+            fmt="csv",
+            btn_label_key="settings_export_csv",
+            btn_help_key="settings_export_csv_help",
+            dl_label_key="settings_download_csv",
+            done_key="settings_export_csv_done",
+            mime="text/csv",
+            file_ext="csv",
+            filename_prefix="opc_agents_export",
+            dl_key="dl_export_csv",
+        )
 
     with format_col3:
-        if st.button(
-            _t("settings_export_zip"),
-            use_container_width=True,
-            help=_t("settings_export_zip_help"),
-        ):
-            with st.spinner(_t("settings_exporting")):
-                try:
-                    from opc_manager.data_backup import get_backup_manager
-
-                    manager = get_backup_manager()
-                    zip_data = manager.export_data(format_type="zip")
-                    st.download_button(
-                        label=_t("settings_download_zip"),
-                        data=zip_data,
-                        file_name=f"opc_agents_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
-                        mime="application/zip",
-                        key="dl_export_zip",
-                        use_container_width=True,
-                    )
-                    st.success(_t("settings_export_zip_done"))
-                except Exception as e:
-                    logger.error("[frontend] Export ZIP error: %s", e)
-                    st.error(
-                        f"❌ {_t('settings_export_failed', fmt='ZIP', error=str(e))}"
-                    )
+        _render_export_column(
+            fmt="zip",
+            btn_label_key="settings_export_zip",
+            btn_help_key="settings_export_zip_help",
+            dl_label_key="settings_download_zip",
+            done_key="settings_export_zip_done",
+            mime="application/zip",
+            file_ext="zip",
+            filename_prefix="opc_agents_backup",
+            dl_key="dl_export_zip",
+        )
 
     st.divider()
     st.caption(_t("settings_export_format_hint"))

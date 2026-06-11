@@ -32,6 +32,7 @@ from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
 from .session_context import SessionContextManager
 from .task_engine_v3 import TaskEngineV3, TaskType, TaskResult
+from .correction_manager import CorrectionManager, SKILL_FALLBACK_MAP
 from .utils import BoundedDict, EventEmitter
 from .performance_monitor import get_performance_monitor
 from .confirmer import Confirmer
@@ -124,6 +125,9 @@ class AgentLoop:
         self.event_emitter = EventEmitter()
         self.confirmer = Confirmer()
         self.progress = ProgressEmitter()
+        self._correction_manager = CorrectionManager(
+            skill_registry=self.skill_registry, executor_brain=self.executor_brain
+        )
 
         self.max_reflect_rounds = max_reflect_rounds
         self.max_retry_per_step = max_retry_per_step
@@ -210,6 +214,7 @@ class AgentLoop:
                     content="",
                     task_type=TaskType.GENERAL_CHAT,
                     error="需要用户确认后才能执行",
+                    metadata={"needs_confirmation": True, "confirmation_message": confirm_result.message if hasattr(confirm_result, "message") else ""},
                 )
 
             skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
@@ -790,7 +795,7 @@ class AgentLoop:
 
         if correction_strategy is not None:
             logger.info("触发自动修正: %s", correction_strategy.value)
-            correction_result = await self._apply_correction(
+            correction_result = await self._correction_manager.apply_correction(
                 context, correction_strategy
             )
             if correction_result:
@@ -850,137 +855,6 @@ class AgentLoop:
 
         logger.info("决定下一步行动: %s", next_action.action_type.name)
         return next_action
-
-    def _make_step_result(
-        self,
-        step,
-        result: ExecutionResult,
-        description_suffix: str = "",
-        correction_tag: str = "",
-    ) -> Dict[str, Any]:
-        return {
-            "step_id": step.id,
-            "skill_id": (
-                result.data.get("skill_id", step.skill_id)
-                if isinstance(result.data, dict) and "skill_id" in result.data
-                else step.skill_id
-            ),
-            "description": f"{step.description}{description_suffix}",
-            "success": result.success,
-            "data": result.data,
-            "error": result.error,
-            "execution_time": result.execution_time,
-            **({"correction": correction_tag} if correction_tag else {}),
-        }
-
-    SKILL_FALLBACK_MAP = {
-        "analysis": "content_generation",
-        "content_generation": "analysis",
-        "search": "analysis",
-        "email": "send_notification",
-        "send_notification": "email",
-        "crm": "search",
-        "finance": "analysis",
-        "calendar": "task_manager",
-        "task_manager": "calendar",
-        "social_publish": "content_generation",
-        "proposal": "content_generation",
-        "invoice": "finance",
-        "report": "content_generation",
-        "competitor_watch": "search",
-        "pricing": "analysis",
-        "tax_reminder": "send_notification",
-        "dashboard": "analysis",
-        "knowledge_mgmt": "search",
-        "ext_skill": "output_result",
-    }
-
-    async def _apply_correction(
-        self, context: AgentContext, strategy: CorrectionStrategy
-    ) -> bool:
-        if not context.plan or not context.plan.steps:
-            return False
-
-        handler = {
-            CorrectionStrategy.RETRY: self._correct_retry,
-            CorrectionStrategy.SEARCH_AND_RETRY: self._correct_search_and_retry,
-            CorrectionStrategy.SWITCH_SKILL: self._correct_switch_skill,
-            CorrectionStrategy.DEGRADE: self._correct_degrade,
-        }.get(strategy)
-
-        if handler is None:
-            return False
-        return await handler(context)
-
-    async def _correct_retry(self, context: AgentContext) -> bool:
-        last_step = context.plan.steps[-1]
-        result = await self.executor_brain.execute_step(
-            step_id=last_step.id,
-            skill_id=last_step.skill_id,
-            parameters=last_step.parameters,
-            context={"task_id": context.task_id},
-        )
-        if context.execution_results:
-            context.execution_results[-1] = self._make_step_result(
-                last_step, result, " (修正-重试)", "retry"
-            )
-        return result.success
-
-    async def _correct_search_and_retry(self, context: AgentContext) -> bool:
-        if not context.intent:
-            return False
-        last_step = context.plan.steps[-1]
-        search_result = await self.skill_registry.execute_skill(
-            "search", query=context.intent.goal, max_results=5
-        )
-        if not search_result.get("success"):
-            return False
-        enriched_params = dict(last_step.parameters or {})
-        enriched_params["data"] = search_result.get("data", {}).get("results", [])
-        result = await self.executor_brain.execute_step(
-            step_id=last_step.id,
-            skill_id=last_step.skill_id,
-            parameters=enriched_params,
-            context={"task_id": context.task_id},
-        )
-        if context.execution_results:
-            context.execution_results[-1] = self._make_step_result(
-                last_step, result, " (修正-补充搜索)", "search_and_retry"
-            )
-        return result.success
-
-    async def _correct_switch_skill(self, context: AgentContext) -> bool:
-        last_step = context.plan.steps[-1]
-        new_skill = self.SKILL_FALLBACK_MAP.get(last_step.skill_id)
-        if not new_skill:
-            return False
-        result = await self.executor_brain.execute_step(
-            step_id=last_step.id,
-            skill_id=new_skill,
-            parameters=last_step.parameters,
-            context={"task_id": context.task_id},
-        )
-        if context.execution_results:
-            step_result = self._make_step_result(
-                last_step, result, " (修正-换技能)", "switch_skill"
-            )
-            step_result["skill_id"] = new_skill
-            context.execution_results[-1] = step_result
-        return result.success
-
-    async def _correct_degrade(self, context: AgentContext) -> bool:
-        last_step = context.plan.steps[-1]
-        result = await self.executor_brain.execute_step(
-            step_id=last_step.id,
-            skill_id=last_step.skill_id,
-            parameters=last_step.parameters,
-            context={"task_id": context.task_id, "degrade": True},
-        )
-        if context.execution_results:
-            context.execution_results[-1] = self._make_step_result(
-                last_step, result, " (修正-降级)", "degrade"
-            )
-        return result.success
 
     async def _consult_consensus(
         self,

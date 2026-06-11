@@ -9,6 +9,8 @@ Contains all dashboard-related UI rendering functions:
 
 import streamlit as st
 import logging
+import time
+import pandas as pd
 from datetime import datetime
 from collections import Counter
 
@@ -203,25 +205,7 @@ def _render_dashboard_page(demo_mode: bool = False):
     # Persist demo_mode so _is_demo_mode() can use it without backend calls
     st.session_state._dashboard_demo_mode = demo_mode
 
-    # 移动端响应式 CSS：小屏幕自动切换到单列布局
-    st.markdown(
-        """
-    <style>
-    @media (max-width: 768px) {
-        /* Dashboard 面板在小屏幕单列显示 */
-        [data-testid="stHorizontalBlock"] > div {
-            flex-direction: column !important;
-            width: 100% !important;
-        }
-        /* Metric 列在小屏幕单列 */
-        [data-testid="stMetricContainer"] {
-            width: 100% !important;
-        }
-    }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
+    # 移动端响应式 CSS 已由 theme_manager 统一注入
 
     if demo_mode:
         st.info(f"📊 {_t('dash_demo_info')}")
@@ -239,7 +223,19 @@ def _render_dashboard_page(demo_mode: bool = False):
         st.info(f"💡 {_t('dash_no_panels')}")
         return
 
-    _render_layout(config, enabled_panels)
+    _CACHE_TTL = 60  # seconds
+    _cache_key = "_dashboard_data"
+    _cache_ts_key = "_dashboard_data_ts"
+
+    with st.spinner(_t("dash_loading") if "_t" in dir() else "Loading dashboard..."):
+        if _cache_key not in st.session_state or \
+           time.time() - st.session_state.get(_cache_ts_key, 0) > _CACHE_TTL:
+            st.session_state[_cache_key] = _get_dashboard_data()
+            st.session_state[_cache_ts_key] = time.time()
+
+    data = st.session_state[_cache_key]
+
+    _render_layout(config, enabled_panels, data)
 
 
 def _load_or_init_config() -> DashboardConfig:
@@ -329,23 +325,23 @@ def _apply_settings(
     st.rerun()
 
 
-def _render_layout(config: DashboardConfig, enabled_panels: list):
+def _render_layout(config: DashboardConfig, enabled_panels: list, data: dict):
     density = config.density
     renderers = {
-        "income_trend": lambda **kw: _render_income_trend_panel(density=density, **kw),
+        "income_trend": lambda **kw: _render_income_trend_panel(density=density, data=data, **kw),
         "client_health": lambda **kw: _render_client_health_panel(
-            density=density, **kw
+            density=density, data=data, **kw
         ),
         "task_completion": lambda **kw: _render_task_completion_panel(
-            density=density, **kw
+            density=density, data=data, **kw
         ),
         "financial_summary": lambda **kw: _render_financial_summary_panel(
-            density=density, **kw
+            density=density, data=data, **kw
         ),
         "activity_timeline": lambda **kw: _render_activity_timeline_panel(
-            density=density, **kw
+            density=density, data=data, **kw
         ),
-        "skill_usage": lambda **kw: _render_skill_usage_panel(density=density, **kw),
+        "skill_usage": lambda **kw: _render_skill_usage_panel(density=density, data=data, **kw),
     }
 
     if config.layout == LayoutType.COMPACT:
@@ -488,8 +484,6 @@ def _render_demo_dashboard():
         )
         labels = trend["labels"]
         values = trend["values"]
-        import pandas as pd
-
         df = pd.DataFrame({_t("dash_month_col"): labels, _t("dash_income_col"): values})
         st.line_chart(df.set_index(_t("dash_month_col")), use_container_width=True)
 
@@ -547,17 +541,17 @@ def _render_demo_dashboard():
 
 
 def _render_income_trend_panel(
-    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False
+    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False, data: dict = None
 ):
     """Panel 1: 收入趋势图 - Income trend chart."""
     st.markdown(f"### {_t('dashboard_income_trend')}")
 
-    data = _get_dashboard_data()
+    if data is None:
+        data = _get_dashboard_data()
     trend = data.get("finance", {}).get("trend", [])
 
     if _is_demo_mode():
         _render_demo_badge()
-        import pandas as pd
 
         demo_months = _DEMO_DATA["income_months"]
         demo_values = _DEMO_DATA["income_values"]
@@ -595,8 +589,6 @@ def _render_income_trend_panel(
     if not trend:
         st.info(f"💡 {_t('dash_no_finance_data')}")
         return
-
-    import pandas as pd
 
     df = pd.DataFrame(trend)
     chart_data = pd.DataFrame(
@@ -639,12 +631,13 @@ def _render_income_trend_panel(
 
 
 def _render_client_health_panel(
-    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False
+    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False, data: dict = None
 ):
     """Panel 2: 客户健康度 - Client health score."""
     st.markdown(f"### {_t('dashboard_client_health')}")
 
-    data = _get_dashboard_data()
+    if data is None:
+        data = _get_dashboard_data()
     customers = data.get("crm", {}).get("customers", [])
     stats = data.get("crm", {}).get("stats", {})
     silent = data.get("crm", {}).get("silent", {})
@@ -661,7 +654,6 @@ def _render_client_health_panel(
         with col_silent:
             silent_count = sum(1 for c in demo_clients if c.get("health", 0) < 75)
             st.metric(_t("dash_need_attention"), silent_count, delta_color="inverse")
-        import pandas as pd
 
         client_data = []
         for c in demo_clients:
@@ -707,7 +699,6 @@ def _render_client_health_panel(
         st.metric(_t("dash_silent_clients"), silent_count, delta_color="inverse")
 
     if density == DensityLevel.DETAILED and customers:
-        import pandas as pd
 
         customer_data = []
         for c in customers[:10]:
@@ -749,7 +740,6 @@ def _render_client_health_panel(
             df = pd.DataFrame(customer_data)
             st.dataframe(df, use_container_width=True, hide_index=True)
     elif density == DensityLevel.STANDARD and customers:
-        import pandas as pd
 
         customer_data = []
         for c in customers[:5]:
@@ -764,12 +754,13 @@ def _render_client_health_panel(
 
 
 def _render_task_completion_panel(
-    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False
+    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False, data: dict = None
 ):
     """Panel 3: 任务完成率 - Task completion rate."""
     st.markdown(f"### {_t('dashboard_task_completion')}")
 
-    data = _get_dashboard_data()
+    if data is None:
+        data = _get_dashboard_data()
     tasks = data.get("tasks", {}).get("list", [])
     by_status = data.get("tasks", {}).get("by_status", {})
 
@@ -800,7 +791,6 @@ def _render_task_completion_panel(
             completion_rate / 100,
             text=_t("dash_progress_demo").format(rate=completion_rate),
         )
-        import pandas as pd
 
         status_df = pd.DataFrame(
             [
@@ -861,7 +851,6 @@ def _render_task_completion_panel(
     )
 
     if density == DensityLevel.DETAILED and by_status:
-        import pandas as pd
 
         status_df = pd.DataFrame(
             [
@@ -890,12 +879,13 @@ def _render_task_completion_panel(
 
 
 def _render_financial_summary_panel(
-    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False
+    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False, data: dict = None
 ):
     """Panel 4: 月度财务汇总 - Monthly financial summary."""
     st.markdown(f"### {_t('dash_finance_panel_title')}")
 
-    data = _get_dashboard_data()
+    if data is None:
+        data = _get_dashboard_data()
     monthly = data.get("finance", {}).get("monthly", {})
     trend = data.get("finance", {}).get("trend", [])
 
@@ -930,7 +920,6 @@ def _render_financial_summary_panel(
                     tax=tax_est, margin=(net_profit / income * 100)
                 )
             )
-            import pandas as pd
 
             comparison = pd.DataFrame(
                 {
@@ -974,7 +963,6 @@ def _render_financial_summary_panel(
         st.metric(_t("dash_net_profit_metric"), f"¥{profit:,.2f}", profit_delta)
 
     if density == DensityLevel.DETAILED and (income > 0 or expense > 0):
-        import pandas as pd
 
         comparison = pd.DataFrame(
             {
@@ -991,12 +979,13 @@ def _render_financial_summary_panel(
 
 
 def _render_activity_timeline_panel(
-    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False
+    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False, data: dict = None
 ):
     """Panel 5: 近期活动时间线 - Recent activity timeline."""
     st.markdown(f"### {_t('dash_timeline_panel_title')}")
 
-    data = _get_dashboard_data()
+    if data is None:
+        data = _get_dashboard_data()
     logs = data.get("audit_log", [])
 
     if _is_demo_mode():
@@ -1083,12 +1072,13 @@ def _render_activity_timeline_panel(
 
 
 def _render_skill_usage_panel(
-    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False
+    density: DensityLevel = DensityLevel.STANDARD, full_width: bool = False, data: dict = None
 ):
     """Panel 6: 技能使用统计 - Skill usage statistics."""
     st.markdown(f"### {_t('dash_skills_panel_title')}")
 
-    data = _get_dashboard_data()
+    if data is None:
+        data = _get_dashboard_data()
     logs = data.get("audit_log", [])
 
     if _is_demo_mode():
@@ -1102,7 +1092,6 @@ def _render_skill_usage_panel(
             )
             return
         st.metric(_t("dash_total_calls_demo"), total_calls)
-        import pandas as pd
 
         skill_data = []
         for sk in demo_skills:
@@ -1160,8 +1149,6 @@ def _render_skill_usage_panel(
         return
 
     st.metric(_t("dash_total_calls_metric"), total_calls)
-
-    import pandas as pd
 
     skill_data = []
     for skill_name, count in top_skills:

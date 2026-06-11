@@ -1,5 +1,5 @@
 import pytest
-from opc_manager.wechat_gateway import (
+from opc_manager.experimental.wechat_gateway import (
     WeChatGateway,
     WeChatMessage,
     WeChatMsgType,

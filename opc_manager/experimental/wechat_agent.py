@@ -2,8 +2,8 @@ import logging
 from typing import Optional, Dict, Any
 
 from .wechat_gateway import WeChatGateway, WeChatMessage, WeChatResponse, WeChatMsgType
-from .agent_loop import AgentLoop
-from .confirmer import ConfirmationRequest, ConfirmationResult
+from opc_manager.agent_loop import AgentLoop
+from opc_manager.confirmer import ConfirmationRequest, ConfirmationResult
 
 logger = logging.getLogger(__name__)
 

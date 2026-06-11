@@ -12,6 +12,14 @@ def render_growth_page():
     level = st.session_state.flywheel_level
     count = st.session_state.scenario_count
 
+    if all(v == 0 for v in scores.values()):
+        st.info(
+            _t("growth_coming_soon")
+            if "growth_coming_soon" in dir(_t)
+            else "🚀 Growth tracking is coming soon! Complete some tasks to see your growth metrics."
+        )
+        return
+
     _raw = _t("growth_level_1")
     lv_name = _t("growth_level_1_name")
     lv_desc = _t("growth_level_1_desc")

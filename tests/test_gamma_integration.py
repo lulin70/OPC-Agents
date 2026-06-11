@@ -20,17 +20,12 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from opc_manager.task_engine_adapter import (
-    TaskEngineAdapter,
-    INTENT_TO_TASK_MAP,
-    SKILL_TO_TASK_MAP,
-)
-from opc_manager.strategist_brain import IntentType
+from opc_manager.intent_types import IntentType, INTENT_TO_TASK_MAP, SKILL_TO_TASK_MAP
 from opc_manager.task_engine_v3 import TaskType
 
 
-class TestTaskEngineAdapter(unittest.TestCase):
-    """G1: TaskEngineAdapter 测试"""
+class TestIntentAndSkillMappings(unittest.TestCase):
+    """G1: IntentType→TaskType and skill→TaskType mapping tests (replaces deprecated TaskEngineAdapter tests)."""
 
     def test_intent_to_task_mapping_completeness(self):
         for intent in IntentType:
@@ -50,93 +45,6 @@ class TestTaskEngineAdapter(unittest.TestCase):
         ]
         for skill in known_skills:
             self.assertIn(skill, SKILL_TO_TASK_MAP, f"skill_id '{skill}' 未映射")
-
-    def test_execute_skill_unknown_defaults_to_general_chat(self):
-        adapter = TaskEngineAdapter(task_engine=MagicMock())
-        adapter.task_engine.execute = MagicMock()
-        adapter.task_engine.execute.return_value = MagicMock(
-            success=True,
-            content="test",
-            task_type=TaskType.GENERAL_CHAT,
-            sources=[],
-            execution_time_ms=100,
-            error=None,
-            deliverable_format="markdown",
-            search_results=[],
-        )
-        result = adapter.execute_skill("unknown_skill_xyz", {"query": "test"})
-        self.assertTrue(result["success"])
-
-    def test_execute_skill_no_input_returns_error(self):
-        adapter = TaskEngineAdapter(task_engine=MagicMock())
-        result = adapter.execute_skill("search", {})
-        self.assertFalse(result["success"])
-        self.assertIn("No input", result["error"])
-
-    def test_dict_to_task_result_roundtrip(self):
-        from opc_manager.task_engine_adapter import TaskEngineAdapter as TEA
-        from opc_manager.task_engine_v3 import TaskResult
-
-        original = TaskResult(
-            success=True,
-            content="hello",
-            task_type=TaskType.INFO_COLLECTION,
-            sources=["src1"],
-            execution_time_ms=1500,
-            error=None,
-            deliverable_format="markdown",
-            search_results=[],
-        )
-        adapter = TaskEngineAdapter(task_engine=MagicMock())
-        data_dict = adapter._task_result_to_dict(original, "search")
-        restored = TEA.dict_to_task_result(data_dict)
-        self.assertEqual(restored.success, original.success)
-        self.assertEqual(restored.content, original.content)
-        self.assertEqual(restored.task_type, original.task_type)
-
-    def test_execute_by_intent_mapping(self):
-        adapter = TaskEngineAdapter(task_engine=MagicMock())
-        adapter.task_engine.execute = MagicMock()
-        adapter.task_engine.execute.return_value = MagicMock(
-            success=True,
-            content="analysis result",
-            task_type=TaskType.DATA_ANALYSIS,
-            sources=[],
-            execution_time_ms=200,
-            error=None,
-            deliverable_format="markdown",
-            search_results=[],
-        )
-        result = adapter.execute_by_intent(IntentType.ANALYSIS, "分析竞品")
-        self.assertTrue(result["success"])
-
-    def test_execute_skill_async(self):
-        adapter = TaskEngineAdapter(task_engine=MagicMock())
-        adapter.task_engine.execute = MagicMock()
-        adapter.task_engine.execute.return_value = MagicMock(
-            success=True,
-            content="async result",
-            task_type=TaskType.CONTENT_GENERATION,
-            sources=[],
-            execution_time_ms=50,
-            error=None,
-            deliverable_format="markdown",
-            search_results=[],
-        )
-        loop = asyncio.new_event_loop()
-        try:
-            result = loop.run_until_complete(
-                adapter.execute_skill_async("content_generation", {"query": "test"})
-            )
-            self.assertTrue(result["success"])
-        finally:
-            loop.close()
-
-    def test_adapter_stats(self):
-        adapter = TaskEngineAdapter(task_engine=MagicMock())
-        stats = adapter.get_stats()
-        self.assertIn("execution_count", stats)
-        self.assertIn("task_engine_initialized", stats)
 
 
 class TestSkillMarketplace(unittest.TestCase):
@@ -556,7 +464,7 @@ class TestAgentLoopIntegration(unittest.TestCase):
         finally:
             os.environ.pop("OPC_SKIP_REFLECT", None)
 
-    def test_agent_loop_with_task_engine_adapter(self):
+    def test_agent_loop_with_task_engine(self):
         from opc_manager.agent_loop import AgentLoop
         from opc_manager.task_engine_v3 import TaskEngineV3
 

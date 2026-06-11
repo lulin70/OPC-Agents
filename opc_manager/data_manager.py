@@ -34,6 +34,9 @@ def _get_encryption_key() -> Optional[bytes]:
     global _fallback_key
 
     # 优先通过 SettingsManager 获取（不通过 os.environ）
+    # ARCHITECTURE NOTE: This is a delayed import to avoid circular dependency.
+    # Dependency direction: data_manager → settings (one-way only).
+    # settings.py must NEVER import from data_manager.
     try:
         from opc_manager.settings import get_settings
 
@@ -661,3 +664,28 @@ def set_preference(key: str, value: str) -> None:
         "INSERT OR REPLACE INTO user_preferences (key, value, updated_at) VALUES (?,?,?)",
         (key, value, now),
     )
+
+
+class DataManager:
+    """Object-oriented wrapper around data_manager global functions.
+
+    Provides dependency injection support while maintaining backward compatibility
+    with the existing module-level function API.
+    """
+
+    def __init__(self, db_path: Optional[str] = None):
+        self._db_path = db_path
+        if db_path:
+            init_db(db_path)
+
+    def query(self, sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
+        return execute_query(sql, params)
+
+    def write(self, sql: str, params: tuple = (), many: bool = False) -> int:
+        return execute_write(sql, params, many)
+
+    def transaction(self, statements: List[tuple]) -> bool:
+        return execute_transaction(statements)
+
+    def write_returning(self, sql: str, params: tuple = ()) -> str:
+        return execute_write_returning(sql, params)

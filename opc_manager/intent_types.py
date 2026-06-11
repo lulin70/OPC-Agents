@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Dict, List, Tuple
 
+from .task_types import TaskType
+
 
 class IntentType(Enum):
     UNKNOWN = "unknown"
@@ -264,4 +266,55 @@ SKILL_INTENT_MAP: Dict[str, IntentType] = {
     "dashboard": IntentType.DASHBOARD,
     "knowledge_mgmt": IntentType.KNOWLEDGE,
     "ext_skill": IntentType.EXTENDED_SKILL,
+}
+
+
+INTENT_TO_TASK_MAP: Dict[IntentType, TaskType] = {
+    IntentType.SEARCH: TaskType.INFO_COLLECTION,
+    IntentType.ANALYSIS: TaskType.DATA_ANALYSIS,
+    IntentType.CREATION: TaskType.CONTENT_GENERATION,
+    IntentType.OPERATION: TaskType.BUSINESS_OPERATION,
+    IntentType.NOTIFICATION: TaskType.GENERAL_CHAT,
+    IntentType.COMBINED: TaskType.CONTENT_GENERATION,
+    IntentType.UNKNOWN: TaskType.GENERAL_CHAT,
+    IntentType.EMAIL: TaskType.BUSINESS_OPERATION,
+    IntentType.FINANCE: TaskType.BUSINESS_OPERATION,
+    IntentType.TASK: TaskType.BUSINESS_OPERATION,
+    IntentType.CRM: TaskType.BUSINESS_OPERATION,
+    IntentType.SOCIAL: TaskType.CONTENT_GENERATION,
+    IntentType.PROPOSAL: TaskType.CONTENT_GENERATION,
+    IntentType.INVOICE: TaskType.BUSINESS_OPERATION,
+    IntentType.REPORT: TaskType.CONTENT_GENERATION,
+    IntentType.CALENDAR: TaskType.BUSINESS_OPERATION,
+    IntentType.COMPETITOR: TaskType.DATA_ANALYSIS,
+    IntentType.PRICING: TaskType.DATA_ANALYSIS,
+    IntentType.TAX_REMINDER: TaskType.BUSINESS_OPERATION,
+    IntentType.DASHBOARD: TaskType.DATA_ANALYSIS,
+    IntentType.KNOWLEDGE: TaskType.INFO_COLLECTION,
+    IntentType.EXTENDED_SKILL: TaskType.BUSINESS_OPERATION,
+}
+
+SKILL_TO_TASK_MAP: Dict[str, TaskType] = {
+    "search": TaskType.INFO_COLLECTION,
+    "analysis": TaskType.DATA_ANALYSIS,
+    "content_generation": TaskType.CONTENT_GENERATION,
+    "execute_operation": TaskType.BUSINESS_OPERATION,
+    "send_notification": TaskType.GENERAL_CHAT,
+    "intent_analysis": TaskType.INFO_COLLECTION,
+    "output_result": TaskType.CONTENT_GENERATION,
+    "email": TaskType.BUSINESS_OPERATION,
+    "finance": TaskType.BUSINESS_OPERATION,
+    "task_manager": TaskType.BUSINESS_OPERATION,
+    "crm": TaskType.BUSINESS_OPERATION,
+    "social_publish": TaskType.CONTENT_GENERATION,
+    "proposal": TaskType.CONTENT_GENERATION,
+    "invoice": TaskType.BUSINESS_OPERATION,
+    "report": TaskType.CONTENT_GENERATION,
+    "calendar": TaskType.BUSINESS_OPERATION,
+    "competitor_watch": TaskType.DATA_ANALYSIS,
+    "pricing": TaskType.DATA_ANALYSIS,
+    "tax_reminder": TaskType.BUSINESS_OPERATION,
+    "dashboard": TaskType.DATA_ANALYSIS,
+    "knowledge_mgmt": TaskType.INFO_COLLECTION,
+    "ext_skill": TaskType.BUSINESS_OPERATION,
 }

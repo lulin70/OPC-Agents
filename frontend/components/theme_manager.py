@@ -56,7 +56,6 @@ THEME_CONFIGS = {
 def apply_theme(theme_name: str):
     """Apply complete theme via Streamlit config."""
     config = THEME_CONFIGS.get(theme_name, THEME_CONFIGS["light"])
-    import streamlit as st
 
     try:
         st.config.set_option("theme.primaryColor", config["primaryColor"])
@@ -126,15 +125,38 @@ def _get_theme_css(theme_name: str) -> str:
             width: 280px !important;
             min-width: 280px !important;
         }
+        [data-testid="collapsedControl"] {
+            display: flex !important;
+        }
         /* Metric 卡片适配 */
         [data-testid="stMetric"] {
             padding: 8px !important;
+        }
+        [data-testid="stMetricContainer"] {
+            width: 100% !important;
         }
         /* 减少内边距节省空间 */
         .block-container {
             padding-top: 2rem !important;
             padding-left: 1rem !important;
             padding-right: 1rem !important;
+        }
+        /* Dashboard / 场景按钮在小屏幕单列显示 */
+        [data-testid="stHorizontalBlock"] > div {
+            flex-direction: column !important;
+            width: 100% !important;
+        }
+        /* 输入框区域增加触摸友好的间距 */
+        [data-testid="stChatInput"] {
+            padding: 12px 8px !important;
+        }
+        [data-testid="stChatInput"] textarea {
+            min-height: 48px !important;
+            font-size: 16px !important;
+        }
+        /* 聊天消息区域增加间距 */
+        [data-testid="stChatMessage"] {
+            padding: 8px 4px !important;
         }
     }
     """

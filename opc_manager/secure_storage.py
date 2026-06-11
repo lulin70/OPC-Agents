@@ -292,7 +292,7 @@ if __name__ == "__main__":
     elif args.command == "get":
         value = store.get_key(args.name)
         if value:
-            print(f"{args.name}={'*' * 8}...{value[-2:]}")
+            print(f"{args.name}=********")
         else:
             print(f"Not found: {args.name}")
 
