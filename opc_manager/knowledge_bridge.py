@@ -84,7 +84,9 @@ class KnowledgeAdapter(ABC):
         try:
             return urllib.request.urlopen(request, timeout=timeout)  # nosec B310
         except socket.timeout as e:
-            logger.warning("[KnowledgeBridge] HTTP request timed out after %ds: %s", timeout, e)
+            logger.warning(
+                "[KnowledgeBridge] HTTP request timed out after %ds: %s", timeout, e
+            )
             raise
         except urllib.error.URLError as e:
             logger.warning("[KnowledgeBridge] HTTP request failed: %s", e)

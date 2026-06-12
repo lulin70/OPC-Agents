@@ -176,7 +176,10 @@ class UndoManager:
             total = sum(len(v) for v in self._records.values())
             limit = MAX_UNDO_HISTORY
             if total > limit:
-                sids = sorted(self._records.keys(), key=lambda s: min(r.created_at for r in self._records[s]))
+                sids = sorted(
+                    self._records.keys(),
+                    key=lambda s: min(r.created_at for r in self._records[s]),
+                )
                 while total > limit and sids:
                     oldest_sid = sids[0]
                     self._records[oldest_sid].pop(0)

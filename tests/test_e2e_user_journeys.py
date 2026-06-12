@@ -45,15 +45,20 @@ def _reset_singletons():
     """Reset all singleton instances between tests for isolation."""
     AuditLog._instance = None
     import opc_manager.performance_monitor as _pm
+
     _pm._default_monitor = None
     import opc_manager.data_manager as _dm
+
     _dm._db_initialized = False
     _dm._local = type("Local", (), {"conn": None})()
     import opc_manager.skill_reviews as _sr
+
     _sr._manager = None
     import opc_manager.llm_cache as _lc
+
     _lc._cache_instance = None
     import opc_manager.knowledge_bridge as _kb
+
     _kb._instance = None
     yield
     AuditLog._instance = None
@@ -77,6 +82,7 @@ def tmp_data_dir(tmp_path):
 def patched_data_dir(tmp_data_dir):
     """Patch opc_manager.data_manager globals to tmp_path."""
     import opc_manager.data_manager as _dm
+
     old_data_dir = _dm.DATA_DIR
     old_db_path = _dm.DB_PATH
     old_backup_dir = _dm.BACKUP_DIR
@@ -187,7 +193,9 @@ class TestJourneyAsyncPollingFlow:
 
     def test_submit_poll_failed_then_retry(self, patched_data_dir):
         """Error recovery: task fails → user retries → succeeds."""
-        executor = AsyncTaskExecutor(max_concurrent=3, default_timeout=30, max_retries=0)
+        executor = AsyncTaskExecutor(
+            max_concurrent=3, default_timeout=30, max_retries=0
+        )
         call_count = {"n": 0}
 
         def _failing_fn(prompt, **kwargs):
@@ -228,7 +236,9 @@ class TestJourneyAsyncPollingFlow:
 
         def _slow_fn(prompt, **kwargs):
             time.sleep(5)
-            return TaskResult(success=True, content="完成", task_type=TaskType.GENERAL_CHAT)
+            return TaskResult(
+                success=True, content="完成", task_type=TaskType.GENERAL_CHAT
+            )
 
         task_id = executor.submit("长任务", execute_func=_slow_fn)
         time.sleep(0.2)  # Let it start
@@ -342,7 +352,9 @@ class TestJourneyCrossPageState:
         )
 
         # Deliverables page queries
-        rows = execute_query("SELECT * FROM interaction_log WHERE id = ?", (deliverable_id,))
+        rows = execute_query(
+            "SELECT * FROM interaction_log WHERE id = ?", (deliverable_id,)
+        )
         assert len(rows) == 1
         assert rows[0]["goal"] == "Q2营销方案"
 
@@ -423,14 +435,20 @@ class TestJourneyNewUserFirstExperience:
         # Step 1: Onboarding starts at WELCOME
         state_file = tmp_path / "onboarding.json"
         fake_marker = tmp_path / ".onboarding_complete"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
-             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
+        with (
+            patch.object(OnboardingManager, "STATE_FILE", str(state_file)),
+            patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker),
+        ):
             mgr = OnboardingManager()
             assert not mgr.is_completed
             assert mgr.get_current_step() == OnboardingStep.WELCOME
 
             # Step 2: Progress through onboarding steps
-            steps = [OnboardingStep.LLM_CONFIG, OnboardingStep.SAMPLE_TASK, OnboardingStep.COMPLETED]
+            steps = [
+                OnboardingStep.LLM_CONFIG,
+                OnboardingStep.SAMPLE_TASK,
+                OnboardingStep.COMPLETED,
+            ]
             for step in steps:
                 mgr.advance_to_step(step)
                 if mgr.is_completed:
@@ -439,8 +457,10 @@ class TestJourneyNewUserFirstExperience:
             assert mgr.is_completed
 
         # Step 3: Onboarding doesn't show again
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
-             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
+        with (
+            patch.object(OnboardingManager, "STATE_FILE", str(state_file)),
+            patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker),
+        ):
             mgr2 = OnboardingManager()
             assert mgr2.is_completed
 
@@ -449,8 +469,10 @@ class TestJourneyNewUserFirstExperience:
         # Complete onboarding
         state_file = tmp_path / "onboarding.json"
         fake_marker = tmp_path / ".onboarding_complete"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
-             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
+        with (
+            patch.object(OnboardingManager, "STATE_FILE", str(state_file)),
+            patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker),
+        ):
             mgr = OnboardingManager()
             mgr.complete_onboarding()
 

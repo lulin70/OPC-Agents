@@ -148,7 +148,9 @@ class TestThreeBrainPipeline:
         mock_registry = MagicMock()
         mock_skill = MagicMock()
         mock_skill.enabled = True
-        mock_skill.execute = MagicMock(return_value={"success": True, "data": {"content": "分析结果"}})
+        mock_skill.execute = MagicMock(
+            return_value={"success": True, "data": {"content": "分析结果"}}
+        )
         mock_registry.get_skill = MagicMock(return_value=mock_skill)
         executor = ExecutorBrain(skill_registry=mock_registry)
 
@@ -230,7 +232,12 @@ class TestTaskEngineSkillRegistry:
     def test_skill_lookup_by_task_type(self):
         """SkillRegistry can find skills by intent keywords."""
         from opc_manager.skill_registry import SkillRegistry
-        from opc_manager.skill_models import Skill, SkillCategory, SkillInput, SkillOutput
+        from opc_manager.skill_models import (
+            Skill,
+            SkillCategory,
+            SkillInput,
+            SkillOutput,
+        )
 
         registry = SkillRegistry(register_builtins=True, register_external=False)
         # Built-in skills should be registered
@@ -240,7 +247,12 @@ class TestTaskEngineSkillRegistry:
     def test_skill_execution_produces_result(self):
         """Executing a skill through registry produces a dict result."""
         from opc_manager.skill_registry import SkillRegistry
-        from opc_manager.skill_models import Skill, SkillCategory, SkillInput, SkillOutput
+        from opc_manager.skill_models import (
+            Skill,
+            SkillCategory,
+            SkillInput,
+            SkillOutput,
+        )
 
         registry = SkillRegistry(register_builtins=True, register_external=False)
         # Try to find a built-in skill
@@ -340,7 +352,16 @@ class TestDataManagerAuditLog:
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         dm.execute_write(
             "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-            (record_id, "income", 5000.0, "咨询费", "测试", "2026-01-01", "测试记录", now),
+            (
+                record_id,
+                "income",
+                5000.0,
+                "咨询费",
+                "测试",
+                "2026-01-01",
+                "测试记录",
+                now,
+            ),
         )
         # Log the operation
         audit_log.log(
@@ -379,7 +400,16 @@ class TestDataManagerDataBackup:
             rid = dm.gen_id()
             dm.execute_write(
                 "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-                (rid, "income", 1000.0 * (i + 1), "咨询费", f"客户{i+1}", "2026-01-01", f"记录{i+1}", now),
+                (
+                    rid,
+                    "income",
+                    1000.0 * (i + 1),
+                    "咨询费",
+                    f"客户{i+1}",
+                    "2026-01-01",
+                    f"记录{i+1}",
+                    now,
+                ),
             )
             record_ids.append(rid)
 
@@ -442,7 +472,14 @@ class TestLLMCacheSimpleLLMService:
         assert result is None
 
         # Store response
-        cache.put(model, temperature, max_tokens, system_prompt, user_prompt, "AI is artificial intelligence.")
+        cache.put(
+            model,
+            temperature,
+            max_tokens,
+            system_prompt,
+            user_prompt,
+            "AI is artificial intelligence.",
+        )
 
         # Second call: cache hit
         result = cache.get(model, temperature, max_tokens, system_prompt, user_prompt)
@@ -563,7 +600,9 @@ class TestPerformanceMonitorAgentLoop:
         """SLA breach is detected when agent_loop exceeds threshold."""
         from opc_manager.performance_monitor import SLA_SINGLE_REQUEST_MS
 
-        performance_monitor.record("agent_loop", SLA_SINGLE_REQUEST_MS + 1000, success=True)
+        performance_monitor.record(
+            "agent_loop", SLA_SINGLE_REQUEST_MS + 1000, success=True
+        )
         sla = performance_monitor.check_sla()
         assert sla["single_request"] is False
 
@@ -581,9 +620,24 @@ class TestConsensusEngineThreeBrains:
         from opc_manager.consensus_engine import Opinion, OpinionType, DecisionType
 
         opinions = [
-            Opinion(brain_type="strategist", opinion_type=OpinionType.AGREE, reasoning="策略合理", confidence=0.9),
-            Opinion(brain_type="executor", opinion_type=OpinionType.AGREE, reasoning="可执行", confidence=0.85),
-            Opinion(brain_type="reflector", opinion_type=OpinionType.AGREE, reasoning="结果良好", confidence=0.88),
+            Opinion(
+                brain_type="strategist",
+                opinion_type=OpinionType.AGREE,
+                reasoning="策略合理",
+                confidence=0.9,
+            ),
+            Opinion(
+                brain_type="executor",
+                opinion_type=OpinionType.AGREE,
+                reasoning="可执行",
+                confidence=0.85,
+            ),
+            Opinion(
+                brain_type="reflector",
+                opinion_type=OpinionType.AGREE,
+                reasoning="结果良好",
+                confidence=0.88,
+            ),
         ]
         decision = consensus_engine.collect_opinions(opinions)
         assert decision.decision_type == DecisionType.UNANIMOUS
@@ -594,9 +648,24 @@ class TestConsensusEngineThreeBrains:
         from opc_manager.consensus_engine import Opinion, OpinionType, DecisionType
 
         opinions = [
-            Opinion(brain_type="strategist", opinion_type=OpinionType.AGREE, reasoning="策略合理", confidence=0.9),
-            Opinion(brain_type="executor", opinion_type=OpinionType.DISAGREE, reasoning="资源不足", confidence=0.8),
-            Opinion(brain_type="reflector", opinion_type=OpinionType.DISAGREE, reasoning="质量不达标", confidence=0.85),
+            Opinion(
+                brain_type="strategist",
+                opinion_type=OpinionType.AGREE,
+                reasoning="策略合理",
+                confidence=0.9,
+            ),
+            Opinion(
+                brain_type="executor",
+                opinion_type=OpinionType.DISAGREE,
+                reasoning="资源不足",
+                confidence=0.8,
+            ),
+            Opinion(
+                brain_type="reflector",
+                opinion_type=OpinionType.DISAGREE,
+                reasoning="质量不达标",
+                confidence=0.85,
+            ),
         ]
         decision = consensus_engine.collect_opinions(opinions)
         # With 2 disagree and veto enabled, should be VETOED or ESCALATED
@@ -608,8 +677,18 @@ class TestConsensusEngineThreeBrains:
         from opc_manager.consensus_engine import Opinion, OpinionType, DecisionType
 
         opinions = [
-            Opinion(brain_type="strategist", opinion_type=OpinionType.AGREE, reasoning="策略合理", confidence=0.9),
-            Opinion(brain_type="executor", opinion_type=OpinionType.AGREE, reasoning="可执行", confidence=0.85),
+            Opinion(
+                brain_type="strategist",
+                opinion_type=OpinionType.AGREE,
+                reasoning="策略合理",
+                confidence=0.9,
+            ),
+            Opinion(
+                brain_type="executor",
+                opinion_type=OpinionType.AGREE,
+                reasoning="可执行",
+                confidence=0.85,
+            ),
             Opinion(
                 brain_type="reflector",
                 opinion_type=OpinionType.DISAGREE,
@@ -626,9 +705,26 @@ class TestConsensusEngineThreeBrains:
         from opc_manager.consensus_engine import Opinion, OpinionType, DecisionType
 
         opinions = [
-            Opinion(brain_type="strategist", opinion_type=OpinionType.CONDITIONAL, reasoning="需调整", confidence=0.7, alternative="减少步骤"),
-            Opinion(brain_type="executor", opinion_type=OpinionType.AGREE, reasoning="可执行", confidence=0.8),
-            Opinion(brain_type="reflector", opinion_type=OpinionType.CONDITIONAL, reasoning="需验证", confidence=0.6, alternative="增加测试"),
+            Opinion(
+                brain_type="strategist",
+                opinion_type=OpinionType.CONDITIONAL,
+                reasoning="需调整",
+                confidence=0.7,
+                alternative="减少步骤",
+            ),
+            Opinion(
+                brain_type="executor",
+                opinion_type=OpinionType.AGREE,
+                reasoning="可执行",
+                confidence=0.8,
+            ),
+            Opinion(
+                brain_type="reflector",
+                opinion_type=OpinionType.CONDITIONAL,
+                reasoning="需验证",
+                confidence=0.6,
+                alternative="增加测试",
+            ),
         ]
         decision = consensus_engine.collect_opinions(opinions)
         # With 1 agree + 2 conditional and 0 disagree → MAJORITY or COMPROMISE
@@ -652,11 +748,22 @@ class TestUndoManagerDataManager:
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         dm.execute_write(
             "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-            (record_id, "income", 5000.0, "咨询费", "测试", "2026-01-01", "测试记录", now),
+            (
+                record_id,
+                "income",
+                5000.0,
+                "咨询费",
+                "测试",
+                "2026-01-01",
+                "测试记录",
+                now,
+            ),
         )
 
         # Verify record exists
-        rows = dm.execute_query("SELECT * FROM finance_records WHERE id=?", (record_id,))
+        rows = dm.execute_query(
+            "SELECT * FROM finance_records WHERE id=?", (record_id,)
+        )
         assert len(rows) == 1
 
         # Push undo record
@@ -673,7 +780,9 @@ class TestUndoManagerDataManager:
         dm.execute_write("DELETE FROM finance_records WHERE id=?", (record_id,))
 
         # Verify record is gone
-        rows = dm.execute_query("SELECT * FROM finance_records WHERE id=?", (record_id,))
+        rows = dm.execute_query(
+            "SELECT * FROM finance_records WHERE id=?", (record_id,)
+        )
         assert len(rows) == 0
 
     def test_undo_record_lifecycle(self, undo_manager):
@@ -750,9 +859,18 @@ class TestKnowledgeBridgeLocalFolder:
         # Create test markdown files
         kb_dir = tmp_path / "knowledge"
         kb_dir.mkdir()
-        (kb_dir / "marketing.md").write_text("# 营销策略\n\n这是关于营销策略的文档。包括内容营销和社交媒体营销。", encoding="utf-8")
-        (kb_dir / "finance.md").write_text("# 财务管理\n\n这是关于财务管理的文档。包括收入和支出管理。", encoding="utf-8")
-        (kb_dir / "tech.md").write_text("# 技术架构\n\n这是关于技术架构的文档。包括微服务和云原生。", encoding="utf-8")
+        (kb_dir / "marketing.md").write_text(
+            "# 营销策略\n\n这是关于营销策略的文档。包括内容营销和社交媒体营销。",
+            encoding="utf-8",
+        )
+        (kb_dir / "finance.md").write_text(
+            "# 财务管理\n\n这是关于财务管理的文档。包括收入和支出管理。",
+            encoding="utf-8",
+        )
+        (kb_dir / "tech.md").write_text(
+            "# 技术架构\n\n这是关于技术架构的文档。包括微服务和云原生。",
+            encoding="utf-8",
+        )
 
         adapter = LocalFolderAdapter(str(kb_dir))
         assert adapter.get_status()["file_count"] == 3
@@ -787,7 +905,9 @@ class TestEndToEndModuleChain:
     """User input → AgentLoop → StrategistBrain → ExecutorBrain →
     TaskEngine → SkillRegistry → TaskResult → AuditLog → PerformanceMonitor."""
 
-    def test_full_chain_with_mocks(self, fresh_db, audit_log, performance_monitor, monkeypatch):
+    def test_full_chain_with_mocks(
+        self, fresh_db, audit_log, performance_monitor, monkeypatch
+    ):
         """Run full chain with mocked LLM, verify all modules participated."""
         from opc_manager.agent_loop import AgentLoop
         from opc_manager.strategist_brain import StrategistBrain
@@ -811,7 +931,9 @@ class TestEndToEndModuleChain:
         mock_registry = MagicMock()
         mock_skill = MagicMock()
         mock_skill.enabled = True
-        mock_skill.execute = MagicMock(return_value={"success": True, "data": {"content": "执行结果"}})
+        mock_skill.execute = MagicMock(
+            return_value={"success": True, "data": {"content": "执行结果"}}
+        )
         mock_registry.get_skill = MagicMock(return_value=mock_skill)
         mock_registry.execute_skill = AsyncMock(
             return_value={"success": True, "data": {"content": "搜索结果"}}
@@ -835,9 +957,7 @@ class TestEndToEndModuleChain:
         )
 
         # Run the loop
-        result = asyncio.run(
-            loop.run("帮我搜索AI趋势")
-        )
+        result = asyncio.run(loop.run("帮我搜索AI趋势"))
 
         # Verify result
         assert result is not None
@@ -922,9 +1042,21 @@ class TestSearchProcessorTaskEngine:
         processor = SearchResultProcessor()
         # Create mock search results
         mock_results = [
-            {"title": "AI营销策略最佳实践", "body": "关于AI驱动的营销策略", "href": "https://example.com/1"},
-            {"title": "小说写作技巧", "body": "如何写好一部小说", "href": "https://example.com/2"},
-            {"title": "AI趋势报告2026", "body": "最新AI行业趋势分析", "href": "https://example.com/3"},
+            {
+                "title": "AI营销策略最佳实践",
+                "body": "关于AI驱动的营销策略",
+                "href": "https://example.com/1",
+            },
+            {
+                "title": "小说写作技巧",
+                "body": "如何写好一部小说",
+                "href": "https://example.com/2",
+            },
+            {
+                "title": "AI趋势报告2026",
+                "body": "最新AI行业趋势分析",
+                "href": "https://example.com/3",
+            },
         ]
         processed = processor.process("AI营销趋势", mock_results)
         # Should return processed results (may be filtered/reordered)
@@ -948,16 +1080,36 @@ class TestDataManagerTransaction:
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         rid1, rid2 = dm.gen_id(), dm.gen_id()
 
-        result = dm.execute_transaction([
-            (
-                "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-                (rid1, "income", 1000.0, "咨询费", "客户A", "2026-01-01", "交易1", now),
-            ),
-            (
-                "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-                (rid2, "income", 2000.0, "培训费", "客户B", "2026-01-02", "交易2", now),
-            ),
-        ])
+        result = dm.execute_transaction(
+            [
+                (
+                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    (
+                        rid1,
+                        "income",
+                        1000.0,
+                        "咨询费",
+                        "客户A",
+                        "2026-01-01",
+                        "交易1",
+                        now,
+                    ),
+                ),
+                (
+                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    (
+                        rid2,
+                        "income",
+                        2000.0,
+                        "培训费",
+                        "客户B",
+                        "2026-01-02",
+                        "交易2",
+                        now,
+                    ),
+                ),
+            ]
+        )
         assert result is True
 
         rows = dm.execute_query("SELECT COUNT(*) as cnt FROM finance_records")
@@ -972,16 +1124,27 @@ class TestDataManagerTransaction:
         rid1 = dm.gen_id()
 
         # Second statement has invalid SQL → should rollback first too
-        result = dm.execute_transaction([
-            (
-                "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
-                (rid1, "income", 1000.0, "咨询费", "客户A", "2026-01-01", "交易1", now),
-            ),
-            (
-                "INSERT INTO nonexistent_table (id) VALUES (?)",
-                ("x",),
-            ),
-        ])
+        result = dm.execute_transaction(
+            [
+                (
+                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    (
+                        rid1,
+                        "income",
+                        1000.0,
+                        "咨询费",
+                        "客户A",
+                        "2026-01-01",
+                        "交易1",
+                        now,
+                    ),
+                ),
+                (
+                    "INSERT INTO nonexistent_table (id) VALUES (?)",
+                    ("x",),
+                ),
+            ]
+        )
         assert result is False
 
         # First insert should have been rolled back

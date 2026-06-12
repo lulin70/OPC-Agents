@@ -90,7 +90,7 @@ class ExecutorBrain:
             return None
         try:
             # Set fallback flag to prevent circular fallback
-            if hasattr(self.task_engine, '_in_fallback'):
+            if hasattr(self.task_engine, "_in_fallback"):
                 self.task_engine._in_fallback = True
             try:
                 task_type = SKILL_TO_TASK_MAP.get(skill_id, TaskType.GENERAL_CHAT)
@@ -109,23 +109,19 @@ class ExecutorBrain:
                 )
             finally:
                 # Always clear fallback flag
-                if hasattr(self.task_engine, '_in_fallback'):
+                if hasattr(self.task_engine, "_in_fallback"):
                     self.task_engine._in_fallback = False
             return ExecutionResult(
                 success=result.success,
                 data={
                     "content": result.content,
                     "sources": result.sources or [],
-                    "task_type": (
-                        result.task_type.value if result.task_type else None
-                    ),
+                    "task_type": (result.task_type.value if result.task_type else None),
                     "deliverable_format": result.deliverable_format,
                 },
                 error=result.error,
                 execution_time=(
-                    result.execution_time_ms / 1000.0
-                    if result.execution_time_ms
-                    else 0
+                    result.execution_time_ms / 1000.0 if result.execution_time_ms else 0
                 ),
             )
         except Exception as e:

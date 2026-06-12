@@ -79,6 +79,7 @@ if SSE_AVAILABLE:
                 proto = request.headers.get("x-forwarded-proto", request.url.scheme)
                 if proto != "https":
                     from fastapi.responses import JSONResponse
+
                     return JSONResponse(
                         status_code=426,
                         content={"error": "HTTPS required. Upgrade your connection."},
@@ -97,18 +98,16 @@ if SSE_AVAILABLE:
                 )
                 return JSONResponse(
                     status_code=401,
-                    content={"error": "MCP_API_KEY not configured — authentication required"},
+                    content={
+                        "error": "MCP_API_KEY not configured — authentication required"
+                    },
                 )
             auth = request.headers.get("Authorization", "")
-            token = (
-                auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
-            )
+            token = auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
             if not hmac.compare_digest(token, MCP_API_KEY):
                 from fastapi.responses import JSONResponse
 
-                return JSONResponse(
-                    status_code=401, content={"error": "Unauthorized"}
-                )
+                return JSONResponse(status_code=401, content={"error": "Unauthorized"})
             return None
 
         @app.get("/sse")

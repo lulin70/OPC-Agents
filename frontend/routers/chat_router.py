@@ -57,9 +57,7 @@ def _save_feedback(task_id, feedback_type):
             exist_ok=True,
         )
         with open(
-            os.path.join(
-                _WORKSPACE_DIR, "data", "feedback", f"{safe_task_id}.json"
-            ),
+            os.path.join(_WORKSPACE_DIR, "data", "feedback", f"{safe_task_id}.json"),
             "w",
         ) as f:
             json.dump(
@@ -169,27 +167,18 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
         if feedback_key not in st.session_state.quality_feedback:
             fb_cols = st.columns([1, 1, 6])
             with fb_cols[0]:
-                if st.button(
-                    _t("chat_feedback_good"), key=f"good_{task_id}"
-                ):
+                if st.button(_t("chat_feedback_good"), key=f"good_{task_id}"):
                     _save_feedback(task_id, "good")
                     st.success(_t("chat_feedback_thanks"))
                     st.rerun()
             with fb_cols[1]:
-                if st.button(
-                    _t("chat_feedback_bad"), key=f"bad_{task_id}"
-                ):
+                if st.button(_t("chat_feedback_bad"), key=f"bad_{task_id}"):
                     _save_feedback(task_id, "bad")
                     st.info(_t("chat_feedback_improve"))
                     st.rerun()
-        elif (
-            st.session_state.quality_feedback.get(feedback_key)
-            == "good"
-        ):
+        elif st.session_state.quality_feedback.get(feedback_key) == "good":
             st.caption(_t("chat_feedback_good_caption"))
-        elif (
-            st.session_state.quality_feedback.get(feedback_key) == "bad"
-        ):
+        elif st.session_state.quality_feedback.get(feedback_key) == "bad":
             st.caption(_t("chat_feedback_bad_caption"))
 
         _render_quick_undo_button(
@@ -219,9 +208,7 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
                     type="primary",
                 )
             with col_info:
-                size_kb = round(
-                    len(file_content.encode("utf-8")) / 1024, 1
-                )
+                size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
                 st.success(
                     f"✅ {_t('chat_file_generated')}: {os.path.basename(result_filepath)} ({size_kb}KB)"
                 )
@@ -250,9 +237,7 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
             or result_deliverable_record.get("task_type", ""),
             last_result={
                 "execution_time_ms": (
-                    result_deliverable_record.get(
-                        "execution_time_ms", 0
-                    )
+                    result_deliverable_record.get("execution_time_ms", 0)
                     if result_deliverable_record
                     else 0
                 ),
@@ -263,9 +248,7 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
                 ),
             },
             deliverables=st.session_state.get("deliverables", []),
-            feedback_history=list(
-                st.session_state.get("quality_feedback", {}).items()
-            ),
+            feedback_history=list(st.session_state.get("quality_feedback", {}).items()),
         )
 
         suggestion_context["session_id"] = session_id

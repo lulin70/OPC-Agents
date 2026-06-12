@@ -144,7 +144,11 @@ class TaskLifecycleManager:
         context.set_state(AgentState.EXECUTING)
         logger.info("任务已恢复: %s (从步骤 %s 继续)", task_id, context.current_step)
 
-        return {"success": True, "task_id": task_id, "resume_step": context.current_step}
+        return {
+            "success": True,
+            "task_id": task_id,
+            "resume_step": context.current_step,
+        }
 
     def list_tasks(self) -> List[Dict[str, Any]]:
         """List all tracked tasks with brief info.

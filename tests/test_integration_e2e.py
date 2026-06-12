@@ -70,8 +70,10 @@ class TestUserOnboardingFlow:
         # Point onboarding state file to tmp_path
         state_file = tmp_path / "data" / "onboarding.json"
         fake_marker = tmp_path / ".onboarding_complete"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
-             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
+        with (
+            patch.object(OnboardingManager, "STATE_FILE", str(state_file)),
+            patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker),
+        ):
             mgr = OnboardingManager()
             # On first launch, onboarding is NOT completed
             assert not mgr.is_completed
@@ -86,8 +88,10 @@ class TestUserOnboardingFlow:
 
         state_file = tmp_path / "data" / "onboarding.json"
         fake_marker = tmp_path / ".onboarding_complete"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
-             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
+        with (
+            patch.object(OnboardingManager, "STATE_FILE", str(state_file)),
+            patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker),
+        ):
             mgr = OnboardingManager()
             # First visit: current step is WELCOME
             assert mgr.get_current_step() == OnboardingStep.WELCOME

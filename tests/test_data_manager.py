@@ -93,13 +93,16 @@ class TestEncryptDecryptRoundTrip:
 
     def test_decrypt_garbage_returns_none(self, temp_db):
         # Fernet tokens always start with 'gAAAA' — garbage that looks like one should return None
-        result = decrypt_field("gAAAAAinvalid_fernet_token_that_will_fail_decryption_check==")
+        result = decrypt_field(
+            "gAAAAAinvalid_fernet_token_that_will_fail_decryption_check=="
+        )
         assert result is None
 
     def test_decrypt_plaintext_with_key_returns_raw(self, temp_db):
         # When key is set but value was stored as plaintext (not Fernet token),
         # it should be returned as-is to prevent data loss during key migration
         from opc_manager.data_manager import _get_encryption_key
+
         key = _get_encryption_key()
         if key is None:
             # No key set — skip this test (plaintext passthrough only matters with a key)
@@ -432,13 +435,17 @@ class TestMigrationAddColumn:
     def test_migration_chain_completes(self, temp_db):
         """Verify database migration chain from v2 to latest version completes."""
         from opc_manager.data_manager import _run_migrations, _get_conn
+
         # Run migrations on a fresh database
         conn = _get_conn()
         _run_migrations(conn)
         # Verify critical tables exist
-        tables = [row[0] for row in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()]
+        tables = [
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
         assert "tasks" in tables or "audit_log" in tables
 
 

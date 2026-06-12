@@ -106,8 +106,10 @@ def decrypt_field(ciphertext: str) -> Optional[str]:
         # Not a Fernet token — but could be garbage or old plaintext.
         # Only return as plaintext if it looks like readable text (no special chars).
         import unicodedata
+
         printable_ratio = sum(
-            1 for c in ciphertext[:50]
+            1
+            for c in ciphertext[:50]
             if unicodedata.category(c).startswith(("L", "N", "P", "Zs")) or c in " \t\n"
         ) / min(len(ciphertext), 50)
         if printable_ratio > 0.8:
@@ -475,7 +477,9 @@ _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 # SQL that must use parameterized queries (? placeholders).
 # Detects common injection patterns: string concatenation with quotes,
 # semicolons in values, and f-string interpolation markers.
-_UNSAFE_SQL_RE = re.compile(r"(?:'\s*\+\s*|;\s*(?:DROP|ALTER|CREATE|DELETE|INSERT|UPDATE)|\{.*\})")
+_UNSAFE_SQL_RE = re.compile(
+    r"(?:'\s*\+\s*|;\s*(?:DROP|ALTER|CREATE|DELETE|INSERT|UPDATE)|\{.*\})"
+)
 
 
 def _validate_sql(sql: str) -> None:

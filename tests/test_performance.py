@@ -40,6 +40,7 @@ def _isolate_data_dir(tmp_path, monkeypatch):
 
     # 重置 DataManager 模块级状态，确保每个测试使用独立的 DB
     import opc_manager.data_manager as dm
+
     dm._db_initialized = False
     dm._local = threading.local()
     dm._fallback_key = None
@@ -60,6 +61,7 @@ def _isolate_data_dir(tmp_path, monkeypatch):
 def data_manager(tmp_path):
     """提供已初始化的 DataManager 模块"""
     import opc_manager.data_manager as dm
+
     dm.init_db()
     return dm
 
@@ -68,6 +70,7 @@ def data_manager(tmp_path):
 def llm_cache(tmp_path):
     """提供独立的 LLMCache 实例"""
     from opc_manager.llm_cache import LLMCache
+
     db_path = str(tmp_path / "test_llm_cache.db")
     cache = LLMCache(db_path, ttl=3600)
     yield cache
@@ -78,6 +81,7 @@ def llm_cache(tmp_path):
 def lru_cache():
     """提供独立的 LRUCache 实例"""
     from opc_manager.performance_monitor import LRUCache
+
     return LRUCache(max_size=50, ttl=300)
 
 
@@ -85,9 +89,9 @@ def lru_cache():
 def performance_monitor(tmp_path, monkeypatch):
     """提供独立的 PerformanceMonitor 实例"""
     from opc_manager.performance_monitor import PerformanceMonitor
+
     monkeypatch.setattr(
-        PerformanceMonitor, "PERSIST_FILE",
-        str(tmp_path / "perf_metrics.json")
+        PerformanceMonitor, "PERSIST_FILE", str(tmp_path / "perf_metrics.json")
     )
     return PerformanceMonitor()
 
@@ -133,7 +137,9 @@ class TestDataManagerPerformance:
         assert elapsed < 5.0, f"批量插入 1000 条耗时 {elapsed:.2f}s，超过 5s 阈值"
 
         # 验证数据完整性
-        count = data_manager.execute_query("SELECT COUNT(*) as cnt FROM finance_records")
+        count = data_manager.execute_query(
+            "SELECT COUNT(*) as cnt FROM finance_records"
+        )
         assert count[0]["cnt"] == 1000
 
     def test_batch_query_1000_records(self, data_manager):
@@ -186,10 +192,14 @@ class TestDataManagerPerformance:
                         "(id, type, amount, category, source, date, note, created_at) "
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                         params=(
-                            rid, "income", 50.0 + thread_id,
+                            rid,
+                            "income",
+                            50.0 + thread_id,
                             f"concurrent_cat_{thread_id}",
                             f"source_t{thread_id}_j{j}",
-                            "2024-06-01", f"thread_{thread_id}_note_{j}", now,
+                            "2024-06-01",
+                            f"thread_{thread_id}_note_{j}",
+                            now,
                         ),
                     )
                     with lock:
@@ -263,12 +273,16 @@ class TestLLMCachePerformance:
         response = "OPC-Agents is a one-person company assistant."
 
         # 首次 put
-        llm_cache.put(model, temperature, max_tokens, system_prompt, user_prompt, response)
+        llm_cache.put(
+            model, temperature, max_tokens, system_prompt, user_prompt, response
+        )
 
         # 99 次 get
         hits = 0
         for _ in range(99):
-            result = llm_cache.get(model, temperature, max_tokens, system_prompt, user_prompt)
+            result = llm_cache.get(
+                model, temperature, max_tokens, system_prompt, user_prompt
+            )
             if result is not None:
                 hits += 1
 
@@ -279,9 +293,7 @@ class TestLLMCachePerformance:
         """100 次唯一查询 → 命中率 0%"""
         hits = 0
         for i in range(100):
-            result = llm_cache.get(
-                "model", 0.3, 1000, "system", f"unique_prompt_{i}"
-            )
+            result = llm_cache.get("model", 0.3, 1000, "system", f"unique_prompt_{i}")
             if result is not None:
                 hits += 1
 
@@ -292,8 +304,12 @@ class TestLLMCachePerformance:
         start_put = time.time()
         for i in range(500):
             llm_cache.put(
-                "model", 0.3, 1000, "system",
-                f"bulk_prompt_{i}", f"bulk_response_{i}",
+                "model",
+                0.3,
+                1000,
+                "system",
+                f"bulk_prompt_{i}",
+                f"bulk_response_{i}",
             )
         put_elapsed = time.time() - start_put
 
@@ -366,6 +382,7 @@ class TestLRUCachePerformance:
     def test_lru_ttl_expiry(self):
         """LRUCache TTL 过期行为"""
         from opc_manager.performance_monitor import LRUCache
+
         cache = LRUCache(max_size=100, ttl=1)  # 1 秒 TTL
 
         cache.put("ttl_key", "ttl_value")
@@ -387,7 +404,9 @@ class TestLRUCachePerformance:
         stats = lru_cache.get_stats()
         assert stats["hits"] == 1, f"命中次数应为 1，实际 {stats['hits']}"
         assert stats["misses"] == 2, f"未命中次数应为 2，实际 {stats['misses']}"
-        assert abs(stats["hit_rate"] - 1/3) < 0.01, f"命中率应为 ~0.333，实际 {stats['hit_rate']}"
+        assert (
+            abs(stats["hit_rate"] - 1 / 3) < 0.01
+        ), f"命中率应为 ~0.333，实际 {stats['hit_rate']}"
 
 
 class TestPerformanceMonitorPerformance:
@@ -411,7 +430,10 @@ class TestPerformanceMonitorPerformance:
 
     def test_sla_breach_detection(self, performance_monitor):
         """SLA 违规检测准确性"""
-        from opc_manager.performance_monitor import SLA_SINGLE_REQUEST_MS, SLA_REFLECT_LOOP_MS
+        from opc_manager.performance_monitor import (
+            SLA_SINGLE_REQUEST_MS,
+            SLA_REFLECT_LOOP_MS,
+        )
 
         # 正常记录
         performance_monitor.record("agent_loop", duration_ms=1000.0)
@@ -462,8 +484,9 @@ class TestPerformanceMonitorPerformance:
 
         # 验证记录数正确
         stats = performance_monitor.get_stats()
-        assert stats["total_operations"] == 400, \
-            f"预期 400 条记录，实际 {stats['total_operations']}"
+        assert (
+            stats["total_operations"] == 400
+        ), f"预期 400 条记录，实际 {stats['total_operations']}"
 
     def test_max_metrics_cap(self, performance_monitor):
         """验证指标数量上限（_max_metrics=1000）"""
@@ -471,8 +494,9 @@ class TestPerformanceMonitorPerformance:
             performance_monitor.record("cap_op", duration_ms=float(i))
 
         stats = performance_monitor.get_stats()
-        assert stats["total_operations"] == 1000, \
-            f"指标应被截断到 1000，实际 {stats['total_operations']}"
+        assert (
+            stats["total_operations"] == 1000
+        ), f"指标应被截断到 1000，实际 {stats['total_operations']}"
 
 
 # ============================================================================
@@ -487,6 +511,7 @@ class TestTaskEngineThroughput:
     def task_engine(self):
         """提供 TaskEngineV3 实例，mock 掉外部依赖"""
         from opc_manager.task_engine_v3 import TaskEngineV3
+
         engine = TaskEngineV3()
         # 标记已初始化，跳过懒加载
         engine._initialized = True
@@ -561,16 +586,20 @@ class TestMemoryAndResourceLimits:
         """多次 DB 操作后无文件描述符泄漏"""
         # 获取当前进程的 FD 数量基线
         import subprocess
+
         pid = os.getpid()
 
         try:
-            baseline = len(os.listdir(f"/dev/fd/{pid}")) if os.path.exists(f"/dev/fd/{pid}") else 0
+            baseline = (
+                len(os.listdir(f"/dev/fd/{pid}"))
+                if os.path.exists(f"/dev/fd/{pid}")
+                else 0
+            )
         except (OSError, PermissionError):
             # macOS 可能无法访问 /dev/fd，使用 lsof
             try:
                 result = subprocess.run(
-                    ["lsof", "-p", str(pid)],
-                    capture_output=True, text=True, timeout=5
+                    ["lsof", "-p", str(pid)], capture_output=True, text=True, timeout=5
                 )
                 baseline = len(result.stdout.strip().split("\n"))
             except Exception:
@@ -582,18 +611,25 @@ class TestMemoryAndResourceLimits:
             data_manager.execute_write(
                 "INSERT OR REPLACE INTO user_preferences (key, value, updated_at) "
                 "VALUES (?, ?, ?)",
-                params=(f"test_key_{_}", "test_val", time.strftime("%Y-%m-%dT%H:%M:%S")),
+                params=(
+                    f"test_key_{_}",
+                    "test_val",
+                    time.strftime("%Y-%m-%dT%H:%M:%S"),
+                ),
             )
 
         gc.collect()
 
         try:
-            after = len(os.listdir(f"/dev/fd/{pid}")) if os.path.exists(f"/dev/fd/{pid}") else 0
+            after = (
+                len(os.listdir(f"/dev/fd/{pid}"))
+                if os.path.exists(f"/dev/fd/{pid}")
+                else 0
+            )
         except (OSError, PermissionError):
             try:
                 result = subprocess.run(
-                    ["lsof", "-p", str(pid)],
-                    capture_output=True, text=True, timeout=5
+                    ["lsof", "-p", str(pid)], capture_output=True, text=True, timeout=5
                 )
                 after = len(result.stdout.strip().split("\n"))
             except Exception:
@@ -679,9 +715,14 @@ class TestConcurrencyStress:
                         "(id, type, amount, category, source, date, note, created_at) "
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                         params=(
-                            rid, "expense", 10.0, "stress_cat",
-                            f"stress_src_{thread_id}", "2024-01-01",
-                            f"stress_note_{thread_id}_{j}", now,
+                            rid,
+                            "expense",
+                            10.0,
+                            "stress_cat",
+                            f"stress_src_{thread_id}",
+                            "2024-01-01",
+                            f"stress_note_{thread_id}_{j}",
+                            now,
                         ),
                     )
                     count += 1
@@ -725,7 +766,11 @@ class TestConcurrencyStress:
                     else:
                         # put 进去
                         llm_cache.put(
-                            "model", 0.3, 1000, "sys", prompt,
+                            "model",
+                            0.3,
+                            1000,
+                            "sys",
+                            prompt,
                             f"response_{thread_id}_{i}",
                         )
                 with lock:
@@ -754,8 +799,7 @@ class TestConcurrencyStress:
         )
 
         monkeypatch.setattr(
-            PerformanceMonitor, "PERSIST_FILE",
-            str(tmp_path / "race_perf.json")
+            PerformanceMonitor, "PERSIST_FILE", str(tmp_path / "race_perf.json")
         )
         _reset_performance_monitor()
 
@@ -781,8 +825,9 @@ class TestConcurrencyStress:
         assert len(errors) == 0, f"单例竞态出错: {errors}"
         # 所有线程应获得同一个实例
         unique_ids = set(instances)
-        assert len(unique_ids) == 1, \
-            f"应获得同一实例，但得到 {len(unique_ids)} 个不同实例"
+        assert (
+            len(unique_ids) == 1
+        ), f"应获得同一实例，但得到 {len(unique_ids)} 个不同实例"
 
         _reset_performance_monitor()
 
@@ -803,9 +848,14 @@ class TestConcurrencyStress:
                         "(id, type, amount, category, source, date, note, created_at) "
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                         (
-                            data_manager.gen_id(), "income", 100.0,
-                            "txn_cat", f"txn_src_{thread_id}", "2024-01-01",
-                            f"txn_note_{thread_id}", now,
+                            data_manager.gen_id(),
+                            "income",
+                            100.0,
+                            "txn_cat",
+                            f"txn_src_{thread_id}",
+                            "2024-01-01",
+                            f"txn_note_{thread_id}",
+                            now,
                         ),
                     ),
                     (
@@ -813,8 +863,12 @@ class TestConcurrencyStress:
                         "(id, title, description, priority, status, created_at) "
                         "VALUES (?, ?, ?, ?, ?, ?)",
                         (
-                            data_manager.gen_id(), f"txn_task_{thread_id}",
-                            "transaction test", 2, "pending", now,
+                            data_manager.gen_id(),
+                            f"txn_task_{thread_id}",
+                            "transaction test",
+                            2,
+                            "pending",
+                            now,
                         ),
                     ),
                 ]
@@ -826,7 +880,9 @@ class TestConcurrencyStress:
                 with lock:
                     errors.append(f"txn_{thread_id}: {e}")
 
-        threads = [threading.Thread(target=transaction_worker, args=(i,)) for i in range(20)]
+        threads = [
+            threading.Thread(target=transaction_worker, args=(i,)) for i in range(20)
+        ]
         for t in threads:
             t.start()
         for t in threads:

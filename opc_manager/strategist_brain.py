@@ -267,6 +267,7 @@ class StrategistBrain:
         self, user_input: str, goal: str
     ) -> Optional[Dict[str, Any]]:
         import time as _time
+
         if _time.time() - self._cache_timestamp > _CACHE_TTL:
             self._cached_user_profile = None
             self._cached_marketplace = None

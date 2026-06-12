@@ -186,7 +186,14 @@ class AgentLoop:
                     content="",
                     task_type=TaskType.GENERAL_CHAT,
                     error="需要用户确认后才能执行",
-                    metadata={"needs_confirmation": True, "confirmation_message": confirm_result.message if hasattr(confirm_result, "message") else ""},
+                    metadata={
+                        "needs_confirmation": True,
+                        "confirmation_message": (
+                            confirm_result.message
+                            if hasattr(confirm_result, "message")
+                            else ""
+                        ),
+                    },
                 )
 
             skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"

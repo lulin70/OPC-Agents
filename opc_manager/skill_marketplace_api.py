@@ -60,7 +60,9 @@ if FASTAPI_AVAILABLE:
     )
 
     # HTTPS enforcement (skip in development)
-    _enforce_https = os.environ.get("MARKETPLACE_ENFORCE_HTTPS", "false").lower() == "true"
+    _enforce_https = (
+        os.environ.get("MARKETPLACE_ENFORCE_HTTPS", "false").lower() == "true"
+    )
 
     @app.middleware("http")
     async def enforce_https_middleware(request, call_next):
@@ -68,6 +70,7 @@ if FASTAPI_AVAILABLE:
             proto = request.headers.get("x-forwarded-proto", request.url.scheme)
             if proto != "https":
                 from fastapi.responses import JSONResponse
+
                 return JSONResponse(
                     status_code=426,
                     content={"error": "HTTPS required. Upgrade your connection."},
@@ -222,7 +225,11 @@ if FASTAPI_AVAILABLE:
         }
 
     @app.post("/api/v1/marketplace/{skill_id}/install")
-    async def install_skill(skill_id: str, source: str = "opc_official", api_key: str = Depends(_get_api_key)):
+    async def install_skill(
+        skill_id: str,
+        source: str = "opc_official",
+        api_key: str = Depends(_get_api_key),
+    ):
         result = external_marketplace.install_skill(skill_id, source)
         if not result.get("success") and not result.get("requires_confirmation"):
             raise HTTPException(

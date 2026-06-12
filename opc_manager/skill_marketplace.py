@@ -638,7 +638,10 @@ class ExternalSkillMarketplace:
 
         skill_info = self._fetch_skill_info(skill_id, source)
         if not skill_info:
-            return {"success": False, "error": f"Cannot verify skill '{skill_id}' — registry unreachable"}
+            return {
+                "success": False,
+                "error": f"Cannot verify skill '{skill_id}' — registry unreachable",
+            }
 
         trust_level = self._get_trust_level(
             source, skill_info.get("downloads", 0), skill_info.get("rating", 0.0)

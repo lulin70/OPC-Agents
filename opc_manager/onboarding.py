@@ -281,7 +281,9 @@ class OnboardingManager:
     def record_sample_task_result(self, result: str):
         """Record the result of the sample task."""
         if result is not None:
-            self._state.sample_task_result = str(result)[:_SAMPLE_TASK_RESULT_MAX_LENGTH]  # truncate
+            self._state.sample_task_result = str(result)[
+                :_SAMPLE_TASK_RESULT_MAX_LENGTH
+            ]  # truncate
         self._save_state()
 
 

@@ -72,7 +72,11 @@ from enum import Enum
 from opc_manager.utils import SECONDS_PER_DAY
 from opc_manager.skill_registry import SkillRegistry
 from opc_manager.task_content_generators import ContentGenerationMixin
-from opc_manager.search_cache import SearchCache, SEARCH_CACHE_MAX_SIZE, SEARCH_CACHE_TTL_SECONDS
+from opc_manager.search_cache import (
+    SearchCache,
+    SEARCH_CACHE_MAX_SIZE,
+    SEARCH_CACHE_TTL_SECONDS,
+)
 from opc_manager.intent_classifier import IntentClassifier
 from opc_manager.task_types import (
     TaskType,
@@ -706,7 +710,8 @@ class TaskEngineV3(ContentGenerationMixin):
         if llm_query is None:
             llm_query = search_query
         results, sources = self._search(
-            self._extract_search_query(search_query), max_results=SEARCH_MAX_RESULTS_INFO
+            self._extract_search_query(search_query),
+            max_results=SEARCH_MAX_RESULTS_INFO,
         )
 
         if not results:
@@ -1062,7 +1067,9 @@ class TaskEngineV3(ContentGenerationMixin):
         desc = step.description
 
         if step_type in ("research", "data_collection"):
-            results, _ = self._search(self._extract_search_query(query), max_results=SEARCH_MAX_RESULTS_STEP)
+            results, _ = self._search(
+                self._extract_search_query(query), max_results=SEARCH_MAX_RESULTS_STEP
+            )
             if results:
                 items = []
                 for r in results[:SEARCH_MAX_RESULTS_STEP]:
@@ -1080,7 +1087,8 @@ class TaskEngineV3(ContentGenerationMixin):
 
         elif step_type == "analysis":
             results, _ = self._search(
-                self._extract_search_query(query) + " 分析 数据", max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
+                self._extract_search_query(query) + " 分析 数据",
+                max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS,
             )
             findings = []
             if results:
@@ -1168,8 +1176,10 @@ class TaskEngineV3(ContentGenerationMixin):
             llm_query = search_query
 
         # Guard: prevent infinite fallback loop between ExecutorBrain and TaskEngineV3
-        if getattr(self, '_in_fallback', False):
-            logger.warning("[TaskEngineV3] Already in fallback mode — skipping SkillRegistry to prevent circular fallback")
+        if getattr(self, "_in_fallback", False):
+            logger.warning(
+                "[TaskEngineV3] Already in fallback mode — skipping SkillRegistry to prevent circular fallback"
+            )
             return TaskResult(
                 success=False,
                 content="",
@@ -1516,7 +1526,9 @@ class TaskEngineV3(ContentGenerationMixin):
 
         search_tasks = [
             TaskSpec(
-                func=lambda q=base_query + " 方案 案例": self._search(q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS),
+                func=lambda q=base_query + " 方案 案例": self._search(
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
+                ),
                 description="方案案例搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
@@ -1528,7 +1540,9 @@ class TaskEngineV3(ContentGenerationMixin):
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
             TaskSpec(
-                func=lambda q=base_query + " 数据 趋势": self._search(q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS),
+                func=lambda q=base_query + " 数据 趋势": self._search(
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
+                ),
                 description="数据趋势搜索",
                 timeout=_HTTP_REQUEST_TIMEOUT,
             ),
@@ -1836,9 +1850,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 del self._task_results[k]
                 removed += 1
         if removed > 0:
-            logger.debug(
-                "[TaskEngineV3] Cleaned up %d stale task results", removed
-            )
+            logger.debug("[TaskEngineV3] Cleaned up %d stale task results", removed)
         return removed
 
 

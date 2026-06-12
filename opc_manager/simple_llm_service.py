@@ -152,7 +152,11 @@ class SimpleLLMService:
             self._is_ollama = config["is_ollama"]
 
         # Enforce HTTPS for non-Ollama providers (API keys must not be sent over plaintext HTTP)
-        if not self._is_ollama and self._base_url and self._base_url.startswith("http://"):
+        if (
+            not self._is_ollama
+            and self._base_url
+            and self._base_url.startswith("http://")
+        ):
             logger.warning(
                 "[SECURITY] API base URL uses plaintext HTTP: %s — "
                 "API keys will be transmitted unencrypted. "

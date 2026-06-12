@@ -829,9 +829,7 @@ class SettingsManager:
         if "port" in kwargs:
             port = kwargs["port"]
             if not isinstance(port, int) or port < 1 or port > 65535:
-                logger.warning(
-                    "Invalid SMTP port rejected (must be 1-65535): %s", port
-                )
+                logger.warning("Invalid SMTP port rejected (must be 1-65535): %s", port)
                 return False
 
         valid_fields = {k for k in dir(SMTPSettings) if not k.startswith("_")}

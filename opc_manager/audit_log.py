@@ -148,7 +148,9 @@ class AuditLog:
             skill_id=skill_id,
             input_hash=hashlib.sha256(input_text.encode()).hexdigest(),
             input_summary=self._audit_sanitize(input_text),
-            output_summary=self._audit_sanitize(str(output_data))[:500] if output_data else "",
+            output_summary=(
+                self._audit_sanitize(str(output_data))[:500] if output_data else ""
+            ),
             duration_ms=duration_ms,
             status=status,
             error_msg=error_msg[:500],

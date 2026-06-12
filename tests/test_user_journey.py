@@ -30,7 +30,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from opc_manager.onboarding import OnboardingManager, OnboardingStep, OnboardingState
-from opc_manager.task_engine_v3 import TaskEngineV3, TaskResult, TaskType, IntentClassifier
+from opc_manager.task_engine_v3 import (
+    TaskEngineV3,
+    TaskResult,
+    TaskType,
+    IntentClassifier,
+)
 from opc_manager.agent_loop import AgentLoop, MAX_USER_INPUT_LENGTH
 from opc_manager.undo_manager import UndoManager, OperationType
 from opc_manager.data_manager import (
@@ -46,7 +51,11 @@ from opc_manager.data_backup import DataBackupManager, _sanitize_value, REDACTED
 from opc_manager.skill_reviews import SkillReviewManager
 from opc_manager.i18n import I18nManager
 from opc_manager.secure_storage import SecureKeyStore
-from opc_manager.knowledge_bridge import KnowledgeBridge, LocalFolderAdapter, KnowledgeEntry
+from opc_manager.knowledge_bridge import (
+    KnowledgeBridge,
+    LocalFolderAdapter,
+    KnowledgeEntry,
+)
 from opc_manager.performance_monitor import PerformanceMonitor, get_performance_monitor
 from opc_manager.llm_cache import LLMCache
 from opc_manager.task_types import InputValidator
@@ -62,19 +71,24 @@ def _reset_singletons():
     AuditLog._instance = None
     # Reset PerformanceMonitor singleton
     import opc_manager.performance_monitor as _pm
+
     _pm._default_monitor = None
     # Reset DataManager state
     import opc_manager.data_manager as _dm
+
     _dm._db_initialized = False
     _dm._local = type("Local", (), {"conn": None})()
     # Reset SkillReviewManager singleton
     import opc_manager.skill_reviews as _sr
+
     _sr._manager = None
     # Reset LLMCache singleton
     import opc_manager.llm_cache as _lc
+
     _lc._cache_instance = None
     # Reset KnowledgeBridge singleton
     import opc_manager.knowledge_bridge as _kb
+
     _kb._instance = None
     yield
     # Cleanup after test
@@ -99,6 +113,7 @@ def tmp_data_dir(tmp_path):
 def patched_data_dir(tmp_data_dir):
     """Patch opc_manager.data_manager.DATA_DIR and DB_PATH to tmp_path."""
     import opc_manager.data_manager as _dm
+
     old_data_dir = _dm.DATA_DIR
     old_db_path = _dm.DB_PATH
     old_backup_dir = _dm.BACKUP_DIR
@@ -192,8 +207,10 @@ class TestJourney1NewUserFirstExperience:
         """Step 1: First launch → onboarding starts at WELCOME step."""
         state_file = tmp_path / "onboarding.json"
         fake_marker = tmp_path / ".onboarding_complete"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
-             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
+        with (
+            patch.object(OnboardingManager, "STATE_FILE", str(state_file)),
+            patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker),
+        ):
             mgr = OnboardingManager()
             assert not mgr.is_completed
             assert mgr.get_current_step() == OnboardingStep.WELCOME
@@ -222,12 +239,14 @@ class TestJourney1NewUserFirstExperience:
 
     def test_user_submits_first_task_gets_result(self, tmp_path):
         """Step 3-4: User submits first task → gets result."""
-        mock_execute = MagicMock(return_value=TaskResult(
-            success=True,
-            content="记录成功：收入5000元，来自张三",
-            task_type=TaskType.BUSINESS_OPERATION,
-            execution_time_ms=800,
-        ))
+        mock_execute = MagicMock(
+            return_value=TaskResult(
+                success=True,
+                content="记录成功：收入5000元，来自张三",
+                task_type=TaskType.BUSINESS_OPERATION,
+                execution_time_ms=800,
+            )
+        )
         with patch.object(TaskEngineV3, "execute", mock_execute):
             engine = TaskEngineV3()
             result = engine.execute("帮我记录一笔收入5000元，来自张三")
@@ -238,8 +257,10 @@ class TestJourney1NewUserFirstExperience:
         """Progress percentage increases as user advances through steps."""
         state_file = tmp_path / "onboarding.json"
         fake_marker = tmp_path / ".onboarding_complete"
-        with patch.object(OnboardingManager, "STATE_FILE", str(state_file)), \
-             patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker):
+        with (
+            patch.object(OnboardingManager, "STATE_FILE", str(state_file)),
+            patch("opc_manager.onboarding._ONBOARDING_MARKER", fake_marker),
+        ):
             mgr = OnboardingManager()
             initial_progress = mgr.progress_pct
             assert initial_progress == 0
@@ -262,12 +283,14 @@ class TestJourney2DailyTaskExecution:
 
     def test_email_draft_generated(self):
         """User submits '帮我写一封客户跟进邮件' → email draft generated."""
-        mock_execute = MagicMock(return_value=TaskResult(
-            success=True,
-            content="尊敬的客户，\n\n感谢您对我们服务的关注...",
-            task_type=TaskType.CONTENT_GENERATION,
-            execution_time_ms=1200,
-        ))
+        mock_execute = MagicMock(
+            return_value=TaskResult(
+                success=True,
+                content="尊敬的客户，\n\n感谢您对我们服务的关注...",
+                task_type=TaskType.CONTENT_GENERATION,
+                execution_time_ms=1200,
+            )
+        )
         with patch.object(TaskEngineV3, "execute", mock_execute):
             engine = TaskEngineV3()
             result = engine.execute("帮我写一封客户跟进邮件")
@@ -281,7 +304,16 @@ class TestJourney2DailyTaskExecution:
         execute_write(
             "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (record_id, "income", 5000.0, "咨询费", "张三", "2025-01-15", "咨询服务费", now),
+            (
+                record_id,
+                "income",
+                5000.0,
+                "咨询费",
+                "张三",
+                "2025-01-15",
+                "咨询服务费",
+                now,
+            ),
         )
         rows = execute_query("SELECT * FROM finance_records WHERE id=?", (record_id,))
         assert len(rows) == 1
@@ -290,12 +322,14 @@ class TestJourney2DailyTaskExecution:
 
     def test_analysis_report_generated(self):
         """User submits '分析我的业务数据' → analysis report generated."""
-        mock_execute = MagicMock(return_value=TaskResult(
-            success=True,
-            content="## SWOT分析\n\n### 优势\n1. 专注度高\n2. 灵活性大",
-            task_type=TaskType.DATA_ANALYSIS,
-            execution_time_ms=2500,
-        ))
+        mock_execute = MagicMock(
+            return_value=TaskResult(
+                success=True,
+                content="## SWOT分析\n\n### 优势\n1. 专注度高\n2. 灵活性大",
+                task_type=TaskType.DATA_ANALYSIS,
+                execution_time_ms=2500,
+            )
+        )
         with patch.object(TaskEngineV3, "execute", mock_execute):
             engine = TaskEngineV3()
             result = engine.execute("分析我的业务数据")
@@ -323,13 +357,31 @@ class TestJourney2DailyTaskExecution:
         execute_write(
             "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (gen_id(), "income", 5000.0, "咨询费", "张三", "2025-01-15", "邮件相关收入", now),
+            (
+                gen_id(),
+                "income",
+                5000.0,
+                "咨询费",
+                "张三",
+                "2025-01-15",
+                "邮件相关收入",
+                now,
+            ),
         )
         # Task record
         execute_write(
             "INSERT INTO tasks (id, title, description, priority, status, due_date, tags, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (gen_id(), "写客户跟进邮件", "草稿已生成", 2, "done", "2025-01-16", "邮件", now),
+            (
+                gen_id(),
+                "写客户跟进邮件",
+                "草稿已生成",
+                2,
+                "done",
+                "2025-01-16",
+                "邮件",
+                now,
+            ),
         )
         # Interaction log
         execute_write(
@@ -367,7 +419,11 @@ class TestJourney3UndoRecovery:
         assert op_id is not None
 
         # Step 2: Undo it
-        with patch.object(UndoManager, "_resolve_inverse", return_value=lambda record_id: {"deleted": True}):
+        with patch.object(
+            UndoManager,
+            "_resolve_inverse",
+            return_value=lambda record_id: {"deleted": True},
+        ):
             result = undo_manager.undo(session_id, op_id)
         assert result["success"]
 
@@ -424,25 +480,36 @@ class TestJourney4KnowledgeManagement:
 
     def test_local_folder_search_finds_relevant_docs(self, knowledge_folder):
         """Step 2: User searches for 'marketing' → finds relevant docs."""
-        with patch.dict(os.environ, {
-            "OPC_KB_ENABLED": "true",
-            "OPC_KB_TYPE": "local",
-            "OPC_KB_PATH": str(knowledge_folder),
-            "OPC_EMBEDDING_ENABLED": "false",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "OPC_KB_ENABLED": "true",
+                "OPC_KB_TYPE": "local",
+                "OPC_KB_PATH": str(knowledge_folder),
+                "OPC_EMBEDDING_ENABLED": "false",
+            },
+        ):
             adapter = LocalFolderAdapter(str(knowledge_folder))
             results = adapter.search("marketing", max_results=5)
             assert len(results) > 0
-            assert any("marketing" in r.title.lower() or "marketing" in r.content.lower() for r in results)
+            assert any(
+                "marketing" in r.title.lower() or "marketing" in r.content.lower()
+                for r in results
+            )
 
-    def test_search_unrelated_topic_returns_empty_or_low_relevance(self, knowledge_folder):
+    def test_search_unrelated_topic_returns_empty_or_low_relevance(
+        self, knowledge_folder
+    ):
         """Step 3: User searches for unrelated topic → gets no/irrelevant results."""
-        with patch.dict(os.environ, {
-            "OPC_KB_ENABLED": "true",
-            "OPC_KB_TYPE": "local",
-            "OPC_KB_PATH": str(knowledge_folder),
-            "OPC_EMBEDDING_ENABLED": "false",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "OPC_KB_ENABLED": "true",
+                "OPC_KB_TYPE": "local",
+                "OPC_KB_PATH": str(knowledge_folder),
+                "OPC_EMBEDDING_ENABLED": "false",
+            },
+        ):
             adapter = LocalFolderAdapter(str(knowledge_folder))
             results = adapter.search("quantum physics astrophysics", max_results=5)
             # Results may be empty or have very low relevance scores
@@ -458,12 +525,15 @@ class TestJourney4KnowledgeManagement:
 
     def test_knowledge_bridge_status(self, knowledge_folder):
         """KnowledgeBridge reports correct status when enabled."""
-        with patch.dict(os.environ, {
-            "OPC_KB_ENABLED": "true",
-            "OPC_KB_TYPE": "local",
-            "OPC_KB_PATH": str(knowledge_folder),
-            "OPC_EMBEDDING_ENABLED": "false",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "OPC_KB_ENABLED": "true",
+                "OPC_KB_TYPE": "local",
+                "OPC_KB_PATH": str(knowledge_folder),
+                "OPC_EMBEDDING_ENABLED": "false",
+            },
+        ):
             kb = KnowledgeBridge()
             if kb.enabled:
                 status = kb.get_status()
@@ -500,7 +570,9 @@ class TestJourney5SkillMarketplace:
 
     def test_get_reviews_list(self, review_db):
         """User can list reviews for a skill."""
-        review_db.add_review("skill_email_writer", 5, review_text="Excellent", user_id="u1")
+        review_db.add_review(
+            "skill_email_writer", 5, review_text="Excellent", user_id="u1"
+        )
         review_db.add_review("skill_email_writer", 4, review_text="Good", user_id="u2")
 
         reviews = review_db.get_reviews("skill_email_writer")
@@ -585,12 +657,14 @@ class TestJourney6DataBackupExport:
         data_dir.mkdir(parents=True)
 
         (data_dir / "config.json").write_text(
-            json.dumps({
-                "api_key": "sk-secret-key-12345",
-                "password": "my_password",
-                "name": "张三",
-                "normal_field": "visible data",
-            }),
+            json.dumps(
+                {
+                    "api_key": "sk-secret-key-12345",
+                    "password": "my_password",
+                    "name": "张三",
+                    "normal_field": "visible data",
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -646,11 +720,13 @@ class TestJourney7SettingsSecurity:
         data_dir.mkdir(parents=True)
 
         (data_dir / "secrets.json").write_text(
-            json.dumps({
-                "api_key": "sk-super-secret",
-                "smtp_pass": "email_password",
-                "username": "testuser",
-            }),
+            json.dumps(
+                {
+                    "api_key": "sk-super-secret",
+                    "smtp_pass": "email_password",
+                    "username": "testuser",
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -924,12 +1000,14 @@ class TestCrossJourneyIntegration:
             assert mgr.is_completed
 
         # 2. Execute task (mocked)
-        mock_execute = MagicMock(return_value=TaskResult(
-            success=True,
-            content="任务完成",
-            task_type=TaskType.CONTENT_GENERATION,
-            execution_time_ms=1000,
-        ))
+        mock_execute = MagicMock(
+            return_value=TaskResult(
+                success=True,
+                content="任务完成",
+                task_type=TaskType.CONTENT_GENERATION,
+                execution_time_ms=1000,
+            )
+        )
         with patch.object(TaskEngineV3, "execute", mock_execute):
             engine = TaskEngineV3()
             result = engine.execute("帮我写方案")
@@ -943,15 +1021,26 @@ class TestCrossJourneyIntegration:
 
         # 4. Undo
         um = UndoManager()
-        op_id = um.push("sess_int", OperationType.RECORD_INCOME, "undo_record_income", {"id": "x"}, {"amount": 100})
-        with patch.object(UndoManager, "_resolve_inverse", return_value=lambda id: {"deleted": True}):
+        op_id = um.push(
+            "sess_int",
+            OperationType.RECORD_INCOME,
+            "undo_record_income",
+            {"id": "x"},
+            {"amount": 100},
+        )
+        with patch.object(
+            UndoManager, "_resolve_inverse", return_value=lambda id: {"deleted": True}
+        ):
             undo_result = um.undo("sess_int", op_id)
         assert undo_result["success"]
 
     def test_data_manager_encrypt_decrypt_roundtrip(self, patched_data_dir):
         """Encrypt then decrypt returns original value (when key is available)."""
-        with patch.dict(os.environ, {"OPC_ENCRYPTION_KEY": "test-encryption-key-12345"}):
+        with patch.dict(
+            os.environ, {"OPC_ENCRYPTION_KEY": "test-encryption-key-12345"}
+        ):
             import opc_manager.data_manager as _dm
+
             _dm._fallback_key = None  # Reset cached key
             original = "敏感数据-张三的收入5000元"
             encrypted = encrypt_field(original)
@@ -977,12 +1066,15 @@ class TestCrossJourneyIntegration:
 
     def test_knowledge_bridge_builds_prompt(self, knowledge_folder):
         """KnowledgeBridge can build a knowledge prompt for LLM injection."""
-        with patch.dict(os.environ, {
-            "OPC_KB_ENABLED": "true",
-            "OPC_KB_TYPE": "local",
-            "OPC_KB_PATH": str(knowledge_folder),
-            "OPC_EMBEDDING_ENABLED": "false",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "OPC_KB_ENABLED": "true",
+                "OPC_KB_TYPE": "local",
+                "OPC_KB_PATH": str(knowledge_folder),
+                "OPC_EMBEDDING_ENABLED": "false",
+            },
+        ):
             kb = KnowledgeBridge()
             if kb.enabled:
                 prompt = kb.build_knowledge_prompt("marketing")
@@ -991,6 +1083,7 @@ class TestCrossJourneyIntegration:
     def test_backup_manager_list_backups(self, tmp_path):
         """Backup manager can list created backups."""
         import time as _time
+
         base_dir = tmp_path / "opc_base"
         data_dir = base_dir / "data"
         data_dir.mkdir(parents=True)
