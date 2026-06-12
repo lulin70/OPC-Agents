@@ -38,8 +38,7 @@ class LLMCache:
         """Create cache table if not exists."""
         with self._lock:
             conn = self._conn
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS llm_cache (
                     cache_key TEXT PRIMARY KEY,
                     model TEXT NOT NULL,
@@ -54,8 +53,7 @@ class LLMCache:
                     last_hit_at REAL,
                     expires_at REAL NOT NULL
                 )
-            """
-            )
+            """)
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_llm_cache_expires ON llm_cache(expires_at)"
             )

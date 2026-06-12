@@ -56,8 +56,7 @@ class SkillReviewManager:
     def _ensure_table(self):
         with self._lock:
             conn = self._conn
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS skill_reviews (
                     review_id TEXT PRIMARY KEY,
                     skill_id TEXT NOT NULL,
@@ -71,8 +70,7 @@ class SkillReviewManager:
                     created_at REAL NOT NULL,
                     updated_at REAL
                 )
-            """
-            )
+            """)
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_reviews_skill ON skill_reviews(skill_id)"
             )

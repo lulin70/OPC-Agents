@@ -159,8 +159,7 @@ def init_db() -> None:
         if _db_initialized:
             return
         conn = _get_conn()
-        conn.executescript(
-            """
+        conn.executescript("""
         CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT);
 
         CREATE TABLE IF NOT EXISTS finance_records (
@@ -381,8 +380,7 @@ def init_db() -> None:
             confidence REAL DEFAULT 0.0,
             detail TEXT DEFAULT ''
         );
-    """
-        )
+    """)
         _run_migrations(conn)
         _seed_categories(conn)
         _seed_templates(conn)
@@ -435,8 +433,7 @@ def _migrate_v3_to_v4(conn: sqlite3.Connection) -> None:
 
 def _migrate_v4_to_v5(conn: sqlite3.Connection) -> None:
     _add_column_if_not_exists(conn, "invoices", "proposal_id", "TEXT DEFAULT ''")
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS follow_ups (
             id TEXT PRIMARY KEY,
             customer_id TEXT NOT NULL,
@@ -445,13 +442,11 @@ def _migrate_v4_to_v5(conn: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
         )
-    """
-    )
+    """)
 
 
 def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS audit_log (
             id TEXT PRIMARY KEY,
             session_id TEXT NOT NULL,
@@ -468,8 +463,7 @@ def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_log(session_id);
         CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log(timestamp);
-    """
-    )
+    """)
 
 
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")

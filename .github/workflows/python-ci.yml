@@ -34,8 +34,8 @@ jobs:
 
     - name: Check formatting with Black
       run: |
-        pip install "black>=25.0,<26.0"
-        black --check opc_manager/ frontend/ tests/
+        pip install "black>=26.3.1"
+        black --check --target-version py310 opc_manager/ frontend/ tests/
 
     - name: Security scan with Bandit
       run: |

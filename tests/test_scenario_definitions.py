@@ -34,7 +34,6 @@ from opc_manager.scenario_definitions import (
     project_deliverable_scenario,
 )
 
-
 # ==================== OutputSpec Tests ====================
 
 

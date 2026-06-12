@@ -28,7 +28,6 @@ from opc_manager.flywheel_tracker import (
     FlywheelTrackerDB,
 )
 
-
 # ==================== DimensionScore Tests ====================
 
 

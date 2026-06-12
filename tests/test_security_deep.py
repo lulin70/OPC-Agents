@@ -23,7 +23,6 @@ from unittest.mock import patch, MagicMock, PropertyMock
 
 import pytest
 
-
 # ============================================================================
 # 1. SQL Injection Deep Tests
 # ============================================================================

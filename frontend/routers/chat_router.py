@@ -265,8 +265,7 @@ def render_chat_page():
     _maybe_show_shortcut_hints()
     if DEMO_MODE:
         st.markdown(f"## {_t('chat_demo_mode')}")
-        st.info(
-            f"""**{_t('chat_demo_mode_title')}** — {_t('chat_demo_mode_desc')}
+        st.info(f"""**{_t('chat_demo_mode_title')}** — {_t('chat_demo_mode_desc')}
 
 | {_t('chat_demo_feature')} | {_t('chat_demo_status')} |
 |------|------|
@@ -276,8 +275,7 @@ def render_chat_page():
 | 💬 {_t('nav_chat')} / {_t('chat_task_exec')} | 🔒 {_t('chat_demo_need_key')}
 
 👉 **{_t('chat_demo_goto_settings')}**
-"""
-        )
+""")
         st.markdown(f"### {_t('chat_demo_data_preview')}")
         demo = _get_demo_dashboard_data()
         col1, col2, col3 = st.columns(3)
@@ -310,8 +308,7 @@ def render_chat_page():
                 f"⚠️ **{_t('chat_template_mode')}** — {_t('chat_template_mode_desc')}"
             )
             with st.expander(f"📖 {_t('chat_how_to_get_key')}", expanded=True):
-                st.markdown(
-                    f"""
+                st.markdown(f"""
 **{_t('chat_3step_config')}:**
 
 1. {_t('chat_step1_visit')}
@@ -319,8 +316,7 @@ def render_chat_page():
 3. {_t('chat_step3_fill_key')}
 
 {_t('chat_config_note')}
-"""
-                )
+""")
         else:
             st.success(f"✅ {_t('chat_ai_ready')}")
 

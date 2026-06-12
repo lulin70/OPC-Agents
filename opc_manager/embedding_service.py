@@ -77,16 +77,14 @@ class EmbeddingService:
         self._cache_db = os.path.join(cache_dir, EMBEDDING_CACHE_DB)
         try:
             conn = sqlite3.connect(self._cache_db)
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS embeddings (
                     content_hash TEXT PRIMARY KEY,
                     model TEXT NOT NULL,
                     embedding BLOB NOT NULL,
                     created_at REAL NOT NULL
                 )
-            """
-            )
+            """)
             conn.commit()
             conn.close()
         except sqlite3.Error as e:

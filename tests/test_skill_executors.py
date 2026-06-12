@@ -18,7 +18,6 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from opc_manager.skill_executors import SkillExecutorMixin
 from opc_manager.skill_models import SkillContext
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

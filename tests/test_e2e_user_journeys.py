@@ -36,7 +36,6 @@ from opc_manager.i18n import I18nManager
 from opc_manager.secure_storage import SecureKeyStore
 from opc_manager.data_backup import DataBackupManager
 
-
 # ─── Shared Fixtures ────────────────────────────────────────────────────────
 
 
