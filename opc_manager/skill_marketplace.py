@@ -1,8 +1,10 @@
 import hashlib
+import hmac
 import importlib.util
 import json
 import logging
 import os
+import re
 import ssl
 import subprocess
 import time
