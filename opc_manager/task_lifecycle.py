@@ -13,7 +13,6 @@ from .agent_context import AgentContext, AgentState
 from .consensus_engine import DecisionType
 from .executor_brain import ExecutorBrain
 from .reflector_brain import Evaluation
-from .task_engine_v3 import TaskType, TaskResult
 
 logger = logging.getLogger(__name__)
 
@@ -311,7 +310,9 @@ class ConsensusConsultant:
 
             init_db()
             execute_write(
-                "INSERT INTO consensus_decisions (id, timestamp, opinion_count, decision_type, approved, confidence, detail) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO consensus_decisions "
+                "(id, timestamp, opinion_count, decision_type, "
+                "approved, confidence, detail) VALUES (?,?,?,?,?,?,?)",
                 (
                     context.task_id,
                     log_entry["timestamp"],

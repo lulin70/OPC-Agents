@@ -39,7 +39,6 @@ if FASTAPI_AVAILABLE:
         SkillMarketplace,
         MarketplaceSkill,
         PermissionLevel,
-        SkillStatus,
         ExternalSkillMarketplace,
     )
 

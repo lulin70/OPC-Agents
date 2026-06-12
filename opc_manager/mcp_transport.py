@@ -24,7 +24,7 @@ import json
 import logging
 import os
 import sys
-from typing import Dict, Any, Optional
+from typing import Optional
 
 from .version import __version__
 
@@ -33,14 +33,13 @@ logger = logging.getLogger(__name__)
 SSE_AVAILABLE = False
 try:
     from fastapi import FastAPI, Request
-    from fastapi.responses import StreamingResponse
     from sse_starlette.sse import EventSourceResponse
 
     SSE_AVAILABLE = True
 except ImportError:
     pass
 
-from .mcp_protocol import MCPServer
+from .mcp_protocol import MCPServer  # noqa: E402
 
 
 def create_mcp_server() -> MCPServer:
@@ -204,8 +203,6 @@ def main():
         transport.run()
     elif args.transport == "sse":
         if SSE_AVAILABLE:
-            import uvicorn
-
             app = create_sse_app()
             start_sse_server(app, host=args.host, port=args.port)
         else:
