@@ -193,3 +193,19 @@ configure_allowed_dirs(["/path/to/workspace/deliverables"])
 ---
 
 **文档状态**: ✅ 安全专家完成 | ⏳ 待全员审核
+
+---
+
+## 5. v0.2.5 安全修复记录
+
+> **修复日期**: 2026-06-07
+> **对应版本**: v0.2.5
+> **修复范围**: 5项关键安全修复，源自DevSquad 7角色评审
+
+| # | 修复项 | 修复内容 | 影响模块 |
+|---|--------|---------|---------|
+| 1 | 加密密钥统一SHA256派生 | 将settings.py中加密密钥派生方式从truncate+pad统一为SHA256，并保留旧密钥的迁移回退逻辑 | settings.py |
+| 2 | asyncio并发修复 | 替换Streamlit上下文中的`asyncio.get_running_loop().run_until_complete()`为`ThreadPoolExecutor`，避免事件循环冲突 | task_engine_v3.py |
+| 3 | 加密回退策略变更 | data_manager.py中加密密钥回退策略从随机会话密钥改为自动派生机器密钥并输出安全警告，避免跨会话数据不可解密 | data_manager.py |
+| 4 | 数据库文件权限0o600 | settings.py写入.env.local后设置文件权限为0o600，防止其他用户读取加密密钥 | settings.py |
+| 5 | undo_manager修复 | 修复undo_manager中can_undo死代码跳过过期检查的问题，确保撤销操作正确校验时效性 | undo_manager.py |

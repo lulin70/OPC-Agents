@@ -1,5 +1,5 @@
 """
-Settings Manager — v0.2.1 统一设置中心
+Settings Manager — v0.2.5 统一设置中心
 
 提供运行时可修改的用户设置，支持持久化到JSON文件。
 所有敏感信息通过SecureKeyStore加密存储。

@@ -443,8 +443,8 @@ def render_chat_page():
                 (50, 60, _t("chat_phase_deliver"), _t("chat_phase_deliver_hint")),
             ]
 
-            max_polls = 60
-            poll_interval = 1.0
+            max_polls = 120
+            poll_interval = 0.5
             start_time = time.time()
             progress_placeholder = st.empty()
 

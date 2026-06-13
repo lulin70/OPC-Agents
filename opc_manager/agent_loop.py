@@ -234,11 +234,15 @@ class AgentLoop:
             if loop_result is not None:
                 if loop_result.get("cancelled"):
                     return self._build_result(agent_context, cancelled=True)
+                loop_error = loop_result.get("error", "")
+                fallback_content = (
+                    loop_error or "任务执行遇到问题，请重试或换一种方式描述"
+                )
                 return TaskResult(
                     success=loop_result.get("success", False),
-                    content="",
+                    content=fallback_content,
                     task_type=TaskType.GENERAL_CHAT,
-                    error=loop_result.get("error", ""),
+                    error=loop_error,
                 )
 
             agent_context.set_state(AgentState.COMPLETED)
@@ -412,7 +416,10 @@ class AgentLoop:
                 task_type=context.intent.type.value if context.intent else None,
             )
 
-        success = all(r.get("success", False) for r in results) if results else False
+        success = all(r.get("success", False) for r in results) if results else True
+
+        if not content and not results:
+            content = "已收到您的消息，我会尽力帮助您。"
 
         return TaskResult(
             success=success,
@@ -865,11 +872,13 @@ class AgentLoop:
             if loop_result is not None:
                 if loop_result.get("cancelled"):
                     return self._build_result(context, cancelled=True)
+                loop_error = loop_result.get("error", "")
+                fallback_content = loop_error or "任务恢复执行遇到问题，请重试"
                 return TaskResult(
                     success=loop_result.get("success", False),
-                    content="",
+                    content=fallback_content,
                     task_type=TaskType.GENERAL_CHAT,
-                    error=loop_result.get("error", ""),
+                    error=loop_error,
                 )
 
             context.set_state(AgentState.COMPLETED)

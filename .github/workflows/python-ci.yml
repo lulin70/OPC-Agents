@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -21,6 +22,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip'
 
     - name: Install dependencies
       run: |
@@ -34,7 +36,6 @@ jobs:
 
     - name: Check formatting with Black
       run: |
-        pip install "black>=26.3.1"
         black --check --target-version py310 opc_manager/ frontend/ tests/
 
     - name: Security scan with Bandit

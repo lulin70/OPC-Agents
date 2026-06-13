@@ -52,14 +52,40 @@ def _get_encryption_key() -> Optional[bytes]:
     if key_str:
         return hashlib.sha256(key_str.encode()).digest()
 
-    # 无密钥时返回 None，调用方负责处理
+    # 无显式密钥时，自动派生基于机器特征的密钥
+    # 保证数据至少是加密存储的，而非明文
     if _fallback_key is None:
-        logger.warning(
-            "[SECURITY] OPC_ENCRYPTION_KEY not set. Sensitive data will be stored as plaintext. "
-            "Set OPC_ENCRYPTION_KEY environment variable for encryption support."
+        machine_id = _derive_machine_key()
+        _fallback_key = hashlib.sha256(
+            f"opc-agents-auto-{machine_id}".encode()
+        ).digest()
+        logger.info(
+            "[SECURITY] OPC_ENCRYPTION_KEY not set. Using auto-derived key "
+            "from machine identity. Set OPC_ENCRYPTION_KEY explicitly for "
+            "portable encrypted data."
         )
-        _fallback_key = None  # 明确标记为无密钥
-    return None
+    return _fallback_key
+
+
+def _derive_machine_key() -> str:
+    """Derive a machine-specific key from stable system identifiers."""
+    components = []
+    for attr in ("node", "machine", "system"):
+        val = getattr(os, attr, None)
+        if val:
+            components.append(str(val))
+    # Add username as additional entropy
+    try:
+        import getpass
+
+        components.append(getpass.getuser())
+    except Exception:
+        pass
+    # Add home directory path as machine-specific entropy
+    home = os.path.expanduser("~")
+    if home:
+        components.append(home)
+    return ":".join(components) if components else "default-opc-key"
 
 
 def encrypt_field(plaintext: str) -> str:

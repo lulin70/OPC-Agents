@@ -202,14 +202,25 @@ OPC-Agents/
 ├── frontend/              # Streamlitフロントエンド（モジュラー化）
 │   ├── app.py             # メインUIルーター（579行、ルーティングのみ）
 │   ├── components/        # 共有コンポーネント
-│   │   └── shared.py      # 16個のUIヘルパー関数（384行）
+│   │   ├── shared.py      # 16個のUIヘルパー関数（384行）
+│   │   ├── session_utils.py      # セッションユーティリティ関数
+│   │   ├── export_helpers.py     # エクスポートヘルパー関数
+│   │   ├── progress_indicator.py # 進捗インジケーターコンポーネント
+│   │   ├── toast_notifications.py # Toast通知コンポーネント
+│   │   ├── theme_manager.py      # テーママネージャー
+│   │   ├── timeline_data.py      # タイムラインデータ処理
+│   │   ├── timeline_export.py    # タイムラインエクスポート
+│   │   ├── timeline_filters.py   # タイムラインフィルター
+│   │   ├── undo_display.py       # アンドゥ操作表示
+│   │   ├── undo_export.py        # アンドゥ操作エクスポート
+│   │   └── undo_actions.py       # アンドゥ操作アクション
 │   ├── page_modules/      # ページモジュール
 │   │   ├── dashboard_page.py   # ダッシュボードページ（578行+テンプレート）
 │   │   ├── marketplace_page.py # スキルマーケットV2（547行）
 │   │   └── settings_page.py    # 設定管理ページ（666行）
 │   ├── routers/            # ルーターモジュール
 │   └── renderers/          # レンダラーモジュール
-├── opc_manager/           # コアビジネスロジック（88個の.pyモジュール）
+├── opc_manager/           # コアビジネスロジック（90個の.pyモジュール）
 │   ├── cli.py             # CLIエントリポイント
 │   ├── agent_loop.py      # 実行ループ
 │   ├── strategist_brain.py# 戦略脳
@@ -325,7 +336,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **テストカバレッジ範囲**：全88個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **テストカバレッジ範囲**：全90個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## バージョン履歴
 

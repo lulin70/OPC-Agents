@@ -1,10 +1,10 @@
-> **状态更新 (2026-06-07)**: v0.2.5 架构统一+安全加固已完成。2933测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
+> **状态更新 (2026-06-07)**: v0.2.5 架构统一+安全加固已完成。2991测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
 
 # OPC-Agents v0.2.5 Roadmap
 
 **Created**: 2026-05-16
 **Last Updated**: 2026-06-07 (v0.2.5 Architecture Unification + Security Hardening + LLM Concurrency Control)
-**Based on**: v0.2.0 post-release evaluation → **v0.2.5** (2933+ tests, 7-dim code review + architecture refactoring completed)
+**Based on**: v0.2.0 post-release evaluation → **v0.2.5** (2991+ tests, 7-dim code review + architecture refactoring completed)
 **Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.2.2-v0.2.5 Sprint COMPLETED
 
 ---
@@ -14,7 +14,7 @@
 | Metric | Value |
 |--------|-------|
 | Version | 0.2.5 (released 2026-06-07) |
-| Tests | **2939** passed, 0 failed |
+| Tests | **2991** passed, 0 failed |
 | CI/CD | ✅ GitHub Actions passing (Python 3.10/3.11/3.12) |
 | Security | Bandit 0 High/Medium, all P0/P1 fixed, Fernet encryption at rest |
 | Source files | **135+ .py** in opc_manager/ + frontend/ + plugins/, **76 test files** |

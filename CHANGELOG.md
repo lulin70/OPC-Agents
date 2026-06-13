@@ -49,6 +49,9 @@ All notable changes to OPC-Agents will be documented in this file.
 - Fixed shortcuts_handler.py: generate() → complete() (method didn't exist)
 - Fixed test_invalid_ciphertext_handled_gracefully with env var isolation
 
+### Test Coverage
+- **2991 tests passing**
+
 ## [0.2.4] - 2026-05-24
 
 ### Version Bump

@@ -10,7 +10,7 @@ Phase 3 Extension: Database persistence support (FlywheelTrackerDB)
 
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from opc_manager.business_types import BusinessType
@@ -657,7 +657,7 @@ class FlywheelTrackerDB(FlywheelTracker):
         db_state.total_scenarios_completed = state.total_scenarios_completed
         db_state.active_days = state.active_days
         db_state.achievements = state.achievements
-        db_state.updated_at = datetime.utcnow()
+        db_state.updated_at = datetime.now(timezone.utc)
 
         try:
             self.db_session.commit()

@@ -60,7 +60,7 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - ✅ **🛡️ User-Friendly Error Handling** — 9 exception types → Chinese-friendly messages, ErrorHandler unified exception translation
 - ✅ **💬 WeChat E2E Integration** — WeChatAgent + WeChatGateway for WeChat-based task interaction
 - ✅ **📊 Modular Dashboard** — DashboardConfig (3 layouts × 3 densities × 6 panels), template system supports 9 combinations
-- ✅ **🌐 Tri-Lingual i18n** — I18nManager supports zh_CN/en_US/ja_JP, 58+ translation keys
+- ✅ **🌐 Tri-Lingual i18n** — I18nManager supports zh_CN/en_US/ja_JP, 696+ translation keys
 - ✅ **🛒 Skill Marketplace V2** — Detail panel + 16-category filter + version pinning,all-new UI experience
 - ✅ **🔍 Global Search** — Cross-module unified search for skills/customers/articles/tasks in one place
 - ✅ **⌨️ Apple Shortcuts Integration** — 5 shortcut actions (quick_task/query_status/create_deliverable/record_income/daily_report)
@@ -204,14 +204,25 @@ OPC-Agents/
 ├── frontend/              # Streamlit frontend (modularized)
 │   ├── app.py             # Main UI router (579 lines, routing only)
 │   ├── components/        # Shared components
-│   │   └── shared.py      # 16 UI helper functions (384 lines)
+│   │   ├── shared.py      # 16 UI helper functions (384 lines)
+│   │   ├── session_utils.py      # Session utility functions
+│   │   ├── export_helpers.py     # Export helper functions
+│   │   ├── progress_indicator.py # Progress indicator component
+│   │   ├── toast_notifications.py # Toast notification component
+│   │   ├── theme_manager.py      # Theme manager
+│   │   ├── timeline_data.py      # Timeline data processing
+│   │   ├── timeline_export.py    # Timeline export
+│   │   ├── timeline_filters.py   # Timeline filters
+│   │   ├── undo_display.py       # Undo operation display
+│   │   ├── undo_export.py        # Undo operation export
+│   │   └── undo_actions.py       # Undo operation actions
 │   ├── page_modules/      # Page modules
 │   │   ├── dashboard_page.py   # Dashboard page (578 lines + templates)
 │   │   ├── marketplace_page.py # Skill Marketplace V2 (547 lines)
 │   │   └── settings_page.py    # Settings management (666 lines)
 │   ├── routers/            # Router modules
 │   └── renderers/          # Renderer modules
-├── opc_manager/           # Core business logic (88 .py modules)
+├── opc_manager/           # Core business logic (90 .py modules)
 │   ├── cli.py             # CLI entry point (opc-agents command after pip install)
 │   ├── agent_loop.py      # Execution loop (Plan→Act→Observe→Reflect 4-phase closed loop)
 │   ├── strategist_brain.py# Strategist Brain (intent understanding + task planning + composite intent decomposition)
@@ -227,7 +238,7 @@ OPC-Agents/
 │   ├── onboarding.py      # 🚶 OnboardingManager (3-step first-run wizard)
 │   ├── error_handler.py   # 🛡️ ErrorHandler (9 exception types → friendly messages)
 │   ├── data_backup.py     # 💾 DataBackupManager (ZIP/JSON/CSV export, SHA256, Zip Slip protection)
-│   ├── i18n.py            # 🌐 I18nManager (zh_CN/en_US/ja_JP, 58+ keys)
+│   ├── i18n.py            # 🌐 I18nManager (zh_CN/en_US/ja_JP, 696+ keys)
 │   ├── dashboard_config.py# 📊 DashboardConfig (3 layouts × 3 densities × 6 panels = 9 combos)
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts integration (5 CLI actions)
 │   │
@@ -327,7 +338,7 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **Test Coverage**: All 88 opc_manager modules + 38 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)
+> **Test Coverage**: All 90 opc_manager modules + 38 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)
 
 ## Version History
 

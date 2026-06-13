@@ -239,14 +239,25 @@ OPC-Agents/
 ├── frontend/              # Streamlit前端（模块化重构）
 │   ├── app.py             # 主界面路由（579行，仅路由逻辑）
 │   ├── components/        # 共享组件
-│   │   └── shared.py      # 16个UI辅助函数（384行）
+│   │   ├── shared.py      # 16个UI辅助函数（384行）
+│   │   ├── session_utils.py      # 会话工具函数
+│   │   ├── export_helpers.py     # 导出辅助函数
+│   │   ├── progress_indicator.py # 进度指示器组件
+│   │   ├── toast_notifications.py # Toast通知组件
+│   │   ├── theme_manager.py      # 主题管理器
+│   │   ├── timeline_data.py      # 时间线数据处理
+│   │   ├── timeline_export.py    # 时间线导出
+│   │   ├── timeline_filters.py   # 时间线过滤器
+│   │   ├── undo_display.py       # 撤销操作显示
+│   │   ├── undo_export.py        # 撤销操作导出
+│   │   └── undo_actions.py       # 撤销操作动作
 │   ├── page_modules/      # 页面模块
 │   │   ├── dashboard_page.py   # 仪表盘页面（578行+模板）
 │   │   ├── marketplace_page.py # 技能市场V2（547行）
 │   │   └── settings_page.py    # 设置管理页（666行）
 │   ├── routers/            # 路由模块
 │   └── renderers/          # 渲染模块
-├── opc_manager/           # 核心业务逻辑（88个.py模块）
+├── opc_manager/           # 核心业务逻辑（90个.py模块）
 │   ├── cli.py             # CLI入口（pip install后opc-agents命令）
 │   ├── agent_loop.py      # 执行循环（Plan→Act→Observe→Reflect四阶段闭环）
 │   ├── strategist_brain.py# 策略脑（意图理解+任务规划+复合意图拆解）
@@ -263,7 +274,7 @@ OPC-Agents/
 │   ├── onboarding.py      # 🚶 OnboardingManager（3步首次运行引导向导）
 │   ├── error_handler.py   # 🛡️ ErrorHandler（9种异常类型→中文友好消息）
 │   ├── data_backup.py     # 💾 DataBackupManager（ZIP/JSON/CSV导出，SHA256，Zip Slip防护）
-│   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP，58+翻译键）
+│   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP，696+翻译键）
 │   ├── dashboard_config.py# 📊 DashboardConfig（3布局×3密度×6面板=9种组合）
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts集成（5个CLI动作）
 │   │
@@ -380,15 +391,15 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **测试覆盖范围**：全部88个opc_manager模块 + 前端38模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **测试覆盖范围**：全部90个opc_manager模块 + 前端38模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## 版本历史
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
 | **0.2.5** | **2026-06-07** | **架构统一+安全加固** — 架构统一重构+LLM并发控制+安全加固+2939测试/76文件 |
-| **0.2.4** | **2026-05-25** | **记忆+知识库增强** — CarryMem深度集成+知识库搜索优化+通知系统+扩展测试 |
-| **0.2.3** | **2026-05-22** | **CarryMem集成** — 跨会话持久记忆(MemoryBridge)+规则引擎+飞轮机制+LLM缓存+技能评分 |
+| **0.2.4** | **2026-05-24** | **记忆+知识库增强** — CarryMem深度集成+知识库搜索优化+通知系统+扩展测试 |
+| **0.2.3** | **2026-05-24** | **CarryMem集成** — 跨会话持久记忆(MemoryBridge)+规则引擎+飞轮机制+LLM缓存+技能评分 |
 | **0.2.2** | **2026-05-21** | **CarryMem+知识库+飞轮** — 跨会话持久记忆+规则引擎+6种知识库适配+飞轮机制+LLM缓存+技能评分+前端模块化+E2E测试（1952测试/56文件） |
 | **0.2.2** | **2026-05-20** | **品质修复** — i18n 315+硬编码清理+备份AES加密+导出脱敏+MCP默认localhost+Onboarding合并+移动端适配+快捷键修正+CI安全扫描 |
 | 0.2.1 | 2026-05-18 | 8个OPC技能集成+技术债清理(32 bare except+i18n 97键) |

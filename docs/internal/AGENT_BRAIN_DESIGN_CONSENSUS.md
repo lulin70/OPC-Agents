@@ -1015,3 +1015,17 @@ Step 5: 集成测试
   ├── 分析→通知闭环
   └── LLM降级路径
 ```
+
+---
+
+## 12. v0.2.5 更新记录
+
+> **更新日期**: 2026-06-07
+> **对应版本**: v0.2.5
+> **更新范围**: 架构统一重构，3项核心架构变更
+
+| # | 更新项 | 更新内容 | 影响模块 |
+|---|--------|---------|---------|
+| 1 | AgentLoop单一入口重构 | 统一为AgentLoop作为唯一执行入口，AgentLoop.run()返回TaskResult而非Dict；移除exec_mode切换（始终使用AgentLoop）；移除execute_task_and_deliver（不再三重回退）；TaskEngineAdapter标记为deprecated（保留向后兼容） | agent_loop.py, executor_brain.py, frontend |
+| 2 | AgentContext/AgentState提取为独立模块 | 将AgentContext和AgentState从agent_loop.py中提取为独立模块，提升代码可维护性和复用性 | agent_context.py, agent_state.py |
+| 3 | TaskLifecycleManager/ConsensusConsultant提取 | 将任务生命周期管理和共识咨询逻辑从核心循环中提取为独立组件，降低AgentLoop复杂度 | task_lifecycle_manager.py, consensus_consultant.py |
