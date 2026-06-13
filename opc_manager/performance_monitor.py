@@ -260,7 +260,7 @@ class PerformanceMonitor:
                 loop.run_in_executor(None, _write)
             except RuntimeError:
                 _write()
-        except Exception as e:
+        except Exception:
             logger.warning("Metrics persist failed")
 
     def _load_metrics(self) -> None:

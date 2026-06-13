@@ -10,7 +10,6 @@ Contains all skill marketplace-related UI rendering functions:
 
 import streamlit as st
 import logging
-import hashlib
 from opc_manager.i18n import t as _t
 
 logger = logging.getLogger(__name__)
@@ -234,19 +233,6 @@ def _render_skill_card_v2(
     author = skill.get("author", "unknown")
     category = skill.get("category", "general")
     skill_id = skill.get("skill_id", "")
-
-    trust_colors = {
-        "official": "blue",
-        "verified": "green",
-        "community": "orange",
-        "unverified": "gray",
-    }
-    trust_labels = {
-        "official": _t("mp_trust_official"),
-        "verified": _t("mp_trust_verified"),
-        "community": _t("mp_trust_community"),
-        "unverified": _t("mp_trust_unverified"),
-    }
 
     is_installed = skill_id in installed_versions
     installed_ver = installed_versions.get(skill_id, "")

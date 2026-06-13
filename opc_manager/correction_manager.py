@@ -1,7 +1,7 @@
 """Correction Manager — Handles strategy correction and skill fallback logic."""
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from .reflector_brain import CorrectionStrategy
 

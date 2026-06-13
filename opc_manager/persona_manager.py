@@ -10,7 +10,6 @@ import logging
 import yaml
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
-from enum import Enum
 
 from opc_manager.business_types import BusinessType
 

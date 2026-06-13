@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
@@ -61,8 +61,8 @@ def get_tax_calendar(month: int = 0) -> Dict[str, Any]:
 
 def check_upcoming_deadlines(days_ahead: int = 30) -> Dict[str, Any]:
     now = time.strftime("%Y-%m-%d")
-    current_month = int(time.strftime("%m"))
-    current_day = int(time.strftime("%d"))
+    int(time.strftime("%m"))
+    int(time.strftime("%d"))
     current_year = int(time.strftime("%Y"))
 
     upcoming = []

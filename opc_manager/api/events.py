@@ -1,8 +1,7 @@
 import json
-import time
 import asyncio
 from aiohttp import web
-from opc_manager.progress_emitter import ProgressEmitter, ProgressEvent, EventType
+from opc_manager.progress_emitter import ProgressEmitter
 
 MAX_SSE_CONNECTIONS = 100
 _active_sse_connections = 0

@@ -28,8 +28,10 @@ import logging
 import base64
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable, List
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
+
+from opc_manager.config import LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
@@ -450,7 +452,7 @@ class SettingsManager:
                     if env_key == "MOKA_API_KEY":
                         self._llm.provider = self._llm.provider or "moka"
                         self._llm.base_url = self._llm.base_url or os.environ.get(
-                            "MOKA_API_BASE", "https://api.moka-ai.com/v1"
+                            "MOKA_API_BASE", LLM_PROVIDERS["moka"]
                         )
                         self._llm.model = self._llm.model or os.environ.get(
                             "MOKA_MODEL", "moka/claude-sonnet-4-6"
@@ -458,13 +460,13 @@ class SettingsManager:
                     elif env_key == "GLM_API_KEY":
                         self._llm.provider = self._llm.provider or "glm"
                         self._llm.base_url = (
-                            self._llm.base_url or "https://open.bigmodel.cn/api/paas/v4"
+                            self._llm.base_url or LLM_PROVIDERS["zhipu"]
                         )
                         self._llm.model = self._llm.model or "glm-4"
                     elif env_key == "OPENAI_API_KEY":
                         self._llm.provider = self._llm.provider or "openai"
                         self._llm.base_url = self._llm.base_url or os.environ.get(
-                            "OPENAI_API_BASE", "https://api.openai.com/v1"
+                            "OPENAI_API_BASE", LLM_PROVIDERS["openai"]
                         )
                         self._llm.model = self._llm.model or "gpt-4"
                     break
@@ -740,7 +742,7 @@ class SettingsManager:
             "api_key": self._llm.api_key or self.get_api_key(self._llm.provider) or "",
             "base_url": self._llm.base_url
             or self._retrieve_sensitive_key("MOKA_API_BASE")
-            or os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1"),
+            or os.environ.get("MOKA_API_BASE", LLM_PROVIDERS["moka"]),
             "model": self._llm.model
             or self._retrieve_sensitive_key("MOKA_MODEL")
             or os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6"),

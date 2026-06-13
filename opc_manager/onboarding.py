@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 import os
 
+from opc_manager.config import LLM_PROVIDERS
+
 logger = logging.getLogger(__name__)
 
 _ONBOARDING_MARKER = Path(os.path.expanduser("~/.opc-agents/onboarding_complete"))
@@ -183,7 +185,7 @@ class OnboardingManager:
                         "id": "moka",
                         "name": "MokaAI (推荐)",
                         "description": "Claude Sonnet 4，高质量中文输出",
-                        "base_url": "https://api.moka-ai.com/v1",
+                        "base_url": LLM_PROVIDERS["moka"],
                         "model": "moka/claude-sonnet-4-6",
                         "key_url": "https://moka-ai.com",
                     },
@@ -191,7 +193,7 @@ class OnboardingManager:
                         "id": "openai",
                         "name": "OpenAI",
                         "description": "GPT-4o，全球最流行的LLM",
-                        "base_url": "https://api.openai.com/v1",
+                        "base_url": LLM_PROVIDERS["openai"],
                         "model": "gpt-4o",
                         "key_url": "https://platform.openai.com/api-keys",
                     },
@@ -199,7 +201,7 @@ class OnboardingManager:
                         "id": "glm",
                         "name": "智谱GLM-4",
                         "description": "国产大模型，中文能力强",
-                        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+                        "base_url": LLM_PROVIDERS["zhipu"],
                         "model": "glm-4",
                         "key_url": "https://open.bigmodel.cn",
                     },

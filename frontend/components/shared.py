@@ -6,13 +6,10 @@ and other reusable UI components.
 """
 
 import streamlit as st
-import os
 import time
 import logging
-from datetime import datetime
 
 from opc_manager.i18n import t as _t
-from opc_manager.error_handler import ErrorHandler, UserFriendlyError
 
 from frontend.components.session_utils import (
     _get_undo_manager,

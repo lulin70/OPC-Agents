@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Tuple
 from opc_manager.task_types import TaskType
 
 logger = logging.getLogger(__name__)

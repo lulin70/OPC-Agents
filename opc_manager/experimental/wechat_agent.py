@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from .wechat_gateway import WeChatGateway, WeChatMessage, WeChatResponse, WeChatMsgType
 from opc_manager.agent_loop import AgentLoop

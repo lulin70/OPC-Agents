@@ -17,7 +17,6 @@ import logging
 from opc_manager.utils import (
     extract_json_from_llm,
     sanitize_for_llm,
-    _llm_thread_semaphore,
     call_llm_service,
 )
 
@@ -138,9 +137,9 @@ class ReflectorBrain:
             except Exception as e:
                 logger.warning("LLM评估异常，降级到规则评估: %s", e)
 
-        success = actual_result.get("success", False)
-        data = actual_result.get("data", {})
-        error = actual_result.get("error", "")
+        actual_result.get("success", False)
+        actual_result.get("data", {})
+        actual_result.get("error", "")
 
         quality_score = self._calculate_quality_score(actual_result, expected_intent)
         result_type = self._determine_result_type(quality_score)

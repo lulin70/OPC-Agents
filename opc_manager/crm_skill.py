@@ -1,7 +1,7 @@
 import logging
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from opc_manager.data_manager import (
     encrypt_field,

@@ -42,7 +42,7 @@ Reasons:
 import re
 import time
 import logging
-from typing import Dict, List, Optional, Any, Tuple, Callable
+from typing import Dict, List, Optional, Tuple, Callable
 from dataclasses import dataclass, field
 from .utils import _llm_thread_semaphore
 
@@ -603,8 +603,6 @@ class LLMEnhancedContentGenerator:
 
         try:
             import requests
-            import json
-            import os
 
             api_key, api_base, model = self._get_llm_config()
             if not api_base:

@@ -12,7 +12,7 @@ extracted to avoid circular imports between skill_registry, skill_builtin, and s
 - Skill: Complete skill definition with metadata
 """
 
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 

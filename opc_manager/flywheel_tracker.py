@@ -661,7 +661,7 @@ class FlywheelTrackerDB(FlywheelTracker):
 
         try:
             self.db_session.commit()
-        except Exception as e:
+        except Exception:
             self.db_session.rollback()
             raise
 

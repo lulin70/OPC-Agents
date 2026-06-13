@@ -1,10 +1,9 @@
 import threading
 import time
-import json
 import hashlib
 import logging
-from dataclasses import dataclass, field
-from typing import Optional, Any, Dict, List
+from dataclasses import dataclass
+from typing import Any, Dict, List
 from collections import deque
 from queue import Queue, Empty
 from opc_manager.utils import SECONDS_PER_DAY

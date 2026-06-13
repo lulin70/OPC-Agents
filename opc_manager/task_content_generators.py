@@ -20,9 +20,9 @@ TaskEngineV3 inherits from this mixin, so all external callers see no change.
 
 import time
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 
-from opc_manager.task_types import TaskType, TaskResult, InputValidator
+from opc_manager.task_types import InputValidator
 
 logger = logging.getLogger(__name__)
 

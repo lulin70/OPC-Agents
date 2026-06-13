@@ -20,7 +20,7 @@ build_timeline_from_session(): 从session状态构建时间线（在 timeline_da
 import streamlit as st
 import logging
 from datetime import datetime
-from typing import List, Dict
+from typing import List
 
 from opc_manager.i18n import t as _t
 
@@ -161,15 +161,14 @@ def _render_timeline_event(event: TimelineEvent, is_latest: bool = False):
     status_badge = status_labels.get(event.status, event.status)
     cat_badge = category_labels.get(event.category, event.category)
 
-    line_style = "solid"
     opacity = "1"
 
     if event.status == "error":
-        line_style = "dashed"
+        pass
     elif event.status in ("undone", "cancelled"):
         opacity = "0.6"
 
-    container_key = f"timeline_event_{event.id}"
+    f"timeline_event_{event.id}"
 
     with st.container():
         col_time, col_content = st.columns([1, 5])

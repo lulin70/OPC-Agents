@@ -24,7 +24,7 @@ import random
 import logging
 import threading
 from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Optional, Any, Tuple
+from typing import List, Dict, Any, Tuple
 from datetime import datetime
 from pathlib import Path
 from collections import deque

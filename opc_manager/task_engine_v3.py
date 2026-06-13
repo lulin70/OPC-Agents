@@ -66,23 +66,18 @@ import time
 import threading
 import logging
 from typing import Dict, List, Optional, Any, Tuple, TYPE_CHECKING
-from dataclasses import dataclass, field
-from enum import Enum
 
 from opc_manager.utils import SECONDS_PER_DAY
 from opc_manager.skill_registry import SkillRegistry
 from opc_manager.task_content_generators import ContentGenerationMixin
 from opc_manager.search_cache import (
     SearchCache,
-    SEARCH_CACHE_MAX_SIZE,
-    SEARCH_CACHE_TTL_SECONDS,
 )
 from opc_manager.intent_classifier import IntentClassifier
 from opc_manager.task_types import (
     TaskType,
     TaskResult,
     InputValidator,
-    MAX_INPUT_LENGTH,
 )
 
 try:
@@ -96,8 +91,6 @@ try:
     from opc_manager.parallel_executor import (
         ParallelExecutor,
         TaskSpec,
-        TaskResult as ParallelTaskResult,
-        ParallelResult,
         MergeStrategy,
     )
 
@@ -341,7 +334,7 @@ class TaskEngineV3(ContentGenerationMixin):
             from opc_manager.validators import TaskRequest
 
             TaskRequest(user_input=sanitized)
-        except Exception as e:
+        except Exception:
             return TaskResult(
                 success=False,
                 content="⚠️ 输入包含不安全内容，请修改后重试",
@@ -996,7 +989,7 @@ class TaskEngineV3(ContentGenerationMixin):
         if llm_query is None:
             llm_query = search_query
         try:
-            from opc_manager.business_types import BusinessType
+            pass
 
             scenario_result = self.scenario_engine.process(search_query)
 
@@ -1804,6 +1797,9 @@ class TaskEngineV3(ContentGenerationMixin):
                 "speedup_factor": parallel_result.speedup_factor,
                 "total_analysis_time_ms": parallel_result.total_time_ms,
             }
+
+            if hasattr(self, "_last_metadata"):
+                self._last_metadata.update(result_metadata)
 
             logger.info(
                 "[TaskEngineV3] Parallel data analysis completed: %s dimensions in %.0fms",

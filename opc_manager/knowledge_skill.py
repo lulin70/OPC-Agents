@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
@@ -90,7 +90,6 @@ def update_article(
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
 
     updates = []
-    params = []
 
     if title:
         updates.append(("title", title))
@@ -164,7 +163,7 @@ def search_articles(
             conditions.append(f"({' OR '.join(tag_conditions)})")
 
     if query:
-        query_lower = query.lower()
+        query.lower()
         conditions.append("(title LIKE ? OR content LIKE ? OR tags LIKE ?)")
         params.extend([f"%{query}%", f"%{query}%", f"%{query}%"])
 

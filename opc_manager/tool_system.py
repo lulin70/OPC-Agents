@@ -182,7 +182,7 @@ class AuditLogger:
             "details": details,
         }
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             queue = cls._ensure_queue()
             try:
                 queue.put_nowait(record)

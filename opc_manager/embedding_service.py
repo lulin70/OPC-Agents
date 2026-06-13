@@ -13,14 +13,16 @@ import logging
 import os
 import sqlite3
 import hashlib
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import requests
+
+from opc_manager.config import LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"
-DEFAULT_OLLAMA_URL = "http://localhost:11434"
+DEFAULT_OLLAMA_URL = LLM_PROVIDERS["ollama"]
 EMBEDDING_CACHE_DB = "embedding_cache.db"
 
 

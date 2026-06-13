@@ -6,7 +6,7 @@ import uuid
 import time
 import logging
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger(__name__)

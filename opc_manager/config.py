@@ -9,9 +9,16 @@ Legacy config.toml support has been removed in v0.1.0.
 import os
 import threading
 import logging
-from typing import Dict, Any, Callable, Optional
+from typing import Dict, Any, Callable
 
 logger = logging.getLogger(__name__)
+
+LLM_PROVIDERS = {
+    "moka": "https://api.moka-ai.com/v1",
+    "openai": "https://api.openai.com/v1",
+    "zhipu": "https://open.bigmodel.cn/api/paas/v4",
+    "ollama": "http://localhost:11434",
+}
 
 
 class ConfigManager:
@@ -44,11 +51,11 @@ class ConfigManager:
     }
 
     _DEFAULTS = {
-        "MOKA_API_BASE": "https://api.moka-ai.com/v1",
+        "MOKA_API_BASE": LLM_PROVIDERS["moka"],
         "MOKA_MODEL": "moka/claude-sonnet-4-6",
-        "GLM_API_BASE": "https://open.bigmodel.cn/api/paas/v4",
+        "GLM_API_BASE": LLM_PROVIDERS["zhipu"],
         "GLM_MODEL": "glm-4",
-        "OPENAI_API_BASE": "https://api.openai.com/v1",
+        "OPENAI_API_BASE": LLM_PROVIDERS["openai"],
         "OPENAI_MODEL": "gpt-4o",
         "OLLAMA_MODEL": "llama3",
         "LLM_MAX_TOKENS": "4000",
@@ -77,7 +84,7 @@ class ConfigManager:
                 if "base_url" not in model_config and not ollama_enabled:
                     continue
                 if "base_url" not in model_config and ollama_enabled:
-                    model_config["base_url"] = "http://localhost:11434"
+                    model_config["base_url"] = LLM_PROVIDERS["ollama"]
             if model_config:
                 models[model_name] = model_config
 

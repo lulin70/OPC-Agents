@@ -4,15 +4,15 @@ LLM Service Layer - Multi-backend abstraction and unified entry point
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from enum import Enum
 import asyncio
 import time
-import random
 import json
 import logging
 from datetime import datetime
 from .utils import get_llm_async_semaphore
+from .config import LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class LLMConfig:
     provider: LLMProvider = LLMProvider.MOKA
     model: str = "moka/claude-sonnet-4-6"
     api_key: Optional[str] = None
-    base_url: Optional[str] = "https://api.moka-ai.com/v1"
+    base_url: Optional[str] = LLM_PROVIDERS["moka"]
     max_tokens: int = 500
     temperature: float = 0.3
     timeout_seconds: float = 60.0
@@ -141,7 +141,7 @@ class OllamaBackend(LLMBackend):
 
     def __init__(self, config: LLMConfig):
         self.config = config
-        self.base_url = config.base_url or "http://localhost:11434"
+        self.base_url = config.base_url or LLM_PROVIDERS["ollama"]
 
     async def complete(
         self, prompt: str, system_prompt: Optional[str] = None

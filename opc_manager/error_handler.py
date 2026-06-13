@@ -7,7 +7,7 @@ Provides centralized error mapping and context-aware message formatting.
 
 import logging
 import traceback
-from typing import Optional, Dict, Any, Type, Tuple
+from typing import Dict, Any, Type, Tuple
 from enum import Enum
 
 logger = logging.getLogger(__name__)

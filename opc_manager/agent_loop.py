@@ -9,30 +9,25 @@
 """
 
 from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
-from enum import Enum
 import asyncio
-import json
 import logging
 import os
 import time
 import uuid
 
-from .strategist_brain import StrategistBrain, Intent, ExecutionPlan
+from .strategist_brain import StrategistBrain
 from .executor_brain import ExecutorBrain, ExecutionResult
 from .reflector_brain import (
     ReflectorBrain,
-    Evaluation,
     NextAction,
     NextActionType,
-    CorrectionStrategy,
 )
-from .consensus_engine import ConsensusEngine, Opinion, OpinionType, DecisionType
+from .consensus_engine import ConsensusEngine
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
 from .session_context import SessionContextManager
 from .task_engine_v3 import TaskEngineV3, TaskType, TaskResult
-from .correction_manager import CorrectionManager, SKILL_FALLBACK_MAP
+from .correction_manager import CorrectionManager
 from .agent_context import AgentContext, AgentState
 from .task_lifecycle import TaskLifecycleManager, ConsensusConsultant
 from .utils import BoundedDict, EventEmitter
@@ -130,7 +125,7 @@ class AgentLoop:
                 error=f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)",
             )
 
-        run_start_time = time.time()
+        time.time()
         _perf_start = time.time()
 
         task_id = f"agent_task_{uuid.uuid4().hex[:8]}"

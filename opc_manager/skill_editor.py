@@ -260,22 +260,6 @@ class SkillEditor:
             return {"success": False, "error": f"技能不存在: {skill_id}"}
 
         if marketplace:
-            from .skill_marketplace import MarketplaceSkill, PermissionLevel
-
-            market_skill = MarketplaceSkill(
-                skill_id=skill.skill_id,
-                name=skill.name,
-                description=skill.description,
-                version=skill.version,
-                category=skill.category,
-                author=skill.author,
-                permissions=[PermissionLevel.READ, PermissionLevel.EXECUTE],
-                dependencies=skill.dependencies,
-                config={
-                    "template": skill.template,
-                    "prompt_template": skill.prompt_template,
-                },
-            )
             return {
                 "success": True,
                 "skill_id": skill_id,

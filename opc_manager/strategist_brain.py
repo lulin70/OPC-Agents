@@ -19,7 +19,6 @@ from opc_manager.intent_types import IntentType, INTENT_KEYWORDS, INTENT_STEP_MA
 from opc_manager.utils import (
     extract_json_from_llm,
     sanitize_for_llm,
-    _llm_thread_semaphore,
     call_llm_service,
 )
 

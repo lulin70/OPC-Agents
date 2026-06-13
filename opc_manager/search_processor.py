@@ -30,9 +30,8 @@ import json
 import logging
 import os
 import re
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
-from collections import Counter
+from typing import Dict, List
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 

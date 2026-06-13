@@ -15,15 +15,12 @@
 """
 
 import streamlit as st
-import sys
 import os
 import logging
-import time
 from pathlib import Path
 from dotenv import load_dotenv
 
 from opc_manager.monitoring import init_monitoring
-from opc_manager.error_handler import ErrorHandler
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +43,8 @@ init_monitoring()
 from frontend.routers.base_router import (
     DELIVERABLES_DIR,
     DEMO_MODE,
-    _is_demo_mode,
     _load_chat_history,
-    _save_chat_history,
     PERSONA_MAP,
-    TYPE_DISPLAY,
     save_deliverable,
     init_session_state,
 )
@@ -77,62 +71,23 @@ for _subdir in [
     os.makedirs(os.path.join(_WORKSPACE_DIR, _subdir), exist_ok=True)
 
 from frontend.components.shared import (
-    _get_export_bytes,
-    _get_mime_type,
-    _render_batch_export_section,
-    _execute_batch_export,
-    _render_single_export_buttons,
-    _event_type_label,
-    _event_emoji,
-    _render_progress_indicator,
-    _auto_refresh_progress,
-    _render_export_buttons,
-    _get_undo_manager,
-    _cached_list_undoable,
     _render_theme_selector,
     _render_language_selector,
     _render_shortcuts_help,
     _get_current_session_id,
-    _get_phase_from_event,
-    show_success,
-    show_error,
-    show_info,
-    _maybe_show_shortcut_hints,
-    _render_floating_help_button,
-    _render_quick_undo_button,
 )
 
 from frontend.components.undo_panel import (
     render_undo_panel,
-    render_mini_undo_hint,
     render_batch_undo,
     check_has_active_undo_records,
 )
 
-from frontend.page_modules._settings_page import (
-    _create_settings_page,
-)
-
-from frontend.page_modules._dashboard_page import (
-    _render_dashboard_page,
-)
 
 from frontend.page_modules._marketplace_page import (
-    _render_skill_marketplace_page,
-    _render_global_search,
     _execute_global_search,
 )
 
-from frontend.components.confirmation_dialog import (
-    build_confirm_callback,
-    check_pending_confirmation,
-    render_confirmation_dialog,
-    clear_pending_confirmation,
-)
-
-from frontend.components.input_autocomplete import (
-    render_autocomplete_input,
-)
 
 from opc_manager.i18n import t as _t
 from frontend.routers import PageKey, get_page_label, navigate
@@ -359,8 +314,6 @@ with st.sidebar:
         from opc_manager.skill_editor import (
             SkillEditor,
             CustomSkill,
-            SkillParameter,
-            ParameterType,
             OutputFormat,
         )
 

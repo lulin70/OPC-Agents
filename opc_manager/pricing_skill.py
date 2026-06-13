@@ -1,7 +1,6 @@
-import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger

@@ -1,7 +1,7 @@
 import io
 
 import openpyxl
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 

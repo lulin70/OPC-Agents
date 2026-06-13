@@ -31,7 +31,6 @@
 import logging
 import os
 import re
-import urllib.parse
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List

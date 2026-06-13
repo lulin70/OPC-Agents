@@ -12,9 +12,8 @@ Design:
 
 import streamlit as st
 import logging
-import uuid
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+from typing import List
 from collections import Counter
 
 from opc_manager.i18n import t as _t
@@ -428,7 +427,7 @@ def _generate_undo_suggestions(context: dict) -> List[Suggestion]:
             record_info = get_latest_undo_record_info(session_id)
 
             if record_info:
-                op_type = record_info.get("operation_type", "unknown")
+                record_info.get("operation_type", "unknown")
                 op_label = record_info.get("label", _t("ss_undo_last_op"))
                 op_icon = record_info.get("icon", "📝")
                 remaining = record_info.get("remaining_seconds", 0)

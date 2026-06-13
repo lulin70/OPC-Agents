@@ -29,7 +29,7 @@ v1.0.0 - Initial implementation for OPC-Agents parallel optimization
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Optional, Dict
+from typing import Any, Callable, List, Dict
 from enum import Enum
 import logging
 

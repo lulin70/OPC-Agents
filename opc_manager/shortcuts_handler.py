@@ -20,7 +20,6 @@ import sys
 import json
 import argparse
 from datetime import datetime
-from typing import Optional
 
 
 class ShortcutResult:

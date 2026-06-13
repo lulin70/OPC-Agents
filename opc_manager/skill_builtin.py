@@ -20,7 +20,6 @@ Notification: tax_reminder
 """
 
 import logging
-from typing import List
 
 from opc_manager.skill_models import (
     Skill,

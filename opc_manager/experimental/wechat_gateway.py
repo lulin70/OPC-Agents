@@ -1,6 +1,5 @@
 import hashlib
 import base64
-import json
 import time
 
 try:
@@ -12,7 +11,7 @@ except ImportError:
         "defusedxml is required for WeChat integration. "
         "Install it with: pip install defusedxml"
     )
-from typing import Optional, Dict, Any, Callable, Awaitable
+from typing import Optional, Dict, Callable, Awaitable
 from dataclasses import dataclass
 from enum import Enum
 import logging
@@ -81,11 +80,7 @@ class WeChatGateway:
 
     def _init_aes_key(self):
         try:
-            from cryptography.hazmat.primitives.ciphers import (
-                Cipher,
-                algorithms,
-                modes,
-            )  # noqa: F401
+            import cryptography.hazmat.primitives.ciphers  # noqa: F401
 
             try:
                 key = base64.b64decode(self.encoding_aes_key + "=")

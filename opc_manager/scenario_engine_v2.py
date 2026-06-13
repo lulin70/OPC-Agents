@@ -12,9 +12,6 @@ from datetime import datetime
 from opc_manager.business_types import BusinessType
 
 from opc_manager.scenario_definitions import (
-    OutputSpec,
-    DeliverableTemplate,
-    WorkflowStep,
     ScenarioConfig,
     ScenarioResult,
     BUILT_IN_SCENARIOS,

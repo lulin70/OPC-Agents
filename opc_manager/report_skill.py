@@ -1,10 +1,9 @@
-import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-from opc_manager.data_manager import execute_query, init_db, DATA_DIR
+from opc_manager.data_manager import init_db, DATA_DIR
 from opc_manager.finance_skill import get_monthly_report, get_trend
 from opc_manager.crm_skill import get_customer_stats, get_silent_customers
 from opc_manager.task_skill import list_tasks

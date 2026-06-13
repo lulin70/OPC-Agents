@@ -134,9 +134,7 @@ def _render_progress_indicator(session_id: str):
     """
     try:
         from opc_manager.progress_emitter import (
-            ProgressEmitter,
             get_progress_emitter,
-            EventType,
         )
     except ImportError:
         return
@@ -165,8 +163,8 @@ def _render_progress_indicator(session_id: str):
     else:
         st.markdown(f"#### {phase_icon} {_t('current_status')}: {status_label}")
 
-    bar_color = "error" if is_error else None
-    bar = st.progress(min(progress_pct / 100.0, 1.0))
+    "error" if is_error else None
+    st.progress(min(progress_pct / 100.0, 1.0))
 
     cols_info = st.columns(3)
     with cols_info[0]:

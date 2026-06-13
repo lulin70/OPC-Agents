@@ -10,7 +10,6 @@ Provides:
 
 import json
 import os
-import shutil
 import zipfile
 import logging
 from pathlib import Path

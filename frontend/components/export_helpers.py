@@ -259,7 +259,7 @@ def _render_export_preview(item_data: dict, format_type: str, item_id: str = "")
             _t("content_preview"), value=content_preview, height=200, disabled=True
         )
 
-    preview_key = f"preview_{format_type}_{item_id}"
+    f"preview_{format_type}_{item_id}"
     col_confirm, col_cancel = st.columns([1, 1])
     with col_confirm:
         if st.button(

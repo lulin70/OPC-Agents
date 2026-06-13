@@ -1,10 +1,11 @@
-import json
 import logging
 import os
 import time
 from typing import Optional, Dict, Any, List
 
 import requests
+
+from opc_manager.config import LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +34,15 @@ def discover_llm_config() -> Dict[str, str]:
     # 回退到 os.environ（兼容外部设置的环境变量）
     config["api_key"] = os.environ.get("MOKA_API_KEY", "")
     if config["api_key"]:
-        config["base_url"] = os.environ.get(
-            "MOKA_API_BASE", "https://api.moka-ai.com/v1"
-        )
+        config["base_url"] = os.environ.get("MOKA_API_BASE", LLM_PROVIDERS["moka"])
         config["model"] = os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
         return config
 
     for env_key, env_url, env_model in [
-        ("GLM_API_KEY", "https://open.bigmodel.cn/api/paas/v4", "glm-4"),
+        ("GLM_API_KEY", LLM_PROVIDERS["zhipu"], "glm-4"),
         (
             "OPENAI_API_KEY",
-            os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1"),
+            os.environ.get("OPENAI_API_BASE", LLM_PROVIDERS["openai"]),
             "gpt-4",
         ),
     ]:
@@ -58,7 +57,7 @@ def discover_llm_config() -> Dict[str, str]:
     ollama_enabled = os.environ.get("OLLAMA_ENABLED", "").lower() == "true"
     if ollama_enabled or ollama_url:
         config["api_key"] = "ollama"
-        config["base_url"] = ollama_url or "http://localhost:11434"
+        config["base_url"] = ollama_url or LLM_PROVIDERS["ollama"]
         config["model"] = os.environ.get("OLLAMA_MODEL", "llama3")
         config["is_ollama"] = True
 
@@ -70,7 +69,7 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
 
     # 优先通过 SettingsManager 获取 moka 配置
     moka_key = ""
-    moka_base_url = os.environ.get("MOKA_API_BASE", "https://api.moka-ai.com/v1")
+    moka_base_url = os.environ.get("MOKA_API_BASE", LLM_PROVIDERS["moka"])
     moka_model = os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
     try:
         from opc_manager.settings import get_settings
@@ -101,7 +100,7 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
         providers.append(
             {
                 "api_key": glm_key,
-                "base_url": "https://open.bigmodel.cn/api/paas/v4",
+                "base_url": LLM_PROVIDERS["zhipu"],
                 "model": "glm-4",
                 "is_ollama": False,
                 "name": "glm",
@@ -112,9 +111,7 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
         providers.append(
             {
                 "api_key": openai_key,
-                "base_url": os.environ.get(
-                    "OPENAI_API_BASE", "https://api.openai.com/v1"
-                ),
+                "base_url": os.environ.get("OPENAI_API_BASE", LLM_PROVIDERS["openai"]),
                 "model": "gpt-4",
                 "is_ollama": False,
                 "name": "openai",
@@ -126,7 +123,7 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
         providers.append(
             {
                 "api_key": "ollama",
-                "base_url": ollama_url or "http://localhost:11434",
+                "base_url": ollama_url or LLM_PROVIDERS["ollama"],
                 "model": os.environ.get("OLLAMA_MODEL", "llama3"),
                 "is_ollama": True,
                 "name": "ollama",
@@ -184,7 +181,7 @@ class SimpleLLMService:
         max_tokens: int,
         timeout: int,
     ) -> Optional[str]:
-        from opc_manager.utils import sanitize_for_llm, _llm_thread_semaphore
+        from opc_manager.utils import _llm_thread_semaphore
 
         name = provider.get("name", "unknown")
         if self._is_provider_circuit_open(name):

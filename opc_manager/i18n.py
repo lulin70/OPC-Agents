@@ -5,9 +5,7 @@ Lightweight, self-built i18n system for OPC-Agents.
 Supports Chinese (zh_CN), English (en_US), and Japanese (ja_JP).
 """
 
-import json
 import logging
-from pathlib import Path
 from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)

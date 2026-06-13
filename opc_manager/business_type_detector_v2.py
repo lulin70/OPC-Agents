@@ -10,9 +10,8 @@ New features:
 - LLM assistance interface (reserved)
 """
 
-from typing import Dict, List, Optional, Any, Tuple, Set
+from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
-from enum import Enum
 import re
 import logging
 

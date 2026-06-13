@@ -17,7 +17,7 @@ import logging
 
 from .utils import BoundedDict
 from .task_engine_v3 import TaskEngineV3, TaskType
-from .intent_types import IntentType, INTENT_TO_TASK_MAP, SKILL_TO_TASK_MAP
+from .intent_types import SKILL_TO_TASK_MAP
 
 logger = logging.getLogger(__name__)
 

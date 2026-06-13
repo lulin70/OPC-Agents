@@ -31,7 +31,6 @@ import subprocess
 import sys
 import time
 import threading
-import traceback
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -451,7 +450,7 @@ class PluginManager:
                     "error": f"Plugin {plugin_id} has no sandbox, refusing to execute",
                 }
 
-            elapsed = time.time() - start_time
+            time.time() - start_time
             instance.execution_count += 1
             instance.state = PluginState.INITIALIZED
 

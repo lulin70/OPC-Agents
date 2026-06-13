@@ -20,7 +20,7 @@ def render_growth_page():
         )
         return
 
-    _raw = _t("growth_level_1")
+    _t("growth_level_1")
     lv_name = _t("growth_level_1_name")
     lv_desc = _t("growth_level_1_desc")
 

@@ -7,7 +7,7 @@ financial records, CRM actions, etc.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import logging
 import threading

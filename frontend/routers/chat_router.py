@@ -13,10 +13,8 @@ from opc_manager.monitoring import track_event, track_error
 
 from frontend.routers.base_router import (
     DEMO_MODE,
-    _is_demo_mode,
     _has_api_key,
     _get_demo_dashboard_data,
-    PERSONA_MAP,
     SCENARIOS_CORE,
     SCENARIOS_MORE,
     safe_detect,
@@ -445,7 +443,7 @@ def render_chat_page():
 
             max_polls = 120
             poll_interval = 0.5
-            start_time = time.time()
+            time.time()
             progress_placeholder = st.empty()
 
             for poll_count in range(max_polls):

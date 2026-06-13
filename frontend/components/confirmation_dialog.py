@@ -10,8 +10,7 @@ Implements a modal confirmation UI for high-risk operations with:
 
 import streamlit as st
 import logging
-from typing import Dict, Any, Optional, Callable, Awaitable
-from dataclasses import dataclass
+from typing import Dict, Any, Optional
 
 from opc_manager.i18n import t as _t
 

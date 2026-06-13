@@ -12,7 +12,6 @@ Provides display-layer data structures and formatting extracted from undo_panel.
 
 import time
 import logging
-from datetime import datetime
 from typing import Tuple
 from dataclasses import dataclass
 

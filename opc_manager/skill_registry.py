@@ -13,21 +13,12 @@
 - skill_executors.py: All _execute_* method implementations (mixin)
 """
 
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, field
-from enum import Enum
+from typing import Dict, List, Optional, Any
 import asyncio
 import json
 import logging
-import re
 import threading
 
-from opc_manager.intent_types import (
-    IntentType,
-    INTENT_KEYWORDS,
-    INTENT_STEP_MAP,
-    SKILL_INTENT_MAP,
-)
 from opc_manager.protocols import LLMServiceProtocol
 from opc_manager.skill_models import (
     SkillContext,

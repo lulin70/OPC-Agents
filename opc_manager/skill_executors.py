@@ -26,9 +26,9 @@ import asyncio
 import json
 import logging
 import re
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 
-from opc_manager.skill_models import SkillContext, SkillCategory
+from opc_manager.skill_models import SkillContext
 
 logger = logging.getLogger(__name__)
 

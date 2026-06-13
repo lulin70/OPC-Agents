@@ -11,15 +11,12 @@ import streamlit as st
 import logging
 import time
 import pandas as pd
-from datetime import datetime
 from collections import Counter
 
 from opc_manager.dashboard_config import (
     DashboardConfig,
     LayoutType,
     DensityLevel,
-    PanelConfig,
-    ALL_PANEL_IDS,
 )
 from opc_manager.i18n import t as _t
 
@@ -598,7 +595,7 @@ def _render_income_trend_panel(
         st.info(f"💡 {_t('dash_no_finance_data')}")
         return
 
-    df = pd.DataFrame(trend)
+    pd.DataFrame(trend)
     chart_data = pd.DataFrame(
         {
             _t("dash_month_col"): [t.get("year_month", "") for t in trend],
@@ -717,7 +714,7 @@ def _render_client_health_panel(
             last_contact = c.get("last_contact", "")
             interactions = c.get("interactions", 0)
 
-            from datetime import datetime as _dt, timedelta
+            from datetime import datetime as _dt
 
             now = _dt.now()
             health_status = _t("dash_health_healthy")
