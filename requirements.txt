@@ -16,7 +16,7 @@ openai>=1.10.0
 
 # Security / Encryption
 cryptography>=41.0.0
-defusedxml>=0.7.0
+defusedxml>=0.7.1
 
 # Configuration
 python-dotenv>=1.0.0

@@ -8,7 +8,7 @@ jobs:
   label:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/github-script@v7
+    - uses: actions/github-script@v7  # v9 requires Node 20, keep v7 for compat
       with:
         script: |
           const pr = context.payload.pull_request;
