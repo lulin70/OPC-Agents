@@ -161,9 +161,7 @@ def _render_llm_settings(settings):
                         }
                         payload = {
                             "model": model,
-                            "messages": [
-                                {"role": "user", "content": "Hi"}
-                            ],
+                            "messages": [{"role": "user", "content": "Hi"}],
                             "max_tokens": 5,
                         }
                         resp = requests.post(

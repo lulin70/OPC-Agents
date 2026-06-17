@@ -92,9 +92,7 @@ def _show_onboarding_overlay():
                         type="password",
                         placeholder="sk-...",
                     )
-                    if st.form_submit_button(
-                        _t("onboard_llm_save"), type="primary"
-                    ):
+                    if st.form_submit_button(_t("onboard_llm_save"), type="primary"):
                         if api_key and api_key.strip():
                             try:
                                 from opc_manager.settings import get_settings

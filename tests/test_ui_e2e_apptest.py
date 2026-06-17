@@ -133,9 +133,9 @@ class TestUIAppLaunch:
         at.run(timeout=30)
         all_text = " ".join(m.value for m in at.markdown)
         all_text += " " + " ".join(t.value for t in at.text)
-        assert "OPC" in all_text or "一人公司" in all_text, (
-            f"App title not found in rendered text"
-        )
+        assert (
+            "OPC" in all_text or "一人公司" in all_text
+        ), f"App title not found in rendered text"
 
     def test_version_displayed_in_sidebar(self, isolated_data_env):
         """Version string is shown in sidebar."""
@@ -144,9 +144,9 @@ class TestUIAppLaunch:
         captions = [c.value for c in at.sidebar.caption]
         all_sidebar_text = " ".join(captions)
         # Should contain version like "v0.2.5"
-        assert any("v0." in c for c in captions), (
-            f"Version not in sidebar captions: {captions}"
-        )
+        assert any(
+            "v0." in c for c in captions
+        ), f"Version not in sidebar captions: {captions}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -212,14 +212,18 @@ class TestUIPageNavigation:
         at = _load_app()
         at.run(timeout=30)
 
-        pages = ["dashboard", "settings", "marketplace", "deliverables",
-                 "growth", "chat"]
+        pages = [
+            "dashboard",
+            "settings",
+            "marketplace",
+            "deliverables",
+            "growth",
+            "chat",
+        ]
         for page in pages:
             at.sidebar.radio[0].set_value(page)
             at.run(timeout=30)
-            assert not at.exception, (
-                f"Navigating to '{page}' raised: {at.exception}"
-            )
+            assert not at.exception, f"Navigating to '{page}' raised: {at.exception}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -237,9 +241,9 @@ class TestUIChatPageDemoMode:
 
         # Demo banner is injected via st.markdown with HTML
         all_markdown = " ".join(m.value for m in at.markdown)
-        assert "demo" in all_markdown.lower() or "演示" in all_markdown, (
-            f"Demo banner not found"
-        )
+        assert (
+            "demo" in all_markdown.lower() or "演示" in all_markdown
+        ), f"Demo banner not found"
 
     def test_chat_page_shows_demo_info(self, isolated_data_env):
         """Chat page in demo mode shows info about available features."""
@@ -280,7 +284,9 @@ class TestUIDemoModeDynamicRefresh:
     refresh dynamically via is_demo_mode().
     """
 
-    def test_demo_mode_refreshes_after_api_key_set(self, isolated_data_env_no_mock, monkeypatch):
+    def test_demo_mode_refreshes_after_api_key_set(
+        self, isolated_data_env_no_mock, monkeypatch
+    ):
         """After setting API Key via os.environ, demo mode should be False."""
         from frontend.routers.base_router import is_demo_mode, _has_api_key
 
@@ -306,19 +312,21 @@ class TestUIDemoModeDynamicRefresh:
         with patch("opc_manager.settings.get_settings", return_value=mock_settings):
             # Demo mode should now be False WITHOUT app restart
             assert _has_api_key() is True, "Should detect API key after setting"
-            assert is_demo_mode() is False, (
-                "Should exit demo mode dynamically after API key set"
-            )
+            assert (
+                is_demo_mode() is False
+            ), "Should exit demo mode dynamically after API key set"
 
         # Cleanup
         monkeypatch.delenv("MOKA_API_KEY", raising=False)
 
         with patch("opc_manager.settings.get_settings", return_value=mock_settings):
-            assert is_demo_mode() is True, (
-                "Should return to demo mode after key removed"
-            )
+            assert (
+                is_demo_mode() is True
+            ), "Should return to demo mode after key removed"
 
-    def test_demo_mode_checks_settings_manager(self, isolated_data_env_no_mock, monkeypatch):
+    def test_demo_mode_checks_settings_manager(
+        self, isolated_data_env_no_mock, monkeypatch
+    ):
         """_has_api_key() should check SettingsManager, not just os.environ."""
         from frontend.routers.base_router import _has_api_key
         from unittest.mock import MagicMock, patch
@@ -339,9 +347,9 @@ class TestUIDemoModeDynamicRefresh:
         mock_settings.get_api_key.return_value = "sk-via-settings-ui"
 
         with patch("opc_manager.settings.get_settings", return_value=mock_settings):
-            assert _has_api_key() is True, (
-                "Should detect API key saved via SettingsManager"
-            )
+            assert (
+                _has_api_key() is True
+            ), "Should detect API key saved via SettingsManager"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -362,9 +370,9 @@ class TestUISettingsPage:
 
         assert not at.exception
         # Settings page should have some input elements
-        assert len(at.text_input) > 0 or len(at.selectbox) > 0, (
-            "No input elements on settings page"
-        )
+        assert (
+            len(at.text_input) > 0 or len(at.selectbox) > 0
+        ), "No input elements on settings page"
 
     def test_settings_page_has_content(self, isolated_data_env):
         """Settings page renders meaningful content (not blank)."""
@@ -376,9 +384,9 @@ class TestUISettingsPage:
 
         all_text = " ".join(m.value for m in at.markdown)
         all_text += " " + " ".join(t.value for t in at.text)
-        assert len(all_text) > 50, (
-            f"Settings page appears blank (text length={len(all_text)})"
-        )
+        assert (
+            len(all_text) > 50
+        ), f"Settings page appears blank (text length={len(all_text)})"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -410,9 +418,9 @@ class TestUIHealthCheck:
         at.run(timeout=10)
 
         all_text = " ".join(m.value for m in at.markdown)
-        assert "ok" in all_text.lower(), (
-            f"Health check didn't return 'ok': {all_text[:200]}"
-        )
+        assert (
+            "ok" in all_text.lower()
+        ), f"Health check didn't return 'ok': {all_text[:200]}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -437,9 +445,9 @@ class TestUISidebarTools:
         at.run(timeout=30)
 
         # The undo button should be in sidebar
-        assert len(at.sidebar.button) >= 2, (
-            f"Expected at least 2 sidebar buttons, got {len(at.sidebar.button)}"
-        )
+        assert (
+            len(at.sidebar.button) >= 2
+        ), f"Expected at least 2 sidebar buttons, got {len(at.sidebar.button)}"
 
     def test_clicking_skill_editor_toggles_panel(self, isolated_data_env):
         """Clicking skill editor button toggles a panel."""
@@ -450,9 +458,7 @@ class TestUISidebarTools:
         if len(at.sidebar.button) > 0:
             at.sidebar.button[0].click()
             at.run(timeout=30)
-            assert not at.exception, (
-                f"Clicking sidebar button raised: {at.exception}"
-            )
+            assert not at.exception, f"Clicking sidebar button raised: {at.exception}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -485,9 +491,7 @@ class TestUILanguageSwitching:
         if len(at.sidebar.selectbox) >= 2:
             at.sidebar.selectbox[1].set_value("en_US")
             at.run(timeout=30)
-            assert not at.exception, (
-                f"Switching to English raised: {at.exception}"
-            )
+            assert not at.exception, f"Switching to English raised: {at.exception}"
 
     def test_switch_language_to_japanese(self, isolated_data_env):
         """Switching to Japanese changes UI text without error."""
@@ -497,6 +501,4 @@ class TestUILanguageSwitching:
         if len(at.sidebar.selectbox) >= 2:
             at.sidebar.selectbox[1].set_value("ja_JP")
             at.run(timeout=30)
-            assert not at.exception, (
-                f"Switching to Japanese raised: {at.exception}"
-            )
+            assert not at.exception, f"Switching to Japanese raised: {at.exception}"
