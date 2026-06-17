@@ -147,10 +147,45 @@ def _render_llm_settings(settings):
             save_clicked = st.form_submit_button(_t("llm_save"), type="primary")
 
         if test_clicked:
-            if api_key and api_key.strip():
-                st.success(f"✅ {_t('settings_llm_key_configured')}")
-            else:
+            if not api_key or not api_key.strip():
                 st.error(_t("settings_llm_key_required"))
+            else:
+                # Real LLM connection test — sends a minimal request
+                with st.spinner(_t("llm_testing")):
+                    try:
+                        import requests
+
+                        headers = {
+                            "Authorization": f"Bearer {api_key.strip()}",
+                            "Content-Type": "application/json",
+                        }
+                        payload = {
+                            "model": model,
+                            "messages": [
+                                {"role": "user", "content": "Hi"}
+                            ],
+                            "max_tokens": 5,
+                        }
+                        resp = requests.post(
+                            f"{base_url.rstrip('/')}/chat/completions",
+                            headers=headers,
+                            json=payload,
+                            timeout=15,
+                        )
+                        if resp.status_code == 200:
+                            st.success(f"✅ {_t('llm_test_success')}")
+                        else:
+                            detail = resp.text[:200]
+                            st.error(
+                                f"❌ {_t('llm_test_failed')} "
+                                f"(HTTP {resp.status_code}): {detail}"
+                            )
+                    except requests.exceptions.Timeout:
+                        st.error(f"❌ {_t('llm_test_timeout')}")
+                    except requests.exceptions.ConnectionError:
+                        st.error(f"❌ {_t('llm_test_connection_error')}")
+                    except Exception as e:
+                        st.error(f"❌ {_t('llm_test_failed')}: {e}")
 
         if save_clicked:
             new_config = {

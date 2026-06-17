@@ -42,7 +42,7 @@ init_monitoring()
 
 from frontend.routers.base_router import (
     DELIVERABLES_DIR,
-    DEMO_MODE,
+    is_demo_mode,
     _load_chat_history,
     PERSONA_MAP,
     save_deliverable,
@@ -100,7 +100,7 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
-if DEMO_MODE:
+if is_demo_mode():
     st.markdown(
         f"""
     <div style="

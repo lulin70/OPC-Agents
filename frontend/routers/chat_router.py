@@ -12,7 +12,7 @@ from opc_manager.i18n import t as _t
 from opc_manager.monitoring import track_event, track_error
 
 from frontend.routers.base_router import (
-    DEMO_MODE,
+    is_demo_mode,
     _has_api_key,
     _get_demo_dashboard_data,
     SCENARIOS_CORE,
@@ -261,7 +261,7 @@ def render_chat_page():
     # 移动端响应式 CSS 已由 theme_manager 统一注入
 
     _maybe_show_shortcut_hints()
-    if DEMO_MODE:
+    if is_demo_mode():
         st.markdown(f"## {_t('chat_demo_mode')}")
         st.info(f"""**{_t('chat_demo_mode_title')}** — {_t('chat_demo_mode_desc')}
 
@@ -441,7 +441,7 @@ def render_chat_page():
                 (50, 60, _t("chat_phase_deliver"), _t("chat_phase_deliver_hint")),
             ]
 
-            max_polls = 120
+            max_polls = 240
             poll_interval = 0.5
             time.time()
             progress_placeholder = st.empty()

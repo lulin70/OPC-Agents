@@ -21,19 +21,50 @@ CHAT_HISTORY_FILE = os.path.join(_WORKSPACE_DIR, "data", "chat_history.json")
 
 
 def _has_api_key():
-    """Check if a valid API Key is configured (excluding whitespace-only values)."""
-    return bool(
+    """Check if a valid API Key is configured.
+
+    Checks both os.environ AND SettingsManager/SecureKeyStore, so that
+    keys saved via the Settings UI are immediately recognized without
+    requiring an app restart.
+    """
+    # 1. Check os.environ (for .env file and external env vars)
+    if (
         (os.environ.get("MOKA_API_KEY") or "").strip()
         or (os.environ.get("GLM_API_KEY") or "").strip()
         or (os.environ.get("OPENAI_API_KEY") or "").strip()
-    )
+    ):
+        return True
+
+    # 2. Check SettingsManager (for keys saved via Settings UI)
+    try:
+        from opc_manager.settings import get_settings
+
+        settings = get_settings()
+        key = settings.get_api_key(settings._llm.provider)
+        if key and key.strip():
+            return True
+    except Exception:
+        pass
+
+    return False
 
 
 def _is_demo_mode():
-    """Determine if running in demo mode (no API Key configured)."""
+    """Determine if running in demo mode (no API Key configured).
+
+    Called dynamically (not cached at module load) so that API Key
+    changes via Settings UI take effect immediately.
+    """
     return not _has_api_key()
 
 
+def is_demo_mode():
+    """Public function for checking demo mode status dynamically."""
+    return _is_demo_mode()
+
+
+# Kept for backward compatibility — but callers should use is_demo_mode()
+# to get fresh status after API Key configuration changes.
 DEMO_MODE = _is_demo_mode()
 
 PERSONA_MAP = {

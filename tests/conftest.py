@@ -1,15 +1,17 @@
 """Pytest configuration and shared fixtures
 
-Dual-track test strategy:
+Three-track test strategy:
 - Default (pytest): Fast unit/integration tests with mocked search & LLM (~50s)
+- UI E2E (pytest tests/test_ui_e2e_apptest.py): Streamlit AppTest UI-level tests (~8s)
 - E2E (pytest -m e2e): Real API calls to validate actual system behavior (~5min)
 
 Run commands:
   pytest                          # Fast unit tests (mocked, ~50s)
+  pytest tests/test_ui_e2e_apptest.py  # UI E2E via Streamlit AppTest
   pytest -m e2e                   # All E2E tests (real search + LLM)
   pytest -m e2e_search            # Real search only (no API key needed)
   pytest -m e2e_llm               # Real LLM only (requires API key)
-  pytest tests/ --ignore=tests/test_e2e_real.py  # Skip E2E entirely
+  pytest tests/ --ignore=tests/test_e2e_real.py  # Skip real E2E entirely
 """
 
 import pytest

@@ -51,6 +51,7 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ### Test Coverage
 - **2991 tests passing**
+- **23 UI E2E tests added** (test_ui_e2e_apptest.py) — Streamlit AppTest UI-level tests covering app launch, page navigation, chat demo mode, settings, health check, sidebar tools, language switching
 
 ## [0.2.4] - 2026-05-24
 

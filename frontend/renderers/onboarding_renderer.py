@@ -4,6 +4,7 @@ import streamlit as st
 import logging
 
 from opc_manager.i18n import t as _t
+from opc_manager.config import LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,73 @@ def _show_onboarding_overlay():
 
         if step_content.get("description"):
             st.markdown(f"\n{step_content['description']}\n")
+
+        # LLM_CONFIG 步骤：提供 API Key 输入入口
+        if current == OnboardingStep.LLM_CONFIG:
+            from frontend.routers.base_router import _has_api_key
+
+            if _has_api_key():
+                st.success(_t("onboard_llm_configured"))
+            else:
+                st.warning(_t("onboard_llm_not_configured"))
+
+                with st.form("onboard_llm_form"):
+                    provider = st.selectbox(
+                        _t("onboard_llm_provider"),
+                        ["moka", "openai", "glm"],
+                        format_func=lambda x: {
+                            "moka": "MokaAI (推荐)",
+                            "openai": "OpenAI",
+                            "glm": "智谱GLM-4",
+                        }.get(x, x),
+                    )
+                    api_key = st.text_input(
+                        _t("onboard_llm_api_key"),
+                        type="password",
+                        placeholder="sk-...",
+                    )
+                    if st.form_submit_button(
+                        _t("onboard_llm_save"), type="primary"
+                    ):
+                        if api_key and api_key.strip():
+                            try:
+                                from opc_manager.settings import get_settings
+
+                                settings = get_settings()
+                                provider_config = {
+                                    "moka": (
+                                        LLM_PROVIDERS["moka"],
+                                        "moka/claude-sonnet-4-6",
+                                    ),
+                                    "openai": (
+                                        LLM_PROVIDERS["openai"],
+                                        "gpt-4o",
+                                    ),
+                                    "glm": (
+                                        LLM_PROVIDERS["zhipu"],
+                                        "glm-4",
+                                    ),
+                                }
+                                base_url, model = provider_config.get(
+                                    provider, provider_config["moka"]
+                                )
+                                settings.update_llm(
+                                    provider=provider,
+                                    api_key=api_key.strip(),
+                                    base_url=base_url,
+                                    model=model,
+                                )
+                                st.success(_t("onboard_llm_saved"))
+                                st.rerun()
+                            except Exception as e:
+                                logger.error(
+                                    "[Onboarding] LLM config save failed: %s", e
+                                )
+                                st.error(_t("onboard_llm_save_failed"))
+                        else:
+                            st.error(_t("onboard_llm_key_required"))
+
+                st.caption(_t("onboard_llm_skip_hint"))
 
         col_prev, col_next, col_skip = st.columns([1, 1, 1])
 
