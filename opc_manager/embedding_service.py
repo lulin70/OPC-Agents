@@ -135,6 +135,33 @@ class EmbeddingService:
         except Exception as e:
             logger.warning("[EmbeddingService] Cache write failed: %s", e)
 
+    def cleanup_old_entries(self, max_age_days: int = 30) -> int:
+        """Remove cache entries older than max_age_days.
+
+        Returns number of entries removed.
+        """
+        if not self._cache_db:
+            return 0
+        try:
+            import time
+
+            cutoff = time.time() - max_age_days * 86400
+            conn = sqlite3.connect(self._cache_db)
+            cursor = conn.execute(
+                "DELETE FROM embeddings WHERE created_at < ?", (cutoff,)
+            )
+            removed = cursor.rowcount
+            conn.commit()
+            conn.close()
+            if removed > 0:
+                logger.info(
+                    "[EmbeddingService] Cleaned up %d old cache entries", removed
+                )
+            return removed
+        except Exception as e:
+            logger.warning("[EmbeddingService] Cache cleanup failed: %s", e)
+            return 0
+
     def embed(self, text: str) -> Optional[List[float]]:
         """Generate embedding for text using Ollama."""
         if not self._enabled:

@@ -3,6 +3,10 @@
 import streamlit as st
 import os
 import re
+
+# Memory bounds — prevent unbounded list growth in long sessions
+MAX_CHAT_MESSAGES = 100  # Keep last 100 messages in memory
+MAX_DELIVERABLES = 50  # Keep last 50 deliverables in memory
 import html
 import time
 import json
@@ -112,6 +116,8 @@ def _render_chat_input():
     if pending:
         prompt = pending
         st.session_state.messages.append({"role": "user", "content": prompt})
+        if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
+            st.session_state.messages = st.session_state.messages[-MAX_CHAT_MESSAGES:]
         _save_chat_history()
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -121,6 +127,8 @@ def _render_chat_input():
         session_history=st.session_state.get("messages", []),
     ):
         st.session_state.messages.append({"role": "user", "content": prompt})
+        if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
+            st.session_state.messages = st.session_state.messages[-MAX_CHAT_MESSAGES:]
         _save_chat_history()
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -147,6 +155,10 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
 
     if result_deliverable_record:
         st.session_state.deliverables.insert(0, result_deliverable_record)
+        if len(st.session_state.deliverables) > MAX_DELIVERABLES:
+            st.session_state.deliverables = st.session_state.deliverables[
+                :MAX_DELIVERABLES
+            ]
 
     if result_content:
         from frontend.components.result_cards import render_result_card
@@ -222,6 +234,8 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
         if result_filepath and os.path.exists(result_filepath):
             msg_record["deliverable_path"] = result_filepath
         st.session_state.messages.append(msg_record)
+        if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
+            st.session_state.messages = st.session_state.messages[-MAX_CHAT_MESSAGES:]
         _save_chat_history()
 
         from frontend.components.smart_suggestions import (
@@ -652,6 +666,10 @@ def render_chat_page():
                     st.session_state.messages.append(
                         {"role": "assistant", "content": fallback}
                     )
+                    if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
+                        st.session_state.messages = st.session_state.messages[
+                            -MAX_CHAT_MESSAGES:
+                        ]
                     _save_chat_history()
                     st.session_state.last_failed_prompt = prompt
                     break

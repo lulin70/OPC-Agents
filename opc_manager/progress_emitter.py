@@ -141,6 +141,7 @@ class ProgressEmitter:
     _instance = None
     _lock = threading.Lock()
     MAX_HISTORY_SIZE = 200
+    MAX_SESSIONS = 50  # Maximum number of sessions to keep history for
 
     def __new__(cls):
         """Create or return singleton instance."""
@@ -152,6 +153,20 @@ class ProgressEmitter:
                     cls._instance._history = {}
                     cls._instance._max_history = cls.MAX_HISTORY_SIZE
         return cls._instance
+
+    def _prune_old_sessions(self):
+        """Remove history for oldest sessions when MAX_SESSIONS is exceeded."""
+        if len(self._history) <= self.MAX_SESSIONS:
+            return
+        # Sort by last event timestamp, remove oldest
+        sessions = sorted(
+            self._history.items(),
+            key=lambda kv: kv[1][-1].get("timestamp", 0) if kv[1] else 0,
+        )
+        excess = len(self._history) - self.MAX_SESSIONS
+        for session_id, _ in sessions[:excess]:
+            self._history.pop(session_id, None)
+            self._subscribers.pop(session_id, None)
 
     def emit(self, event: ProgressEvent):
         sse_data = event.to_sse()
@@ -172,6 +187,7 @@ class ProgressEmitter:
         history.append(event.to_dict())
         if len(history) > self._max_history:
             history[:] = history[-self._max_history :]
+        self._prune_old_sessions()
 
     def subscribe(self, session_id: str, callback: Callable[[str], None]):
         if not session_id or not isinstance(session_id, str):

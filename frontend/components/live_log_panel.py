@@ -282,7 +282,7 @@ def collect_app_logs(since_timestamp: float = None) -> List[LogEntry]:
                 continue
 
             with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()[-500:]
+                lines = list(deque(f, maxlen=500))
 
             for line in lines:
                 line = line.strip()
@@ -341,7 +341,7 @@ def collect_engine_logs(since_timestamp: float = None) -> List[LogEntry]:
             continue
         try:
             with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()[-300:]
+                lines = list(deque(f, maxlen=300))
             for line in lines:
                 line = line.strip()
                 if not line or "opc_manager" not in line.lower():

@@ -104,7 +104,7 @@ class LocalFolderAdapter(KnowledgeAdapter):
             self._build_index()
 
     def _build_index(self):
-        """构建文件索引"""
+        """构建文件索引（懒加载：只存metadata，不存全文）"""
         for root, dirs, files in os.walk(self._path):
             # 跳过隐藏目录
             dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -112,39 +112,41 @@ class LocalFolderAdapter(KnowledgeAdapter):
                 if fname.endswith((".md", ".txt", ".markdown")):
                     fpath = os.path.join(root, fname)
                     try:
+                        # 只读取前500字符用于标签提取和embedding
+                        # 全文在搜索时按需读取（懒加载）
                         with open(fpath, "r", encoding="utf-8") as f:
-                            content = f.read()
+                            head_content = f.read(500)
                         title = (
                             fname.replace(".md", "")
                             .replace(".txt", "")
                             .replace(".markdown", "")
                         )
                         # 提取标签（#tag 格式）
-                        tags = re.findall(r"#(\w+)", content[:500])
+                        tags = re.findall(r"#(\w+)", head_content)
+                        file_size = os.path.getsize(fpath)
                         self._index.append(
                             {
                                 "title": title,
-                                "content": content,
                                 "path": fpath,
                                 "tags": tags,
-                                "size": len(content),
+                                "size": file_size,
                             }
                         )
                     except (OSError, UnicodeDecodeError) as e:
                         logger.warning(
-                            "[KnowledgeBridge] Obsidian config parsing failed: %s", e
+                            "[KnowledgeBridge] Failed to index %s: %s", fpath, e
                         )
         logger.info("[LocalFolder] 索引完成: %d 个文件", len(self._index))
 
-        # Generate embeddings for semantic search
+        # Generate embeddings for semantic search (using title only, not full content)
         if self._embedding_svc.enabled and self._index:
             logger.info(
                 "[LocalFolder] Generating embeddings for %d documents...",
                 len(self._index),
             )
             for entry in self._index:
-                # Use title + first 500 chars for embedding
-                embed_text = f"{entry['title']} {entry['content'][:500]}"
+                # Use title only for embedding (content loaded lazily on search)
+                embed_text = entry["title"]
                 entry["embedding"] = self._embedding_svc.embed(embed_text)
             embedded_count = sum(1 for e in self._index if e.get("embedding"))
             logger.info(
@@ -152,6 +154,17 @@ class LocalFolderAdapter(KnowledgeAdapter):
                 embedded_count,
                 len(self._index),
             )
+
+    def _read_content(self, entry: Dict, max_chars: int = 0) -> str:
+        """Lazily read file content. If max_chars>0, read only that many chars."""
+        try:
+            with open(entry["path"], "r", encoding="utf-8") as f:
+                if max_chars > 0:
+                    return f.read(max_chars)
+                return f.read()
+        except (OSError, UnicodeDecodeError) as e:
+            logger.warning("[KnowledgeBridge] Failed to read %s: %s", entry["path"], e)
+            return ""
 
     def search(self, query: str, max_results: int = 5) -> List[KnowledgeEntry]:
         results = []
@@ -166,7 +179,9 @@ class LocalFolderAdapter(KnowledgeAdapter):
         for entry in self._index:
             # --- Keyword score (existing logic) ---
             title_lower = entry["title"].lower()
-            content_lower = entry["content"][:2000].lower()
+            # Lazy read: only read first 2000 chars for keyword matching
+            content_snippet = self._read_content(entry, max_chars=2000)
+            content_lower = content_snippet.lower()
 
             kw_score = 0.0
             if query_lower in title_lower:
@@ -193,10 +208,12 @@ class LocalFolderAdapter(KnowledgeAdapter):
                 score = min(kw_score, 1.0)
 
             if score > 0:
+                # Lazy read: only read content for results that will be returned
+                full_content = self._read_content(entry)
                 results.append(
                     KnowledgeEntry(
                         title=entry["title"],
-                        content=entry["content"][:1500],
+                        content=full_content[:1500],
                         source=entry["path"],
                         source_type="local",
                         tags=entry.get("tags", []),

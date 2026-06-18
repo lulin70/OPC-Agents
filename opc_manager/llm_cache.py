@@ -27,6 +27,11 @@ class LLMCache:
         self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._ensure_table()
+        # Auto-cleanup expired entries on startup
+        try:
+            self.cleanup_expired()
+        except Exception as e:
+            logger.warning("[LLMCache] Startup cleanup failed: %s", e)
 
     def close(self):
         """Close the persistent database connection."""
