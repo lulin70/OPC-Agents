@@ -9,6 +9,7 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
+@unittest.skip("competitor_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestCompetitorSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -93,6 +94,7 @@ class TestCompetitorSkill(unittest.TestCase):
         self.assertTrue(result["success"])
 
 
+@unittest.skip("pricing_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestPricingSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -203,6 +205,7 @@ class TestPricingSkill(unittest.TestCase):
         self.assertTrue(required.issubset(set(PRICING_METHODS.keys())))
 
 
+@unittest.skip("tax_reminder_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestTaxReminderSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -291,6 +294,7 @@ class TestTaxReminderSkill(unittest.TestCase):
         self.assertEqual(_urgency_level(20), "提前准备")
 
 
+@unittest.skip("dashboard_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestDashboardSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -450,6 +454,7 @@ class TestDashboardSkill(unittest.TestCase):
         self.assertIn("看板", result["markdown"])
 
 
+@unittest.skip("knowledge_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestKnowledgeSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -631,6 +636,7 @@ class TestSkillRegistryP2(unittest.TestCase):
         registry = SkillRegistry(register_builtins=True)
         self.assertGreaterEqual(len(registry.skills), 21)
 
+    @unittest.skip("competitor_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_execute_competitor_add(self):
         from opc_manager.skill_registry import SkillRegistry
 

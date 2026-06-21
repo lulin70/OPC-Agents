@@ -1,6 +1,8 @@
 """
 Parallel Execution Engine for OPC-Agents LLM Call Optimization
 
+⚠️ 实验性功能：ParallelExecutor 当前未被三贤者投票流程实际使用，保留用于未来多技能并行执行场景。
+
 Provides controlled parallelism for LLM calls with:
 - Rate limiting (max concurrent API calls to avoid API bans)
 - Error isolation (one failure doesn't block others)
@@ -294,9 +296,11 @@ class ParallelExecutor:
         retries_remaining = task.retry_count
         last_error = None
 
-        for attempt in range(retries_remaining + 1):
-            try:
-                async with semaphore:
+        # P2-13: 信号量在重试循环外获取，任务持有信号量期间完成所有重试，
+        # 避免重试时重新排队导致排在后面的任务长时间等待（饿死）。
+        async with semaphore:
+            for attempt in range(retries_remaining + 1):
+                try:
                     task_start = time.time()
 
                     logger.debug(
@@ -335,34 +339,34 @@ class ParallelExecutor:
 
                     return task_result
 
-            except asyncio.TimeoutError:
-                execution_time_ms = (
-                    time.time()
-                    - (task_start if "task_start" in locals() else time.time())
-                ) * 1000
-                last_error = f"Timeout after {timeout}s"
-                logger.warning(
-                    f"[ParallelExecutor] Task {task_index} timed out after {timeout}s: "
-                    f"{task.description or 'unnamed'}"
-                )
+                except asyncio.TimeoutError:
+                    execution_time_ms = (
+                        time.time()
+                        - (task_start if "task_start" in locals() else time.time())
+                    ) * 1000
+                    last_error = f"Timeout after {timeout}s"
+                    logger.warning(
+                        f"[ParallelExecutor] Task {task_index} timed out after {timeout}s: "
+                        f"{task.description or 'unnamed'}"
+                    )
 
-            except Exception as e:
-                execution_time_ms = (
-                    time.time()
-                    - (task_start if "task_start" in locals() else time.time())
-                ) * 1000
-                last_error = str(e)
-                logger.warning(
-                    f"[ParallelExecutor] Task {task_index} failed "
-                    f"(attempt {attempt + 1}): {e}"
-                )
+                except Exception as e:
+                    execution_time_ms = (
+                        time.time()
+                        - (task_start if "task_start" in locals() else time.time())
+                    ) * 1000
+                    last_error = str(e)
+                    logger.warning(
+                        f"[ParallelExecutor] Task {task_index} failed "
+                        f"(attempt {attempt + 1}): {e}"
+                    )
 
-            if attempt < retries_remaining:
-                retry_delay = min(0.5 * (2**attempt), 2.0)
-                logger.debug(
-                    f"[ParallelExecutor] Retrying task {task_index} in {retry_delay}s"
-                )
-                await asyncio.sleep(retry_delay)
+                if attempt < retries_remaining:
+                    retry_delay = min(0.5 * (2**attempt), 2.0)
+                    logger.debug(
+                        f"[ParallelExecutor] Retrying task {task_index} in {retry_delay}s"
+                    )
+                    await asyncio.sleep(retry_delay)
 
         failure_result = TaskResult(
             success=False,
@@ -435,10 +439,14 @@ class ParallelExecutor:
         successful_results = [r for r in results if r.success and r.result]
 
         if not successful_results:
-            failed_errors = [r.error for r in results if not r.success]
-            return f"\n\n❌ 所有并行任务均失败:\n" + "\n".join(
-                f"- {e}" for e in failed_errors if e
-            )
+            # P2-14: 聚合所有失败任务的错误消息，格式统一为
+            # "所有任务失败: [task_0: error_0; task_1: error_1; ...]"
+            failed_entries = [
+                f"task_{r.task_index}: {r.error}"
+                for r in results
+                if not r.success and r.error
+            ]
+            return f"所有任务失败: [{'; '.join(failed_entries)}]"
 
         if strategy == MergeStrategy.FIRST_SUCCESS:
             return str(successful_results[0].result)

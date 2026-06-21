@@ -2,6 +2,160 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.0] - 2026-06-19 (待发布)
+
+### P0 关键问题修复（2026-06-21 7维度评估后）
+
+> 基于 DevSquad 7维度项目整理评估发现的 P0 级问题修复。评估报告见 docs/internal/V030_REMEDIATION_PLAN.md。
+
+#### 安全修复
+- **P0-1 共识门 fail-open → fail-close**：agent_loop.py 关键决策点共识检查失败时，原实现降级到直接执行（fail-open），可能导致发邮件等不可逆操作在无共识下执行。修复为 fail-close（跳过步骤并记录错误），确保关键决策点在共识失败时不放行。
+- **P0-3 技能冻结机制真正生效**：skill_registry.execute_skill 和 executor_brain._execute_skill 添加 frozen 字段检查。原实现仅 UI 层过滤（技能市场隐藏），执行层完全不检查 frozen 字段，冻结技能仍可被正常调用。修复后 frozen=True 的完全冻结技能被拒绝执行，返回明确错误信息。
+
+#### 性能修复
+- **P0-2 事件循环阻塞消除**：_serial_consensus_fallback 和 ConsensusConsultant.consult 中的同步 LLM 调用包装为 asyncio.to_thread。原实现在 async 事件循环中直接调用同步阻塞 LLM 方法，可能导致 45-60s 系统无响应。修复后所有同步调用通过线程池执行，不阻塞事件循环。
+
+#### 文档修复
+- **P0-4 版本号矛盾修正**：README.md 第3行从 "v0.3.0 (待发布)" 改为 "v0.2.5（v0.3.0 待批准）"，与 VERSION 文件（0.2.5）保持一致。原实现 README.md 已宣称 v0.3.0 但 VERSION 仍为 0.2.5，且 README.md 第169行 pip install 仍写 0.2.5，自身矛盾。
+
+#### CI/CD 修复
+- **P0-5 覆盖率门禁失效修复**：python-ci.yml 第61行移除 `|| true`，添加 `--cov-fail-under=60` 硬性阈值。原实现 `|| true` 导致覆盖率步骤永远成功，无门禁效果。
+
+#### 验证结果
+- 三贤者核心测试：441 passed, 86 skipped, 0 failed（186.14s）
+- 冻结技能验证：proposal (frozen=True) 被拒绝执行，返回 "技能已冻结（v0.3.0 产品收缩决策）"
+- 无回归：所有预存在测试状态保持不变
+
+### P1 重要问题修复（2026-06-21 7维度评估后）
+
+> 基于 DevSquad 7维度项目整理评估发现的 P1 级问题修复。
+
+#### 架构修复
+- **P1-4 SIMPLE 路由注释修正**：agent_loop.py SIMPLE 路由注释从"单次LLM调用"修正为"跳过关键决策点共识"，与实际实现一致。SIMPLE 路由仍走 plan→execute→reflect 流程，但跳过并行共识。
+- **P1-5 串行降级超时保护**：_serial_consensus_fallback 为每个 asyncio.to_thread 调用添加 asyncio.wait_for 超时保护（15s/调用，总45s）。超时时返回否决决策（fail-close），而非抛异常导致 fail-open。
+- **P1-6 StrategistBrain 决策点意见**：express_opinion 接收并使用 decision_point 参数，在 reasoning 中提及具体决策点，提升意见价值。_strategist_opinion_async 同步更新传递 decision_point。
+- **P1-7 intent/plan 结构化序列化**：reflector_brain.py _predict_with_llm 中 intent/plan 对象使用 dataclasses.asdict + json.dumps 序列化为结构化 JSON，而非 str() 截断。LLM 收到完整结构化信息，提升预判质量。
+
+#### 冻结技能引用清理
+- **SKILL_COLLABORATIONS 清理**：删除 3 个引用完全冻结技能的协作规则：finance_to_tax（tax_reminder）、report_to_calendar（calendar）、proposal_to_email（proposal）。避免用户输入"报税"/"报告截止"/"报价后发邮件"时触发冻结技能。
+
+#### 文档同步
+- **三语 README 同步**：README-EN.md 和 README-JP.md 升级到 v0.2.5（v0.3.0 待批准）叙事，与中文 README.md 内容一致。新增 v0.3.0 亮点章节、三贤者并行投票架构、IntentClassifier 三路分类、3核心技能+11冻结技能。修正 README-JP.md i18n 翻译键数量（58+ → 1242）。
+- **中文 README i18n 键数量修正**：项目结构中 i18n.py 注释从"696+翻译键"修正为"1242翻译键"。
+- **微信E2E幽灵功能修正**：README.md 中微信E2E从正式特性宣称改为"🧪 experimental 实验性功能"，明确标注位于 experimental/ 目录，未纳入核心流程。
+- **被取代文档标注**：AGENT_BRAIN_DESIGN_CONSENSUS.md 添加"已被 PARALLEL_SAGES_DESIGN.md 取代"标注。
+
+#### 目录结构清理
+- **删除废弃脚本**：scripts/scenario_migrator.py、scripts/simulate_user_journey.py、tests/tools/benchmark_parallel_executor.py（均无引用）
+- **删除重复文档**：docs/internal/CODE_REVIEW_7DIM_v0.1.9.md（与 archive/ 下重复，保留完整版）
+- **归档已完成文档**：ARCHITECTURE_REORG_PLAN.md、ROADMAP_AGENT_EVOLUTION.md、ROADMAP_V3_FULLSTACK.md、v020_complete_analysis_report.md、OPC-Agents-CarryMem-Integration-Proposal.md 移入 docs/internal/archive/
+
+#### 验证结果
+- 三贤者核心测试：368 passed, 86 skipped, 0 failed（153.75s）
+- 无回归：所有预存在测试状态保持不变
+
+### P2/P3 次要与建议问题修复（2026-06-21 7维度评估后）
+
+> 基于 DevSquad 7维度项目整理评估发现的 P2/P3 级问题修复。
+
+#### 安全修复
+- **P2-11 skill_id/action sanitize_for_llm**：reflector_brain.py _predict_with_llm 中 skill_id 和 action 经过 sanitize_for_llm 处理，防止 prompt injection。原实现仅截断，未过滤注入模式。
+- **CICD auto-label.yml 安全风险**：pull_request_target → pull_request 触发器。原实现 pull_request_target 拥有 secrets 访问权限，若未来添加 secrets 使用可能被恶意 PR 利用。本 workflow 不使用 secrets，改为 pull_request 更安全。
+
+#### 健壮性修复
+- **P3-19 collect_opinions_async 防御性检查**：consensus_engine.py collect_opinions_async 添加 isinstance(result, Opinion) 检查。原实现 else 分支直接 append(result)，若返回非 Opinion 实例会导致后续 AttributeError。
+- **P2-15 全局 LLM 并发信号量集成**：utils.py call_llm_service 使用 _llm_thread_semaphore 限流。原实现信号量已定义但未使用，3 个 LLM 调用同时发起无全局限流，可能触发 API 限流。
+
+#### 可维护性修复
+- **P3-17 QUALITY_THRESHOLD_CONSENSUS 常量引用**：task_lifecycle.py consult 方法引用 agent_loop.py 的 QUALITY_THRESHOLD_CONSENSUS 常量，而非硬编码 0.7。避免修改阈值时遗漏。
+
+#### CICD 修复
+- **release.yml 排除 E2E 测试**：测试步骤添加 --ignore 排除需要 API Key 的 E2E 测试文件，避免无 secrets 时发布失败。
+- **weekly-e2e-real.yml 失败通知增强**：添加 E2E 报告 artifact 上传 + GitHub Issue 自动创建通知。原实现仅 echo "::warning::"，失败信息易被忽略。
+
+#### 文档补全
+- **PRD_V4.md 冻结技能标记**：新增 "1.4 v0.3.0 技能冻结决策" 章节，列出 9 个完全冻结技能、2 个半冻结技能、10 个活跃技能，与代码实现一致。
+- **USER_TRIAL_GUIDE.md Windows 安装修正**：移除不存在的 install.bat/start.bat 引用，改为 WSL/Git Bash 运行 .sh 脚本说明。
+
+#### 验证结果
+- 三贤者核心测试：441 passed, 86 skipped, 0 failed（211.61s）
+- 无回归：所有预存在测试状态保持不变
+
+### P2/P3 剩余问题修复（2026-06-21）
+
+> 基于 DevSquad 7维度项目整理评估发现的剩余 P2/P3 级问题修复。
+
+#### 架构一致性修复
+- **P2-9 三脑 express_opinion 签名统一**：ReflectorBrain.express_opinion 添加 decision_point: Optional[str] = None 参数，与 StrategistBrain 和 ExecutorBrain 签名一致。当 decision_point 不为 None 时，在 reasoning 中提及决策点。
+- **P2-10 retry_count 假意见规则去重**：提取 ExecutorBrain._generate_retry_opinion(retry_count) 静态方法，消除 executor_brain.py 和 task_lifecycle.py 中的重复代码。
+- **P3-16 task_start else 分支清理**：删除 agent_loop.py 中无意义的 else 分支（仅含 log，无实际逻辑）。
+
+#### 并行执行引擎修复
+- **P2-13 信号量在重试循环外获取**：parallel_executor.py _execute_single_task 中信号量从重试循环内移到外部，避免任务重试时饿死其他任务。
+- **P2-14 _merge_results 错误消息格式修正**：FIRST_SUCCESS 策略所有任务失败时，聚合所有错误消息为统一格式 "所有任务失败: [task_0: error_0; task_1: error_1; ...]"。
+- **P3-18 ParallelExecutor 标注实验性**：文件头部添加"⚠️ 实验性功能"标注，明确未被三贤者投票流程实际使用。
+
+#### 测试质量提升
+- **test_integration_modules.py 质量分阈值**：从 >= 0.0 提升到 >= 0.7，真正验证评估质量。
+- **test_agent_brain.py 置信度阈值**：从 >= 0.5 细化为 COMBINED >= 0.5 + 子意图 >= 0.7，ANALYSIS >= 0.7。
+- **test_regression_i18n.py 阈值收紧**：orphan key 阈值从 <= 50 收紧到 <= 10，CJK 违规阈值从 200 收紧到 10-80。
+- **test_timeline_view.py 跳过测试修复**：5个 @unittest.skip 测试改为使用 mock 实现真实测试，验证撤销管理器、审计日志映射、进度发射器等场景。
+
+#### 验证结果
+- 完整回归测试：677 passed, 86 skipped, 2 failed（预存在 Mock 问题，非回归）
+- 无回归：所有预存在测试状态保持不变
+
+### 重大变更 - 三贤者并行投票架构回归
+
+#### 架构改造
+- **三贤者并行投票**：从串行流水线（3×RTT）改为并行投票（1×RTT），延迟降低3倍
+- **ConsensusEngine 前置**：从事后补救改为关键决策点前置保护
+- **ExecutorBrain 真意见**：删除 retry_count 假意见规则，改为 LLM 独立判断
+- **ReflectorBrain 前置预判**：新增 predict_consequence()，少数派报告模式
+- **IntentClassifier 三路分类**：SIMPLE/COMPLEX/GREETING，简单任务绕过三贤者
+
+#### 产品收缩
+- **技能冻结**：11个非核心技能冻结（9完全冻结+2半冻结），聚焦3个核心技能
+- **Onboarding 优化**：API Key 说明+获取链接+无API Key体验模式
+- **i18n 重构**：3857行→133行逻辑层+JSON化，向后兼容
+
+#### 质量提升
+- **覆盖率**：总覆盖率 62.87%，email_skill 99%，finance_skill 100%
+- **真实E2E测试**：7个核心技能E2E测试，CI cron每周一运行
+- **循环依赖消除**：__getattr__ 延迟导入清零，Protocol 接口解耦
+
+#### Bug修复
+- 修复 finance_skill get_monthly_report 上月环比数据永远为空（LIKE通配符缺失）
+- 修复 data_manager SQLite "database is locked"（添加 timeout=5）
+- 修复 onboarding 测试状态文件污染
+
+### 新增文档
+- docs/architecture/PARALLEL_SAGES_DESIGN.md - 三贤者并行投票架构设计
+- docs/internal/V030_PRODUCT_OPTIMIZATION_PLAN.md - 产品优化方案
+- docs/internal/V030_REMEDIATION_PLAN.md - 整改计划
+- docs/internal/COVERAGE_BASELINE.md - 覆盖率基线
+- docs/internal/PARALLEL_LATENCY_REPORT.md - 延迟对比报告
+- docs/spec/CORE_SKILLS_ACCEPTANCE.md - 核心技能验收标准
+- docs/spec/SKILL_FREEZE_LIST.md - 技能冻结清单
+- docs/spec/USER_RECRUITMENT_PLAN.md - 用户招募计划
+- docs/guides/USER_TRIAL_GUIDE.md - 用户试用指南
+- docs/guides/DEMO_SCRIPTS.md - 演示脚本
+- docs/guides/FEEDBACK_FORM.md - 反馈收集表
+
+### 新增测试
+- tests/test_parallel_sages.py - 并行投票测试（24个）
+- tests/test_executor_opinion.py - ExecutorBrain真意见测试（20个）
+- tests/test_reflector_prediction.py - ReflectorBrain预判测试（12个）
+- tests/test_intent_router.py - 三路分类测试（34个）
+- tests/test_no_circular_import.py - 循环导入检测（12个）
+- tests/test_email_skill_coverage.py - email_skill覆盖率测试（59个）
+- tests/test_finance_skill_coverage.py - finance_skill覆盖率测试（64个）
+- tests/test_e2e_real.py - 真实LLM E2E测试（7个）
+
+### CI/CD
+- 新增 weekly-e2e-real.yml：每周一3AM UTC运行核心技能E2E测试
+- python-ci.yml 新增覆盖率报告步骤+artifact上传
+
 ## [0.2.5] - 2026-06-07
 
 ### DevSquad 7-Role Evaluation (67 issues fixed)

@@ -101,7 +101,7 @@ def get_monthly_report(year_month: str = "") -> Dict[str, Any]:
 
     prev_month_rows = execute_query(
         "SELECT type, amount FROM finance_records WHERE date LIKE ?",
-        (_prev_month(year_month),),
+        (f"{_prev_month(year_month)}%",),
     )
     prev_income = sum(r["amount"] for r in prev_month_rows if r["type"] == "income")
     prev_expense = sum(r["amount"] for r in prev_month_rows if r["type"] == "expense")

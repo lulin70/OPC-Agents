@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.2.5 | **Status**: Beta | **License**: MIT
+> **Version**: v0.2.5 (v0.3.0 pending approval) | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -13,6 +13,39 @@
 
 ---
 
+## 30 Seconds to Understand OPC-Agents
+
+**🎯 One-liner**: An AI execution team for one-person companies — you state the requirement, it delivers the result.
+
+**⚡ Core Flow**:
+```
+You state requirement → AI analyzes + searches + generates → You get deliverable (report/plan/copy/email...)
+```
+
+**🚀 3-Step Quickstart**:
+```bash
+pip install opc-agents          # 1. Install
+opc-agents                      # 2. Launch
+# 3. Type "write a weekly report for me" → get deliverable
+```
+
+---
+
+## 🆕 v0.3.0 Highlights (Pending Release)
+
+> Full changes see [CHANGELOG.md](CHANGELOG.md), architecture design see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md).
+
+- **⚡ Three Sages Parallel Voting Architecture Returns**: Switched from serial pipeline (3×RTT) to parallel voting (1×RTT), 3x latency reduction. Inspired by EVA MAGI three-sage synchronous voting + minority report mechanism, key decision points protected by upfront consensus.
+- **🎯 Focus on 3 Core Skills**: Email / Finance / Report. 11 non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
+- **🧠 IntentClassifier 3-Way Smart Routing**: SIMPLE / COMPLEX / GREETING three-way classification. Simple tasks bypass the three sages directly — fast and cost-effective; complex tasks enter parallel voting for quality assurance.
+- **🛡️ Key Decision Point Upfront Consensus Protection**: ConsensusEngine shifts from "post-hoc remedy" to "upfront gatekeeping", ExecutorBrain gives real opinions (fake opinion rules removed), ReflectorBrain upfront prediction + minority report.
+- **📊 Significant Quality Improvement**: Total coverage 62.87%, email_skill 99%, finance_skill 100%; added 7 real LLM E2E tests (CI auto-runs every Monday).
+- **🌐 i18n Refactor**: 3857 lines → 133 lines logic layer + JSON-ification, backward compatible, drastically reduced maintenance cost.
+
+> 🧪 Want to try it? Read [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) (3-minute setup), demo scripts at [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md), feedback form at [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md).
+
+---
+
 ## What Is This
 
 OPC-Agents (One-Person Company Agents) is an **intelligent task execution system designed for solo entrepreneurs, freelancers, and independent creators**.
@@ -21,51 +54,40 @@ OPC-Agents (One-Person Company Agents) is an **intelligent task execution system
 
 Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 
-## What It Can Do
+## What It Can Do for You
 
-| You Say | System Delivers |
-|---------|----------------|
-| "Collect OPC company trends" | 🔍 **Research Report** (real search results + source links + structured organization) |
-| "Write a Q2 marketing plan" | ✍️ **Complete Plan Document** (SMART goals + roadmap + resources/risks/acceptance criteria) |
-| "Analyze competitor A" | 📊 **Analysis Report** (SWOT + action items + priority ranking) |
-| "Create a product launch plan" | 🚀 **Launch Plan** (pricing strategy + promotion channels + timeline) |
+| You Say | It Delivers |
+|---------|-------------|
+| "Collect OPC company trends" | 🔍 Research Report (real search + source links + structured organization) |
+| "Write a Q2 marketing plan" | ✍️ Complete Plan (SMART goals + roadmap + risks + acceptance criteria) |
+| "Analyze competitor A" | 📊 Analysis Report (SWOT + action items + priority ranking) |
+| "Send an email to a client" | 📧 Email Sending (template rendering + SMTP sending + rate limiting) |
+| "Record an income entry" | 💰 Finance Record (auto-categorization + monthly report + trend analysis) |
+| "Add customer info" | 👥 Customer Profile (encrypted storage + silence alert + collaboration tracking) |
 
-### Key Features
+---
 
-- ✅ **Three-Sage Architecture** — Strategist Brain (intent understanding) + Executor Brain (skill execution) + Reflector Brain (result evaluation) closed-loop collaboration
-- ✅ **Skill Context Passing** — SkillContext enables data flow between skills, search→analysis→creation closed loop
-- ✅ **LLM-Enhanced Content Generation** — Powered by Claude Sonnet 4, high-quality output
-- ✅ **Real Web Search** — DuckDuckGo live search, no fabricated data
-- ✅ **Zero-Placeholder Guarantee** — Every output has specific, actionable content
-- ✅ **Auto-Correction** — Automatically triggers correction strategies when quality is substandard (retry/search-and-retry/switch-skill/degrade)
-- ✅ **Multi-Skill Orchestration** — Composite intents auto-decomposed into multi-step execution plans (e.g., "analyze competitors and write plan" → search → analysis → creation)
-- ✅ **Task Pause/Resume** — Pause running tasks and resume from breakpoint later
-- ✅ **Execution Progress Visualization** — Event-driven real-time progress tracking with SSE support
-- ✅ **Long Session Context** — Multi-turn conversation maintains context, follow-up "add XX" continues from previous results
-- ✅ **Async Execution** — Submit and return, background processing with progress indication
-- ✅ **Quality Gate** — Auto-check deliverables for zero placeholders + minimum length + data sources; flag if substandard
-- ✅ **Output Redaction** — Auto-detect and replace API keys/GitHub tokens in generated content
-- ✅ **Knowledge Base Fallback** — 6 categories, 20 professional knowledge entries, auto-fallback when search fails
-- ✅ **File Delivery** — Auto-generates `.md` files with download button
-- ✅ **Security Protection** — Command whitelist + path validation + input length limit + audit log + input validation + Prompt injection defense + URL safety + error sanitization + encrypted API key storage
-- ✅ **Test Coverage** — 2939 test cases, 100% pass rate, CI auto-verification (covers settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler and all new modules)
-- ✅ **Skill Marketplace API** — External skill registration/discovery/invocation, API Key auth + permission levels
-- ✅ **MCP Protocol Compatible** — Compatible with Microsoft Model Context Protocol standard, supports tools/resources/prompts
-- ✅ **Plugin System** — Community plugin hot-loading + sandbox isolation + lifecycle management
-- ✅ **Custom Skill Editor** — Form-based skill creation/testing/preview/publishing
-- ✅ **Quality/Fast Mode** — User-selectable three-sage full closed loop or skip-reflection fast execution
-- ✅ **📋 Unified Settings Management** — 5-tab settings center (LLM/SMTP/API Keys/Security/Profile), SettingsManager singleton
-- ✅ **🚶 First-Run Onboarding** — 3-step onboarding wizard (Welcome → API Key Config → Feature Intro)
-- ✅ **💾 Data Backup & Restore** — ZIP/JSON/CSV export, SHA256 verification, Zip Slip protection, DataBackupManager
-- ✅ **🛡️ User-Friendly Error Handling** — 9 exception types → Chinese-friendly messages, ErrorHandler unified exception translation
-- ✅ **💬 WeChat E2E Integration** — WeChatAgent + WeChatGateway for WeChat-based task interaction
-- ✅ **📊 Modular Dashboard** — DashboardConfig (3 layouts × 3 densities × 6 panels), template system supports 9 combinations
-- ✅ **🌐 Tri-Lingual i18n** — I18nManager supports zh_CN/en_US/ja_JP, 696+ translation keys
-- ✅ **🛒 Skill Marketplace V2** — Detail panel + 16-category filter + version pinning,all-new UI experience
-- ✅ **🔍 Global Search** — Cross-module unified search for skills/customers/articles/tasks in one place
-- ✅ **⌨️ Apple Shortcuts Integration** — 5 shortcut actions (quick_task/query_status/create_deliverable/record_income/daily_report)
-- ✅ **🔐 API Key Encryption at Rest** — Fernet symmetric encryption, auto-generated key (.env.local), enhanced secure_storage
-- ✅ **🧩 Code Modularization Refactor** — Frontend split from 3834-line monolithic into 8 modules; backend extracted skill_models/skill_builtin/skill_executors/task_types/task_content_generators/scenario_definitions as independent modules
+## Core Capabilities
+
+**Three Sages Parallel Voting Architecture** — Three AI roles vote synchronously in a closed-loop collaboration, with key decisions protected by upfront consensus (v0.3.0 upgrade, see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)):
+- 🧠 **StrategistBrain**: Understands your intent, plans execution steps
+- ⚡ **ExecutorBrain**: Invokes skills and tools, generates deliverables (v0.3.0 onwards gives "real opinions", no more fake opinion rules)
+- 🔍 **ReflectorBrain**: Evaluates result quality, upfront prediction + minority report, auto-corrects when substandard
+- 🛡️ **ConsensusEngine**: Three sages parallel voting (1×RTT, 3x faster than serial 3×RTT), key decision point upfront protection
+
+**IntentClassifier 3-Way Smart Routing** — Routes by task complexity, saving time and money:
+- 🟢 **SIMPLE**: Simple tasks execute directly, bypassing the three sages
+- 🟡 **COMPLEX**: Complex tasks enter parallel voting, quality assured
+- 👋 **GREETING**: Greetings/small talk responded directly
+
+**3 Core Skills** — v0.3.0 focused polish, covering the most frequent one-person company scenarios (other skills frozen, see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)):
+- 📧 **Email**: SMTP sending + template rendering + rate limiting
+- 💰 **Finance**: Income/expense records + monthly report + trend analysis
+- 📊 **Report**: Weekly/monthly/annual report auto-generation
+
+**Real Search** — DuckDuckGo live search integration, no fabricated data, every conclusion has a source.
+
+---
 
 ## Accelerators
 
@@ -90,6 +112,60 @@ Encounter specific scenarios? Use these together for better results:
 |----------|-----------------|-------------|
 | Want AI to remember your preferences | [CarryMem](https://github.com/lulin70/carrymem) | Cross-session persistent memory engine, `pip install opc-agents[memory]` to enable |
 | Have dev tasks needing multi-role collaboration | [DevSquad](https://github.com/lulin70/DevSquad) | 7-role AI team (Architect/PM/Security/Tester/Coder/DevOps/UI), complex dev task decomposition and collaboration |
+
+## Architecture Overview
+
+> v0.3.0 upgraded to Three Sages Parallel Voting architecture, full design see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md), latency comparison see [docs/internal/PARALLEL_LATENCY_REPORT.md](docs/internal/PARALLEL_LATENCY_REPORT.md).
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    OPC-Agents v0.3.0                 │
+├─────────────────────────────────────────────────────┤
+│  User Input                                          │
+│       ↓                                              │
+│  IntentClassifier 3-Way Smart Routing                │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
+│  │ SIMPLE   │  │ COMPLEX  │  │ GREETING │          │
+│  │ Direct   │  │ Enter    │  │ Direct   │          │
+│  │ Execute  │  │ Voting   │  │ Respond  │          │
+│  └────┬─────┘  └────┬─────┘  └──────────┘          │
+│       ↓              ↓                              │
+│  ┌─────────────────────────────────────────┐        │
+│  │ Three Sages Parallel Voting (1×RTT)     │        │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ │        │
+│  │  │Strategist│ │Executor  │ │Reflector │ │        │
+│  │  │Brain     │ │Brain     │ │Brain     │ │        │
+│  │  │(real op) │ │(real op) │ │(upfront) │ │        │
+│  │  └─────┬────┘ └─────┬────┘ └─────┬────┘ │        │
+│  │        └──────┬─────┴──────┬──────┘     │        │
+│  │               ↓            ↓            │        │
+│  │     ConsensusEngine (key decision       │        │
+│  │     upfront protection)                 │        │
+│  │     · Parallel voting · Minority report │        │
+│  │     · Conflict resolution               │        │
+│  └────────────────────┬────────────────────┘        │
+│                       ↓                             │
+├─────────────────────────────────────────────────────┤
+│  3 Core Skills (v0.3.0 focus)                       │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐│
+│  │ 📧 email     │ │ 💰 finance   │ │ 📊 report    ││
+│  │ SMTP+tpl+lim │ │ inc/exp+rpt  │ │ wk/mo/yr rpt ││
+│  └──────────────┘ └──────────────┘ └──────────────┘│
+│  (Other 11 non-core skills frozen, see SKILL_FREEZE)│
+├─────────────────────────────────────────────────────┤
+│  External Extensions                                 │
+│  ┌──────────────┐  ┌──────────────┐                │
+│  │ 🔌 Skill     │  │ 🔗 MCP       │                │
+│  │   Marketplace│  │   Service    │                │
+│  └──────────────┘  └──────────────┘                │
+│  ┌──────────────┐  ┌──────────────┐                │
+│  │ 👤 User      │  │ 🔒 Data      │                │
+│  │   Profile    │  │   Security   │                │
+│  └──────────────┘  └──────────────┘                │
+├─────────────────────────────────────────────────────┤
+│  SQLite Unified Storage (AES encryption + 0600 perm) │
+└─────────────────────────────────────────────────────┘
+```
 
 ## Quick Start
 
@@ -238,7 +314,7 @@ OPC-Agents/
 │   ├── onboarding.py      # 🚶 OnboardingManager (3-step first-run wizard)
 │   ├── error_handler.py   # 🛡️ ErrorHandler (9 exception types → friendly messages)
 │   ├── data_backup.py     # 💾 DataBackupManager (ZIP/JSON/CSV export, SHA256, Zip Slip protection)
-│   ├── i18n.py            # 🌐 I18nManager (zh_CN/en_US/ja_JP, 696+ keys)
+│   ├── i18n.py            # 🌐 I18nManager (zh_CN/en_US/ja_JP, 1242 keys)
 │   ├── dashboard_config.py# 📊 DashboardConfig (3 layouts × 3 densities × 6 panels = 9 combos)
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts integration (5 CLI actions)
 │   │
@@ -344,6 +420,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.3.0** | **2026-06-19 (Pending Release)** | **Three Sages Parallel Voting Architecture Returns** — Parallel voting (1×RTT, 3x latency reduction) + ConsensusEngine upfront + ExecutorBrain real opinions + ReflectorBrain upfront prediction + IntentClassifier 3-way routing + focus on 3 core skills (email/finance/report) + 11 non-core skills frozen + i18n refactor (3857→133 lines) + coverage 62.87% + real LLM E2E tests |
 | **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 2939 tests / 76 files |
 | **0.2.4** | **2026-05-25** | **Memory + Knowledge Enhancement** — CarryMem deep integration + knowledge search optimization + notification system + extended tests |
 | **0.2.3** | **2026-05-22** | **CarryMem Integration** — Cross-session persistent memory (MemoryBridge) + rule engine + flywheel mechanism + LLM cache + skill scoring |

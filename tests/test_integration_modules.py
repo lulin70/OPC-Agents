@@ -179,7 +179,11 @@ class TestThreeBrainPipeline:
             expected_intent={"goal": intent.goal},
         )
         assert isinstance(evaluation, Evaluation)
-        assert evaluation.quality_score >= 0.0
+        # 成功执行 + 数据完整 + 结果相关 + 步骤全完成 = 0.3+0.25+0.25+0.15 = 0.95
+        # 阈值从 0.0 提升到 0.7，确保评估真正验证了成功结果的质量
+        assert evaluation.quality_score >= 0.7, (
+            f"quality_score {evaluation.quality_score} 过低，成功执行应获得较高评分"
+        )
 
         next_action = reflector.decide_next_action(evaluation, plan=None)
         assert isinstance(next_action, NextAction)

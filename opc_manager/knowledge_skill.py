@@ -1,3 +1,10 @@
+"""[FROZEN v0.3.0] This skill is frozen and not actively maintained.
+
+Frozen on: 2026-06-19
+Reason: v0.3.0 product focus contraction (13→3 core skills)
+Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
+"""
+
 import json
 import logging
 import time

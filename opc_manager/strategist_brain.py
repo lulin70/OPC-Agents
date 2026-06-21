@@ -747,11 +747,36 @@ class StrategistBrain:
                     parsed[val] = v
             self.constraint_keywords = parsed
 
-    def express_opinion(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def express_opinion(
+        self, context: Dict[str, Any], decision_point: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        策略脑对决策点表达意见。
+
+        P1-6 修复：接收并使用 decision_point 参数，给出针对具体决策点的意见。
+        原实现不接收 decision_point，意见与决策点无关，近似于"摆设"。
+
+        Args:
+            context: 包含 intent 等上下文信息
+            decision_point: 决策点标识（如 "execute_step", "send_email" 等）
+
+        Returns:
+            Dict[str, Any]: 包含 brain_type, opinion_type, reasoning, confidence
+        """
         intent = context.get("intent")
         confidence = intent.confidence if intent else 0.5
         opinion_type = "AGREE" if confidence > 0.5 else "CONDITIONAL"
-        reasoning = f"策略脑置信度: {confidence:.2f}" if intent else "无意图信息"
+
+        # P1-6 修复：在 reasoning 中提及具体决策点，提升意见价值
+        if decision_point:
+            reasoning = (
+                f"策略脑对决策点[{decision_point}]的意见: " f"置信度 {confidence:.2f}"
+                if intent
+                else f"策略脑对决策点[{decision_point}]的意见: 无意图信息"
+            )
+        else:
+            reasoning = f"策略脑置信度: {confidence:.2f}" if intent else "无意图信息"
+
         return {
             "brain_type": "strategist",
             "opinion_type": opinion_type,

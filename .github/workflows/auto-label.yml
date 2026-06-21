@@ -1,7 +1,11 @@
 name: Auto Label PR
 
+# P2 安全修复：pull_request_target → pull_request
+# 原实现使用 pull_request_target 触发器，该触发器使用 base 分支的 workflow 文件
+# 但拥有 secrets 访问权限，若未来添加 secrets 使用可能被恶意 PR 利用。
+# 本 workflow 不使用 secrets，改为 pull_request 更安全。
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, synchronize]
 
 jobs:

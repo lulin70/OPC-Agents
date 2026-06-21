@@ -59,7 +59,22 @@ class TestStrategistBrain:
         intent = strategist.understand_intent("帮我分析竞争对手")
 
         assert intent.type in (IntentType.ANALYSIS, IntentType.COMBINED)
-        assert intent.confidence >= 0.5
+        # COMBINED意图的主confidence为0.5（默认），但其子意图应有更高置信度
+        # ANALYSIS意图应通过关键词匹配获得 >= 0.7 的置信度
+        # 阈值从 0.5 提升：确保意图识别真正匹配了关键词，而非仅返回默认值
+        if intent.type == IntentType.COMBINED:
+            assert intent.confidence >= 0.5, (
+                f"COMBINED意图confidence {intent.confidence} 过低"
+            )
+            assert len(intent.sub_intents) > 0, "COMBINED意图应有子意图"
+            sub_confidences = [si.confidence for si in intent.sub_intents]
+            assert max(sub_confidences) >= 0.7, (
+                f"子意图最高confidence {max(sub_confidences)} 过低，应 >= 0.7"
+            )
+        else:
+            assert intent.confidence >= 0.7, (
+                f"confidence {intent.confidence} 过低，匹配关键词的意图应 >= 0.7"
+            )
 
     def test_intent_understanding_creation(self):
         """测试意图理解 - 创作类任务"""

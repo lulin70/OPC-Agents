@@ -1,3 +1,12 @@
+"""[SEMI-FROZEN v0.3.0] Partially frozen — only referenced methods maintained.
+
+Frozen on: 2026-06-19
+Maintained methods (referenced by core skills):
+  - list_tasks (referenced by report_skill)
+Other methods are frozen and not actively maintained.
+Revival: See docs/spec/SKILL_FREEZE_LIST.md
+"""
+
 import logging
 import time
 from typing import Any, Dict

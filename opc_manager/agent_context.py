@@ -6,7 +6,7 @@ These are pure data structures with no dependencies on other agent modules.
 
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class AgentState(Enum):
@@ -37,6 +37,7 @@ class AgentContext:
     session_id: Optional[str] = None
     correction_count: int = 0
     paused_at: Optional[float] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def set_state(self, new_state: AgentState) -> None:
         self.state = new_state

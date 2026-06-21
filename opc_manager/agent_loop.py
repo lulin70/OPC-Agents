@@ -22,7 +22,12 @@ from .reflector_brain import (
     NextAction,
     NextActionType,
 )
-from .consensus_engine import ConsensusEngine
+from .consensus_engine import (
+    ConsensusEngine,
+    Opinion,
+    OpinionType,
+    Decision,
+)
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
 from .session_context import SessionContextManager
@@ -53,6 +58,20 @@ QUALITY_THRESHOLD_CORRECTION = 0.6
 QUALITY_THRESHOLD_CONSENSUS = 0.7
 MAX_CORRECTION_ATTEMPTS = 2
 
+# 三贤者并行投票配置 [S2-T2]
+PARALLEL_VOTE_TIMEOUT = int(os.environ.get("OPC_PARALLEL_VOTE_TIMEOUT", "30"))
+PARALLEL_VOTE_ENABLED = (
+    os.environ.get("OPC_PARALLEL_VOTE_ENABLED", "true").lower() == "true"
+)
+# 关键决策点（不可逆操作）[S2-T4]
+CRITICAL_DECISION_SKILLS = {"email", "report"}
+CRITICAL_DECISION_ACTIONS = {
+    "send",
+    "execute_operation",
+    "send_notification",
+    "send_email",
+}
+
 
 class AgentLoop:
 
@@ -79,6 +98,7 @@ class AgentLoop:
         self.executor_brain = executor_brain or ExecutorBrain(
             skill_registry=self.skill_registry,
             task_engine=self.task_engine,
+            llm_service=llm_service,
         )
         self.reflector_brain = reflector_brain or ReflectorBrain(
             llm_service=llm_service
@@ -95,7 +115,10 @@ class AgentLoop:
         )
         self._lifecycle = TaskLifecycleManager(self.contexts, self.executor_brain)
         self._consensus_consultant = ConsensusConsultant(
-            self.strategist_brain, self.reflector_brain, self.consensus_engine
+            self.strategist_brain,
+            self.reflector_brain,
+            self.consensus_engine,
+            executor_brain=self.executor_brain,
         )
 
         self.max_reflect_rounds = max_reflect_rounds
@@ -135,6 +158,29 @@ class AgentLoop:
             session_id=session_id or str(uuid.uuid4()),
         )
         self.contexts[task_id] = agent_context
+
+        # [S2-T6] 三路路由分类（0 LLM 成本，正则+启发式）
+        from .intent_classifier import IntentRouter, IntentCategory
+
+        category, route_confidence = IntentRouter.classify_route(user_input)
+
+        if category == IntentCategory.GREETING:
+            # 问候直接响应，绕过三贤者（0 LLM 成本）
+            logger.info("[S2-T6] GREETING 路由，直接响应")
+            return TaskResult(
+                success=True,
+                content=self._generate_greeting_response(user_input),
+                task_type=TaskType.GENERAL_CHAT,
+                metadata={"route": "greeting", "confidence": route_confidence},
+            )
+
+        if category == IntentCategory.SIMPLE:
+            # P1-4 修复：SIMPLE 路由跳过关键决策点共识（_is_critical_decision_point 对 simple 返回 False）
+            # 仍走 plan→execute→reflect 流程，但跳过并行共识，减少 LLM 调用
+            logger.info("[S2-T6] SIMPLE 路由，跳过关键决策点共识")
+            agent_context.metadata["route_category"] = "simple"
+        # P3-16 修复：删除无意义的 else 分支（原 else 仅含注释+log，无实际逻辑）
+        # COMPLEX 路由走完整三贤者并行流程（_phase_plan → _phase_execute → _phase_reflect）
 
         conversation_history = []
         if session_id:
@@ -526,6 +572,43 @@ class AgentLoop:
                     )
                 )
 
+            # [S2-T4] 关键决策点前置共识检查（fail-close：共识失败时跳过步骤，不降级到直接执行）
+            try:
+                if self._is_critical_decision_point(context, step):
+                    decision = await self._parallel_consensus(
+                        context, "execute_step", step
+                    )
+                    if not decision.approved:
+                        logger.info("关键决策点被三贤者否决: %s", decision.reasoning)
+                        context.execution_results.append(
+                            {
+                                "step_id": step.id,
+                                "skill_id": step.skill_id,
+                                "description": step.description,
+                                "success": False,
+                                "data": None,
+                                "error": f"consensus_veto: {decision.reasoning}",
+                                "execution_time": 0,
+                            }
+                        )
+                        continue  # 跳过该步骤
+            except Exception as e:
+                # P0-1 修复：共识检查失败时 fail-close（跳过步骤），而非 fail-open（降级到直接执行）
+                # 原因：关键决策点（如发邮件、数据持久化）不可逆，共识失败时不应放行
+                logger.error("关键决策点共识检查失败，fail-close 跳过步骤: %s", e)
+                context.execution_results.append(
+                    {
+                        "step_id": step.id,
+                        "skill_id": step.skill_id,
+                        "description": step.description,
+                        "success": False,
+                        "data": None,
+                        "error": f"consensus_check_failed: {str(e)}",
+                        "execution_time": 0,
+                    }
+                )
+                continue  # 跳过该步骤，不降级到直接执行
+
             step_start_time = time.time()
             enriched_params = self._enrich_step_parameters(
                 step.parameters, context.execution_results
@@ -579,6 +662,266 @@ class AgentLoop:
                     result.error,
                 )
                 break
+
+    async def _parallel_consensus(
+        self, context, decision_point: str, step=None
+    ) -> Decision:
+        """
+        三贤者并行投票决策 [S2-T2]
+
+        - 在关键决策点前调用
+        - 并行失败时降级到串行
+
+        Args:
+            context: AgentContext 或 dict
+            decision_point: 决策点标识（如 "execute_step"）
+            step: 当前步骤对象（可选，用于提取计划行动）
+
+        Returns:
+            Decision: 三贤者共识决策
+        """
+        if not PARALLEL_VOTE_ENABLED:
+            return await self._serial_consensus_fallback(context, decision_point, step)
+        try:
+            context_dict = self._context_to_dict(context)
+            planned_action = self._extract_planned_action(context, step)
+            decision = await asyncio.wait_for(
+                self.consensus_engine.collect_opinions_async(
+                    self._strategist_opinion_async(context_dict, decision_point),
+                    self.executor_brain.express_opinion_async(
+                        context_dict, decision_point
+                    ),
+                    self.reflector_brain.predict_consequence_async(
+                        context_dict, planned_action
+                    ),
+                ),
+                timeout=PARALLEL_VOTE_TIMEOUT,
+            )
+            return decision
+        except Exception as e:
+            logger.warning("并行投票失败，降级到串行: %s", e)
+            return await self._serial_consensus_fallback(context, decision_point, step)
+
+    async def _strategist_opinion_async(self, context_dict, decision_point) -> Opinion:
+        """
+        策略脑异步意见 [S2-T2]
+
+        包装现有 StrategistBrain.express_opinion（同步、返回 Dict），
+        适配为异步并转换为 Opinion 对象。
+
+        P1-6 修复：传递 decision_point 给 express_opinion，使策略脑意见针对具体决策点。
+
+        Args:
+            context_dict: 上下文字典
+            decision_point: 决策点标识
+
+        Returns:
+            Opinion: 策略脑意见
+        """
+        # P1-6 修复：传递 decision_point，使策略脑意见与决策点相关
+        result = await asyncio.to_thread(
+            self.strategist_brain.express_opinion, context_dict, decision_point
+        )
+        return self._dict_to_opinion(result, brain_type="strategist")
+
+    async def _serial_consensus_fallback(
+        self, context, decision_point: str, step=None
+    ) -> Decision:
+        """
+        串行降级路径（并行失败时）[S2-T2]
+
+        P0-2 修复：所有同步 LLM 调用包装为 asyncio.to_thread，避免阻塞事件循环。
+        P1-5 修复：为每个调用添加 asyncio.wait_for 超时保护，避免无限期等待。
+        原实现无超时保护，若 LLM 调用挂起将无限期阻塞。
+
+        Args:
+            context: AgentContext 或 dict
+            decision_point: 决策点标识
+            step: 当前步骤对象（可选）
+
+        Returns:
+            Decision: 三贤者共识决策
+        """
+        context_dict = self._context_to_dict(context)
+        planned_action = self._extract_planned_action(context, step)
+        # P0-2 + P1-5 修复：asyncio.to_thread + asyncio.wait_for 超时保护
+        SERIAL_OP_TIMEOUT = 15  # 单个意见表达超时15s（总超时45s）
+        try:
+            s_op = self._dict_to_opinion(
+                await asyncio.wait_for(
+                    asyncio.to_thread(
+                        self.strategist_brain.express_opinion, context_dict
+                    ),
+                    timeout=SERIAL_OP_TIMEOUT,
+                ),
+                "strategist",
+            )
+            e_op = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.executor_brain.express_opinion, context_dict, decision_point
+                ),
+                timeout=SERIAL_OP_TIMEOUT,
+            )
+            r_op = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.reflector_brain.predict_consequence,
+                    context_dict,
+                    planned_action,
+                ),
+                timeout=SERIAL_OP_TIMEOUT,
+            )
+            return self.consensus_engine.collect_opinions([s_op, e_op, r_op])
+        except asyncio.TimeoutError as e:
+            logger.error(
+                "串行降级共识超时（>%ds），fail-close 拒绝执行: %s",
+                SERIAL_OP_TIMEOUT * 3,
+                e,
+            )
+            # P1-5 修复：超时时返回否决决策，而非抛异常导致 fail-open
+            return Decision(
+                approved=False,
+                reasoning=f"serial_consensus_timeout: 串行降级共识超时（>{SERIAL_OP_TIMEOUT * 3}s）",
+                opinions=[],
+                consensus_score=0.0,
+            )
+
+    def _context_to_dict(self, context) -> Dict[str, Any]:
+        """
+        将 AgentContext 转换为 dict（用于三贤者投票）[S2-T2]
+
+        Args:
+            context: AgentContext 对象或 dict
+
+        Returns:
+            Dict[str, Any]: 上下文字典
+        """
+        if isinstance(context, dict):
+            return context
+        return {
+            "user_input": getattr(context, "user_input", ""),
+            "intent": getattr(context, "intent", None),
+            "plan": getattr(context, "plan", None),
+            "retry_count": getattr(context, "retry_count", 0),
+            "current_step": getattr(context, "current_step", 0),
+            "execution_results": getattr(context, "execution_results", []),
+        }
+
+    def _extract_planned_action(self, context, step=None) -> Dict[str, Any]:
+        """
+        提取计划行动信息（用于 ReflectorBrain 预判）[S2-T2]
+
+        Args:
+            context: AgentContext 或 dict
+            step: 当前步骤对象（可选，优先使用）
+
+        Returns:
+            Dict[str, Any]: 包含 skill_id / action / parameters 的字典
+        """
+        if step is None:
+            # 从 context 中查找当前步骤
+            if not isinstance(context, dict):
+                current_step_idx = getattr(context, "current_step", 0)
+                plan = getattr(context, "plan", None)
+                steps = getattr(plan, "steps", None) if plan else None
+                if steps and 0 < current_step_idx <= len(steps):
+                    step = steps[current_step_idx - 1]
+        if step:
+            return {
+                "skill_id": getattr(step, "skill_id", "") or "",
+                "action": getattr(step, "action", "") or "",
+                "parameters": getattr(step, "parameters", {}) or {},
+            }
+        return {"skill_id": "", "action": "", "parameters": {}}
+
+    def _dict_to_opinion(self, result: Dict, brain_type: str) -> Opinion:
+        """
+        将 Brain.express_opinion 返回的 Dict 转换为 Opinion 对象 [S2-T2]
+
+        Args:
+            result: Brain 返回的字典
+            brain_type: 贤者类型（strategist/executor/reflector）
+
+        Returns:
+            Opinion: 意见对象
+        """
+        if not isinstance(result, dict):
+            return Opinion(
+                brain_type=brain_type,
+                opinion_type=OpinionType.ABSTAIN,
+                reasoning=f"Brain 返回非 dict: {type(result).__name__}",
+                confidence=0.0,
+            )
+        opinion_type_str = str(result.get("opinion_type", "AGREE")).upper()
+        try:
+            opinion_type = OpinionType[opinion_type_str]
+        except KeyError:
+            opinion_type = OpinionType.ABSTAIN
+        return Opinion(
+            brain_type=brain_type,
+            opinion_type=opinion_type,
+            reasoning=result.get("reasoning", ""),
+            confidence=result.get("confidence", 0.5),
+            alternative=result.get("alternative"),
+        )
+
+    def _generate_greeting_response(self, user_input: str) -> str:
+        """生成问候响应 [S2-T6]（0 LLM 成本，基于关键词模板）"""
+        text = user_input.lower()
+        if any(w in text for w in ["你好", "您好", "hi", "hello", "嗨", "哈喽"]):
+            return (
+                "你好！我是 OPC-Agents 助手。我可以帮你：\n"
+                "- 发送邮件\n- 记录收支\n- 生成报告\n\n"
+                "请告诉我你需要什么帮助？"
+            )
+        if any(w in text for w in ["谢谢", "感谢", "thanks"]):
+            return "不客气！还有其他需要帮助的吗？"
+        if any(w in text for w in ["再见", "bye", "拜拜"]):
+            return "再见！有需要随时找我。"
+        if any(w in text for w in ["帮助", "help", "怎么用"]):
+            return (
+                "我可以帮你：\n"
+                "1. 发送邮件（如：发邮件给张总）\n"
+                "2. 记录收支（如：记一笔收入3000元）\n"
+                "3. 生成报告（如：生成本月经营报告）\n\n"
+                "直接用自然语言告诉我你的需求即可。"
+            )
+        return "你好，有什么可以帮你的吗？"
+
+    def _is_critical_decision_point(self, context, step=None) -> bool:
+        """
+        判断当前是否为关键决策点 [S2-T4]
+
+        关键决策点包括：发邮件、数据持久化等不可逆操作。
+
+        Args:
+            context: AgentContext 或 dict
+            step: 当前步骤对象（可选，优先使用）
+
+        Returns:
+            bool: 是否为关键决策点
+        """
+        # [S2-T6] 简单任务不触发共识（绕过三贤者并行投票）
+        if isinstance(context, dict):
+            metadata = context.get("metadata", {}) or {}
+        else:
+            metadata = getattr(context, "metadata", None) or {}
+        if isinstance(metadata, dict) and metadata.get("route_category") == "simple":
+            return False
+
+        if step is None:
+            if not isinstance(context, dict):
+                current_step_idx = getattr(context, "current_step", 0)
+                plan = getattr(context, "plan", None)
+                steps = getattr(plan, "steps", None) if plan else None
+                if steps and 0 < current_step_idx <= len(steps):
+                    step = steps[current_step_idx - 1]
+        if not step:
+            return False
+        skill_id = (getattr(step, "skill_id", "") or "").lower()
+        action = (getattr(step, "action", "") or "").lower()
+        return (
+            skill_id in CRITICAL_DECISION_SKILLS or action in CRITICAL_DECISION_ACTIONS
+        )
 
     def _enrich_step_parameters(
         self, params: Dict, execution_results: List[Dict]

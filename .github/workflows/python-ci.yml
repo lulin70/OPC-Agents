@@ -47,6 +47,28 @@ jobs:
       run: |
         PYTHONPATH=. pytest --tb=long -v --junitxml=test-results.xml 2>&1 | tee test-output.txt
 
+    - name: Coverage report
+      if: matrix.python-version == '3.11'
+      run: |
+        PYTHONPATH=. pytest --cov=opc_manager --cov=frontend \
+          --cov-report=xml:coverage.xml --cov-report=term \
+          --cov-fail-under=60 \
+          --tb=no -q --timeout=10 \
+          --ignore=tests/test_e2e_real.py \
+          --ignore=tests/test_e2e_user_journeys.py \
+          --ignore=tests/test_e2e_user_workflow.py \
+          --ignore=tests/test_integration_e2e.py \
+          --ignore=tests/test_wechat_e2e.py \
+          -p no:cacheprovider
+
+    - name: Upload coverage artifact
+      if: matrix.python-version == '3.11'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.xml
+        retention-days: 14
+
     - name: Verify Docker build
       run: docker build -t opc-agents-test .
       if: matrix.python-version == '3.11'

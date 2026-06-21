@@ -391,4 +391,36 @@ def register_builtin_skills(registry) -> None:
     )
     registry.register_skill(knowledge_skill)
 
-    logger.info("[SkillBuiltin] Registered %d built-in skills", 21)
+    # [v0.3.0] Freeze non-core skills (13→3 contraction)
+    # See docs/spec/SKILL_FREEZE_LIST.md for rationale and revival conditions
+    _FROZEN_DATE = "2026-06-19"
+    _FULLY_FROZEN = {
+        "calendar",
+        "competitor_watch",
+        "dashboard",
+        "invoice",
+        "knowledge_mgmt",
+        "pricing",
+        "proposal",
+        "social_publish",
+        "tax_reminder",
+    }
+    _SEMI_FROZEN = {"task_manager", "crm"}  # referenced by email/report core skills
+
+    for skill_id in _FULLY_FROZEN:
+        skill = registry.get_skill(skill_id)
+        if skill:
+            skill.frozen = True
+            skill.frozen_date = _FROZEN_DATE
+    for skill_id in _SEMI_FROZEN:
+        skill = registry.get_skill(skill_id)
+        if skill:
+            skill.frozen = "semi"
+            skill.frozen_date = _FROZEN_DATE
+
+    logger.info(
+        "[SkillBuiltin] Registered %d built-in skills (%d fully frozen, %d semi-frozen)",
+        21,
+        len(_FULLY_FROZEN),
+        len(_SEMI_FROZEN),
+    )

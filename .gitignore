@@ -75,7 +75,11 @@ task_workspaces/
 
 # Test artifacts
 test_results.xml
+test-output.txt
 coverage/
+coverage.xml
+coverage.json
+.coverage
 .htmlcov/
 .pytest_cache/
 .benchmarks

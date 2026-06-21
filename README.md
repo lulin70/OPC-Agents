@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.2.5 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.2.5（v0.3.0 待批准） | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,6 +31,21 @@ opc-agents                      # 2. 启动
 
 ---
 
+## 🆕 v0.3.0 亮点（待发布）
+
+> 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)。
+
+- **⚡ 三贤者并行投票架构回归**：从串行流水线（3×RTT）改为并行投票（1×RTT），延迟降低 3 倍。借鉴 EVA MAGI 三贤者同步投票 + 少数派报告机制，关键决策点前置共识保护。
+- **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结 11 个非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
+- **🧠 IntentClassifier 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
+- **🛡️ 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
+- **📊 质量大幅提升**：总覆盖率 62.87%，email_skill 99%，finance_skill 100%；新增 7 个真实 LLM E2E 测试（CI 每周一自动运行）。
+- **🌐 i18n 重构**：3857 行 → 133 行逻辑层 + JSON 化，向后兼容，维护成本骤降。
+
+> 🧪 准备试用？请阅读 [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md)（3 分钟完成配置），演示话术见 [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)，反馈表见 [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。
+
+---
+
 ## 它能帮你做什么
 
 | 你说 | 它交付 |
@@ -46,12 +61,21 @@ opc-agents                      # 2. 启动
 
 ## 核心能力
 
-**三贤者架构**——三个 AI 角色闭环协作，确保输出质量：
-- 🧠 **策略脑**：理解你的意图，规划执行步骤
-- ⚡ **执行脑**：调用技能和工具，生成成果物
-- 🔍 **反思脑**：评估结果质量，不达标自动修正
+**三贤者并行投票架构**——三个 AI 角色同步投票闭环协作，关键决策前置共识保护（v0.3.0 升级，详见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)）：
+- 🧠 **策略脑（StrategistBrain）**：理解你的意图，规划执行步骤
+- ⚡ **执行脑（ExecutorBrain）**：调用技能和工具，生成成果物（v0.3.0 起给"真意见"，不再用假意见规则）
+- 🔍 **反思脑（ReflectorBrain）**：评估结果质量，前置预判 + 少数派报告，不达标自动修正
+- 🛡️ **共识引擎（ConsensusEngine）**：三贤者并行投票（1×RTT，比串行 3×RTT 快 3 倍），关键决策点前置保护
 
-**21 个内置技能**——覆盖一人公司日常运营：邮件、财务、CRM、方案、报告、社媒、报价、竞品分析...
+**IntentClassifier 三路智能路由**——按任务复杂度分流，省时省钱：
+- 🟢 **SIMPLE**：简单任务直接执行，绕过三贤者
+- 🟡 **COMPLEX**：复杂任务进入并行投票，质量有保障
+- 👋 **GREETING**：问候/闲聊直接回应
+
+**3 个核心技能**——v0.3.0 聚焦打磨，覆盖一人公司最高频场景（其余技能已冻结，详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)）：
+- 📧 **邮件（email）**：SMTP 发送 + 模板渲染 + 频率限制
+- 💰 **财务（finance）**：收支记录 + 月度报表 + 趋势分析
+- 📊 **报告（report）**：周报/月报/年报自动生成
 
 **真实搜索**——接入 DuckDuckGo 实时搜索，不编造数据，每个结论有来源。
 
@@ -83,43 +107,46 @@ opc-agents                      # 2. 启动
 
 ## 架构概览
 
+> v0.3.0 升级为三贤者并行投票架构，完整设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)，延迟对比见 [docs/internal/PARALLEL_LATENCY_REPORT.md](docs/internal/PARALLEL_LATENCY_REPORT.md)。
+
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    OPC-Agents v0.2.5                 │
+│                    OPC-Agents v0.3.0                 │
 ├─────────────────────────────────────────────────────┤
-│  三贤者架构                                          │
+│  用户输入                                            │
+│       ↓                                              │
+│  IntentClassifier 三路智能路由                       │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
-│  │ 策略脑    │→│ 执行脑    │→│ 反思脑    │          │
-│  │ 意图理解  │  │ 技能执行  │  │ 结果评估  │          │
-│  │ 任务规划  │  │ 工具调用  │  │ 自动修正  │          │
-│  └──────────┘  └──────────┘  └──────────┘          │
-│       ↕             ↕             ↕                  │
-│            共识引擎（意见协调+冲突决策）               │
+│  │ SIMPLE   │  │ COMPLEX  │  │ GREETING │          │
+│  │ 直接执行  │  │ 进入投票 │  │ 直接回应 │          │
+│  └────┬─────┘  └────┬─────┘  └──────────┘          │
+│       ↓              ↓                              │
+│  ┌─────────────────────────────────────────┐        │
+│  │ 三贤者并行投票（1×RTT，延迟降低3倍）      │        │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ │        │
+│  │  │ 策略脑    │ │ 执行脑    │ │ 反思脑    │ │        │
+│  │  │ (真意见)  │ │ (真意见)  │ │ (前置预判)│ │        │
+│  │  └─────┬────┘ └─────┬────┘ └─────┬────┘ │        │
+│  │        └──────┬─────┴──────┬──────┘     │        │
+│  │               ↓            ↓            │        │
+│  │     ConsensusEngine（关键决策点前置保护） │        │
+│  │     · 并行投票 · 少数派报告 · 冲突决策   │        │
+│  └────────────────────┬────────────────────┘        │
+│                       ↓                             │
 ├─────────────────────────────────────────────────────┤
-│  intent_types.py — 意图类型SSOT                       │
-│  IntentType枚举 / INTENT_KEYWORDS / INTENT_STEP_MAP  │
-│  SkillRegistry单例 — 技能注册/发现/调用/依赖注入      │
-│  execute_goal — 各技能模块统一委托入口                 │
-├─────────────────────────────────────────────────────┤
-│  21个内置技能                                        │
-│  ┌─ P0 核心 ─────────────────────────────────────┐  │
-│  │ 📧 email  💰 finance  ✅ task  👥 crm         │  │
-│  ├─ P1 业务 ─────────────────────────────────────┤  │
-│  │ 📱 social  📋 proposal  🧾 invoice            │  │
-│  │ 📊 report  📅 calendar                         │  │
-│  ├─ P2 进阶 ─────────────────────────────────────┤  │
-│  │ 🔍 competitor  💲 pricing  🧾 tax_reminder    │  │
-│  │ 📈 dashboard  📚 knowledge                     │  │
-│  └───────────────────────────────────────────────┘  │
+│  3 个核心技能（v0.3.0 聚焦）                         │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐│
+│  │ 📧 email     │ │ 💰 finance   │ │ 📊 report    ││
+│  │ SMTP+模板+限频│ │ 收支+月报+趋势│ │ 周/月/年报    ││
+│  └──────────────┘ └──────────────┘ └──────────────┘│
+│  （其余 11 个非核心技能已冻结，见 SKILL_FREEZE_LIST） │
 ├─────────────────────────────────────────────────────┤
 │  外部扩展                                            │
 │  ┌──────────────┐  ┌──────────────┐                │
 │  │ 🔌 技能市场   │  │ 🔗 MCP服务   │                │
-│  │ 搜索/安装/管理│  │ 发现/连接    │                │
 │  └──────────────┘  └──────────────┘                │
 │  ┌──────────────┐  ┌──────────────┐                │
 │  │ 👤 用户画像   │  │ 🔒 数据安全  │                │
-│  │ 偏好/推荐    │  │ 加密/沙箱    │                │
 │  └──────────────┘  └──────────────┘                │
 ├─────────────────────────────────────────────────────┤
 │  SQLite统一存储（AES加密 + 文件权限0600）             │
@@ -127,6 +154,8 @@ opc-agents                      # 2. 启动
 ```
 
 ## 快速开始
+
+> 🆕 **v0.3.0 试用用户**：非技术背景用户请直接阅读 [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md)（图文版，3 分钟完成配置，含 API Key 获取链接和无 API Key 体验模式）。本节为开发者快速参考。
 
 ### 前提条件
 
@@ -274,7 +303,7 @@ OPC-Agents/
 │   ├── onboarding.py      # 🚶 OnboardingManager（3步首次运行引导向导）
 │   ├── error_handler.py   # 🛡️ ErrorHandler（9种异常类型→中文友好消息）
 │   ├── data_backup.py     # 💾 DataBackupManager（ZIP/JSON/CSV导出，SHA256，Zip Slip防护）
-│   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP，696+翻译键）
+│   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP，1242翻译键）
 │   ├── dashboard_config.py# 📊 DashboardConfig（3布局×3密度×6面板=9种组合）
 │   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts集成（5个CLI动作）
 │   │
@@ -342,9 +371,9 @@ OPC-Agents/
 │   ├── confirmer.py                  # 确认机制
 │   ├── progress_emitter.py           # 进度事件发射器
 │   └── version.py         # 版本号管理（SSOT）
-│   ├── experimental/      # 实验性模块（未纳入核心流程）
-│   │   ├── wechat_agent.py    # 💬 微信E2E智能体
-│   │   ├── wechat_gateway.py  # 💬 微信网关
+│   ├── experimental/      # 🧪 实验性模块（experimental，未纳入核心流程，不作为正式特性宣称）
+│   │   ├── wechat_agent.py    # 💬 微信E2E智能体（experimental 实验性）
+│   │   ├── wechat_gateway.py  # 💬 微信网关（experimental 实验性）
 │   │   └── plugin_worker.py   # 🔌 插件工作器
 ├── opc_manager/api/        # API事件模块
 │   └── events.py          # 事件定义
@@ -397,6 +426,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| **0.3.0** | **2026-06-19 (待发布)** | **三贤者并行投票架构回归** — 并行投票(1×RTT，延迟降3倍)+ConsensusEngine前置+ExecutorBrain真意见+ReflectorBrain前置预判+IntentClassifier三路路由+聚焦3核心技能(邮件/财务/报告)+11非核心技能冻结+i18n重构(3857→133行)+覆盖率62.87%+真实LLM E2E测试 |
 | **0.2.5** | **2026-06-07** | **架构统一+安全加固** — 架构统一重构+LLM并发控制+安全加固+2939测试/76文件 |
 | **0.2.4** | **2026-05-24** | **记忆+知识库增强** — CarryMem深度集成+知识库搜索优化+通知系统+扩展测试 |
 | **0.2.3** | **2026-05-24** | **CarryMem集成** — 跨会话持久记忆(MemoryBridge)+规则引擎+飞轮机制+LLM缓存+技能评分 |

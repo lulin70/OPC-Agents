@@ -44,10 +44,8 @@ logger = logging.getLogger(__name__)
 
 SKILL_COLLABORATIONS = {
     "crm_to_email": {"trigger": ["跟进", "发邮件"], "skills": ["crm", "email"]},
-    "finance_to_tax": {
-        "trigger": ["记账", "报税"],
-        "skills": ["finance", "tax_reminder"],
-    },
+    # P1 修复：finance_to_tax 已删除（tax_reminder 已冻结 v0.3.0）
+    # "finance_to_tax": {"trigger": ["记账", "报税"], "skills": ["finance", "tax_reminder"]},
     "deal_to_income": {"trigger": ["成交", "收款"], "skills": ["crm", "finance"]},
     "report_full": {
         "trigger": ["经营报告", "全面报告"],
@@ -57,14 +55,10 @@ SKILL_COLLABORATIONS = {
         "trigger": ["成交后发邮件", "成交通知"],
         "skills": ["crm", "email"],
     },
-    "report_to_calendar": {
-        "trigger": ["报告截止", "报告日程"],
-        "skills": ["report", "calendar"],
-    },
-    "proposal_to_email": {
-        "trigger": ["报价后发邮件", "报价通知"],
-        "skills": ["proposal", "email"],
-    },
+    # P1 修复：report_to_calendar 已删除（calendar 已冻结 v0.3.0）
+    # "report_to_calendar": {"trigger": ["报告截止", "报告日程"], "skills": ["report", "calendar"]},
+    # P1 修复：proposal_to_email 已删除（proposal 已冻结 v0.3.0）
+    # "proposal_to_email": {"trigger": ["报价后发邮件", "报价通知"], "skills": ["proposal", "email"]},
 }
 
 
@@ -319,6 +313,15 @@ class SkillRegistry(SkillExecutorMixin):
 
         if not skill.enabled:
             return {"success": False, "error": f"技能已禁用: {skill_id}"}
+
+        # P0-3 修复：技能冻结机制真正生效
+        # frozen=True 表示完全冻结，拒绝执行；frozen="semi" 表示半冻结，允许维护方法调用
+        if getattr(skill, "frozen", False) is True:
+            logger.warning("技能已冻结（v0.3.0），拒绝执行: %s", skill_id)
+            return {
+                "success": False,
+                "error": f"技能已冻结（v0.3.0 产品收缩决策）: {skill_id}。详见 docs/spec/SKILL_FREEZE_LIST.md",
+            }
 
         try:
             missing_params = []

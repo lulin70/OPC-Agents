@@ -44,6 +44,38 @@ v3.5的7个技能（意图分析/搜索/分析/内容生成/操作执行/通知/
 | P0 | task_manager | 帮我管待办，不是帮我列待办清单 |
 | P0 | crm | 帮我管客户，不是帮我写客户分析报告 |
 
+### 1.4 v0.3.0 技能冻结决策（2026-06-19）
+
+> **决策背景**：v4.0 定义了 4 个 P0 技能，但 v0.2.5 实现了 21 个技能，其中多数未达生产质量。v0.3.0 产品收缩决策：聚焦 3 个核心技能（email/finance/report），冻结 11 个非核心技能。
+
+#### 完全冻结技能（9个，frozen=True）
+
+| 技能ID | 文件 | 冻结原因 |
+|--------|------|---------|
+| proposal | proposal_skill.py | 非核心，待质量达标后解冻 |
+| invoice | invoice_skill.py | 非核心，待质量达标后解冻 |
+| calendar | calendar_skill.py | 非核心，待质量达标后解冻 |
+| social_publish | social_skill.py | 非核心，待质量达标后解冻 |
+| competitor_watch | competitor_skill.py | 非核心，待质量达标后解冻 |
+| pricing | pricing_skill.py | 非核心，待质量达标后解冻 |
+| tax_reminder | tax_reminder_skill.py | 非核心，待质量达标后解冻 |
+| dashboard | dashboard_skill.py | 非核心，待质量达标后解冻 |
+| knowledge_mgmt | knowledge_skill.py | 非核心，待质量达标后解冻 |
+
+#### 半冻结技能（2个，frozen="semi"）
+
+| 技能ID | 文件 | 维护方法 |
+|--------|------|---------|
+| crm | crm_skill.py | get_customer, get_customer_stats, get_silent_customers |
+| task_manager | task_skill.py | list_tasks |
+
+#### 活跃技能（10个，frozen=False）
+
+intent_analysis, search, analysis, content_generation, execute_operation, send_notification, output_result, email, finance, report
+
+> **详见**: [docs/spec/SKILL_FREEZE_LIST.md](../spec/SKILL_FREEZE_LIST.md)
+> **执行机制**: skill_registry.execute_skill 和 executor_brain._execute_skill 检查 frozen 字段，frozen=True 拒绝执行
+
 ---
 
 ## 二、功能需求详细定义

@@ -77,6 +77,10 @@ def _show_onboarding_overlay():
             else:
                 st.warning(_t("onboard_llm_not_configured"))
 
+                # [v0.3.0] "什么是 API Key" 折叠说明 — 降低非技术用户门槛
+                with st.expander(_t("onboard_llm_what_is_apikey"), expanded=False):
+                    st.info(_t("onboard_llm_apikey_explain"))
+
                 with st.form("onboard_llm_form"):
                     provider = st.selectbox(
                         _t("onboard_llm_provider"),
@@ -131,7 +135,30 @@ def _show_onboarding_overlay():
                         else:
                             st.error(_t("onboard_llm_key_required"))
 
+                # [v0.3.0] "一键获取 API Key" 引导链接
+                st.caption(_t("onboard_llm_get_key_hint"))
+                link_cols = st.columns(3)
+                provider_links = {
+                    "moka": ("MokaAI", "https://www.moka-ai.com/"),
+                    "openai": ("OpenAI", "https://platform.openai.com/api-keys"),
+                    "glm": ("智谱GLM", "https://open.bigmodel.cn/usercenter/apikeys"),
+                }
+                for col, (key, (label, url)) in zip(link_cols, provider_links.items()):
+                    with col:
+                        st.markdown(
+                            f"[{label}]({url})",
+                            help=f"{label} API Key 注册/获取",
+                        )
+
                 st.caption(_t("onboard_llm_skip_hint"))
+
+                # [v0.3.0] "无 API Key 体验模式" 入口
+                st.markdown("---")
+                st.caption(_t("onboard_llm_demo_mode_hint"))
+                if st.button(_t("onboard_llm_demo_mode_btn"), use_container_width=True):
+                    onboard.skip_onboarding()
+                    st.info(_t("onboard_skipped_msg"))
+                    st.rerun()
 
         col_prev, col_next, col_skip = st.columns([1, 1, 1])
 

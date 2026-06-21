@@ -71,6 +71,8 @@ class Skill:
     enabled: bool = True  # 是否启用
     version: str = "1.0"  # 版本号
     intent_keywords: List[str] = None  # 触发意图的关键词
+    frozen: Any = False  # False=活跃, True=完全冻结, "semi"=半冻结
+    frozen_date: str = ""  # 冻结日期
 
     def __post_init__(self):
         if self.intent_keywords is None:

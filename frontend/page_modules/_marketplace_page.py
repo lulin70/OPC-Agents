@@ -159,6 +159,22 @@ def _render_marketplace_filters_v2():
     return search, selected_cats, sort_by
 
 
+def _get_frozen_skill_ids() -> set:
+    """Get set of fully frozen skill IDs from SkillRegistry.
+
+    Returns:
+        Set of skill_id strings that are fully frozen (frozen=True).
+        Semi-frozen skills are NOT included (they're still partially active).
+    """
+    try:
+        from opc_manager.skill_registry import SkillRegistry
+
+        registry = SkillRegistry()
+        return {s.skill_id for s in registry.list_all_skills() if s.frozen is True}
+    except Exception:
+        return set()
+
+
 def _filter_and_sort_skills(skills, search_text, categories, sort_by):
     """Apply search + category + sort to skill list.
 
@@ -172,6 +188,12 @@ def _filter_and_sort_skills(skills, search_text, categories, sort_by):
         Filtered and sorted list of skill dicts.
     """
     filtered = list(skills)
+
+    # [v0.3.0] Hide fully frozen skills from marketplace
+    # See docs/spec/SKILL_FREEZE_LIST.md
+    _frozen_ids = _get_frozen_skill_ids()
+    if _frozen_ids:
+        filtered = [s for s in filtered if s.get("skill_id", "") not in _frozen_ids]
 
     if search_text:
         q = search_text.lower()

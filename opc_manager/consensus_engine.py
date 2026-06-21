@@ -160,6 +160,67 @@ class ConsensusEngine:
         self._log_decision(opinions, decision)
         return decision
 
+    async def collect_opinions_async(
+        self,
+        strategist_coro,
+        executor_coro,
+        reflector_coro,
+    ) -> Decision:
+        """
+        并行收集三贤者意见（asyncio.gather）[S2-T2]
+
+        三贤者并行投票用：
+        - 三脑并行执行，任一异常返回 ABSTAIN
+        - 复用 collect_opinions() 同步汇总逻辑
+
+        Args:
+            strategist_coro: 策略脑意见协程
+            executor_coro: 执行脑意见协程
+            reflector_coro: 反思脑预判协程
+
+        Returns:
+            Decision: 最终决策
+        """
+        import asyncio
+
+        results = await asyncio.gather(
+            strategist_coro,
+            executor_coro,
+            reflector_coro,
+            return_exceptions=True,
+        )
+        valid_opinions: List[Opinion] = []
+        brain_names = ["strategist", "executor", "reflector"]
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                valid_opinions.append(
+                    Opinion(
+                        brain_type=brain_names[i],
+                        opinion_type=OpinionType.ABSTAIN,
+                        reasoning=f"并行投票异常: {result}",
+                        confidence=0.0,
+                    )
+                )
+            elif isinstance(result, Opinion):
+                # P3-19 修复：防御性检查，确保返回的是 Opinion 实例
+                valid_opinions.append(result)
+            else:
+                # P3-19 修复：非 Opinion 返回值转为 ABSTAIN，避免后续 AttributeError
+                logger.warning(
+                    "脑 %s 返回非 Opinion 类型: %s，转为 ABSTAIN",
+                    brain_names[i],
+                    type(result).__name__,
+                )
+                valid_opinions.append(
+                    Opinion(
+                        brain_type=brain_names[i],
+                        opinion_type=OpinionType.ABSTAIN,
+                        reasoning=f"非 Opinion 返回值: {type(result).__name__}",
+                        confidence=0.0,
+                    )
+                )
+        return self.collect_opinions(valid_opinions)
+
     def _check_veto(self, opinions: List[Opinion]) -> Optional[Opinion]:
         """
         检查是否有行使否决权的意见

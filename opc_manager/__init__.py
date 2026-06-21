@@ -1,10 +1,102 @@
 """OPC-Agents 三贤者架构模块
 
-Lazy imports to prevent circular dependency issues.
-All symbols are available via `from opc_manager import X` but only loaded on first access.
+[S2-T8] 显式导入替代 __getattr__ 延迟导入。
+
+经分析，子模块均通过具体子模块路径导入（如 `from opc_manager.utils import X`），
+不从包顶层导入符号，因此不存在真实循环依赖，可安全使用显式导入。
+Protocol 接口（BrainProtocol/SkillRegistryProtocol）已在 protocols.py 中定义，
+用于解耦共识调用方与具体贤者/注册表实现。
 """
 
 from .version import __version__, get_version, get_version_info, get_version_string
+
+# 策略脑
+from .strategist_brain import (
+    StrategistBrain,
+    Intent,
+    IntentType,
+    Constraint,
+    ConstraintType,
+    ExecutionPlan,
+    Step,
+)
+
+# 执行脑
+from .executor_brain import (
+    ExecutorBrain,
+    ExecutionResult,
+    ExecutionStatus,
+    ExecutionStatusType,
+    ExecutionResultType,
+)
+
+# 反思脑
+from .reflector_brain import (
+    ReflectorBrain,
+    Evaluation,
+    EvaluationResult,
+    NextAction,
+    NextActionType,
+    CorrectionStrategy,
+)
+
+# 共识引擎
+from .consensus_engine import (
+    ConsensusEngine,
+    Opinion,
+    OpinionType,
+    Decision,
+    DecisionType,
+)
+
+# 技能注册表
+from .skill_registry import (
+    SkillRegistry,
+    Skill,
+    SkillCategory,
+    SkillInput,
+    SkillOutput,
+    SkillContext,
+)
+
+# 工具调用框架
+from .tool_system import (
+    ToolSystem,
+    Tool,
+    ToolCategory,
+    ToolParameter,
+    PermissionLevel,
+)
+
+# 执行循环
+from .agent_loop import AgentLoop
+from .agent_context import AgentContext, AgentState
+
+# 公共工具
+from .utils import BoundedDict, EventEmitter, Event
+
+# 外部技能市场
+from .skill_marketplace import (
+    SkillMarketplace,
+    ExternalSkillMarketplace,
+    ExternalSkill,
+    MCPServerInfo,
+    TrustLevel,
+)
+
+# 用户画像
+from .user_profile import UserProfile
+
+# 设置管理器
+from .settings import (
+    SettingsManager,
+    SettingsCategory,
+    LLMSettings,
+    SMTPSettings,
+    SecuritySettings,
+    ProfileSettings,
+    get_settings,
+)
 
 __all__ = [
     # 版本信息
@@ -77,85 +169,3 @@ __all__ = [
     "ProfileSettings",
     "get_settings",
 ]
-
-# Lazy import mapping: name -> (module_path, attribute_name)
-_LAZY_IMPORTS = {
-    # 策略脑
-    "StrategistBrain": (".strategist_brain", "StrategistBrain"),
-    "Intent": (".strategist_brain", "Intent"),
-    "IntentType": (".strategist_brain", "IntentType"),
-    "Constraint": (".strategist_brain", "Constraint"),
-    "ConstraintType": (".strategist_brain", "ConstraintType"),
-    "ExecutionPlan": (".strategist_brain", "ExecutionPlan"),
-    "Step": (".strategist_brain", "Step"),
-    # 执行脑
-    "ExecutorBrain": (".executor_brain", "ExecutorBrain"),
-    "ExecutionResult": (".executor_brain", "ExecutionResult"),
-    "ExecutionStatus": (".executor_brain", "ExecutionStatus"),
-    "ExecutionStatusType": (".executor_brain", "ExecutionStatusType"),
-    "ExecutionResultType": (".executor_brain", "ExecutionResultType"),
-    # 反思脑
-    "ReflectorBrain": (".reflector_brain", "ReflectorBrain"),
-    "Evaluation": (".reflector_brain", "Evaluation"),
-    "EvaluationResult": (".reflector_brain", "EvaluationResult"),
-    "NextAction": (".reflector_brain", "NextAction"),
-    "NextActionType": (".reflector_brain", "NextActionType"),
-    "CorrectionStrategy": (".reflector_brain", "CorrectionStrategy"),
-    # 共识引擎
-    "ConsensusEngine": (".consensus_engine", "ConsensusEngine"),
-    "Opinion": (".consensus_engine", "Opinion"),
-    "OpinionType": (".consensus_engine", "OpinionType"),
-    "Decision": (".consensus_engine", "Decision"),
-    "DecisionType": (".consensus_engine", "DecisionType"),
-    # 技能注册表
-    "SkillRegistry": (".skill_registry", "SkillRegistry"),
-    "Skill": (".skill_registry", "Skill"),
-    "SkillCategory": (".skill_registry", "SkillCategory"),
-    "SkillInput": (".skill_registry", "SkillInput"),
-    "SkillOutput": (".skill_registry", "SkillOutput"),
-    "SkillContext": (".skill_registry", "SkillContext"),
-    # 工具调用框架
-    "ToolSystem": (".tool_system", "ToolSystem"),
-    "Tool": (".tool_system", "Tool"),
-    "ToolCategory": (".tool_system", "ToolCategory"),
-    "ToolParameter": (".tool_system", "ToolParameter"),
-    "PermissionLevel": (".tool_system", "PermissionLevel"),
-    # 执行循环
-    "AgentLoop": (".agent_loop", "AgentLoop"),
-    "AgentContext": (".agent_context", "AgentContext"),
-    "AgentState": (".agent_context", "AgentState"),
-    # 公共工具
-    "BoundedDict": (".utils", "BoundedDict"),
-    "EventEmitter": (".utils", "EventEmitter"),
-    "Event": (".utils", "Event"),
-    # 外部技能市场
-    "SkillMarketplace": (".skill_marketplace", "SkillMarketplace"),
-    "ExternalSkillMarketplace": (".skill_marketplace", "ExternalSkillMarketplace"),
-    "ExternalSkill": (".skill_marketplace", "ExternalSkill"),
-    "MCPServerInfo": (".skill_marketplace", "MCPServerInfo"),
-    "TrustLevel": (".skill_marketplace", "TrustLevel"),
-    # 用户画像
-    "UserProfile": (".user_profile", "UserProfile"),
-    # 设置管理器
-    "SettingsManager": (".settings", "SettingsManager"),
-    "SettingsCategory": (".settings", "SettingsCategory"),
-    "LLMSettings": (".settings", "LLMSettings"),
-    "SMTPSettings": (".settings", "SMTPSettings"),
-    "SecuritySettings": (".settings", "SecuritySettings"),
-    "ProfileSettings": (".settings", "ProfileSettings"),
-    "get_settings": (".settings", "get_settings"),
-}
-
-
-def __getattr__(name):
-    """Lazy import: only load modules when accessed, preventing circular imports."""
-    if name in _LAZY_IMPORTS:
-        module_path, attr_name = _LAZY_IMPORTS[name]
-        import importlib
-
-        module = importlib.import_module(module_path, __name__)
-        attr = getattr(module, attr_name)
-        # Cache in module globals for subsequent access
-        globals()[name] = attr
-        return attr
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

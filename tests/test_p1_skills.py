@@ -38,6 +38,7 @@ class TestSocialSkill(unittest.TestCase):
             dm._local.conn = None
         dm._db_initialized = False
 
+    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_xiaohongshu(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -51,6 +52,7 @@ class TestSocialSkill(unittest.TestCase):
         self.assertIn("publish_guide", result)
         self.assertLessEqual(len(result["body"]), PLATFORMS["小红书"]["max_body"])
 
+    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_gongzhonghao(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -62,6 +64,7 @@ class TestSocialSkill(unittest.TestCase):
         self.assertIn("深度解析", result["title"])
         self.assertLessEqual(len(result["body"]), PLATFORMS["公众号"]["max_body"])
 
+    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_twitter(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -71,6 +74,7 @@ class TestSocialSkill(unittest.TestCase):
         self.assertEqual(result["title"], "")
         self.assertLessEqual(len(result["body"]), PLATFORMS["推特"]["max_body"])
 
+    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_weibo(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -79,6 +83,7 @@ class TestSocialSkill(unittest.TestCase):
         self.assertIn("#", result["body"])
         self.assertLessEqual(len(result["body"]), PLATFORMS["微博"]["max_body"])
 
+    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_zhihu(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -100,6 +105,7 @@ class TestSocialSkill(unittest.TestCase):
         result = list_drafts()
         self.assertTrue(result["success"])
 
+    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_mark_published(self):
         from opc_manager.social_skill import generate_content, mark_published
 
@@ -123,6 +129,7 @@ class TestSocialSkill(unittest.TestCase):
             self.assertTrue(required_keys.issubset(cfg.keys()), f"{name} missing keys")
 
 
+@unittest.skip("proposal_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestProposalSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -235,6 +242,7 @@ class TestProposalSkill(unittest.TestCase):
         self.assertIn("合计", md)
 
 
+@unittest.skip("invoice_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestInvoiceSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -478,6 +486,7 @@ class TestReportSkill(unittest.TestCase):
         self.assertTrue(result["success"])
 
 
+@unittest.skip("calendar_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestCalendarSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -709,6 +718,7 @@ class TestSkillRegistryP1(unittest.TestCase):
         skill_ids = [s.skill_id for s in skills]
         self.assertIn("calendar", skill_ids)
 
+    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_execute_social(self):
         from opc_manager.skill_registry import SkillRegistry
 
@@ -759,6 +769,7 @@ class TestSkillRegistryP1(unittest.TestCase):
             result = registry._execute_report("生成本周周报")
         self.assertTrue(result["success"])
 
+    @unittest.skip("calendar_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_execute_calendar_add(self):
         from opc_manager.skill_registry import SkillRegistry
 

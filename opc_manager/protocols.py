@@ -26,12 +26,37 @@ Usage:
 from typing import Optional, Dict, List, Any, Protocol, runtime_checkable
 import threading
 
+from .consensus_engine import Opinion
+
 try:
     from loguru import logger
 except ImportError:
     import logging
 
     logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class BrainProtocol(Protocol):
+    """三贤者统一接口 [S2-T8] - 用于解耦共识调用方与具体贤者实现。
+
+    共识流程中，贤者通过 express_opinion 输出意见对象。
+    注意：StrategistBrain/ReflectorBrain 的 express_opinion 返回 Dict，
+    由调用方 (AgentLoop/TaskLifecycle) 通过 _dict_to_opinion 转换；
+    ExecutorBrain 直接返回 Opinion。此 Protocol 描述共识参与者契约。
+    """
+
+    def express_opinion(
+        self, context: Dict[str, Any], decision_point: str = ""
+    ) -> Opinion: ...
+
+
+@runtime_checkable
+class SkillRegistryProtocol(Protocol):
+    """技能注册表接口 [S2-T8] - 用于解耦依赖 SkillRegistry 的调用方。"""
+
+    def get_skill(self, skill_id: str): ...
+    def list_all_skills(self) -> List[Any]: ...
 
 
 @runtime_checkable

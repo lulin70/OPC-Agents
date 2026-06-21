@@ -383,15 +383,35 @@ class TestBuildFromDeliverables(unittest.TestCase):
 class TestBuildFromUndoManager(unittest.TestCase):
     """_build_from_undo_manager()单元测试"""
 
-    @unittest.skip("需要真实模块环境，集成测试覆盖")
     def test_no_undo_manager_returns_empty(self):
         """TC-TL-021: UndoManager不可用时返回空列表"""
-        pass
+        mock_module = MagicMock()
+        mock_module.get_undo_manager.return_value = None
+        with patch.dict("sys.modules", {"opc_manager.undo_manager": mock_module}):
+            events = _build_from_undo_manager("test_session")
+        self.assertEqual(events, [])
 
-    @unittest.skip("需要真实模块环境，集成测试覆盖")
     def test_undone_event_created(self):
         """TC-TL-022: 已撤销操作生成undo_action事件"""
-        pass
+        mock_record = MagicMock()
+        mock_record.operation_id = "op_001"
+        mock_record.created_at = time.time()
+        mock_record.status = "undone"
+        mock_record.operation_type = MagicMock(value="email_send")
+        mock_record.inverse_func_name = "undo_email_send"
+
+        mock_manager = MagicMock()
+        mock_manager.list_records.return_value = [mock_record]
+
+        mock_module = MagicMock()
+        mock_module.get_undo_manager.return_value = mock_manager
+        with patch.dict("sys.modules", {"opc_manager.undo_manager": mock_module}):
+            events = _build_from_undo_manager("test_session")
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].event_type, "undo_action")
+        self.assertEqual(events[0].status, "undone")
+        self.assertEqual(events[0].icon, "↩️")
 
 
 class TestGetUndoDescription(unittest.TestCase):
@@ -431,10 +451,32 @@ class TestGetUndoDescription(unittest.TestCase):
 class TestBuildFromAuditLog(unittest.TestCase):
     """_build_from_audit_log()单元测试"""
 
-    @unittest.skip("需要真实模块环境，集成测试覆盖")
     def test_email_send_mapping(self):
         """TC-TL-026: email_send操作映射到email_sent事件"""
-        pass
+        entry = {
+            "operation_type": "email_send",
+            "timestamp": time.time(),
+            "input_summary": "发送欢迎邮件",
+            "output_summary": "邮件发送成功",
+            "duration_ms": 150,
+            "status": "success",
+            "id": "audit_001",
+            "skill_id": "email_skill",
+        }
+
+        mock_audit_instance = MagicMock()
+        mock_audit_instance.get_recent_entries.return_value = [entry]
+        mock_audit_instance.hasattr = lambda name: True
+
+        mock_module = MagicMock()
+        mock_module.AuditLog.return_value = mock_audit_instance
+        with patch.dict("sys.modules", {"opc_manager.audit_log": mock_module}):
+            events = _build_from_audit_log()
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].event_type, "email_sent")
+        self.assertEqual(events[0].icon, "📧")
+        self.assertEqual(events[0].category, "communication")
 
     def test_unknown_operation_skipped(self):
         """TC-TL-027: 未知操作类型被跳过"""
@@ -444,17 +486,55 @@ class TestBuildFromAuditLog(unittest.TestCase):
 
 
 class TestBuildFromProgressEmitter(unittest.TestCase):
-    """_build_from_progress_emitter()单元测试"""
+    """_build_from_progress_emitter()测试"""
 
-    @unittest.skip("需要真实模块环境，集成测试覆盖")
     def test_confirm_requested_event(self):
         """TC-TL-028: confirm_requested生成confirmation_required事件"""
-        pass
+        history = [
+            {
+                "event": "confirm_requested",
+                "timestamp": time.time(),
+                "message": "需要确认是否发送邮件",
+                "progress": 50,
+            }
+        ]
 
-    @unittest.skip("需要真实模块环境，集成测试覆盖")
+        mock_emitter = MagicMock()
+        mock_emitter.get_history.return_value = history
+
+        mock_module = MagicMock()
+        mock_module.get_progress_emitter.return_value = mock_emitter
+        with patch.dict("sys.modules", {"opc_manager.progress_emitter": mock_module}):
+            events = _build_from_progress_emitter("test_session")
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].event_type, "confirmation_required")
+        self.assertEqual(events[0].status, "pending")
+        self.assertEqual(events[0].icon, "⚠️")
+
     def test_error_event(self):
         """TC-TL-029: error事件生成error_occurred"""
-        pass
+        history = [
+            {
+                "event": "error",
+                "timestamp": time.time(),
+                "message": "执行失败",
+                "detail": {"error_msg": "数据库连接超时"},
+            }
+        ]
+
+        mock_emitter = MagicMock()
+        mock_emitter.get_history.return_value = history
+
+        mock_module = MagicMock()
+        mock_module.get_progress_emitter.return_value = mock_emitter
+        with patch.dict("sys.modules", {"opc_manager.progress_emitter": mock_module}):
+            events = _build_from_progress_emitter("test_session")
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].event_type, "error_occurred")
+        self.assertEqual(events[0].status, "error")
+        self.assertEqual(events[0].icon, "❌")
 
 
 class TestFiltersAndGrouping(unittest.TestCase):

@@ -15,9 +15,15 @@ import copy
 import uuid
 import logging
 
-from .utils import BoundedDict
+from .utils import (
+    BoundedDict,
+    call_llm_service,
+    extract_json_from_llm,
+    sanitize_for_llm,
+)
 from .task_engine_v3 import TaskEngineV3, TaskType
 from .intent_types import SKILL_TO_TASK_MAP
+from .consensus_engine import Opinion, OpinionType
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +73,13 @@ class ExecutionStatus:
 
 class ExecutorBrain:
 
-    def __init__(self, skill_registry=None, tool_system=None, task_engine=None):
+    def __init__(
+        self, skill_registry=None, tool_system=None, task_engine=None, llm_service=None
+    ):
         self.skill_registry = skill_registry
         self.tool_system = tool_system
         self.task_engine = task_engine or TaskEngineV3()
+        self.llm_service = llm_service
         self.task_statuses: BoundedDict = BoundedDict(max_size=MAX_TASK_HISTORY)
 
     @staticmethod
@@ -242,6 +251,14 @@ class ExecutorBrain:
                     return ExecutionResult(
                         success=False, error=f"技能已禁用: {skill_id}"
                     )
+                # P0-3 修复：技能冻结机制真正生效
+                # frozen=True 表示完全冻结，拒绝执行；半冻结技能允许通过维护方法调用
+                if getattr(skill, "frozen", False) is True:
+                    logger.warning("技能已冻结（v0.3.0），拒绝执行: %s", skill_id)
+                    return ExecutionResult(
+                        success=False,
+                        error=f"技能已冻结（v0.3.0 产品收缩决策）: {skill_id}。详见 docs/spec/SKILL_FREEZE_LIST.md",
+                    )
                 try:
                     if asyncio.iscoroutinefunction(skill.execute):
                         result = await skill.execute(**parameters)
@@ -370,6 +387,153 @@ class ExecutorBrain:
             return True
 
         return False
+
+    def express_opinion(
+        self,
+        context: Dict[str, Any],
+        decision_point: Optional[str] = None,
+    ) -> Opinion:
+        """
+        ExecutorBrain 独立LLM判断（替代retry_count规则）
+        [S2-T3] 三贤者并行投票用
+
+        P2-9 修复：统一三脑签名，decision_point 改为 Optional（默认 None，向后兼容）。
+
+        Args:
+            context: 上下文字典，可包含 retry_count / user_input / step_info /
+                     execution_summary 等字段
+            decision_point: 决策点字符串，如 "send_email" / "execute_operation" /
+                            "data_persist"（可选，默认 None）
+
+        Returns:
+            Opinion: 执行脑意见对象，brain_type 固定为 "executor"
+        """
+        if not self.llm_service:
+            return self._express_opinion_rulebased(context, decision_point)
+
+        try:
+            opinion = self._express_opinion_with_llm(context, decision_point)
+            if opinion is not None:
+                return opinion
+            logger.warning("LLM执行意见生成失败，降级到规则判断")
+        except Exception as e:
+            logger.warning("LLM执行意见异常，降级到规则判断: %s", e)
+
+        return self._express_opinion_rulebased(context, decision_point)
+
+    def _express_opinion_rulebased(
+        self,
+        context: Dict[str, Any],
+        decision_point: Optional[str] = None,
+    ) -> Opinion:
+        """基于规则的降级判断（保留与原假意见逻辑的兼容性）"""
+        retry_count = int(context.get("retry_count", 0))
+        # P2-10 修复：提取 retry_count 假意见规则为私有方法，消除重复实现
+        opinion_data = self._generate_retry_opinion(retry_count)
+        opinion_type = (
+            OpinionType.AGREE
+            if opinion_data["opinion_type"] == "AGREE"
+            else OpinionType.DISAGREE
+        )
+        dp_str = decision_point if decision_point is not None else "unknown"
+        reasoning = f"执行重试次数: {retry_count} (决策点: {dp_str})"
+        return Opinion(
+            brain_type="executor",
+            opinion_type=opinion_type,
+            reasoning=reasoning,
+            confidence=opinion_data["confidence"],
+        )
+
+    @staticmethod
+    def _generate_retry_opinion(retry_count: int) -> Dict[str, Any]:
+        """根据重试次数生成假意见规则数据（P2-10 去重提取）。
+
+        被 _express_opinion_rulebased 和 task_lifecycle._build_executor_opinion
+        共用，消除两处重复的 retry_count 假意见规则。
+
+        Args:
+            retry_count: 重试次数
+
+        Returns:
+            Dict[str, Any]: 包含 opinion_type (str) 和 confidence (float) 的字典
+        """
+        opinion_type = "AGREE" if retry_count < 2 else "DISAGREE"
+        confidence = max(0.3, 1.0 - retry_count * 0.3)
+        return {
+            "opinion_type": opinion_type,
+            "confidence": confidence,
+        }
+
+    def _express_opinion_with_llm(
+        self,
+        context: Dict[str, Any],
+        decision_point: Optional[str] = None,
+    ) -> Optional[Opinion]:
+        """使用 LLM 进行执行可行性判断"""
+        retry_count = int(context.get("retry_count", 0))
+        step_info = context.get("step_info", "")
+        user_input = context.get("user_input", "")
+        execution_summary = context.get("execution_summary", "")
+
+        safe_step = sanitize_for_llm(str(step_info), 300)
+        safe_input = sanitize_for_llm(str(user_input), 300)
+        safe_summary = sanitize_for_llm(str(execution_summary), 300)
+        dp_str = decision_point if decision_point is not None else "unknown"
+
+        prompt = (
+            "你是执行脑(ExecutorBrain)，负责评估当前执行决策点的可行性。\n\n"
+            f"决策点: {dp_str}\n"
+            f"重试次数: {retry_count}\n"
+            f"用户输入: {safe_input}\n"
+            f"当前步骤: {safe_step}\n"
+            f"执行摘要: {safe_summary}\n\n"
+            "请判断是否同意继续执行该决策点。返回JSON格式（不要包含其他内容）:\n"
+            "{\n"
+            '  "opinion_type": "AGREE 或 DISAGREE 或 CONDITIONAL",\n'
+            '  "reasoning": "判断理由（一句话）",\n'
+            '  "confidence": 0.0-1.0的置信度\n'
+            "}\n\n"
+            "判断准则:\n"
+            "- AGREE: 执行可行，无风险或风险可控\n"
+            "- DISAGREE: 执行不可行，存在重大风险或已多次失败\n"
+            "- CONDITIONAL: 需要满足特定条件才可执行"
+        )
+
+        llm_response = call_llm_service(self.llm_service, prompt)
+        if not llm_response:
+            return None
+
+        data = extract_json_from_llm(llm_response)
+        if not data:
+            return None
+
+        opinion_type_str = str(data.get("opinion_type", "AGREE")).upper().strip()
+        opinion_type = OpinionType.AGREE
+        for ot in OpinionType:
+            if ot.name == opinion_type_str:
+                opinion_type = ot
+                break
+
+        reasoning = str(data.get("reasoning", f"执行脑LLM判断: {dp_str}"))
+        try:
+            confidence = min(1.0, max(0.0, float(data.get("confidence", 0.7))))
+        except (TypeError, ValueError):
+            confidence = 0.7
+
+        return Opinion(
+            brain_type="executor",
+            opinion_type=opinion_type,
+            reasoning=reasoning,
+            confidence=confidence,
+        )
+
+    async def express_opinion_async(
+        self,
+        context: Dict[str, Any],
+        decision_point: Optional[str] = None,
+    ) -> Opinion:
+        """异步版本（并行投票用）"""
+        return await asyncio.to_thread(self.express_opinion, context, decision_point)
 
     def to_dict(self) -> Dict[str, Any]:
         return {"type": "executor_brain", "task_count": len(self.task_statuses)}

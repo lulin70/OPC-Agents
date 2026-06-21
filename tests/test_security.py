@@ -157,6 +157,15 @@ class TestOutputSanitization(unittest.TestCase):
 class TestSecureStorage(unittest.TestCase):
     """Secure storage security tests"""
 
+    def setUp(self):
+        """Reset fingerprint cache to prevent pollution from other tests."""
+        try:
+            import opc_manager.secure_storage as ss
+            with ss._fingerprint_lock:
+                ss._fingerprint_cache = None
+        except ImportError:
+            pass
+
     def test_encrypted_file_not_plaintext(self):
         try:
             from opc_manager.secure_storage import SecureKeyStore

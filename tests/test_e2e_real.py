@@ -267,5 +267,183 @@ class TestRealE2EWithLLM(unittest.TestCase):
         self.assertIn("OPC-Agents", result_jp.content)
 
 
+# ============================================================
+# [v0.3.0] Core Skills Real E2E Tests — 3 core scenarios
+# See docs/spec/CORE_SKILLS_ACCEPTANCE.md for acceptance criteria
+# ============================================================
+
+
+@pytest.mark.e2e
+@pytest.mark.e2e_core_skill
+class TestRealCoreSkills(unittest.TestCase):
+    """Validate 3 core skills (email/finance/report) with real LLM
+
+    Acceptance criteria: docs/spec/CORE_SKILLS_ACCEPTANCE.md
+    Run: SKIP_E2E=0 pytest tests/test_e2e_real.py -m e2e_core_skill -v
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        if os.environ.get("SKIP_E2E", "1") != "0":
+            raise unittest.SkipTest(
+                "Set SKIP_E2E=0 to run core skill E2E tests (requires real API Key)"
+            )
+        from opc_manager.simple_llm_service import SimpleLLMService
+
+        cls.llm = SimpleLLMService()
+        # Verify LLM is available
+        try:
+            test_resp = cls.llm.call(
+                system_prompt="You are a test assistant.",
+                user_prompt="Reply with 'OK' only.",
+                max_tokens=5,
+            )
+            if not test_resp or "OK" not in str(test_resp).upper():
+                raise unittest.SkipTest("LLM service not responding correctly")
+        except Exception as e:
+            raise unittest.SkipTest(f"LLM service unavailable: {e}")
+
+    # --- Scenario E1: Email draft generation ---
+
+    def test_email_draft_generation(self):
+        """Scenario E1: '帮我给张总写一封项目跟进邮件' → generate email draft.
+
+        Acceptance:
+        - Draft non-empty and meaningful
+        - Subject ≤ 50 chars, body 100-500 chars
+        - Content related to 'project follow-up'
+        - Latency < 30s
+        """
+        start = time.time()
+        response = self.llm.call(
+            system_prompt="你是一人公司助手。生成邮件草稿，格式：主题：xxx\n\n正文：xxx",
+            user_prompt="帮我给张总写一封项目跟进邮件，本周完成了产品优化，下周计划用户测试。",
+            max_tokens=500,
+        )
+        elapsed = time.time() - start
+
+        self.assertIsNotNone(response, "LLM response should not be None")
+        self.assertLess(
+            elapsed, 30, f"Email draft took {elapsed:.1f}s, should be < 30s"
+        )
+
+        content = str(response)
+        self.assertGreater(len(content), 50, "Email draft too short")
+        # Check it contains email-like structure
+        self.assertTrue(
+            any(kw in content for kw in ["主题", "正文", "张总", "跟进", "项目"]),
+            f"Email draft should mention email/project keywords, got: {content[:100]}",
+        )
+
+    # --- Scenario F1: Finance income recording ---
+
+    def test_finance_income_recording(self):
+        """Scenario F1: '帮我记一笔收入3000元来自A公司' → record income.
+
+        Acceptance:
+        - Income recorded in SQLite
+        - Amount = 3000.00
+        - Source = A公司
+        - Data persisted (queryable after recording)
+        """
+        from opc_manager.finance_skill import record_income, get_monthly_report
+        import time as _time
+
+        result = record_income(
+            amount=3000, source="A公司", category="咨询费", note="E2E测试"
+        )
+        self.assertTrue(result.get("success"), f"Income recording failed: {result}")
+        self.assertEqual(result.get("message"), "已记录收入 ¥3000.00 (A公司)")
+
+        # Verify persistence by querying monthly report
+        current_month = _time.strftime("%Y-%m")
+        report = get_monthly_report(current_month)
+        self.assertTrue(report.get("success"))
+        self.assertGreaterEqual(
+            report.get("income", 0),
+            3000,
+            "Monthly income should include the 3000 record",
+        )
+
+    def test_finance_expense_recording(self):
+        """Scenario F2: '记一笔支出500元办公用品' → record expense.
+
+        Acceptance:
+        - Expense recorded
+        - Amount = 500.00
+        - Type = expense
+        """
+        from opc_manager.finance_skill import record_expense
+
+        result = record_expense(amount=500, source="办公用品", category="办公支出")
+        self.assertTrue(result.get("success"), f"Expense recording failed: {result}")
+        self.assertIn("¥500.00", result.get("message", ""))
+
+    def test_finance_error_handling(self):
+        """Scenario F4: Negative amount should be rejected."""
+        from opc_manager.finance_skill import record_income
+
+        result = record_income(amount=-100, source="test")
+        self.assertFalse(result.get("success"))
+        self.assertIn("大于0", result.get("error", ""))
+
+    # --- Scenario R1: Report generation ---
+
+    def test_report_weekly_generation(self):
+        """Scenario R1: '帮我生成本周周报' → generate weekly report.
+
+        Acceptance:
+        - Report generated as Markdown
+        - Contains required sections (本周完成/待办事项/客户动态)
+        - Report file saved
+        """
+        from opc_manager.report_skill import generate_weekly_report
+
+        result = generate_weekly_report(week_note="E2E测试周报")
+        self.assertTrue(result.get("success"), f"Report generation failed: {result}")
+
+        content = result.get("content", "") or result.get("markdown", "")
+        if not content:
+            # Report may be saved to file, check path
+            self.assertIn("path", result, "Report should have content or file path")
+        else:
+            self.assertIn("#", content, "Report should be Markdown format")
+            self.assertTrue(
+                any(kw in content for kw in ["完成", "待办", "客户", "周报"]),
+                f"Report should contain weekly sections, got: {content[:100]}",
+            )
+
+    def test_report_monthly_generation(self):
+        """Scenario R2: '帮我生成本月经营报告' → generate monthly report.
+
+        Acceptance:
+        - Report generated as Markdown
+        - Contains financial data (收入/支出/利润)
+        - Handles empty data gracefully
+        """
+        from opc_manager.report_skill import generate_monthly_report
+        import time as _time
+
+        current_month = _time.strftime("%Y-%m")
+        result = generate_monthly_report(current_month)
+        self.assertTrue(result.get("success"), f"Monthly report failed: {result}")
+
+        content = result.get("content", "") or result.get("markdown", "")
+        if content:
+            self.assertIn("#", content, "Monthly report should be Markdown")
+            self.assertTrue(
+                any(kw in content for kw in ["收入", "支出", "利润", "财务", "月度"]),
+                f"Monthly report should contain financial keywords, got: {content[:100]}",
+            )
+
+    def test_report_empty_data_handling(self):
+        """Scenario R4: Empty data should not crash report generation."""
+        from opc_manager.report_skill import generate_monthly_report
+
+        # Use a month far in the future with no data
+        result = generate_monthly_report("2099-12")
+        self.assertTrue(result.get("success"), "Empty data should not crash")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

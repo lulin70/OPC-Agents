@@ -123,15 +123,22 @@ def call_llm_service(
 ) -> Optional[str]:
     if not llm_service:
         return None
-    try:
-        if hasattr(llm_service, "complete"):
-            return llm_service.complete(prompt, max_tokens=max_tokens, timeout=timeout)
-        elif hasattr(llm_service, "generate"):
-            return llm_service.generate(prompt, max_tokens=max_tokens, timeout=timeout)
-        elif hasattr(llm_service, "_call_llm_api"):
-            return llm_service._call_llm_api(prompt)
-    except Exception as e:
-        logger.warning("LLM调用失败: %s", e)
+    # P2-15 修复：使用全局信号量限流，避免三脑并行投票时触发 API 限流
+    # 原实现信号量已定义但未使用，3 个 LLM 调用同时发起无全局限流
+    with _llm_thread_semaphore:
+        try:
+            if hasattr(llm_service, "complete"):
+                return llm_service.complete(
+                    prompt, max_tokens=max_tokens, timeout=timeout
+                )
+            elif hasattr(llm_service, "generate"):
+                return llm_service.generate(
+                    prompt, max_tokens=max_tokens, timeout=timeout
+                )
+            elif hasattr(llm_service, "_call_llm_api"):
+                return llm_service._call_llm_api(prompt)
+        except Exception as e:
+            logger.warning("LLM调用失败: %s", e)
     return None
 
 

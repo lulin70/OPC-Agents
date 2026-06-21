@@ -1,3 +1,14 @@
+"""[SEMI-FROZEN v0.3.0] Partially frozen — only referenced methods maintained.
+
+Frozen on: 2026-06-19
+Maintained methods (referenced by core skills):
+  - get_customer (referenced by email_skill)
+  - get_customer_stats (referenced by report_skill)
+  - get_silent_customers (referenced by report_skill)
+Other methods are frozen and not actively maintained.
+Revival: See docs/spec/SKILL_FREEZE_LIST.md
+"""
+
 import logging
 import re
 import time
