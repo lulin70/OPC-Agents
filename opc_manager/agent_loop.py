@@ -6,6 +6,16 @@
 - Act: 执行脑执行计划
 - Observe: 收集执行结果
 - Reflect: 反思脑评估并决定下一步
+
+重构说明 (v0.4.0)：
+AgentLoop已重构为轻量级协调器，具体职责委托给专门组件：
+- StateManager: 状态管理
+- ErrorHandler: 错误处理
+- ProgressTracker: 进度跟踪
+- ResultBuilder: 结果构建
+- TaskOrchestrator: 任务编排
+
+为保持向后兼容，AgentLoop保留了原有的公共接口和辅助方法。
 """
 
 from typing import Dict, List, Optional, Any
@@ -39,6 +49,13 @@ from .utils import BoundedDict, EventEmitter
 from .performance_monitor import get_performance_monitor
 from .confirmer import Confirmer
 from .progress_emitter import ProgressEmitter, ProgressEvent, EventType
+
+# 新增组件导入
+from .state_manager import StateManager
+from .error_handler_component import ErrorHandler
+from .progress_tracker import ProgressTracker
+from .result_builder import ResultBuilder
+from .task_orchestrator import TaskOrchestrator, RouteDecision
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +91,20 @@ CRITICAL_DECISION_ACTIONS = {
 
 
 class AgentLoop:
+    """三贤者架构的核心协调器。
+
+    重构后职责：
+    - 作为轻量级协调器，委托具体职责给专门组件
+    - 保持对外接口不变，确保向后兼容
+    - 管理组件生命周期和依赖注入
+
+    委托的职责：
+    - 状态管理 → StateManager
+    - 错误处理 → ErrorHandler
+    - 进度跟踪 → ProgressTracker
+    - 结果构建 → ResultBuilder
+    - 任务编排 → TaskOrchestrator
+    """
 
     def __init__(
         self,
@@ -89,6 +120,7 @@ class AgentLoop:
         max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
         max_retry_per_step: int = MAX_RETRY_PER_STEP,
     ):
+        # 初始化核心依赖
         self.task_engine = task_engine or TaskEngineV3()
         self.llm_service = llm_service
         self.strategist_brain = strategist_brain or StrategistBrain(
@@ -109,17 +141,40 @@ class AgentLoop:
         self.event_emitter = EventEmitter()
         self.confirmer = Confirmer()
         self.progress = ProgressEmitter()
-        self.contexts: BoundedDict = BoundedDict(max_size=MAX_CONTEXT_HISTORY)
+
+        # 初始化专门组件（重构新增）
+        self._state_manager = StateManager(max_context_history=MAX_CONTEXT_HISTORY)
+        self._error_handler = ErrorHandler()
+        self._progress_tracker = ProgressTracker(self.progress)
+        self._result_builder = ResultBuilder(self.session_manager)
+
+        # 修正管理器和生命周期管理器（共享contexts）
         self._correction_manager = CorrectionManager(
             skill_registry=self.skill_registry, executor_brain=self.executor_brain
         )
-        self._lifecycle = TaskLifecycleManager(self.contexts, self.executor_brain)
         self._consensus_consultant = ConsensusConsultant(
             self.strategist_brain,
             self.reflector_brain,
             self.consensus_engine,
             executor_brain=self.executor_brain,
         )
+
+        # 任务编排器
+        self._orchestrator = TaskOrchestrator(
+            strategist_brain=self.strategist_brain,
+            executor_brain=self.executor_brain,
+            reflector_brain=self.reflector_brain,
+            consensus_consultant=self._consensus_consultant,
+            correction_manager=self._correction_manager,
+            result_builder=self._result_builder,
+            progress_tracker=self._progress_tracker,
+            max_reflect_rounds=max_reflect_rounds,
+            max_retry_per_step=max_retry_per_step,
+        )
+
+        # 保持向后兼容：contexts属性指向StateManager的contexts
+        self.contexts = self._state_manager.contexts
+        self._lifecycle = TaskLifecycleManager(self.contexts, self.executor_brain)
 
         self.max_reflect_rounds = max_reflect_rounds
         self.max_retry_per_step = max_retry_per_step
@@ -130,58 +185,35 @@ class AgentLoop:
         context: Optional[Dict] = None,
         session_id: Optional[str] = None,
     ) -> TaskResult:
+        """执行用户任务（重构后委托给专门组件）。"""
         logger.info("AgentLoop 开始执行: %s...", user_input[:50])
 
-        if not user_input or not user_input.strip():
-            return TaskResult(
-                success=False,
-                content="",
-                task_type=TaskType.GENERAL_CHAT,
-                error="用户输入不能为空",
+        # 1. 输入验证（委托给ErrorHandler）
+        validation_result = self._error_handler.validate_input(user_input)
+        if not validation_result.is_valid:
+            return self._error_handler.build_validation_error_result(
+                validation_result.error
             )
 
-        if len(user_input) > MAX_USER_INPUT_LENGTH:
-            return TaskResult(
-                success=False,
-                content="",
-                task_type=TaskType.GENERAL_CHAT,
-                error=f"用户输入超过最大长度限制({MAX_USER_INPUT_LENGTH}字符)",
-            )
-
-        time.time()
         _perf_start = time.time()
 
-        task_id = f"agent_task_{uuid.uuid4().hex[:8]}"
-        agent_context = AgentContext(
-            task_id=task_id,
-            user_input=user_input.strip(),
-            session_id=session_id or str(uuid.uuid4()),
-        )
-        self.contexts[task_id] = agent_context
+        # 2. 创建上下文（委托给StateManager）
+        agent_context = self._state_manager.create_context(user_input, session_id)
 
-        # [S2-T6] 三路路由分类（0 LLM 成本，正则+启发式）
-        from .intent_classifier import IntentRouter, IntentCategory
+        # 3. 意图分类和路由（委托给TaskOrchestrator）
+        route_decision = self._orchestrator.determine_route(user_input)
 
-        category, route_confidence = IntentRouter.classify_route(user_input)
-
-        if category == IntentCategory.GREETING:
-            # 问候直接响应，绕过三贤者（0 LLM 成本）
+        if route_decision.is_greeting:
             logger.info("[S2-T6] GREETING 路由，直接响应")
-            return TaskResult(
-                success=True,
-                content=self._generate_greeting_response(user_input),
-                task_type=TaskType.GENERAL_CHAT,
-                metadata={"route": "greeting", "confidence": route_confidence},
+            return self._result_builder.build_greeting_result(
+                route_decision.response, route_decision.confidence
             )
 
-        if category == IntentCategory.SIMPLE:
-            # P1-4 修复：SIMPLE 路由跳过关键决策点共识（_is_critical_decision_point 对 simple 返回 False）
-            # 仍走 plan→execute→reflect 流程，但跳过并行共识，减少 LLM 调用
+        if route_decision.is_simple:
             logger.info("[S2-T6] SIMPLE 路由，跳过关键决策点共识")
             agent_context.metadata["route_category"] = "simple"
-        # P3-16 修复：删除无意义的 else 分支（原 else 仅含注释+log，无实际逻辑）
-        # COMPLEX 路由走完整三贤者并行流程（_phase_plan → _phase_execute → _phase_reflect）
 
+        # 4. 准备对话历史
         conversation_history = []
         if session_id:
             history_text = self.session_manager.get_context_for_llm(max_turns=5)
@@ -189,105 +221,48 @@ class AgentLoop:
                 conversation_history = [{"role": "history", "content": history_text}]
 
         try:
-            agent_context.set_state(AgentState.PLANNING)
-            await self._phase_plan(agent_context, conversation_history)
+            # 5. 执行规划阶段
+            self._state_manager.set_state(agent_context, AgentState.PLANNING)
+            await self._orchestrator.execute_plan_phase(
+                agent_context, conversation_history
+            )
 
+            # 6. 检查取消请求
             if agent_context.cancel_requested:
-                agent_context.set_state(AgentState.CANCELLED)
-                if self.progress:
-                    self.progress.emit(
-                        ProgressEvent(
-                            event_type=EventType.CANCELLED,
-                            session_id=task_id,
-                            message="任务已取消",
-                        )
-                    )
-                return self._build_result(agent_context, cancelled=True)
+                self._state_manager.set_state(agent_context, AgentState.CANCELLED)
+                self._progress_tracker.emit_cancelled(agent_context.task_id)
+                return self._result_builder.build_result(agent_context, cancelled=True)
 
-            intent_type = (
-                agent_context.intent.type.name if agent_context.intent else "UNKNOWN"
+            # 7. 用户确认检查
+            confirm_result = await self._check_confirmation(
+                agent_context, user_input
             )
-            goal = agent_context.intent.goal if agent_context.intent else ""
-            confidence = (
-                getattr(agent_context.intent, "confidence", 0.85)
-                if agent_context.intent
-                else 0.85
-            )
-            confirm_result = await self.confirmer.check_confirmation(
-                session_id=agent_context.session_id,
-                intent_type=intent_type,
-                goal=goal,
-                confidence=confidence,
-                params={"user_input": user_input[:200]},
-            )
-            if not confirm_result.confirmed and confirm_result.method != "no_callback":
-                agent_context.set_state(AgentState.CONFIRMATION_NEEDED)
-                return TaskResult(
-                    success=False,
-                    content="",
-                    task_type=TaskType.GENERAL_CHAT,
-                    error="需要用户确认后才能执行",
-                    metadata={
-                        "needs_confirmation": True,
-                        "confirmation_message": (
-                            confirm_result.message
-                            if hasattr(confirm_result, "message")
-                            else ""
-                        ),
-                    },
-                )
+            if confirm_result is not None:
+                return confirm_result
 
-            skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
-
+            # 8. 检查是否跳过反思
+            skip_reflect = (
+                os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
+            )
             if skip_reflect:
-                agent_context.set_state(AgentState.EXECUTING)
-                await self._phase_execute(agent_context)
-                has_results = bool(agent_context.execution_results)
-                all_failed = has_results and all(
-                    not r.get("success", False) for r in agent_context.execution_results
-                )
-                if not has_results or all_failed:
-                    agent_context.set_state(AgentState.FAILED)
-                    if self.progress:
-                        self.progress.emit(
-                            ProgressEvent(
-                                event_type=EventType.ERROR,
-                                session_id=task_id,
-                                message="执行步骤全部失败",
-                            )
-                        )
-                    return self._build_result(agent_context)
-                agent_context.set_state(AgentState.COMPLETED)
-                if self.progress:
-                    self.progress.emit(
-                        ProgressEvent(
-                            event_type=EventType.COMPLETE,
-                            session_id=task_id,
-                            message="全部完成!",
-                            progress_pct=100,
-                        )
-                    )
-                return self._build_result(agent_context)
+                return await self._execute_skip_reflect(agent_context, _perf_start)
 
+            # 9. 执行反思循环
             deadline = time.time() + AGENT_LOOP_TIMEOUT_SECONDS
-            loop_result = await self._reflect_loop(agent_context, deadline=deadline)
+            loop_result = await self._orchestrator.run_reflect_loop(
+                agent_context, deadline=deadline
+            )
 
             if loop_result is not None:
                 if loop_result.get("cancelled"):
-                    return self._build_result(agent_context, cancelled=True)
-                loop_error = loop_result.get("error", "")
-                fallback_content = (
-                    loop_error or "任务执行遇到问题，请重试或换一种方式描述"
-                )
-                return TaskResult(
-                    success=loop_result.get("success", False),
-                    content=fallback_content,
-                    task_type=TaskType.GENERAL_CHAT,
-                    error=loop_error,
-                )
+                    return self._result_builder.build_result(
+                        agent_context, cancelled=True
+                    )
+                return self._result_builder.build_loop_error_result(loop_result)
 
-            agent_context.set_state(AgentState.COMPLETED)
-            logger.info("AgentLoop 执行完成: %s", task_id)
+            # 10. 完成处理
+            self._state_manager.set_state(agent_context, AgentState.COMPLETED)
+            logger.info("AgentLoop 执行完成: %s", agent_context.task_id)
 
             self.event_emitter.emit(
                 event_type="task_completed",
@@ -296,505 +271,147 @@ class AgentLoop:
                 status="completed",
             )
 
-            if self.progress:
-                self.progress.emit(
-                    ProgressEvent(
-                        event_type=EventType.COMPLETE,
-                        session_id=task_id,
-                        message="全部完成!",
-                        progress_pct=100,
-                    )
-                )
+            self._progress_tracker.emit_complete(agent_context.task_id)
 
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=True)
-            return self._build_result(agent_context)
+            return self._result_builder.build_result(agent_context)
 
         except Exception as e:
-            agent_context.set_state(AgentState.FAILED)
+            self._state_manager.set_state(agent_context, AgentState.FAILED)
             logger.error("AgentLoop 执行失败: %s", str(e))
 
-            if self.progress:
-                self.progress.emit(
-                    ProgressEvent(
-                        event_type=EventType.ERROR,
-                        session_id=task_id,
-                        message=f"执行失败: {str(e)}",
-                        detail={"error": str(e)},
-                    )
-                )
+            self._progress_tracker.emit_error(
+                agent_context.task_id, f"执行失败: {str(e)}", {"error": str(e)}
+            )
 
             duration_ms = (time.time() - _perf_start) * 1000
             get_performance_monitor().record("agent_loop", duration_ms, success=False)
-            return TaskResult(
-                success=False, content="", task_type=TaskType.GENERAL_CHAT, error=str(e)
+            return self._error_handler.handle_execution_exception(
+                e, agent_context.task_id
             )
 
-    async def _reflect_loop(
-        self,
-        context: AgentContext,
-        start_step: int = 0,
-        deadline: Optional[float] = None,
-    ) -> Optional[Dict[str, Any]]:
-        for reflect_round in range(self.max_reflect_rounds):
-            if deadline and time.time() > deadline:
-                logger.warning("AgentLoop总超时，强制返回当前结果")
-                context.set_state(AgentState.COMPLETED)
-                return None
+    async def _check_confirmation(
+        self, agent_context: AgentContext, user_input: str
+    ) -> Optional[TaskResult]:
+        """检查用户确认（如果需要）。
 
-            context.set_state(AgentState.EXECUTING)
-            await self._phase_execute(context, start_step=start_step)
-            start_step = 0
-
-            if context.cancel_requested:
-                context.set_state(AgentState.CANCELLED)
-                if self.progress:
-                    self.progress.emit(
-                        ProgressEvent(
-                            event_type=EventType.CANCELLED,
-                            session_id=context.task_id,
-                            message="任务已取消",
-                        )
-                    )
-                return {"cancelled": True}
-
-            context.set_state(AgentState.OBSERVING)
-            await self._phase_observe(context)
-
-            context.set_state(AgentState.REFLECTING)
-            next_action = await self._phase_reflect(context)
-
-            if next_action.action_type == NextActionType.CONTINUE:
-                break
-            elif next_action.action_type == NextActionType.REVIEW:
-                logger.info(
-                    "反思轮次 %s: 需要人工复核，终止自动循环", reflect_round + 1
-                )
-                break
-            elif next_action.action_type == NextActionType.ABANDON:
-                context.set_state(AgentState.FAILED)
-                return {
-                    "success": False,
-                    "task_id": context.task_id,
-                    "session_id": context.session_id,
-                    "results": context.execution_results,
-                    "error": next_action.reason,
-                    "message": "任务放弃",
-                }
-            elif next_action.action_type in (
-                NextActionType.RETRY,
-                NextActionType.ADJUST_STRATEGY,
-            ):
-                logger.info(
-                    "反思轮次 %s: %s，重新执行",
-                    reflect_round + 1,
-                    next_action.action_type.name,
-                )
-                context.execution_results = [
-                    r for r in context.execution_results if r.get("success", False)
-                ]
-                context.current_step = 0
-                if next_action.action_type == NextActionType.ADJUST_STRATEGY:
-                    context.set_state(AgentState.PLANNING)
-                    await self._phase_plan(context)
-                continue
-        else:
-            logger.warning("反思循环已达上限 %s 次", self.max_reflect_rounds)
-            if context.execution_results and not all(
-                r.get("success", False) for r in context.execution_results
-            ):
-                context.set_state(AgentState.FAILED)
-                return {
-                    "success": False,
-                    "task_id": context.task_id,
-                    "session_id": context.session_id,
-                    "results": context.execution_results,
-                    "error": "反思循环已达上限，且执行结果存在失败",
-                }
-
+        Returns:
+            TaskResult如果需要返回（确认失败），None如果继续执行
+        """
+        intent_type = (
+            agent_context.intent.type.name if agent_context.intent else "UNKNOWN"
+        )
+        goal = agent_context.intent.goal if agent_context.intent else ""
+        confidence = (
+            getattr(agent_context.intent, "confidence", 0.85)
+            if agent_context.intent
+            else 0.85
+        )
+        confirm_result = await self.confirmer.check_confirmation(
+            session_id=agent_context.session_id,
+            intent_type=intent_type,
+            goal=goal,
+            confidence=confidence,
+            params={"user_input": user_input[:200]},
+        )
+        if not confirm_result.confirmed and confirm_result.method != "no_callback":
+            self._state_manager.set_state(
+                agent_context, AgentState.CONFIRMATION_NEEDED
+            )
+            confirmation_message = (
+                confirm_result.message if hasattr(confirm_result, "message") else ""
+            )
+            return self._error_handler.build_confirmation_needed_result(
+                confirmation_message
+            )
         return None
+
+    async def _execute_skip_reflect(
+        self, agent_context: AgentContext, _perf_start: float
+    ) -> TaskResult:
+        """执行跳过反思的快速路径。"""
+        self._state_manager.set_state(agent_context, AgentState.EXECUTING)
+        await self._orchestrator.execute_execute_phase(agent_context)
+
+        has_results = bool(agent_context.execution_results)
+        all_failed = has_results and all(
+            not r.get("success", False) for r in agent_context.execution_results
+        )
+
+        if not has_results or all_failed:
+            self._state_manager.set_state(agent_context, AgentState.FAILED)
+            self._progress_tracker.emit_error(
+                agent_context.task_id, "执行步骤全部失败"
+            )
+            return self._result_builder.build_result(agent_context)
+
+        self._state_manager.set_state(agent_context, AgentState.COMPLETED)
+        self._progress_tracker.emit_complete(agent_context.task_id)
+        return self._result_builder.build_result(agent_context)
+
+    # =========================================================================
+    # 向后兼容方法：保留原有的辅助方法，供TaskOrchestrator和其他组件调用
+    # 这些方法委托给TaskOrchestrator，确保现有测试和调用方继续工作
+    # =========================================================================
+
+    def _is_critical_decision_point(self, context, step=None) -> bool:
+        """判断当前是否为关键决策点 [向后兼容委托]"""
+        return self._orchestrator._is_critical_decision_point(context, step)
+
+    async def _parallel_consensus(self, context, decision_point: str, step=None):
+        """三贤者并行投票决策 [向后兼容委托]"""
+        return await self._orchestrator._parallel_consensus(
+            context, decision_point, step
+        )
+
+    async def _serial_consensus_fallback(
+        self, context, decision_point: str, step=None
+    ):
+        """串行降级路径 [向后兼容委托]"""
+        return await self._orchestrator._serial_consensus_fallback(
+            context, decision_point, step
+        )
+
+    async def _strategist_opinion_async(self, context_dict, decision_point):
+        """策略脑异步意见 [向后兼容委托]"""
+        return await self._orchestrator._strategist_opinion_async(
+            context_dict, decision_point
+        )
+
+    def _enrich_step_parameters(
+        self, params: Dict, execution_results: List[Dict]
+    ) -> Dict:
+        """丰富步骤参数 [向后兼容委托]"""
+        return self._orchestrator._enrich_step_parameters(
+            params, execution_results
+        )
+
+    async def _execute_step_with_retry(
+        self, context: AgentContext, step, enriched_params: Dict = None
+    ):
+        """带重试的步骤执行 [向后兼容委托]"""
+        return await self._orchestrator._execute_step_with_retry(
+            context, step, enriched_params
+        )
+
+    def _generate_greeting_response(self, user_input: str) -> str:
+        """生成问候响应 [向后兼容委托]"""
+        return self._orchestrator._generate_greeting_response(user_input)
+
+    def _build_overall_result(self, context: AgentContext) -> Dict[str, Any]:
+        """构建总体结果 [向后兼容委托]"""
+        return self._result_builder.build_overall_result(context)
 
     def _build_result(
         self, context: AgentContext, cancelled: bool = False
     ) -> TaskResult:
-        if cancelled:
-            return TaskResult(
-                success=False,
-                content="",
-                task_type=TaskType.GENERAL_CHAT,
-                error="任务已取消",
-            )
+        """构建结果 [向后兼容委托]"""
+        return self._result_builder.build_result(context, cancelled)
 
-        results = context.execution_results
-        content = ""
-        sources = []
-        task_type = TaskType.GENERAL_CHAT
-        execution_time_ms = 0
-
-        if results:
-            last = results[-1]
-            data = last.get("data", {})
-            if isinstance(data, dict):
-                content = data.get("content", "")
-                sources = data.get("sources", [])
-                tt_str = data.get("task_type", "")
-                for tt in TaskType:
-                    if tt.value == tt_str:
-                        task_type = tt
-                        break
-            elif isinstance(data, str):
-                content = data
-            execution_time_ms = sum(r.get("execution_time", 0) for r in results) * 1000
-
-        result_summary = ""
-        if content:
-            result_summary = content[:200]
-
-        if context.session_id and result_summary:
-            self.session_manager.add_turn(
-                user_input=context.user_input,
-                assistant_response=result_summary,
-                task_type=context.intent.type.value if context.intent else None,
-            )
-
-        success = all(r.get("success", False) for r in results) if results else True
-
-        if not content and not results:
-            content = "已收到您的消息，我会尽力帮助您。"
-
-        return TaskResult(
-            success=success,
-            content=content,
-            task_type=task_type,
-            sources=sources,
-            execution_time_ms=execution_time_ms,
-            error="" if success else "执行失败",
-        )
-
-    async def _phase_plan(
-        self, context: AgentContext, conversation_history: Optional[List[Dict]] = None
-    ) -> None:
-        logger.info("Phase 1: 规划开始")
-
-        if self.progress:
-            self.progress.emit(
-                ProgressEvent(
-                    event_type=EventType.PLAN_START,
-                    session_id=context.task_id,
-                    message="正在分析你的需求...",
-                )
-            )
-
-        history = conversation_history or []
-        loop = asyncio.get_running_loop()
-
-        # MemoryBridge: 注入规则约束到策略脑 context
-        memory_rules = {}
-        try:
-            from opc_manager.memory_bridge import get_memory_bridge
-
-            _mb = get_memory_bridge()
-            if _mb.enabled:
-                memory_rules = _mb.get_rules_for_context(context.user_input)
-        except Exception as e:
-            logger.debug("[AgentLoop] MemoryBridge 规则注入跳过: %s", e)
-
-        plan_context = {"history": history}
-        if memory_rules.get("rules_prompt"):
-            plan_context["rules_prompt"] = memory_rules["rules_prompt"]
-        if memory_rules.get("rules"):
-            plan_context["rules"] = memory_rules["rules"]
-
-        intent = await loop.run_in_executor(
-            None,
-            lambda: self.strategist_brain.understand_intent(
-                user_input=context.user_input, context=plan_context
-            ),
-        )
-        context.intent = intent
-        logger.info("意图理解完成: %s - %s", intent.type.name, intent.goal)
-
-        if self.progress:
-            self.progress.emit(
-                ProgressEvent(
-                    event_type=EventType.INTENT_DETECTED,
-                    session_id=context.task_id,
-                    message=f"意图识别: {intent.type.name} - {intent.goal[:50]}",
-                    detail={
-                        "intent_type": intent.type.name,
-                        "confidence": getattr(intent, "confidence", None),
-                    },
-                    progress_pct=10,
-                )
-            )
-
-        plan = await loop.run_in_executor(
-            None, lambda: self.strategist_brain.plan(intent)
-        )
-        context.plan = plan
-        logger.info("计划制定完成: %s 个步骤", len(plan.steps))
-
-    async def _phase_execute(self, context: AgentContext, start_step: int = 0) -> None:
-        logger.info("Phase 2: 执行开始")
-
-        if not context.plan:
-            raise ValueError("没有执行计划，无法执行")
-
-        total_steps = len(context.plan.steps)
-
-        for i, step in enumerate(context.plan.steps[start_step:]):
-            if context.cancel_requested:
-                return
-
-            context.current_step += 1
-            logger.info(
-                "执行步骤 %s/%s: %s",
-                context.current_step,
-                total_steps,
-                step.description,
-            )
-
-            self.event_emitter.emit(
-                event_type="step_started",
-                step_id=step.id,
-                step_name=step.description,
-                status="running",
-            )
-
-            if self.progress:
-                self.progress.emit(
-                    ProgressEvent(
-                        event_type=EventType.STEP_START,
-                        session_id=context.task_id,
-                        message=f"[执行脑] 执行步骤: {step.skill_id}",
-                        detail={"step_id": step.id, "skill_id": step.skill_id},
-                        progress_pct=int((i / total_steps) * 70) + 10,
-                    )
-                )
-
-            # [S2-T4] 关键决策点前置共识检查（fail-close：共识失败时跳过步骤，不降级到直接执行）
-            try:
-                if self._is_critical_decision_point(context, step):
-                    decision = await self._parallel_consensus(
-                        context, "execute_step", step
-                    )
-                    if not decision.approved:
-                        logger.info("关键决策点被三贤者否决: %s", decision.reasoning)
-                        context.execution_results.append(
-                            {
-                                "step_id": step.id,
-                                "skill_id": step.skill_id,
-                                "description": step.description,
-                                "success": False,
-                                "data": None,
-                                "error": f"consensus_veto: {decision.reasoning}",
-                                "execution_time": 0,
-                            }
-                        )
-                        continue  # 跳过该步骤
-            except Exception as e:
-                # P0-1 修复：共识检查失败时 fail-close（跳过步骤），而非 fail-open（降级到直接执行）
-                # 原因：关键决策点（如发邮件、数据持久化）不可逆，共识失败时不应放行
-                logger.error("关键决策点共识检查失败，fail-close 跳过步骤: %s", e)
-                context.execution_results.append(
-                    {
-                        "step_id": step.id,
-                        "skill_id": step.skill_id,
-                        "description": step.description,
-                        "success": False,
-                        "data": None,
-                        "error": f"consensus_check_failed: {str(e)}",
-                        "execution_time": 0,
-                    }
-                )
-                continue  # 跳过该步骤，不降级到直接执行
-
-            step_start_time = time.time()
-            enriched_params = self._enrich_step_parameters(
-                step.parameters, context.execution_results
-            )
-            result = await self._execute_step_with_retry(context, step, enriched_params)
-            step_duration_ms = (time.time() - step_start_time) * 1000
-
-            context.execution_results.append(
-                {
-                    "step_id": step.id,
-                    "skill_id": step.skill_id,
-                    "description": step.description,
-                    "success": result.success,
-                    "data": result.data,
-                    "error": result.error,
-                    "execution_time": result.execution_time,
-                }
-            )
-
-            if result.success:
-                self.event_emitter.emit(
-                    event_type="step_completed",
-                    step_id=step.id,
-                    step_name=step.description,
-                    status="completed",
-                    duration_ms=step_duration_ms,
-                )
-
-                if self.progress:
-                    self.progress.emit(
-                        ProgressEvent(
-                            event_type=EventType.STEP_COMPLETE,
-                            session_id=context.task_id,
-                            message=f"✅ 步骤完成: {step.skill_id}",
-                            progress_pct=int(((i + 1) / total_steps) * 70) + 10,
-                        )
-                    )
-            else:
-                self.event_emitter.emit(
-                    event_type="step_failed",
-                    step_id=step.id,
-                    step_name=step.description,
-                    status="failed",
-                    duration_ms=step_duration_ms,
-                    data={"error": result.error},
-                )
-                logger.warning(
-                    "步骤 %s 执行失败（已重试%s次）: %s",
-                    step.id,
-                    context.step_retry_counts.get(step.id, 0),
-                    result.error,
-                )
-                break
-
-    async def _parallel_consensus(
-        self, context, decision_point: str, step=None
-    ) -> Decision:
-        """
-        三贤者并行投票决策 [S2-T2]
-
-        - 在关键决策点前调用
-        - 并行失败时降级到串行
-
-        Args:
-            context: AgentContext 或 dict
-            decision_point: 决策点标识（如 "execute_step"）
-            step: 当前步骤对象（可选，用于提取计划行动）
-
-        Returns:
-            Decision: 三贤者共识决策
-        """
-        if not PARALLEL_VOTE_ENABLED:
-            return await self._serial_consensus_fallback(context, decision_point, step)
-        try:
-            context_dict = self._context_to_dict(context)
-            planned_action = self._extract_planned_action(context, step)
-            decision = await asyncio.wait_for(
-                self.consensus_engine.collect_opinions_async(
-                    self._strategist_opinion_async(context_dict, decision_point),
-                    self.executor_brain.express_opinion_async(
-                        context_dict, decision_point
-                    ),
-                    self.reflector_brain.predict_consequence_async(
-                        context_dict, planned_action
-                    ),
-                ),
-                timeout=PARALLEL_VOTE_TIMEOUT,
-            )
-            return decision
-        except Exception as e:
-            logger.warning("并行投票失败，降级到串行: %s", e)
-            return await self._serial_consensus_fallback(context, decision_point, step)
-
-    async def _strategist_opinion_async(self, context_dict, decision_point) -> Opinion:
-        """
-        策略脑异步意见 [S2-T2]
-
-        包装现有 StrategistBrain.express_opinion（同步、返回 Dict），
-        适配为异步并转换为 Opinion 对象。
-
-        P1-6 修复：传递 decision_point 给 express_opinion，使策略脑意见针对具体决策点。
-
-        Args:
-            context_dict: 上下文字典
-            decision_point: 决策点标识
-
-        Returns:
-            Opinion: 策略脑意见
-        """
-        # P1-6 修复：传递 decision_point，使策略脑意见与决策点相关
-        result = await asyncio.to_thread(
-            self.strategist_brain.express_opinion, context_dict, decision_point
-        )
-        return self._dict_to_opinion(result, brain_type="strategist")
-
-    async def _serial_consensus_fallback(
-        self, context, decision_point: str, step=None
-    ) -> Decision:
-        """
-        串行降级路径（并行失败时）[S2-T2]
-
-        P0-2 修复：所有同步 LLM 调用包装为 asyncio.to_thread，避免阻塞事件循环。
-        P1-5 修复：为每个调用添加 asyncio.wait_for 超时保护，避免无限期等待。
-        原实现无超时保护，若 LLM 调用挂起将无限期阻塞。
-
-        Args:
-            context: AgentContext 或 dict
-            decision_point: 决策点标识
-            step: 当前步骤对象（可选）
-
-        Returns:
-            Decision: 三贤者共识决策
-        """
-        context_dict = self._context_to_dict(context)
-        planned_action = self._extract_planned_action(context, step)
-        # P0-2 + P1-5 修复：asyncio.to_thread + asyncio.wait_for 超时保护
-        SERIAL_OP_TIMEOUT = 15  # 单个意见表达超时15s（总超时45s）
-        try:
-            s_op = self._dict_to_opinion(
-                await asyncio.wait_for(
-                    asyncio.to_thread(
-                        self.strategist_brain.express_opinion, context_dict
-                    ),
-                    timeout=SERIAL_OP_TIMEOUT,
-                ),
-                "strategist",
-            )
-            e_op = await asyncio.wait_for(
-                asyncio.to_thread(
-                    self.executor_brain.express_opinion, context_dict, decision_point
-                ),
-                timeout=SERIAL_OP_TIMEOUT,
-            )
-            r_op = await asyncio.wait_for(
-                asyncio.to_thread(
-                    self.reflector_brain.predict_consequence,
-                    context_dict,
-                    planned_action,
-                ),
-                timeout=SERIAL_OP_TIMEOUT,
-            )
-            return self.consensus_engine.collect_opinions([s_op, e_op, r_op])
-        except asyncio.TimeoutError as e:
-            logger.error(
-                "串行降级共识超时（>%ds），fail-close 拒绝执行: %s",
-                SERIAL_OP_TIMEOUT * 3,
-                e,
-            )
-            # P1-5 修复：超时时返回否决决策，而非抛异常导致 fail-open
-            return Decision(
-                approved=False,
-                reasoning=f"serial_consensus_timeout: 串行降级共识超时（>{SERIAL_OP_TIMEOUT * 3}s）",
-                opinions=[],
-                consensus_score=0.0,
-            )
-
-    def _context_to_dict(self, context) -> Dict[str, Any]:
-        """
-        将 AgentContext 转换为 dict（用于三贤者投票）[S2-T2]
-
-        Args:
-            context: AgentContext 对象或 dict
-
-        Returns:
-            Dict[str, Any]: 上下文字典
-        """
+    @staticmethod
+    def _context_to_dict(context) -> Dict[str, Any]:
+        """将 AgentContext 转换为 dict（用于三贤者投票）[S2-T2]"""
         if isinstance(context, dict):
             return context
         return {
@@ -806,19 +423,10 @@ class AgentLoop:
             "execution_results": getattr(context, "execution_results", []),
         }
 
-    def _extract_planned_action(self, context, step=None) -> Dict[str, Any]:
-        """
-        提取计划行动信息（用于 ReflectorBrain 预判）[S2-T2]
-
-        Args:
-            context: AgentContext 或 dict
-            step: 当前步骤对象（可选，优先使用）
-
-        Returns:
-            Dict[str, Any]: 包含 skill_id / action / parameters 的字典
-        """
+    @staticmethod
+    def _extract_planned_action(context, step=None) -> Dict[str, Any]:
+        """提取计划行动信息（用于 ReflectorBrain 预判）[S2-T2]"""
         if step is None:
-            # 从 context 中查找当前步骤
             if not isinstance(context, dict):
                 current_step_idx = getattr(context, "current_step", 0)
                 plan = getattr(context, "plan", None)
@@ -833,17 +441,9 @@ class AgentLoop:
             }
         return {"skill_id": "", "action": "", "parameters": {}}
 
-    def _dict_to_opinion(self, result: Dict, brain_type: str) -> Opinion:
-        """
-        将 Brain.express_opinion 返回的 Dict 转换为 Opinion 对象 [S2-T2]
-
-        Args:
-            result: Brain 返回的字典
-            brain_type: 贤者类型（strategist/executor/reflector）
-
-        Returns:
-            Opinion: 意见对象
-        """
+    @staticmethod
+    def _dict_to_opinion(result: Dict, brain_type: str) -> Opinion:
+        """将 Brain.express_opinion 返回的 Dict 转换为 Opinion 对象 [S2-T2]"""
         if not isinstance(result, dict):
             return Opinion(
                 brain_type=brain_type,
@@ -864,321 +464,9 @@ class AgentLoop:
             alternative=result.get("alternative"),
         )
 
-    def _generate_greeting_response(self, user_input: str) -> str:
-        """生成问候响应 [S2-T6]（0 LLM 成本，基于关键词模板）"""
-        text = user_input.lower()
-        if any(w in text for w in ["你好", "您好", "hi", "hello", "嗨", "哈喽"]):
-            return (
-                "你好！我是 OPC-Agents 助手。我可以帮你：\n"
-                "- 发送邮件\n- 记录收支\n- 生成报告\n\n"
-                "请告诉我你需要什么帮助？"
-            )
-        if any(w in text for w in ["谢谢", "感谢", "thanks"]):
-            return "不客气！还有其他需要帮助的吗？"
-        if any(w in text for w in ["再见", "bye", "拜拜"]):
-            return "再见！有需要随时找我。"
-        if any(w in text for w in ["帮助", "help", "怎么用"]):
-            return (
-                "我可以帮你：\n"
-                "1. 发送邮件（如：发邮件给张总）\n"
-                "2. 记录收支（如：记一笔收入3000元）\n"
-                "3. 生成报告（如：生成本月经营报告）\n\n"
-                "直接用自然语言告诉我你的需求即可。"
-            )
-        return "你好，有什么可以帮你的吗？"
-
-    def _is_critical_decision_point(self, context, step=None) -> bool:
-        """
-        判断当前是否为关键决策点 [S2-T4]
-
-        关键决策点包括：发邮件、数据持久化等不可逆操作。
-
-        Args:
-            context: AgentContext 或 dict
-            step: 当前步骤对象（可选，优先使用）
-
-        Returns:
-            bool: 是否为关键决策点
-        """
-        # [S2-T6] 简单任务不触发共识（绕过三贤者并行投票）
-        if isinstance(context, dict):
-            metadata = context.get("metadata", {}) or {}
-        else:
-            metadata = getattr(context, "metadata", None) or {}
-        if isinstance(metadata, dict) and metadata.get("route_category") == "simple":
-            return False
-
-        if step is None:
-            if not isinstance(context, dict):
-                current_step_idx = getattr(context, "current_step", 0)
-                plan = getattr(context, "plan", None)
-                steps = getattr(plan, "steps", None) if plan else None
-                if steps and 0 < current_step_idx <= len(steps):
-                    step = steps[current_step_idx - 1]
-        if not step:
-            return False
-        skill_id = (getattr(step, "skill_id", "") or "").lower()
-        action = (getattr(step, "action", "") or "").lower()
-        return (
-            skill_id in CRITICAL_DECISION_SKILLS or action in CRITICAL_DECISION_ACTIONS
-        )
-
-    def _enrich_step_parameters(
-        self, params: Dict, execution_results: List[Dict]
-    ) -> Dict:
-        if not params or not execution_results:
-            return params or {}
-
-        enriched = dict(params)
-        prev_result = execution_results[-1] if execution_results else None
-        prev_data = (
-            prev_result.get("data", {})
-            if prev_result and prev_result.get("success")
-            else None
-        )
-
-        reference_keys = {
-            "input",
-            "content",
-            "data",
-            "source",
-            "search_results",
-            "analysis_results",
-            "generated_report",
-        }
-        for key in list(enriched.keys()):
-            val = enriched[key]
-            if isinstance(val, str) and val in reference_keys:
-                if prev_data:
-                    if isinstance(prev_data, dict):
-                        content = prev_data.get(
-                            "content",
-                            prev_data.get(
-                                "results", prev_data.get("analysis_result", "")
-                            ),
-                        )
-                        if content:
-                            if isinstance(content, list):
-                                enriched[key] = str(content)[:500]
-                            else:
-                                enriched[key] = str(content)[:500]
-                    elif isinstance(prev_data, str):
-                        enriched[key] = prev_data[:500]
-                else:
-                    enriched[key] = ""
-
-        if "data" not in enriched and prev_data is not None:
-            enriched["data"] = prev_data
-
-        if enriched.get("query") and len(str(enriched["query"])) > 200:
-            enriched["query"] = str(enriched["query"])[:200]
-
-        return enriched
-
-    async def _execute_step_with_retry(
-        self, context: AgentContext, step, enriched_params: Dict = None
-    ) -> ExecutionResult:
-        step_retries = context.step_retry_counts.get(step.id, 0)
-        exec_params = (
-            enriched_params if enriched_params is not None else step.parameters
-        )
-
-        result = await self.executor_brain.execute_step(
-            step_id=step.id,
-            skill_id=step.skill_id,
-            parameters=exec_params,
-            context={"task_id": context.task_id},
-        )
-
-        while not result.success and step_retries < self.max_retry_per_step:
-            if context.cancel_requested:
-                return result
-
-            step_retries += 1
-            context.step_retry_counts[step.id] = step_retries
-            context.retry_count += 1
-            logger.info(
-                "步骤 %s 失败，重试第 %s/%s 次",
-                step.id,
-                step_retries,
-                self.max_retry_per_step,
-            )
-
-            await asyncio.sleep(
-                min(RETRY_BACKOFF_BASE**step_retries, RETRY_BACKOFF_CAP)
-            )
-
-            result = await self.executor_brain.execute_step(
-                step_id=step.id,
-                skill_id=step.skill_id,
-                parameters=exec_params,
-                context={"task_id": context.task_id},
-            )
-
-            context.execution_results.append(
-                {
-                    "step_id": step.id,
-                    "skill_id": step.skill_id,
-                    "description": f"{step.description} (重试#{step_retries})",
-                    "success": result.success,
-                    "data": result.data,
-                    "error": result.error,
-                    "execution_time": result.execution_time,
-                    "retry": step_retries,
-                }
-            )
-
-        context.step_retry_counts[step.id] = step_retries
-        return result
-
-    async def _phase_observe(self, context: AgentContext) -> None:
-        logger.info("Phase 3: 观察开始")
-
-        total_steps = len(context.plan.steps) if context.plan else 0
-        completed_steps = sum(
-            1 for r in context.execution_results if r.get("success", False)
-        )
-        total_time = sum(r.get("execution_time", 0) for r in context.execution_results)
-
-        logger.info(
-            "执行结果汇总: %s/%s 步骤完成，总耗时: %.2f秒",
-            completed_steps,
-            total_steps,
-            total_time,
-        )
-
-    def _build_overall_result(self, context: AgentContext) -> Dict[str, Any]:
-        return {
-            "success": all(r.get("success", False) for r in context.execution_results),
-            "data": {
-                "results": context.execution_results,
-                "total_steps": len(context.execution_results),
-                "completed_steps": sum(
-                    1 for r in context.execution_results if r.get("success", False)
-                ),
-                "total_time": sum(
-                    r.get("execution_time", 0) for r in context.execution_results
-                ),
-            },
-        }
-
-    async def _phase_reflect(self, context: AgentContext) -> NextAction:
-        logger.info("Phase 4: 反思开始")
-
-        if self.progress:
-            self.progress.emit(
-                ProgressEvent(
-                    event_type=EventType.REFLECT_START,
-                    session_id=context.task_id,
-                    message="[反思脑] 正在评估执行结果...",
-                    progress_pct=85,
-                )
-            )
-
-        overall_result = self._build_overall_result(context)
-
-        loop = asyncio.get_running_loop()
-        expected_intent = {"goal": context.intent.goal} if context.intent else {}
-
-        evaluation = await loop.run_in_executor(
-            None,
-            lambda: self.reflector_brain.evaluate_result(
-                actual_result=overall_result, expected_intent=expected_intent
-            ),
-        )
-
-        logger.info(
-            "评估结果: %s (质量评分: %.2f)",
-            evaluation.result.name,
-            evaluation.quality_score,
-        )
-
-        # MemoryBridge: 质量不佳时记录失败经验
-        if evaluation.quality_score < 0.5:
-            try:
-                from opc_manager.memory_bridge import get_memory_bridge
-
-                _mb = get_memory_bridge()
-                if _mb.enabled:
-                    _mb.record_failure(
-                        user_input=context.user_input,
-                        failure_reason=str(evaluation.deviation_analysis or "")[:200],
-                        quality_score=evaluation.quality_score,
-                    )
-            except Exception as e:
-                logger.debug("[AgentLoop] MemoryBridge 失败经验记录跳过: %s", e)
-
-        correction_strategy = await loop.run_in_executor(
-            None,
-            lambda: self.reflector_brain.suggest_correction_strategy(
-                evaluation=evaluation,
-                execution_results=context.execution_results,
-                correction_count=context.correction_count,
-            ),
-        )
-
-        if correction_strategy is not None:
-            logger.info("触发自动修正: %s", correction_strategy.value)
-            correction_result = await self._correction_manager.apply_correction(
-                context, correction_strategy
-            )
-            if correction_result:
-                context.correction_count += 1
-                re_eval_data = self._build_overall_result(context)
-                re_eval = await loop.run_in_executor(
-                    None,
-                    lambda: self.reflector_brain.evaluate_result(
-                        actual_result=re_eval_data, expected_intent=expected_intent
-                    ),
-                )
-                logger.info(
-                    "修正后评估: %s (质量评分: %.2f)",
-                    re_eval.result.name,
-                    re_eval.quality_score,
-                )
-                if re_eval.quality_score >= QUALITY_THRESHOLD_CORRECTION:
-                    return NextAction(
-                        action_type=NextActionType.CONTINUE,
-                        reason=f"修正后质量达标(评分: {re_eval.quality_score:.2f})",
-                        confidence=re_eval.quality_score,
-                    )
-
-        if (
-            context.correction_count >= MAX_CORRECTION_ATTEMPTS
-            and evaluation.quality_score < QUALITY_THRESHOLD_CORRECTION
-        ):
-            logger.warning("修正%s次仍未达标，标记需人工复核", context.correction_count)
-            return NextAction(
-                action_type=NextActionType.REVIEW,
-                reason=f"修正{context.correction_count}次后质量仍不达标(评分: {evaluation.quality_score:.2f})",
-                confidence=evaluation.quality_score,
-            )
-
-        plan_dict = None
-        if context.plan:
-            plan_dict = {
-                "steps": [
-                    {"id": s.id, "skill_id": s.skill_id, "description": s.description}
-                    for s in context.plan.steps
-                ],
-                "retry_count": context.retry_count,
-            }
-
-        next_action = await loop.run_in_executor(
-            None,
-            lambda: self.reflector_brain.decide_next_action(
-                evaluation=evaluation, plan=plan_dict
-            ),
-        )
-
-        consensus_decision = await self._consensus_consultant.consult(
-            context, evaluation, next_action
-        )
-        if consensus_decision is not None:
-            return consensus_decision
-
-        logger.info("决定下一步行动: %s", next_action.action_type.name)
-        return next_action
+    # =========================================================================
+    # 生命周期管理方法（委托给TaskLifecycleManager）
+    # =========================================================================
 
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         return self._lifecycle.get_task_status(task_id)
@@ -1194,7 +482,7 @@ class AgentLoop:
         if not result.get("success"):
             return result
 
-        # If resume succeeded, continue the reflect loop
+        # 如果恢复成功，继续反思循环
         context = self.contexts.get(task_id)
         if not context:
             return result
@@ -1203,27 +491,22 @@ class AgentLoop:
         deadline = time.time() + AGENT_LOOP_TIMEOUT_SECONDS
 
         try:
-            loop_result = await self._reflect_loop(
-                context, start_step=resume_step, deadline=deadline
+            loop_result = await self._orchestrator.run_reflect_loop(
+                context, deadline=deadline
             )
 
             if loop_result is not None:
                 if loop_result.get("cancelled"):
-                    return self._build_result(context, cancelled=True)
-                loop_error = loop_result.get("error", "")
-                fallback_content = loop_error or "任务恢复执行遇到问题，请重试"
-                return TaskResult(
-                    success=loop_result.get("success", False),
-                    content=fallback_content,
-                    task_type=TaskType.GENERAL_CHAT,
-                    error=loop_error,
-                )
+                    return self._result_builder.build_result(
+                        context, cancelled=True
+                    )
+                return self._result_builder.build_loop_error_result(loop_result)
 
-            context.set_state(AgentState.COMPLETED)
-            return self._build_result(context)
+            self._state_manager.set_state(context, AgentState.COMPLETED)
+            return self._result_builder.build_result(context)
 
         except Exception as e:
-            context.set_state(AgentState.FAILED)
+            self._state_manager.set_state(context, AgentState.FAILED)
             logger.error("恢复任务执行失败: %s", str(e))
             return {"success": False, "task_id": task_id, "error": str(e)}
 
