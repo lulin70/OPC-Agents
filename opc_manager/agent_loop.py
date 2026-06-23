@@ -228,16 +228,12 @@ class AgentLoop:
                 return self._result_builder.build_result(agent_context, cancelled=True)
 
             # 7. 用户确认检查
-            confirm_result = await self._check_confirmation(
-                agent_context, user_input
-            )
+            confirm_result = await self._check_confirmation(agent_context, user_input)
             if confirm_result is not None:
                 return confirm_result
 
             # 8. 检查是否跳过反思
-            skip_reflect = (
-                os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
-            )
+            skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
             if skip_reflect:
                 return await self._execute_skip_reflect(agent_context, _perf_start)
 
@@ -310,9 +306,7 @@ class AgentLoop:
             params={"user_input": user_input[:200]},
         )
         if not confirm_result.confirmed and confirm_result.method != "no_callback":
-            self._state_manager.set_state(
-                agent_context, AgentState.CONFIRMATION_NEEDED
-            )
+            self._state_manager.set_state(agent_context, AgentState.CONFIRMATION_NEEDED)
             confirmation_message = (
                 confirm_result.message if hasattr(confirm_result, "message") else ""
             )
@@ -335,9 +329,7 @@ class AgentLoop:
 
         if not has_results or all_failed:
             self._state_manager.set_state(agent_context, AgentState.FAILED)
-            self._progress_tracker.emit_error(
-                agent_context.task_id, "执行步骤全部失败"
-            )
+            self._progress_tracker.emit_error(agent_context.task_id, "执行步骤全部失败")
             return self._result_builder.build_result(agent_context)
 
         self._state_manager.set_state(agent_context, AgentState.COMPLETED)
@@ -359,9 +351,7 @@ class AgentLoop:
             context, decision_point, step
         )
 
-    async def _serial_consensus_fallback(
-        self, context, decision_point: str, step=None
-    ):
+    async def _serial_consensus_fallback(self, context, decision_point: str, step=None):
         """串行降级路径 [向后兼容委托]"""
         return await self._orchestrator._serial_consensus_fallback(
             context, decision_point, step
@@ -377,9 +367,7 @@ class AgentLoop:
         self, params: Dict, execution_results: List[Dict]
     ) -> Dict:
         """丰富步骤参数 [向后兼容委托]"""
-        return self._orchestrator._enrich_step_parameters(
-            params, execution_results
-        )
+        return self._orchestrator._enrich_step_parameters(params, execution_results)
 
     async def _execute_step_with_retry(
         self, context: AgentContext, step, enriched_params: Dict = None
@@ -451,9 +439,7 @@ class AgentLoop:
 
             if loop_result is not None:
                 if loop_result.get("cancelled"):
-                    return self._result_builder.build_result(
-                        context, cancelled=True
-                    )
+                    return self._result_builder.build_result(context, cancelled=True)
                 return self._result_builder.build_loop_error_result(loop_result)
 
             self._state_manager.set_state(context, AgentState.COMPLETED)

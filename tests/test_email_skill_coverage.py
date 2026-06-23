@@ -56,7 +56,6 @@ from opc_manager.email_skill import (
 )
 from opc_manager.tool_system import AuditLogger
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -328,13 +327,17 @@ class TestSendEmail:
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_success_with_cc(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_send_success_with_cc(
+        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
 
-        result = send_email("user@test.com", "主题", "正文", cc="cc1@test.com,cc2@test.com")
+        result = send_email(
+            "user@test.com", "主题", "正文", cc="cc1@test.com,cc2@test.com"
+        )
         assert result["success"] is True
         # 验证收件人列表包含 cc
         _args, kwargs = server.sendmail.call_args
@@ -344,7 +347,9 @@ class TestSendEmail:
 
     @patch("opc_manager.email_skill.smtplib.SMTP")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_success_non_ssl_starttls(self, mock_config, mock_smtp, temp_db, smtp_config):
+    def test_send_success_non_ssl_starttls(
+        self, mock_config, mock_smtp, temp_db, smtp_config
+    ):
         dm.init_db()
         config = dict(smtp_config)
         config["ssl"] = False
@@ -359,7 +364,9 @@ class TestSendEmail:
 
     @patch("opc_manager.email_skill.smtplib.SMTP")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_starttls_not_supported(self, mock_config, mock_smtp, temp_db, smtp_config):
+    def test_send_starttls_not_supported(
+        self, mock_config, mock_smtp, temp_db, smtp_config
+    ):
         dm.init_db()
         config = dict(smtp_config)
         config["ssl"] = False
@@ -376,7 +383,9 @@ class TestSendEmail:
     @patch("opc_manager.email_skill.time.sleep")
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_smtp_failure_retries(self, mock_config, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config):
+    def test_send_smtp_failure_retries(
+        self, mock_config, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.side_effect = smtplib.SMTPException("connection refused")
@@ -393,7 +402,9 @@ class TestSendEmail:
     @patch("opc_manager.email_skill.time.sleep")
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_success_after_retry(self, mock_config, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config):
+    def test_send_success_after_retry(
+        self, mock_config, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         server = _make_mock_smtp()
@@ -426,7 +437,14 @@ class TestSendEmail:
     @patch("opc_manager.email_skill._get_smtp_config")
     def test_send_no_username_skips_login(self, mock_config, mock_smtp_ssl, temp_db):
         dm.init_db()
-        config = {"host": "smtp.test.com", "port": 465, "username": "", "password": "", "ssl": True, "from_addr": "noreply@test.com"}
+        config = {
+            "host": "smtp.test.com",
+            "port": 465,
+            "username": "",
+            "password": "",
+            "ssl": True,
+            "from_addr": "noreply@test.com",
+        }
         mock_config.return_value = config
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
@@ -444,15 +462,15 @@ class TestSendEmail:
 class TestSendEmailAsync:
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_email_async_success(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_send_email_async_success(
+        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
 
-        result = asyncio.run(
-            send_email_async("async@test.com", "异步主题", "异步正文")
-        )
+        result = asyncio.run(send_email_async("async@test.com", "异步主题", "异步正文"))
         assert result["success"] is True
 
 
@@ -595,19 +613,21 @@ class TestLookupEmailByName:
 class TestExecuteGoal:
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_goal_with_email_prefix(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_goal_with_email_prefix(
+        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
-        result = execute_goal(
-            "邮箱：user@test.com 主题", subject="测试", body="内容"
-        )
+        result = execute_goal("邮箱：user@test.com 主题", subject="测试", body="内容")
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_goal_with_recipient_prefix_valid_email(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_goal_with_recipient_prefix_valid_email(
+        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.return_value = _make_mock_smtp()
@@ -619,33 +639,39 @@ class TestExecuteGoal:
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    @patch("opc_manager.email_skill._lookup_email_by_name", return_value="looked@test.com")
-    def test_goal_with_recipient_prefix_name_lookup(self, mock_lookup, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    @patch(
+        "opc_manager.email_skill._lookup_email_by_name", return_value="looked@test.com"
+    )
+    def test_goal_with_recipient_prefix_name_lookup(
+        self, mock_lookup, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
-        result = execute_goal(
-            "收件人：张三 请发送", subject="测试", body="内容"
-        )
+        result = execute_goal("收件人：张三 请发送", subject="测试", body="内容")
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_goal_with_gei_pattern_valid_email(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_goal_with_gei_pattern_valid_email(
+        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
-        result = execute_goal(
-            "给 valid@test.com 发邮件", subject="测试", body="内容"
-        )
+        result = execute_goal("给 valid@test.com 发邮件", subject="测试", body="内容")
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    @patch("opc_manager.email_skill._lookup_email_by_name", return_value="found@test.com")
-    def test_goal_with_gei_pattern_name_lookup(self, mock_lookup, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    @patch(
+        "opc_manager.email_skill._lookup_email_by_name", return_value="found@test.com"
+    )
+    def test_goal_with_gei_pattern_name_lookup(
+        self, mock_lookup, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.return_value = _make_mock_smtp()
@@ -655,7 +681,9 @@ class TestExecuteGoal:
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_goal_all_params_provided(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_goal_all_params_provided(
+        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.return_value = _make_mock_smtp()
@@ -678,7 +706,9 @@ class TestExecuteGoal:
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
     @patch("opc_manager.email_skill._get_smtp_config")
-    def test_goal_to_only_derives_subject_body(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_goal_to_only_derives_subject_body(
+        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+    ):
         dm.init_db()
         mock_config.return_value = smtp_config
         mock_smtp_ssl.return_value = _make_mock_smtp()

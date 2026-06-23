@@ -43,11 +43,11 @@ class ProgressTracker:
         """获取底层进度发射器。"""
         return self._progress
 
-    def emit_plan_start(self, session_id: str, message: str = "正在分析你的需求...") -> None:
+    def emit_plan_start(
+        self, session_id: str, message: str = "正在分析你的需求..."
+    ) -> None:
         """发射规划开始事件。"""
-        self._emit(
-            EventType.PLAN_START, session_id, message
-        )
+        self._emit(EventType.PLAN_START, session_id, message)
 
     def emit_intent_detected(
         self,

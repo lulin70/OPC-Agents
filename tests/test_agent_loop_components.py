@@ -424,9 +424,7 @@ class TestRouteDecision(unittest.TestCase):
 
     def test_greeting_decision(self):
         """测试问候决策"""
-        decision = RouteDecision(
-            is_greeting=True, response="hello", confidence=0.95
-        )
+        decision = RouteDecision(is_greeting=True, response="hello", confidence=0.95)
         self.assertTrue(decision.is_greeting)
         self.assertEqual(decision.response, "hello")
         self.assertEqual(decision.confidence, 0.95)

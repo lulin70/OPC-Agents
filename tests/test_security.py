@@ -161,6 +161,7 @@ class TestSecureStorage(unittest.TestCase):
         """Reset fingerprint cache to prevent pollution from other tests."""
         try:
             import opc_manager.secure_storage as ss
+
             with ss._fingerprint_lock:
                 ss._fingerprint_cache = None
         except ImportError:

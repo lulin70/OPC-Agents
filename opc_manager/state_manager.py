@@ -19,7 +19,9 @@ from .utils import BoundedDict
 
 logger = logging.getLogger(__name__)
 
-MAX_CONTEXT_HISTORY = int(__import__("os").environ.get("OPC_MAX_CONTEXT_HISTORY", "100"))
+MAX_CONTEXT_HISTORY = int(
+    __import__("os").environ.get("OPC_MAX_CONTEXT_HISTORY", "100")
+)
 
 
 class StateManager:
