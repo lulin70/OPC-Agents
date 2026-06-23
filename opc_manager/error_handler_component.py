@@ -106,9 +106,7 @@ class AgentErrorHandler:
         )
 
     @staticmethod
-    def handle_execution_exception(
-        error: Exception, task_id: str
-    ) -> TaskResult:
+    def handle_execution_exception(error: Exception, task_id: str) -> TaskResult:
         """处理执行异常。
 
         Args:
