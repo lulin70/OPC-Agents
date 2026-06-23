@@ -109,11 +109,22 @@ Or try any of these:
 ## Architecture
 
 ```
-User Input → AgentLoop → StrategistBrain (Plan)
-                         → ExecutorBrain (Act)
-                         → ReflectorBrain (Evaluate)
-                         → TaskEngineV3 → SkillRegistry → Result
+User Input → AgentLoop (lightweight coordinator, ~460 lines)
+               ├→ StateManager (state management)
+               ├→ AgentErrorHandler (error handling)
+               ├→ ProgressTracker (progress tracking)
+               ├→ ResultBuilder (result building)
+               └→ TaskOrchestrator (task orchestration)
+                     → StrategistBrain (Plan)
+                     → ExecutorBrain (Act)
+                     → ReflectorBrain (Evaluate)
+                     → SkillRegistry → Result
 ```
+
+AgentLoop delegates to 5 dedicated components (StateManager, AgentErrorHandler,
+ProgressTracker, ResultBuilder, TaskOrchestrator). Shared constants live in
+`constants.py` and shared helpers in `agent_utils.py` (eliminates the previous
+circular dependency).
 
 ## Support
 

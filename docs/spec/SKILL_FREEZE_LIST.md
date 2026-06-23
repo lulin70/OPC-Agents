@@ -37,7 +37,7 @@
 | 技能 | 文件 | 依赖方 | 被引用方法 | 冻结状态 |
 |------|------|--------|-----------|---------|
 | crm | `crm_skill.py` | email_skill, report_skill | `get_customer`, `get_customer_stats`, `get_silent_customers` | 🔶 半冻结 |
-| task | `task_skill.py` | report_skill | `list_tasks` | 🔶 半冻结 |
+| task_manager | `task_skill.py` | report_skill | `list_tasks` | 🔶 半冻结 |
 
 ### 半冻结规则
 
@@ -55,13 +55,13 @@
 | # | 技能 | 文件 | 当前功能 | 冻结理由 | 复活条件 |
 |---|------|------|---------|---------|---------|
 | 1 | calendar | `calendar_skill.py` | 日历事件管理 | 非一人公司高频需求 | 用户反馈需要日程管理 |
-| 2 | competitor | `competitor_skill.py` | 竞品分析 | 非高频，价值未验证 | 用户反馈需要竞品监控 |
+| 2 | competitor_watch | `competitor_skill.py` | 竞品分析 | 非高频，价值未验证 | 用户反馈需要竞品监控 |
 | 3 | dashboard | `dashboard_skill.py` | 仪表盘 | 依赖crm/task，但本身非核心 | 用户反馈需要可视化 |
 | 4 | invoice | `invoice_skill.py` | 发票管理 | 依赖tax_reminder，低频 | 用户反馈需要开票 |
-| 5 | knowledge | `knowledge_skill.py` | 知识库 | 非高频，MemoryBridge已覆盖核心 | 用户反馈需要知识管理 |
+| 5 | knowledge_mgmt | `knowledge_skill.py` | 知识库 | 非高频，MemoryBridge已覆盖核心 | 用户反馈需要知识管理 |
 | 6 | pricing | `pricing_skill.py` | 定价策略 | 非高频，价值未验证 | 用户反馈需要定价建议 |
 | 7 | proposal | `proposal_skill.py` | 方案生成 | 依赖invoice，低频 | 用户反馈需要方案撰写 |
-| 8 | social | `social_skill.py` | 社交媒体 | 非一人公司核心需求 | 用户反馈需要社媒管理 |
+| 8 | social_publish | `social_skill.py` | 社交媒体 | 非一人公司核心需求 | 用户反馈需要社媒管理 |
 | 9 | tax_reminder | `tax_reminder_skill.py` | 税务提醒 | 低频，被invoice依赖 | 用户反馈需要税务提醒 |
 
 ### 冻结技能间的依赖链
@@ -151,12 +151,12 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md
 ```python
 # 完全冻结
 SkillMeta(id="calendar", ..., frozen=True, frozen_date="2026-06-19"),
-SkillMeta(id="competitor", ..., frozen=True, frozen_date="2026-06-19"),
+SkillMeta(id="competitor_watch", ..., frozen=True, frozen_date="2026-06-19"),
 # ... 其余9个
 
 # 半冻结
 SkillMeta(id="crm", ..., frozen="semi", frozen_date="2026-06-19"),
-SkillMeta(id="task", ..., frozen="semi", frozen_date="2026-06-19"),
+SkillMeta(id="task_manager", ..., frozen="semi", frozen_date="2026-06-19"),
 ```
 
 ### 5.4 技能市场UI处理
@@ -182,13 +182,13 @@ active_skills = [s for s in all_skills if not s.get("frozen")]
 | 技能 | 复活条件 | 复活优先级 |
 |------|---------|-----------|
 | calendar | ≥2个用户反馈需要日程管理 | 中 |
-| competitor | ≥2个用户反馈需要竞品监控 | 低 |
+| competitor_watch | ≥2个用户反馈需要竞品监控 | 低 |
 | dashboard | ≥2个用户反馈需要可视化仪表盘 | 中 |
 | invoice | ≥2个用户反馈需要开票功能 | 低 |
-| knowledge | ≥2个用户反馈需要知识管理 | 低 |
+| knowledge_mgmt | ≥2个用户反馈需要知识管理 | 低 |
 | pricing | ≥2个用户反馈需要定价建议 | 低 |
 | proposal | ≥2个用户反馈需要方案撰写 | 低 |
-| social | ≥2个用户反馈需要社媒管理 | 低 |
+| social_publish | ≥2个用户反馈需要社媒管理 | 低 |
 | tax_reminder | ≥2个用户反馈需要税务提醒 | 低 |
 
 **复活流程**:

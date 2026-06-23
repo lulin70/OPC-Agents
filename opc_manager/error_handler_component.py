@@ -28,7 +28,7 @@ class ValidationResult:
     error: Optional[str] = None
 
 
-class ErrorHandler:
+class AgentErrorHandler:
     """统一的错误处理器。
 
     职责：
@@ -100,7 +100,7 @@ class ErrorHandler:
         Returns:
             TaskResult: 验证错误结果
         """
-        return ErrorHandler.build_error_result(
+        return AgentErrorHandler.build_error_result(
             error=error,
             content="",
         )
@@ -120,7 +120,7 @@ class ErrorHandler:
         """
         error_msg = str(error)
         logger.error("AgentLoop 执行失败 (task_id=%s): %s", task_id, error_msg)
-        return ErrorHandler.build_error_result(error=error_msg)
+        return AgentErrorHandler.build_error_result(error=error_msg)
 
     @staticmethod
     def build_confirmation_needed_result(
