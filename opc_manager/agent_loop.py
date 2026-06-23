@@ -10,7 +10,7 @@
 重构说明 (v0.4.0)：
 AgentLoop已重构为轻量级协调器，具体职责委托给专门组件：
 - StateManager: 状态管理
-- ErrorHandler: 错误处理
+- AgentErrorHandler: 错误处理
 - ProgressTracker: 进度跟踪
 - ResultBuilder: 结果构建
 - TaskOrchestrator: 任务编排
@@ -50,44 +50,38 @@ from .performance_monitor import get_performance_monitor
 from .confirmer import Confirmer
 from .progress_emitter import ProgressEmitter, ProgressEvent, EventType
 
+# Shared constants and utilities (eliminates circular dependency)
+from .constants import (
+    MAX_USER_INPUT_LENGTH,
+    MAX_RETRY_PER_STEP,
+    MAX_CONTEXT_HISTORY,
+    MAX_REFLECT_ROUNDS,
+    RETRY_BACKOFF_BASE,
+    RETRY_BACKOFF_CAP,
+    PAUSE_TIMEOUT_SECONDS,
+    AGENT_LOOP_TIMEOUT_SECONDS,
+    QUALITY_THRESHOLD_CORRECTION,
+    QUALITY_THRESHOLD_CONSENSUS,
+    MAX_CORRECTION_ATTEMPTS,
+    PARALLEL_VOTE_TIMEOUT,
+    PARALLEL_VOTE_ENABLED,
+    CRITICAL_DECISION_SKILLS,
+    CRITICAL_DECISION_ACTIONS,
+)
+from .agent_utils import (
+    context_to_dict as _context_to_dict_impl,
+    extract_planned_action as _extract_planned_action_impl,
+    dict_to_opinion as _dict_to_opinion_impl,
+)
+
 # 新增组件导入
 from .state_manager import StateManager
-from .error_handler_component import ErrorHandler
+from .error_handler_component import AgentErrorHandler
 from .progress_tracker import ProgressTracker
 from .result_builder import ResultBuilder
 from .task_orchestrator import TaskOrchestrator, RouteDecision
 
 logger = logging.getLogger(__name__)
-
-MAX_USER_INPUT_LENGTH = 10000
-
-MAX_RETRY_PER_STEP = int(os.environ.get("OPC_MAX_RETRY_PER_STEP", "3"))
-MAX_CONTEXT_HISTORY = int(os.environ.get("OPC_MAX_CONTEXT_HISTORY", "100"))
-MAX_REFLECT_ROUNDS = int(os.environ.get("OPC_MAX_REFLECT_ROUNDS", "3"))
-RETRY_BACKOFF_BASE = 2
-RETRY_BACKOFF_CAP = 10
-PAUSE_TIMEOUT_SECONDS = int(os.environ.get("OPC_PAUSE_TIMEOUT_SECONDS", "1800"))
-AGENT_LOOP_TIMEOUT_SECONDS = int(
-    os.environ.get("OPC_AGENT_LOOP_TIMEOUT_SECONDS", "120")
-)
-
-QUALITY_THRESHOLD_CORRECTION = 0.6
-QUALITY_THRESHOLD_CONSENSUS = 0.7
-MAX_CORRECTION_ATTEMPTS = 2
-
-# 三贤者并行投票配置 [S2-T2]
-PARALLEL_VOTE_TIMEOUT = int(os.environ.get("OPC_PARALLEL_VOTE_TIMEOUT", "30"))
-PARALLEL_VOTE_ENABLED = (
-    os.environ.get("OPC_PARALLEL_VOTE_ENABLED", "true").lower() == "true"
-)
-# 关键决策点（不可逆操作）[S2-T4]
-CRITICAL_DECISION_SKILLS = {"email", "report"}
-CRITICAL_DECISION_ACTIONS = {
-    "send",
-    "execute_operation",
-    "send_notification",
-    "send_email",
-}
 
 
 class AgentLoop:
@@ -100,7 +94,7 @@ class AgentLoop:
 
     委托的职责：
     - 状态管理 → StateManager
-    - 错误处理 → ErrorHandler
+    - 错误处理 → AgentErrorHandler
     - 进度跟踪 → ProgressTracker
     - 结果构建 → ResultBuilder
     - 任务编排 → TaskOrchestrator
@@ -144,7 +138,7 @@ class AgentLoop:
 
         # 初始化专门组件（重构新增）
         self._state_manager = StateManager(max_context_history=MAX_CONTEXT_HISTORY)
-        self._error_handler = ErrorHandler()
+        self._error_handler = AgentErrorHandler()
         self._progress_tracker = ProgressTracker(self.progress)
         self._result_builder = ResultBuilder(self.session_manager)
 
@@ -188,7 +182,7 @@ class AgentLoop:
         """执行用户任务（重构后委托给专门组件）。"""
         logger.info("AgentLoop 开始执行: %s...", user_input[:50])
 
-        # 1. 输入验证（委托给ErrorHandler）
+        # 1. 输入验证（委托给AgentErrorHandler）
         validation_result = self._error_handler.validate_input(user_input)
         if not validation_result.is_valid:
             return self._error_handler.build_validation_error_result(
@@ -234,16 +228,12 @@ class AgentLoop:
                 return self._result_builder.build_result(agent_context, cancelled=True)
 
             # 7. 用户确认检查
-            confirm_result = await self._check_confirmation(
-                agent_context, user_input
-            )
+            confirm_result = await self._check_confirmation(agent_context, user_input)
             if confirm_result is not None:
                 return confirm_result
 
             # 8. 检查是否跳过反思
-            skip_reflect = (
-                os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
-            )
+            skip_reflect = os.environ.get("OPC_SKIP_REFLECT", "false").lower() == "true"
             if skip_reflect:
                 return await self._execute_skip_reflect(agent_context, _perf_start)
 
@@ -316,9 +306,7 @@ class AgentLoop:
             params={"user_input": user_input[:200]},
         )
         if not confirm_result.confirmed and confirm_result.method != "no_callback":
-            self._state_manager.set_state(
-                agent_context, AgentState.CONFIRMATION_NEEDED
-            )
+            self._state_manager.set_state(agent_context, AgentState.CONFIRMATION_NEEDED)
             confirmation_message = (
                 confirm_result.message if hasattr(confirm_result, "message") else ""
             )
@@ -341,9 +329,7 @@ class AgentLoop:
 
         if not has_results or all_failed:
             self._state_manager.set_state(agent_context, AgentState.FAILED)
-            self._progress_tracker.emit_error(
-                agent_context.task_id, "执行步骤全部失败"
-            )
+            self._progress_tracker.emit_error(agent_context.task_id, "执行步骤全部失败")
             return self._result_builder.build_result(agent_context)
 
         self._state_manager.set_state(agent_context, AgentState.COMPLETED)
@@ -365,9 +351,7 @@ class AgentLoop:
             context, decision_point, step
         )
 
-    async def _serial_consensus_fallback(
-        self, context, decision_point: str, step=None
-    ):
+    async def _serial_consensus_fallback(self, context, decision_point: str, step=None):
         """串行降级路径 [向后兼容委托]"""
         return await self._orchestrator._serial_consensus_fallback(
             context, decision_point, step
@@ -383,9 +367,7 @@ class AgentLoop:
         self, params: Dict, execution_results: List[Dict]
     ) -> Dict:
         """丰富步骤参数 [向后兼容委托]"""
-        return self._orchestrator._enrich_step_parameters(
-            params, execution_results
-        )
+        return self._orchestrator._enrich_step_parameters(params, execution_results)
 
     async def _execute_step_with_retry(
         self, context: AgentContext, step, enriched_params: Dict = None
@@ -412,57 +394,17 @@ class AgentLoop:
     @staticmethod
     def _context_to_dict(context) -> Dict[str, Any]:
         """将 AgentContext 转换为 dict（用于三贤者投票）[S2-T2]"""
-        if isinstance(context, dict):
-            return context
-        return {
-            "user_input": getattr(context, "user_input", ""),
-            "intent": getattr(context, "intent", None),
-            "plan": getattr(context, "plan", None),
-            "retry_count": getattr(context, "retry_count", 0),
-            "current_step": getattr(context, "current_step", 0),
-            "execution_results": getattr(context, "execution_results", []),
-        }
+        return _context_to_dict_impl(context)
 
     @staticmethod
     def _extract_planned_action(context, step=None) -> Dict[str, Any]:
         """提取计划行动信息（用于 ReflectorBrain 预判）[S2-T2]"""
-        if step is None:
-            if not isinstance(context, dict):
-                current_step_idx = getattr(context, "current_step", 0)
-                plan = getattr(context, "plan", None)
-                steps = getattr(plan, "steps", None) if plan else None
-                if steps and 0 < current_step_idx <= len(steps):
-                    step = steps[current_step_idx - 1]
-        if step:
-            return {
-                "skill_id": getattr(step, "skill_id", "") or "",
-                "action": getattr(step, "action", "") or "",
-                "parameters": getattr(step, "parameters", {}) or {},
-            }
-        return {"skill_id": "", "action": "", "parameters": {}}
+        return _extract_planned_action_impl(context, step)
 
     @staticmethod
     def _dict_to_opinion(result: Dict, brain_type: str) -> Opinion:
         """将 Brain.express_opinion 返回的 Dict 转换为 Opinion 对象 [S2-T2]"""
-        if not isinstance(result, dict):
-            return Opinion(
-                brain_type=brain_type,
-                opinion_type=OpinionType.ABSTAIN,
-                reasoning=f"Brain 返回非 dict: {type(result).__name__}",
-                confidence=0.0,
-            )
-        opinion_type_str = str(result.get("opinion_type", "AGREE")).upper()
-        try:
-            opinion_type = OpinionType[opinion_type_str]
-        except KeyError:
-            opinion_type = OpinionType.ABSTAIN
-        return Opinion(
-            brain_type=brain_type,
-            opinion_type=opinion_type,
-            reasoning=result.get("reasoning", ""),
-            confidence=result.get("confidence", 0.5),
-            alternative=result.get("alternative"),
-        )
+        return _dict_to_opinion_impl(result, brain_type)
 
     # =========================================================================
     # 生命周期管理方法（委托给TaskLifecycleManager）
@@ -497,9 +439,7 @@ class AgentLoop:
 
             if loop_result is not None:
                 if loop_result.get("cancelled"):
-                    return self._result_builder.build_result(
-                        context, cancelled=True
-                    )
+                    return self._result_builder.build_result(context, cancelled=True)
                 return self._result_builder.build_loop_error_result(loop_result)
 
             self._state_manager.set_state(context, AgentState.COMPLETED)

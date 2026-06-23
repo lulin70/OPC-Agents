@@ -22,13 +22,24 @@ from .reflector_brain import NextAction, NextActionType
 from .task_engine_v3 import TaskType, TaskResult
 from .result_builder import ResultBuilder
 from .progress_tracker import ProgressTracker
-from .error_handler_component import ErrorHandler
+from .error_handler_component import AgentErrorHandler
+from .constants import (
+    AGENT_LOOP_TIMEOUT_SECONDS,
+    CRITICAL_DECISION_SKILLS,
+    CRITICAL_DECISION_ACTIONS,
+    PARALLEL_VOTE_ENABLED,
+    PARALLEL_VOTE_TIMEOUT,
+    RETRY_BACKOFF_BASE,
+    RETRY_BACKOFF_CAP,
+    SERIAL_OP_TIMEOUT,
+)
+from .agent_utils import (
+    context_to_dict,
+    extract_planned_action,
+    dict_to_opinion,
+)
 
 logger = logging.getLogger(__name__)
-
-AGENT_LOOP_TIMEOUT_SECONDS = int(
-    os.environ.get("OPC_AGENT_LOOP_TIMEOUT_SECONDS", "120")
-)
 
 
 @dataclass
@@ -522,8 +533,6 @@ class TaskOrchestrator:
 
     def _is_critical_decision_point(self, context, step=None) -> bool:
         """判断当前是否为关键决策点。"""
-        from .agent_loop import CRITICAL_DECISION_SKILLS, CRITICAL_DECISION_ACTIONS
-
         if isinstance(context, dict):
             metadata = context.get("metadata", {}) or {}
         else:
@@ -548,18 +557,11 @@ class TaskOrchestrator:
 
     async def _parallel_consensus(self, context, decision_point: str, step=None):
         """三贤者并行投票决策。"""
-        from .agent_loop import (
-            PARALLEL_VOTE_ENABLED,
-            PARALLEL_VOTE_TIMEOUT,
-        )
-
         if not PARALLEL_VOTE_ENABLED:
             return await self._serial_consensus_fallback(context, decision_point, step)
         try:
-            from .agent_loop import AgentLoop
-
-            context_dict = AgentLoop._context_to_dict(context)
-            planned_action = AgentLoop._extract_planned_action(context, step)
+            context_dict = context_to_dict(context)
+            planned_action = extract_planned_action(context, step)
 
             from .consensus_engine import Opinion, OpinionType
 
@@ -582,26 +584,20 @@ class TaskOrchestrator:
 
     async def _strategist_opinion_async(self, context_dict, decision_point):
         """策略脑异步意见。"""
-        from .agent_loop import AgentLoop
-        from .consensus_engine import Opinion, OpinionType
-
         result = await asyncio.to_thread(
             self.strategist_brain.express_opinion, context_dict, decision_point
         )
-        return AgentLoop._dict_to_opinion(result, brain_type="strategist")
+        return dict_to_opinion(result, brain_type="strategist")
 
     async def _serial_consensus_fallback(self, context, decision_point: str, step=None):
         """串行降级路径。"""
-        from .agent_loop import AgentLoop
-
-        context_dict = AgentLoop._context_to_dict(context)
-        planned_action = AgentLoop._extract_planned_action(context, step)
-        SERIAL_OP_TIMEOUT = 15
+        context_dict = context_to_dict(context)
+        planned_action = extract_planned_action(context, step)
 
         try:
             from .consensus_engine import Decision
 
-            s_op = AgentLoop._dict_to_opinion(
+            s_op = dict_to_opinion(
                 await asyncio.wait_for(
                     asyncio.to_thread(
                         self.strategist_brain.express_opinion, context_dict
@@ -699,8 +695,6 @@ class TaskOrchestrator:
         self, context: AgentContext, step, enriched_params: Dict = None
     ):
         """带重试的步骤执行。"""
-        from .agent_loop import RETRY_BACKOFF_BASE, RETRY_BACKOFF_CAP
-
         step_retries = context.step_retry_counts.get(step.id, 0)
         exec_params = (
             enriched_params if enriched_params is not None else step.parameters

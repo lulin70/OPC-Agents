@@ -3,7 +3,7 @@
 
 覆盖：
 - StateManager: 状态管理
-- ErrorHandler: 错误处理
+- AgentErrorHandler: 错误处理
 - ProgressTracker: 进度跟踪
 - ResultBuilder: 结果构建
 - TaskOrchestrator: 任务编排（路由决策部分）
@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import Mock, MagicMock, patch
 
 from opc_manager.state_manager import StateManager
-from opc_manager.error_handler_component import ErrorHandler, ValidationResult
+from opc_manager.error_handler_component import AgentErrorHandler, ValidationResult
 from opc_manager.progress_tracker import ProgressTracker
 from opc_manager.result_builder import ResultBuilder
 from opc_manager.task_orchestrator import TaskOrchestrator, RouteDecision
@@ -119,37 +119,37 @@ class TestStateManager(unittest.TestCase):
         self.assertIn(context.task_id, self.manager.contexts)
 
 
-class TestErrorHandler(unittest.TestCase):
-    """ErrorHandler错误处理器测试"""
+class TestAgentErrorHandler(unittest.TestCase):
+    """AgentErrorHandler错误处理器测试"""
 
     def test_validate_input_valid(self):
         """测试有效输入验证"""
-        result = ErrorHandler.validate_input("hello world")
+        result = AgentErrorHandler.validate_input("hello world")
         self.assertTrue(result.is_valid)
         self.assertIsNone(result.error)
 
     def test_validate_input_empty(self):
         """测试空输入验证"""
-        result = ErrorHandler.validate_input("")
+        result = AgentErrorHandler.validate_input("")
         self.assertFalse(result.is_valid)
         self.assertEqual(result.error, "用户输入不能为空")
 
     def test_validate_input_whitespace_only(self):
         """测试纯空白输入验证"""
-        result = ErrorHandler.validate_input("   ")
+        result = AgentErrorHandler.validate_input("   ")
         self.assertFalse(result.is_valid)
         self.assertEqual(result.error, "用户输入不能为空")
 
     def test_validate_input_too_long(self):
         """测试超长输入验证"""
         long_input = "a" * 10001
-        result = ErrorHandler.validate_input(long_input)
+        result = AgentErrorHandler.validate_input(long_input)
         self.assertFalse(result.is_valid)
         self.assertIn("超过最大长度限制", result.error)
 
     def test_build_error_result(self):
         """测试构建错误结果"""
-        result = ErrorHandler.build_error_result("test error")
+        result = AgentErrorHandler.build_error_result("test error")
 
         self.assertFalse(result.success)
         self.assertEqual(result.error, "test error")
@@ -157,7 +157,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_build_validation_error_result(self):
         """测试构建验证错误结果"""
-        result = ErrorHandler.build_validation_error_result("validation failed")
+        result = AgentErrorHandler.build_validation_error_result("validation failed")
 
         self.assertFalse(result.success)
         self.assertEqual(result.error, "validation failed")
@@ -165,7 +165,7 @@ class TestErrorHandler(unittest.TestCase):
 
     def test_build_confirmation_needed_result(self):
         """测试构建需要确认的结果"""
-        result = ErrorHandler.build_confirmation_needed_result("please confirm")
+        result = AgentErrorHandler.build_confirmation_needed_result("please confirm")
 
         self.assertFalse(result.success)
         self.assertEqual(result.error, "需要用户确认后才能执行")
@@ -175,7 +175,7 @@ class TestErrorHandler(unittest.TestCase):
     def test_handle_execution_exception(self):
         """测试处理执行异常"""
         error = ValueError("test exception")
-        result = ErrorHandler.handle_execution_exception(error, "task_123")
+        result = AgentErrorHandler.handle_execution_exception(error, "task_123")
 
         self.assertFalse(result.success)
         self.assertEqual(result.error, "test exception")
@@ -424,9 +424,7 @@ class TestRouteDecision(unittest.TestCase):
 
     def test_greeting_decision(self):
         """测试问候决策"""
-        decision = RouteDecision(
-            is_greeting=True, response="hello", confidence=0.95
-        )
+        decision = RouteDecision(is_greeting=True, response="hello", confidence=0.95)
         self.assertTrue(decision.is_greeting)
         self.assertEqual(decision.response, "hello")
         self.assertEqual(decision.confidence, 0.95)

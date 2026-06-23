@@ -62,8 +62,11 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-timeout>=2.2.0",
     "black>=25.0",
     "flake8>=7.0.0",
+    "bandit>=1.7.0",
+    "pip-audit>=2.7.0",
     "build>=1.0.0",
     "twine>=5.0.0",
 ]
@@ -125,4 +128,4 @@ markers = [
     "e2e_core_skill: Real E2E for 3 core skills (email/finance/report, requires LLM API key)",
     "security: Security-focused tests (injection, XSS, leakage)",
 ]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --strict-markers"

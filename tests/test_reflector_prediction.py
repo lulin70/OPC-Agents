@@ -108,9 +108,7 @@ class TestPredictConsequence:
         """有 llm_service 时调用 LLM 返回 Opinion"""
         mock_llm = MockLLMService(_LLM_AGREE_RESPONSE)
         brain = ReflectorBrain(llm_service=mock_llm)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_low_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_low_risk_action())
 
         assert isinstance(opinion, Opinion)
         assert mock_llm.call_count == 1
@@ -120,9 +118,7 @@ class TestPredictConsequence:
     def test_predict_consequence_without_llm(self):
         """无 llm_service 时降级到规则预判"""
         brain = ReflectorBrain(llm_service=None)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_low_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_low_risk_action())
 
         assert isinstance(opinion, Opinion)
         assert opinion.opinion_type == OpinionType.AGREE
@@ -132,9 +128,7 @@ class TestPredictConsequence:
         """异步版本正常工作"""
         brain = ReflectorBrain(llm_service=None)
         opinion = _run_async(
-            brain.predict_consequence_async(
-                _make_context(), _make_low_risk_action()
-            )
+            brain.predict_consequence_async(_make_context(), _make_low_risk_action())
         )
 
         assert isinstance(opinion, Opinion)
@@ -144,18 +138,14 @@ class TestPredictConsequence:
     def test_predict_consequence_returns_correct_brain_type(self):
         """返回的 brain_type 为 reflector"""
         brain = ReflectorBrain(llm_service=None)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_low_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_low_risk_action())
 
         assert opinion.brain_type == "reflector"
 
     def test_predict_consequence_high_risk_action(self):
         """高风险行动（如发送邮件）预判返回 DISAGREE 或 CONDITIONAL"""
         brain = ReflectorBrain(llm_service=None)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_high_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_high_risk_action())
 
         assert opinion.opinion_type in (
             OpinionType.DISAGREE,
@@ -166,33 +156,26 @@ class TestPredictConsequence:
     def test_predict_consequence_low_risk_action(self):
         """低风险行动（如查询）预判返回 AGREE"""
         brain = ReflectorBrain(llm_service=None)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_low_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_low_risk_action())
 
         assert opinion.opinion_type == OpinionType.AGREE
 
     def test_predict_consequence_reasoning_not_empty(self):
         """reasoning 非空，包含后果描述"""
         brain = ReflectorBrain(llm_service=None)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_low_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_low_risk_action())
 
         assert opinion.reasoning
         assert len(opinion.reasoning) > 0
         # reasoning 应包含后果相关描述关键词
         assert any(
-            kw in opinion.reasoning
-            for kw in ["预判", "风险", "操作", "可逆", "副作用"]
+            kw in opinion.reasoning for kw in ["预判", "风险", "操作", "可逆", "副作用"]
         )
 
     def test_predict_consequence_llm_failure_degrades_gracefully(self):
         """LLM 调用失败时降级到规则预判，不抛异常"""
         brain = ReflectorBrain(llm_service=FailingLLMService())
-        opinion = brain.predict_consequence(
-            _make_context(), _make_low_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_low_risk_action())
 
         assert isinstance(opinion, Opinion)
         assert opinion.opinion_type == OpinionType.AGREE
@@ -201,9 +184,7 @@ class TestPredictConsequence:
         """LLM 返回非 JSON 时降级到规则预判"""
         mock_llm = MockLLMService("NOT JSON AT ALL")
         brain = ReflectorBrain(llm_service=mock_llm)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_low_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_low_risk_action())
 
         assert isinstance(opinion, Opinion)
         assert opinion.opinion_type == OpinionType.AGREE
@@ -212,9 +193,7 @@ class TestPredictConsequence:
         """LLM 返回 DISAGREE 时正确解析"""
         mock_llm = MockLLMService(_LLM_DISAGREE_RESPONSE)
         brain = ReflectorBrain(llm_service=mock_llm)
-        opinion = brain.predict_consequence(
-            _make_context(), _make_high_risk_action()
-        )
+        opinion = brain.predict_consequence(_make_context(), _make_high_risk_action())
 
         assert opinion.opinion_type == OpinionType.DISAGREE
         assert "不可逆" in opinion.reasoning

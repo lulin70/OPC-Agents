@@ -123,9 +123,7 @@ class ResultBuilder:
             metadata={"route": "greeting", "confidence": confidence},
         )
 
-    def build_loop_error_result(
-        self, loop_result: Dict[str, Any]
-    ) -> TaskResult:
+    def build_loop_error_result(self, loop_result: Dict[str, Any]) -> TaskResult:
         """构建循环错误结果。
 
         Args:
@@ -153,16 +151,12 @@ class ResultBuilder:
             Dict: 总体结果字典
         """
         return {
-            "success": all(
-                r.get("success", False) for r in context.execution_results
-            ),
+            "success": all(r.get("success", False) for r in context.execution_results),
             "data": {
                 "results": context.execution_results,
                 "total_steps": len(context.execution_results),
                 "completed_steps": sum(
-                    1
-                    for r in context.execution_results
-                    if r.get("success", False)
+                    1 for r in context.execution_results if r.get("success", False)
                 ),
                 "total_time": sum(
                     r.get("execution_time", 0) for r in context.execution_results
@@ -170,9 +164,7 @@ class ResultBuilder:
             },
         }
 
-    def _record_session_turn(
-        self, context: AgentContext, result_summary: str
-    ) -> None:
+    def _record_session_turn(self, context: AgentContext, result_summary: str) -> None:
         """记录会话历史。
 
         Args:

@@ -37,7 +37,6 @@ from opc_manager.finance_skill import (
 )
 from opc_manager.tool_system import AuditLogger
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -137,7 +136,9 @@ class TestRecordIncome:
         assert rows[0]["note"] == "季度培训"
         assert rows[0]["category"] == "培训费"
 
-    @patch("opc_manager.finance_skill.execute_write", side_effect=Exception("db locked"))
+    @patch(
+        "opc_manager.finance_skill.execute_write", side_effect=Exception("db locked")
+    )
     def test_income_exception(self, _mock, temp_db):
         dm.init_db()
         result = record_income(100, "测试")
@@ -179,7 +180,9 @@ class TestRecordExpense:
         assert rows[0]["amount"] == 150.5
         assert rows[0]["date"] == "2026-02-20"
 
-    @patch("opc_manager.finance_skill.execute_write", side_effect=Exception("write error"))
+    @patch(
+        "opc_manager.finance_skill.execute_write", side_effect=Exception("write error")
+    )
     def test_expense_exception(self, _mock, temp_db):
         dm.init_db()
         result = record_expense(100, "测试")
@@ -455,7 +458,9 @@ class TestUndoRecord:
         expense_result = record_expense(500, "支出")
         undo_record_income(record_id=income_result["id"])
         # 支出应该还在
-        rows = dm.execute_query("SELECT * FROM finance_records WHERE id=?", (expense_result["id"],))
+        rows = dm.execute_query(
+            "SELECT * FROM finance_records WHERE id=?", (expense_result["id"],)
+        )
         assert len(rows) == 1
 
 
