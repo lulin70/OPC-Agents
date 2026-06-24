@@ -32,7 +32,7 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        flake8 opc_manager/ frontend/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 opc_manager/ frontend/ tests/ --count --select=E9,F63,F7,F82,W605 --show-source --statistics
 
     - name: Check formatting with Black
       run: |
@@ -52,7 +52,7 @@ jobs:
       run: |
         PYTHONPATH=. pytest --cov=opc_manager --cov=frontend \
           --cov-report=xml:coverage.xml --cov-report=term \
-          --cov-fail-under=60 \
+          --cov-fail-under=62 \
           --tb=no -q --timeout=10 \
           --ignore=tests/test_e2e_real.py \
           --ignore=tests/test_e2e_user_journeys.py \

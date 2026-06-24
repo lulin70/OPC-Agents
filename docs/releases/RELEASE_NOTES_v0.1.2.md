@@ -417,7 +417,7 @@ P95响应时间: 6.1s (修复前: 8.5s, 改进 28%)
 cd OPC-Agents
 git pull origin main
 pip install --upgrade -r requirements.txt
-./start.sh
+./scripts/start.sh
 ```
 
 **注意事项**:
@@ -434,7 +434,7 @@ cd OPC-Agents
 pip install -r requirements.txt
 cp .env.example .env
 # 编辑 .env 填入 API Key（可选）
-./start.sh
+./scripts/start.sh
 ```
 
 ### Docker部署（计划中）

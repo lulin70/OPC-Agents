@@ -20,7 +20,7 @@
 | ConsensusEngine 角色 | 事后补救（quality<0.7） | 核心决策（关键决策点前置） | 关键操作100%经共识 |
 | ExecutorBrain 意见 | 假意见（retry_count规则） | 真实LLM判断 | express_opinion()调用LLM |
 | ReflectorBrain 角色 | 事后评估（evaluate_result） | 前置预判（predict_consequence） | 预判方法生效 |
-| IntentClassifier | 5类TaskType正则 | 三路分类（简单/复杂/问候） | 简单任务绕过三贤者 |
+| IntentRouter | 5类TaskType正则 | 三路分类（简单/复杂/问候） | 简单任务绕过三贤者 |
 
 ### 1.2 设计原则
 
@@ -116,7 +116,7 @@ EVA MAGI 三贤者系统:
 ```
 [用户输入]
     ↓
-[IntentClassifier 三路分类]
+[IntentRouter 三路分类]
     ├── SIMPLE（单步、无副作用）→ SingleLLMCall → Result
     ├── GREETING（问候/帮助）→ 直接响应 → Result
     └── COMPLEX（多步、有副作用）→ 三贤者并行投票
@@ -148,7 +148,7 @@ EVA MAGI 三贤者系统:
 - 非关键操作（查询/读取）不触发投票，直接执行
 - 投票否决时操作不执行，返回决策理由给用户
 
-### 4.3 IntentClassifier 三路分类
+### 4.3 IntentRouter 三路分类
 
 ```python
 class IntentCategory(Enum):
@@ -156,7 +156,7 @@ class IntentCategory(Enum):
     COMPLEX = "complex"      # 多步、有副作用、需规划
     GREETING = "greeting"    # 问候/帮助/闲聊
 
-class IntentClassifier:
+class IntentRouter:
     @classmethod
     def classify_route(cls, user_input: str) -> Tuple[IntentCategory, float]:
         """
@@ -394,14 +394,14 @@ PARALLEL_VOTE_ENABLED = os.environ.get("OPC_PARALLEL_VOTE_ENABLED", "true").lowe
 | AgentLoop._serial_consensus_fallback() | agent_loop.py | 串行降级 |
 | AgentLoop._phase_execute_with_consensus() | agent_loop.py | 带共识的执行 |
 | AgentLoop._is_critical_decision_point() | agent_loop.py | 关键决策点判断 |
-| IntentClassifier.classify_route() | intent_classifier.py | 三路分类（S2-T6） |
+| IntentRouter.classify_route() | intent_classifier.py | 三路分类（S2-T6） |
 
 ### 6.3 修改的方法
 
 | 方法 | 文件 | 修改内容 |
 |------|------|---------|
 | ConsensusConsultant.consult() | task_lifecycle.py L248-255 | 删除假意见，调用 executor.express_opinion() |
-| AgentLoop.run() | agent_loop.py L104 | 入口增加 IntentClassifier 路由 |
+| AgentLoop.run() | agent_loop.py L104 | 入口增加 IntentRouter 路由 |
 | AgentLoop._phase_execute() | agent_loop.py L491 | 增加关键决策点前置共识 |
 
 ---
@@ -470,7 +470,7 @@ def test_parallel_vs_serial_latency():
 | 三脑并行后决策质量下降 | 低 | 高 | 保留串行fallback；A/B对比测试 |
 | asyncio.gather 异常处理复杂 | 中 | 中 | return_exceptions=True；ABSTAIN降级 |
 | 关键决策点识别遗漏 | 中 | 高 | 白名单+黑名单结合；可配置 |
-| IntentClassifier误分类 | 中 | 中 | 保守策略：不确定时归为COMPLEX |
+| IntentRouter误分类 | 中 | 中 | 保守策略：不确定时归为COMPLEX |
 
 ### 8.2 兼容性风险
 
@@ -547,7 +547,7 @@ class Decision:
 | S2-T3 | 4.4.3, 6.3 | ExecutorBrain.express_opinion() |
 | S2-T4 | 4.4.5, 4.6, 6.3 | ConsensusEngine 前置 + async |
 | S2-T5 | 4.4.4, 6.2 | ReflectorBrain.predict_consequence() |
-| S2-T6 | 4.3, 6.3 | IntentClassifier 三路分类 |
+| S2-T6 | 4.3, 6.3 | IntentRouter 三路分类 |
 | S2-T9 | 7.2, 7.3 | 延迟对比验证 + 报告 |
 
 ---
@@ -569,7 +569,7 @@ class Decision:
 - [ ] ExecutorBrain 假意见代码删除
 - [ ] ConsensusEngine 关键决策点前置
 - [ ] ReflectorBrain predict_consequence 生效
-- [ ] IntentClassifier 三路分类准确率 ≥ 80%
+- [ ] IntentRouter 三路分类准确率 ≥ 80%
 - [ ] 现有测试100%通过（无回归）
 - [ ] 新测试覆盖并行路径
 

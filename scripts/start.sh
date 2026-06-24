@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # OPC-Agents One-Click Launcher v0.2.5
-# Usage: ./start.sh
+# Usage: ./scripts/start.sh
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

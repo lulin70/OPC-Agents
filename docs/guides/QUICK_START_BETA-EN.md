@@ -50,7 +50,7 @@ cd OPC-Agents
 **Option A: One-Click Install (Recommended)**
 ```bash
 chmod +x install.sh start.sh
-./install.sh
+./scripts/install.sh
 ```
 
 **Option B: Manual Install**
@@ -84,7 +84,7 @@ cp .env.example .env
 #### 4. Launch the System
 
 ```bash
-./start.sh
+./scripts/start.sh
 ```
 
 Your browser will automatically open `http://localhost:8501`

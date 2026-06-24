@@ -120,10 +120,10 @@ cd OPC-Agents
 
 3. 运行安装脚本：
    ```bash
-   ./install.sh
+   ./scripts/install.sh
    ```
 
-[截图：终端运行 ./install.sh 的过程，显示检查 Python、创建虚拟环境、安装依赖的输出]
+[截图：终端运行 ./scripts/install.sh 的过程，显示检查 Python、创建虚拟环境、安装依赖的输出]
 
 **预期看到**（按顺序）：
 - ✅ `Python 版本符合要求`
@@ -141,7 +141,7 @@ cd OPC-Agents
 3. 在 WSL/Git Bash 终端中运行：
    ```bash
    chmod +x install.sh
-   ./install.sh
+   ./scripts/install.sh
    ```
 
 **预期看到**：终端显示安装进度（虚拟环境创建→依赖安装→配置文件创建），最后显示"安装完成"。
@@ -208,19 +208,19 @@ cd OPC-Agents
 
 在终端（确保还在 OPC-Agents 文件夹）输入：
 ```bash
-./start.sh
+./scripts/start.sh
 ```
 
 #### Windows 用户
 
 在 WSL/Git Bash 终端中输入：
 ```bash
-./start.sh
+./scripts/start.sh
 ```
 
 > ⚠️ Windows 原生 cmd 不支持 `.sh` 脚本，必须使用 WSL 或 Git Bash。
 
-[截图：终端运行 ./start.sh 后的输出，显示 Ready! Starting OPC-Agents...]
+[截图：终端运行 ./scripts/start.sh 后的输出，显示 Ready! Starting OPC-Agents...]
 
 **预期看到**：
 1. 终端显示一系列检查通过的信息
@@ -351,7 +351,7 @@ cd OPC-Agents
    - 解决：手动在浏览器地址栏输入 `http://localhost:8501`
 
 4. **启动后白屏**
-   - 解决：等待 10-30 秒让应用初始化；若仍白屏，按 `Ctrl+C` 停止后重新运行 `./start.sh`
+   - 解决：等待 10-30 秒让应用初始化；若仍白屏，按 `Ctrl+C` 停止后重新运行 `./scripts/start.sh`
 
 ---
 
@@ -360,7 +360,7 @@ cd OPC-Agents
 - **推荐**：MokaAI 密钥（https://moka-ai.com 注册获取，有免费额度）
 - **备选 1**：智谱 GLM-4 密钥（https://open.bigmodel.cn ，国产，有免费额度）
 - **备选 2**：OpenAI 密钥（https://platform.openai.com ，付费）
-- **备选 3**：本地 Ollama 模型（https://ollama.ai ，完全免费，但需另装 Ollama 软件）
+- **备选 3**：本地 Ollama 模型（https://ollama.com ，完全免费，但需另装 Ollama 软件）
 
 > ⚠️ **注意**：OPC-Agents 不提供也不存储任何 API Key，你需要自行到对应服务商网站注册获取。填入 `.env` 文件的密钥会加密保存在本地，不会上传。
 
@@ -420,7 +420,7 @@ cd OPC-Agents
 ```bash
 cd OPC-Agents
 git pull origin main
-./install.sh   # 重新安装依赖（如有更新）
+./scripts/install.sh   # 重新安装依赖（如有更新）
 ```
 
 **方式 B：如果是下载 ZIP 的**
@@ -428,7 +428,7 @@ git pull origin main
 1. 备份你的 `data/` 文件夹和 `.env` 文件
 2. 下载新版本的 ZIP 并解压
 3. 把备份的 `data/` 文件夹和 `.env` 文件复制到新版本文件夹中
-4. 运行 `./install.sh`
+4. 运行 `./scripts/install.sh`
 
 > ⚠️ **重要**：更新前务必备份 `data/` 文件夹，避免数据丢失！
 

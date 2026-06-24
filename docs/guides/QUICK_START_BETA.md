@@ -50,7 +50,7 @@ cd OPC-Agents
 **方式一：一键安装（推荐）**
 ```bash
 chmod +x install.sh start.sh
-./install.sh
+./scripts/install.sh
 ```
 
 **方式二：手动安装**
@@ -84,7 +84,7 @@ cp .env.example .env
 #### 4. 启动系统
 
 ```bash
-./start.sh
+./scripts/start.sh
 ```
 
 浏览器会自动打开 `http://localhost:8501`
