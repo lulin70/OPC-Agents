@@ -165,6 +165,8 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ## クイックスタート
 
+> 🆕 **v0.3.0トライアルユーザー**：非技術背景のユーザーは [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) を直接お読みください（図解版、3分で設定完了、APIキー取得リンクとAPIキー不要体験モード含む）。本節は開発者向けのクイックリファレンスです。
+
 ### 前提条件
 
 - Python 3.10+
@@ -202,7 +204,7 @@ opc-agents
 git clone https://github.com/lulin70/OPC-Agents.git
 cd OPC-Agents
 chmod +x install.sh start.sh
-./install.sh
+./scripts/install.sh
 
 # 暗号化依存パッケージをインストール
 pip install cryptography
@@ -212,7 +214,7 @@ cp .env.example .env
 # .envを編集し、MOKA APIキーを入力
 
 # 起動
-./start.sh
+./scripts/start.sh
 ```
 
 ### 方法3：Dockerデプロイ
@@ -247,6 +249,8 @@ docker compose up -d
 > ⚠️ **セキュリティ注意**：`OPC_ENCRYPTION_KEY`は必須です。未設定時、`encrypt_field()`が`RuntimeError`をスローし、メールパスワードや顧客機密フィールド等の暗号化操作が失敗します。`.env`に強力なランダムキーを必ず設定してください。
 
 ### APIキーについて
+
+> ⚠️ **OPC-AgentsはLLMサービスを提供しません。** ご自身のLLMプロバイダーを選択し、APIキーを各自で取得してください。プロジェクトはAPIキーや機密情報を一切保存しません。
 
 | バックエンド | モデル | 設定変数 | 品質 | 取得方法 |
 |-------------|--------|----------|------|---------|
@@ -422,6 +426,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 | **0.2.2** | **2026-05-20** | **品質修正** — i18n 315+ハードコードクリーンアップ+バックアップAES暗号化+エクスポート秘匿化+MCPデフォルトlocalhost+オンボーディング統合+モバイル対応+キーボードショートカット修正+CIセキュリティスキャン |
 | 0.2.1 | 2026-05-18 | 8個のOPCスキル統合+技術債務クリーンアップ（32 bare except+i18n 97キー） |
 | **0.2.0** | **2026-05-17** | **FINAL** — 製品リリース：統一設定管理+初回ガイド+データバックアップ/リストア+エラー処理+WeChat E2E+モジュラーダッシュボード+i18n 3言語+スキルマーケットV2+グローバル検索+Apple Shortcuts+API Key暗号化(Fernet)+コードモジュラー化リファクター（87モジュール/56テストファイル/1860テスト） |
+| 0.1.8 | 2026-05-14 | 21ビルトインスキル+外部スキルマーケット+MCPサービス発見+ユーザープロファイル+データセキュリティ+SQLite統一ストレージ |
 | 0.1.9-delta | 2026-05-09 | 実動作検証：三賢者LLM駆動+スキルマーケットFastAPI+MCP転送+プラグイン例+エディタUI+パフォーマンス監視 |
 | 0.1.9-gamma | 2026-05-09 | リファクタリング：三賢者統合+スキルマーケットAPI+MCPプロトコル+プラグインシステム+スキルエディタ |
 | 0.1.9 | 2026-05-09 | エンドツーエンドクローズドループ：自動修正+マルチスキルオーケストレーション+タスク一時停止/再開+進捗可視化+長セッションコンテキスト |

@@ -11,7 +11,7 @@ OPC-Agents requires an LLM backend to function. Choose **one** of the following:
 | MOKA (Claude) | https://moka-ai.com | claude-sonnet-4 | Pay-per-use |
 | Zhipu GLM-4 | https://open.bigmodel.cn | glm-4 | Free tier available |
 | OpenAI | https://platform.openai.com | gpt-4o | Pay-per-use |
-| Ollama (local) | https://ollama.ai | llama3/qwen2 | Free, no API key needed |
+| Ollama (local) | https://ollama.com | llama3/qwen2 | Free, no API key needed |
 
 ### Step 2: Install & Configure
 

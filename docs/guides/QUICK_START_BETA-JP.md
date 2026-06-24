@@ -50,7 +50,7 @@ cd OPC-Agents
 **方法A：ワンクリックインストール（推奨）**
 ```bash
 chmod +x install.sh start.sh
-./install.sh
+./scripts/install.sh
 ```
 
 **方法B：手動インストール**
@@ -84,7 +84,7 @@ cp .env.example .env
 #### 4. システムを起動
 
 ```bash
-./start.sh
+./scripts/start.sh
 ```
 
 ブラウザが自動的に `http://localhost:8501` を開きます

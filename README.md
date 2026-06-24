@@ -46,6 +46,14 @@ opc-agents                      # 2. 启动
 
 ---
 
+## 这是什么
+
+OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由职业者和独立创作者设计的智能任务执行系统**。
+
+**核心理念：告诉系统你想要什么结果，它完成工作并把文件交付给你。**
+
+不是聊天机器人。不是建议引擎。它是一个**把事情做完的执行者**。
+
 ## 它能帮你做什么
 
 | 你说 | 它交付 |
@@ -160,7 +168,7 @@ opc-agents                      # 2. 启动
 ### 前提条件
 
 - Python 3.10+
-- 至少一个LLM API Key
+- 至少一个LLM API Key（推荐: [MOKA](https://moka-ai.com)）
 
 ### 方式一：pip 安装
 
@@ -194,7 +202,7 @@ opc-agents
 git clone https://github.com/lulin70/OPC-Agents.git
 cd OPC-Agents
 chmod +x install.sh start.sh
-./install.sh
+./scripts/install.sh
 
 # 安装加密依赖
 pip install cryptography
@@ -204,7 +212,7 @@ cp .env.example .env
 # 编辑 .env，填入你的MOKA API Key
 
 # 启动
-./start.sh
+./scripts/start.sh
 ```
 
 ### 方式三：Docker 部署

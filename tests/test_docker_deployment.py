@@ -7,6 +7,12 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+# Dynamically import version to avoid hardcoding
+import sys
+
+sys.path.insert(0, str(PROJECT_ROOT))
+from opc_manager.version import __version__ as PROJECT_VERSION
+
 
 class TestDockerfile:
     """P2-9: Dockerfile validation."""
@@ -26,10 +32,10 @@ class TestDockerfile:
     def test_dockerfile_version_label(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()
         assert (
-            'version="0.2.5"' in content
-            or "version=0.2.5" in content
-            or "ARG VERSION=0.2.5" in content
-        ), "Dockerfile must define VERSION (hardcoded or via ARG)"
+            f'version="{PROJECT_VERSION}"' in content
+            or f"version={PROJECT_VERSION}" in content
+            or f"ARG VERSION={PROJECT_VERSION}" in content
+        ), f"Dockerfile must define VERSION ({PROJECT_VERSION})"
 
     def test_dockerfile_python_base(self):
         content = (PROJECT_ROOT / "Dockerfile").read_text()
@@ -258,21 +264,21 @@ class TestStartScript:
     """P2-12: start.sh pre-flight checks."""
 
     def test_start_sh_exists(self):
-        sh = PROJECT_ROOT / "start.sh"
+        sh = PROJECT_ROOT / "scripts" / "start.sh"
         assert sh.exists(), "start.sh must exist"
 
     def test_start_sh_has_port_check(self):
-        content = (PROJECT_ROOT / "start.sh").read_text()
+        content = (PROJECT_ROOT / "scripts" / "start.sh").read_text()
         assert "lsof" in content, "start.sh must check port availability"
 
     def test_start_sh_has_disk_check(self):
-        content = (PROJECT_ROOT / "start.sh").read_text()
+        content = (PROJECT_ROOT / "scripts" / "start.sh").read_text()
         assert "df -k" in content, "start.sh must check disk space"
 
     def test_start_sh_has_memory_check(self):
-        content = (PROJECT_ROOT / "start.sh").read_text()
+        content = (PROJECT_ROOT / "scripts" / "start.sh").read_text()
         assert "vm_stat" in content, "start.sh must check memory (macOS)"
 
     def test_start_sh_has_preflight_label(self):
-        content = (PROJECT_ROOT / "start.sh").read_text()
+        content = (PROJECT_ROOT / "scripts" / "start.sh").read_text()
         assert "pre-flight" in content.lower(), "start.sh must have pre-flight section"

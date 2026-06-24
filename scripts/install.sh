@@ -126,7 +126,7 @@ echo "1. 配置 API 密钥（可选，不配置也能用模板模式）："
 echo "   vim .env"
 echo ""
 echo "2. 启动服务："
-echo "   ./start.sh"
+echo "   ./scripts/start.sh"
 echo ""
 echo "3. 访问系统："
 echo "   http://localhost:8501"
@@ -142,5 +142,5 @@ if [ -t 0 ]; then
         streamlit run frontend/app.py
     fi
 else
-    echo "💡 非交互模式，请手动运行: ./start.sh"
+    echo "💡 非交互模式，请手动运行: ./scripts/start.sh"
 fi

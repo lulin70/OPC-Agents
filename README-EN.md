@@ -169,6 +169,8 @@ Encounter specific scenarios? Use these together for better results:
 
 ## Quick Start
 
+> 🆕 **v0.3.0 Trial Users**: Non-technical users please read [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) directly (illustrated version, 3-minute setup, includes API Key acquisition links and no-API-Key experience mode). This section is a quick reference for developers.
+
 ### Prerequisites
 
 - Python 3.10+
@@ -206,7 +208,7 @@ opc-agents
 git clone https://github.com/lulin70/OPC-Agents.git
 cd OPC-Agents
 chmod +x install.sh start.sh
-./install.sh
+./scripts/install.sh
 
 # Install encryption dependency
 pip install cryptography
@@ -216,7 +218,7 @@ cp .env.example .env
 # Edit .env and fill in your MOKA API Key
 
 # Launch
-./start.sh
+./scripts/start.sh
 ```
 
 ### Option 3: Docker Deployment
@@ -428,6 +430,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 | **0.2.2** | **2026-05-20** | **Quality Fix** — i18n 315+ hardcoded cleanup + backup AES encryption + export sanitization + MCP default localhost + Onboarding merge + mobile responsive + keyboard shortcuts fix + CI security scan |
 | 0.2.1 | 2026-05-18 | 8 OPC skills integrated + tech debt cleanup (32 bare except + i18n 97 keys) |
 | **0.2.0** | **2026-05-17** | **FINAL** — Product Release: Unified settings + onboarding + data backup/restore + error handling + WeChat E2E + modular dashboard + i18n tri-lingual + Skill Marketplace V2 + global search + Apple Shortcuts + API Key encryption (Fernet) + code modularization refactor (87 modules / 56 test files / 1860 tests) |
+| 0.1.8 | 2026-05-14 | 21 built-in skills + external skill marketplace + MCP service discovery + user profile + data security + SQLite unified storage |
 | 0.1.9-delta | 2026-05-09 | Real-run verification: Three-Sage LLM-driven + Skill Marketplace FastAPI + MCP transport + Plugin examples + Editor UI + Performance monitoring |
 | 0.1.9-gamma | 2026-05-09 | Refactoring: Three-Sage integration + Skill Marketplace API + MCP protocol + Plugin system + Skill editor |
 | 0.1.9 | 2026-05-09 | End-to-end closed loop: auto-correction + multi-skill orchestration + task pause/resume + progress visualization + long session context |
