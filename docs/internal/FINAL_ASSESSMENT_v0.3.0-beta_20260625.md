@@ -139,12 +139,14 @@ pytest tests/test_ui_e2e_apptest.py -q
 
 ## 五、PR 建议
 
-### 5.1 分支与 PR
+### 5.1 分支与 PR 状态
 
-- **建议分支名**: `release/v0.3.0-beta`
-- **建议 PR 标题**: `fix(v0.3.0-beta): 修复 P0/P1 阻塞项、同步文档、优化 UI 可访问性`
+- **实际分支名**: `release/v0.3.0-beta` ✅ 已创建并推送
+- **建议 PR 标题**: `fix(v0.3.0-beta): resolve P0/P1 blockers, sync docs, improve UI accessibility`
 - **目标分支**: `main`
-- **合并方式**: Squash Merge（推荐，27 个提交可整理为 1 个清晰的发布提交）
+- **合并方式**: Squash Merge（推荐，本地已整理为 1 个清晰的发布提交）
+- **手动创建 PR 地址**: https://github.com/lulin70/OPC-Agents/pull/new/release/v0.3.0-beta
+- **PR 创建状态**: ⚠️ GitHub MCP 因认证失败、浏览器因超时均未能自动创建 PR，需手动点击上述链接创建
 
 ### 5.2 PR 描述模板
 

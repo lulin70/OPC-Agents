@@ -43,24 +43,26 @@
 
 | 页面/操作 | 结果 | 证据/说明 |
 |-----------|------|-----------|
-| 应用启动 | ✅ | 页面标题 "一人公司助手"，无控制台 JS 错误 |
-| 跳过引导 | ✅ | 点击后 onboarding overlay 关闭 |
+| 应用启动 | ✅ | 页面标题 "一人公司助手"，控制台无致命 JS 错误 |
+| 跳过引导 | ✅ | 点击“跳过引导”后 onboarding overlay 关闭 |
+| 操作提示关闭 | ✅ | 点击“Got it, don't show again”后提示折叠 |
 | 首页/对话页 | ✅ | 侧边栏导航、场景按钮、快捷入口、输入框均渲染 |
-| Dashboard 页 | ✅ | 导航切换正常，显示时间线图表 |
-| 设置页 | ✅ | 显示“安全设置/个人信息/数据备份”标签页与输入框 |
-| 聊天输入提交 | ⚠️ | 输入“帮我写一份周报”并点击 Send，触发任务执行；因后端配置/LLM 问题执行失败并显示“任务执行遇到问题”，但 UI 提交流程本身正常 |
+| Dashboard 页 | ✅ | 导航切换正常，显示数据仪表盘与收入趋势图；控制台仅 Vega-Lite warning |
+| 设置页 | ✅ | LLM/SMTP/API密钥/安全设置/个人信息/数据备份 标签页与输入框渲染 |
+| 聊天输入提交 | ⚠️ | 使用真实键盘事件输入“分析本月数据”并点击 Send，消息成功提交并触发任务执行；因后端未配置 LLM 返回“任务执行遇到问题”，但 UI 提交流程本身正常 |
+| 取消任务/重新执行 | ✅ | 任务执行期间“取消任务”按钮出现，失败后“重新执行”按钮渲染 |
 
 **发现的 UI/UX 问题**：
 
 | 编号 | 问题 | 严重程度 | 说明/建议 |
 |------|------|----------|-----------|
-| UI-01 | 界面大量使用 emoji | P1 | 首页可见文本中检测到 69 处 emoji；与“优先使用莫兰迪色系/PNG/SVG 图标”的 UX 偏好冲突；建议逐步替换为图标组件或色块 |
-| UI-02 | `st.radio` 空 label 触发可访问性警告 | P2 | 已修复为 `label="Navigation"` + `label_visibility="collapsed"` |
+| UI-01 | 界面大量使用 emoji | P1 | 导航、按钮、场景卡片、标题均检测到 emoji；与“优先使用莫兰迪色系/PNG/SVG 图标”的 UX 偏好冲突；需批量替换 |
+| UI-02 | `st.radio` 空 label 触发可访问性警告 | 已修复 | `frontend/app.py:243` 已改为 `label="Navigation"` + `label_visibility="collapsed"` |
 | UI-03 | 启动时出现 `transformers` 库 `__path__` 警告 | P2 | 某依赖链间接引入 transformers，拖慢冷启动；建议排查并延迟/条件导入 |
-| UI-04 | 浏览器视图宽度偏窄 | P2 | 当前验证窗口约 632px；建议在 ≥1024px 视口下重新验证响应式布局 |
-| UI-05 | 聊天任务执行报错 | P2 | 输入提交后后端返回错误；本地开发环境需配置 LLM/API 才能完整验证端到端 |
+| UI-04 | 浏览器视图宽度偏窄 | P2 | 当前浏览器工具 viewport 锁定在 632px，无法调整到 ≥1024px；宽屏响应式布局验证受限 |
+| UI-05 | 聊天任务执行报错 | P2 | UI 流程正常，后端失败系本地未配置 LLM；端到端成功需配置有效 LLM 后重测 |
 
-**UI/UX 结论**: 核心导航、页面切换、表单输入均已验证可用；**尚未达到“真实用户逐按钮验证功能”的完全覆盖**，主要阻塞点为 emoji 替换和宽屏布局验证。
+**UI/UX 结论**: 核心 UI 流程在 632px 视口下已通过真实用户操作验证；**宽屏 ≥1024px 布局验证因浏览器环境限制未能完成**，emoji 替换（P1）仍是发布前必须补齐的项。
 
 ---
 
@@ -82,19 +84,23 @@
 
 ## 五、Git 状态
 
-**当前分支**: 未指定功能分支（工作区在 main 上直接修改）  
-**未提交更改**: 25 个已修改文件 + 2 个新增文件（REMEDIATION_PLAN_20260625.md、TECH_DEBT_20260625.md）
+**当前分支**: `release/v0.3.0-beta`  
+**提交状态**: 32 个文件已提交（27 个修改 + 5 个新增文档）  
+**推送状态**: ✅ 已推送至 `origin/release/v0.3.0-beta`  
+**PR 状态**: ⚠️ GitHub MCP 与浏览器创建 PR 均因认证/超时失败，需手动创建 PR
 
-**已修改文件清单**：
+**手动创建 PR 地址**: https://github.com/lulin70/OPC-Agents/pull/new/release/v0.3.0-beta
+
+**已提交文件清单**：
 - CHANGELOG.md, QUICK_START.md, README-EN.md, README-JP.md, README.md
 - docs/API.md, docs/internal/V030_ROADMAP.md
+- docs/internal/FINAL_ASSESSMENT_v0.3.0-beta_20260625.md（新增）
+- docs/internal/RELEASE_CHECKLIST_v0.3.0.md（新增）
+- docs/internal/REMEDIATION_PLAN_20260625.md（新增）
+- docs/internal/TECH_DEBT_20260625.md（新增）
 - frontend/app.py
 - opc_manager/async_executor.py, opc_manager/audit_log.py, opc_manager/constants.py, opc_manager/data_manager.py, opc_manager/onboarding.py, opc_manager/task_orchestrator.py
 - tests/conftest.py, tests/test_async_executor.py, tests/test_async_frontend_integration.py, tests/test_audit_log.py, tests/test_data_manager.py, tests/test_e2e_user_journeys.py, tests/test_integration_e2e.py, tests/test_integration_modules.py, tests/test_no_circular_import.py, tests/test_onboarding.py, tests/test_parallel_sages.py, tests/test_start_script.py, tests/test_ui_e2e_apptest.py, tests/test_user_journey.py
-
-**新增文件**：
-- docs/internal/REMEDIATION_PLAN_20260625.md
-- docs/internal/TECH_DEBT_20260625.md
 
 ---
 
@@ -106,21 +112,23 @@
 | 测试质量 | ✅ 通过 | 3223 passed，覆盖率 62.87% |
 | 安全扫描 | ✅ 通过 | bandit 无 High/Medium |
 | 文档同步 | ✅ 通过 | 关键文档已更新 |
-| UI/UX | ⚠️ 部分满足 | 核心流程可用，但 emoji 替换和宽屏验证未完成 |
-| Git 流程 | ❌ 未满足 | 修改直接在 main 工作区，未通过 PR → Review → Merge |
+| UI/UX | ⚠️ 部分满足 | 632px 视口核心流程已通过真实操作验证；emoji 替换未完成；宽屏 ≥1024px 验证受环境限制未执行 |
+| Git 流程 | 🔄 进行中 | 已创建 `release/v0.3.0-beta` 分支并推送，PR 需手动创建 |
 
 **发布建议**: 
 - **暂不建议直接发布到 v0.3.0**。
-- 必须先完成：1) 将当前变更整理为 PR 并按 Git 工作流合并；2) 处理 UI-01 emoji 替换（P1）；3) 在 ≥1024px 视口下补充响应式布局验证。
+- 必须先完成：1) 手动创建 PR（https://github.com/lulin70/OPC-Agents/pull/new/release/v0.3.0-beta）并按 Git 工作流 Review → Merge；2) 处理 UI-01 emoji 替换（P1）；3) 在支持 ≥1024px 视口的环境中补充响应式布局验证。
 - 完成后可重新评估为 RC 状态。
 
 ---
 
 ## 七、PR 建议
 
-**建议分支名**: `feat/v0.3.0-beta-remediation` 或 `release/v0.3.0-beta`  
-**建议 PR 标题**: `fix(v0.3.0-beta): 修复 P0/P1 阻塞项、同步文档、优化 UI 可访问性`  
-**建议 PR 描述要点**：
+**实际分支名**: `release/v0.3.0-beta` ✅ 已推送  
+**建议 PR 标题**: `fix(v0.3.0-beta): resolve P0/P1 blockers, sync docs, improve UI accessibility`  
+**手动创建 PR 地址**: https://github.com/lulin70/OPC-Agents/pull/new/release/v0.3.0-beta
+
+**PR 描述要点**：
 1. 修复 AuditLog 后台 writer 与 SQLite 写锁竞争（P0-1）
 2. 修复 `_serial_consensus_fallback` Decision 构造参数（P1-1）
 3. 将 `finance` 纳入关键决策技能集合（P1-2）
