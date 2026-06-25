@@ -781,9 +781,7 @@ def _render_task_completion_panel(
         in_progress = demo_tasks["in_progress"]
         blocked = demo_tasks["blocked"]
         completion_rate = (done / total * 100) if total > 0 else 0
-        emoji = (
-            "" if completion_rate >= 70 else ("" if completion_rate >= 40 else "")
-        )
+        emoji = "" if completion_rate >= 70 else ("" if completion_rate >= 40 else "")
         if density == DensityLevel.COMPACT:
             st.markdown(
                 f"**{emoji} {_t('dash_completion_rate')} {completion_rate:.1f}%（Demo）** ({done}/{total})"
@@ -838,9 +836,7 @@ def _render_task_completion_panel(
     completion_rate = (completed / total * 100) if total > 0 else 0
 
     if density == DensityLevel.COMPACT:
-        emoji = (
-            "" if completion_rate >= 70 else ("" if completion_rate >= 40 else "")
-        )
+        emoji = "" if completion_rate >= 70 else ("" if completion_rate >= 40 else "")
         st.markdown(
             f"**{emoji} {_t('dash_completion_rate')} {completion_rate:.1f}%** ({completed}/{total})"
         )

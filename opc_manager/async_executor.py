@@ -216,7 +216,8 @@ class AsyncTaskExecutor:
             active_task_ids = [
                 task_id
                 for task_id, task in self._tasks.items()
-                if task.status in (TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.RETRYING)
+                if task.status
+                in (TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.RETRYING)
             ]
         for task_id in active_task_ids:
             self.cancel(task_id)

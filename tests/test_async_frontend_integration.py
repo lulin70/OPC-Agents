@@ -152,7 +152,9 @@ class TestAsyncExecuteWrapper:
 
     def test_wrapper_handles_exception(self):
         """测试异常情况下的错误处理"""
-        self.executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=5, max_retries=0)
+        self.executor = AsyncTaskExecutor(
+            max_concurrent=2, default_timeout=5, max_retries=0
+        )
 
         def failing_execute(prompt, cancel_event):
             raise ValueError("模拟执行失败")

@@ -18,6 +18,7 @@ from opc_manager.config import LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
+
 def _get_onboarding_marker() -> Path:
     """Return the onboarding completion marker path.
 

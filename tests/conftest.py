@@ -35,7 +35,10 @@ def _reset_global_singletons(monkeypatch):
     contention during full-suite runs. It also isolates the onboarding
     marker so tests do not pollute the user's real ~/.opc-agents directory.
     """
-    marker_path = Path(tempfile.gettempdir()) / f"opc_test_onboarding_{os.getpid()}_{threading.current_thread().ident}.marker"
+    marker_path = (
+        Path(tempfile.gettempdir())
+        / f"opc_test_onboarding_{os.getpid()}_{threading.current_thread().ident}.marker"
+    )
     monkeypatch.setenv("OPC_ONBOARDING_MARKER", str(marker_path))
     if marker_path.exists():
         marker_path.unlink()

@@ -122,9 +122,7 @@ class LogEntry:
         bg_color = level_cfg.get("bg_color", "#F3F4F6")
 
         source_config = _get_log_source_labels()
-        source_cfg = source_config.get(
-            self.source, {"label": self.source, "icon": ""}
-        )
+        source_cfg = source_config.get(self.source, {"label": self.source, "icon": ""})
         source_icon = source_cfg.get("icon", "")
         source_label = source_cfg.get("label", self.source)
 

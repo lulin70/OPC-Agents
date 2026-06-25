@@ -365,9 +365,7 @@ def _render_api_keys_settings(settings):
             st.warning(_t("settings_apikeys_no_llm"))
             st.caption(_t("settings_apikeys_goto_llm"))
 
-    with st.expander(
-        f" {_t('settings_apikeys_smtp_pass')}", expanded=bool(smtp_pass)
-    ):
+    with st.expander(f" {_t('settings_apikeys_smtp_pass')}", expanded=bool(smtp_pass)):
         if smtp_pass:
             masked = "****" + smtp_pass[-4:] if len(smtp_pass) > 4 else "****"
             col_val, col_copy = st.columns([3, 1])
