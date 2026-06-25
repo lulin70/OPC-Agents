@@ -1,13 +1,16 @@
 # OPC-Agents API 文档
 
-> 版本: v0.2.5 | 最后更新: 2026-06-07 | 测试: 3339 passed, 0 failed
+> 版本: v0.3.0-beta | 最后更新: 2026-06-25 | 测试: 3341 passed, 0 failed
 
 本文档列出 OPC-Agents 所有公开API，按模块分组。每个API包含函数签名、参数说明和返回值格式。
+
+> **v0.3.0 核心变更**: 引入三贤者并行投票架构（StrategistBrain / ExecutorBrain / ReflectorBrain）和 `IntentClassifier` 三路由（SIMPLE / COMPLEX / GREETING）。本节重点说明新架构 API。
 
 ---
 
 ## 目录
 
+- [v0.3.0 三贤者并行投票架构（新增）](#v030-三贤者并行投票架构新增)
 - [data_manager — 数据管理](#data_manager--数据管理)
 - [intent_types — 意图类型](#intent_types--意图类型)
 - [protocols — Protocol接口](#protocols--protocol接口)
@@ -40,6 +43,90 @@
 - [embedding_service — 嵌入服务（v0.2.5 新增）](#embedding_service--嵌入服务)
 - [llm_cache — LLM缓存（v0.2.2 新增）](#llm_cache--llm缓存)
 - [skill_reviews — 技能评分（v0.2.2 新增）](#skill_reviews--技能评分)
+
+---
+
+## v0.3.0 三贤者并行投票架构（新增）
+
+### 架构概览
+
+```
+User Input
+    │
+    ▼
+IntentRouter.classify_route(input) ─┬─► GREETING  → 直接响应（0 LLM 成本）
+                                      ├─► SIMPLE    → 单步快速执行
+                                      └─► COMPLEX   → 三贤者并行投票
+                                                          │
+                    ┌─────────────────────────────────────┼─────────────────────────────────────┐
+                    ▼                                     ▼                                     ▼
+            StrategistBrain                      ExecutorBrain                      ReflectorBrain
+            express_opinion()                    express_opinion()                  predict_consequence()
+                    │                                     │                                     │
+                    └─────────────────────────────────────┼─────────────────────────────────────┘
+                                                          ▼
+                                              ConsensusEngine.collect_opinions_async()
+                                                          │
+                    ┌─────────────────────────────────────┴─────────────────────────────────────┐
+                    ▼                                     ▼                                     ▼
+              approved=True                   approved=False                       timeout/error
+                    │                                     │                                     │
+              执行 Skill                          跳过步骤/返回替代方案                   fail-close 跳过步骤
+```
+
+### `IntentRouter.classify_route(user_input)`
+
+三路由入口，决定任务进入哪个执行路径。
+
+```python
+@staticmethod
+def classify_route(user_input: str) -> Tuple[IntentCategory, float]
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `user_input` | `str` | 用户原始输入 |
+
+**返回值**: `Tuple[IntentCategory, float]` — 路由类别与置信度
+
+| 类别 | 说明 |
+|------|------|
+| `GREETING` | 问候/告别/帮助类输入，直接模板响应 |
+| `SIMPLE` | 简单明确任务，绕过三贤者系统 |
+| `COMPLEX` | 复杂任务，触发并行投票 |
+
+### `ConsensusEngine.collect_opinions_async(...)`
+
+并行收集三贤者意见，超时后降级到串行路径 `_serial_consensus_fallback`。
+
+```python
+async def collect_opinions_async(
+    strategist_opinion: Awaitable[Opinion],
+    executor_opinion: Awaitable[Opinion],
+    reflector_opinion: Awaitable[Opinion],
+) -> Decision
+```
+
+**返回值**: `Decision`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `decision_type` | `DecisionType` | `UNANIMOUS` / `MAJORITY` / `COMPROMISE` / `ESCALATED` / `VETOED` |
+| `approved` | `bool` | 是否批准执行 |
+| `reasoning` | `str` | 决策理由 |
+| `alternative` | `Optional[str]` | 替代方案 |
+| `confidence` | `float` | 决策置信度 |
+
+### 关键决策点（Critical Decision Points）
+
+在 [constants.py](file:///Users/lin/trae_projects/OPC-Agents/opc_manager/constants.py) 中定义：
+
+```python
+CRITICAL_DECISION_SKILLS = {"email", "report", "finance"}
+CRITICAL_DECISION_ACTIONS = {"send", "execute_operation", "send_notification", "send_email"}
+```
+
+涉及邮件发送、报告生成、财务写入等不可逆/高成本操作前，必须经三贤者投票。超时或异常时执行 **fail-close**：跳过步骤，拒绝执行。
 
 ---
 

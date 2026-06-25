@@ -10,6 +10,23 @@ import sys
 import pytest
 
 
+def _snapshot_modules():
+    """Return a shallow copy of sys.modules for later restoration."""
+    return dict(sys.modules)
+
+
+def _restore_modules(snapshot):
+    """Restore sys.modules to the provided snapshot, removing any newly added
+    opc_manager modules to avoid stale references leaking across tests.
+    """
+    current = set(sys.modules.keys())
+    for key in current:
+        if key not in snapshot:
+            del sys.modules[key]
+    for key, module in snapshot.items():
+        sys.modules[key] = module
+
+
 class TestNoCircularImport:
     """验证关键模块无循环导入"""
 
@@ -31,17 +48,21 @@ class TestNoCircularImport:
     def test_module_imports_without_circular(self, module_name):
         """每个核心模块都能独立导入无循环依赖"""
         # 清除已导入的 opc_manager 模块，确保独立导入测试有效
-        for key in list(sys.modules.keys()):
-            if "opc_manager" in key:
-                del sys.modules[key]
-        # 尝试导入
+        snapshot = _snapshot_modules()
         try:
-            importlib.import_module(module_name)
-        except ImportError as e:
-            if "circular" in str(e).lower():
-                pytest.fail(f"循环导入: {module_name} -> {e}")
-            # 其他 ImportError 可能是缺少依赖，跳过
-            pytest.skip(f"非循环导入错误: {e}")
+            for key in list(sys.modules.keys()):
+                if "opc_manager" in key:
+                    del sys.modules[key]
+            # 尝试导入
+            try:
+                importlib.import_module(module_name)
+            except ImportError as e:
+                if "circular" in str(e).lower():
+                    pytest.fail(f"循环导入: {module_name} -> {e}")
+                # 其他 ImportError 可能是缺少依赖，跳过
+                pytest.skip(f"非循环导入错误: {e}")
+        finally:
+            _restore_modules(snapshot)
 
     def test_no_getattr_in_core_modules(self):
         """核心模块不应有模块级 __getattr__ 延迟导入"""
@@ -76,23 +97,27 @@ class TestNoCircularImport:
 
     def test_package_symbols_eagerly_available(self):
         """[S2-T8] 包顶层符号在导入后立即可用（无需 __getattr__ 触发）"""
-        for key in list(sys.modules.keys()):
-            if "opc_manager" in key:
-                del sys.modules[key]
-        import opc_manager
+        snapshot = _snapshot_modules()
+        try:
+            for key in list(sys.modules.keys()):
+                if "opc_manager" in key:
+                    del sys.modules[key]
+            import opc_manager
 
-        # 这些符号此前通过 __getattr__ 延迟加载，现在应直接存在于模块字典
-        expected_symbols = [
-            "StrategistBrain",
-            "ExecutorBrain",
-            "ReflectorBrain",
-            "ConsensusEngine",
-            "Opinion",
-            "SkillRegistry",
-            "ToolSystem",
-            "AgentLoop",
-            "AgentContext",
-            "EventEmitter",
-        ]
-        missing = [s for s in expected_symbols if s not in opc_manager.__dict__]
-        assert not missing, f"以下符号未在包导入后立即可用: {missing}"
+            # 这些符号此前通过 __getattr__ 延迟加载，现在应直接存在于模块字典
+            expected_symbols = [
+                "StrategistBrain",
+                "ExecutorBrain",
+                "ReflectorBrain",
+                "ConsensusEngine",
+                "Opinion",
+                "SkillRegistry",
+                "ToolSystem",
+                "AgentLoop",
+                "AgentContext",
+                "EventEmitter",
+            ]
+            missing = [s for s in expected_symbols if s not in opc_manager.__dict__]
+            assert not missing, f"以下符号未在包导入后立即可用: {missing}"
+        finally:
+            _restore_modules(snapshot)

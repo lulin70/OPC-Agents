@@ -15,12 +15,12 @@ class TestStartScript:
 
     def test_start_sh_exists(self):
         """start.sh must exist at project root."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
-        assert os.path.isfile(path), "start.sh not found at project root"
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
+        assert os.path.isfile(path), "start.sh not found at scripts/start.sh"
 
     def test_start_sh_is_executable(self):
         """start.sh must have executable permission."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         assert os.path.isfile(path), "start.sh not found"
         mode = os.stat(path).st_mode
         assert (
@@ -29,21 +29,21 @@ class TestStartScript:
 
     def test_start_sh_contains_version(self):
         """start.sh must contain v0.2.5 version marker."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
         assert "v0.2.5" in content, "start.sh missing v0.2.5 version string"
 
     def test_start_sh_auto_creates_venv(self):
         """start.sh should auto-create virtual environment."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
         assert "venv" in content, "start.sh missing venv handling"
 
     def test_start_sh_auto_installs_deps(self):
         """start.sh should auto-install dependencies."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
         assert (
@@ -52,7 +52,7 @@ class TestStartScript:
 
     def test_start_sh_auto_opens_browser(self):
         """start.sh should auto-open browser on macOS/Linux."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
         has_macos = "open " in content or 'open "' in content
@@ -61,14 +61,14 @@ class TestStartScript:
 
     def test_start_sh_checks_python(self):
         """start.sh should check Python availability."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
         assert "python3" in content, "start.sh missing Python version check"
 
     def test_start_sh_handles_env(self):
         """start.sh should handle .env file creation."""
-        path = os.path.join(PROJECT_ROOT, "start.sh")
+        path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
         assert ".env" in content, "start.sh missing .env handling"

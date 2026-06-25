@@ -101,6 +101,9 @@ class AuditLog:
                     cls._instance._write_queue = Queue()
                     cls._instance._started = False
                     cls._instance._stop_event = threading.Event()
+                    cls._instance._cleanup_counter = 0
+                    cls._instance._cleanup_needed = False
+                    cls._instance._writer_thread = None
         return cls._instance
 
     @staticmethod
@@ -134,7 +137,7 @@ class AuditLog:
         status: str = "success",
         error_msg: str = "",
         user_id: str = "default",
-    ) -> None:
+    ) -> str:
         import uuid
 
         input_text = input_text or ""
@@ -161,7 +164,11 @@ class AuditLog:
         if not self._started:
             self._start_background_writer()
 
-        self._cleanup_db_rows()
+        # Throttle DB row cleanup and offload it to the background writer to
+        # avoid synchronous DB lock contention on the caller thread.
+        self._cleanup_counter += 1
+        if self._cleanup_counter % 100 == 0:
+            self._cleanup_needed = True
 
         return record.id
 
@@ -242,21 +249,30 @@ class AuditLog:
                 init_db()
             except Exception as e:
                 logger.warning("AuditLog DB init failed: %s", e)
+                return
 
             batch = []
             while not self._stop_event.is_set():
                 try:
                     item = self._write_queue.get(timeout=30)
+                    if item is None:
+                        # Sentinel value requested by stop(); drain remaining
+                        # records and exit cleanly.
+                        break
                     batch.append(item)
                     while len(batch) < AUDIT_WRITE_BATCH_SIZE:
                         try:
                             item = self._write_queue.get_nowait()
+                            if item is None:
+                                break
                             batch.append(item)
                         except Empty:
                             break
 
+                    if not batch:
+                        break
+
                     try:
-                        init_db()
                         values = [
                             (
                                 r.id,
@@ -285,10 +301,20 @@ class AuditLog:
                             values,
                             many=True,
                         )
+                        # Offloaded cleanup runs in the writer thread so it does
+                        # not contend with the caller's DB operations.
+                        if self._cleanup_needed:
+                            try:
+                                self._cleanup_db_rows()
+                                self._cleanup_needed = False
+                            except Exception as e:
+                                logger.warning("AuditLog cleanup failed: %s", e)
                     except (IOError, OSError) as e:
                         logger.warning("AuditLog I/O write failed: %s", e)
+                        time.sleep(0.1)
                     except Exception as e:
                         logger.warning("AuditLog background write failed: %s", e)
+                        time.sleep(0.1)
                     finally:
                         batch = []
                 except (KeyboardInterrupt, SystemExit):
@@ -297,8 +323,42 @@ class AuditLog:
                     logger.warning("[AuditLog] Writer loop error: %s", e)
                     break
 
-        t = threading.Thread(target=writer, daemon=True)
-        t.start()
+            # Flush any remaining records before exiting.
+            if batch:
+                try:
+                    values = [
+                        (
+                            r.id,
+                            r.session_id,
+                            r.user_id,
+                            r.timestamp,
+                            r.operation_type,
+                            r.skill_id,
+                            r.input_hash,
+                            r.input_summary,
+                            r.output_summary,
+                            r.duration_ms,
+                            r.status,
+                            r.error_msg,
+                        )
+                        for r in batch
+                    ]
+                    execute_write(
+                        """
+                        INSERT OR IGNORE INTO audit_log
+                        (id, session_id, user_id, timestamp, operation_type,
+                         skill_id, input_hash, input_summary, output_summary,
+                         duration_ms, status, error_msg)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                    """,
+                        values,
+                        many=True,
+                    )
+                except Exception as e:
+                    logger.warning("AuditLog final flush failed: %s", e)
+
+        self._writer_thread = threading.Thread(target=writer, daemon=True)
+        self._writer_thread.start()
         logger.debug("AuditLog background writer started")
 
     def _cleanup_db_rows(self) -> int:
@@ -323,5 +383,19 @@ class AuditLog:
             logger.warning("AuditLog DB row cleanup failed: %s", e)
         return 0
 
-    def stop(self):
+    def stop(self, wait: bool = False):
+        """Signal the background writer to stop and optionally wait for it.
+
+        Sending a sentinel wakes the writer immediately so it can release its
+        database connection and exit, preventing lock contention in tests.
+        The join timeout is long enough to let any in-flight DB write complete
+        or time out after the configured busy timeout.
+        """
         self._stop_event.set()
+        try:
+            self._write_queue.put_nowait(None)
+        except Exception:
+            pass
+        if wait and self._writer_thread is not None and self._writer_thread.is_alive():
+            self._writer_thread.join(timeout=10)
+        self._started = False

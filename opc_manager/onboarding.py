@@ -18,7 +18,22 @@ from opc_manager.config import LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
-_ONBOARDING_MARKER = Path(os.path.expanduser("~/.opc-agents/onboarding_complete"))
+def _get_onboarding_marker() -> Path:
+    """Return the onboarding completion marker path.
+
+    The path is resolved at call time so tests can isolate it via the
+    OPC_ONBOARDING_MARKER environment variable without reloading the module.
+    """
+    return Path(
+        os.environ.get(
+            "OPC_ONBOARDING_MARKER",
+            os.path.expanduser("~/.opc-agents/onboarding_complete"),
+        )
+    )
+
+
+# Backwards-compatible module-level alias (deprecated, prefer _get_onboarding_marker).
+_ONBOARDING_MARKER = _get_onboarding_marker()
 _SAMPLE_TASK_RESULT_MAX_LENGTH = 500
 
 
@@ -127,7 +142,7 @@ class OnboardingManager:
         if self._state.current_step == OnboardingStep.COMPLETED:
             return True
         # Check file-based marker for returning users
-        if _ONBOARDING_MARKER.exists():
+        if _get_onboarding_marker().exists():
             self._state.current_step = OnboardingStep.COMPLETED
             return True
         return False
@@ -254,9 +269,10 @@ class OnboardingManager:
         self._state.completed_at = time.time()
         self._save_state()
         # Write file-based marker for returning users
+        marker = _get_onboarding_marker()
         try:
-            _ONBOARDING_MARKER.parent.mkdir(parents=True, exist_ok=True)
-            _ONBOARDING_MARKER.write_text(str(time.time()), encoding="utf-8")
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(str(time.time()), encoding="utf-8")
         except Exception as e:
             logger.warning("Failed to write onboarding marker: %s", e)
         logger.info(
@@ -273,9 +289,10 @@ class OnboardingManager:
         self._state = OnboardingState()
         if self._state_file.exists():
             self._state_file.unlink()
+        marker = _get_onboarding_marker()
         try:
-            if _ONBOARDING_MARKER.exists():
-                _ONBOARDING_MARKER.unlink()
+            if marker.exists():
+                marker.unlink()
         except Exception as e:
             logger.warning("Failed to remove onboarding marker: %s", e)
         logger.info("Onboarding reset")

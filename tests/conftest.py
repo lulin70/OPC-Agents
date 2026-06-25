@@ -17,9 +17,66 @@ Run commands:
 import pytest
 import os
 import sys
+import tempfile
+import threading
+from pathlib import Path
 from unittest.mock import Mock, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+
+@pytest.fixture(autouse=True)
+def _reset_global_singletons(monkeypatch):
+    """Clean up global singletons after every test to prevent background
+    threads and DB connections from leaking across tests.
+
+    This addresses P0-1 where AuditLog's background writer threads and
+    data_manager thread-local SQLite connections caused cascading lock
+    contention during full-suite runs. It also isolates the onboarding
+    marker so tests do not pollute the user's real ~/.opc-agents directory.
+    """
+    marker_path = Path(tempfile.gettempdir()) / f"opc_test_onboarding_{os.getpid()}_{threading.current_thread().ident}.marker"
+    monkeypatch.setenv("OPC_ONBOARDING_MARKER", str(marker_path))
+    if marker_path.exists():
+        marker_path.unlink()
+    yield
+    try:
+        from opc_manager.audit_log import AuditLog
+
+        instance = AuditLog._instance
+        if instance is not None:
+            try:
+                instance.stop(wait=True)
+            except Exception:
+                pass
+        AuditLog._instance = None
+    except Exception:
+        pass
+
+    try:
+        import opc_manager.data_manager as _dm
+
+        if hasattr(_dm._local, "conn") and _dm._local.conn is not None:
+            try:
+                _dm._local.conn.close()
+            except Exception:
+                pass
+            _dm._local.conn = None
+    except Exception:
+        pass
+
+    try:
+        from opc_manager.i18n import get_i18n
+
+        get_i18n().locale = "zh_CN"
+    except Exception:
+        pass
+
+    if marker_path.exists():
+        try:
+            marker_path.unlink()
+        except Exception:
+            pass
 
 
 def pytest_configure(config):

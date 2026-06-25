@@ -504,6 +504,7 @@ class TestDataManagementWorkflow:
         assert stats["failed"] == 1
 
         # Cleanup singleton
+        audit.stop(wait=True)
         AuditLog._instance = None
 
 
@@ -769,4 +770,5 @@ class TestSecurityWorkflow:
         assert "sk-12345" not in records[0]["input_summary"]
         assert "REDACTED" in records[0]["input_summary"]
 
+        audit.stop(wait=True)
         AuditLog._instance = None

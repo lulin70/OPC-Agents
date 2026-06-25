@@ -36,12 +36,27 @@ from opc_manager.i18n import I18nManager
 from opc_manager.secure_storage import SecureKeyStore
 from opc_manager.data_backup import DataBackupManager
 
+
+def _reset_data_manager_local():
+    """Close the current thread's DB connection and restore thread-local storage."""
+    import opc_manager.data_manager as _dm
+
+    if hasattr(_dm._local, "conn") and _dm._local.conn is not None:
+        try:
+            _dm._local.conn.close()
+        except Exception:
+            pass
+    _dm._local = threading.local()
+
+
 # ─── Shared Fixtures ────────────────────────────────────────────────────────
 
 
 @pytest.fixture(autouse=True)
 def _reset_singletons():
     """Reset all singleton instances between tests for isolation."""
+    if AuditLog._instance is not None:
+        AuditLog._instance.stop(wait=True)
     AuditLog._instance = None
     import opc_manager.performance_monitor as _pm
 
@@ -49,7 +64,7 @@ def _reset_singletons():
     import opc_manager.data_manager as _dm
 
     _dm._db_initialized = False
-    _dm._local = type("Local", (), {"conn": None})()
+    _reset_data_manager_local()
     import opc_manager.skill_reviews as _sr
 
     _sr._manager = None
@@ -59,14 +74,22 @@ def _reset_singletons():
     import opc_manager.knowledge_bridge as _kb
 
     _kb._instance = None
+    import opc_manager.onboarding as _ob
+
+    if _ob._ONBOARDING_MARKER.exists():
+        _ob._ONBOARDING_MARKER.unlink()
     yield
+    if AuditLog._instance is not None:
+        AuditLog._instance.stop(wait=True)
     AuditLog._instance = None
     _pm._default_monitor = None
     _dm._db_initialized = False
-    _dm._local = type("Local", (), {"conn": None})()
+    _reset_data_manager_local()
     _sr._manager = None
     _lc._cache_instance = None
     _kb._instance = None
+    if _ob._ONBOARDING_MARKER.exists():
+        _ob._ONBOARDING_MARKER.unlink()
 
 
 @pytest.fixture
@@ -89,7 +112,7 @@ def patched_data_dir(tmp_data_dir):
     _dm.DB_PATH = str(tmp_data_dir / "opc_data.db")
     _dm.BACKUP_DIR = str(tmp_data_dir / "backups")
     _dm._db_initialized = False
-    _dm._local = type("Local", (), {"conn": None})()
+    _reset_data_manager_local()
     try:
         _dm.init_db()
     except Exception:
@@ -99,7 +122,7 @@ def patched_data_dir(tmp_data_dir):
     _dm.DB_PATH = old_db_path
     _dm.BACKUP_DIR = old_backup_dir
     _dm._db_initialized = False
-    _dm._local = type("Local", (), {"conn": None})()
+    _reset_data_manager_local()
 
 
 @pytest.fixture

@@ -143,7 +143,7 @@ if "initialized" not in st.session_state:
     from opc_manager.session_context import SessionContextManager
 
     st.session_state.session_ctx = SessionContextManager(max_turns=20)
-    st.session_state.async_executor = AsyncTaskExecutor(
+    _async_executor = AsyncTaskExecutor(
         max_concurrent=3,
         default_timeout=120,
         save_callback=lambda *a, **kw: save_deliverable(*a, **kw),
@@ -152,15 +152,12 @@ if "initialized" not in st.session_state:
         zombie_check_interval=30,
         persist_dir="data",
     )
+    st.session_state.async_executor = _async_executor
     import atexit
 
-    atexit.register(
-        lambda: (
-            st.session_state.async_executor.shutdown()
-            if hasattr(st.session_state, "async_executor")
-            else None
-        )
-    )
+    # Capture executor in closure so atexit does not need to access
+    # st.session_state, which is only valid inside a Streamlit script run context.
+    atexit.register(lambda executor=_async_executor: executor.shutdown())
     logger.debug("[frontend] AsyncTaskExecutor 初始化完成 (max_concurrent=3)")
 
     if os.path.exists(DELIVERABLES_DIR):
@@ -244,7 +241,7 @@ with st.sidebar:
         "settings": PageKey.SETTINGS,
     }
     selected = st.radio(
-        "",
+        "Navigation",
         options=list(page_key_map.keys()),
         format_func=lambda k: get_page_label(page_key_map[k], _t),
         label_visibility="collapsed",

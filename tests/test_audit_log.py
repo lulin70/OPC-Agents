@@ -30,8 +30,14 @@ from opc_manager.audit_log import (
 def reset_singleton():
     """Reset AuditLog singleton before each test for isolation."""
     original = AuditLog._instance
+    if original is not None:
+        original.stop(wait=True)
     AuditLog._instance = None
     yield
+    # Stop any instance created during the test to release DB connections.
+    current = AuditLog._instance
+    if current is not None and current is not original:
+        current.stop(wait=True)
     AuditLog._instance = original
 
 
@@ -341,6 +347,7 @@ class TestSingletonPattern:
 
     def test_reset_allows_new_instance(self):
         a1 = AuditLog()
+        a1.stop(wait=True)
         AuditLog._instance = None
         a2 = AuditLog()
         assert a1 is not a2

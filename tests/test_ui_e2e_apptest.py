@@ -24,6 +24,7 @@ Run:
 
 import os
 import sys
+import threading
 import tempfile
 from pathlib import Path
 
@@ -60,7 +61,7 @@ def isolated_data_env(tmp_path, monkeypatch):
     monkeypatch.setattr(dm, "DB_PATH", str(data_dir / "opc_data.db"))
     monkeypatch.setattr(dm, "BACKUP_DIR", str(data_dir / "backups"))
     monkeypatch.setattr(dm, "_db_initialized", False)
-    monkeypatch.setattr(dm, "_local", type("Local", (), {"conn": None})())
+    monkeypatch.setattr(dm, "_local", threading.local())
 
     # Patch DEMO_MODE and is_demo_mode for demo mode tests
     import frontend.routers.base_router as br
@@ -95,7 +96,7 @@ def isolated_data_env_no_mock(tmp_path, monkeypatch):
     monkeypatch.setattr(dm, "DB_PATH", str(data_dir / "opc_data.db"))
     monkeypatch.setattr(dm, "BACKUP_DIR", str(data_dir / "backups"))
     monkeypatch.setattr(dm, "_db_initialized", False)
-    monkeypatch.setattr(dm, "_local", type("Local", (), {"conn": None})())
+    monkeypatch.setattr(dm, "_local", threading.local())
 
     yield tmp_path
 

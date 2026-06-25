@@ -1,11 +1,11 @@
-> **状态更新 (2026-06-07)**: v0.2.5 架构统一+安全加固已完成。2991测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。
+> **状态更新 (2026-06-25)**: v0.3.0 发布前修复进行中。3341测试全通过，CI/CD Pipeline通过(Python 3.10/3.11/3.12)。安全扫描0 High/Medium问题。核心阻塞项见 REMEDIATION_PLAN_20260625.md。
 
-# OPC-Agents v0.2.5 Roadmap
+# OPC-Agents v0.3.0 Roadmap
 
 **Created**: 2026-05-16
-**Last Updated**: 2026-06-07 (v0.2.5 Architecture Unification + Security Hardening + LLM Concurrency Control)
-**Based on**: v0.2.0 post-release evaluation → **v0.2.5** (2991+ tests, 7-dim code review + architecture refactoring completed)
-**Status**: ✅ Sprint 1-3 items + Core Workflow Revolution + v0.2.2-v0.2.5 Sprint COMPLETED
+**Last Updated**: 2026-06-25 (v0.3.0 Pre-release Remediation + Consensus Gate Hardening)
+**Based on**: v0.2.5 post-release evaluation → **v0.3.0** (3341+ tests, 7-dim code review + parallel sages architecture)
+**Status**: 🔄 v0.3.0-beta remediation in progress
 
 ---
 
@@ -13,14 +13,14 @@
 
 | Metric | Value |
 |--------|-------|
-| Version | 0.2.5 (released 2026-06-07) |
-| Tests | **2991** passed, 0 failed |
+| Version | 0.2.5 (released 2026-06-07), v0.3.0-beta remediation |
+| Tests | **3341** passed, 0 failed |
 | CI/CD | ✅ GitHub Actions passing (Python 3.10/3.11/3.12) |
 | Security | Bandit 0 High/Medium, all P0/P1 fixed, Fernet encryption at rest |
-| Source files | **135+ .py** in opc_manager/ + frontend/ + plugins/, **76 test files** |
+| Source files | **135+ .py** in opc_manager/ + frontend/ + plugins/, **87 test files** |
 | Frontend modules | **22 components** (11 new modularized modules) |
-| Total LOC | ~20,000+ lines |
-| Maturity | Production-ready Beta |
+| Total LOC | ~36,000+ lines |
+| Maturity | Mid-Beta → RC pending remediation |
 
 ## ✅ v0.2.0 Completed (ALL planned items delivered in 4 iterations)
 
