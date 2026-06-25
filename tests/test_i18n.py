@@ -55,11 +55,11 @@ class TestTranslationChinese:
 
     def test_nav_chat_chinese(self):
         manager = I18nManager()
-        assert manager.t("nav_chat") == "💬 对话"
+        assert manager.t("nav_chat") == "对话"
 
     def test_settings_llm_chinese(self):
         manager = I18nManager()
-        assert manager.t("settings_llm") == "🧠 LLM 配置"
+        assert manager.t("settings_llm") == "LLM 配置"
 
     def test_common_save_chinese(self):
         manager = I18nManager()
@@ -67,7 +67,7 @@ class TestTranslationChinese:
 
     def test_onboarding_welcome_title_chinese(self):
         manager = I18nManager()
-        assert manager.t("onboarding_welcome_title") == "👋 欢迎使用 OPC-Agents"
+        assert manager.t("onboarding_welcome_title") == "欢迎使用 OPC-Agents"
 
 
 class TestTranslationEnglish:
@@ -76,12 +76,12 @@ class TestTranslationEnglish:
     def test_nav_chat_english(self):
         manager = I18nManager()
         manager.locale = "en_US"
-        assert manager.t("nav_chat") == "💬 Chat"
+        assert manager.t("nav_chat") == "Chat"
 
     def test_settings_llm_english(self):
         manager = I18nManager()
         manager.locale = "en_US"
-        assert manager.t("settings_llm") == "🧠 LLM Config"
+        assert manager.t("settings_llm") == "LLM Config"
 
     def test_common_save_english(self):
         manager = I18nManager()
@@ -194,12 +194,12 @@ class TestTranslationJapanese:
     def test_nav_chat_japanese(self):
         manager = I18nManager()
         manager.locale = "ja_JP"
-        assert manager.t("nav_chat") == "💬 チャット"
+        assert manager.t("nav_chat") == "チャット"
 
     def test_settings_llm_japanese(self):
         manager = I18nManager()
         manager.locale = "ja_JP"
-        assert manager.t("settings_llm") == "🧠 LLM設定"
+        assert manager.t("settings_llm") == "LLM設定"
 
     def test_common_save_japanese(self):
         manager = I18nManager()

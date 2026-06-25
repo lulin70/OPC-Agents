@@ -27,11 +27,11 @@ def _create_settings_page():
     """Create the unified Settings page with 5 tabs.
 
     Tabs:
-    1. 🧠 LLM Configuration — Provider selection, API key input, connection test
-    2. 📧 SMTP Configuration — Email server setup, preset provider, test connection
-    3. 🔑 API Keys — All API keys management with masking
-    4. 🔒 Security — Encryption key status, regenerate option
-    5. 👤 Profile — User info, company, timezone, language
+    1.  LLM Configuration — Provider selection, API key input, connection test
+    2.  SMTP Configuration — Email server setup, preset provider, test connection
+    3.  API Keys — All API keys management with masking
+    4.  Security — Encryption key status, regenerate option
+    5.  Profile — User info, company, timezone, language
     """
     try:
         from opc_manager.settings import get_settings
@@ -171,19 +171,19 @@ def _render_llm_settings(settings):
                             timeout=15,
                         )
                         if resp.status_code == 200:
-                            st.success(f"✅ {_t('llm_test_success')}")
+                            st.success(f" {_t('llm_test_success')}")
                         else:
                             detail = resp.text[:200]
                             st.error(
-                                f"❌ {_t('llm_test_failed')} "
+                                f" {_t('llm_test_failed')} "
                                 f"(HTTP {resp.status_code}): {detail}"
                             )
                     except requests.exceptions.Timeout:
-                        st.error(f"❌ {_t('llm_test_timeout')}")
+                        st.error(f" {_t('llm_test_timeout')}")
                     except requests.exceptions.ConnectionError:
-                        st.error(f"❌ {_t('llm_test_connection_error')}")
+                        st.error(f" {_t('llm_test_connection_error')}")
                     except Exception as e:
-                        st.error(f"❌ {_t('llm_test_failed')}: {e}")
+                        st.error(f" {_t('llm_test_failed')}: {e}")
 
         if save_clicked:
             new_config = {
@@ -195,8 +195,8 @@ def _render_llm_settings(settings):
                 "temperature": temperature,
             }
             if settings.update_llm(**new_config):
-                st.toast(f"✅ {_t('settings_llm_saved')}", icon="💾")
-                st.success(f"✅ {_t('settings_llm_saved')}")
+                st.toast(f" {_t('settings_llm_saved')}", icon="")
+                st.success(f" {_t('settings_llm_saved')}")
                 st.rerun()
             else:
                 st.error(_t("settings_save_failed"))
@@ -307,14 +307,14 @@ def _render_smtp_settings(settings):
                 test_result = settings.test_smtp_connection()
                 if test_result["success"]:
                     st.success(
-                        f"✅ {_t('settings_smtp_success', latency=test_result['latency_ms'])}"
+                        f" {_t('settings_smtp_success', latency=test_result['latency_ms'])}"
                     )
                     st.info(
                         f"{_t('settings_smtp_server_response')}: {test_result['message']}"
                     )
                 else:
                     st.error(
-                        f"❌ {_t('settings_smtp_failed', msg=test_result['message'])}"
+                        f" {_t('settings_smtp_failed', msg=test_result['message'])}"
                     )
 
         if save_clicked:
@@ -327,8 +327,8 @@ def _render_smtp_settings(settings):
                 "from_email": from_email,
             }
             if settings.update_smtp(**new_config):
-                st.toast(f"✅ {_t('settings_smtp_saved')}", icon="💾")
-                st.success(f"✅ {_t('settings_smtp_saved')}")
+                st.toast(f" {_t('settings_smtp_saved')}", icon="")
+                st.success(f" {_t('settings_smtp_saved')}")
                 st.rerun()
             else:
                 st.error(_t("settings_save_failed"))
@@ -344,7 +344,7 @@ def _render_api_keys_settings(settings):
     llm_key = settings.llm.api_key
     smtp_pass = settings.smtp.password
 
-    with st.expander(f"🧠 {_t('settings_apikeys_llm_key')}", expanded=bool(llm_key)):
+    with st.expander(f" {_t('settings_apikeys_llm_key')}", expanded=bool(llm_key)):
         if llm_key:
             masked = "****" + llm_key[-4:] if len(llm_key) > 4 else "****"
             col_val, col_copy = st.columns([3, 1])
@@ -365,9 +365,7 @@ def _render_api_keys_settings(settings):
             st.warning(_t("settings_apikeys_no_llm"))
             st.caption(_t("settings_apikeys_goto_llm"))
 
-    with st.expander(
-        f"📧 {_t('settings_apikeys_smtp_pass')}", expanded=bool(smtp_pass)
-    ):
+    with st.expander(f" {_t('settings_apikeys_smtp_pass')}", expanded=bool(smtp_pass)):
         if smtp_pass:
             masked = "****" + smtp_pass[-4:] if len(smtp_pass) > 4 else "****"
             col_val, col_copy = st.columns([3, 1])
@@ -435,7 +433,7 @@ def _render_security_settings(settings):
 
     st.divider()
 
-    st.caption(f"⚠️ {_t('settings_regenerate_warning')}")
+    st.caption(f"️ {_t('settings_regenerate_warning')}")
 
 
 def _render_profile_settings(settings):
@@ -510,8 +508,8 @@ def _render_profile_settings(settings):
                 "timezone": timezone,
             }
             if settings.update_profile(**new_profile):
-                st.toast(f"✅ {_t('settings_profile_saved')}", icon="💾")
-                st.success(f"✅ {_t('settings_profile_saved')}")
+                st.toast(f" {_t('settings_profile_saved')}", icon="")
+                st.success(f" {_t('settings_profile_saved')}")
                 st.rerun()
             else:
                 st.error(_t("settings_save_failed"))
@@ -578,7 +576,7 @@ def _render_create_backup_tab():
                     )
 
                     st.success(
-                        f"✅ {_t('settings_backup_created', name=backup_path.name)}"
+                        f" {_t('settings_backup_created', name=backup_path.name)}"
                     )
                     st.json(
                         {
@@ -597,7 +595,7 @@ def _render_create_backup_tab():
                     st.balloons()
                 except Exception as e:
                     logger.error("[frontend] Create backup error: %s", e)
-                    st.error(f"❌ {_t('settings_backup_create_failed', error=str(e))}")
+                    st.error(f" {_t('settings_backup_create_failed', error=str(e))}")
 
 
 def _render_backup_list_tab():
@@ -618,7 +616,7 @@ def _render_backup_list_tab():
 
         for idx, backup in enumerate(backups):
             with st.expander(
-                f"📄 {backup['filename']} — {backup['size_mb']} MB ({backup['created_at'][:10]})",
+                f" {backup['filename']} — {backup['size_mb']} MB ({backup['created_at'][:10]})",
                 expanded=(idx == 0),
             ):
                 col_dl, col_del, _ = st.columns([1, 1, 2])
@@ -655,7 +653,7 @@ def _render_backup_list_tab():
         st.warning(_t("settings_backup_module_not_ready"))
     except Exception as e:
         logger.error("[frontend] Backup list error: %s", e)
-        st.error(f"⚠️ {_t('settings_backup_list_failed', error=str(e))}")
+        st.error(f"️ {_t('settings_backup_list_failed', error=str(e))}")
 
 
 def _render_export_column(
@@ -693,7 +691,7 @@ def _render_export_column(
             except Exception as e:
                 logger.error("[frontend] Export %s error: %s", fmt.upper(), e)
                 st.error(
-                    f"❌ {_t('settings_export_failed', fmt=fmt.upper(), error=str(e))}"
+                    f" {_t('settings_export_failed', fmt=fmt.upper(), error=str(e))}"
                 )
 
 
@@ -762,7 +760,7 @@ def _render_restore_data_tab():
     if uploaded_file:
         _size_kb = uploaded_file.size / 1024
         st.info(
-            f"📄 {_t('settings_backup_file_selected', name=uploaded_file.name, size=f'{_size_kb:.1f}')}"
+            f" {_t('settings_backup_file_selected', name=uploaded_file.name, size=f'{_size_kb:.1f}')}"
         )
 
         # Save uploaded file to temp location (sanitize filename)
@@ -797,7 +795,7 @@ def _render_restore_data_tab():
 
                         if result["success"]:
                             st.success(
-                                f"✅ {_t('settings_backup_restore_success', files=result.get('restored_files', 0))}"
+                                f" {_t('settings_backup_restore_success', files=result.get('restored_files', 0))}"
                             )
                             st.json(
                                 {
@@ -810,7 +808,7 @@ def _render_restore_data_tab():
                             st.warning(_t("settings_backup_refresh_hint"))
                         else:
                             st.error(
-                                f"❌ {_t('settings_backup_restore_failed', error=result.get('error', _t('settings_unknown_error')))}"
+                                f" {_t('settings_backup_restore_failed', error=result.get('error', _t('settings_unknown_error')))}"
                             )
 
                         # Cleanup temp file
@@ -820,5 +818,5 @@ def _render_restore_data_tab():
                     except Exception as e:
                         logger.error("[frontend] Restore error: %s", e)
                         st.error(
-                            f"❌ {_t('settings_backup_restore_error', error=str(e))}"
+                            f" {_t('settings_backup_restore_error', error=str(e))}"
                         )

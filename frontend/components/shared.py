@@ -116,18 +116,18 @@ def _render_undo_panel():
     st.divider()
 
     if st.button(
-        "↩️ " + _t("undo_operations"),
+        "️ " + _t("undo_operations"),
         use_container_width=True,
         help=_t("undo_operations_help"),
     ):
         st.session_state.show_undo = not st.session_state.get("show_undo", False)
 
     if st.session_state.get("show_undo", False):
-        st.markdown("#### ↩️ " + _t("undoable_operations"))
+        st.markdown("#### ️ " + _t("undoable_operations"))
 
         session_id = _get_current_session_id()
         if not session_id:
-            st.warning("⚠️ " + _t("cannot_get_session_id"))
+            st.warning("️ " + _t("cannot_get_session_id"))
             return
 
         undoable = _cached_list_undoable(session_id)
@@ -145,7 +145,7 @@ def _render_undo_panel():
 
             can_undo, reason = um.can_undo(session_id, op_id)
 
-            with st.expander(f"↩️ {op_type} — {created_at}"):
+            with st.expander(f"️ {op_type} — {created_at}"):
                 col_info, col_action = st.columns([3, 1])
 
                 with col_info:
@@ -181,18 +181,18 @@ def _render_undo_panel():
                                     result = um.undo(session_id, op_id)
                                     if result.get("success"):
                                         st.success(
-                                            f"✅ {_t('undo_success', msg=result.get('message', ''))}"
+                                            f" {_t('undo_success', msg=result.get('message', ''))}"
                                         )
-                                        st.toast("操作已撤销", icon="✅")
+                                        st.toast("操作已撤销", icon="")
                                         _cached_list_undoable.clear()
                                         time.sleep(1)
                                         st.rerun()
                                     else:
                                         st.error(
-                                            f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}"
+                                            f" {_t('undo_failed', error=result.get('error', _t('unknown_error')))}"
                                         )
                     else:
-                        st.caption(f"❌ {reason}")
+                        st.caption(f" {reason}")
 
                         expires_at = record.get("expires_at", 0)
                         if expires_at and not can_undo:
@@ -200,10 +200,10 @@ def _render_undo_panel():
                             if remaining > 0:
                                 mins, secs = divmod(int(remaining), 60)
                                 st.caption(
-                                    f"⏰ {_t('remaining_time', mins=mins, secs=secs)}"
+                                    f" {_t('remaining_time', mins=mins, secs=secs)}"
                                 )
                             else:
-                                st.caption("⏰ " + _t("undo_window_expired"))
+                                st.caption(" " + _t("undo_window_expired"))
 
 
 def _render_theme_selector():
@@ -350,11 +350,11 @@ def _render_quick_undo_button(task_id: str, operation_type: str = None):
 
         col_undo, col_space = st.columns([1, 4])
         with col_undo:
-            label = f"↩️ {_t('undo_last_step', op=operation_type or last_record.get('operation_type', _t('operation'))) }"
+            label = f"️ {_t('undo_last_step', op=operation_type or last_record.get('operation_type', _t('operation'))) }"
 
             if st.button(label, key=f"quick_undo_{task_id}", type="secondary"):
                 confirmed = st.checkbox(
-                    "✅ " + _t("confirm_undo_this_operation"),
+                    " " + _t("confirm_undo_this_operation"),
                     key=f"quick_undo_confirm_{task_id}",
                     help=_t("undo_destructive_help"),
                 )
@@ -364,15 +364,15 @@ def _render_quick_undo_button(task_id: str, operation_type: str = None):
                         result = um.undo(session_id, op_id)
                         if result.get("success"):
                             st.success(
-                                f"✅ {_t('undo_success', msg=result.get('message', ''))}"
+                                f" {_t('undo_success', msg=result.get('message', ''))}"
                             )
-                            st.toast("操作已撤销", icon="✅")
+                            st.toast("操作已撤销", icon="")
                             _cached_list_undoable.clear()
                             time.sleep(1)
                             st.rerun()
                         else:
                             st.error(
-                                f"❌ {_t('undo_failed', error=result.get('error', _t('unknown_error')))}"
+                                f" {_t('undo_failed', error=result.get('error', _t('unknown_error')))}"
                             )
 
     except Exception as e:

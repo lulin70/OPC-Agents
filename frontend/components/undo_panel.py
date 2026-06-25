@@ -77,7 +77,7 @@ def _render_undo_record(
     op_config = OPERATION_TYPE_CONFIG.get(
         record.operation_type,
         {
-            "icon": "📝",
+            "icon": "",
             "label": "操作",
             "color": "#6B7280",
             "bg_color": "#F9FAFB",
@@ -123,7 +123,7 @@ def _render_undo_record(
         </div>
 
         <div style="display: flex; align-items: center; gap: 16px; font-size: 12px; color: #6B7280;">
-            <span>🕐 {record.time_ago}</span>
+            <span> {record.time_ago}</span>
             <span>{status_text}</span>
         </div>
     </div>
@@ -140,10 +140,10 @@ def _render_undo_record(
             help_text = "此操作将执行逆操作恢复原始状态"
 
             if is_destructive:
-                help_text = "⚠️ 此操作将删除已发布的内容，不可恢复"
+                help_text = "️ 此操作将删除已发布的内容，不可恢复"
 
             if st.button(
-                "↩️ 撤销此操作",
+                "️ 撤销此操作",
                 key=f"undo_btn_{record.operation_id}_{index}",
                 type=btn_type,
                 use_container_width=True,
@@ -177,7 +177,7 @@ def _render_confirmation_dialog(
         index: Index for unique keys
         is_destructive: Whether this is a destructive operation
     """
-    warning_icon = "⚠️" if is_destructive else "💡"
+    warning_icon = "️" if is_destructive else ""
     warning_color = "#DC2626" if is_destructive else "#D97706"
     bg_color = "#FEF2F2" if is_destructive else "#FFFBEB"
 
@@ -218,20 +218,20 @@ def _render_confirmation_dialog(
 
     with col_confirm:
         if st.button(
-            "✅ 确认撤销",
+            " 确认撤销",
             key=f"confirm_undo_{record.operation_id}_{index}",
             type="primary" if not is_destructive else None,
             use_container_width=True,
         ):
             result = execute_undo(record.session_id, record.operation_id)
             if result["success"]:
-                st.success(f"✅ {result['message']}")
-                st.toast(_t("undo_success_toast"), icon="✅")
+                st.success(f" {result['message']}")
+                st.toast(_t("undo_success_toast"), icon="")
                 del st.session_state[f"pending_undo_{record.operation_id}"]
                 time.sleep(1)
                 st.rerun()
             else:
-                st.error(f"❌ {result['message']}")
+                st.error(f" {result['message']}")
 
     with col_cancel:
         if st.button(
@@ -260,7 +260,7 @@ def render_undo_stats(session_id: str) -> dict:
 
     with col_active:
         st.metric(
-            label="🟢 可撤销",
+            label=" 可撤销",
             value=stats["active"],
             delta=None,
             help="当前在时间窗口内且可执行撤销的操作数",
@@ -268,7 +268,7 @@ def render_undo_stats(session_id: str) -> dict:
 
     with col_undone:
         st.metric(
-            label="⚪ 已撤销",
+            label=" 已撤销",
             value=stats["undone"],
             delta=None,
             help="已经执行过撤销的操作数",
@@ -276,7 +276,7 @@ def render_undo_stats(session_id: str) -> dict:
 
     with col_expired:
         st.metric(
-            label="🔴 已过期",
+            label=" 已过期",
             value=stats["expired"],
             delta=None,
             help="超过撤销窗口期的操作数",
@@ -297,15 +297,15 @@ def render_undo_panel(session_id: str, expand: bool = False):
 
     Visual Layout:
     ┌─────────────────────────────────────────────┐
-    │ ↩️ 撤销历史 (最近5分钟内的操作)               │
+    │ ️ 撤销历史 (最近5分钟内的操作)               │
     │ ─────────────────────────────────────────── │
-    │ 📊 可撤销: 3项 | 已撤销: 1项 | 已过期: 2项   │
+    │  可撤销: 3项 | 已撤销: 1项 | 已过期: 2项   │
     │                                              │
-    │ 📝 新建任务: "Q2营销方案"                    │
-    │    2分钟前 | ⏱️ 还剩28秒可撤销                │
+    │  新建任务: "Q2营销方案"                    │
+    │    2分钟前 | ️ 还剩28秒可撤销                │
     │    [撤销此操作]                              │
     │                                              │
-    │ [🗑️ 清除所有已过期记录]                       │
+    │ [️ 清除所有已过期记录]                       │
     └─────────────────────────────────────────────┘
 
     Args:
@@ -328,7 +328,7 @@ def render_undo_panel(session_id: str, expand: bool = False):
         border-radius: 8px;
         margin-bottom: 16px;
     ">
-        <span style="font-size: 18px; margin-right: 8px;">↩️</span>
+        <span style="font-size: 18px; margin-right: 8px;">️</span>
         <strong style="color: #3730A3;">撤销历史</strong>
         <span style="color: #6366F1; font-size: 12px;">（最近可撤销的操作）</span>
     </div>
@@ -339,7 +339,7 @@ def render_undo_panel(session_id: str, expand: bool = False):
     stats = render_undo_stats(session_id)
 
     if stats["total"] == 0:
-        st.info("💡 暂无操作记录。执行任务后可在此查看和撤销操作。")
+        st.info(" 暂无操作记录。执行任务后可在此查看和撤销操作。")
         return
 
     all_records_raw = []
@@ -402,19 +402,19 @@ def render_undo_panel(session_id: str, expand: bool = False):
     if has_expired:
         st.divider()
         if st.button(
-            "🗑️ 清除所有已过期记录",
+            "️ 清除所有已过期记录",
             key="cleanup_expired",
             use_container_width=True,
             help="移除所有已过期的撤销记录，不会影响已撤销的记录",
         ):
             um.cleanup_expired()
-            st.success("✅ 已清除过期记录")
+            st.success(" 已清除过期记录")
             st.rerun()
 
     export_col, _ = st.columns([1, 3])
     with export_col:
         if st.button(
-            "📥 导出撤销历史",
+            " 导出撤销历史",
             key="export_undo_history",
             use_container_width=True,
             help="导出为CSV或JSON格式（审计用途）",
@@ -430,7 +430,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
 
     Layout:
     ┌──────────────────────────────────────────┐
-    │ 💡 此操作可在5分钟内撤销 [查看撤销历史]  │
+    │  此操作可在5分钟内撤销 [查看撤销历史]  │
     └──────────────────────────────────────────┘
 
     Args:
@@ -461,7 +461,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
 
         op_config = OPERATION_TYPE_CONFIG.get(op_type, {})
         op_label = op_config.get("label", "操作")
-        op_icon = op_config.get("icon", "📝")
+        op_icon = op_config.get("icon", "")
 
         if remaining < 60:
             time_hint = f"{remaining}秒"
@@ -479,7 +479,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
             margin-top: 12px;
             font-size: 13px;
         ">
-            <span style="font-size: 16px; margin-right: 6px;">💡</span>
+            <span style="font-size: 16px; margin-right: 6px;"></span>
             <strong>此操作可在 {time_hint} 内撤销</strong>
             <span style="color: #059669; margin-left: 8px;">
                 {op_icon} {op_label}
@@ -493,7 +493,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
 
         with col_hint:
             if st.button(
-                f"↩️ 立即撤销",
+                f"️ 立即撤销",
                 key=f"mini_undo_{task_id}_{op_id}",
                 type="secondary",
                 use_container_width=True,
@@ -501,12 +501,12 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
             ):
                 result = execute_undo(session_id, op_id)
                 if result["success"]:
-                    st.success(f"✅ {result['message']}")
-                    st.toast(_t("undo_success_toast"), icon="✅")
+                    st.success(f" {result['message']}")
+                    st.toast(_t("undo_success_toast"), icon="")
                     time.sleep(1)
                     st.rerun()
                 else:
-                    st.error(f"❌ {result['message']}")
+                    st.error(f" {result['message']}")
 
         with col_view:
             if st.button(
@@ -543,10 +543,10 @@ def render_batch_undo(session_id: str):
         ]
 
         if len(active_records) < 2:
-            st.info("⚠️ 批量撤销需要至少2个可撤销的操作")
+            st.info("️ 批量撤销需要至少2个可撤销的操作")
             return
 
-        st.markdown("#### 📦 批量撤销")
+        st.markdown("####  批量撤销")
 
         st.caption(f"选择要撤销的操作（共 {len(active_records)} 个可撤销）")
 
@@ -591,7 +591,7 @@ def render_batch_undo(session_id: str):
             st.divider()
 
             if st.button(
-                f"↩️ 批量撤销选中项 ({len(selected_ids)}个)",
+                f"️ 批量撤销选中项 ({len(selected_ids)}个)",
                 key="batch_undo_execute",
                 type="primary",
                 use_container_width=True,
@@ -614,10 +614,10 @@ def render_batch_undo(session_id: str):
                         fail_count += 1
                     time.sleep(0.3)
 
-                progress_bar.progress(100, text="✅ 批量撤销完成!")
+                progress_bar.progress(100, text=" 批量撤销完成!")
 
                 st.success(
-                    f"✅ 批量撤销完成: 成功 {success_count} 个, 失败 {fail_count} 个"
+                    f" 批量撤销完成: 成功 {success_count} 个, 失败 {fail_count} 个"
                 )
                 time.sleep(1)
                 st.rerun()

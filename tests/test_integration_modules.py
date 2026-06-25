@@ -71,10 +71,12 @@ def audit_log():
     """Provide a fresh AuditLog instance (reset singleton)."""
     import opc_manager.audit_log as al
 
+    if al.AuditLog._instance is not None:
+        al.AuditLog._instance.stop(wait=True)
     al.AuditLog._instance = None
     log = al.AuditLog()
     yield log
-    log.stop()
+    log.stop(wait=True)
     al.AuditLog._instance = None
 
 

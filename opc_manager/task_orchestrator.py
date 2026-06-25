@@ -629,13 +629,13 @@ class TaskOrchestrator:
                 SERIAL_OP_TIMEOUT * 3,
                 e,
             )
-            from .consensus_engine import Decision
+            from .consensus_engine import Decision, DecisionType
 
             return Decision(
+                decision_type=DecisionType.ESCALATED,
                 approved=False,
                 reasoning=f"serial_consensus_timeout: 串行降级共识超时（>{SERIAL_OP_TIMEOUT * 3}s）",
-                opinions=[],
-                consensus_score=0.0,
+                confidence=0.0,
             )
 
     def _enrich_step_parameters(

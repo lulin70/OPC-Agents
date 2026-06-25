@@ -347,7 +347,7 @@ class TestCalculateRemainingTime:
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert 0 < remaining <= 10
         assert "即将过期" in status_text
-        assert "🔴" in status_text
+        assert "🔴" not in status_text
 
     def test_warning_less_than_60_seconds(self):
         now = time.time()
@@ -365,7 +365,7 @@ class TestCalculateRemainingTime:
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert 10 < remaining < 60
         assert "秒后过期" in status_text
-        assert "🟠" in status_text
+        assert "🟠" not in status_text
 
     def test_normal_minutes_remaining(self):
         now = time.time()
@@ -383,7 +383,7 @@ class TestCalculateRemainingTime:
         remaining, percentage, status_text = _calculate_remaining_time(record)
         assert remaining >= 60
         assert "分" in status_text
-        assert "🟢" in status_text
+        assert "🟢" not in status_text
 
     def test_hours_remaining(self):
         now = time.time()
@@ -680,7 +680,7 @@ class TestGetLatestRecordInfo:
         assert info["operation_id"] == "op123"
         assert info["operation_type"] == "EMAIL_SEND"
         assert info["label"] == "发送邮件"
-        assert info["icon"] == "📧"
+        assert info["icon"] == ""
         assert info["remaining_seconds"] == 240
 
     @patch("frontend.components.undo_actions._get_undo_manager")

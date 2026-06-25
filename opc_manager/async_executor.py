@@ -181,6 +181,7 @@ class AsyncTaskExecutor:
         self._tasks: Dict[str, AsyncTask] = {}
         self._lock = threading.RLock()
         self._shutdown = False
+        self._shutdown_event = threading.Event()
 
         self._load_persisted_tasks()
 
@@ -194,6 +195,49 @@ class AsyncTaskExecutor:
             f"max_concurrent={max_concurrent}, timeout={default_timeout}s, "
             f"max_retries={max_retries}, persist={'on' if persist_dir else 'off'}"
         )
+
+    def shutdown(self, wait: bool = False):
+        """Graceful shutdown: cancel active tasks and stop background threads.
+
+        Call this before process exit to enable crash recovery on restart.
+        Tests may call shutdown(wait=False) to signal cancellation without
+        blocking; worker threads will exit once their current operation
+        observes the cancel event.
+
+        Args:
+            wait: If True, block until background threads exit with a timeout.
+        """
+        self._shutdown = True
+        self._shutdown_event.set()
+
+        # Cancel all active tasks so worker threads can release resources
+        # (including database connections) as soon as possible.
+        with self._lock:
+            active_task_ids = [
+                task_id
+                for task_id, task in self._tasks.items()
+                if task.status
+                in (TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.RETRYING)
+            ]
+        for task_id in active_task_ids:
+            self.cancel(task_id)
+
+        self._persist_active_tasks()
+
+        if wait:
+            if self._zombie_timer.is_alive():
+                self._zombie_timer.join(timeout=self.zombie_check_interval + 1)
+            # Give worker threads a bounded window to exit after cancellation.
+            with self._lock:
+                worker_threads = [
+                    task.thread_ref
+                    for task in self._tasks.values()
+                    if task.thread_ref is not None and task.thread_ref.is_alive()
+                ]
+            for t in worker_threads:
+                t.join(timeout=2)
+
+        logger.info("[AsyncTaskExecutor] Shutdown complete")
 
     def submit(
         self, prompt: str, execute_func: Optional[Callable] = None, **execute_kwargs
@@ -686,7 +730,9 @@ class AsyncTaskExecutor:
         This is a safety net in case get_status() is not called frequently enough.
         """
         while not self._shutdown:
-            time.sleep(self.zombie_check_interval)
+            # Use Event.wait so shutdown() can wake the loop immediately
+            # instead of waiting out the full sleep interval.
+            self._shutdown_event.wait(timeout=self.zombie_check_interval)
             if self._shutdown:
                 break
             try:
@@ -860,12 +906,3 @@ class AsyncTaskExecutor:
 
         except Exception as e:
             logger.warning("[AsyncTaskExecutor] Failed to persist tasks: %s", e)
-
-    def shutdown(self):
-        """Graceful shutdown: persist active tasks and stop zombie scanner
-
-        Call this before process exit to enable crash recovery on restart.
-        """
-        self._shutdown = True
-        self._persist_active_tasks()
-        logger.info("[AsyncTaskExecutor] Shutdown complete")

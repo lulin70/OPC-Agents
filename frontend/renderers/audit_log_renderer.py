@@ -144,10 +144,10 @@ def _render_audit_log_page():
             output_summary = record.get("output_summary", "")
 
             status_emoji = {
-                "success": "✅",
-                "failed": "❌",
-                "cancelled": "⚪",
-            }.get(status, "❓")
+                "success": "",
+                "failed": "",
+                "cancelled": "",
+            }.get(status, "")
 
             status_color = {
                 "success": "green",

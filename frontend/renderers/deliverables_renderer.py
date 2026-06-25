@@ -59,7 +59,7 @@ def _render_deliverables_list():
         )
 
         for i, d in enumerate(filtered_deliverables):
-            with st.expander(f"📄 {d['filename']}", expanded=(i == 0)):
+            with st.expander(f" {d['filename']}", expanded=(i == 0)):
                 col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
                     st.markdown(f"**{_t('del_task_label')}**: `{d['prompt']}`")

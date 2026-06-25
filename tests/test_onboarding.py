@@ -36,18 +36,19 @@ class TestInitialState(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
+        # Mock marker file BEFORE creating OnboardingManager so is_completed
+        # does not read the user's real marker.
+        self._marker_patch = patch(
+            "opc_manager.onboarding._get_onboarding_marker",
+            return_value=Path(self.tmpdir) / ".onboarding_complete",
+        )
+        self._marker_patch.start()
         # 隔离状态文件，防止其他测试写入 data/onboarding.json 造成污染
         self._state_patch = patch.object(
             OnboardingManager, "STATE_FILE", str(Path(self.tmpdir) / "onboarding.json")
         )
         self._state_patch.start()
         self.manager = OnboardingManager()
-        # Mock marker file to prevent false "completed" from user's real marker
-        self._marker_patch = patch(
-            "opc_manager.onboarding._ONBOARDING_MARKER",
-            Path(self.tmpdir) / ".onboarding_complete",
-        )
-        self._marker_patch.start()
 
     def tearDown(self):
         self._marker_patch.stop()
@@ -211,17 +212,18 @@ class TestProgressCalculation(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
+        # Mock marker file BEFORE creating OnboardingManager.
+        self._marker_patch = patch(
+            "opc_manager.onboarding._get_onboarding_marker",
+            return_value=Path(self.tmpdir) / ".onboarding_complete",
+        )
+        self._marker_patch.start()
         # 隔离状态文件，防止其他测试写入 data/onboarding.json 造成污染
         self._state_patch = patch.object(
             OnboardingManager, "STATE_FILE", str(Path(self.tmpdir) / "onboarding.json")
         )
         self._state_patch.start()
         self.manager = OnboardingManager()
-        self._marker_patch = patch(
-            "opc_manager.onboarding._ONBOARDING_MARKER",
-            Path(self.tmpdir) / ".onboarding_complete",
-        )
-        self._marker_patch.start()
 
     def tearDown(self):
         self._marker_patch.stop()

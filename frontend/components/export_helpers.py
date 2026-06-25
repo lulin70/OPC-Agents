@@ -108,7 +108,7 @@ def _get_mime_type(filepath: str) -> str:
 
 
 def _render_batch_export_section(DELIVERABLES_DIR):
-    st.markdown(f"### 📤 {_t('export_batch_title')}")
+    st.markdown(f"###  {_t('export_batch_title')}")
 
     col_fmt, col_btn = st.columns([3, 1])
     with col_fmt:
@@ -192,7 +192,7 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
             if os.path.exists(fp):
                 with open(fp, "rb") as f:
                     st.download_button(
-                        label=f"⬇️ {_t('download')} {os.path.basename(fp)}",
+                        label=f"️ {_t('download')} {os.path.basename(fp)}",
                         data=f,
                         file_name=os.path.basename(fp),
                         mime=_get_mime_type(fp),
@@ -204,21 +204,21 @@ def _render_single_export_buttons(item: dict, item_id: str):
     col_pdf, col_word, col_excel, col_png = st.columns(4)
     with col_pdf:
         if st.button(
-            "📄 PDF", key=f"pdf_{item_id}", help=_t("export_as_format", fmt="PDF")
+            " PDF", key=f"pdf_{item_id}", help=_t("export_as_format", fmt="PDF")
         ):
             _export_single_with_preview(item, "pdf", item_id)
     with col_word:
         if st.button(
-            "📝 Word", key=f"word_{item_id}", help=_t("export_as_format", fmt="Word")
+            " Word", key=f"word_{item_id}", help=_t("export_as_format", fmt="Word")
         ):
             _export_single_with_preview(item, "word", item_id)
     with col_excel:
         if st.button(
-            "📊 Excel", key=f"excel_{item_id}", help=_t("export_as_format", fmt="Excel")
+            " Excel", key=f"excel_{item_id}", help=_t("export_as_format", fmt="Excel")
         ):
             _export_single_with_preview(item, "excel", item_id)
     with col_png:
-        if st.button("🖼️ 图片", key=f"png_{item_id}", help=_t("export_as_png")):
+        if st.button("️ 图片", key=f"png_{item_id}", help=_t("export_as_png")):
             _export_single_with_preview(item, "png", item_id)
 
 
@@ -239,11 +239,11 @@ def _render_export_preview(item_data: dict, format_type: str, item_id: str = "")
         )
 
         format_hints = {
-            "pdf": "📄 PDF {_t('format_pdf_desc')}",
-            "word": "📝 Word {_t('format_word_desc')}",
-            "excel": "📊 Excel {_t('format_excel_desc')}",
-            "image": "🖼️ PNG {_t('format_png_desc')}",
-            "png": "🖼️ PNG {_t('format_png_desc')}",
+            "pdf": " PDF {_t('format_pdf_desc')}",
+            "word": " Word {_t('format_word_desc')}",
+            "excel": " Excel {_t('format_excel_desc')}",
+            "image": "️ PNG {_t('format_png_desc')}",
+            "png": "️ PNG {_t('format_png_desc')}",
         }
         st.caption(
             format_hints.get(
@@ -263,7 +263,7 @@ def _render_export_preview(item_data: dict, format_type: str, item_id: str = "")
     col_confirm, col_cancel = st.columns([1, 1])
     with col_confirm:
         if st.button(
-            "✅ " + _t("confirm_export"),
+            " " + _t("confirm_export"),
             type="primary",
             key=f"confirm_export_{format_type}_{item_id}",
         ):
@@ -337,7 +337,7 @@ def _export_single(item: dict, fmt: str):
             ext = target_fmt.value
             filename = f"{os.path.splitext(item.get('filename', 'export'))[0]}.{ext}"
             st.download_button(
-                label=f"⬇️ {_t('download')} {filename}",
+                label=f"️ {_t('download')} {filename}",
                 data=file_bytes,
                 file_name=filename,
                 mime=_get_mime_type(f".{ext}"),
@@ -353,12 +353,12 @@ def _render_export_buttons(content: str, formats: list, key_prefix: str):
     if not formats:
         return
     FORMAT_LABELS = {
-        "pdf": "📄 PDF",
-        "docx": "📝 Word",
-        "xlsx": "📊 Excel",
-        "png": "🖼️ 图片",
-        "html": "🌐 HTML",
-        "md": "📑 Markdown",
+        "pdf": " PDF",
+        "docx": " Word",
+        "xlsx": " Excel",
+        "png": "️ 图片",
+        "html": " HTML",
+        "md": " Markdown",
     }
     st.markdown(f"**{_t('export_as_other_formats')}:**")
     btn_cols = st.columns(min(len(formats), 4))

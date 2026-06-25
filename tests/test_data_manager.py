@@ -36,6 +36,7 @@ from opc_manager.data_manager import (
     set_preference,
     _add_column_if_not_exists,
     _db_initialized,
+    _get_conn,
     _local,
     DB_PATH,
     DATA_DIR,
@@ -56,8 +57,17 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("OPC_ENCRYPTION_KEY", "test-key-for-encryption-32chars!!")
     import opc_manager.data_manager as dm
 
+    # Save original module-level state so we can restore it after the test.
+    _orig_data_dir = dm.DATA_DIR
+    _orig_db_path = dm.DB_PATH
+    _orig_backup_dir = dm.BACKUP_DIR
     _orig_initialized = dm._db_initialized
-    _orig_conn = getattr(_local, "conn", None)
+
+    # Patch module-level paths because DATA_DIR/DB_PATH were already resolved
+    # at import time; monkeypatch.setenv alone does not affect them.
+    dm.DATA_DIR = str(db_dir)
+    dm.DB_PATH = os.path.join(dm.DATA_DIR, "opc_data.db")
+    dm.BACKUP_DIR = os.path.join(dm.DATA_DIR, "backups")
     dm._db_initialized = False
     if hasattr(_local, "conn") and _local.conn is not None:
         try:
@@ -72,6 +82,9 @@ def temp_db(tmp_path, monkeypatch):
         except Exception:
             pass
         _local.conn = None
+    dm.DATA_DIR = _orig_data_dir
+    dm.DB_PATH = _orig_db_path
+    dm.BACKUP_DIR = _orig_backup_dir
     dm._db_initialized = _orig_initialized
 
 
@@ -396,15 +409,14 @@ class TestMigrationAddColumn:
 
     def test_adds_new_column(self, temp_db):
         init_db()
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
+        # Use the module-managed connection (WAL + busy_timeout) to avoid
+        # "database is locked" contention with the persistent _get_conn()
+        # connection that init_db() leaves open in the current thread.
+        conn = _get_conn()
         cols_before = [
             row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()
         ]
-        conn.close()
         assert "test_migration_col" not in cols_before
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
         _add_column_if_not_exists(
             conn, "tasks", "test_migration_col", "TEXT DEFAULT ''"
         )
@@ -412,30 +424,27 @@ class TestMigrationAddColumn:
         cols_after = [
             row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()
         ]
-        conn.close()
         assert "test_migration_col" in cols_after
-        conn = sqlite3.connect(DB_PATH)
         try:
             conn.execute("ALTER TABLE tasks DROP COLUMN test_migration_col")
             conn.commit()
         except Exception:
             pass
-        finally:
-            conn.close()
 
     def test_skips_if_column_present(self, temp_db):
         init_db()
-        conn = sqlite3.connect(DB_PATH)
+        conn = _get_conn()
         _add_column_if_not_exists(conn, "tasks", "title", "TEXT DEFAULT 'dup'")
         conn.commit()
         rows = conn.execute("SELECT title FROM tasks LIMIT 0").fetchall()
-        conn.close()
         assert rows is not None
 
     def test_migration_chain_completes(self, temp_db):
         """Verify database migration chain from v2 to latest version completes."""
-        from opc_manager.data_manager import _run_migrations, _get_conn
+        from opc_manager.data_manager import _run_migrations, _get_conn, init_db
 
+        # Ensure base schema (including _meta table) exists before migrating.
+        init_db()
         # Run migrations on a fresh database
         conn = _get_conn()
         _run_migrations(conn)

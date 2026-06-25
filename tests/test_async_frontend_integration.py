@@ -28,6 +28,11 @@ class TestAsyncExecutorIntegration:
         """每个测试前创建新的executor实例"""
         self.executor = AsyncTaskExecutor(max_concurrent=3, default_timeout=10)
 
+    def teardown_method(self, method):
+        """每个测试后关闭executor，释放后台线程"""
+        if hasattr(self, "executor") and self.executor:
+            self.executor.shutdown(wait=False)
+
     def test_submit_returns_task_id_immediately(self):
         """测试submit()是否立即返回task_id（<10ms）"""
         start = time.time()
@@ -99,6 +104,10 @@ class TestAsyncExecutorIntegration:
 class TestAsyncExecuteWrapper:
     """_async_execute_task包装函数测试"""
 
+    def teardown_method(self, method):
+        if hasattr(self, "executor") and self.executor:
+            self.executor.shutdown(wait=False)
+
     def test_wrapper_returns_dict_on_success(self):
         """测试成功执行时返回正确的字典结构"""
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "frontend"))
@@ -111,7 +120,7 @@ class TestAsyncExecuteWrapper:
             os.path.join(os.path.dirname(__file__), "..", "frontend", "app.py"),
         )
 
-        executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
+        self.executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
 
         def mock_execute(prompt, cancel_event):
             return {
@@ -122,17 +131,17 @@ class TestAsyncExecuteWrapper:
                 "error": None,
             }
 
-        task_id = executor.submit("wrapper测试", execute_func=mock_execute)
+        task_id = self.executor.submit("wrapper测试", execute_func=mock_execute)
 
         max_wait = 5
         start = time.time()
         while time.time() - start < max_wait:
-            status = executor.get_status(task_id)
+            status = self.executor.get_status(task_id)
             if status["status"] in ["done", "failed", "cancelled"]:
                 break
             time.sleep(0.1)
 
-        final_status = executor.get_status(task_id)
+        final_status = self.executor.get_status(task_id)
         assert (
             final_status["status"] == "done"
         ), f"任务应完成，实际: {final_status['status']}"
@@ -143,22 +152,24 @@ class TestAsyncExecuteWrapper:
 
     def test_wrapper_handles_exception(self):
         """测试异常情况下的错误处理"""
-        executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=5, max_retries=0)
+        self.executor = AsyncTaskExecutor(
+            max_concurrent=2, default_timeout=5, max_retries=0
+        )
 
         def failing_execute(prompt, cancel_event):
             raise ValueError("模拟执行失败")
 
-        task_id = executor.submit("失败测试", execute_func=failing_execute)
+        task_id = self.executor.submit("失败测试", execute_func=failing_execute)
 
         max_wait = 3
         start = time.time()
         while time.time() - start < max_wait:
-            status = executor.get_status(task_id)
+            status = self.executor.get_status(task_id)
             if status["status"] in ["done", "failed", "cancelled"]:
                 break
             time.sleep(0.1)
 
-        final_status = executor.get_status(task_id)
+        final_status = self.executor.get_status(task_id)
         assert (
             final_status["status"] == "failed"
         ), f"应为failed状态，实际: {final_status['status']}"
@@ -169,9 +180,13 @@ class TestAsyncExecuteWrapper:
 class TestEndToEndFlow:
     """端到端流程测试: submit → poll → result"""
 
+    def teardown_method(self, method):
+        if hasattr(self, "executor") and self.executor:
+            self.executor.shutdown(wait=False)
+
     def test_complete_flow_success(self):
         """测试完整成功流程"""
-        executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
+        self.executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
 
         def quick_task(prompt, cancel_event):
             time.sleep(0.2)
@@ -183,13 +198,13 @@ class TestEndToEndFlow:
                 "error": None,
             }
 
-        task_id = executor.submit("E2E完整测试", execute_func=quick_task)
+        task_id = self.executor.submit("E2E完整测试", execute_func=quick_task)
         assert task_id is not None, "提交应成功"
 
         states_seen = []
         max_polls = 20
         for i in range(max_polls):
-            status = executor.get_status(task_id)
+            status = self.executor.get_status(task_id)
             states_seen.append(status["status"])
 
             if status["status"] == "done":
@@ -210,7 +225,7 @@ class TestEndToEndFlow:
 
     def test_complete_flow_with_cancel(self):
         """测试带取消的完整流程"""
-        executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
+        self.executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
 
         def slow_task(prompt, cancel_event):
             time.sleep(30)
@@ -222,23 +237,23 @@ class TestEndToEndFlow:
                 "error": "timeout",
             }
 
-        task_id = executor.submit("可取消任务", execute_func=slow_task)
+        task_id = self.executor.submit("可取消任务", execute_func=slow_task)
         time.sleep(0.1)
 
-        initial_status = executor.get_status(task_id)
+        initial_status = self.executor.get_status(task_id)
         assert initial_status["status"] in ["pending", "running"]
 
-        cancelled = executor.cancel(task_id)
+        cancelled = self.executor.cancel(task_id)
         assert cancelled is True
 
         time.sleep(0.2)
-        final_status = executor.get_status(task_id)
+        final_status = self.executor.get_status(task_id)
         assert final_status["status"] == "cancelled"
         print(f"✅ 取消流程完成: task_id={task_id}")
 
     def test_multiple_concurrent_tasks(self):
         """测试多个任务并发执行"""
-        executor = AsyncTaskExecutor(max_concurrent=3, default_timeout=10)
+        self.executor = AsyncTaskExecutor(max_concurrent=3, default_timeout=10)
 
         def timed_task(prompt, cancel_event):
             duration = float(prompt.split("_")[-1])
@@ -253,7 +268,7 @@ class TestEndToEndFlow:
 
         task_ids = []
         for i, delay in enumerate([0.1, 0.2, 0.15]):
-            tid = executor.submit(f"task_{delay}", execute_func=timed_task)
+            tid = self.executor.submit(f"task_{delay}", execute_func=timed_task)
             task_ids.append(tid)
 
         completed = 0
@@ -264,7 +279,7 @@ class TestEndToEndFlow:
         while time.time() - start < max_wait and completed < 3:
             for tid in task_ids:
                 if tid not in completed_ids:
-                    status = executor.get_status(tid)
+                    status = self.executor.get_status(tid)
                     if status["status"] == "done":
                         completed += 1
                         completed_ids.add(tid)
@@ -277,14 +292,18 @@ class TestEndToEndFlow:
 class TestPerformanceGuarantees:
     """性能保证测试 — 验证V36-P0-2的关键性能指标"""
 
+    def teardown_method(self, method):
+        if hasattr(self, "executor") and self.executor:
+            self.executor.shutdown(wait=False)
+
     def test_submit_latency_under_50ms(self):
         """submit()延迟应<50ms（ADR-010要求）"""
-        executor = AsyncTaskExecutor()
+        self.executor = AsyncTaskExecutor()
         latencies = []
 
         for _ in range(10):
             start = time.time()
-            executor.submit("性能测试")
+            self.executor.submit("性能测试")
             elapsed_ms = (time.time() - start) * 1000
             latencies.append(elapsed_ms)
 
@@ -297,14 +316,14 @@ class TestPerformanceGuarantees:
 
     def test_get_status_latency_under_1ms(self):
         """get_status()延迟应<1ms（纯内存读取）"""
-        executor = AsyncTaskExecutor()
-        task_id = executor.submit("状态查询测试")
+        self.executor = AsyncTaskExecutor()
+        task_id = self.executor.submit("状态查询测试")
         time.sleep(0.05)
 
         latencies = []
         for _ in range(100):
             start = time.time()
-            executor.get_status(task_id)
+            self.executor.get_status(task_id)
             elapsed_ms = (time.time() - start) * 1000
             latencies.append(elapsed_ms)
 

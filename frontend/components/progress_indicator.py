@@ -32,62 +32,62 @@ EVENT_TYPE_CONFIG = {
     "PLAN_START": {
         "label": _t("event_plan_start"),
         "phase": "planning",
-        "emoji": "🎯",
+        "emoji": "",
     },
     "INTENT_DETECTED": {
         "label": _t("event_intent_detected"),
         "phase": "intent",
-        "emoji": "🔍",
+        "emoji": "",
     },
     "CONFIRM_REQUESTED": {
         "label": _t("event_confirm_requested"),
         "phase": "confirm",
-        "emoji": "❓",
+        "emoji": "",
     },
     "CONFIRMED": {
         "label": _t("event_confirmed"),
         "phase": "confirm",
-        "emoji": "✅",
+        "emoji": "",
     },
     "STEP_START": {
         "label": _t("event_step_start"),
         "phase": "executing",
-        "emoji": "⚙️",
+        "emoji": "️",
     },
     "STEP_PROGRESS": {
         "label": _t("event_step_progress"),
         "phase": "executing",
-        "emoji": "🔄",
+        "emoji": "",
     },
     "STEP_COMPLETE": {
         "label": _t("event_step_complete"),
         "phase": "executing",
-        "emoji": "✅",
+        "emoji": "",
     },
     "COLLAB_START": {
         "label": _t("event_collab_start"),
         "phase": "collab",
-        "emoji": "🤝",
+        "emoji": "",
     },
     "REFLECT_START": {
         "label": _t("event_reflect_start"),
         "phase": "reflect",
-        "emoji": "💭",
+        "emoji": "",
     },
     "COMPLETE": {
         "label": _t("event_complete"),
         "phase": "complete",
-        "emoji": "🎉",
+        "emoji": "",
     },
     "ERROR": {
         "label": _t("event_error"),
         "phase": "error",
-        "emoji": "❌",
+        "emoji": "",
     },
     "CANCELLED": {
         "label": _t("event_cancelled"),
         "phase": "cancelled",
-        "emoji": "⏹️",
+        "emoji": "️",
     },
 }
 
@@ -105,21 +105,21 @@ def _get_phase_from_event(event_type: str) -> tuple:
     )
     phase = cfg.get("phase", "unknown")
     phase_labels = {
-        "planning": ("🚀", _t("phase_task_start")),
-        "intent": ("🔍", _t("phase_intent_detected")),
-        "executing": ("⚡", _t("phase_executing")),
-        "complete": ("✅", _t("phase_task_complete")),
-        "error": ("❌", _t("phase_exec_error")),
-        "cancelled": ("⏹️", _t("event_cancelled")),
+        "planning": ("", _t("phase_task_start")),
+        "intent": ("", _t("phase_intent_detected")),
+        "executing": ("", _t("phase_executing")),
+        "complete": ("", _t("phase_task_complete")),
+        "error": ("", _t("phase_exec_error")),
+        "cancelled": ("️", _t("event_cancelled")),
     }
-    return phase_labels.get(phase, ("⚡", _t("phase_executing")))
+    return phase_labels.get(phase, ("", _t("phase_executing")))
 
 
 def _event_emoji(event_type: str) -> str:
     cfg = EVENT_TYPE_CONFIG.get(
         event_type, EVENT_TYPE_CONFIG.get(event_type.upper(), {})
     )
-    return cfg.get("emoji", "📌")
+    return cfg.get("emoji", "")
 
 
 def _render_progress_indicator(session_id: str):
@@ -127,7 +127,7 @@ def _render_progress_indicator(session_id: str):
 
     显示功能：
     - 动画进度条，通过Server-Sent Events更新
-    - 阶段图标映射（PLAN_START→🚀, INTENT_DETECTED→🔍等）
+    - 阶段图标映射（PLAN_START→, INTENT_DETECTED→等）
     - 阶段时间线可视化
     - 错误状态特殊样式（红色高亮）
     - 如果SSE不可用则回退到静态进度显示
@@ -184,11 +184,11 @@ def _render_progress_indicator(session_id: str):
 
     if len(history) > 1:
         st.markdown("---")
-        st.markdown(f"**📈 {_t('execution_timeline')}**")
+        st.markdown(f"** {_t('execution_timeline')}**")
 
         _render_timeline(history)
 
-        with st.expander("📋 " + _t("operation_log_details"), expanded=False):
+        with st.expander(" " + _t("operation_log_details"), expanded=False):
             for evt in reversed(history[-10:]):
                 etype = evt.get("event", evt.get("event_type", "UNKNOWN"))
                 epct = evt.get("progress", evt.get("progress_pct", 0))
@@ -223,28 +223,28 @@ def _get_phase_icon(event_type: str) -> str:
         对应的emoji图标
     """
     icon_mapping = {
-        "plan_start": "🚀",
-        "intent_detected": "🔍",
-        "confirm_requested": "❓",
-        "confirmed": "✅",
-        "step_start": "⚡",
-        "step_progress": "⚡",
-        "step_complete": "✅",
-        "complete": "✅",
-        "error": "❌",
-        "cancelled": "⏹️",
+        "plan_start": "",
+        "intent_detected": "",
+        "confirm_requested": "",
+        "confirmed": "",
+        "step_start": "",
+        "step_progress": "",
+        "step_complete": "",
+        "complete": "",
+        "error": "",
+        "cancelled": "️",
     }
     event_key = event_type.lower().replace("-", "_")
-    return icon_mapping.get(event_key, "📌")
+    return icon_mapping.get(event_key, "")
 
 
 def _render_timeline(history: list):
     timeline_phases = [
-        ("plan_start", "🚀 " + _t("timeline_plan_start")),
-        ("intent_detected", "🔍 " + _t("timeline_intent_detected")),
-        ("step_start", "⚡ " + _t("timeline_step_start")),
-        ("step_complete", "✅ " + _t("event_step_complete")),
-        ("complete", "🎉 " + _t("timeline_task_complete")),
+        ("plan_start", " " + _t("timeline_plan_start")),
+        ("intent_detected", " " + _t("timeline_intent_detected")),
+        ("step_start", " " + _t("timeline_step_start")),
+        ("step_complete", " " + _t("event_step_complete")),
+        ("complete", " " + _t("timeline_task_complete")),
     ]
 
     completed_phases = set()
@@ -285,7 +285,7 @@ def _auto_refresh_progress(session_id: str, interval_sec: int = 2):
 
     col_refresh, col_close = st.columns([1, 3])
     with col_refresh:
-        if st.button("🔄 " + _t("refresh_progress"), key="refresh_prog"):
+        if st.button(" " + _t("refresh_progress"), key="refresh_prog"):
             st.rerun()
     with col_close:
         st.caption(_t("click_refresh_hint"))

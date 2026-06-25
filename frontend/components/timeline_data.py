@@ -88,61 +88,61 @@ class TimelineEvent:
 
 EVENT_TYPE_CONFIG = {
     "task_complete": {
-        "icon": "✅",
+        "icon": "",
         "color": "#10B981",
         "category": "work",
         "i18n_key": "timeline_task_complete",
     },
     "income_recorded": {
-        "icon": "💰",
+        "icon": "",
         "color": "#F59E0B",
         "category": "finance",
         "i18n_key": "timeline_income_recorded",
     },
     "expense_recorded": {
-        "icon": "💸",
+        "icon": "",
         "color": "#EF4444",
         "category": "finance",
         "i18n_key": "timeline_expense_recorded",
     },
     "email_sent": {
-        "icon": "📧",
+        "icon": "",
         "color": "#3B82F6",
         "category": "communication",
         "i18n_key": "timeline_email_sent",
     },
     "proposal_created": {
-        "icon": "📋",
+        "icon": "",
         "color": "#8B5CF6",
         "category": "work",
         "i18n_key": "timeline_proposal_created",
     },
     "error_occurred": {
-        "icon": "❌",
+        "icon": "",
         "color": "#EF4444",
         "category": "system",
         "i18n_key": "timeline_error",
     },
     "undo_action": {
-        "icon": "↩️",
+        "icon": "️",
         "color": "#6B7280",
         "category": "system",
         "i18n_key": "timeline_undo_action",
     },
     "confirmation_required": {
-        "icon": "⚠️",
+        "icon": "️",
         "color": "#F59E0B",
         "category": "system",
         "i18n_key": "timeline_confirmation_required",
     },
     "skill_executed": {
-        "icon": "🛠️",
+        "icon": "️",
         "color": "#06B6D4",
         "category": "work",
         "i18n_key": "timeline_skill_executed",
     },
     "dashboard_viewed": {
-        "icon": "📊",
+        "icon": "",
         "color": "#3B82F6",
         "category": "work",
         "i18n_key": "timeline_dashboard_viewed",
@@ -258,7 +258,7 @@ def _build_from_deliverables() -> List[TimelineEvent]:
                 event_type="task_complete",
                 title=record.get("prompt", _t("timeline_task_complete"))[:50],
                 description=f"{_t('timeline_generated')} {record.get('task_type', _t('timeline_document'))}",
-                icon="✅",
+                icon="",
                 category="work",
                 metadata={
                     "filepath": record.get("filepath", ""),
@@ -302,7 +302,7 @@ def _build_from_undo_manager(session_id: str) -> List[TimelineEvent]:
                     event_type="undo_action" if is_undone else "task_complete",
                     title=_get_undo_description(record),
                     description=f"{op_type_str} {_t('timeline_operation')}",
-                    icon="↩️" if is_undone else "✅",
+                    icon="️" if is_undone else "",
                     category="system",
                     metadata={
                         "operation_type": op_type_str,
@@ -442,16 +442,16 @@ def _map_audit_operation_to_event(
 ) -> Optional[Tuple[str, str, str]]:
     """将AuditLog的operation_type映射到时间线事件类型"""
     mapping = {
-        "email_send": ("email_sent", "📧", "communication"),
-        "send_email": ("email_sent", "📧", "communication"),
-        "record_income": ("income_recorded", "💰", "finance"),
-        "income_record": ("income_recorded", "💰", "finance"),
-        "record_expense": ("expense_recorded", "💸", "finance"),
-        "expense_record": ("expense_recorded", "💸", "finance"),
-        "create_proposal": ("proposal_created", "📋", "work"),
-        "proposal_create": ("proposal_created", "📋", "work"),
-        "execute_skill": ("skill_executed", "🛠️", "work"),
-        "skill_run": ("skill_executed", "🛠️", "work"),
+        "email_send": ("email_sent", "", "communication"),
+        "send_email": ("email_sent", "", "communication"),
+        "record_income": ("income_recorded", "", "finance"),
+        "income_record": ("income_recorded", "", "finance"),
+        "record_expense": ("expense_recorded", "", "finance"),
+        "expense_record": ("expense_recorded", "", "finance"),
+        "create_proposal": ("proposal_created", "", "work"),
+        "proposal_create": ("proposal_created", "", "work"),
+        "execute_skill": ("skill_executed", "️", "work"),
+        "skill_run": ("skill_executed", "️", "work"),
     }
     return mapping.get(operation_type.lower())
 
@@ -484,7 +484,7 @@ def _build_from_progress_emitter(session_id: str) -> List[TimelineEvent]:
                         event_type="confirmation_required",
                         title=evt.get("message", _t("timeline_waiting_confirm"))[:50],
                         description=_t("timeline_need_user_confirm"),
-                        icon="⚠️",
+                        icon="️",
                         category="system",
                         metadata={"progress": evt.get("progress", 0)},
                         status="pending",
@@ -503,7 +503,7 @@ def _build_from_progress_emitter(session_id: str) -> List[TimelineEvent]:
                             if evt.get("detail")
                             else ""
                         ),
-                        icon="❌",
+                        icon="",
                         category="system",
                         metadata={"detail": evt.get("detail", {})},
                         status="error",
@@ -550,7 +550,7 @@ def _build_from_chat_history() -> List[TimelineEvent]:
                     event_type="dashboard_viewed",
                     title=_t("timeline_dashboard_viewed"),
                     description=_t("timeline_viewed_dashboard_desc"),
-                    icon="📊",
+                    icon="",
                     category="work",
                     status="success",
                 )
@@ -566,7 +566,7 @@ def _build_from_chat_history() -> List[TimelineEvent]:
                     event_type="skill_executed",
                     title=_t("timeline_skill_executed"),
                     description=content[:80],
-                    icon="🛠️",
+                    icon="️",
                     category="work",
                     status="success",
                 )

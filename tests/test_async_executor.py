@@ -25,6 +25,9 @@ class TestSubmitReturnsTaskID(unittest.TestCase):
     def setUp(self):
         self.executor = AsyncTaskExecutor(max_concurrent=5, default_timeout=30)
 
+    def tearDown(self):
+        self.executor.shutdown(wait=False)
+
     def test_submit_returns_valid_uuid_format(self):
         """submit()返回的task_id应为UUID格式"""
         task_id = self.executor.submit("测试任务")
@@ -71,6 +74,9 @@ class TestStatusPolling(unittest.TestCase):
 
     def setUp(self):
         self.executor = AsyncTaskExecutor(max_concurrent=5, default_timeout=30)
+
+    def tearDown(self):
+        self.executor.shutdown(wait=False)
 
     def test_pending_to_running_transition(self):
         """任务状态应从pending变为running"""
@@ -174,6 +180,9 @@ class TestCancelOperation(unittest.TestCase):
     def setUp(self):
         self.executor = AsyncTaskExecutor(max_concurrent=5, default_timeout=30)
 
+    def tearDown(self):
+        self.executor.shutdown(wait=False)
+
     def test_cancel_pending_task(self):
         """取消pending状态的任务应成功"""
 
@@ -241,6 +250,9 @@ class TestTimeoutAutoCleanup(unittest.TestCase):
             default_timeout=1,
             max_history=10,
         )
+
+    def tearDown(self):
+        self.executor.shutdown(wait=False)
 
     def test_max_concurrent_limit(self):
         """达到并发上限后submit()应返回None"""
@@ -313,6 +325,9 @@ class TestGateASYNC01(unittest.TestCase):
 
     def setUp(self):
         self.executor = AsyncTaskExecutor(max_concurrent=5, default_timeout=60)
+
+    def tearDown(self):
+        self.executor.shutdown(wait=False)
 
     def test_submit_latency_under_100ms(self):
         """门禁：submit()延迟 < 100ms"""

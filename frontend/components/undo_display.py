@@ -50,61 +50,61 @@ class UndoRecordDisplay:
 
 OPERATION_TYPE_CONFIG = {
     "EMAIL_SEND": {
-        "icon": "📧",
+        "icon": "",
         "label": _t("undo_op_email_send"),
         "color": "#3B82F6",
         "bg_color": "#EFF6FF",
     },
     "RECORD_INCOME": {
-        "icon": "💰",
+        "icon": "",
         "label": _t("undo_op_record_income"),
         "color": "#10B981",
         "bg_color": "#ECFDF5",
     },
     "RECORD_EXPENSE": {
-        "icon": "💸",
+        "icon": "",
         "label": _t("undo_op_record_expense"),
         "color": "#F59E0B",
         "bg_color": "#FFFBEB",
     },
     "ADD_EVENT": {
-        "icon": "📅",
+        "icon": "",
         "label": _t("undo_op_add_event"),
         "color": "#8B5CF6",
         "bg_color": "#F5F3FF",
     },
     "ADD_DEAL": {
-        "icon": "🤝",
+        "icon": "",
         "label": _t("undo_op_add_deal"),
         "color": "#06B6D4",
         "bg_color": "#ECFEFF",
     },
     "CREATE_PROPOSAL": {
-        "icon": "📋",
+        "icon": "",
         "label": _t("undo_op_create_proposal"),
         "color": "#6366F1",
         "bg_color": "#EEF2FF",
     },
     "CREATE_INVOICE": {
-        "icon": "🧾",
+        "icon": "",
         "label": _t("undo_op_create_invoice"),
         "color": "#14B8A6",
         "bg_color": "#F0FDFA",
     },
     "ADD_CUSTOMER": {
-        "icon": "👥",
+        "icon": "",
         "label": _t("undo_op_add_customer"),
         "color": "#F97316",
         "bg_color": "#FFF7ED",
     },
     "ADD_FOLLOW_UP": {
-        "icon": "📞",
+        "icon": "",
         "label": _t("undo_op_add_follow_up"),
         "color": "#EC4899",
         "bg_color": "#FDF2F8",
     },
     "SOCIAL_PUBLISH": {
-        "icon": "📱",
+        "icon": "",
         "label": _t("undo_op_social_publish"),
         "color": "#EF4444",
         "bg_color": "#FEF2F2",
@@ -113,19 +113,19 @@ OPERATION_TYPE_CONFIG = {
 
 STATUS_CONFIG = {
     "active": {
-        "icon": "✅",
+        "icon": "",
         "label": _t("undo_status_active"),
         "color": "#10B981",
         "text_color": "green",
     },
     "undone": {
-        "icon": "⚪",
+        "icon": "",
         "label": _t("undo_status_undone"),
         "color": "#9CA3AF",
         "text_color": "gray",
     },
     "expired": {
-        "icon": "❌",
+        "icon": "",
         "label": _t("undo_status_expired"),
         "color": "#EF4444",
         "text_color": "red",
@@ -258,20 +258,20 @@ def _calculate_remaining_time(record: UndoRecordDisplay) -> Tuple[int, int, str]
     percentage = int((remaining / total_window) * 100) if total_window > 0 else 0
 
     if remaining <= 0:
-        status_text = "❌ " + _t("undo_time_expired")
+        status_text = " " + _t("undo_time_expired")
     elif remaining < 10:
-        status_text = "🔴 " + _t("undo_time_expiring_soon", secs=remaining)
+        status_text = " " + _t("undo_time_expiring_soon", secs=remaining)
     elif remaining < 60:
-        status_text = "🟠 " + _t("undo_time_seconds", secs=remaining)
+        status_text = " " + _t("undo_time_seconds", secs=remaining)
     else:
         mins, secs = divmod(remaining, 60)
         if mins >= 60:
             hours, remainder_mins = divmod(mins, 60)
-            status_text = "🟢 " + _t(
+            status_text = " " + _t(
                 "undo_time_hours_mins", hours=hours, mins=remainder_mins
             )
         else:
-            status_text = "🟢 " + _t("undo_time_mins_secs", mins=mins, secs=secs)
+            status_text = " " + _t("undo_time_mins_secs", mins=mins, secs=secs)
 
     return remaining, percentage, status_text
 

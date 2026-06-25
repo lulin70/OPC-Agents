@@ -77,42 +77,42 @@ _DEMO_DATA = {
     "timeline": [
         {
             "time": "09:15",
-            "icon": "📄",
+            "icon": "",
             "text": "完成《Q1咨询项目总结报告》",
             "tag": "成果物",
             "color": "green",
         },
         {
             "time": "10:30",
-            "icon": "💰",
+            "icon": "",
             "text": "记录收入 ¥35,000（字节跳动-Phase2）",
             "tag": "财务",
             "color": "blue",
         },
         {
             "time": "13:00",
-            "icon": "🤝",
+            "icon": "",
             "text": "客户会议：美团点评 Q2规划讨论",
             "tag": "会议",
             "color": "purple",
         },
         {
             "time": "15:30",
-            "icon": "📊",
+            "icon": "",
             "text": "Dashboard 数据分析完成",
             "tag": "系统",
             "color": "gray",
         },
         {
             "time": "16:45",
-            "icon": "📝",
+            "icon": "",
             "text": "提交《数字化转型方案》初稿",
             "tag": "提案",
             "color": "orange",
         },
         {
             "time": "17:30",
-            "icon": "✅",
+            "icon": "",
             "text": "完成日报自动生成",
             "tag": "任务",
             "color": "green",
@@ -180,7 +180,7 @@ def _render_demo_badge():
         font-weight: 600;
         opacity: 0.85;
         margin-bottom: 8px;
-    ">🎮 {_t('demo_badge_text')}</div>
+    "> {_t('demo_badge_text')}</div>
     """,
         unsafe_allow_html=True,
     )
@@ -205,7 +205,7 @@ def _render_dashboard_page(demo_mode: bool = False):
     # 移动端响应式 CSS 已由 theme_manager 统一注入
 
     if demo_mode:
-        st.info(f"📊 {_t('dash_demo_info')}")
+        st.info(f" {_t('dash_demo_info')}")
         _render_demo_dashboard()
         return
 
@@ -217,7 +217,7 @@ def _render_dashboard_page(demo_mode: bool = False):
 
     enabled_panels = config.get_enabled_panels()
     if not enabled_panels:
-        st.info(f"💡 {_t('dash_no_panels')}")
+        st.info(f" {_t('dash_no_panels')}")
         return
 
     _CACHE_TTL = 60  # seconds
@@ -320,7 +320,7 @@ def _apply_settings(
         config.set_panel_enabled(panel_id, enabled)
     config.save()
     st.session_state.dashboard_config = config
-    st.success(f"✅ {_t('dash_settings_saved')}")
+    st.success(f" {_t('dash_settings_saved')}")
     st.rerun()
 
 
@@ -509,7 +509,7 @@ def _render_demo_dashboard():
     with col3:
         st.markdown(f"### {_t('dash_demo_clients_title')}")
         for client in demo["client_health"]:
-            arrow = "📈" if client["trend"] == "up" else "➡️"
+            arrow = "" if client["trend"] == "up" else "️"
             st.markdown(
                 f"**{client['name']}** — {arrow} {_t('dash_score')} {client['score']} | {_t('dash_projects')} {client['projects']}"
             )
@@ -528,11 +528,11 @@ def _render_demo_dashboard():
         st.markdown(f"### {_t('dash_demo_timeline_title')}")
         for event in demo["timeline"]:
             type_emoji = {
-                "deliverable": "📄",
-                "finance": "💰",
-                "meeting": "🤝",
-                "proposal": "📝",
-            }.get(event["type"], "📌")
+                "deliverable": "",
+                "finance": "",
+                "meeting": "",
+                "proposal": "",
+            }.get(event["type"], "")
             st.markdown(f"{type_emoji} **{event['time']}** — {event['event']}")
 
     with col6:
@@ -592,7 +592,7 @@ def _render_income_trend_panel(
         return
 
     if not trend:
-        st.info(f"💡 {_t('dash_no_finance_data')}")
+        st.info(f" {_t('dash_no_finance_data')}")
         return
 
     pd.DataFrame(trend)
@@ -617,7 +617,7 @@ def _render_income_trend_panel(
         latest = trend[-1].get("profit", 0) if trend else 0
         prev = trend[-2].get("profit", 0) if len(trend) >= 2 else 0
         change = ((latest - prev) / abs(prev) * 100) if prev != 0 else 0
-        arrow = "📈" if change >= 0 else "📉"
+        arrow = "" if change >= 0 else ""
         st.markdown(
             f"**{arrow} {_t('dash_monthly_profit_label').format(val=latest, pct=change)}**"
         )
@@ -665,9 +665,9 @@ def _render_client_health_panel(
         client_data = []
         for c in demo_clients:
             health_emoji = (
-                "🟢"
+                ""
                 if c.get("health", 0) >= 85
-                else ("🟡" if c.get("health", 0) >= 70 else "🔴")
+                else ("" if c.get("health", 0) >= 70 else "")
             )
             client_data.append(
                 {
@@ -688,7 +688,7 @@ def _render_client_health_panel(
     silent_count = silent.get("count", 0)
 
     if total == 0 and not customers:
-        st.info(f"💡 {_t('dash_no_client_data')}")
+        st.info(f" {_t('dash_no_client_data')}")
         return
 
     if density == DensityLevel.COMPACT:
@@ -781,9 +781,7 @@ def _render_task_completion_panel(
         in_progress = demo_tasks["in_progress"]
         blocked = demo_tasks["blocked"]
         completion_rate = (done / total * 100) if total > 0 else 0
-        emoji = (
-            "🟢" if completion_rate >= 70 else ("🟡" if completion_rate >= 40 else "🔴")
-        )
+        emoji = "" if completion_rate >= 70 else ("" if completion_rate >= 40 else "")
         if density == DensityLevel.COMPACT:
             st.markdown(
                 f"**{emoji} {_t('dash_completion_rate')} {completion_rate:.1f}%（Demo）** ({done}/{total})"
@@ -832,15 +830,13 @@ def _render_task_completion_panel(
     pending = by_status.get("pending", 0)
 
     if total == 0:
-        st.info(f"💡 {_t('dash_no_task_data')}")
+        st.info(f" {_t('dash_no_task_data')}")
         return
 
     completion_rate = (completed / total * 100) if total > 0 else 0
 
     if density == DensityLevel.COMPACT:
-        emoji = (
-            "🟢" if completion_rate >= 70 else ("🟡" if completion_rate >= 40 else "🔴")
-        )
+        emoji = "" if completion_rate >= 70 else ("" if completion_rate >= 40 else "")
         st.markdown(
             f"**{emoji} {_t('dash_completion_rate')} {completion_rate:.1f}%** ({completed}/{total})"
         )
@@ -952,7 +948,7 @@ def _render_financial_summary_panel(
     profit = monthly.get("profit", 0)
 
     if income == 0 and expense == 0:
-        st.info(f"💡 {_t('dash_no_monthly_finance')}")
+        st.info(f" {_t('dash_no_monthly_finance')}")
         return
 
     if density == DensityLevel.COMPACT:
@@ -1007,14 +1003,14 @@ def _render_activity_timeline_panel(
         display_limit = len(demo_events)
         for idx, event in enumerate(demo_events):
             tag_color_map = {
-                "green": "🟢",
-                "blue": "🔵",
-                "purple": "🟣",
-                "gray": "⚪",
-                "orange": "🟠",
-                "red": "🔴",
+                "green": "",
+                "blue": "",
+                "purple": "",
+                "gray": "",
+                "orange": "",
+                "red": "",
             }
-            color_dot = tag_color_map.get(event.get("color", "gray"), "⚪")
+            color_dot = tag_color_map.get(event.get("color", "gray"), "")
             if density == DensityLevel.COMPACT:
                 st.markdown(
                     f"{event['icon']} `{event['time']}` — **{event['text'][:30]}** `[{event['tag']}]`"
@@ -1027,7 +1023,7 @@ def _render_activity_timeline_panel(
         return
 
     if not logs:
-        st.info(f"💡 {_t('dash_no_activity_records')}")
+        st.info(f" {_t('dash_no_activity_records')}")
         return
 
     display_limit = (
@@ -1055,10 +1051,10 @@ def _render_activity_timeline_panel(
         )
 
         status_emoji = {
-            "success": "✅",
-            "failed": "❌",
-            "cancelled": "⚪",
-        }.get(status, "📌")
+            "success": "",
+            "failed": "",
+            "cancelled": "",
+        }.get(status, "")
 
         if density == DensityLevel.COMPACT:
             st.markdown(f"{status_emoji} `{op_type}` — {time_str} ({duration}ms)")
@@ -1112,7 +1108,7 @@ def _render_skill_usage_panel(
         for sk in demo_skills:
             pct = sk["usage"] / total_calls * 100 if total_calls > 0 else 0
             trend_emoji = (
-                "📈" if "↑" in sk["trend"] else ("📉" if "↓" in sk["trend"] else "➡️")
+                "" if "↑" in sk["trend"] else ("" if "↓" in sk["trend"] else "️")
             )
             skill_data.append(
                 {
@@ -1139,7 +1135,7 @@ def _render_skill_usage_panel(
         return
 
     if not logs:
-        st.info(f"💡 {_t('dash_no_skill_data')}")
+        st.info(f" {_t('dash_no_skill_data')}")
         return
 
     skill_counts = Counter()
@@ -1149,7 +1145,7 @@ def _render_skill_usage_panel(
             skill_counts[skill_id] += 1
 
     if not skill_counts:
-        st.info(f"💡 {_t('dash_no_skill_records')}")
+        st.info(f" {_t('dash_no_skill_records')}")
         return
 
     total_calls = sum(skill_counts.values())

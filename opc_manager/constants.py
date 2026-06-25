@@ -35,7 +35,8 @@ PARALLEL_VOTE_ENABLED = (
 )
 
 # Critical decision points (irreversible operations) [S2-T4]
-CRITICAL_DECISION_SKILLS = {"email", "report"}
+# finance is included because financial writes are data-persistent and irreversible.
+CRITICAL_DECISION_SKILLS = {"email", "report", "finance"}
 CRITICAL_DECISION_ACTIONS = {
     "send",
     "execute_operation",

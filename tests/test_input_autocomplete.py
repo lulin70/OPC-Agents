@@ -423,11 +423,11 @@ class TestTemplateSuggestions:
         items = _render_template_suggestions()
         assert all(item.source == "template" for item in items)
 
-    def test_template_display_contains_emoji(self):
-        """Test that template display texts contain emojis"""
+    def test_template_display_contains_no_emoji(self):
+        """Test that template display texts do not contain emojis"""
         items = _render_template_suggestions()
         for item in items:
-            assert any(
+            assert not any(
                 char in item.display_text
                 for char in ["📝", "📊", "💰", "📧", "✅", "💹", "🔍", "🎯"]
             )

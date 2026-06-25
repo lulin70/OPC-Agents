@@ -210,10 +210,10 @@ class TestEventTypeConfig(unittest.TestCase):
         for config in EVENT_TYPE_CONFIG.values():
             self.assertIn(config["category"], CATEGORY_LABELS)
 
-    def test_icons_are_non_empty(self):
-        """TC-TL-011: 所有图标非空"""
+    def test_icons_are_strings(self):
+        """TC-TL-011: 所有图标为字符串（emoji替换后允许为空）"""
         for config in EVENT_TYPE_CONFIG.values():
-            self.assertTrue(len(config["icon"]) > 0)
+            self.assertIsInstance(config["icon"], str)
 
 
 class TestBuildTimelineFromSession(unittest.TestCase):
@@ -343,7 +343,7 @@ class TestBuildFromDeliverables(unittest.TestCase):
         event = events[0]
         self.assertEqual(event.event_type, "task_complete")
         self.assertEqual(event.category, "work")
-        self.assertEqual(event.icon, "✅")
+        self.assertEqual(event.icon, "")
         self.assertIn("filepath", event.metadata)
 
     @patch("frontend.components.timeline_data.st")
@@ -411,7 +411,7 @@ class TestBuildFromUndoManager(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "undo_action")
         self.assertEqual(events[0].status, "undone")
-        self.assertEqual(events[0].icon, "↩️")
+        self.assertEqual(events[0].icon, "️")
 
 
 class TestGetUndoDescription(unittest.TestCase):
@@ -475,7 +475,7 @@ class TestBuildFromAuditLog(unittest.TestCase):
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "email_sent")
-        self.assertEqual(events[0].icon, "📧")
+        self.assertEqual(events[0].icon, "")
         self.assertEqual(events[0].category, "communication")
 
     def test_unknown_operation_skipped(self):
@@ -510,7 +510,7 @@ class TestBuildFromProgressEmitter(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "confirmation_required")
         self.assertEqual(events[0].status, "pending")
-        self.assertEqual(events[0].icon, "⚠️")
+        self.assertEqual(events[0].icon, "️")
 
     def test_error_event(self):
         """TC-TL-029: error事件生成error_occurred"""
@@ -534,7 +534,7 @@ class TestBuildFromProgressEmitter(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "error_occurred")
         self.assertEqual(events[0].status, "error")
-        self.assertEqual(events[0].icon, "❌")
+        self.assertEqual(events[0].icon, "")
 
 
 class TestFiltersAndGrouping(unittest.TestCase):
@@ -786,9 +786,9 @@ class TestExportFunctions(unittest.TestCase):
         self.assertIsInstance(md_result, str)
         content = md_result
 
-        self.assertIn("# 操作时间线报告", content)
+        self.assertIn("操作时间线报告", content)
         self.assertIn("## ", content)  # 日期标题
-        self.assertIn("**导出时间**:", content)
+        self.assertIn("导出时间**:", content)
         self.assertIn("导出测试", content)
 
     def test_export_png_generates_html(self):
@@ -811,7 +811,7 @@ class TestExportFunctions(unittest.TestCase):
             self.assertIsInstance(csv_result, bytes)
 
             md_result = _export_to_markdown([])
-            self.assertIn("# 操作时间线报告", md_result)
+            self.assertIn("操作时间线报告", md_result)
 
     def test_export_timeline_csv(self):
         """TC-TL-043: export_timeline() CSV模式"""

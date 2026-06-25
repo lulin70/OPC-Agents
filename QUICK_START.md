@@ -109,22 +109,48 @@ Or try any of these:
 ## Architecture
 
 ```
-User Input → AgentLoop (lightweight coordinator, ~460 lines)
-               ├→ StateManager (state management)
-               ├→ AgentErrorHandler (error handling)
-               ├→ ProgressTracker (progress tracking)
-               ├→ ResultBuilder (result building)
-               └→ TaskOrchestrator (task orchestration)
-                     → StrategistBrain (Plan)
-                     → ExecutorBrain (Act)
-                     → ReflectorBrain (Evaluate)
-                     → SkillRegistry → Result
+User Input
+    │
+    ▼
+AgentLoop (lightweight coordinator, ~460 lines)
+    │
+    ▼
+IntentRouter.classify_route(user_input)
+    ├─► GREETING  ──────────────────────────────► 模板响应（0 LLM 成本）
+    ├─► SIMPLE    ──────────────────────────────► 单步快速执行
+    └─► COMPLEX   ──────────────────────────────► 三贤者并行投票（1×RTT）
+                                                        │
+        ┌───────────────────────────────────────────────┼───────────────────────────────────────────────┐
+        ▼                                               ▼                                               ▼
+StrategistBrain (Plan)                        ExecutorBrain (Act)                          ReflectorBrain (predict)
+express_opinion()                             express_opinion()                            predict_consequence()
+        │                                               │                                               │
+        └───────────────────────────────────────────────┼───────────────────────────────────────────────┘
+                                                        ▼
+                                              ConsensusEngine.collect_opinions_async()
+                                                        │
+                    ┌───────────────────────────────────┴───────────────────────────────────┐
+                    ▼                                       ▼                                 ▼
+              approved=True                            approved=False                  timeout / error
+                    │                                       │                                 │
+                    ▼                                       ▼                                 ▼
+            SkillRegistry.execute_skill()         返回替代方案 / 跳过步骤             fail-close 跳过步骤
+                    │
+                    ▼
+                 Result
 ```
 
 AgentLoop delegates to 5 dedicated components (StateManager, AgentErrorHandler,
 ProgressTracker, ResultBuilder, TaskOrchestrator). Shared constants live in
 `constants.py` and shared helpers in `agent_utils.py` (eliminates the previous
 circular dependency).
+
+### Key Design Points
+
+- **Parallel Sages**: StrategistBrain, ExecutorBrain, and ReflectorBrain vote in parallel via `asyncio.gather`-style scheduling, reducing latency from 3×RTT (serial) to 1×RTT (worst case).
+- **Three-Way Routing**: `IntentRouter` classifies input into `GREETING`, `SIMPLE`, or `COMPLEX`; simple tasks bypass the sage system to save cost and latency.
+- **Consensus Gate**: Critical skills (`email`, `report`, `finance`) must pass a pre-execution consensus vote. On timeout or exception, the gate **fails closed** — the step is skipped rather than executed.
+- **Skill Freeze**: 9 non-core skills are fully frozen in v0.3.0 (see `docs/spec/SKILL_FREEZE_LIST.md`).
 
 ## Support
 

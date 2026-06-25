@@ -14,15 +14,15 @@ Design:
 
 UI Layout:
 ┌─────────────────────────────────────────────┐
-│ 🎯 输入你的需求...                    [发送] │
+│  输入你的需求...                    [发送] │
 ├─────────────────────────────────────────────┤
-│ 💡 最近使用:                                │
+│  最近使用:                                │
 │ [写一份Q2营销方案] [分析竞品数据] [记录收入] │
 │                                              │
-│ 🛠️ 技能快捷入口:                            │
+│ ️ 技能快捷入口:                            │
 │ [CRM客户管理] [财务记录] [报告生成] [...]     │
 │                                              │
-│ 📋 常用模板:                                │
+│  常用模板:                                │
 │ [写报告...] [发邮件...] [新建任务...]        │
 └─────────────────────────────────────────────┘
 """
@@ -106,12 +106,12 @@ COMPLETION_TEMPLATES = [
 ]
 
 SKILL_CATEGORY_ICONS = {
-    "utility": "🔧",
-    "search": "🔍",
-    "analysis": "📊",
-    "creation": "✍️",
-    "operation": "⚙️",
-    "notification": "🔔",
+    "utility": "",
+    "search": "",
+    "analysis": "",
+    "creation": "️",
+    "operation": "️",
+    "notification": "",
 }
 
 SMART_HINTS = [
@@ -346,7 +346,7 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
                 if hasattr(skill.category, "value")
                 else str(skill.category)
             )
-            icon = SKILL_CATEGORY_ICONS.get(cat_name, "📌")
+            icon = SKILL_CATEGORY_ICONS.get(cat_name, "")
             display_text = f"{icon} {skill.name}"
 
             items.append(
@@ -366,15 +366,15 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
     except Exception as e:
         logger.warning(f"[autocomplete] Failed to load skills: {e}")
         default_skills = [
-            (_t("ac_default_skill_search"), "🔍"),
-            (_t("ac_default_skill_analysis"), "📊"),
-            (_t("ac_default_skill_content"), "✍️"),
-            (_t("ac_default_skill_email"), "📧"),
-            (_t("ac_default_skill_finance"), "💰"),
-            (_t("ac_default_skill_crm"), "👥"),
-            (_t("ac_default_skill_report"), "📝"),
-            (_t("ac_default_skill_schedule"), "📅"),
-            (_t("ac_default_skill_todo"), "✅"),
+            (_t("ac_default_skill_search"), ""),
+            (_t("ac_default_skill_analysis"), ""),
+            (_t("ac_default_skill_content"), "️"),
+            (_t("ac_default_skill_email"), ""),
+            (_t("ac_default_skill_finance"), ""),
+            (_t("ac_default_skill_crm"), ""),
+            (_t("ac_default_skill_report"), ""),
+            (_t("ac_default_skill_schedule"), ""),
+            (_t("ac_default_skill_todo"), ""),
         ]
         for name, icon in default_skills:
             items.append(
@@ -433,7 +433,7 @@ def _render_contact_suggestions(query: str = "") -> List[CompletionItem]:
             if name:
                 items.append(
                     CompletionItem(
-                        text=f"@{name}", display_text=f"👤 {name}", source="contact"
+                        text=f"@{name}", display_text=f" {name}", source="contact"
                     )
                 )
 
@@ -480,15 +480,15 @@ def render_autocomplete_input(
 
     UI Layout:
     ┌─────────────────────────────────────────────┐
-    │ 🎯 输入你的需求...                    [发送] │
+    │  输入你的需求...                    [发送] │
     ├─────────────────────────────────────────────┤
-    │ 💡 最近使用: (if available)                 │
+    │  最近使用: (if available)                 │
     │ [suggestion buttons]                        │
     │                                              │
-    │ 🛠️ 技能快捷入口:                            │
+    │ ️ 技能快捷入口:                            │
     │ [skill buttons]                              │
     │                                              │
-    │ 📋 常用模板:                                │
+    │  常用模板:                                │
     │ [template buttons]                           │
     └─────────────────────────────────────────────┘
 
@@ -575,7 +575,7 @@ def _render_empty_state_hints(auto_state: Dict) -> None:
     hint_index = auto_state.get("hint_index", 0)
     hint = SMART_HINTS[hint_index % len(SMART_HINTS)]
 
-    st.caption(f"💡 {hint}")
+    st.caption(f" {hint}")
 
     auto_state["hint_index"] = hint_index + 1
 

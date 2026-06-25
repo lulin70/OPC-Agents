@@ -88,7 +88,7 @@ TYPE_DISPLAY = {
 SCENARIOS_CORE = [
     {
         "id": "content_creation",
-        "icon": "✍️",
+        "icon": "️",
         "title": "scenario_core_content_title",
         "desc": "scenario_core_content_desc",
         "coverage": [
@@ -99,7 +99,7 @@ SCENARIOS_CORE = [
     },
     {
         "id": "product_launch",
-        "icon": "🚀",
+        "icon": "",
         "title": "scenario_core_product_title",
         "desc": "scenario_core_product_desc",
         "coverage": [
@@ -110,7 +110,7 @@ SCENARIOS_CORE = [
     },
     {
         "id": "data_analysis",
-        "icon": "📊",
+        "icon": "",
         "title": "scenario_core_data_title",
         "desc": "scenario_core_data_desc",
         "coverage": ["scenario_core_data_coverage_1", "scenario_core_data_coverage_2"],
@@ -118,7 +118,7 @@ SCENARIOS_CORE = [
     },
     {
         "id": "project_mgmt",
-        "icon": "📋",
+        "icon": "",
         "title": "scenario_core_project_title",
         "desc": "scenario_core_project_desc",
         "coverage": [
@@ -133,147 +133,147 @@ SCENARIOS_CORE = [
 SCENARIOS_MORE = [
     {
         "id": "content_calendar",
-        "icon": "📅",
+        "icon": "",
         "title": "scenario_more_calendar_title",
         "desc": "scenario_more_calendar_desc",
         "prompt": "帮我规划下周的内容日历和选题排期",
     },
     {
         "id": "digital_product_launch",
-        "icon": "🎯",
+        "icon": "",
         "title": "scenario_more_digital_title",
         "desc": "scenario_more_digital_desc",
         "prompt": "帮我制定数字产品的发布方案，包括定价和推广",
     },
     {
         "id": "feedback_analysis",
-        "icon": "💬",
+        "icon": "",
         "title": "scenario_more_feedback_title",
         "desc": "scenario_more_feedback_desc",
         "prompt": "帮我分析用户反馈，提炼关键行动项",
     },
     {
         "id": "consulting_proposal",
-        "icon": "📝",
+        "icon": "",
         "title": "scenario_more_proposal_title",
         "desc": "scenario_more_proposal_desc",
         "prompt": "帮我撰写一份专业咨询提案",
     },
     {
         "id": "ecommerce_ops",
-        "icon": "🛒",
+        "icon": "",
         "title": "scenario_more_ecommerce_title",
         "desc": "scenario_more_ecommerce_desc",
         "prompt": "帮我优化电商运营，提升GMV",
     },
     {
         "id": "project_deliverable",
-        "icon": "📦",
+        "icon": "",
         "title": "scenario_more_deliverable_title",
         "desc": "scenario_more_deliverable_desc",
         "prompt": "帮我整理项目交付物并做质量检查",
     },
     {
         "id": "write_report",
-        "icon": "📄",
+        "icon": "",
         "title": "scenario_more_report_title",
         "desc": "scenario_more_report_desc",
         "prompt": "帮我写一份结构化的分析报告",
     },
     {
         "id": "organize_meeting",
-        "icon": "🤝",
+        "icon": "",
         "title": "scenario_more_meeting_title",
         "desc": "scenario_more_meeting_desc",
         "prompt": "帮我组织一次项目会议",
     },
     {
         "id": "social_publish",
-        "icon": "📢",
+        "icon": "",
         "title": "scenario_social_publish_title",
         "desc": "scenario_social_publish_desc",
         "prompt": "帮我在多个社交平台发布内容并管理互动",
     },
     {
         "id": "generate_invoice",
-        "icon": "🧾",
+        "icon": "",
         "title": "scenario_invoice_title",
         "desc": "scenario_invoice_desc",
         "prompt": "帮我生成一张专业的发票或账单",
     },
     {
         "id": "competitor_watch",
-        "icon": "🔭",
+        "icon": "",
         "title": "scenario_competitor_title",
         "desc": "scenario_competitor_desc",
         "prompt": "帮我监控竞品动态和市场趋势变化",
     },
     {
         "id": "pricing_strategy",
-        "icon": "💎",
+        "icon": "",
         "title": "scenario_pricing_title",
         "desc": "scenario_pricing_desc",
         "prompt": "帮我制定产品或服务的最优定价策略",
     },
     {
         "id": "tax_reminder",
-        "icon": "🏛️",
+        "icon": "️",
         "title": "scenario_tax_reminder_title",
         "desc": "scenario_tax_reminder_desc",
         "prompt": "提醒我即将到期的税务申报和合规事项",
     },
     {
         "id": "opc_creative_planning",
-        "icon": "💡",
+        "icon": "",
         "title": "scenario_opc_creative_planning_title",
         "desc": "scenario_opc_creative_planning_desc",
         "prompt": "帮我想一些创业创意方向，我想利用我的特殊知识建立一人公司",
     },
     {
         "id": "opc_market_research",
-        "icon": "🔍",
+        "icon": "",
         "title": "scenario_opc_market_research_title",
         "desc": "scenario_opc_market_research_desc",
         "prompt": "帮我验证这个创意的市场需求，看看是否有真实的用户痛点",
     },
     {
         "id": "opc_growth_hacker",
-        "icon": "🚀",
+        "icon": "",
         "title": "scenario_opc_growth_hacker_title",
         "desc": "scenario_opc_growth_hacker_desc",
         "prompt": "帮我设计一个0预算的增长策略，快速获取前100个种子用户",
     },
     {
         "id": "opc_social_listening",
-        "icon": "👂",
+        "icon": "",
         "title": "scenario_opc_social_listening_title",
         "desc": "scenario_opc_social_listening_desc",
         "prompt": "帮我从Reddit和Twitter上挖掘用户对这个话题的真实抱怨和痛点",
     },
     {
         "id": "opc_legal_advisor",
-        "icon": "⚖️",
+        "icon": "️",
         "title": "scenario_opc_legal_advisor_title",
         "desc": "scenario_opc_legal_advisor_desc",
         "prompt": "帮我审查这份合同条款，看看有没有对我不利的霸王条款",
     },
     {
         "id": "opc_proposal_review",
-        "icon": "🔬",
+        "icon": "",
         "title": "scenario_opc_proposal_review_title",
         "desc": "scenario_opc_proposal_review_desc",
         "prompt": "帮我评估这个项目的可行性，用逆向思维分析可能失败的原因",
     },
     {
         "id": "opc_prd_generation",
-        "icon": "📋",
+        "icon": "",
         "title": "scenario_opc_prd_generation_title",
         "desc": "scenario_opc_prd_generation_desc",
         "prompt": "帮我把这个方案转化成详细的PRD文档，定义清楚功能需求和验收标准",
     },
     {
         "id": "opc_domain_brand",
-        "icon": "🎨",
+        "icon": "",
         "title": "scenario_opc_domain_brand_title",
         "desc": "scenario_opc_domain_brand_desc",
         "prompt": "帮我为这个产品起个好名字，检查域名可用性，并提供Logo设计灵感",
@@ -370,7 +370,7 @@ def _get_demo_dashboard_data():
 
 def _show_success_toast(message: str):
     """Display a visible success confirmation after user actions."""
-    st.success(f"✅ {message}")
+    st.success(f" {message}")
 
 
 def safe_detect(prompt_text):
@@ -542,16 +542,16 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
         meta_lines = []
         if task_result.execution_time_ms:
-            meta_lines.append(f"⏱️ 执行耗时: {task_result.execution_time_ms:.0f}ms")
+            meta_lines.append(f"️ 执行耗时: {task_result.execution_time_ms:.0f}ms")
         task_type_label = _t(
             _TASK_TYPE_LABELS.get(task_result.task_type.name, _TASK_TYPE_GENERIC)
         )
-        meta_lines.append(f"📌 任务类型: {task_type_label}")
-        meta_lines.append("🧠 三贤者架构执行")
+        meta_lines.append(f" 任务类型: {task_type_label}")
+        meta_lines.append(" 三贤者架构执行")
         if task_result.sources:
-            meta_lines.append(f"🔗 信息来源: {len(task_result.sources)} 条")
+            meta_lines.append(f" 信息来源: {len(task_result.sources)} 条")
         if task_result.deliverable_format:
-            meta_lines.append(f"📦 格式: {task_result.deliverable_format}")
+            meta_lines.append(f" 格式: {task_result.deliverable_format}")
 
         meta_str = "\n".join(meta_lines)
         content_with_meta = f"{task_result.content}\n\n---\n*{meta_str}*"

@@ -201,7 +201,7 @@ def get_latest_undo_record_info(session_id: str) -> Optional[dict]:
             "operation_id": latest.get("operation_id", ""),
             "operation_type": op_type,
             "label": op_config.get("label", "操作"),
-            "icon": op_config.get("icon", "📝"),
+            "icon": op_config.get("icon", ""),
             "remaining_seconds": latest.get("remaining_seconds", 0),
             "description": latest.get("original_summary", ""),
         }

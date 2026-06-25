@@ -153,8 +153,20 @@ def decrypt_field(ciphertext: str) -> Optional[str]:
 def _get_conn() -> sqlite3.Connection:
     if not hasattr(_local, "conn") or _local.conn is None:
         os.makedirs(DATA_DIR, exist_ok=True)
-        conn = sqlite3.connect(DB_PATH, timeout=5)
-        conn.execute("PRAGMA journal_mode=WAL")
+        # Busy timeout is bounded to avoid cascading hangs when multiple
+        # background writer threads (e.g. AuditLog) contend for the same DB.
+        conn = sqlite3.connect(
+            DB_PATH,
+            timeout=5.0,
+            check_same_thread=False,
+        )
+        conn.execute("PRAGMA busy_timeout = 5000")
+        mode = conn.execute("PRAGMA journal_mode=WAL").fetchone()[0]
+        if mode.lower() != "wal":
+            logger.warning("[DataManager] journal_mode=%s, WAL not active", mode)
+        # NORMAL synchronous with WAL provides durability without the
+        # full performance penalty of FULL, reducing writer contention.
+        conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.row_factory = sqlite3.Row
         _local.conn = conn

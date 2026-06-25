@@ -242,6 +242,34 @@ class TestParallelConsensus(unittest.TestCase):
         executor.express_opinion.assert_called_once()
         reflector.predict_consequence.assert_called_once()
 
+    def test_serial_consensus_fallback_timeout_fail_close(self):
+        """串行降级超时时必须返回 ESCALATED 且 approved=False [P1-1]"""
+        loop, strategist, executor, reflector, engine = _build_agent_loop()
+
+        # 模拟策略脑超时，触发 fail-close 路径
+        strategist.express_opinion = Mock(
+            side_effect=asyncio.TimeoutError("strategist timeout")
+        )
+        executor.express_opinion = Mock(
+            return_value=_make_opinion("executor", OpinionType.AGREE)
+        )
+        reflector.predict_consequence = Mock(
+            return_value=_make_opinion("reflector", OpinionType.AGREE)
+        )
+
+        context = {"user_input": "test", "retry_count": 0}
+        step = Step(id="s1", skill_id="search", description="search")
+
+        decision = _run_async(
+            loop._serial_consensus_fallback(context, "execute_step", step)
+        )
+
+        self.assertIsInstance(decision, Decision)
+        self.assertFalse(decision.approved)
+        self.assertEqual(decision.decision_type, DecisionType.ESCALATED)
+        self.assertIn("serial_consensus_timeout", decision.reasoning)
+        self.assertEqual(decision.confidence, 0.0)
+
     def test_parallel_disabled_uses_serial(self):
         """PARALLEL_VOTE_ENABLED=false 时使用串行"""
         loop, strategist, executor, reflector, engine = _build_agent_loop()
@@ -284,6 +312,14 @@ class TestCriticalDecisionPoint(unittest.TestCase):
         """report 技能是关键决策点"""
         loop, _, _, _, _ = _build_agent_loop()
         step = Step(id="s1", skill_id="report", description="generate report")
+        context = {"user_input": "test"}
+
+        self.assertTrue(loop._is_critical_decision_point(context, step))
+
+    def test_is_critical_finance_skill(self):
+        """finance 技能是关键决策点 [P1-2]"""
+        loop, _, _, _, _ = _build_agent_loop()
+        step = Step(id="s1", skill_id="finance", description="record expense")
         context = {"user_input": "test"}
 
         self.assertTrue(loop._is_critical_decision_point(context, step))

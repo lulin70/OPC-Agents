@@ -17,35 +17,35 @@ logger = logging.getLogger(__name__)
 
 TASK_TYPE_CONFIG = {
     "content_generation": {
-        "icon": "✍️",
+        "icon": "️",
         "title": _t("rc_title_content_gen"),
         "gradient_start": "#667eea",
         "gradient_end": "#764ba2",
         "bg_color": "#f8f7ff",
     },
     "data_analysis": {
-        "icon": "📊",
+        "icon": "",
         "title": _t("rc_title_data_analysis"),
         "gradient_start": "#11998e",
         "gradient_end": "#38ef7d",
         "bg_color": "#f0fdf9",
     },
     "info_collection": {
-        "icon": "🔍",
+        "icon": "",
         "title": _t("rc_title_info_collection"),
         "gradient_start": "#f093fb",
         "gradient_end": "#f5576c",
         "bg_color": "#fff7ed",
     },
     "scenario_based": {
-        "icon": "🎯",
+        "icon": "",
         "title": _t("rc_title_scenario"),
         "gradient_start": "#fa709a",
         "gradient_end": "#fee140",
         "bg_color": "#fdf4ff",
     },
     "general_chat": {
-        "icon": "💬",
+        "icon": "",
         "title": _t("rc_title_general_chat"),
         "gradient_start": "#a8edea",
         "gradient_end": "#fed6e3",
@@ -220,7 +220,7 @@ def _render_card_header(task_type: str, config: Dict[str, str]) -> None:
             <span style="font-size: 24px;">{config['icon']}</span>
             <span>{config['title']}</span>
             <span style="margin-left: auto; font-size: 14px; opacity: 0.9;">
-                🕐 {timestamp}
+                 {timestamp}
             </span>
         </div>
         <div class="card-body">
@@ -244,11 +244,11 @@ def _render_metadata_bar(
     execution_time = metadata.get("execution_time_ms")
     if execution_time:
         time_sec = round(execution_time / 1000, 1)
-        items.append(("⏱️", _t("rc_time_cost", sec=time_sec)))
+        items.append(("️", _t("rc_time_cost", sec=time_sec)))
 
     sources_count = metadata.get("sources_count")
     if sources_count:
-        items.append(("🔗", _t("rc_sources_count", count=sources_count)))
+        items.append(("", _t("rc_sources_count", count=sources_count)))
 
     file_format = metadata.get("format") or (deliverable_record or {}).get("task_type")
     if file_format:
@@ -259,15 +259,15 @@ def _render_metadata_bar(
             "scenario_based": _t("rc_format_workflow"),
         }
         fmt_display = format_labels.get(file_format, file_format.capitalize())
-        items.append(("📦", _t("rc_format_label", fmt=fmt_display)))
+        items.append(("", _t("rc_format_label", fmt=fmt_display)))
 
     size_kb = (deliverable_record or {}).get("size_kb")
     if size_kb:
-        items.append(("📄", _t("rc_size_label", size=size_kb)))
+        items.append(("", _t("rc_size_label", size=size_kb)))
 
     agent_loop = metadata.get("agent_loop")
     if agent_loop:
-        items.append(("🧠", _t("rc_ai_enhanced")))
+        items.append(("", _t("rc_ai_enhanced")))
 
     if not items:
         return
@@ -338,7 +338,7 @@ def _render_action_buttons(
         ):
             st.session_state[f"clipboard_{hash(filepath)}"] = content
             st.success(_t("rc_copied"))
-            st.toast("已复制", icon="✅")
+            st.toast("已复制", icon="")
 
     if formats:
         st.markdown(_t("rc_other_formats"))
@@ -350,9 +350,9 @@ def _render_action_buttons(
             has_columns = True
 
         FORMAT_LABELS = {
-            "pdf": "📄 PDF",
-            "docx": "📝 Word",
-            "xlsx": "📊 Excel",
+            "pdf": " PDF",
+            "docx": " Word",
+            "xlsx": " Excel",
         }
 
         for i, fmt in enumerate(formats):
@@ -507,7 +507,7 @@ def get_task_type_label(task_type: str) -> str:
         "general_chat": _t("rc_task_type_general_chat"),
         "business_operation": _t("rc_task_type_business_op"),
     }
-    return labels.get(task_type, f"📌 {task_type}")
+    return labels.get(task_type, f" {task_type}")
 
 
 def validate_deliverable_record(record: Dict[str, Any]) -> Tuple[bool, str]:

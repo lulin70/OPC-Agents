@@ -533,37 +533,37 @@ class TestPhaseIconMapping:
         """PLAN_START should map to 🚀 icon."""
         from frontend.components.shared import _get_phase_icon
 
-        assert _get_phase_icon("plan_start") == "🚀"
+        assert _get_phase_icon("plan_start") == ""
 
     def test_intent_detected_icon(self):
         """INTENT_DETECTED should map to 🔍 icon."""
         from frontend.components.shared import _get_phase_icon
 
-        assert _get_phase_icon("intent_detected") == "🔍"
+        assert _get_phase_icon("intent_detected") == ""
 
     def test_step_progress_icon(self):
         """STEP_PROGRESS should map to ⚡ icon."""
         from frontend.components.shared import _get_phase_icon
 
-        assert _get_phase_icon("step_progress") == "⚡"
+        assert _get_phase_icon("step_progress") == ""
 
     def test_complete_icon(self):
         """COMPLETE should map to ✅ icon."""
         from frontend.components.shared import _get_phase_icon
 
-        assert _get_phase_icon("complete") == "✅"
+        assert _get_phase_icon("complete") == ""
 
     def test_error_icon(self):
         """ERROR should map to ❌ icon."""
         from frontend.components.shared import _get_phase_icon
 
-        assert _get_phase_icon("error") == "❌"
+        assert _get_phase_icon("error") == ""
 
     def test_unknown_event_returns_default_icon(self):
         """Unknown event type should return default 📌 icon."""
         from frontend.components.shared import _get_phase_icon
 
-        assert _get_phase_icon("unknown_event") == "📌"
+        assert _get_phase_icon("unknown_event") == ""
 
 
 class TestGetPhaseFromEvent:
@@ -574,7 +574,7 @@ class TestGetPhaseFromEvent:
         from frontend.components.shared import _get_phase_from_event
 
         icon, name = _get_phase_from_event("plan_start")
-        assert icon == "🚀"
+        assert icon == ""
         assert name == "任务启动"
 
     def test_intent_detected_phase(self):
@@ -582,7 +582,7 @@ class TestGetPhaseFromEvent:
         from frontend.components.shared import _get_phase_from_event
 
         icon, name = _get_phase_from_event("intent_detected")
-        assert icon == "🔍"
+        assert icon == ""
         assert name == "意图识别"
 
     def test_step_start_phase(self):
@@ -590,7 +590,7 @@ class TestGetPhaseFromEvent:
         from frontend.components.shared import _get_phase_from_event
 
         icon, name = _get_phase_from_event("step_start")
-        assert icon == "⚡"
+        assert icon == ""
         assert name == "执行中"
 
     def test_complete_phase(self):
@@ -598,7 +598,7 @@ class TestGetPhaseFromEvent:
         from frontend.components.shared import _get_phase_from_event
 
         icon, name = _get_phase_from_event("complete")
-        assert icon == "✅"
+        assert icon == ""
         assert name == "任务完成"
 
     def test_error_phase(self):
@@ -606,7 +606,7 @@ class TestGetPhaseFromEvent:
         from frontend.components.shared import _get_phase_from_event
 
         icon, name = _get_phase_from_event("error")
-        assert icon == "❌"
+        assert icon == ""
         assert name == "执行错误"
 
     def test_unknown_event_returns_default(self):
@@ -614,7 +614,7 @@ class TestGetPhaseFromEvent:
         from frontend.components.shared import _get_phase_from_event
 
         icon, name = _get_phase_from_event("unknown")
-        assert icon == "⚡"
+        assert icon == ""
         assert name == "执行中"
 
     def test_case_insensitive_matching(self):
