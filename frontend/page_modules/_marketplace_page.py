@@ -412,7 +412,7 @@ def _render_my_skills_v2(marketplace, external_mp):
         skill_version = skill.get("version", "?")
         pinned_version = installed_versions.get(skill_id, skill_version)
 
-        with st.expander(f"📦 {skill_name} v{pinned_version or skill_version}"):
+        with st.expander(f" {skill_name} v{pinned_version or skill_version}"):
             col_info, col_action = st.columns([3, 1])
             with col_info:
                 st.json(
@@ -534,7 +534,7 @@ def _render_global_search():
     - Audit log entries
     """
     search_query = st.text_input(
-        "🔍 全局搜索...",
+        " 全局搜索...",
         value="",
         key="global_search_input",
         label_visibility="collapsed",
@@ -559,16 +559,16 @@ def _render_global_search():
 
     for rtype, items in grouped.items():
         type_icons = {
-            "chat": "💬",
-            "deliverable": "📁",
-            "client": "👥",
-            "finance": "💰",
-            "task": "✅",
-            "audit": "📋",
-            "skill": "🔧",
-            "other": "📌",
+            "chat": "",
+            "deliverable": "",
+            "client": "",
+            "finance": "",
+            "task": "",
+            "audit": "",
+            "skill": "",
+            "other": "",
         }
-        icon = type_icons.get(rtype, "📌")
+        icon = type_icons.get(rtype, "")
 
         with st.expander(f"{icon} {rtype} ({len(items)})"):
             for item in items[:10]:

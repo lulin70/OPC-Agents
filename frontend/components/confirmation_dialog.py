@@ -17,11 +17,11 @@ from opc_manager.i18n import t as _t
 logger = logging.getLogger(__name__)
 
 RISK_BADGE_CONFIG = {
-    "low": {"emoji": "🟢", "i18n_key": "confirm_risk_low", "color": "#4CAF50"},
-    "medium": {"emoji": "🟡", "i18n_key": "confirm_risk_medium", "color": "#FF9800"},
-    "high": {"emoji": "🔴", "i18n_key": "confirm_risk_high", "color": "#F44336"},
+    "low": {"emoji": "", "i18n_key": "confirm_risk_low", "color": "#4CAF50"},
+    "medium": {"emoji": "", "i18n_key": "confirm_risk_medium", "color": "#FF9800"},
+    "high": {"emoji": "", "i18n_key": "confirm_risk_high", "color": "#F44336"},
     "critical": {
-        "emoji": "🟣",
+        "emoji": "",
         "i18n_key": "confirm_risk_critical",
         "color": "#9C27B0",
     },
@@ -52,7 +52,7 @@ def _render_risk_badge(risk_level: str) -> str:
         risk_level: One of 'low', 'medium', 'high', 'critical'
 
     Returns:
-        Formatted badge string like "🔴 高风险"
+        Formatted badge string like " 高风险"
     """
     config = RISK_BADGE_CONFIG.get(risk_level.lower(), RISK_BADGE_CONFIG["medium"])
     return f"{config['emoji']} {_t(config['i18n_key'])}"

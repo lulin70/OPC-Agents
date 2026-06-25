@@ -95,7 +95,7 @@ from frontend.renderers.onboarding_renderer import _show_onboarding_overlay
 
 st.set_page_config(
     page_title=_t("app_title"),
-    page_icon="🚀",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="auto",
 )
@@ -112,7 +112,7 @@ if is_demo_mode():
         margin-bottom: 16px;
         font-size: 15px;
     ">
-        🎮 <strong>{_t('demo_banner_title')}</strong> — {_t('demo_banner_hint')} &nbsp;|&nbsp;
+         <strong>{_t('demo_banner_title')}</strong> — {_t('demo_banner_hint')} &nbsp;|&nbsp;
         {_t('demo_banner_action')}
     </div>
     """,
@@ -219,7 +219,7 @@ with st.sidebar:
     if st.session_state.get("sidebar_global_search", "").strip():
         query = st.session_state.sidebar_global_search.strip()
         if len(query) >= 2:
-            with st.expander(f"🔍 {query}", expanded=True):
+            with st.expander(f" {query}", expanded=True):
                 results = _execute_global_search(query)
                 if results:
                     st.success(_t("search_found", count=len(results)))
@@ -417,9 +417,9 @@ with st.sidebar:
         sla = performance_monitor.check_sla()
         total = stats.get("total_operations", 0)
         st.metric(_t("total_ops"), total)
-        sla_color = "🟢" if all(sla.values()) else "🔴"
+        sla_color = "" if all(sla.values()) else ""
         st.markdown(
-            f"{_t('sla_status_label')}: {sla_color} {_t('sla_single_request')}{'✅' if sla.get('single_request') else '❌'} | {_t('sla_reflect_loop')}{'✅' if sla.get('reflect_loop') else '❌'}"
+            f"{_t('sla_status_label')}: {sla_color} {_t('sla_single_request')}{'' if sla.get('single_request') else ''} | {_t('sla_reflect_loop')}{'' if sla.get('reflect_loop') else ''}"
         )
         cache = stats.get("cache", {})
         if cache:

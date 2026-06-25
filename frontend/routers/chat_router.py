@@ -85,7 +85,7 @@ def _render_chat_history():
 
                 if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
                     st.warning(
-                        f"⚠️ File path security check failed: {msg['deliverable_path']}"
+                        f"️ File path security check failed: {msg['deliverable_path']}"
                     )
                     continue
                 file_content = None
@@ -106,7 +106,7 @@ def _render_chat_history():
                     with col_info:
                         size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
                         st.caption(
-                            f"📄 {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
+                            f" {os.path.basename(msg['deliverable_path'])} ({size_kb}KB)"
                         )
 
 
@@ -220,7 +220,7 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
             with col_info:
                 size_kb = round(len(file_content.encode("utf-8")) / 1024, 1)
                 st.success(
-                    f"✅ {_t('chat_file_generated')}: {os.path.basename(result_filepath)} ({size_kb}KB)"
+                    f" {_t('chat_file_generated')}: {os.path.basename(result_filepath)} ({size_kb}KB)"
                 )
                 show_success(
                     f"{_t('chat_deliverable_generated')}: {os.path.basename(result_filepath)}"
@@ -281,12 +281,12 @@ def render_chat_page():
 
 | {_t('chat_demo_feature')} | {_t('chat_demo_status')} |
 |------|------|
-| 📈 {_t('nav_dashboard')} | ✅ {_t('chat_demo_available')} |
-| ⚙️ {_t('nav_settings')} | ✅ {_t('chat_demo_available')} |
-| 🏪 {_t('nav_marketplace')} | ✅ {_t('chat_demo_available')} |
-| 💬 {_t('nav_chat')} / {_t('chat_task_exec')} | 🔒 {_t('chat_demo_need_key')}
+|  {_t('nav_dashboard')} |  {_t('chat_demo_available')} |
+| ️ {_t('nav_settings')} |  {_t('chat_demo_available')} |
+|  {_t('nav_marketplace')} |  {_t('chat_demo_available')} |
+|  {_t('nav_chat')} / {_t('chat_task_exec')} |  {_t('chat_demo_need_key')}
 
-👉 **{_t('chat_demo_goto_settings')}**
+ **{_t('chat_demo_goto_settings')}**
 """)
         st.markdown(f"### {_t('chat_demo_data_preview')}")
         demo = _get_demo_dashboard_data()
@@ -301,10 +301,10 @@ def render_chat_page():
         with col3:
             st.metric(_t("chat_demo_income_growth"), demo["income_trend"]["growth"])
         st.markdown("---")
-        st.caption(f"💡 {_t('chat_demo_api_hint')}")
+        st.caption(f" {_t('chat_demo_api_hint')}")
         st.stop()
     if len(st.session_state.messages) > 0:
-        st.caption(f"💡 {_t('chat_history_saved')}")
+        st.caption(f" {_t('chat_history_saved')}")
     if len(st.session_state.messages) == 0:
         st.markdown(f"## {_t('chat_welcome_title')}")
         st.markdown(
@@ -317,9 +317,9 @@ def render_chat_page():
         has_api_key = _has_api_key()
         if not has_api_key:
             st.warning(
-                f"⚠️ **{_t('chat_template_mode')}** — {_t('chat_template_mode_desc')}"
+                f"️ **{_t('chat_template_mode')}** — {_t('chat_template_mode_desc')}"
             )
-            with st.expander(f"📖 {_t('chat_how_to_get_key')}", expanded=True):
+            with st.expander(f" {_t('chat_how_to_get_key')}", expanded=True):
                 st.markdown(f"""
 **{_t('chat_3step_config')}:**
 
@@ -330,7 +330,7 @@ def render_chat_page():
 {_t('chat_config_note')}
 """)
         else:
-            st.success(f"✅ {_t('chat_ai_ready')}")
+            st.success(f" {_t('chat_ai_ready')}")
 
         st.markdown(f"### {_t('chat_scenario_title')}")
 
@@ -339,7 +339,7 @@ def render_chat_page():
         for i, sc in enumerate(SCENARIOS_CORE):
             with core_cols[i % 2]:
                 if st.button(
-                    f"{sc['icon']} **{_t(sc['title'])}**\n\n📌 {_t(sc['desc'])}\n\n{_t('scenario_coverage_label')} {', '.join([_t(c) for c in sc['coverage']])}",
+                    f"{sc['icon']} **{_t(sc['title'])}**\n\n {_t(sc['desc'])}\n\n{_t('scenario_coverage_label')} {', '.join([_t(c) for c in sc['coverage']])}",
                     key=f"core_{sc['id']}",
                     use_container_width=True,
                 ):
@@ -349,9 +349,9 @@ def render_chat_page():
                     st.rerun()
 
         st.divider()
-        st.caption(f"💡 {_t('chat_input_execute_hint')}")
+        st.caption(f" {_t('chat_input_execute_hint')}")
 
-    with st.expander(f"🔍 {_t('chat_more_scenarios')}", expanded=False):
+    with st.expander(f" {_t('chat_more_scenarios')}", expanded=False):
         st.markdown(f"**{_t('chat_select_scenario')}**")
         more_cols = st.columns(2)
         for i, sc in enumerate(SCENARIOS_MORE):
@@ -475,7 +475,7 @@ def render_chat_page():
                     retry_count = task_status.get("retry_count", 0)
                     max_retries = task_status.get("max_retries", 2)
                     status_container.update(
-                        label=f"🔄 {_t('chat_status_retrying', count=retry_count, max=max_retries)}"
+                        label=f" {_t('chat_status_retrying', count=retry_count, max=max_retries)}"
                     )
                     max_polls += 10
                     time.sleep(poll_interval)
@@ -518,7 +518,7 @@ def render_chat_page():
                             )
                     else:
                         phase_icon, phase_name, phase_hint = (
-                            "⚡",
+                            "",
                             _t("chat_status_executing"),
                             _t("chat_status_processing"),
                         )
@@ -532,7 +532,7 @@ def render_chat_page():
                                 break
                         if elapsed >= 60:
                             phase_icon, phase_name, phase_hint = (
-                                "🔄",
+                                "",
                                 _t("chat_status_deep"),
                                 _t("chat_status_deep_hint"),
                             )
@@ -691,6 +691,6 @@ def render_chat_page():
 
     failed_prompt = st.session_state.pop("last_failed_prompt", None)
     if failed_prompt:
-        if st.button(f"🔄 {_t('chat_retry')}", key=f"retry_{int(time.time()*1000)}"):
+        if st.button(f" {_t('chat_retry')}", key=f"retry_{int(time.time()*1000)}"):
             st.session_state.pending_prompt = failed_prompt
             st.rerun()

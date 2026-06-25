@@ -112,7 +112,7 @@ class TestLogEntryDataStructure:
         ts = 1700000000.0
         entry = create_sample_entry(timestamp=ts, message="Task started")
         display = entry.to_display()
-        assert "ℹ️" in display
+        assert "ℹ️" not in display
         assert "[应用]" in display
         assert "Task started" in display
 
@@ -120,7 +120,7 @@ class TestLogEntryDataStructure:
         entry = create_sample_entry(level="ERROR", message="Something failed")
         html = entry.to_html(colorized=True)
         assert "#EF4444" in html
-        assert "❌" in html
+        assert "❌" not in html
         assert "Something failed" in html
         assert "<div" in html
 
@@ -678,8 +678,8 @@ class TestExportFunctionality:
         text = result.decode("utf-8")
         assert "Info message" in text
         assert "Error occurred" in text
-        assert "ℹ️" in text
-        assert "❌" in text
+        assert "ℹ️" not in text
+        assert "❌" not in text
 
     def test_export_json_format(self):
         result = export_logs(self.sample_logs, format="json")

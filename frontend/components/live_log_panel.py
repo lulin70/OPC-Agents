@@ -47,11 +47,11 @@ MIN_POLL_INTERVAL = 1
 
 def _get_log_source_config():
     return {
-        "app": {"i18n_key": "log_source_app", "icon": "🖥️"},
-        "engine": {"i18n_key": "log_source_engine", "icon": "⚙️"},
-        "audit": {"i18n_key": "log_source_audit", "icon": "📋"},
-        "progress": {"i18n_key": "log_source_progress", "icon": "📊"},
-        "system": {"i18n_key": "log_source_system", "icon": "🔧"},
+        "app": {"i18n_key": "log_source_app", "icon": "️"},
+        "engine": {"i18n_key": "log_source_engine", "icon": "️"},
+        "audit": {"i18n_key": "log_source_audit", "icon": ""},
+        "progress": {"i18n_key": "log_source_progress", "icon": ""},
+        "system": {"i18n_key": "log_source_system", "icon": ""},
     }
 
 
@@ -64,11 +64,11 @@ def _get_log_source_labels():
 
 
 LOG_LEVEL_CONFIG = {
-    "DEBUG": {"icon": "🔧", "color": "#6B7280", "bg_color": "#F3F4F6"},
-    "INFO": {"icon": "ℹ️", "color": "#3B82F6", "bg_color": "#EFF6FF"},
-    "WARNING": {"icon": "⚠️", "color": "#F59E0B", "bg_color": "#FFFBEB"},
-    "ERROR": {"icon": "❌", "color": "#EF4444", "bg_color": "#FEF2F2"},
-    "CRITICAL": {"icon": "🚨", "color": "#DC2626", "bg_color": "#FEE2E2"},
+    "DEBUG": {"icon": "", "color": "#6B7280", "bg_color": "#F3F4F6"},
+    "INFO": {"icon": "️", "color": "#3B82F6", "bg_color": "#EFF6FF"},
+    "WARNING": {"icon": "️", "color": "#F59E0B", "bg_color": "#FFFBEB"},
+    "ERROR": {"icon": "", "color": "#EF4444", "bg_color": "#FEF2F2"},
+    "CRITICAL": {"icon": "", "color": "#DC2626", "bg_color": "#FEE2E2"},
 }
 
 LOG_SOURCE_CONFIG = _get_log_source_labels()
@@ -105,7 +105,7 @@ class LogEntry:
     def to_display(self) -> str:
         """格式化为单行显示文本"""
         ts = datetime.fromtimestamp(self.timestamp).strftime("%H:%M:%S")
-        level_icon = LOG_LEVEL_CONFIG.get(self.level, {}).get("icon", "📝")
+        level_icon = LOG_LEVEL_CONFIG.get(self.level, {}).get("icon", "")
         source_config = _get_log_source_labels()
         source_label = source_config.get(self.source, {}).get("label", self.source)
         return f"{ts} {level_icon} [{source_label}] {self.message}"
@@ -117,15 +117,15 @@ class LogEntry:
 
         ts = datetime.fromtimestamp(self.timestamp).strftime("%H:%M:%S")
         level_cfg = LOG_LEVEL_CONFIG.get(self.level, {})
-        icon = level_cfg.get("icon", "📝")
+        icon = level_cfg.get("icon", "")
         color = level_cfg.get("color", "#6B7280")
         bg_color = level_cfg.get("bg_color", "#F3F4F6")
 
         source_config = _get_log_source_labels()
         source_cfg = source_config.get(
-            self.source, {"label": self.source, "icon": "📌"}
+            self.source, {"label": self.source, "icon": ""}
         )
-        source_icon = source_cfg.get("icon", "📌")
+        source_icon = source_cfg.get("icon", "")
         source_label = source_cfg.get("label", self.source)
 
         message_escaped = self.message.replace("<", "&lt;").replace(">", "&gt;")
@@ -570,7 +570,7 @@ def _render_log_entry(entry: LogEntry, index: int):
 
     level_cfg = LOG_LEVEL_CONFIG.get(entry.level, LOG_LEVEL_CONFIG["INFO"])
     source_config = _get_log_source_labels()
-    source_cfg = source_config.get(entry.source, {"label": entry.source, "icon": "📌"})
+    source_cfg = source_config.get(entry.source, {"label": entry.source, "icon": ""})
 
     col_time, col_icon, col_source, col_msg = st.columns([1.2, 0.6, 1.2, 6])
 
@@ -591,7 +591,7 @@ def _render_log_entry(entry: LogEntry, index: int):
         st.markdown(
             f'<span style="background:#E5E7EB;color:#374151;padding:2px 8px;'
             f'border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap">'
-            f'{source_cfg.get("icon", "📌")} {source_cfg.get("label", entry.source)}</span>',
+            f'{source_cfg.get("icon", "")} {source_cfg.get("label", entry.source)}</span>',
             unsafe_allow_html=True,
         )
 
@@ -695,16 +695,16 @@ def _render_stats_summary(logs: List[LogEntry]):
         st.metric(_t("log_total"), total)
 
     with stat_cols[1]:
-        st.metric("ℹ️ INFO", stats["INFO"])
+        st.metric("️ INFO", stats["INFO"])
 
     with stat_cols[2]:
-        st.metric("⚠️ WARN", stats["WARNING"])
+        st.metric("️ WARN", stats["WARNING"])
 
     with stat_cols[3]:
-        st.metric("❌ ERROR", stats["ERROR"])
+        st.metric(" ERROR", stats["ERROR"])
 
     with stat_cols[4]:
-        st.metric("🚨 CRIT", stats["CRITICAL"])
+        st.metric(" CRIT", stats["CRITICAL"])
 
     with stat_cols[5]:
         source_summary = ", ".join(

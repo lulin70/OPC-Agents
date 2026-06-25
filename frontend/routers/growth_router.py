@@ -16,7 +16,7 @@ def render_growth_page():
         st.info(
             _t("growth_coming_soon")
             if "growth_coming_soon" in dir(_t)
-            else "🚀 Growth tracking is coming soon! Complete some tasks to see your growth metrics."
+            else " Growth tracking is coming soon! Complete some tasks to see your growth metrics."
         )
         return
 
@@ -34,11 +34,11 @@ def render_growth_page():
     st.divider()
     st.markdown(f"### {_t('growth_5d_health')}")
     dims = [
-        ("📝", "content_quality", _t("growth_metric_content")),
-        ("👥", "audience_growth", _t("growth_metric_audience")),
-        ("💰", "monetization", _t("growth_metric_monetization")),
-        ("🔗", "cross_promotion", _t("growth_metric_cross_promo")),
-        ("🌍", "ecosystem_synergy", _t("growth_metric_ecosystem")),
+        ("", "content_quality", _t("growth_metric_content")),
+        ("", "audience_growth", _t("growth_metric_audience")),
+        ("", "monetization", _t("growth_metric_monetization")),
+        ("", "cross_promotion", _t("growth_metric_cross_promo")),
+        ("", "ecosystem_synergy", _t("growth_metric_ecosystem")),
     ]
     for icon, dim_key, dim_label in dims:
         score = scores.get(dim_key, 0)
@@ -51,8 +51,8 @@ def render_growth_page():
             st.metric(label=dim_label, value=score)
 
     if count == 0:
-        st.info(f"💡 {_t('growth_empty_hint')}")
+        st.info(f" {_t('growth_empty_hint')}")
     elif level < 3:
         st.success(
-            f"🎯 {_t('growth_upgrade_hint', level_name=_t('growth_upgrade_target'))}"
+            f" {_t('growth_upgrade_hint', level_name=_t('growth_upgrade_target'))}"
         )

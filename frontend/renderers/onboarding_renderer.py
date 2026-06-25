@@ -48,7 +48,7 @@ def _show_onboarding_overlay():
 
         st.markdown("---")
         st.markdown(
-            f"# {step_content.get('icon', '🎉')} {step_content.get('title', _t('chat_onboard_welcome'))}"
+            f"# {step_content.get('icon', '')} {step_content.get('title', _t('chat_onboard_welcome'))}"
         )
 
         step_order = [

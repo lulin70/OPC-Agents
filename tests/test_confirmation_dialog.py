@@ -35,35 +35,35 @@ class TestRenderRiskBadge:
         from frontend.components.confirmation_dialog import _render_risk_badge
 
         result = _render_risk_badge("low")
-        assert "🟢" in result
+        assert "🟢" not in result
         assert "低风险" in result
 
     def test_medium_risk_badge(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
 
         result = _render_risk_badge("medium")
-        assert "🟡" in result
+        assert "🟡" not in result
         assert "中风险" in result
 
     def test_high_risk_badge(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
 
         result = _render_risk_badge("high")
-        assert "🔴" in result
+        assert "🔴" not in result
         assert "高风险" in result
 
     def test_critical_risk_badge(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
 
         result = _render_risk_badge("critical")
-        assert "🟣" in result
+        assert "🟣" not in result
         assert "关键操作" in result
 
     def test_unknown_risk_fallback_to_medium(self):
         from frontend.components.confirmation_dialog import _render_risk_badge
 
         result = _render_risk_badge("unknown")
-        assert "🟡" in result
+        assert "🟡" not in result
         assert "中风险" in result
 
     def test_case_insensitive_risk_level(self):

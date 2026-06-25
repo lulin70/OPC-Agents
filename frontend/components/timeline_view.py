@@ -80,7 +80,7 @@ def render_timeline_view(events: List[TimelineEvent], title: str = None):
         st.info(_t("timeline_no_records"))
         return
 
-    st.markdown(f"### 🕐 {title}")
+    st.markdown(f"###  {title}")
 
     _render_timeline_stats(events)
 
@@ -99,7 +99,7 @@ def render_timeline_view(events: List[TimelineEvent], title: str = None):
 
     with container:
         for group_label, group_events in grouped.items():
-            st.markdown(f"#### 📅 {group_label}")
+            st.markdown(f"####  {group_label}")
 
             for i, event in enumerate(group_events):
                 is_latest = i == 0 and group_label == list(grouped.keys())[0]
@@ -138,7 +138,7 @@ def _render_timeline_event(event: TimelineEvent, is_latest: bool = False):
 
     UI结构：
     ┌─────────────────────────────────────┐
-    │ 14:30  ✅ ───────●                  │
+    │ 14:30   ───────●                  │
     │        │  标题                       │
     │        │  描述 | 耗时 | 元数据       │
     │        │  [展开详情]                 │
@@ -221,9 +221,9 @@ def _render_timeline_event(event: TimelineEvent, is_latest: bool = False):
                     </div>
 
                     <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#9CA3AF;">
-                        <span>📁 {cat_badge}</span>
-                        {f'<span>⏱️ {event.duration_ms:.1f}s</span>' if event.duration_ms > 0 else ''}
-                        {f'<span>🔗 {_t("timeline_related_count", count=len(event.related_ids))}</span>' if event.related_ids else ''}
+                        <span> {cat_badge}</span>
+                        {f'<span>️ {event.duration_ms:.1f}s</span>' if event.duration_ms > 0 else ''}
+                        {f'<span> {_t("timeline_related_count", count=len(event.related_ids))}</span>' if event.related_ids else ''}
                     </div>
                 </div>
             </div>

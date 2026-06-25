@@ -263,7 +263,7 @@ class TestDemoModeDetection:
 
         source = inspect.getsource(_render_demo_badge)
         assert "Demo" in source or "demo" in source
-        assert "🎮" in source
+        assert "🎮" not in source
 
     def test_demo_badge_uses_html(self):
         from frontend.page_modules._dashboard_page import _render_demo_badge

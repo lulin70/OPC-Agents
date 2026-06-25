@@ -41,7 +41,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="export_pdf",
             title=_t("ss_export_pdf"),
             description=_t("ss_export_pdf_desc"),
-            icon="📄",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_export_pdf_prompt")},
             confidence=0.9,
@@ -51,7 +51,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="gen_related_doc",
             title=_t("ss_gen_related_doc"),
             description=_t("ss_gen_related_doc_desc"),
-            icon="📝",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_gen_related_doc_prompt")},
             confidence=0.75,
@@ -61,7 +61,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="share_content",
             title=_t("ss_share_content"),
             description=_t("ss_share_content_desc"),
-            icon="📤",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_share_content_prompt")},
             confidence=0.65,
@@ -73,7 +73,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="deep_dive_metric",
             title=_t("ss_deep_dive_metric"),
             description=_t("ss_deep_dive_metric_desc"),
-            icon="🔍",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_deep_dive_metric_prompt")},
             confidence=0.88,
@@ -83,7 +83,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="compare_history",
             title=_t("ss_compare_history"),
             description=_t("ss_compare_history_desc"),
-            icon="📊",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_compare_history_prompt")},
             confidence=0.82,
@@ -93,7 +93,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="generate_report",
             title=_t("ss_generate_report"),
             description=_t("ss_generate_report_desc"),
-            icon="📋",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_generate_report_prompt")},
             confidence=0.85,
@@ -105,7 +105,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="gen_plan_from_info",
             title=_t("ss_gen_plan_from_info"),
             description=_t("ss_gen_plan_from_info_desc"),
-            icon="💡",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_gen_plan_from_info_prompt")},
             confidence=0.87,
@@ -115,7 +115,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="save_as_template",
             title=_t("ss_save_as_template"),
             description=_t("ss_save_as_template_desc"),
-            icon="📌",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_save_as_template_prompt")},
             confidence=0.7,
@@ -125,7 +125,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="set_reminder",
             title=_t("ss_set_reminder"),
             description=_t("ss_set_reminder_desc"),
-            icon="⏰",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_set_reminder_prompt")},
             confidence=0.72,
@@ -137,9 +137,9 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="view_monthly_report",
             title=_t("ss_view_monthly_report"),
             description=_t("ss_view_monthly_report_desc"),
-            icon="📈",
+            icon="",
             action_type="navigate_tab",
-            action_payload={"target_tab": "📈 Dashboard"},
+            action_payload={"target_tab": " Dashboard"},
             confidence=0.9,
             category="follow_up",
         ),
@@ -147,7 +147,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="record_expense",
             title=_t("ss_record_expense"),
             description=_t("ss_record_expense_desc"),
-            icon="💰",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_record_expense_prompt")},
             confidence=0.78,
@@ -157,7 +157,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="client_followup",
             title=_t("ss_client_followup"),
             description=_t("ss_client_followup_desc"),
-            icon="👥",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_client_followup_prompt")},
             confidence=0.8,
@@ -169,7 +169,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="review_steps",
             title=_t("ss_review_steps"),
             description=_t("ss_review_steps_desc"),
-            icon="🔄",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_review_steps_prompt")},
             confidence=0.85,
@@ -179,7 +179,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="adjust_rerun",
             title=_t("ss_adjust_rerun"),
             description=_t("ss_adjust_rerun_desc"),
-            icon="⚙️",
+            icon="️",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_adjust_rerun_prompt")},
             confidence=0.82,
@@ -191,7 +191,7 @@ TASK_TYPE_FOLLOW_UP_MAP = {
             id="start_task",
             title=_t("ss_start_task"),
             description=_t("ss_start_task_desc"),
-            icon="🎯",
+            icon="",
             action_type="quick_task",
             action_payload={"prompt": _t("ss_start_task_prompt")},
             confidence=0.75,
@@ -253,7 +253,7 @@ def _generate_related_suggestions(context: dict) -> List[Suggestion]:
                         id=f"rel_analysis_{comp_type}",
                         title=_t("ss_rel_financial_analysis"),
                         description=_t("ss_rel_financial_analysis_desc"),
-                        icon="📊",
+                        icon="",
                         action_type="quick_task",
                         action_payload={
                             "prompt": _t("ss_rel_financial_analysis_prompt")
@@ -268,7 +268,7 @@ def _generate_related_suggestions(context: dict) -> List[Suggestion]:
                         id=f"rel_content_{comp_type}",
                         title=_t("ss_rel_weekly_report"),
                         description=_t("ss_rel_weekly_report_desc"),
-                        icon="📝",
+                        icon="",
                         action_type="quick_task",
                         action_payload={"prompt": _t("ss_rel_weekly_report_prompt")},
                         confidence=confidence,
@@ -281,7 +281,7 @@ def _generate_related_suggestions(context: dict) -> List[Suggestion]:
                         id=f"rel_info_{comp_type}",
                         title=_t("ss_rel_market_research"),
                         description=_t("ss_rel_market_research_desc"),
-                        icon="🔎",
+                        icon="",
                         action_type="quick_task",
                         action_payload={"prompt": _t("ss_rel_market_research_prompt")},
                         confidence=confidence,
@@ -307,7 +307,7 @@ def _generate_improvement_suggestions(context: dict) -> List[Suggestion]:
                 id="imp_speed",
                 title=_t("ss_imp_simplify_request"),
                 description=_t("ss_imp_simplify_request_desc"),
-                icon="⚡",
+                icon="",
                 action_type="quick_task",
                 action_payload={"prompt": ""},
                 confidence=0.75,
@@ -321,7 +321,7 @@ def _generate_improvement_suggestions(context: dict) -> List[Suggestion]:
                 id="imp_search",
                 title=_t("ss_imp_optimize_search"),
                 description=_t("ss_imp_optimize_search_desc"),
-                icon="🔍",
+                icon="",
                 action_type="quick_task",
                 action_payload={"prompt": ""},
                 confidence=0.7,
@@ -336,7 +336,7 @@ def _generate_improvement_suggestions(context: dict) -> List[Suggestion]:
                 id="imp_feedback",
                 title=_t("ss_imp_try_different"),
                 description=_t("ss_imp_try_different_desc"),
-                icon="💭",
+                icon="",
                 action_type="quick_task",
                 action_payload={"prompt": ""},
                 confidence=0.8,
@@ -361,9 +361,9 @@ def _generate_exploration_suggestions(context: dict) -> List[Suggestion]:
                 id="exp_dashboard",
                 title=_t("ss_exp_dashboard"),
                 description=_t("ss_exp_dashboard_desc"),
-                icon="📈",
+                icon="",
                 action_type="navigate_tab",
-                action_payload={"target_tab": "📈 Dashboard"},
+                action_payload={"target_tab": " Dashboard"},
                 confidence=0.72,
                 category="exploration",
             )
@@ -375,7 +375,7 @@ def _generate_exploration_suggestions(context: dict) -> List[Suggestion]:
                 id="exp_marketplace",
                 title=_t("ss_exp_marketplace"),
                 description=_t("ss_exp_marketplace_desc"),
-                icon="🛒",
+                icon="",
                 action_type="navigate_tab",
                 action_payload={"target_tab": _t("ss_skill_market_tab")},
                 confidence=0.68,
@@ -389,7 +389,7 @@ def _generate_exploration_suggestions(context: dict) -> List[Suggestion]:
                 id="exp_shortcuts",
                 title=_t("ss_exp_shortcuts"),
                 description=_t("ss_exp_shortcuts_desc"),
-                icon="⌨️",
+                icon="️",
                 action_type="open_settings",
                 action_payload={"section": "shortcuts"},
                 confidence=0.65,
@@ -429,7 +429,7 @@ def _generate_undo_suggestions(context: dict) -> List[Suggestion]:
             if record_info:
                 record_info.get("operation_type", "unknown")
                 op_label = record_info.get("label", _t("ss_undo_last_op"))
-                op_icon = record_info.get("icon", "📝")
+                op_icon = record_info.get("icon", "")
                 remaining = record_info.get("remaining_seconds", 0)
 
                 if remaining < 60:
@@ -449,7 +449,7 @@ def _generate_undo_suggestions(context: dict) -> List[Suggestion]:
                             label=op_label,
                             urgency=time_urgency,
                         ),
-                        icon="↩️",
+                        icon="️",
                         action_type="quick_task",
                         action_payload={
                             "prompt": "",
@@ -579,7 +579,7 @@ def render_suggestion_panel(suggestions: List[Suggestion], max_show: int = 3) ->
         border-radius: 8px;
         margin-bottom: 16px;
     ">
-        <span style="font-size: 18px; margin-right: 8px;">💡</span>
+        <span style="font-size: 18px; margin-right: 8px;"></span>
         <strong style="color: #92400e;">{_t("ss_next_steps")}</strong>
     </div>
     """,
@@ -613,7 +613,7 @@ def execute_suggestion(suggestion: Suggestion) -> None:
                 st.session_state.user_input = prompt
                 st.session_state.auto_submit = True
                 st.success(_t("ss_ready_to_exec", title=suggestion.title))
-                st.toast("建议已执行", icon="✅")
+                st.toast("建议已执行", icon="")
                 st.rerun()
             else:
                 st.info(_t("ss_suggestion_tip", desc=suggestion.description))
@@ -621,9 +621,9 @@ def execute_suggestion(suggestion: Suggestion) -> None:
         elif suggestion.action_type == "navigate_tab":
             target_tab = suggestion.action_payload.get("target_tab", "")
             tab_key_map = {
-                "📈 Dashboard": "dashboard",
-                "📊 Dashboard": "dashboard",
-                "📈 仪表盘": "dashboard",
+                " Dashboard": "dashboard",
+                " Dashboard": "dashboard",
+                " 仪表盘": "dashboard",
             }
             nav_key = tab_key_map.get(target_tab, target_tab)
             if nav_key:

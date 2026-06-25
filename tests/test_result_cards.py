@@ -158,7 +158,8 @@ class TestRenderCardHeader(unittest.TestCase):
         config = TASK_TYPE_CONFIG["data_analysis"]
         _render_card_header("data_analysis", config)
         call_args = mock_st.markdown.call_args[0][0]
-        self.assertIn("🕐", call_args)
+        self.assertNotIn("🕐", call_args)
+        self.assertIn("2026-", call_args)
 
 
 class TestRenderMetadataBar(unittest.TestCase):
@@ -342,13 +343,13 @@ class TestGetTaskTypeLabel(unittest.TestCase):
     def test_content_generation_label(self):
         """TC-030: 内容生成标签正确"""
         label = get_task_type_label("content_generation")
-        self.assertIn("✍️", label)
+        self.assertNotIn("✍️", label)
         self.assertIn("内容生成", label)
 
     def test_data_analysis_label(self):
         """TC-031: 数据分析标签正确"""
         label = get_task_type_label("data_analysis")
-        self.assertIn("📊", label)
+        self.assertNotIn("📊", label)
         self.assertIn("数据分析", label)
 
     def test_unknown_type_fallback(self):

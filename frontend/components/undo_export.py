@@ -32,7 +32,7 @@ def _render_export_options(records: List[UndoRecordDisplay]):
     """
     import streamlit as st
 
-    st.markdown("#### 📤 导出撤销历史")
+    st.markdown("####  导出撤销历史")
 
     format_option = st.radio(
         "选择导出格式",
@@ -44,7 +44,7 @@ def _render_export_options(records: List[UndoRecordDisplay]):
     if format_option == "CSV表格":
         csv_data = _generate_csv(records)
         st.download_button(
-            label="⬇️ 下载 CSV 文件",
+            label="️ 下载 CSV 文件",
             data=csv_data,
             file_name=f"undo_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
@@ -55,7 +55,7 @@ def _render_export_options(records: List[UndoRecordDisplay]):
     else:
         json_data = _generate_json(records)
         st.download_button(
-            label="⬇️ 下载 JSON 文件",
+            label="️ 下载 JSON 文件",
             data=json_data,
             file_name=f"undo_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
             mime="application/json",
