@@ -2,6 +2,41 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.1] - 2026-06-26
+
+### P1/P2 技术债清理（DevSquad 驱动，3 阶段推进）
+
+> 基于 v0.3.0-beta 7维度评估报告中的 P1/P2 遗留项，分 3 阶段推进清理。
+
+#### Phase 1: Quick Wins（4 项 P2/P1 低成本修复）
+- **P2-3 Ollama URL 统一**：QUICK_START.md 2 处 `host.docker.internal:11434` → `localhost:11434`，注明 Docker 场景用 `host.docker.internal:11434`
+- **P2-4 IntentClassifier → IntentRouter**：三语 README 共 12 处误用旧名，统一为代码实际使用的 `IntentRouter`
+- **P1-3 .env.example OPC_ 前缀**：`PARALLEL_VOTE_ENABLED`/`PARALLEL_VOTE_TIMEOUT` → `OPC_PARALLEL_VOTE_ENABLED`/`OPC_PARALLEL_VOTE_TIMEOUT`（与 constants.py 读取一致）
+- **P2-5 TECH_DEBT 过时项清理**：P2-8/9/10/11 标记为已解决
+
+#### Phase 2: Ghost Feature Removal（~2196 行死代码删除）
+- **4 类零生产引用的幽灵功能全部删除**（grep 全量确认零生产引用）：
+  - `opc_manager/api/events.py`（89 行，SSE 事件流，零引用）
+  - `opc_manager/experimental/wechat_gateway.py` + `wechat_agent.py` + `plugin_worker.py`（565 行，微信网关实验性功能）
+  - `opc_manager/plugin_system.py`（544 行，PluginManager/PluginSandbox 沙箱）
+  - `plugins/data_converter.py` + `text_summarizer.py` + `plugin_config.json`（65 行，插件示例）
+- **2 个纯幽灵测试文件删除**：`test_wechat_e2e.py`（814 行）+ `test_wechat_gateway.py`（112 行）
+- **4 个测试文件修改**：移除引用幽灵功能的测试方法（TestPluginExamples/TestPluginSystem/test_plugin_timeout_enforcement）
+- **CI workflow 清理**：移除 `--ignore=tests/test_wechat_e2e.py`（文件已删）
+- **验证**：3165 passed, 0 failed（较 v0.3.0-beta 的 3223 减少 58 项，全部为幽灵功能测试）
+
+#### Phase 3: CI/CD 改进（3 项 P1 修复）
+- **P1-4 release.yml 安全扫描**：发布流水线新增 Bandit（-ll -ii）+ pip-audit + `--cov-fail-under=62` 覆盖率门禁，在 GHCR push 前执行
+- **P1-5 flake8 范围扩展**：新增非阻塞 Extended lint 步骤（F401/F841/E501/E722），发现 454 项违规（279 F401 + 106 E501 + 69 F841），记入技术债逐步修复；阻塞性规则（E9/F63/F7/F82/W605）保持 0 违规
+- **P1-6 error_handler 命名冲突**：`error_handler_component.py` → `agent_error_handler.py`（git rename 保留历史），3 处 import 同步更新；类名 `AgentErrorHandler` 不变
+
+#### 评估复评
+- 综合分：70 (B-) → **72 (B-)**，7 维度均有改善
+- 安全 72→76、可维护 58→68（+10，幽灵功能清除）、集成 72→78
+- 遗留 v0.3.2 技术债：5 个 God Class（6250 行）、87+89 文件平铺、454 项 flake8 扩展违规
+
+---
+
 ## [0.3.0-beta] - 2026-06-26
 
 ### P0 发布阻断项修复（DevSquad 7维度评估后，6项全修复）
