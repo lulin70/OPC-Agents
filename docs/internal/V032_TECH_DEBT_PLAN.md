@@ -145,7 +145,7 @@ opc_manager/finance_skill.py   166    0   100%
 |---|---|---|---|
 | task_engine_v3.py | 1853 | 499 facade + 3 mixin（search/executors/parallel） | ✅ 完成 |
 | business_type_detector_v2.py | 1197 | 362 facade + 3 mixin（database 625/scoring 206/strategies 165） | ✅ 完成 |
-| skill_marketplace.py | 1073 | — | 待开始 |
+| skill_marketplace.py | 1073 | 468 facade + external 662 + constants 31（双类分文件，re-export） | ✅ 完成 |
 | settings.py | 1067 | — | 待开始 |
 | llm_content.py | 1060 | — | 待开始 |
 
