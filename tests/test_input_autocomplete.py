@@ -66,28 +66,28 @@ def sample_items():
     return [
         CompletionItem(
             text="帮我写一份报告",
-            display_text="📝 写报告",
+            display_text="写报告",
             source="template",
             frequency=10,
             last_used=time.time() - 3600,
         ),
         CompletionItem(
             text="分析数据趋势",
-            display_text="📊 数据分析",
+            display_text="数据分析",
             source="template",
             frequency=5,
             last_used=time.time() - 7200,
         ),
         CompletionItem(
             text="记录收入",
-            display_text="💰 记录收入",
+            display_text="记录收入",
             source="history",
             frequency=3,
             last_used=time.time() - 86400,
         ),
         CompletionItem(
             text="发送邮件给客户",
-            display_text="📧 发邮件",
+            display_text="发邮件",
             source="skill",
             frequency=1,
             last_used=time.time() - 172800,
@@ -209,7 +209,7 @@ class TestFilteringAlgorithm:
     def test_display_text_matching(self, sample_items):
         """Test that display text is also searched"""
         result = filter_completions("写报告", sample_items)
-        assert any(item.display_text == "📝 写报告" for item in result)
+        assert any(item.display_text == "写报告" for item in result)
 
     def test_max_results_limit(self):
         """Test that results are limited to max_results"""

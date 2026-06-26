@@ -124,19 +124,19 @@ EVENT_TYPE_CONFIG = {
         "i18n_key": "timeline_error",
     },
     "undo_action": {
-        "icon": "️",
+        "icon": "",
         "color": "#6B7280",
         "category": "system",
         "i18n_key": "timeline_undo_action",
     },
     "confirmation_required": {
-        "icon": "️",
+        "icon": "",
         "color": "#F59E0B",
         "category": "system",
         "i18n_key": "timeline_confirmation_required",
     },
     "skill_executed": {
-        "icon": "️",
+        "icon": "",
         "color": "#06B6D4",
         "category": "work",
         "i18n_key": "timeline_skill_executed",
@@ -302,7 +302,7 @@ def _build_from_undo_manager(session_id: str) -> List[TimelineEvent]:
                     event_type="undo_action" if is_undone else "task_complete",
                     title=_get_undo_description(record),
                     description=f"{op_type_str} {_t('timeline_operation')}",
-                    icon="️" if is_undone else "",
+                    icon="" if is_undone else "",
                     category="system",
                     metadata={
                         "operation_type": op_type_str,
@@ -450,8 +450,8 @@ def _map_audit_operation_to_event(
         "expense_record": ("expense_recorded", "", "finance"),
         "create_proposal": ("proposal_created", "", "work"),
         "proposal_create": ("proposal_created", "", "work"),
-        "execute_skill": ("skill_executed", "️", "work"),
-        "skill_run": ("skill_executed", "️", "work"),
+        "execute_skill": ("skill_executed", "", "work"),
+        "skill_run": ("skill_executed", "", "work"),
     }
     return mapping.get(operation_type.lower())
 
@@ -484,7 +484,7 @@ def _build_from_progress_emitter(session_id: str) -> List[TimelineEvent]:
                         event_type="confirmation_required",
                         title=evt.get("message", _t("timeline_waiting_confirm"))[:50],
                         description=_t("timeline_need_user_confirm"),
-                        icon="️",
+                        icon="",
                         category="system",
                         metadata={"progress": evt.get("progress", 0)},
                         status="pending",
@@ -566,7 +566,7 @@ def _build_from_chat_history() -> List[TimelineEvent]:
                     event_type="skill_executed",
                     title=_t("timeline_skill_executed"),
                     description=content[:80],
-                    icon="️",
+                    icon="",
                     category="work",
                     status="success",
                 )

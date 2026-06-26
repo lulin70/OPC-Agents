@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 TASK_TYPE_CONFIG = {
     "content_generation": {
-        "icon": "️",
+        "icon": "",
         "title": _t("rc_title_content_gen"),
         "gradient_start": "#667eea",
         "gradient_end": "#764ba2",
@@ -244,7 +244,7 @@ def _render_metadata_bar(
     execution_time = metadata.get("execution_time_ms")
     if execution_time:
         time_sec = round(execution_time / 1000, 1)
-        items.append(("️", _t("rc_time_cost", sec=time_sec)))
+        items.append(("", _t("rc_time_cost", sec=time_sec)))
 
     sources_count = metadata.get("sources_count")
     if sources_count:

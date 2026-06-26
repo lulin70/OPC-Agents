@@ -411,7 +411,7 @@ class TestBuildFromUndoManager(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "undo_action")
         self.assertEqual(events[0].status, "undone")
-        self.assertEqual(events[0].icon, "️")
+        self.assertEqual(events[0].icon, "")
 
 
 class TestGetUndoDescription(unittest.TestCase):
@@ -510,7 +510,7 @@ class TestBuildFromProgressEmitter(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "confirmation_required")
         self.assertEqual(events[0].status, "pending")
-        self.assertEqual(events[0].icon, "️")
+        self.assertEqual(events[0].icon, "")
 
     def test_error_event(self):
         """TC-TL-029: error事件生成error_occurred"""
@@ -958,7 +958,7 @@ class TestEdgeCases(unittest.TestCase):
 
         escaped = _escape_html(event.title)
         self.assertNotIn("<", escaped)
-        self.assertIn("🎉", escaped)
+        self.assertIn("中文标题", escaped)
 
     def test_very_long_metadata(self):
         """TC-TL-055: 大量元数据处理"""
@@ -1013,7 +1013,7 @@ class TestEdgeCases(unittest.TestCase):
                 event_type="confirmation_required",
                 title="Confirm",
                 description="",
-                icon="⚠️",
+                icon="⚠",
                 category="system",
                 related_ids=["c"],
             ),

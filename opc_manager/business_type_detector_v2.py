@@ -83,7 +83,7 @@ class BusinessTypeDetectorV2:
         return {
             BusinessType.CONTENT_CREATOR: {
                 "name": "内容创作者",
-                "emoji": "✍️",
+                "emoji": "",
                 "weight": 1.6,
                 "primary_keywords": [
                     "内容",
@@ -179,7 +179,7 @@ class BusinessTypeDetectorV2:
             },
             BusinessType.DIGITAL_PRODUCT: {
                 "name": "数字产品开发者",
-                "emoji": "💰",
+                "emoji": "",
                 "weight": 1.4,
                 "primary_keywords": [
                     "数字产品",
@@ -262,7 +262,7 @@ class BusinessTypeDetectorV2:
             },
             BusinessType.AI_TOOL_BUILDER: {
                 "name": "AI工具开发者",
-                "emoji": "🤖",
+                "emoji": "",
                 "weight": 1.5,
                 "primary_keywords": [
                     "AI工具",
@@ -358,7 +358,7 @@ class BusinessTypeDetectorV2:
             },
             BusinessType.CONSULTANT: {
                 "name": "专业咨询师",
-                "emoji": "💼",
+                "emoji": "",
                 "weight": 1.3,
                 "primary_keywords": [
                     "咨询",
@@ -440,7 +440,7 @@ class BusinessTypeDetectorV2:
             },
             BusinessType.ECOMMERCE: {
                 "name": "电商运营者",
-                "emoji": "🛒",
+                "emoji": "",
                 "weight": 1.4,
                 "primary_keywords": [
                     "电商",
@@ -528,7 +528,7 @@ class BusinessTypeDetectorV2:
             },
             BusinessType.CREATIVE_WORK: {
                 "name": "创意工作者",
-                "emoji": "🎨",
+                "emoji": "",
                 "weight": 1.3,
                 "primary_keywords": [
                     "设计",
@@ -1176,9 +1176,9 @@ if __name__ == "__main__":
         is_correct = detected_name in expected_type
         if is_correct:
             correct_count += 1
-            status = "✅"
+            status = ""
         else:
-            status = "❌"
+            status = ""
 
         print(f'\n{status} [{i}] "{input_text[:45]}..."')
         print(f"   Expected: {expected_type}")
@@ -1193,5 +1193,5 @@ if __name__ == "__main__":
     accuracy = (correct_count / len(test_cases)) * 100
     print(f"\n{'=' * 70}")
     print(f"Accuracy: {correct_count}/{len(test_cases)} = {accuracy:.1f}%")
-    print(f"Target: 95%+ | {'✅ Met' if accuracy >= 95 else '⚠️ Needs optimization'}")
+    print(f"Target: 95%+ | {' Met' if accuracy >= 95 else ' Needs optimization'}")
     print("=" * 70)

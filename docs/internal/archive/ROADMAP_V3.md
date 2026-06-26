@@ -1,6 +1,6 @@
 # OPC-Agents 开发路线图 v3.5 (四角色共识提升版)
 
-> ⚠️ **文档状态说明**: 本文档基于 v3.5 四角色共识编写，V35-T01~T16 任务大部分已在 v0.1.5/v0.1.6 中完成。最新进度请参考 `docs/CHANGELOG.md` 和 `docs/internal/v0.1.6-optimization-consensus.md`。
+> ⚠ **文档状态说明**: 本文档基于 v3.5 四角色共识编写，V35-T01~T16 任务大部分已在 v0.1.5/v0.1.6 中完成。最新进度请参考 `docs/CHANGELOG.md` 和 `docs/internal/v0.1.6-optimization-consensus.md`。
 
 ## 更新履历
 
@@ -28,13 +28,13 @@
 | P3-T02 | 对话式交互界面 | 计划中 | ✅ **已完成** | ChatUI + Markdown渲染 |
 | P3-T03 | 业务类型自动识别UI | 计划中 | ✅ **已完成** | 后台自动识别，用户无感 |
 | P3-T04 | 飞轮仪表盘页面 | 计划中 | ✅ **已完成** | 📊成长页 |
-| P3-T05 | LLM服务层抽象 | 计划中 | ⚠️ **部分完成** | 抽象层OK，未接入生产 |
+| P3-T05 | LLM服务层抽象 | 计划中 | ⚠ **部分完成** | 抽象层OK，未接入生产 |
 | P3-T06 | detect_by_llm实现 | 计划中 | ❌ **未实施** | Mock导致崩溃，延后 |
 | P3-T07 | 数据库模型设计 | 计划中 | ✅ **已完成** | 6个ORM模型 |
 | P3-T08 | FlywheelTracker DB化 | 计划中 | ✅ **已完成** | FlywheelTrackerDB |
 | P3-T09 | 平台适配器抽象 | 计划中 | ✅ **已完成** | PlatformAdapter基类 |
-| P3-T10 | 小红书适配器 | 计划中 | ⚠️ **Mock实现** | 待API Key配置 |
-| P3-T11 | Gumroad适配器 | 计划中 | ⚠️ **Mock实现** | 待API Key配置 |
+| P3-T10 | 小红书适配器 | 计划中 | ⚠ **Mock实现** | 待API Key配置 |
+| P3-T11 | Gumroad适配器 | 计划中 | ⚠ **Mock实现** | 待API Key配置 |
 | P3-T12 | CI/CD流水线 | 计划中 | ❌ **未实施** | GitHub Actions待建 |
 | P3-T13 | Docker容器化 | 计划中 | ❌ **未实施** | 待v4.0 |
 | P3-T14 | 文档更新 | 计划中 | ✅ **正在进行** | 本文档 |
@@ -172,9 +172,9 @@
 |---|------|------|------|------|
 | D1 | 选择Streamlit而非Flask/FastAPI作为主前端 | 04-15 | 快速原型；降低门槛 | ✅ 快速上线，但遇到超时问题 |
 | D2 | 废弃TaskEngine(v1/v2)，新建v3 | 04-16 | v1返回JSON、v2返回空模板 | ✅ 彻底解决问题 |
-| D3 | 不接入LLM到生产流程 | 04-16 | MockLLM导致前端崩溃 | ⚠️ 临时决定，v3.4需重新评估 |
+| D3 | 不接入LLM到生产流程 | 04-16 | MockLLM导致前端崩溃 | ⚠ 临时决定，v3.4需重新评估 |
 | D4 | 使用文件系统而非DB存储成果物 | 04-16 | 简单直接；用户可查看文件 | ✅ 合理，DB留作扩展 |
-| D5 | DuckDuckGo作为唯一搜索源 | 04-16 | 免费;无需API Key;够用 | ⚠️ 中文质量待提升 |
+| D5 | DuckDuckGo作为唯一搜索源 | 04-16 | 免费;无需API Key;够用 | ⚠ 中文质量待提升 |
 
 ---
 
@@ -401,7 +401,7 @@ assert "Q2方案" in ctx and "缩短到2周" in ctx
 | 开发时间 | ~16人日 | 可用 | ✅ 充足 | 按4周节奏推进 |
 | GLM-4 API配额 | ~1000次调用/月 | config.toml已有Key | ✅ 已有 | 监控用量 |
 | DuckDuckGo访问 | 无限制 | WebSearchMCP已接入 | ✅ 已有 | — |
-| 测试环境 | pytest + CI/CD | GitHub Actions待建 | ⚠️ 部分 | 本地pytest先跑通 |
+| 测试环境 | pytest + CI/CD | GitHub Actions待建 | ⚠ 部分 | 本地pytest先跑通 |
 | 文档维护 | 5份文档同步更新 | 已有体系 | ✅ 充足 | CDR为单一权威来源 |
 
 ---

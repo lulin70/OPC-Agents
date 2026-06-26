@@ -352,19 +352,19 @@ def get_category_label(category: UnifiedTaskCategory, locale: str = "zh_CN") -> 
 
 
 CATEGORY_ICONS: Dict[UnifiedTaskCategory, str] = {
-    UnifiedTaskCategory.INFO_SEARCH: "🔍",
-    UnifiedTaskCategory.DATA_QUERY: "📊",
-    UnifiedTaskCategory.DOCUMENT_WRITING: "📝",
-    UnifiedTaskCategory.MESSAGE_COMPOSE: "💬",
-    UnifiedTaskCategory.TASK_MANAGEMENT: "✅",
-    UnifiedTaskCategory.FINANCE_OPERATION: "💰",
-    UnifiedTaskCategory.CRM_OPERATION: "👥",
-    UnifiedTaskCategory.CALENDAR_OPERATION: "📅",
-    UnifiedTaskCategory.SOCIAL_PUBLISH: "📢",
-    UnifiedTaskCategory.EMAIL_SEND: "📧",
-    UnifiedTaskCategory.DATA_ANALYSIS: "📈",
-    UnifiedTaskCategory.WORKFLOW_AUTOMATION: "⚙️",
-    UnifiedTaskCategory.GENERAL_CHAT: "💭",
+    UnifiedTaskCategory.INFO_SEARCH: "",
+    UnifiedTaskCategory.DATA_QUERY: "",
+    UnifiedTaskCategory.DOCUMENT_WRITING: "",
+    UnifiedTaskCategory.MESSAGE_COMPOSE: "",
+    UnifiedTaskCategory.TASK_MANAGEMENT: "",
+    UnifiedTaskCategory.FINANCE_OPERATION: "",
+    UnifiedTaskCategory.CRM_OPERATION: "",
+    UnifiedTaskCategory.CALENDAR_OPERATION: "",
+    UnifiedTaskCategory.SOCIAL_PUBLISH: "",
+    UnifiedTaskCategory.EMAIL_SEND: "",
+    UnifiedTaskCategory.DATA_ANALYSIS: "",
+    UnifiedTaskCategory.WORKFLOW_AUTOMATION: "",
+    UnifiedTaskCategory.GENERAL_CHAT: "",
 }
 
 
@@ -377,7 +377,7 @@ def get_category_icon(category: UnifiedTaskCategory) -> str:
     Returns:
         Emoji icon string
     """
-    return CATEGORY_ICONS.get(category, "❓")
+    return CATEGORY_ICONS.get(category, "")
 
 
 # =============================================================================

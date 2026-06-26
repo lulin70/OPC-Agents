@@ -233,13 +233,13 @@ class SessionContextManager:
             [对话历史 - 共3轮]
 
             === 第1轮 (2026-04-16 10:30) ===
-            👤 用户: 帮我写Q2营销方案
-            🤖 助手: 已生成Q2营销方案，包含3个阶段...
-                 📎 参考资料: 3条 | 📄 文件: /tmp/q2_plan.md
+             用户: 帮我写Q2营销方案
+             助手: 已生成Q2营销方案，包含3个阶段...
+                  参考资料: 3条 |  文件: /tmp/q2_plan.md
 
             === 第2轮 (2026-04-16 10:35) ===
-            👤 用户: 第三阶段时间太长，能缩短到2周吗？
-            🤖 助手: 已调整第三阶段为2周敏捷迭代...
+             用户: 第三阶段时间太长，能缩短到2周吗？
+             助手: 已调整第三阶段为2周敏捷迭代...
         """
         if not self._turns:
             return ""
@@ -269,22 +269,22 @@ class SessionContextManager:
                 truncated_user = user_content[:300] + (
                     "..." if len(user_content) > 300 else ""
                 )
-                lines.append(f"👤 用户: {truncated_user}")
+                lines.append(f" 用户: {truncated_user}")
 
             asst_content = turn_data.get("assistant_content", "")
             if asst_content:
                 truncated_asst = asst_content[:500] + (
                     "..." if len(asst_content) > 500 else ""
                 )
-                lines.append(f"🤖 助手: {truncated_asst}")
+                lines.append(f" 助手: {truncated_asst}")
 
             meta_parts = []
             if turn_data.get("task_type"):
                 meta_parts.append(f"类型:{turn_data['task_type']}")
             if turn_data.get("filepath"):
-                meta_parts.append(f"📄 文件: {turn_data['filepath'][:60]}")
+                meta_parts.append(f" 文件: {turn_data['filepath'][:60]}")
             if turn_data.get("sources_count", 0) > 0:
-                meta_parts.append(f"📎 参考:{turn_data['sources_count']}条")
+                meta_parts.append(f" 参考:{turn_data['sources_count']}条")
 
             if meta_parts:
                 lines.append(f"   {' | '.join(meta_parts)}")

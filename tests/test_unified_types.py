@@ -580,28 +580,36 @@ class TestIconSystem:
     """Test suite for emoji icon system."""
 
     def test_all_categories_have_icons(self):
-        """Verify every category has an associated emoji icon."""
+        """Verify every category has an associated icon string (emoji-free)."""
         for cat in UnifiedTaskCategory:
             icon = get_category_icon(cat)
             assert isinstance(icon, str)
-            assert len(icon) >= 1, f"Icon for {cat.value} should not be empty"
 
-    def test_icons_are_valid_emoji(self):
-        """Verify icons look like valid emoji (basic check)."""
+    def test_icons_are_emoji_free(self):
+        """Verify icons contain no emoji characters."""
+
+        def _looks_like_emoji(char: str) -> bool:
+            cp = ord(char)
+            return (
+                (0x1F300 <= cp <= 0x1F9FF)
+                or (0x2600 <= cp <= 0x27BF)
+                or (0x1F600 <= cp <= 0x1F64F)
+                or (0x1F680 <= cp <= 0x1F6FF)
+                or (0x1F1E0 <= cp <= 0x1F1FF)
+            )
+
         for cat in UnifiedTaskCategory:
             icon = get_category_icon(cat)
-            # Basic emoji detection: should be in Unicode emoji ranges or common emoji
-            code_point = ord(icon[0])
-            assert code_point >= 0x1F300 or code_point in range(
-                0x2600, 0x27BF
-            ), f"Icon '{icon}' for {cat.value} doesn't look like valid emoji"
+            assert not any(
+                _looks_like_emoji(ch) for ch in icon
+            ), f"Icon '{icon}' for {cat.value} should not contain emoji"
 
     def test_specific_icon_assignments(self):
         """Test specific icon assignments match expectations."""
-        assert get_category_icon(UnifiedTaskCategory.INFO_SEARCH) == "🔍"
-        assert get_category_icon(UnifiedTaskCategory.EMAIL_SEND) == "📧"
-        assert get_category_icon(UnifiedTaskCategory.SOCIAL_PUBLISH) == "📢"
-        assert get_category_icon(UnifiedTaskCategory.FINANCE_OPERATION) == "💰"
+        assert get_category_icon(UnifiedTaskCategory.INFO_SEARCH) == ""
+        assert get_category_icon(UnifiedTaskCategory.EMAIL_SEND) == ""
+        assert get_category_icon(UnifiedTaskCategory.SOCIAL_PUBLISH) == ""
+        assert get_category_icon(UnifiedTaskCategory.FINANCE_OPERATION) == ""
 
     def test_icons_are_unique_per_category(self):
         """Verify each category has its own distinct icon (no duplicates ideally)."""

@@ -47,8 +47,8 @@ MIN_POLL_INTERVAL = 1
 
 def _get_log_source_config():
     return {
-        "app": {"i18n_key": "log_source_app", "icon": "️"},
-        "engine": {"i18n_key": "log_source_engine", "icon": "️"},
+        "app": {"i18n_key": "log_source_app", "icon": ""},
+        "engine": {"i18n_key": "log_source_engine", "icon": ""},
         "audit": {"i18n_key": "log_source_audit", "icon": ""},
         "progress": {"i18n_key": "log_source_progress", "icon": ""},
         "system": {"i18n_key": "log_source_system", "icon": ""},
@@ -65,10 +65,10 @@ def _get_log_source_labels():
 
 LOG_LEVEL_CONFIG = {
     "DEBUG": {"icon": "", "color": "#6B7280", "bg_color": "#F3F4F6"},
-    "INFO": {"icon": "️", "color": "#3B82F6", "bg_color": "#EFF6FF"},
-    "WARNING": {"icon": "️", "color": "#F59E0B", "bg_color": "#FFFBEB"},
+    "INFO": {"icon": "", "color": "#3B82F6", "bg_color": "#EFF6FF"},
+    "WARNING": {"icon": "", "color": "#F59E0B", "bg_color": "#FFFBEB"},
     "ERROR": {"icon": "", "color": "#EF4444", "bg_color": "#FEF2F2"},
-    "CRITICAL": {"icon": "", "color": "#DC2626", "bg_color": "#FEE2E2"},
+    "CRITICAL": {"icon": "", "color": "#DC2626", "bg_color": "#FEE2F2"},
 }
 
 LOG_SOURCE_CONFIG = _get_log_source_labels()
@@ -693,10 +693,10 @@ def _render_stats_summary(logs: List[LogEntry]):
         st.metric(_t("log_total"), total)
 
     with stat_cols[1]:
-        st.metric("️ INFO", stats["INFO"])
+        st.metric(" INFO", stats["INFO"])
 
     with stat_cols[2]:
-        st.metric("️ WARN", stats["WARNING"])
+        st.metric(" WARN", stats["WARNING"])
 
     with stat_cols[3]:
         st.metric(" ERROR", stats["ERROR"])

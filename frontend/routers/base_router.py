@@ -88,7 +88,7 @@ TYPE_DISPLAY = {
 SCENARIOS_CORE = [
     {
         "id": "content_creation",
-        "icon": "️",
+        "icon": "",
         "title": "scenario_core_content_title",
         "desc": "scenario_core_content_desc",
         "coverage": [
@@ -217,7 +217,7 @@ SCENARIOS_MORE = [
     },
     {
         "id": "tax_reminder",
-        "icon": "️",
+        "icon": "",
         "title": "scenario_tax_reminder_title",
         "desc": "scenario_tax_reminder_desc",
         "prompt": "提醒我即将到期的税务申报和合规事项",
@@ -252,7 +252,7 @@ SCENARIOS_MORE = [
     },
     {
         "id": "opc_legal_advisor",
-        "icon": "️",
+        "icon": "",
         "title": "scenario_opc_legal_advisor_title",
         "desc": "scenario_opc_legal_advisor_desc",
         "prompt": "帮我审查这份合同条款，看看有没有对我不利的霸王条款",
@@ -542,7 +542,7 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
 
         meta_lines = []
         if task_result.execution_time_ms:
-            meta_lines.append(f"️ 执行耗时: {task_result.execution_time_ms:.0f}ms")
+            meta_lines.append(f" 执行耗时: {task_result.execution_time_ms:.0f}ms")
         task_type_label = _t(
             _TASK_TYPE_LABELS.get(task_result.task_type.name, _TASK_TYPE_GENERIC)
         )

@@ -1,7 +1,7 @@
 """
 Parallel Execution Engine for OPC-Agents LLM Call Optimization
 
-⚠️ 实验性功能：ParallelExecutor 当前未被三贤者投票流程实际使用，保留用于未来多技能并行执行场景。
+ 实验性功能：ParallelExecutor 当前未被三贤者投票流程实际使用，保留用于未来多技能并行执行场景。
 
 Provides controlled parallelism for LLM calls with:
 - Rate limiting (max concurrent API calls to avoid API bans)

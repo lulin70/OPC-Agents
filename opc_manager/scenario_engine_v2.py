@@ -236,14 +236,14 @@ if __name__ == "__main__":
     print("=" * 60)
 
     stats = engine.get_statistics()
-    print(f"\n📊 Engine statistics:")
+    print(f"\n Engine statistics:")
     print(f"   Total scenarios: {stats['total_scenarios']}")
     print(
         f"   Supported business types: {', '.join(stats['business_types_supported'])}"
     )
     print(f"   Version: {stats['version']}")
 
-    print(f"\n📋 All scenarios:")
+    print(f"\n All scenarios:")
     for scenario in engine.list_scenarios():
         types_str = ", ".join(scenario["target_business_types"])
         print(f"   [{scenario['id']}] {scenario['name']}")
@@ -260,13 +260,13 @@ if __name__ == "__main__":
     ]
 
     print("\n" + "=" * 60)
-    print("🧪 Test cases")
+    print(" Test cases")
     print("=" * 60)
 
     for i, (input_text, context) in enumerate(test_inputs, 1):
         print(f'\nTest {i}: "{input_text}"')
         result = engine.process(input_text, context)
-        print(f"Match result: {'✅ Success' if result.matched else '❌ No match'}")
+        print(f"Match result: {' Success' if result.matched else ' No match'}")
         if result.matched:
             print(f"Scenario ID: {result.scenario_id}")
             print(f"Confidence: {result.confidence:.2f}")

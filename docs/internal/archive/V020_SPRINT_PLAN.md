@@ -107,7 +107,7 @@ class SettingsManager:
 | **涉及文件** | `opc_manager/secure_storage.py` (修改) |
 | **验收标准** | - encrypt_field()输出Base64编码密文（含nonce+tag）<br>- decrypt_field()正确还原明文<br>- mask_value("sk-abc123def456") → "sk-****456"<br>- 符合FIPS 140-2标准（香农熵>7.5）<br>- 线程安全（复用现有_lock） |
 
-**技术风险**: ⚠️ 中等 - 需确保与现有Fernet加密方案兼容，建议保留旧方法标记为deprecated
+**技术风险**: ⚠ 中等 - 需确保与现有Fernet加密方案兼容，建议保留旧方法标记为deprecated
 
 ---
 
@@ -357,7 +357,7 @@ class SettingsManager:
 | **涉及文件** | `opc_manager/wechat_gateway.py` (修改第88-94行) |
 | **验收标准** | - Token为空时返回False+warning日志<br>- Timestamp超过300秒拒绝<br>- Nonce重复请求拒绝（内存Set去重，1小时过期）<br>- SHA1签名验证逻辑正确<br>- TC-P0-019签名验证测试通过<br>- TC-P0-020消息重放攻击测试通过 |
 
-**技术风险**: ⚠️ 中等 - 签名验证是企业微信安全防线，必须严格测试
+**技术风险**: ⚠ 中等 - 签名验证是企业微信安全防线，必须严格测试
 
 ---
 
@@ -612,7 +612,7 @@ class SettingsManager:
 | **涉及文件** | `opc_manager/data_manager.py` (修改) |
 | **验收标准** | - import_data()正确解压并恢复数据<br>- 版本不兼容时拒绝并提示（TC-P1-013）<br>- 导入前自动备份现有数据<br>- 数据冲突时提供3种策略选择（TC-P1-014）<br>- 返回详细导入报告（成功N条/跳过M条/失败K条）<br>- 恢复成功率99%+（KPI指标） |
 
-**技术风险**: ⚠️ 中等 - 数据一致性是关键，需要事务级别的原子性保证
+**技术风险**: ⚠ 中等 - 数据一致性是关键，需要事务级别的原子性保证
 
 ---
 
@@ -714,7 +714,7 @@ class SettingsManager:
 | **涉及文件** | `opc_manager/progress_emitter.py` (修改), `opc_manager/api/events.py` (可能修改) |
 | **验收标准** | - emit_sse()推送格式正确的SSE事件<br>- /api/events/stream endpoint返回text/event-stream<br>- 事件格式：data: {json}\n\n<br>- 支持3种事件类型（progress/error/complete）<br>- 客户端断开后自动清理资源<br>- 并发多客户端推送互不干扰<br>- 与现有progress_emitter逻辑兼容 |
 
-**技术风险**: ⚠️ 中等 - SSE需要Streamlit前端配合JavaScript接收，需验证可行性
+**技术风险**: ⚠ 中等 - SSE需要Streamlit前端配合JavaScript接收，需验证可行性
 
 ---
 
@@ -819,7 +819,7 @@ class SettingsManager:
 | 属性 | 值 |
 |------|-----|
 | **任务ID** | S4-T02 |
-| **描述** | 修改 `frontend/app.py`，在页面右上角添加主题切换按钮（🌙/☀️图标，st.toggle或st.button实现），点击后调用ThemeManager.toggle_theme()、通过st.markdown(unsafe_allow_html=True)注入CSS变量、st.rerun()刷新页面应用新主题、图标随当前主题变化（亮色显示🌙，暗色显示☀️） |
+| **描述** | 修改 `frontend/app.py`，在页面右上角添加主题切换按钮（🌙/☀图标，st.toggle或st.button实现），点击后调用ThemeManager.toggle_theme()、通过st.markdown(unsafe_allow_html=True)注入CSS变量、st.rerun()刷新页面应用新主题、图标随当前主题变化（亮色显示🌙，暗色显示☀） |
 | **预估工时** | 3h |
 | **依赖关系** | S4-T01 |
 | **并行任务** | ❌ 依赖ThemeManager完成 |
@@ -1112,7 +1112,7 @@ S3-T06                              ██     ← 依赖T05
                     
 S3-T08                         ████   ← 并行F组（依赖T07）
                     
-S3-T10                              ██████  ← 并行G组（依赖T09）⚠️高风险
+S3-T10                              ██████  ← 并行G组（依赖T09）⚠高风险
                     
 S3-T11                         ████   ← 测试H组
 S3-T12                         ████   ← 测试I组
@@ -1129,7 +1129,7 @@ S4-T10                         ████
 S4-T02                              ██     ← 依赖T01
                          
 S4-T04                              ████   ← 依赖T03
-S4-T05                                   ██████████  ← 依赖T03,T04 ⚠️工作量大
+S4-T05                                   ██████████  ← 依赖T03,T04 ⚠工作量大
                          
 S4-T08                                   ██████  ← 依赖T07
 S4-T09                                        ██     ← 依赖T08
@@ -1194,7 +1194,7 @@ GA: v0.2.0 Release                           ██ (Week 7 End)
 ├─ S2-T09 审计日志UI ────────┘ (依赖S2-T08)
 ├─ S2-T12 Undo前端UI ──────── (依赖S2-T11)
 ├─ S3-T08 多格式导出前端 ──── (依赖S3-T07)
-└─ S3-T10 SSE进度条前端 ──── (依赖S3-T09) ⚠️高风险
+└─ S3-T10 SSE进度条前端 ──── (依赖S3-T09) ⚠高风险
 
 层级3 (依赖层级2):
 ├─ S1-T09 Settings UI ───────→ S1-T14 Onboarding UI
@@ -1210,7 +1210,7 @@ GA: v0.2.0 Release                           ██ (Week 7 End)
 
 ---
 
-## ⚠️ 风险点识别
+## ⚠ 风险点识别
 
 ### 🔴 高风险（需要提前验证和重点关注）
 
@@ -1308,7 +1308,7 @@ pytest tests_v020/test_audit_log_performance.py -v  # 全绿
 - [ ] Dashboard默认4组件正常显示（收入趋势+客户健康度+最近任务+快捷操作）
 - [ ] Dashboard支持添加/移除/重排组件
 - [ ] 多格式批量导出（PDF/Excel/Word）可用
-- [ ] SSE实时进度条在任务执行时显示（⚠️如技术可行）
+- [ ] SSE实时进度条在任务执行时显示（⚠如技术可行）
 - [ ] 单元测试：DataManager(30+) + Dashboard(20+) + Export(20+) + SSE(15+) = 85+新测试全绿
 
 **验证方式**:

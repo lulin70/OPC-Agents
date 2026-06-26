@@ -38,7 +38,7 @@ opc-agents                      # 2. Launch
 - **⚡ Three Sages Parallel Voting Architecture Returns**: Switched from serial pipeline (3×RTT) to parallel voting (1×RTT), 3x latency reduction. Inspired by EVA MAGI three-sage synchronous voting + minority report mechanism, key decision points protected by upfront consensus.
 - **🎯 Focus on 3 Core Skills**: Email / Finance / Report. 11 non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
 - **🧠 IntentClassifier 3-Way Smart Routing**: SIMPLE / COMPLEX / GREETING three-way classification. Simple tasks bypass the three sages directly — fast and cost-effective; complex tasks enter parallel voting for quality assurance.
-- **🛡️ Key Decision Point Upfront Consensus Protection**: ConsensusEngine shifts from "post-hoc remedy" to "upfront gatekeeping", ExecutorBrain gives real opinions (fake opinion rules removed), ReflectorBrain upfront prediction + minority report.
+- **🛡 Key Decision Point Upfront Consensus Protection**: ConsensusEngine shifts from "post-hoc remedy" to "upfront gatekeeping", ExecutorBrain gives real opinions (fake opinion rules removed), ReflectorBrain upfront prediction + minority report.
 - **📊 Significant Quality Improvement**: Total coverage 62.87%, email_skill 99%, finance_skill 100%; added 7 real LLM E2E tests (CI auto-runs every Monday).
 - **🌐 i18n Refactor**: 3857 lines → 133 lines logic layer + JSON-ification, backward compatible, drastically reduced maintenance cost.
 
@@ -59,7 +59,7 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 | You Say | It Delivers |
 |---------|-------------|
 | "Collect OPC company trends" | 🔍 Research Report (real search + source links + structured organization) |
-| "Write a Q2 marketing plan" | ✍️ Complete Plan (SMART goals + roadmap + risks + acceptance criteria) |
+| "Write a Q2 marketing plan" | ✍ Complete Plan (SMART goals + roadmap + risks + acceptance criteria) |
 | "Analyze competitor A" | 📊 Analysis Report (SWOT + action items + priority ranking) |
 | "Send an email to a client" | 📧 Email Sending (template rendering + SMTP sending + rate limiting) |
 | "Record an income entry" | 💰 Finance Record (auto-categorization + monthly report + trend analysis) |
@@ -73,7 +73,7 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - 🧠 **StrategistBrain**: Understands your intent, plans execution steps
 - ⚡ **ExecutorBrain**: Invokes skills and tools, generates deliverables (v0.3.0 onwards gives "real opinions", no more fake opinion rules)
 - 🔍 **ReflectorBrain**: Evaluates result quality, upfront prediction + minority report, auto-corrects when substandard
-- 🛡️ **ConsensusEngine**: Three sages parallel voting (1×RTT, 3x faster than serial 3×RTT), key decision point upfront protection
+- 🛡 **ConsensusEngine**: Three sages parallel voting (1×RTT, 3x faster than serial 3×RTT), key decision point upfront protection
 
 **IntentClassifier 3-Way Smart Routing** — Routes by task complexity, saving time and money:
 - 🟢 **SIMPLE**: Simple tasks execute directly, bypassing the three sages
@@ -100,7 +100,7 @@ These features make the core workflow **better, faster, and stronger over time**
 | 🏪 **Skill Marketplace** | Search and install third-party skills, expand capabilities on demand |
 | 📚 **External Knowledge Base** | Connect Obsidian/Yuque/Feishu/Notion/Siyuan Notes, AI references your private materials |
 | 📜 **Rule Engine** | Failed experiences auto-extracted as rules, same errors never repeated |
-| ↩️ **Undo Mechanism** | Operations are reversible, use boldly with confidence |
+| ↩ **Undo Mechanism** | Operations are reversible, use boldly with confidence |
 | 🌐 **Tri-Lingual Switch** | Chinese/English/Japanese UI one-click switch |
 | 🧊 **LLM Cache** | Same questions don't trigger duplicate API calls, saves time and money |
 
@@ -250,11 +250,11 @@ docker compose up -d
 | `OPC_KB_TYPE` | Knowledge base type | `local` |
 | `OPC_KB_PATH` | Knowledge base path (Obsidian/local) | `~/knowledge` |
 
-> ⚠️ **Security Note**: `OPC_ENCRYPTION_KEY` is required. When unset, `encrypt_field()` will throw `RuntimeError`, causing email passwords, customer sensitive fields, and other encryption operations to fail. Make sure to set a strong random key in `.env`.
+> ⚠ **Security Note**: `OPC_ENCRYPTION_KEY` is required. When unset, `encrypt_field()` will throw `RuntimeError`, causing email passwords, customer sensitive fields, and other encryption operations to fail. Make sure to set a strong random key in `.env`.
 
 ### About API Keys
 
-> ⚠️ **OPC-Agents does NOT provide LLM services.** Choose your own LLM provider and obtain your own API key. The project does not store any API keys or sensitive information.
+> ⚠ **OPC-Agents does NOT provide LLM services.** Choose your own LLM provider and obtain your own API key. The project does not store any API keys or sensitive information.
 
 | Backend | Model | Config Variable | Quality | Get Key |
 |---------|-------|-----------------|---------|---------|
@@ -314,11 +314,11 @@ OPC-Agents/
 │   ├── # === v0.2.0 New Core Modules ===
 │   ├── settings.py        # 📋 SettingsManager singleton (5 tabs: LLM/SMTP/API Keys/Security/Profile)
 │   ├── onboarding.py      # 🚶 OnboardingManager (3-step first-run wizard)
-│   ├── error_handler.py   # 🛡️ ErrorHandler (9 exception types → friendly messages)
+│   ├── error_handler.py   # 🛡 ErrorHandler (9 exception types → friendly messages)
 │   ├── data_backup.py     # 💾 DataBackupManager (ZIP/JSON/CSV export, SHA256, Zip Slip protection)
 │   ├── i18n.py            # 🌐 I18nManager (zh_CN/en_US/ja_JP, 1242 keys)
 │   ├── dashboard_config.py# 📊 DashboardConfig (3 layouts × 3 densities × 6 panels = 9 combos)
-│   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts integration (5 CLI actions)
+│   ├── shortcuts_handler.py# ⌨ Apple Shortcuts integration (5 CLI actions)
 │   │
 │   ├── # === v0.2.5 New: CarryMem + Knowledge Base + Flywheel ===
 │   ├── memory_bridge.py   # 🧠 MemoryBridge (CarryMem adapter, persistent memory + rule engine + flywheel)

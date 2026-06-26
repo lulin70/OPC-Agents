@@ -52,7 +52,7 @@ EVENT_TYPE_CONFIG = {
     "STEP_START": {
         "label": _t("event_step_start"),
         "phase": "executing",
-        "emoji": "️",
+        "emoji": "",
     },
     "STEP_PROGRESS": {
         "label": _t("event_step_progress"),
@@ -87,7 +87,7 @@ EVENT_TYPE_CONFIG = {
     "CANCELLED": {
         "label": _t("event_cancelled"),
         "phase": "cancelled",
-        "emoji": "️",
+        "emoji": "",
     },
 }
 
@@ -110,7 +110,7 @@ def _get_phase_from_event(event_type: str) -> tuple:
         "executing": ("", _t("phase_executing")),
         "complete": ("", _t("phase_task_complete")),
         "error": ("", _t("phase_exec_error")),
-        "cancelled": ("️", _t("event_cancelled")),
+        "cancelled": ("", _t("event_cancelled")),
     }
     return phase_labels.get(phase, ("", _t("phase_executing")))
 
@@ -232,7 +232,7 @@ def _get_phase_icon(event_type: str) -> str:
         "step_complete": "",
         "complete": "",
         "error": "",
-        "cancelled": "️",
+        "cancelled": "",
     }
     event_key = event_type.lower().replace("-", "_")
     return icon_mapping.get(event_key, "")

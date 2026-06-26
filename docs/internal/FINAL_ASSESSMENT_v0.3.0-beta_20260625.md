@@ -120,7 +120,7 @@ pytest tests/test_ui_e2e_apptest.py -q
 | 侧边栏导航切换（Dashboard、设置、对话） | ✅ | 三页切换正常，URL 与标题同步 |
 | Dashboard 时间线图表 | ✅ | 数据仪表盘与收入趋势图渲染，控制台仅 Vega-Lite warning |
 | 设置页标签页 | ✅ | LLM/SMTP/API密钥/安全设置/个人信息/数据备份 标签渲染 |
-| 聊天输入真实提交 | ⚠️ 提交成功 | 使用真实键盘事件输入“分析本月数据”并点击 Send，消息成功提交并触发任务执行；后端因未配置 LLM/API 返回“任务执行遇到问题”，但 UI 提交流程本身正常 |
+| 聊天输入真实提交 | ⚠ 提交成功 | 使用真实键盘事件输入“分析本月数据”并点击 Send，消息成功提交并触发任务执行；后端因未配置 LLM/API 返回“任务执行遇到问题”，但 UI 提交流程本身正常 |
 | 取消任务/重新执行按钮 | ✅ | 任务执行期间“取消任务”按钮出现，失败后“重新执行”按钮渲染 |
 
 ### 4.2 关键 UI/UX 问题
@@ -146,7 +146,7 @@ pytest tests/test_ui_e2e_apptest.py -q
 - **目标分支**: `main`
 - **合并方式**: Squash Merge（推荐，本地已整理为 1 个清晰的发布提交）
 - **手动创建 PR 地址**: https://github.com/lulin70/OPC-Agents/pull/new/release/v0.3.0-beta
-- **PR 创建状态**: ⚠️ GitHub MCP 因认证失败、浏览器因超时均未能自动创建 PR，需手动点击上述链接创建
+- **PR 创建状态**: ⚠ GitHub MCP 因认证失败、浏览器因超时均未能自动创建 PR，需手动点击上述链接创建
 
 ### 5.2 PR 描述模板
 
@@ -192,7 +192,7 @@ pytest tests/test_ui_e2e_apptest.py -q
 | 测试覆盖 | ✅ | 3223 passed，117 skipped，覆盖率 62.87% |
 | 安全扫描 | ✅ | 通过 |
 | 文档同步 | ✅ | API/QUICK_START/CHANGELOG/README 已统一 |
-| UI/UX | ⚠️ | 核心流程（632px 视口）已真实验证；emoji 替换未完成；宽屏 ≥1024px 验证受环境限制未执行 |
+| UI/UX | ⚠ | 核心流程（632px 视口）已真实验证；emoji 替换未完成；宽屏 ≥1024px 验证受环境限制未执行 |
 | Git 流程 | ❌ | 修改仍在 main 工作区，未通过 PR → Review → Merge |
 
 ### 6.2 最终判定

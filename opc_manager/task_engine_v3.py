@@ -314,17 +314,17 @@ class TaskEngineV3(ContentGenerationMixin):
             else None
         )
         self._emit_progress(
-            session_id, EventType.PLAN_START, "🚀 任务执行开始", progress_pct=0
+            session_id, EventType.PLAN_START, " 任务执行开始", progress_pct=0
         )
 
         sanitized, validation_error = InputValidator.sanitize(user_input)
         if validation_error:
             self._emit_progress(
-                session_id, EventType.ERROR, f"❌ 输入校验失败: {validation_error}"
+                session_id, EventType.ERROR, f" 输入校验失败: {validation_error}"
             )
             return TaskResult(
                 success=False,
-                content=f"⚠️ 输入校验未通过：{validation_error}",
+                content=f" 输入校验未通过：{validation_error}",
                 task_type=TaskType.GENERAL_CHAT,
                 execution_time_ms=(time.time() - start_time) * 1000,
                 error=validation_error,
@@ -337,7 +337,7 @@ class TaskEngineV3(ContentGenerationMixin):
         except Exception:
             return TaskResult(
                 success=False,
-                content="⚠️ 输入包含不安全内容，请修改后重试",
+                content=" 输入包含不安全内容，请修改后重试",
                 task_type=TaskType.GENERAL_CHAT,
                 execution_time_ms=(time.time() - start_time) * 1000,
                 error="unsafe_input",
@@ -388,7 +388,7 @@ class TaskEngineV3(ContentGenerationMixin):
             self._emit_progress(
                 session_id,
                 EventType.INTENT_DETECTED,
-                f"🔍 意图识别: {task_type.value}",
+                f" 意图识别: {task_type.value}",
                 progress_pct=10,
             )
 
@@ -396,7 +396,7 @@ class TaskEngineV3(ContentGenerationMixin):
             self._emit_progress(
                 session_id,
                 EventType.STEP_START,
-                f"⚡ 开始执行: {step_name}",
+                f" 开始执行: {step_name}",
                 progress_pct=15,
             )
 
@@ -512,13 +512,13 @@ class TaskEngineV3(ContentGenerationMixin):
             self._emit_progress(
                 session_id,
                 EventType.STEP_COMPLETE,
-                f"✅ 执行完成: {step_name}",
+                f" 执行完成: {step_name}",
                 progress_pct=90,
             )
 
             if is_follow_up and result.success and result.content:
                 result.content = (
-                    f"> 🔄 **基于上次结果继续** — 以下内容在原有基础上进行了补充/修改\n\n"
+                    f">  **基于上次结果继续** — 以下内容在原有基础上进行了补充/修改\n\n"
                     f"{result.content}"
                 )
 
@@ -547,7 +547,7 @@ class TaskEngineV3(ContentGenerationMixin):
                     cache_stats["hits"] + cache_stats["misses"],
                 )
             self._emit_progress(
-                session_id, EventType.COMPLETE, "🎉 任务执行完成", progress_pct=100
+                session_id, EventType.COMPLETE, " 任务执行完成", progress_pct=100
             )
             # Store task result for tracking
             if session_id:
@@ -561,11 +561,11 @@ class TaskEngineV3(ContentGenerationMixin):
         except Exception as e:
             logger.error("[TaskEngineV3] Execution failed: %s", e, exc_info=True)
             self._emit_progress(
-                session_id, EventType.ERROR, f"❌ 执行异常: {str(e)[:100]}"
+                session_id, EventType.ERROR, f" 执行异常: {str(e)[:100]}"
             )
             return TaskResult(
                 success=False,
-                content="⚠️ 任务执行遇到问题，请稍后重试或调整需求描述",
+                content=" 任务执行遇到问题，请稍后重试或调整需求描述",
                 task_type=TaskType.GENERAL_CHAT,
                 execution_time_ms=(time.time() - start_time) * 1000,
                 error="internal_error",
@@ -691,7 +691,7 @@ class TaskEngineV3(ContentGenerationMixin):
         Typical user input: "收集2024年AI Agent框架最新信息"
 
         Output format:
-        # 🔍 「Query」 Research Report
+        #  「Query」 Research Report
         - Search result summaries (8 items, each with title/summary/link)
         - Core points extraction (automatically extracted from titles)
         - Next step action suggestions (read/verify/apply/deep analysis)
@@ -709,7 +709,7 @@ class TaskEngineV3(ContentGenerationMixin):
 
         if not results:
             content = (
-                f"# 🔍 「{search_query}」— 未找到足够信息\n\n"
+                f"#  「{search_query}」— 未找到足够信息\n\n"
                 f"> 搜索时间: {time.strftime('%Y-%m-%d %H:%M')}\n\n"
                 f"## 说明\n\n"
                 f"针对「**{search_query}**」的搜索未返回足够的相关结果。\n\n"
@@ -722,14 +722,14 @@ class TaskEngineV3(ContentGenerationMixin):
                 f"- 告诉我更多背景信息，我可以从其他角度帮你查找\n"
                 f"- 如果这是特定行业的专业问题，建议查阅该行业的权威报告或咨询专业人士\n\n"
                 f"---\n"
-                f"⚠️ **Note**: No external data was retrieved for this query. The following content is generated from general knowledge and may not reflect the latest information.\n"
+                f" **Note**: No external data was retrieved for this query. The following content is generated from general knowledge and may not reflect the latest information.\n"
             )
             return TaskResult(
                 success=True, content=content, task_type=TaskType.INFO_COLLECTION
             )
 
         lines = []
-        lines.append(f"# 🔍 「{search_query}」研究报告\n")
+        lines.append(f"#  「{search_query}」研究报告\n")
         lines.append(
             f"> 生成时间: {time.strftime('%Y-%m-%d %H:%M')} | 信息来源: {len(results)} 条\n"
         )
@@ -743,7 +743,7 @@ class TaskEngineV3(ContentGenerationMixin):
             lines.append(f"### {i}. {title}\n")
             lines.append(f"{body[:400]}{'...' if len(body) > 400 else ''}\n")
             if href:
-                lines.append(f"🔗 [{title}]({href})\n")
+                lines.append(f" [{title}]({href})\n")
             lines.append("")
 
         lines.append("---\n")
@@ -844,7 +844,7 @@ class TaskEngineV3(ContentGenerationMixin):
             )
 
         if not results:
-            disclaimer = "\n\n---\n⚠️ **Note**: No external data was retrieved for this query. The following content is generated from general knowledge and may not reflect the latest information.\n"
+            disclaimer = "\n\n---\n **Note**: No external data was retrieved for this query. The following content is generated from general knowledge and may not reflect the latest information.\n"
             content += disclaimer
 
         return TaskResult(
@@ -893,7 +893,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 deliverable_format="Markdown",
             )
 
-        lines.append(f"# 📊 「{search_query}」深度分析\n")
+        lines.append(f"#  「{search_query}」深度分析\n")
         lines.append(f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')}\n\n")
 
         if results:
@@ -911,17 +911,17 @@ class TaskEngineV3(ContentGenerationMixin):
         )
 
         lines.append(f"## SWOT分析\n\n")
-        lines.append(f"### ✅ 优势 (Strengths)\n\n")
+        lines.append(f"###  优势 (Strengths)\n\n")
         lines.append(f"1. **专注度高**: 作为一人公司，决策链条短，执行力强\n")
         lines.append(f"2. **灵活性大**: 可以快速试错和调整方向\n")
         lines.append(f"3. **成本低**: 相比传统企业，固定支出可控\n\n")
 
-        lines.append(f"### ⚠️ 劣势 (Weaknesses)\n\n")
+        lines.append(f"###  劣势 (Weaknesses)\n\n")
         lines.append(f"1. **资源有限**: 人力和时间是最大瓶颈\n")
         lines.append(f"2. **精力分散**: 需要同时处理多领域事务\n")
         lines.append(f"3. **规模效应弱**: 难以享受大团队的规模经济\n\n")
 
-        lines.append(f"### 🎯 机会 (Opportunities)\n\n")
+        lines.append(f"###  机会 (Opportunities)\n\n")
         if results:
             first_body = results[0].get("body", "") or results[0].get("snippet", "")
             if first_body:
@@ -933,7 +933,7 @@ class TaskEngineV3(ContentGenerationMixin):
         lines.append(f"2. 细分领域的专业化服务需求增长\n")
         lines.append(f"3. 个人品牌和信任经济的兴起\n\n")
 
-        lines.append(f"### ⚡ 威胁 (Threats)\n\n")
+        lines.append(f"###  威胁 (Threats)\n\n")
         lines.append(f"1. **竞争加剧**: 同赛道参与者增多\n")
         lines.append(f"2. **平台依赖**: 流量入口受制于平台政策\n")
         lines.append(f"3. **技术迭代快**: 需要持续学习和适应\n\n")
@@ -1001,7 +1001,7 @@ class TaskEngineV3(ContentGenerationMixin):
             deliverable = config.deliverable_template
 
             lines = []
-            lines.append(f"# 📋 {deliverable.name}\n")
+            lines.append(f"#  {deliverable.name}\n")
             lines.append(
                 f"> 场景: {config.description} | 预计耗时: {config.estimated_duration}\n"
             )
@@ -1015,12 +1015,12 @@ class TaskEngineV3(ContentGenerationMixin):
                 lines.append(f"{step_content}\n")
                 if step.output_spec:
                     lines.append(
-                        f"📦 **预期产出**: {step.output_spec.name} ({step.output_spec.format})\n"
+                        f" **预期产出**: {step.output_spec.name} ({step.output_spec.format})\n"
                     )
                     lines.append(f"   包含: {', '.join(step.output_spec.includes)}\n")
                 lines.append("---\n\n")
 
-            lines.append("# ✅ 最终交付物\n\n")
+            lines.append("#  最终交付物\n\n")
             lines.append(f"以上各步骤的产出整合为完整的**{deliverable.name}**。\n\n")
             lines.append(f"**包含章节**:\n")
             for i, section in enumerate(deliverable.sections, 1):
@@ -1048,7 +1048,7 @@ class TaskEngineV3(ContentGenerationMixin):
         - writing/generation: Call _gen_writing_for_step() to generate complete draft
         - design: Output design proposal framework (UX/UI four elements)
         - marketing: Output promotion strategy matrix (4 channels + budget + KPI + timeline)
-        - review: Output review checklist (5 items all ⏳ pending confirmation)
+        - review: Output review checklist (5 items all  pending confirmation)
         - scheduling/invitation: Output schedule (today + tomorrow options)
         - Other: Return step description text (fallback)
 
@@ -1071,7 +1071,7 @@ class TaskEngineV3(ContentGenerationMixin):
                     href = r.get("href", "")
                     item = f"- **{title}**\n  {body[:200]}{'...' if len(body) > 200 else ''}"
                     if href:
-                        item += f"\n  🔗 {href}"
+                        item += f"\n   {href}"
                     items.append(item)
                 return (
                     "\n".join(items) if items else "*搜索未返回结果，建议手动补充数据*"
@@ -1132,12 +1132,12 @@ class TaskEngineV3(ContentGenerationMixin):
                 f"**评审范围**: {desc}\n\n"
                 f"| 检查项 | 状态 | 验证方法 |\n"
                 f"|--------|:----:|------|\n"
-                f"| 完整性: 所有必需章节齐全 | ⏳ 待人工确认 | 逐章节核对目录 |\n"
-                f"| 准确性: 数据和事实经核实 | ⏳ 待人工确认 | 数据来源可追溯 |\n"
-                f"| 一致性: 各部分逻辑自洽 | ⏳ 待人工确认 | 交叉引用检查 |\n"
-                f"| 可行性: 建议可立即执行 | ⏳ 待人工确认 | 资源和时间已评估 |\n"
-                f"| 清晰度: 表达无歧义 | ⏳ 待人工确认 | 第三方试读通过 |\n\n"
-                f"**评审结论**: ⏳ 自动生成的评审框架，需人工复核后确认。请逐项检查并标注最终状态。"
+                f"| 完整性: 所有必需章节齐全 |  待人工确认 | 逐章节核对目录 |\n"
+                f"| 准确性: 数据和事实经核实 |  待人工确认 | 数据来源可追溯 |\n"
+                f"| 一致性: 各部分逻辑自洽 |  待人工确认 | 交叉引用检查 |\n"
+                f"| 可行性: 建议可立即执行 |  待人工确认 | 资源和时间已评估 |\n"
+                f"| 清晰度: 表达无歧义 |  待人工确认 | 第三方试读通过 |\n\n"
+                f"**评审结论**:  自动生成的评审框架，需人工复核后确认。请逐项检查并标注最终状态。"
             )
 
         elif step_type in ("scheduling", "invitation"):
@@ -1149,7 +1149,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 f"**事项**: {desc}\n\n"
                 f"| 选项 | 日期 | 时段 | 推荐 |\n"
                 f"|------|------|------|------|\n"
-                f"| A | {today} | 14:00-16:00 | ⭐ 推荐 |\n"
+                f"| A | {today} | 14:00-16:00 |  推荐 |\n"
                 f"| B | {tomorrow_s} | 09:00-11:00 | 备选 |\n"
                 f"| C | {tomorrow_s} | 15:00-17:00 | 备选 |\n\n"
                 f"**准备事项**: 发送邀请 → 准备材料 → 确认参会 → 预订场地"
@@ -1251,35 +1251,35 @@ class TaskEngineV3(ContentGenerationMixin):
         query_lower = query.lower()
 
         greeting_zh = (
-            "👋 你好！我是OPC-Agents一人公司助手。\n\n"
+            " 你好！我是OPC-Agents一人公司助手。\n\n"
             "我能直接帮你完成任务并交付文件：\n\n"
-            "- 🔍 **收集信息** → 返回真实搜索结果+研究报告（可下载.md文件）\n"
-            "- ✍️ **生成方案** → 返回完整可执行的计划文档（含时间表/资源/风险）\n"
-            "- 📊 **分析问题** → 返回SWOT分析+具体行动清单\n"
-            "- 📋 **执行场景** → 返回多步骤工作流+每步产出物\n\n"
+            "-  **收集信息** → 返回真实搜索结果+研究报告（可下载.md文件）\n"
+            "-  **生成方案** → 返回完整可执行的计划文档（含时间表/资源/风险）\n"
+            "-  **分析问题** → 返回SWOT分析+具体行动清单\n"
+            "-  **执行场景** → 返回多步骤工作流+每步产出物\n\n"
             "直接告诉我你需要什么，我来帮你做完并交付文件！"
         )
         greeting_en = (
-            "👋 Hello! I'm OPC-Agents, your One-Person Company assistant.\n\n"
+            " Hello! I'm OPC-Agents, your One-Person Company assistant.\n\n"
             "I can directly complete tasks and deliver files for you:\n\n"
-            "- 🔍 **Collect Information** → Real search results + research report (downloadable .md)\n"
-            "- ✍️ **Generate Plans** → Complete executable plan document (with timeline/resources/risks)\n"
-            "- 📊 **Analyze Issues** → SWOT analysis + specific action items\n"
-            "- 📋 **Execute Scenarios** → Multi-step workflows with deliverables at each step\n\n"
+            "-  **Collect Information** → Real search results + research report (downloadable .md)\n"
+            "-  **Generate Plans** → Complete executable plan document (with timeline/resources/risks)\n"
+            "-  **Analyze Issues** → SWOT analysis + specific action items\n"
+            "-  **Execute Scenarios** → Multi-step workflows with deliverables at each step\n\n"
             "Tell me what you need, and I'll get it done and deliver the file!"
         )
         greeting_jp = (
-            "👋 こんにちは！OPC-Agents一人会社アシスタントです。\n\n"
+            " こんにちは！OPC-Agents一人会社アシスタントです。\n\n"
             "タスクを直接完了し、ファイルを納品できます：\n\n"
-            "- 🔍 **情報収集** → 実際の検索結果＋調査レポート（ダウンロード可能.md）\n"
-            "- ✍️ **プラン生成** → 完全な実行計画書（タイムライン/リソース/リスク付き）\n"
-            "- 📊 **問題分析** → SWOT分析＋具体的なアクションリスト\n"
-            "- 📋 **シナリオ実行** → マルチステップワークフロー＋各ステップの成果物\n\n"
+            "-  **情報収集** → 実際の検索結果＋調査レポート（ダウンロード可能.md）\n"
+            "-  **プラン生成** → 完全な実行計画書（タイムライン/リソース/リスク付き）\n"
+            "-  **問題分析** → SWOT分析＋具体的なアクションリスト\n"
+            "-  **シナリオ実行** → マルチステップワークフロー＋各ステップの成果物\n\n"
             "必要な結果を伝えてください。ファイルを納品します！"
         )
 
         help_zh = (
-            "💡 **我能直接为你交付的成果物**：\n\n"
+            " **我能直接为你交付的成果物**：\n\n"
             "| 你说 | 我交付 |\n"
             "|------|--------|\n"
             '| "帮我收集XX趋势" | 真实搜索结果+结构化研究报告(.md) |\n'
@@ -1289,7 +1289,7 @@ class TaskEngineV3(ContentGenerationMixin):
             "所有成果物都可以直接下载使用！"
         )
         help_en = (
-            "💡 **Deliverables I can produce for you**:\n\n"
+            " **Deliverables I can produce for you**:\n\n"
             "| You Say | I Deliver |\n"
             "|---------|----------|\n"
             '| "Collect XX trends" | Real search results + structured research report (.md) |\n'
@@ -1299,7 +1299,7 @@ class TaskEngineV3(ContentGenerationMixin):
             "All deliverables can be downloaded and used directly!"
         )
         help_jp = (
-            "💡 **納品できる成果物**：\n\n"
+            " **納品できる成果物**：\n\n"
             "| あなたの指示 | 納品物 |\n"
             "|-------------|--------|\n"
             "| 「XXトレンドを収集」 | 実際の検索結果＋構造化調査レポート(.md) |\n"
@@ -1546,7 +1546,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 self._emit_progress(
                     session_id,
                     EventType.STEP_START,
-                    f"🚀 开始并行预检索 ({len(search_tasks)}个搜索任务)",
+                    f" 开始并行预检索 ({len(search_tasks)}个搜索任务)",
                     progress_pct=20,
                 )
 
@@ -1560,7 +1560,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 self._emit_progress(
                     session_id,
                     EventType.STEP_PROGRESS,
-                    f"✅ 并行检索完成: {parallel_result.success_count}/{len(search_tasks)} 成功 "
+                    f" 并行检索完成: {parallel_result.success_count}/{len(search_tasks)} 成功 "
                     f"(提速 {parallel_result.speedup_factor:.1f}x)",
                     progress_pct=50,
                     detail={
@@ -1623,7 +1623,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 self._emit_progress(
                     session_id,
                     EventType.ERROR,
-                    f"⚠️ 并行执行失败，切换到串行模式: {str(e)[:80]}",
+                    f" 并行执行失败，切换到串行模式: {str(e)[:80]}",
                 )
             return await self._serial_content_generation(prompt, session_id)
 
@@ -1713,7 +1713,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 self._emit_progress(
                     session_id,
                     EventType.STEP_START,
-                    f"📊 开始并行多维度分析 ({len(analysis_tasks)}个分析维度)",
+                    f" 开始并行多维度分析 ({len(analysis_tasks)}个分析维度)",
                     progress_pct=20,
                 )
 
@@ -1727,7 +1727,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 self._emit_progress(
                     session_id,
                     EventType.STEP_PROGRESS,
-                    f"✅ 多维度分析完成: {parallel_result.success_count}/{len(analysis_tasks)} 维度 "
+                    f" 多维度分析完成: {parallel_result.success_count}/{len(analysis_tasks)} 维度 "
                     f"(提速 {parallel_result.speedup_factor:.1f}x)",
                     progress_pct=60,
                     detail={
@@ -1760,7 +1760,7 @@ class TaskEngineV3(ContentGenerationMixin):
                     }
 
             lines = []
-            lines.append(f"# 📊 「{prompt}」深度并行分析\n")
+            lines.append(f"#  「{prompt}」深度并行分析\n")
             lines.append(
                 f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')} | 并行维度: {len(dimension_results)}\n\n"
             )
@@ -1815,7 +1815,7 @@ class TaskEngineV3(ContentGenerationMixin):
                 self._emit_progress(
                     session_id,
                     EventType.ERROR,
-                    f"⚠️ 并行分析失败，切换到串行模式: {str(e)[:80]}",
+                    f" 并行分析失败，切换到串行模式: {str(e)[:80]}",
                 )
             return self._execute_data_analysis_serial(prompt, session_id).content
 

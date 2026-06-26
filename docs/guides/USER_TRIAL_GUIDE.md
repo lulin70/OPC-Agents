@@ -134,7 +134,7 @@ cd OPC-Agents
 
 #### Windows 用户
 
-> ⚠️ **重要提示**：OPC-Agents 当前版本主要面向 Mac 用户，Windows 支持需要通过 WSL（Windows Subsystem for Linux）或 Git Bash 运行 `.sh` 脚本。
+> ⚠ **重要提示**：OPC-Agents 当前版本主要面向 Mac 用户，Windows 支持需要通过 WSL（Windows Subsystem for Linux）或 Git Bash 运行 `.sh` 脚本。
 
 1. 安装 [WSL](https://learn.microsoft.com/zh-cn/windows/wsl/install) 或 [Git Bash](https://git-scm.com/downloads)
 2. 进入 `OPC-Agents` 文件夹
@@ -146,7 +146,7 @@ cd OPC-Agents
 
 **预期看到**：终端显示安装进度（虚拟环境创建→依赖安装→配置文件创建），最后显示"安装完成"。
 
-> ⚠️ **如果安装失败**：请看本文档末尾的 FAQ 第 1 条。
+> ⚠ **如果安装失败**：请看本文档末尾的 FAQ 第 1 条。
 
 ---
 
@@ -198,7 +198,7 @@ cd OPC-Agents
 
 **预期看到**：`.env` 文件中有一行 `MOKA_API_KEY=sk-...`，且行首没有 `#`。
 
-> ⚠️ **重要**：密钥前后不要加引号或空格，等号两边也不要有空格。
+> ⚠ **重要**：密钥前后不要加引号或空格，等号两边也不要有空格。
 
 ---
 
@@ -218,7 +218,7 @@ cd OPC-Agents
 ./scripts/start.sh
 ```
 
-> ⚠️ Windows 原生 cmd 不支持 `.sh` 脚本，必须使用 WSL 或 Git Bash。
+> ⚠ Windows 原生 cmd 不支持 `.sh` 脚本，必须使用 WSL 或 Git Bash。
 
 [截图：终端运行 ./scripts/start.sh 后的输出，显示 Ready! Starting OPC-Agents...]
 
@@ -230,7 +230,7 @@ cd OPC-Agents
 
 > 💡 **如果浏览器没自动打开**：手动打开浏览器，在地址栏输入 `http://localhost:8501` 回车。
 
-> ⚠️ **注意**：启动后**不要关闭终端窗口**！关闭终端 = 关闭应用。
+> ⚠ **注意**：启动后**不要关闭终端窗口**！关闭终端 = 关闭应用。
 >
 > **如何停止应用**：在终端按 `Ctrl + C`。
 
@@ -299,8 +299,8 @@ cd OPC-Agents
 |------|---------|---------------------|
 | 记账 | ✅ 完全可用 | ✅ 完全可用 |
 | 报告生成 | ✅ 可用（基于模板） | ✅ 可用（更智能） |
-| 邮件草稿 | ⚠️ 通用模板 | ✅ 个性化生成 |
-| 自然语言理解 | ⚠️ 基础识别 | ✅ 精准理解 |
+| 邮件草稿 | ⚠ 通用模板 | ✅ 个性化生成 |
+| 自然语言理解 | ⚠ 基础识别 | ✅ 精准理解 |
 | 内容质量 | 一般 | 优秀 |
 
 > 💡 **建议**：先用模板模式体验记账和报告功能，觉得有用后再去注册 API Key 解锁完整能力。
@@ -362,7 +362,7 @@ cd OPC-Agents
 - **备选 2**：OpenAI 密钥（https://platform.openai.com ，付费）
 - **备选 3**：本地 Ollama 模型（https://ollama.com ，完全免费，但需另装 Ollama 软件）
 
-> ⚠️ **注意**：OPC-Agents 不提供也不存储任何 API Key，你需要自行到对应服务商网站注册获取。填入 `.env` 文件的密钥会加密保存在本地，不会上传。
+> ⚠ **注意**：OPC-Agents 不提供也不存储任何 API Key，你需要自行到对应服务商网站注册获取。填入 `.env` 文件的密钥会加密保存在本地，不会上传。
 
 ---
 
@@ -398,7 +398,7 @@ cd OPC-Agents
 
 **方式 1：应用内备份（推荐）**
 
-1. 在应用中点击侧边栏 **`⚙️ 设置`**
+1. 在应用中点击侧边栏 **`⚙ 设置`**
 2. 找到 **`数据备份`** 标签
 3. 点击 **`导出备份`**，选择 ZIP 格式
 4. 系统会生成一个带 SHA256 校验的加密压缩包
@@ -430,7 +430,7 @@ git pull origin main
 3. 把备份的 `data/` 文件夹和 `.env` 文件复制到新版本文件夹中
 4. 运行 `./scripts/install.sh`
 
-> ⚠️ **重要**：更新前务必备份 `data/` 文件夹，避免数据丢失！
+> ⚠ **重要**：更新前务必备份 `data/` 文件夹，避免数据丢失！
 
 ---
 

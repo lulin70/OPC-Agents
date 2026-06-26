@@ -1,6 +1,6 @@
 # OPC-Agents Agent Brain 架构设计 — 七角色共识文档
 
-> ⚠️ 此文档描述串行架构（v2.0, 2026-05-07），已被 docs/architecture/PARALLEL_SAGES_DESIGN.md（三贤者并行投票架构）取代，仅作历史参考。
+> ⚠ 此文档描述串行架构（v2.0, 2026-05-07），已被 docs/architecture/PARALLEL_SAGES_DESIGN.md（三贤者并行投票架构）取代，仅作历史参考。
 
 **日期**: 2026-05-07
 **参与角色**: 架构师、产品经理、安全专家、测试专家、开发者、DevOps、UI设计师

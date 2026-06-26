@@ -167,7 +167,7 @@ def generate_dashboard_report() -> Dict[str, Any]:
         md += f"| {t.get('year_month', '')} | ¥{t.get('income', 0):.2f} | ¥{t.get('expense', 0):.2f} | ¥{t.get('profit', 0):.2f} |\n"
 
     if tasks.get("overdue_count", 0) > 0:
-        md += "\n## ⚠️ 逾期任务\n\n"
+        md += "\n##  逾期任务\n\n"
         for t in tasks.get("overdue_tasks", []):
             md += f"- {t['title']} (截止 {t.get('due_date', '')})\n"
 

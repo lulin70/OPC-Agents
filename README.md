@@ -38,7 +38,7 @@ opc-agents                      # 2. 启动
 - **⚡ 三贤者并行投票架构回归**：从串行流水线（3×RTT）改为并行投票（1×RTT），延迟降低 3 倍。借鉴 EVA MAGI 三贤者同步投票 + 少数派报告机制，关键决策点前置共识保护。
 - **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结 11 个非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
 - **🧠 IntentClassifier 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
-- **🛡️ 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
+- **🛡 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
 - **📊 质量大幅提升**：总覆盖率 62.87%，email_skill 99%，finance_skill 100%；新增 7 个真实 LLM E2E 测试（CI 每周一自动运行）。
 - **🌐 i18n 重构**：3857 行 → 133 行逻辑层 + JSON 化，向后兼容，维护成本骤降。
 
@@ -59,7 +59,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 | 你说 | 它交付 |
 |------|--------|
 | "帮我收集OPC公司趋势" | 🔍 研究报告（真实搜索+来源链接+结构化整理） |
-| "帮我写Q2营销方案" | ✍️ 完整方案（SMART目标+路线图+风险+验收标准） |
+| "帮我写Q2营销方案" | ✍ 完整方案（SMART目标+路线图+风险+验收标准） |
 | "帮我分析竞品A" | 📊 分析报告（SWOT+行动清单+优先级排序） |
 | "帮我发邮件给客户" | 📧 邮件发送（模板渲染+SMTP发送+频率限制） |
 | "帮我记录一笔收入" | 💰 财务记录（自动分类+月度报表+趋势分析） |
@@ -73,7 +73,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 - 🧠 **策略脑（StrategistBrain）**：理解你的意图，规划执行步骤
 - ⚡ **执行脑（ExecutorBrain）**：调用技能和工具，生成成果物（v0.3.0 起给"真意见"，不再用假意见规则）
 - 🔍 **反思脑（ReflectorBrain）**：评估结果质量，前置预判 + 少数派报告，不达标自动修正
-- 🛡️ **共识引擎（ConsensusEngine）**：三贤者并行投票（1×RTT，比串行 3×RTT 快 3 倍），关键决策点前置保护
+- 🛡 **共识引擎（ConsensusEngine）**：三贤者并行投票（1×RTT，比串行 3×RTT 快 3 倍），关键决策点前置保护
 
 **IntentClassifier 三路智能路由**——按任务复杂度分流，省时省钱：
 - 🟢 **SIMPLE**：简单任务直接执行，绕过三贤者
@@ -100,7 +100,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 | 🏪 **技能市场** | 搜索安装第三方技能，按需扩展能力 |
 | 📚 **外接知识库** | 接入 Obsidian/语雀/飞书/Notion/思源笔记，AI 参考你的私有资料 |
 | 📜 **规则引擎** | 失败经验自动提炼为规则，同类错误不再犯 |
-| ↩️ **撤销机制** | 操作可回退，放心大胆用 |
+| ↩ **撤销机制** | 操作可回退，放心大胆用 |
 | 🌐 **三语切换** | 中文/英文/日文界面一键切换 |
 | 🧊 **LLM 缓存** | 相同问题不重复调用，省时省钱 |
 
@@ -244,11 +244,11 @@ docker compose up -d
 | `OPC_KB_TYPE` | 知识库类型 | `local` |
 | `OPC_KB_PATH` | 知识库路径（Obsidian/本地） | `~/knowledge` |
 
-> ⚠️ **安全提示**：`OPC_ENCRYPTION_KEY` 为必设项，未设置时 `encrypt_field()` 将抛出 `RuntimeError`，导致邮件密码、客户敏感字段等加密操作失败。请务必在 `.env` 中设置强随机密钥。
+> ⚠ **安全提示**：`OPC_ENCRYPTION_KEY` 为必设项，未设置时 `encrypt_field()` 将抛出 `RuntimeError`，导致邮件密码、客户敏感字段等加密操作失败。请务必在 `.env` 中设置强随机密钥。
 
 ### 关于API Key
 
-> ⚠️ **OPC-Agents 不提供 LLM 服务。** 请选择适合你的 LLM 服务商，自行获取 API Key。项目不存储任何 API Key 等隐私信息。
+> ⚠ **OPC-Agents 不提供 LLM 服务。** 请选择适合你的 LLM 服务商，自行获取 API Key。项目不存储任何 API Key 等隐私信息。
 
 | 后端 | 模型 | 配置环境变量 | 质量 | 获取方式 |
 |------|------|-------------|------|---------|
@@ -309,11 +309,11 @@ OPC-Agents/
 │   ├── # === v0.2.0 新增核心模块 ===
 │   ├── settings.py        # 📋 SettingsManager单例（5标签页：LLM/SMTP/API Keys/Security/Profile）
 │   ├── onboarding.py      # 🚶 OnboardingManager（3步首次运行引导向导）
-│   ├── error_handler.py   # 🛡️ ErrorHandler（9种异常类型→中文友好消息）
+│   ├── error_handler.py   # 🛡 ErrorHandler（9种异常类型→中文友好消息）
 │   ├── data_backup.py     # 💾 DataBackupManager（ZIP/JSON/CSV导出，SHA256，Zip Slip防护）
 │   ├── i18n.py            # 🌐 I18nManager（zh_CN/en_US/ja_JP，1242翻译键）
 │   ├── dashboard_config.py# 📊 DashboardConfig（3布局×3密度×6面板=9种组合）
-│   ├── shortcuts_handler.py# ⌨️ Apple Shortcuts集成（5个CLI动作）
+│   ├── shortcuts_handler.py# ⌨ Apple Shortcuts集成（5个CLI动作）
 │   │
 │   ├── # === v0.2.5 新增：CarryMem + 知识库 + 飞轮 ===
 │   ├── memory_bridge.py   # 🧠 MemoryBridge（CarryMem适配层，持久记忆+规则引擎+飞轮）

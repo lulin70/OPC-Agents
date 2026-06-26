@@ -32,7 +32,7 @@ try:
 
     _CARRYMEM_AVAILABLE = True
 except ImportError:
-    pass
+    CarryMem = None  # type: ignore
 
 
 def is_memory_enabled() -> bool:
@@ -473,17 +473,17 @@ class MemoryBridge:
 
         level = min(round(score), 5)
         grades = {
-            0: "🌱 新手",
-            1: "🌿 熟悉",
-            2: "🌳 精通",
-            3: "🏔️ 专家",
-            4: "🧙 大师",
-            5: "👑 传奇",
+            0: " 新手",
+            1: " 熟悉",
+            2: " 精通",
+            3: " 专家",
+            4: " 大师",
+            5: " 传奇",
         }
 
         return {
             "level": level,
-            "grade": grades.get(level, "🌱 新手"),
+            "grade": grades.get(level, " 新手"),
             "score": round(score, 1),
             "metrics": metrics,
         }
