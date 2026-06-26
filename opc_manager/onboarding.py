@@ -40,11 +40,11 @@ _SAMPLE_TASK_RESULT_MAX_LENGTH = 500
 
 QUICK_START_GUIDE = """
 ┌─────────────────────────────────────────────────────┐
-│           🚀 OPC-Agents 快速上手指南               │
+│            OPC-Agents 快速上手指南               │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │  ① 设置  →  ② 对话  →  ③ 查看  →  ④ 导出         │
-│  ⚙️        💬        📊        📁                 │
+│                                           │
 │                                                     │
 │  ┌──────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │
 │  │填入  │  │ 输入需求  │  │ 查看数据  │  │ 导出为  │ │
@@ -53,7 +53,7 @@ QUICK_START_GUIDE = """
 │            │ 收入5000  │                           │
 │            └──────────┘                           │
 │                                                     │
-│  💡 小技巧：                                        │
+│   小技巧：                                        │
 │  • 按 Ctrl+Z 可撤销上一步操作                       │
 │  • 输入 "/" 打开快捷命令                            │
 │  • 设置页可切换主题和语言                             │
@@ -82,7 +82,7 @@ class OnboardingState:
 SAMPLE_TASKS = [
     {
         "id": "first_income",
-        "title": "🎯 试试记录一笔收入",
+        "title": " 试试记录一笔收入",
         "description": "体验OPC-Agents的核心能力：自然语言→自动执行",
         "example_input": "帮我记录一笔收入5000元，来自客户张三的咨询服务费",
         "category": "finance",
@@ -172,25 +172,25 @@ class OnboardingManager:
 
         contents = {
             OnboardingStep.WELCOME: {
-                "title": "👋 欢迎使用 OPC-Agents",
+                "title": " 欢迎使用 OPC-Agents",
                 "subtitle": "一人公司智能任务执行系统",
                 "description": (
                     "OPC-Agents 不是聊天机器人，而是能干活的AI执行者。\n\n"
                     "告诉它你要什么结果，它直接做完并交付文件给你。\n\n"
-                    "✅ 搜索分析  ✅ 内容创作  ✅ 财务记录\n"
-                    "✅ 客户管理  ✅ 邮件发送  ✅ 日程安排"
+                    " 搜索分析   内容创作   财务记录\n"
+                    " 客户管理   邮件发送   日程安排"
                 ),
                 "features": [
-                    ("🔍 智能搜索", "实时网络搜索，不编造数据"),
-                    ("✍️ 内容生成", "研究报告、方案文档、营销文案"),
-                    ("💰 财务管理", "收支记录、报表、趋势分析"),
-                    ("👥 客户CRM", "客户档案、跟进提醒、合作追踪"),
+                    (" 智能搜索", "实时网络搜索，不编造数据"),
+                    (" 内容生成", "研究报告、方案文档、营销文案"),
+                    (" 财务管理", "收支记录、报表、趋势分析"),
+                    (" 客户CRM", "客户档案、跟进提醒、合作追踪"),
                 ],
                 "action_text": "开始配置 →",
                 "action_target": "llm_config",
             },
             OnboardingStep.LLM_CONFIG: {
-                "title": "🧠 配置 AI 大脑",
+                "title": " 配置 AI 大脑",
                 "subtitle": "选择你的LLM提供商并输入API密钥",
                 "description": (
                     "OPC-Agents 需要连接大语言模型来理解你的需求并执行任务。\n"
@@ -226,18 +226,18 @@ class OnboardingManager:
                 "action_target": "sample_task",
             },
             OnboardingStep.SAMPLE_TASK: {
-                "title": "🎯 试试第一个任务",
+                "title": " 试试第一个任务",
                 "subtitle": "体验OPC-Agents的核心能力",
                 "task": SAMPLE_TASKS[0],
                 "action_text": "完成设置 →",
                 "action_target": "completed",
             },
             OnboardingStep.COMPLETED: {
-                "title": "🎉 准备就绪！",
+                "title": " 准备就绪！",
                 "subtitle": "OPC-Agents 已配置完成",
                 "description": (
                     "你现在可以开始使用所有功能了！\n\n"
-                    "💡 小提示：\n"
+                    " 小提示：\n"
                     "• 直接在对话框输入你的需求即可\n"
                     "• 支持21种技能：搜索、写作、财务、邮件等\n"
                     "• 所有成果物都可以导出为PDF/Word/Excel"

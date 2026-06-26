@@ -65,13 +65,11 @@ class TestShortcutResultSerialization:
     def test_success_output_format(self):
         result = ShortcutResult(True, "操作成功")
         output = result.to_shortcuts_output()
-        assert output.startswith("✅")
         assert "操作成功" in output
 
     def test_failure_output_format(self):
         result = ShortcutResult(False, "出错了")
         output = result.to_shortcuts_output()
-        assert output.startswith("❌")
         assert "出错了" in output
 
     def test_to_json_success(self):
@@ -181,8 +179,8 @@ class TestQueryStatus:
 
         assert result.success is True
         assert "今日状态" in result.message
-        assert "📋 任务数:" in result.message
-        assert "💰 收入总计:" in result.message
+        assert "任务数:" in result.message
+        assert "收入总计:" in result.message
         assert isinstance(result.data["tasks"], int)
         assert isinstance(result.data["income"], float)
         assert "date" in result.data
@@ -244,7 +242,7 @@ class TestCreateDeliverable:
 
         assert result.success is True
         assert "Q2季度报告" in result.message
-        assert "📊报告" in result.message
+        assert "报告已创建" in result.message
         assert result.data["type"] == "report"
         assert result.data["title"] == "Q2季度报告"
         assert "id" in result.data
@@ -264,9 +262,9 @@ class TestCreateDeliverable:
     def test_create_deliverable_different_types(self, temp_db):
         handler = ShortcutsHandler()
         type_tests = [
-            ("proposal", "📝方案"),
-            ("invoice", "🧾发票"),
-            ("unknown_type", "📁文件"),
+            ("proposal", "方案已创建"),
+            ("invoice", "发票已创建"),
+            ("unknown_type", "文件已创建"),
         ]
         for dtype, expected_label in type_tests:
             result = handler.create_deliverable(title=f"test_{dtype}", dtype=dtype)

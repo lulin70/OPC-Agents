@@ -178,11 +178,11 @@ class ErrorHandler:
     @staticmethod
     def get_emoji(severity: ErrorSeverity) -> str:
         return {
-            ErrorSeverity.INFO: "ℹ️",
-            ErrorSeverity.WARNING: "⚠️",
-            ErrorSeverity.ERROR: "❌",
-            ErrorSeverity.CRITICAL: "🔴",
-        }.get(severity, "❓")
+            ErrorSeverity.INFO: "",
+            ErrorSeverity.WARNING: "",
+            ErrorSeverity.ERROR: "",
+            ErrorSeverity.CRITICAL: "",
+        }.get(severity, "")
 
 
 def get_error_handler() -> ErrorHandler:

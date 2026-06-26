@@ -127,7 +127,7 @@
 |--------|--------------------------|-------------------------------|--------|
 | Test count | 900+ target | **1822+** | ✅ +102% over target |
 | Max module size | <400 lines | **<400 lines** (largest ~1311→extracted) | ✅ Met |
-| app.py size | <800 lines | **~1687 lines** | ⚠️ Partially met (further split possible) |
+| app.py size | <800 lines | **~1687 lines** | ⚠ Partially met (further split possible) |
 | Plaintext secrets | Zero | **Zero** (Fernet encrypted) | ✅ Met |
 | Supported languages | 3 (+ja) | **3** (zh/en/ja) | ✅ Met |
 | Dashboard layouts | 9 (3×3) | **9** (3×3) | ✅ Met |
@@ -241,7 +241,7 @@
 
 ---
 
-## 🗓️ Sprint Plan (v0.2.2) — ✅ ALL SPRINTS COMPLETED
+## 🗓 Sprint Plan (v0.2.2) — ✅ ALL SPRINTS COMPLETED
 
 ### Sprint 1: "Hardening Foundation" (Week 1-2)
 **Focus**: Test coverage, security, code organization
@@ -329,7 +329,7 @@
 
 ---
 
-## ⚠️ Risk Matrix
+## ⚠ Risk Matrix
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|

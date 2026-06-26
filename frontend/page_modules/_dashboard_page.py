@@ -509,7 +509,7 @@ def _render_demo_dashboard():
     with col3:
         st.markdown(f"### {_t('dash_demo_clients_title')}")
         for client in demo["client_health"]:
-            arrow = "" if client["trend"] == "up" else "️"
+            arrow = "" if client["trend"] == "up" else ""
             st.markdown(
                 f"**{client['name']}** — {arrow} {_t('dash_score')} {client['score']} | {_t('dash_projects')} {client['projects']}"
             )
@@ -1108,7 +1108,7 @@ def _render_skill_usage_panel(
         for sk in demo_skills:
             pct = sk["usage"] / total_calls * 100 if total_calls > 0 else 0
             trend_emoji = (
-                "" if "↑" in sk["trend"] else ("" if "↓" in sk["trend"] else "️")
+                "" if "↑" in sk["trend"] else ("" if "↓" in sk["trend"] else "")
             )
             skill_data.append(
                 {

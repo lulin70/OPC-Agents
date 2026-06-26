@@ -116,18 +116,18 @@ def _render_undo_panel():
     st.divider()
 
     if st.button(
-        "️ " + _t("undo_operations"),
+        " " + _t("undo_operations"),
         use_container_width=True,
         help=_t("undo_operations_help"),
     ):
         st.session_state.show_undo = not st.session_state.get("show_undo", False)
 
     if st.session_state.get("show_undo", False):
-        st.markdown("#### ️ " + _t("undoable_operations"))
+        st.markdown("####  " + _t("undoable_operations"))
 
         session_id = _get_current_session_id()
         if not session_id:
-            st.warning("️ " + _t("cannot_get_session_id"))
+            st.warning(" " + _t("cannot_get_session_id"))
             return
 
         undoable = _cached_list_undoable(session_id)
@@ -145,7 +145,7 @@ def _render_undo_panel():
 
             can_undo, reason = um.can_undo(session_id, op_id)
 
-            with st.expander(f"️ {op_type} — {created_at}"):
+            with st.expander(f" {op_type} — {created_at}"):
                 col_info, col_action = st.columns([3, 1])
 
                 with col_info:
@@ -350,7 +350,7 @@ def _render_quick_undo_button(task_id: str, operation_type: str = None):
 
         col_undo, col_space = st.columns([1, 4])
         with col_undo:
-            label = f"️ {_t('undo_last_step', op=operation_type or last_record.get('operation_type', _t('operation'))) }"
+            label = f" {_t('undo_last_step', op=operation_type or last_record.get('operation_type', _t('operation'))) }"
 
             if st.button(label, key=f"quick_undo_{task_id}", type="secondary"):
                 confirmed = st.checkbox(

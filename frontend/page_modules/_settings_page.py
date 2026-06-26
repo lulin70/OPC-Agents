@@ -433,7 +433,7 @@ def _render_security_settings(settings):
 
     st.divider()
 
-    st.caption(f"️ {_t('settings_regenerate_warning')}")
+    st.caption(f" {_t('settings_regenerate_warning')}")
 
 
 def _render_profile_settings(settings):
@@ -488,9 +488,9 @@ def _render_profile_settings(settings):
         with col_lang:
             current_locale = profile.get("language", "zh_CN")
             locale_names = {
-                "zh_CN": "中文 🇨🇳",
-                "en_US": "English 🇺🇸",
-                "ja_JP": "日本語 🇯🇵",
+                "zh_CN": "中文",
+                "en_US": "English",
+                "ja_JP": "日本語",
             }
             display_language = locale_names.get(current_locale, current_locale)
             st.text_input(
@@ -653,7 +653,7 @@ def _render_backup_list_tab():
         st.warning(_t("settings_backup_module_not_ready"))
     except Exception as e:
         logger.error("[frontend] Backup list error: %s", e)
-        st.error(f"️ {_t('settings_backup_list_failed', error=str(e))}")
+        st.error(f" {_t('settings_backup_list_failed', error=str(e))}")
 
 
 def _render_export_column(

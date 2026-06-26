@@ -115,7 +115,7 @@ class PersonaManager:
                 self.variants[variant_id] = PersonaConfig(
                     variant_id=variant_id,
                     display_name=variant_config.get("display_name", variant_id),
-                    emoji=variant_config.get("emoji", "🤖"),
+                    emoji=variant_config.get("emoji", ""),
                     target_business_type=variant_config.get("target_business_type", ""),
                     style_overrides=variant_config.get("style_overrides", {}),
                     expertise_tags=variant_config.get("expertise_tags", []),
@@ -147,15 +147,15 @@ class PersonaManager:
         self.variants["content_creator"] = PersonaConfig(
             variant_id="content_creator",
             display_name="内容小助理",
-            emoji="✍️",
+            emoji="",
             target_business_type="content_creator",
             style_overrides={"tone": "轻松活泼", "formality_level": 0.3},
             expertise_tags=["内容创作"],
             vocabulary={"domain_specific": ["内容"], "forbidden": []},
             dialogue_templates={
-                "greeting": "嗨！今天有什么想法？💡",
+                "greeting": "嗨！今天有什么想法？",
                 "accept_task": "收到！我来帮你处理！",
-                "complete": "搞定啦！✨",
+                "complete": "搞定啦！",
             },
             proactive_rules=[],
             response_patterns={},
@@ -265,9 +265,9 @@ class PersonaManager:
         emoji_density = style.get("emoji_density", "medium")
 
         if emoji_density == "high" and not any(
-            c in base_response for c in ["💡", "🔥", "✨", "📊"]
+            c in base_response for c in ["", "", "", ""]
         ):
-            emojis = ["✨", "💡", "🎯", "⚡", "🚀"]
+            emojis = ["", "", "", "", ""]
             import random
 
             base_response += (
@@ -283,7 +283,7 @@ class PersonaManager:
         persona = self.get_persona(user_id=user_id, business_type=business_type)
         if persona:
             return self.format_response(persona, "greeting")
-        return "你好！我是你的AI助手，有什么可以帮你的吗？😊"
+        return "你好！我是你的AI助手，有什么可以帮你的吗？"
 
     def get_task_acceptance(
         self,
@@ -360,13 +360,13 @@ if __name__ == "__main__":
     print("=" * 60)
 
     stats = manager.get_statistics()
-    print(f"\n📊 统计信息:")
+    print(f"\n 统计信息:")
     print(f"   总变体数: {stats['total_variants']}")
     print(f"   缓存用户数: {stats['cached_users']}")
     print(f"   基础人格: {stats['base_persona_name']}")
     print(f"   配置版本: {stats['config_version']}")
 
-    print(f"\n📋 可用人格列表:")
+    print(f"\n 可用人格列表:")
     personas = manager.list_available_personas()
     for p in personas:
         print(f"   [{p['emoji']}] {p['display_name']} ({p['id']})")
@@ -378,7 +378,7 @@ if __name__ == "__main__":
     ]
 
     print("\n" + "=" * 60)
-    print("🧪 功能测试")
+    print(" 功能测试")
     print("=" * 60)
 
     for user_id, btype in test_users:
@@ -386,7 +386,7 @@ if __name__ == "__main__":
 
         persona = manager.get_persona(user_id=user_id, business_type=btype)
         if persona:
-            print(f"✅ 加载成功: {persona.display_name} {persona.emoji}")
+            print(f" 加载成功: {persona.display_name} {persona.emoji}")
 
             greeting = manager.get_greeting(user_id=user_id, business_type=btype)
             print(f"问候语: {greeting}")
@@ -406,10 +406,10 @@ if __name__ == "__main__":
             )
             print(f"建议: {suggestion}")
         else:
-            print("❌ 加载失败")
+            print(" 加载失败")
 
     print("\n" + "=" * 60)
-    print("🔄 人格切换测试")
+    print(" 人格切换测试")
     print("=" * 60)
 
     test_user = "test_switch_user"
@@ -421,7 +421,7 @@ if __name__ == "__main__":
     success = manager.switch_persona(
         test_user, BusinessType.ECOMMERCE, reason="测试切换"
     )
-    print(f"切换结果: {'成功 ✅' if success else '失败 ❌'}")
+    print(f"切换结果: {'成功 ' if success else '失败 '}")
 
     current = manager._cache.get(test_user)
     if current:

@@ -109,19 +109,19 @@ class TestToastNotifications:
         from frontend.components.shared import show_success
 
         html_output = show_success.__doc__
-        assert "✅" in html_output or "success" in html_output.lower()
+        assert "success" in html_output.lower()
 
     def test_error_toast_contains_icon(self):
         from frontend.components.shared import show_error
 
         html_output = show_error.__doc__
-        assert "❌" in html_output or "error" in html_output.lower()
+        assert "error" in html_output.lower()
 
     def test_info_toast_contains_icon(self):
         from frontend.components.shared import show_info
 
         html_output = show_info.__doc__
-        assert "ℹ️" in html_output or "info" in html_output.lower()
+        assert "info" in html_output.lower()
 
     def test_toast_functions_have_correct_signature(self):
         from frontend.components.shared import show_success, show_error, show_info

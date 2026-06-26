@@ -85,7 +85,7 @@ def _render_chat_history():
 
                 if not real_path.startswith(os.path.realpath(DELIVERABLES_DIR)):
                     st.warning(
-                        f"️ File path security check failed: {msg['deliverable_path']}"
+                        f" File path security check failed: {msg['deliverable_path']}"
                     )
                     continue
                 file_content = None
@@ -282,7 +282,7 @@ def render_chat_page():
 | {_t('chat_demo_feature')} | {_t('chat_demo_status')} |
 |------|------|
 |  {_t('nav_dashboard')} |  {_t('chat_demo_available')} |
-| ️ {_t('nav_settings')} |  {_t('chat_demo_available')} |
+|  {_t('nav_settings')} |  {_t('chat_demo_available')} |
 |  {_t('nav_marketplace')} |  {_t('chat_demo_available')} |
 |  {_t('nav_chat')} / {_t('chat_task_exec')} |  {_t('chat_demo_need_key')}
 
@@ -317,7 +317,7 @@ def render_chat_page():
         has_api_key = _has_api_key()
         if not has_api_key:
             st.warning(
-                f"️ **{_t('chat_template_mode')}** — {_t('chat_template_mode_desc')}"
+                f" **{_t('chat_template_mode')}** — {_t('chat_template_mode_desc')}"
             )
             with st.expander(f" {_t('chat_how_to_get_key')}", expanded=True):
                 st.markdown(f"""

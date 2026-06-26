@@ -112,7 +112,7 @@ class TestLogEntryDataStructure:
         ts = 1700000000.0
         entry = create_sample_entry(timestamp=ts, message="Task started")
         display = entry.to_display()
-        assert "ℹ️" not in display
+        assert "ℹ" not in display
         assert "[应用]" in display
         assert "Task started" in display
 
@@ -678,7 +678,7 @@ class TestExportFunctionality:
         text = result.decode("utf-8")
         assert "Info message" in text
         assert "Error occurred" in text
-        assert "ℹ️" not in text
+        assert "ℹ" not in text
         assert "❌" not in text
 
     def test_export_json_format(self):
@@ -812,8 +812,8 @@ class TestEdgeCases:
 
     def test_unicode_and_emoji_in_message(self):
         entry = create_sample_entry(message="✅ 任务完成 🎉 成功！")
-        assert "✅" in entry.to_display()
-        assert "🎉" in entry.to_display()
+        assert "任务完成" in entry.to_display()
+        assert "成功" in entry.to_display()
 
     def test_special_characters_in_module_name(self):
         entry = create_sample_entry(module="my-module.v2.special")
