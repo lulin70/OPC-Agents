@@ -10,6 +10,36 @@ Settings Manager — v0.2.5 统一设置中心
 - 敏感字段掩码：导出时自动脱敏，防止密钥泄露
 - 原子写入：使用临时文件+rename保证数据一致性
 
+=== Mixin Architecture (God Class refactor) ===
+``SettingsManager`` was split into a thin facade (this file) plus three mixin
+modules to keep each file focused and under the line-count budget. The facade
+inherits all mixins, so the public API is 100% backward compatible — every
+existing importer site keeps working unchanged.
+
+    SettingsManager(SettingsEncryptionMixin, SettingsPersistenceMixin,
+                    SettingsOperationsMixin)
+
+Modules:
+- ``opc_manager.settings_encryption.SettingsEncryptionMixin``
+  Fernet init, encrypt/decrypt helpers, key auto-generation, key heuristics.
+- ``opc_manager.settings_persistence.SettingsPersistenceMixin``
+  JSON load/save, sensitive-field decryption, plaintext->encrypted migration,
+  env-var fallback, SecureKeyStore bridge.
+- ``opc_manager.settings_operations.SettingsOperationsMixin``
+  SMTP connection test, is_configured, callback registry, masked export,
+  reset_to_defaults.
+
+This facade retains:
+- The dataclasses/enums (``SettingsCategory``, ``LLMSettings``, ...) and the
+  ``SMTP_PRESETS`` constant — they are referenced directly by the getters and
+  updaters below, so keeping them here avoids any circular import.
+- The singleton plumbing (``__new__`` + class-level ``_lock`` + ``__init__``).
+- The property accessors, getters, updaters, and SMTP-preset helpers.
+- The ``get_settings()`` factory.
+
+Cross-mixin calls resolve at runtime through ``self`` (e.g. an updater calls
+``self._save_to_disk()`` which lives on the persistence mixin).
+
 Usage:
     from opc_manager.settings import get_settings, SettingsManager, SettingsCategory
 
@@ -18,20 +48,18 @@ Usage:
     print(settings.llm.provider)  # "moka"
 """
 
-import hashlib
-import json
-import os
-import secrets
-import threading
-import time
 import logging
-import base64
-from pathlib import Path
-from typing import Dict, Any, Optional, Callable, List
+import os
+import threading
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 from opc_manager.config import LLM_PROVIDERS
+from opc_manager.settings_encryption import SettingsEncryptionMixin
+from opc_manager.settings_operations import SettingsOperationsMixin
+from opc_manager.settings_persistence import SettingsPersistenceMixin
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +154,11 @@ SMTP_PRESETS = {
 }
 
 
-class SettingsManager:
+class SettingsManager(
+    SettingsEncryptionMixin,
+    SettingsPersistenceMixin,
+    SettingsOperationsMixin,
+):
     """Unified settings manager for OPC-Agents v0.2.5
 
     Thread-safe singleton that manages all user-configurable settings.
@@ -135,6 +167,12 @@ class SettingsManager:
 
     Architecture:
         ConfigManager (read-only env) ←→ SettingsManager (writable user prefs)
+
+        This class is a thin facade over three mixin modules (see the module
+        docstring): encryption, persistence, and operations. All behavior is
+        implemented in the mixins; this facade holds the singleton plumbing,
+        the dataclasses/enums, the property accessors, the getters, and the
+        updaters.
 
     Thread Safety:
         - Singleton creation protected by class-level lock
@@ -186,452 +224,6 @@ class SettingsManager:
             self._load_from_disk()
             self._initialized = True
 
-    def _init_fernet(self) -> None:
-        """Initialize Fernet cipher using encryption key.
-
-        Uses the encryption key from security settings (in-memory).
-        Falls back to os.environ only for externally-set env vars (e.g., docker-compose).
-        If key is unavailable, encryption is disabled (plaintext mode).
-
-        Key derivation: SHA-256 hash (unified with data_manager.py).
-        Migration: If old-derivation encrypted data is found, re-encrypt with new key.
-        """
-        try:
-            from cryptography.fernet import Fernet
-
-            # 优先使用进程内存储的密钥，不主动从 os.environ 读取
-            key = self._security.encryption_key
-            if not key:
-                # 仅回退读取外部设置的环境变量（兼容 docker/start.sh 部署）
-                key = os.environ.get("OPC_ENCRYPTION_KEY", "")
-            if not key:
-                logger.warning(
-                    "[SettingsManager] No encryption key available, sensitive fields stored as plaintext"
-                )
-                return
-
-            # 统一使用 SHA-256 派生密钥（与 data_manager.py 一致）
-            key_bytes = hashlib.sha256(key.encode()).digest()
-            fernet_key = base64.urlsafe_b64encode(key_bytes)
-            self._fernet = Fernet(fernet_key)
-            logger.debug("[SettingsManager] Fernet cipher initialized successfully")
-
-        except ImportError:
-            logger.warning(
-                "[SettingsManager] cryptography package not installed. "
-                "Install with: pip install cryptography. "
-                "Sensitive fields will be stored as plaintext."
-            )
-            self._fernet = None
-        except Exception as e:
-            logger.error("[SettingsManager] Failed to initialize Fernet: %s", e)
-            self._fernet = None
-
-    def _decrypt_with_old_key(self, ciphertext: str) -> Optional[str]:
-        """Try to decrypt using the old key derivation method (truncate+pad).
-
-        This is used for migration: data encrypted with the old method
-        (key.encode()[:32].ljust(32, b"\\0")) can still be decrypted
-        and then re-encrypted with the new SHA-256 method.
-        """
-        try:
-            from cryptography.fernet import Fernet
-
-            key = self._security.encryption_key
-            if not key:
-                key = os.environ.get("OPC_ENCRYPTION_KEY", "")
-            if not key:
-                return None
-
-            old_key_bytes = key.encode()[:32].ljust(32, b"\0")
-            old_fernet_key = base64.urlsafe_b64encode(old_key_bytes)
-            old_fernet = Fernet(old_fernet_key)
-            return old_fernet.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
-        except Exception:
-            logger.debug(
-                "[SettingsManager] Decryption failed for value, returning None"
-            )
-            return None
-
-    def _encrypt_value(self, plaintext: str) -> str:
-        """Encrypt a sensitive value using Fernet.
-
-        Args:
-            plaintext: Plain text value to encrypt (e.g., API key, password)
-
-        Returns:
-            Encrypted string (base64-encoded), or original plaintext if encryption unavailable
-        """
-        if not plaintext or not self._fernet:
-            return plaintext
-
-        try:
-            encrypted = self._fernet.encrypt(plaintext.encode("utf-8"))
-            return encrypted.decode("utf-8")
-        except Exception as e:
-            logger.error("[SettingsManager] Failed to encrypt value: %s", e)
-            return plaintext
-
-    def _decrypt_value(self, ciphertext: str) -> Optional[str]:
-        """Decrypt a previously encrypted value.
-
-        Args:
-            ciphertext: Encrypted string (base64-encoded Fernet token)
-
-        Returns:
-            Decrypted plain text, None if decryption fails (corrupt/invalid token)
-        """
-        if not ciphertext or not self._fernet:
-            return ciphertext if ciphertext else None
-
-        try:
-            decrypted = self._fernet.decrypt(ciphertext.encode("utf-8"))
-            return decrypted.decode("utf-8")
-        except Exception:
-            logger.debug(
-                "[SettingsManager] New-key decryption failed, trying old-key migration"
-            )
-            # 新方式解密失败，尝试旧方式（truncate+pad 派生）进行迁移
-            old_decrypted = self._decrypt_with_old_key(ciphertext)
-            if old_decrypted is not None:
-                logger.info(
-                    "[SettingsManager] Migrated data from old key derivation to SHA-256"
-                )
-                return old_decrypted
-            logger.debug(
-                "[SettingsManager] Decryption failed with both new and old key"
-            )
-            return None
-
-    def _load_from_disk(self) -> None:
-        """Load settings from JSON file if exists.
-
-        Silently handles missing/corrupt files by using defaults.
-        Each category is loaded independently to prevent cascading failures.
-        Sensitive fields (api_key, password) are decrypted after loading.
-        Auto-migration: Detects plaintext keys and re-encrypts them.
-        """
-        if not self._settings_file.exists():
-            logger.debug(
-                "Settings file not found at %s, using defaults", self._settings_file
-            )
-            return
-
-        try:
-            with open(self._settings_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            category_map = {
-                "llm": self._llm,
-                "smtp": self._smtp,
-                "security": self._security,
-                "profile": self._profile,
-            }
-
-            for category, obj in category_map.items():
-                cat_data = data.get(category, {})
-                for k, v in cat_data.items():
-                    if hasattr(obj, k):
-                        if category == "security" and k == "encryption_key":
-                            continue
-                        setattr(obj, k, v)
-
-            self._decrypt_sensitive_fields()
-            self._migrate_plaintext_to_encrypted()
-            self._fallback_to_env_vars()
-
-            logger.info("Settings loaded from %s", self._settings_file)
-
-        except json.JSONDecodeError as e:
-            logger.error("Invalid JSON in settings file %s: %s", self._settings_file, e)
-        except Exception as e:
-            logger.error("Failed to load settings: %s", e)
-
-    def _decrypt_sensitive_fields(self) -> None:
-        """Decrypt sensitive fields after loading from disk.
-
-        Attempts to decrypt api_key and password fields.
-        - If value looks like valid Fernet token: try to decrypt
-        - If value looks like base64 (potentially corrupt): try decrypt, fail → empty string
-        - If value looks like plaintext: keep as-is (migration will handle)
-        - If Fernet unavailable: keep original value
-        """
-        try:
-            if self._llm.api_key:
-                if self._fernet:
-                    if self._looks_like_encrypted(
-                        self._llm.api_key
-                    ) or self._looks_like_base64(self._llm.api_key):
-                        decrypted = self._decrypt_value(self._llm.api_key)
-                        if decrypted is not None:
-                            self._llm.api_key = decrypted
-                        else:
-                            logger.warning(
-                                "[SettingsManager] Failed to decrypt LLM api_key, "
-                                "setting to empty string"
-                            )
-                            self._llm.api_key = ""
-
-            if self._smtp.password:
-                if self._fernet:
-                    if self._looks_like_encrypted(
-                        self._smtp.password
-                    ) or self._looks_like_base64(self._smtp.password):
-                        decrypted = self._decrypt_value(self._smtp.password)
-                        if decrypted is not None:
-                            self._smtp.password = decrypted
-                        else:
-                            logger.warning(
-                                "[SettingsManager] Failed to decrypt SMTP password, "
-                                "setting to empty string"
-                            )
-                            self._smtp.password = ""
-
-        except Exception as e:
-            logger.error("[SettingsManager] Error decrypting sensitive fields: %s", e)
-
-    def _migrate_plaintext_to_encrypted(self) -> None:
-        """Auto-migrate plaintext sensitive fields to encrypted format.
-
-        After loading, checks if sensitive fields appear to be plaintext
-        (not valid Fernet tokens). If so, re-encrypts and saves to disk.
-        This ensures one-time migration from v0.1.x (plaintext) to v0.2.0+ (encrypted).
-
-        After migration, in-memory values are kept as plaintext for application use.
-        Only the on-disk representation is encrypted.
-        """
-        if not self._fernet:
-            return
-
-        migrated = False
-        llm_plaintext = None
-        smtp_plaintext = None
-
-        try:
-            if self._llm.api_key and not self._looks_like_encrypted(self._llm.api_key):
-                llm_plaintext = self._llm.api_key
-                self._llm.api_key = self._encrypt_value(llm_plaintext)
-                migrated = True
-                logger.info(
-                    "[SettingsManager] Migrating LLM api_key to encrypted storage"
-                )
-
-            if self._smtp.password and not self._looks_like_encrypted(
-                self._smtp.password
-            ):
-                smtp_plaintext = self._smtp.password
-                self._smtp.password = self._encrypt_value(smtp_plaintext)
-                migrated = True
-                logger.info(
-                    "[SettingsManager] Migrating SMTP password to encrypted storage"
-                )
-
-            if migrated:
-                self._save_to_disk()
-
-            if llm_plaintext is not None:
-                self._llm.api_key = llm_plaintext
-            if smtp_plaintext is not None:
-                self._smtp.password = smtp_plaintext
-
-        except Exception as e:
-            logger.error("[SettingsManager] Failed to migrate plaintext keys: %s", e)
-
-    def _fallback_to_env_vars(self) -> None:
-        """Fill empty LLM settings from environment variables.
-
-        When settings.json has no api_key/provider/base_url/model,
-        fall back to environment variables so that keys configured via
-        .env or SecureKeyStore are visible in the Settings page.
-        """
-        if not self._llm.api_key:
-            for env_key in ("MOKA_API_KEY", "GLM_API_KEY", "OPENAI_API_KEY"):
-                val = os.environ.get(env_key, "").strip()
-                if val:
-                    self._llm.api_key = val
-                    if env_key == "MOKA_API_KEY":
-                        self._llm.provider = self._llm.provider or "moka"
-                        self._llm.base_url = self._llm.base_url or os.environ.get(
-                            "MOKA_API_BASE", LLM_PROVIDERS["moka"]
-                        )
-                        self._llm.model = self._llm.model or os.environ.get(
-                            "MOKA_MODEL", "moka/claude-sonnet-4-6"
-                        )
-                    elif env_key == "GLM_API_KEY":
-                        self._llm.provider = self._llm.provider or "glm"
-                        self._llm.base_url = (
-                            self._llm.base_url or LLM_PROVIDERS["zhipu"]
-                        )
-                        self._llm.model = self._llm.model or "glm-4"
-                    elif env_key == "OPENAI_API_KEY":
-                        self._llm.provider = self._llm.provider or "openai"
-                        self._llm.base_url = self._llm.base_url or os.environ.get(
-                            "OPENAI_API_BASE", LLM_PROVIDERS["openai"]
-                        )
-                        self._llm.model = self._llm.model or "gpt-4"
-                    break
-
-        if not self._llm.provider:
-            self._llm.provider = "moka"
-
-    def _looks_like_encrypted(self, value: str) -> bool:
-        """Check if a value appears to be a Fernet-encrypted token.
-
-        Fernet tokens are base64-encoded and typically 44+ characters long
-        (for short plaintext inputs). This is a heuristic check.
-
-        Args:
-            value: String to check
-
-        Returns:
-            True if value looks like encrypted token, False otherwise
-        """
-        if not value or len(value) < 44:
-            return False
-
-        try:
-            decoded = base64.urlsafe_b64decode(value)
-            return len(decoded) >= 32
-        except Exception as e:
-            logger.debug("[SettingsManager] is_valid_base64_token check failed: %s", e)
-            return False
-
-    def _looks_like_base64(self, value: str) -> bool:
-        """Check if a value appears to be base64-encoded (potential corrupt token).
-
-        Used to distinguish between obvious plaintext and potentially
-        corrupted encrypted tokens that should result in empty string.
-
-        Args:
-            value: String to check
-
-        Returns:
-            True if value looks like base64, False otherwise
-        """
-        if not value or len(value) < 20:
-            return False
-
-        try:
-            decoded = base64.urlsafe_b64decode(value)
-            return len(decoded) >= 16
-        except Exception as e:
-            logger.debug("[SettingsManager] looks_like_base64 check failed: %s", e)
-            return False
-
-    def _save_to_disk(self) -> None:
-        """Persist current settings to JSON file with atomic write.
-
-        Uses write-to-temp + rename pattern to prevent corruption
-        if process crashes during write.
-        Sensitive fields (api_key, password) are encrypted before saving.
-        """
-        try:
-            self._settings_file.parent.mkdir(parents=True, exist_ok=True)
-
-            llm_dict = self._llm.__dict__.copy()
-            smtp_dict = self._smtp.__dict__.copy()
-
-            llm_dict["api_key"] = self._encrypt_value(llm_dict.get("api_key", ""))
-            smtp_dict["password"] = self._encrypt_value(smtp_dict.get("password", ""))
-
-            data = {
-                "llm": llm_dict,
-                "smtp": smtp_dict,
-                "security": {
-                    "auto_generated": self._security.auto_generated,
-                },
-                "profile": self._profile.__dict__.copy(),
-            }
-
-            tmp_path = self._settings_file.with_suffix(".tmp")
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-            os.replace(tmp_path, self._settings_file)
-            logger.debug("Settings saved to %s", self._settings_file)
-
-        except Exception as e:
-            logger.error("Failed to save settings: %s", e)
-
-    def _ensure_encryption_key(self) -> None:
-        """Auto-generate encryption key if not present (P0-2 core feature).
-
-        Generates a cryptographically secure 256-bit (64 hex chars) key using
-        secrets.token_hex(). Stores in both memory and .env.local file.
-
-        Key reuse strategy:
-        1. Check if already in memory (previous session)
-        2. Check .env.local file (persisted from earlier run)
-        3. Check os.environ (set by external process)
-        4. If none found, generate new key
-
-        Security considerations:
-        - Key generated via secrets module (CSPRNG)
-        - Stored in .env.local (gitignored by default)
-        - Kept in process memory only, NOT written to os.environ
-        - Auto-generated flag prevents overwriting user-provided keys
-        """
-        if self._security.encryption_key and self._security.auto_generated:
-            return
-
-        existing_key = (
-            self._security.encryption_key
-            or os.environ.get("OPC_ENCRYPTION_KEY", "")
-            or self._read_key_from_env_local()
-        )
-
-        if existing_key:
-            self._security.encryption_key = existing_key
-            self._security.auto_generated = True
-            logger.info("Reused existing encryption key from .env.local")
-            return
-
-        key = secrets.token_hex(32)
-        self._security.encryption_key = key
-        self._security.auto_generated = True
-
-        env_local = Path(self.SETTINGS_FILE).parent / ".env.local"
-        lines = []
-        if env_local.exists():
-            lines = env_local.read_text(encoding="utf-8").splitlines()
-
-        found = False
-        new_line = f"OPC_ENCRYPTION_KEY={key}"
-        for i, line in enumerate(lines):
-            if line.startswith("OPC_ENCRYPTION_KEY="):
-                lines[i] = new_line
-                found = True
-                break
-
-        if not found:
-            lines.append(new_line)
-            lines.append("")
-
-        env_local.write_text("\n".join(lines), encoding="utf-8")
-        os.chmod(str(env_local), 0o600)  # 仅文件所有者可读写
-        self._save_to_disk()
-
-        logger.info("Auto-generated encryption key and saved to .env.local")
-
-    def _read_key_from_env_local(self) -> str:
-        """Read existing encryption key from .env.local file.
-
-        Returns:
-            Key string if found, empty string otherwise
-        """
-        try:
-            env_local = Path(".env.local")
-            if not env_local.exists():
-                return ""
-
-            for line in env_local.read_text(encoding="utf-8").splitlines():
-                if line.startswith("OPC_ENCRYPTION_KEY="):
-                    return line.split("=", 1)[1].strip()
-
-            return ""
-        except Exception as e:
-            logger.warning("Failed to read key from .env.local: %s", e)
-            return ""
-
     @property
     def llm(self) -> LLMSettings:
         """Access LLM configuration settings."""
@@ -651,50 +243,6 @@ class SettingsManager:
     def profile(self) -> ProfileSettings:
         """Access user profile settings."""
         return self._profile
-
-    def _store_sensitive_key(self, name: str, value: str) -> None:
-        """安全存储敏感密钥到 SecureKeyStore，不写入 os.environ。
-
-        Args:
-            name: 密钥名称（如 MOKA_API_KEY）
-            value: 密钥值
-        """
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-
-            store = SecureKeyStore()
-            if store.is_available:
-                store.set_key(name, value)
-            else:
-                logger.warning(
-                    "[SettingsManager] SecureKeyStore 不可用，敏感密钥 %s 仅存储在内存中",
-                    name,
-                )
-        except Exception as e:
-            logger.warning(
-                "[SettingsManager] 存储密钥 %s 到 SecureKeyStore 失败: %s", name, e
-            )
-
-    def _retrieve_sensitive_key(self, name: str) -> Optional[str]:
-        """从 SecureKeyStore 安全获取敏感密钥。
-
-        Args:
-            name: 密钥名称
-
-        Returns:
-            密钥值，如果未找到返回 None
-        """
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-
-            store = SecureKeyStore()
-            if store.is_available:
-                return store.get_key(name)
-        except Exception as e:
-            logger.warning(
-                "[SettingsManager] 从 SecureKeyStore 获取密钥 %s 失败: %s", name, e
-            )
-        return None
 
     def get_encryption_key(self) -> str:
         """获取加密密钥，供其他模块使用（不通过 os.environ）。
@@ -873,64 +421,6 @@ class SettingsManager:
         self._notify_callbacks("profile")
         return True
 
-    def test_smtp_connection(self) -> Dict[str, Any]:
-        """Test SMTP connection with current settings.
-
-        Attempts to connect and authenticate with configured SMTP server.
-        Uses 5-second timeout to avoid blocking UI on unreachable servers.
-
-        Returns:
-            dict with keys:
-                - success (bool): Whether connection succeeded
-                - message (str): Human-readable result description
-                - latency_ms (int): Round-trip time in milliseconds
-        """
-        start = time.time()
-
-        try:
-            if not self._smtp.host or not self._smtp.username:
-                return {
-                    "success": False,
-                    "message": "SMTP host or username not configured",
-                    "latency_ms": 0,
-                }
-
-            import smtplib
-
-            server = smtplib.SMTP(self._smtp.host, self._smtp.port, timeout=5)
-
-            if self._smtp.tls:
-                server.starttls()
-
-            server.login(self._smtp.username, self._smtp.password)
-            server.quit()
-
-            latency = int((time.time() - start) * 1000)
-            return {
-                "success": True,
-                "message": f"Connected successfully to {self._smtp.host}",
-                "latency_ms": latency,
-            }
-
-        except smtplib.SMTPAuthenticationError:
-            return {
-                "success": False,
-                "message": "Authentication failed - check username/password",
-                "latency_ms": int((time.time() - start) * 1000),
-            }
-        except smtplib.SMTPConnectError as e:
-            return {
-                "success": False,
-                "message": f"Connection failed: {e}",
-                "latency_ms": int((time.time() - start) * 1000),
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "message": f"Error: {e}",
-                "latency_ms": int((time.time() - start) * 1000),
-            }
-
     def get_smtp_preset(self, name: str) -> Dict[str, Any]:
         """Get SMTP preset configuration by provider name.
 
@@ -950,105 +440,6 @@ class SettingsManager:
         """
         return list(SMTP_PRESETS.keys())
 
-    def is_configured(self, category: SettingsCategory) -> bool:
-        """Check if a settings category has been minimally configured.
-
-        Args:
-            category: SettingsCategory enum value to check
-
-        Returns:
-            True if category has required fields set, False otherwise
-        """
-        if category == SettingsCategory.LLM:
-            return bool(self._llm.api_key or self._llm.provider == "ollama")
-        elif category == SettingsCategory.SMTP:
-            return bool(self._smtp.host and self._smtp.username)
-        elif category == SettingsCategory.SECURITY:
-            return bool(self._security.encryption_key)
-        elif category == SettingsCategory.PROFILE:
-            return bool(self._profile.user_name)
-        return False
-
-    def register_callback(self, callback: Callable[[str], None]) -> None:
-        """Register a callback for settings changes.
-
-        Callback will be invoked with category name string when any
-        setting in that category is modified.
-
-        Args:
-            callback: Function accepting single str argument (category name)
-        """
-        with self._data_lock:
-            if callback not in self._callbacks:
-                self._callbacks.append(callback)
-
-    def unregister_callback(self, callback: Callable[[str], None]) -> None:
-        """Remove a previously registered callback.
-
-        Args:
-            callback: The exact function object to remove
-        """
-        with self._data_lock:
-            if callback in self._callbacks:
-                self._callbacks.remove(callback)
-
-    def _notify_callbacks(self, category: str) -> None:
-        """Notify all registered callbacks of a change.
-
-        Errors in individual callbacks are caught and logged to prevent
-        one faulty callback from blocking others.
-        """
-        with self._data_lock:
-            for cb in self._callbacks:
-                try:
-                    cb(category)
-                except Exception as e:
-                    logger.warning("Settings callback error for %s: %s", category, e)
-
-    def export_settings(self) -> Dict[str, Any]:
-        """Export all settings with sensitive fields masked.
-
-        Safe for logging, display, or export to non-secure contexts.
-        Actual sensitive values are replaced with "***" mask.
-
-        Returns:
-            Nested dict with all settings categories and masked values
-        """
-        return {
-            "llm": {
-                k: ("***" if k in self.SENSITIVE_FIELDS else v)
-                for k, v in self._llm.__dict__.items()
-            },
-            "smtp": {
-                k: ("***" if k in self.SENSITIVE_FIELDS else v)
-                for k, v in self._smtp.__dict__.items()
-            },
-            "security": {
-                "has_key": bool(self._security.encryption_key),
-                "auto_generated": self._security.auto_generated,
-            },
-            "profile": self._profile.__dict__.copy(),
-        }
-
-    def reset_to_defaults(self, category: Optional[SettingsCategory] = None) -> bool:
-        """Reset settings to default values.
-
-        Args:
-            category: Specific category to reset, or None for all categories
-
-        Returns:
-            True after reset completes (always succeeds)
-        """
-        if category is None or category == SettingsCategory.LLM:
-            self._llm = LLMSettings()
-        if category is None or category == SettingsCategory.SMTP:
-            self._smtp = SMTPSettings()
-        if category is None or category == SettingsCategory.PROFILE:
-            self._profile = ProfileSettings()
-
-        self._save_to_disk()
-        return True
-
 
 def get_settings() -> SettingsManager:
     """Get the SettingsManager singleton instance.
@@ -1065,3 +456,15 @@ def get_settings() -> SettingsManager:
         >>> settings.update_llm(provider="openai")
     """
     return SettingsManager()
+
+
+__all__ = [
+    "SettingsCategory",
+    "LLMSettings",
+    "SMTPSettings",
+    "SecuritySettings",
+    "ProfileSettings",
+    "SMTP_PRESETS",
+    "SettingsManager",
+    "get_settings",
+]
