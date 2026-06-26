@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.2.5（v0.3.0 待批准） | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.0-beta | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -39,7 +39,7 @@ opc-agents                      # 2. 启动
 - **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结 11 个非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
 - **🧠 IntentClassifier 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
 - **🛡 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
-- **📊 质量大幅提升**：总覆盖率 62.87%，email_skill 99%，finance_skill 100%；新增 7 个真实 LLM E2E 测试（CI 每周一自动运行）。
+- **📊 质量大幅提升**：总覆盖率 62.41%，核心 skill 测试覆盖率 email 16.96% / finance 14.46%（已记入 v0.3.1 技术债）；新增 7 个真实 LLM E2E 测试（CI 每周一自动运行）。
 - **🌐 i18n 重构**：3857 行 → 133 行逻辑层 + JSON 化，向后兼容，维护成本骤降。
 
 > 🧪 准备试用？请阅读 [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md)（3 分钟完成配置），演示话术见 [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)，反馈表见 [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。
@@ -174,7 +174,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.2.5
+pip install opc-agents==0.3.0-beta
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

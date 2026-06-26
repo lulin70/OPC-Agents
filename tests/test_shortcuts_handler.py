@@ -416,7 +416,7 @@ class TestCliArgumentParsing:
             [sys.executable, "-m", "opc_manager.shortcuts_handler", "--help"],
             capture_output=True,
             text=True,
-            cwd="/Users/lin/trae_projects/OPC-Agents",
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
         assert proc.returncode == 0
         assert "OPC-Agents Apple Shortcuts Handler" in proc.stdout
@@ -431,7 +431,7 @@ class TestCliArgumentParsing:
             [sys.executable, "-m", "opc_manager.shortcuts_handler"],
             capture_output=True,
             text=True,
-            cwd="/Users/lin/trae_projects/OPC-Agents",
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
         assert proc.returncode == 1
 
@@ -440,7 +440,7 @@ class TestCliArgumentParsing:
             [sys.executable, "-m", "opc_manager.shortcuts_handler", "quick_task"],
             capture_output=True,
             text=True,
-            cwd="/Users/lin/trae_projects/OPC-Agents",
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
         assert proc.returncode != 0
 
@@ -454,7 +454,7 @@ class TestCliArgumentParsing:
             ],
             capture_output=True,
             text=True,
-            cwd="/Users/lin/trae_projects/OPC-Agents",
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
         assert proc.returncode != 0
 
@@ -463,7 +463,7 @@ class TestCliArgumentParsing:
             [sys.executable, "-m", "opc_manager.shortcuts_handler", "record_income"],
             capture_output=True,
             text=True,
-            cwd="/Users/lin/trae_projects/OPC-Agents",
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
         assert proc.returncode != 0
 

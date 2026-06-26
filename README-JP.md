@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.2.5（v0.3.0 承認待ち） | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.0-beta | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -39,7 +39,7 @@ opc-agents                      # 2. 起動
 - **🎯 3つのコアスキルに集中**: メール / 財務 / レポート。11個の非コアスキルを凍結（[docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md) 参照）、各コアスキルを本当に使いやすくする。
 - **🧠 IntentClassifier 3分類スマートルーティング**: SIMPLE / COMPLEX / GREETINGの3分類。簡単なタスクは三賢者をバイパスして直接実行—速くてお得；複雑なタスクのみ並列投票に入り、品質を保証。
 - **🛡 重要意思決定点の事前コンセンサス保護**: ConsensusEngineを「事後補救」から「事前関門」に変更、ExecutorBrainは真の意見を提供（偽意見ルール削除）、ReflectorBrainは事前予測+マイノリティレポート。
-- **📊 品質大幅向上**: 総カバレッジ62.87%、email_skill 99%、finance_skill 100%；実LLM E2Eテスト7件追加（CIが毎週月曜に自動実行）。
+- **📊 品質大幅向上**: 総カバレッジ62.41%、コアスキルテストカバレッジ email 16.96% / finance 14.46%（v0.3.1技術的負債として記録）；実LLM E2Eテスト7件追加（CIが毎週月曜に自動実行）。
 - **🌐 i18nリファクター**: 3857行 → 133行ロジック層 + JSON化、後方互換、メンテナンスコスト激減。
 
 > 🧪 試してみたい？[docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) をお読みください（3分で設定完了）、デモスクリプトは [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)、フィードバックフォームは [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。

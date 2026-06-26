@@ -2,6 +2,44 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.0-beta] - 2026-06-26
+
+### P0 发布阻断项修复（DevSquad 7维度评估后，6项全修复）
+
+> 基于 DevSquad /项目整理评估发现的 6 项 P0 级发布阻断项全部修复。评估报告见 [docs/internal/PROJECT_TIDY_ASSESSMENT_v0.3.0-beta_20260626.md](docs/internal/PROJECT_TIDY_ASSESSMENT_v0.3.0-beta_20260626.md)。
+
+#### 安全修复
+- **P0-1 加密 fallback fail-closed**：`data_manager.py:94-96` 原实现 `key is None` 时静默返回明文，与三语 README 声称的 `RuntimeError` 不一致。修复为 `raise RuntimeError("OPC_ENCRYPTION_KEY is not set...")`（fail-closed），拒绝明文落库。`_get_encryption_key()` 有机器特征 fallback，正常情况不会触发此分支；此修复为防御性编程，确保密钥派生彻底失败时拒绝明文。
+
+#### 版本号一致性
+- **P0-2 版本号 bump 0.2.5 → 0.3.0-beta**：8 个文件版本号同步更新——VERSION、opc_manager/version.py（`__version__` + `__version_info__`）、.env.example、Dockerfile（`ARG VERSION`）、requirements.txt、README.md、README-EN.md、README-JP.md。历史评估漏检：VERSION=0.2.5 与发布名 v0.3.0-beta 不匹配，循环验证只验两个 0.2.5 一致。
+
+#### 文档准确性
+- **P0-3 README 覆盖率措辞澄清**：三语 README 第42行误导性"email_skill 99%/finance_skill 100%"改为实际测试覆盖率"email 16.96%/finance 14.46%（已记入 v0.3.1 技术债）"。原措辞将 README 中引用的 skill 模块存在率误当作测试覆盖率。
+
+#### CI/CD 修复
+- **P0-4 CI pipefail**：`python-ci.yml:48` 添加 `set -o pipefail &&` 前缀。原 `pytest | tee` 管道退出码取 tee（恒0），掩盖 12 项测试失败。修复后管道退出码取 pytest，失败将正确阻断 CI。
+- **P0-6 weekly-e2e 删除幽灵测试引用**：`weekly-e2e-real.yml` 删除"Run search E2E tests"步骤（引用不存在的 `tests/test_e2e_search.py`）。原实现 CI 会因找不到测试文件而失败。
+
+#### 测试可移植性
+- **P0-5 shortcuts 测试硬编码路径**：`test_shortcuts_handler.py` 5 处 `cwd="/Users/lin/trae_projects/OPC-Agents"` 改为 `cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`。原实现硬编码本机绝对路径，CI/其他开发环境必然失败。
+
+#### 测试更新（反映修复后的正确行为）
+- `test_integration_modules.py::test_without_key_plaintext` → `test_without_key_raises_runtime_error`：断言改为 `pytest.raises(RuntimeError, match="OPC_ENCRYPTION_KEY is not set")`
+- `test_security_deep.py::test_data_manager_no_key_stores_plaintext` → `test_data_manager_no_key_raises_runtime_error`：同上断言更新
+
+#### 验证结果
+- 全量测试：`3223 passed, 117 skipped, 1 xpassed, 0 failed`（184.33s）
+- 版本一致性：`pytest tests/test_version.py tests/test_docker_deployment.py` → 46 passed
+- 安全测试：`pytest tests/test_integration_modules.py tests/test_security_deep.py` → 153 passed
+- 评估复评：综合分 62/100 (C+) → **70/100 (B-)**，发布判定从"建议推迟"→"可发布"
+
+### 重新评估结论
+
+6 项 P0 全部修复后，7维度复评综合分从 62 (C+) 提升至 70 (B-)，达到发布门槛。遗留 P1/P2 项（God Class 6250行、幽灵功能 2500行、目录平铺、IntentClassifier 误名、Ollama URL 不一致、skill 测试覆盖率低）记入 v0.3.1 技术债。
+
+---
+
 ## [0.3.0] - 2026-06-19 (待发布)
 
 ### P0 关键问题修复（2026-06-21 7维度评估后）

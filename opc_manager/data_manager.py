@@ -92,8 +92,14 @@ def encrypt_field(plaintext: str) -> str:
         return ""
     key = _get_encryption_key()
     if key is None:
-        # 无密钥时跳过加密，直接返回原文
-        return plaintext
+        # 与三语 README 文档一致：未设置 OPC_ENCRYPTION_KEY 时抛 RuntimeError（fail-closed）
+        # _get_encryption_key() 有机器特征 fallback，正常情况不会返回 None；
+        # 此分支为防御性编程，确保密钥派生彻底失败时拒绝明文落库
+        raise RuntimeError(
+            "OPC_ENCRYPTION_KEY is not set. encrypt_field() refuses to "
+            "store plaintext. Set OPC_ENCRYPTION_KEY in .env or via "
+            "SettingsManager.get_encryption_key()."
+        )
     try:
         from cryptography.fernet import Fernet
 

@@ -518,8 +518,13 @@ class TestLLMCacheSimpleLLMService:
 class TestSecureKeyStoreDataManagerEncryption:
     """Encryption keys from SecureKeyStore used by DataManager's encrypt/decrypt."""
 
-    def test_without_key_plaintext(self, monkeypatch):
-        """Without OPC_ENCRYPTION_KEY: fields stored as plaintext."""
+    def test_without_key_raises_runtime_error(self, monkeypatch):
+        """Without OPC_ENCRYPTION_KEY: encrypt_field() raises RuntimeError (fail-closed).
+
+        This aligns with the trilingual README documentation which states that
+        encrypt_field() raises RuntimeError when OPC_ENCRYPTION_KEY is not set,
+        rather than silently storing plaintext (P0-1 fix, 2026-06-26).
+        """
         monkeypatch.delenv("OPC_ENCRYPTION_KEY", raising=False)
         # Reset the fallback key
         import opc_manager.data_manager as dm
@@ -529,14 +534,12 @@ class TestSecureKeyStoreDataManagerEncryption:
         # Mock _get_encryption_key to return None (no key available)
         monkeypatch.setattr(dm, "_get_encryption_key", lambda: None)
 
-        from opc_manager.data_manager import encrypt_field, decrypt_field
+        from opc_manager.data_manager import encrypt_field
 
         plaintext = "my-secret-data"
-        result = encrypt_field(plaintext)
-        # Without key, should return plaintext
-        assert result == plaintext
-        decrypted = decrypt_field(result)
-        assert decrypted == plaintext
+        # Fail-closed: refuse to store plaintext when key is unavailable
+        with pytest.raises(RuntimeError, match="OPC_ENCRYPTION_KEY is not set"):
+            encrypt_field(plaintext)
 
     def test_with_key_encrypt_decrypt(self, monkeypatch):
         """With OPC_ENCRYPTION_KEY: fields encrypted and decryptable."""

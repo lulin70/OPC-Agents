@@ -767,14 +767,19 @@ class TestCryptographicSecurity:
             decrypted = decrypt_field(encrypted)
             assert decrypted == original
 
-    def test_data_manager_no_key_stores_plaintext(self):
-        """Without encryption key, data_manager stores plaintext (documented behavior)."""
-        from opc_manager.data_manager import encrypt_field, decrypt_field
+    def test_data_manager_no_key_raises_runtime_error(self):
+        """Without encryption key, data_manager raises RuntimeError (fail-closed).
+
+        Aligns with trilingual README documentation: encrypt_field() refuses to
+        store plaintext when OPC_ENCRYPTION_KEY is unset (P0-1 fix, 2026-06-26).
+        """
+        from opc_manager.data_manager import encrypt_field
 
         with patch("opc_manager.data_manager._get_encryption_key", return_value=None):
             original = "plaintext-no-key"
-            result = encrypt_field(original)
-            assert result == original
+            # Fail-closed: refuse to store plaintext when key is unavailable
+            with pytest.raises(RuntimeError, match="OPC_ENCRYPTION_KEY is not set"):
+                encrypt_field(original)
 
     def test_data_manager_decrypt_garbage_returns_none(self):
         """Decrypting garbage that looks like a Fernet token with a valid key should return None."""

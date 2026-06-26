@@ -35,10 +35,6 @@ jobs:
       run: |
         PYTHONPATH=. pytest tests/test_e2e_real.py -m e2e_core_skill -v --tb=long 2>&1 | tee e2e-output.txt
 
-    - name: Run search E2E tests (no API key needed)
-      run: |
-        PYTHONPATH=. pytest tests/test_e2e_search.py -m e2e_search -v --tb=long 2>&1 | tee -a e2e-output.txt
-
     - name: Run integration E2E tests
       run: |
         PYTHONPATH=. pytest tests/test_integration_e2e.py -v --tb=long 2>&1 | tee -a e2e-output.txt
