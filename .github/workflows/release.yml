@@ -36,6 +36,27 @@ jobs:
           --ignore=tests/test_integration_e2e.py \
           --ignore=tests/test_ui_e2e_apptest.py
 
+    - name: Security scan with Bandit
+      run: |
+        pip install bandit
+        bandit -r opc_manager/ -ll -ii
+
+    - name: Dependency audit with pip-audit
+      run: |
+        pip install pip-audit
+        pip-audit -r requirements.txt
+
+    - name: Coverage gate
+      run: |
+        python -m pytest tests/ -q --tb=short \
+          --cov=opc_manager --cov=frontend \
+          --cov-fail-under=62 \
+          --ignore=tests/test_e2e_real.py \
+          --ignore=tests/test_e2e_user_journeys.py \
+          --ignore=tests/test_e2e_user_workflow.py \
+          --ignore=tests/test_integration_e2e.py \
+          --ignore=tests/test_ui_e2e_apptest.py
+
   build-and-push-ghcr:
     needs: test
     runs-on: ubuntu-latest

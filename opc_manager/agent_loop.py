@@ -76,7 +76,7 @@ from .agent_utils import (
 
 # 新增组件导入
 from .state_manager import StateManager
-from .error_handler_component import AgentErrorHandler
+from .agent_error_handler import AgentErrorHandler
 from .progress_tracker import ProgressTracker
 from .result_builder import ResultBuilder
 from .task_orchestrator import TaskOrchestrator, RouteDecision

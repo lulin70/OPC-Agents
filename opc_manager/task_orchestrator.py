@@ -22,7 +22,7 @@ from .reflector_brain import NextAction, NextActionType
 from .task_engine_v3 import TaskType, TaskResult
 from .result_builder import ResultBuilder
 from .progress_tracker import ProgressTracker
-from .error_handler_component import AgentErrorHandler
+from .agent_error_handler import AgentErrorHandler
 from .constants import (
     AGENT_LOOP_TIMEOUT_SECONDS,
     CRITICAL_DECISION_SKILLS,

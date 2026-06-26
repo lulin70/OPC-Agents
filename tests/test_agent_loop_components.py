@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import Mock, MagicMock, patch
 
 from opc_manager.state_manager import StateManager
-from opc_manager.error_handler_component import AgentErrorHandler, ValidationResult
+from opc_manager.agent_error_handler import AgentErrorHandler, ValidationResult
 from opc_manager.progress_tracker import ProgressTracker
 from opc_manager.result_builder import ResultBuilder
 from opc_manager.task_orchestrator import TaskOrchestrator, RouteDecision
