@@ -6,6 +6,10 @@
 不从包顶层导入符号，因此不存在真实循环依赖，可安全使用显式导入。
 Protocol 接口（BrainProtocol/SkillRegistryProtocol）已在 protocols.py 中定义，
 用于解耦共识调用方与具体贤者/注册表实现。
+
+IOC 分层映射见 docs/internal/DIRECTORY_STRUCTURE.md：
+  I=Input(6)  C=Control(22)  O=Output(21)  S=Skills(24)  F=Infra(26)
+  依赖方向: I → C ←→ S, C → O, 全部 → F(Infra)
 """
 
 from .version import __version__, get_version, get_version_info, get_version_string

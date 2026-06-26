@@ -137,7 +137,7 @@ opc_manager/finance_skill.py   166    0   100%
 | Phase 1 | ✅ 完成 | 033dc1d | 3165 passed/0 failed | flake8 F401+F841 348 项归零，-232 行净减 |
 | Phase 2 | ✅ 完成 | b0b64bc | 3167 passed/0 failed | email_skill.py 99%→100%，+2 边界测试 |
 | Phase 3 | ✅ 完成（5/5） | 待提交 | 3167 passed/0 failed | 5 God Class 全部拆分完成 |
-| Phase 4 | 待开始 | — | — | IOC 分层 |
+| Phase 4 | ✅ 完成（轻量方案） | 待提交 | 无代码变更 | IOC 分层文档化（DIRECTORY_STRUCTURE.md + __init__.py 引用），零风险 |
 
 ### Phase 3 子进度（5 God Class 保守提取+facade）
 

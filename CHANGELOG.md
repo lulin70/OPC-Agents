@@ -14,6 +14,32 @@ All notable changes to OPC-Agents will be documented in this file.
 - **验证**：`pytest tests/test_email_skill_coverage.py tests/test_finance_skill_coverage.py --cov=opc_manager.email_skill --cov=opc_manager.finance_skill` → email 99% / finance 100%
 - **教训**：覆盖率数据必须以 `pytest --cov` 实测命令输出为唯一权威数据源，不得以文档间对照作为结论依据
 
+#### Phase 1: flake8 F401+F841 全量修复（348 项归零）
+- **autoflake + 手动修复**：348 项未用导入(F401)/未用变量(F841) 全部清除，净减 232 行
+- **autoflake 盲点**：re-export 模式（A 从 B 导入符号供 C 从 A 导入）无法被 autoflake 检测，需手动修复（task_lifecycle.py 改为从 constants.py 直接导入）
+- **验证**：3165 passed / 0 failed，flake8 F401+F841 零违规
+
+#### Phase 2: email_skill 覆盖率 99% → 100%
+- **补充 2 个边界测试**：覆盖 email_skill.py 最后 3 行未覆盖代码（207 行 MAX_RETRIES=0 兜底 + 263-264 行 create_template DB 异常）
+- **验证**：3167 passed / 0 failed，email_skill.py 行覆盖率 100%
+
+#### Phase 3: 5 God Class 保守提取 + facade（6250 行 → 5 facade + 13 mixin）
+- **task_engine_v3.py**：1853 → 499 facade + 3 mixin（search/executors/parallel）
+- **business_type_detector_v2.py**：1197 → 362 facade + 3 mixin（database/scoring/strategies）
+- **skill_marketplace.py**：1073 → 468 facade + external + constants（双类分文件）
+- **settings.py**：1067 → 470 facade + 3 mixin（encryption/persistence/operations）
+- **llm_content.py**：1060 → 419 facade + 2 mixin（prompt/generation）
+- **模式**：mixin extraction + facade inheritance，公共 API 100% 向后兼容
+- **验证**：3167 passed / 0 failed，flake8 clean，全部 53+ 导入站点不变
+
+#### Phase 4: IOC 分层（轻量文档方案）
+- **DIRECTORY_STRUCTURE.md**：99 个 opc_manager/ 文件按 IOC 5 层映射（Input 6 / Control 22 / Output 21 / Skills 24 / Infra 26），含依赖方向规则
+- **__init__.py 引用**：添加 IOC 分层映射引用
+- **决策原因**：全量目录重组需改 250+ 导入语句（74 相对 + 89 绝对 + 87 测试），违反 Simplicity First / Surgical Changes 原则；轻量方案零代码风险
+
+### 版本号
+- VERSION + version.py + 三语 README 版本头：0.3.0-beta → 0.3.2
+
 ## [0.3.1] - 2026-06-26
 
 ### P1/P2 技术债清理（DevSquad 驱动，3 阶段推进）
