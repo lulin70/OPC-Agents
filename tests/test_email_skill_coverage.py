@@ -760,3 +760,42 @@ class TestUndoSendEmail:
         dm.init_db()
         result = undo_send_email()
         assert result["success"] is True  # 即使没记录也返回成功
+
+
+class TestCoverageBoundary:
+    """边界测试：覆盖 email_skill.py 中未覆盖的 3 行（207, 263-264）。
+
+    追求 100% 代码行覆盖率。Phase 2 v0.3.2。
+    """
+
+    @patch("opc_manager.email_skill.MAX_RETRIES", 0)
+    @patch("opc_manager.email_skill._get_smtp_config")
+    @patch("opc_manager.email_skill._check_rate_limit", return_value=True)
+    def test_send_email_zero_retries_fallback(
+        self, _mock_rate, mock_config, temp_db, smtp_config
+    ):
+        """覆盖 email_skill.py:207 防御性兜底 return。
+
+        Scenario: MAX_RETRIES=0（for 循环不执行）
+        Expected: 直接返回 {"success": False, "error": "邮件发送失败"}
+        """
+        dm.init_db()
+        mock_config.return_value = smtp_config
+        result = send_email("user@test.com", "subject", "body")
+        assert result["success"] is False
+        assert result["error"] == "邮件发送失败"
+
+    def test_create_template_db_error(self, temp_db):
+        """覆盖 email_skill.py:263-264 create_template 异常处理。
+
+        Scenario: execute_write 抛异常（如 DB locked）
+        Expected: 返回 {"success": False, "error": str(e)}
+        """
+        dm.init_db()
+        with patch(
+            "opc_manager.email_skill.execute_write",
+            side_effect=Exception("DB locked"),
+        ):
+            result = create_template("test_tpl", "subject", "body")
+        assert result["success"] is False
+        assert "DB locked" in result["error"]
