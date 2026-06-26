@@ -13,7 +13,7 @@ Covers:
 """
 
 import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock
 
 from opc_manager.business_types import BusinessType
 from opc_manager.business_type_detector_v2 import (

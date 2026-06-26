@@ -9,14 +9,11 @@ v0.1.8 delta 测试 — V2-1到V2-7 全任务覆盖
 - 插件示例
 """
 
-import asyncio
 import json
 import os
 import sys
-import tempfile
-import time
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -98,7 +95,7 @@ class TestReflectorBrainLLM(unittest.TestCase):
     """V2-1b: 反思脑LLM驱动测试"""
 
     def test_llm_evaluation_success(self):
-        from opc_manager.reflector_brain import ReflectorBrain, EvaluationResult
+        from opc_manager.reflector_brain import ReflectorBrain
 
         mock_llm = MagicMock()
         llm_response = json.dumps(
@@ -227,7 +224,7 @@ class TestSkillMarketplaceAPI(unittest.TestCase):
 
     def test_fastapi_available(self):
         try:
-            from opc_manager.skill_marketplace_api import FASTAPI_AVAILABLE
+            pass
         except ImportError:
             pass
 

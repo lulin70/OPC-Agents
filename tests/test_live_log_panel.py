@@ -22,7 +22,6 @@ import os
 import sys
 import time
 import tempfile
-import threading
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -32,7 +31,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 try:
-    import psutil
+    pass
 
     psutil_available = True
 except ImportError:
@@ -54,7 +53,6 @@ from frontend.components.live_log_panel import (
     collect_system_logs,
     collect_all_logs,
     export_logs,
-    _get_log_cache,
     MAX_CACHE_ENTRIES,
     DEFAULT_DISPLAY_LIMIT,
 )
@@ -613,7 +611,7 @@ class TestLogCache:
         CACHE_FILE.unlink(missing_ok=True)
 
     def test_load_restores_from_file(self):
-        cache = LogCache()
+        LogCache()
         test_data = [
             {
                 "timestamp": time.time(),
@@ -792,7 +790,6 @@ class TestEdgeCases:
     """Test suite for edge cases and error handling."""
 
     def test_empty_log_list(self):
-        logs = []
         assert collect_all_logs() is not None
 
     def test_none_values_in_optional_fields(self):

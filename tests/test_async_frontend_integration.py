@@ -14,7 +14,6 @@ import pytest
 import sys
 import os
 import time
-import threading
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -111,14 +110,6 @@ class TestAsyncExecuteWrapper:
     def test_wrapper_returns_dict_on_success(self):
         """测试成功执行时返回正确的字典结构"""
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "frontend"))
-
-        from importlib import import_module
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location(
-            "frontend_app",
-            os.path.join(os.path.dirname(__file__), "..", "frontend", "app.py"),
-        )
 
         self.executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
 

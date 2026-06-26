@@ -19,7 +19,7 @@
 import unittest
 import time
 from unittest.mock import patch
-from opc_manager.task_engine_v3 import TaskEngineV3, InputValidator
+from opc_manager.task_engine_v3 import TaskEngineV3
 from opc_manager.search_processor import SearchResultProcessor
 from opc_manager.llm_content import LLMEnhancedContentGenerator
 from opc_manager.async_executor import AsyncTaskExecutor
@@ -348,7 +348,7 @@ class TestInputValidationAndSession(unittest.TestCase):
 
         xss_input = "<script>alert('xss')</script>测试"
 
-        result = engine.execute(xss_input, session_ctx=session)
+        engine.execute(xss_input, session_ctx=session)
 
         history = session.get_full_history()
         if history:

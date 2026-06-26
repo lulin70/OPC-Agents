@@ -8,7 +8,6 @@ or defined before call site.
 import ast
 import os
 import re
-import pytest
 
 APP_PY = os.path.join(os.path.dirname(__file__), "..", "frontend", "app.py")
 

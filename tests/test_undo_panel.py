@@ -25,7 +25,6 @@ import json
 import csv
 import io
 from unittest.mock import patch, MagicMock
-from datetime import datetime
 
 import pytest
 
@@ -33,16 +32,12 @@ from frontend.components.undo_panel import (
     UndoRecordDisplay,
     OPERATION_TYPE_CONFIG,
     STATUS_CONFIG,
-    _get_undo_manager,
-    _get_current_session_id,
     _get_operation_description,
     _calculate_remaining_time,
     _format_time_ago,
     _convert_to_display_record,
-    _render_undo_record,
     execute_undo,
     calculate_undo_stats,
-    render_undo_stats,
     check_has_active_undo_records,
     get_latest_undo_record_info,
     _generate_csv,

@@ -5,8 +5,6 @@
 """
 
 import re
-import os
-import pytest
 from pathlib import Path
 
 

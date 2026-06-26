@@ -13,7 +13,6 @@ import os
 import sys
 import tempfile
 
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -22,7 +21,6 @@ from frontend.page_modules._marketplace_page import (
     SORT_OPTIONS,
     _filter_and_sort_skills,
     _simulate_install_count,
-    _get_installed_versions_file,
     _load_installed_versions_for_write,
     _save_installed_version,
     _remove_installed_version,

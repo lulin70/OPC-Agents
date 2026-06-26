@@ -22,10 +22,8 @@ Run:
     pytest tests/test_ui_e2e_apptest.py -v
 """
 
-import os
 import sys
 import threading
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -143,7 +141,7 @@ class TestUIAppLaunch:
         at = _load_app()
         at.run(timeout=30)
         captions = [c.value for c in at.sidebar.caption]
-        all_sidebar_text = " ".join(captions)
+        " ".join(captions)
         # Should contain version like "v0.2.5"
         assert any(
             "v0." in c for c in captions

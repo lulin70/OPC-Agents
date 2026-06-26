@@ -19,8 +19,6 @@ Run with: pytest tests/test_parallel_executor.py -v
 import asyncio
 import time
 import pytest
-from typing import List
-from unittest.mock import Mock, patch, AsyncMock
 import sys
 import os
 
@@ -29,8 +27,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from opc_manager.parallel_executor import (
     ParallelExecutor,
     TaskSpec,
-    TaskResult,
-    ParallelResult,
     MergeStrategy,
 )
 
@@ -197,7 +193,6 @@ class TestConcurrencyControl:
         assert len(execution_order) == 6
         for i in range(3):
             start_idx = execution_order.index(f"start_{i}")
-            end_idx = execution_order.index(f"end_{i}")
             if i > 0:
                 prev_end_idx = execution_order.index(f"end_{i-1}")
                 assert (

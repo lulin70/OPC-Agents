@@ -1,11 +1,9 @@
 """Tests for opc_manager.llm_cache — LLM response caching layer."""
 
-import os
 import time
-import tempfile
 import pytest
 
-from opc_manager.llm_cache import LLMCache, DEFAULT_CACHE_TTL
+from opc_manager.llm_cache import LLMCache
 
 
 @pytest.fixture

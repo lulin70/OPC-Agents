@@ -15,9 +15,7 @@ import unittest
 import os
 import sys
 import tempfile
-import shutil
-from unittest.mock import patch, MagicMock
-from datetime import datetime
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -122,7 +120,7 @@ class TestRenderResultCard(unittest.TestCase):
         content = "对话内容..."
         with patch.object(
             sys.modules["frontend.components.result_cards"].st, "container"
-        ) as mock_container:
+        ):
             render_result_card(content, "general_chat", {}, None)
 
     @patch("frontend.components.result_cards.st")

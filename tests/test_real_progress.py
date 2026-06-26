@@ -16,9 +16,8 @@ Run command:
     pytest tests/test_real_progress.py -v --tb=short
 """
 
-import time
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 from opc_manager.progress_emitter import (
     EventType,
@@ -481,11 +480,6 @@ class TestBackwardCompatibility:
 
     def test_emit_progress_without_progress_emitter(self, engine):
         """_emit_progress should work even if ProgressEmitter is unavailable."""
-        original_available = (
-            engine.__class__.__module__._PROGRESS_EMITTER_AVAILABLE
-            if hasattr(engine.__class__, "_PROGRESS_EMITTER_AVAILABLE")
-            else True
-        )
         try:
             with patch.dict("sys.modules", {"opc_manager.progress_emitter": None}):
                 engine._emit_progress("x" * 32, EventType.PLAN_START, "test")

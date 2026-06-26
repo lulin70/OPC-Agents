@@ -9,13 +9,8 @@ Covers:
 """
 
 import json
-import os
-import shutil
-import tempfile
 import zipfile
 import pytest
-from pathlib import Path
-from datetime import datetime
 
 from opc_manager.data_backup import (
     DataBackupManager,

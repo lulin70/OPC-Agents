@@ -16,9 +16,7 @@ import os
 import sys
 import time
 import threading
-import sqlite3
 import gc
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -695,7 +693,7 @@ class TestConcurrencyStress:
             try:
                 count = 0
                 for _ in range(50):
-                    rows = data_manager.execute_query(
+                    data_manager.execute_query(
                         "SELECT COUNT(*) as cnt FROM finance_records"
                     )
                     count += 1

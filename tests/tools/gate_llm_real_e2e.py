@@ -38,14 +38,11 @@ python tests/gate_llm_real_e2e.py [--layer L1] [--quick] [--report]
 """
 
 import os
-import sys
 import time
-import json
 import re
-import hashlib
 import logging
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 

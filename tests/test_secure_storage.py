@@ -6,7 +6,6 @@ Covers: key derivation consistency, encrypt/decrypt round-trip,
 All file I/O is mocked via temp directories.
 """
 
-import hashlib
 import base64
 import json
 import os
@@ -20,7 +19,6 @@ from opc_manager.secure_storage import (
     SecureKeyStore,
     _get_machine_fingerprint,
     _derive_fernet_key,
-    _fingerprint_cache,
     _fingerprint_lock,
     init_secure_storage,
 )

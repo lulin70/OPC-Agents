@@ -15,11 +15,7 @@ Run: pytest tests/test_security_deep.py -v
 
 import json
 import os
-import re
-import stat
-import threading
-from pathlib import Path
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -99,7 +95,7 @@ class TestSQLInjectionDeep:
         """Verify execute_write uses ? placeholders, not string formatting."""
         from opc_manager import data_manager
 
-        original_conn = data_manager._get_conn
+        data_manager._get_conn
         mock_cursor = MagicMock()
         mock_conn = MagicMock()
         mock_conn.execute.return_value = mock_cursor
@@ -261,7 +257,6 @@ class TestCommandInjection:
     def test_file_path_traversal_stripped_by_fileupload(self):
         """FileUpload strips /, \\, and .. from filenames."""
         from opc_manager.validators import FileUpload
-        from pydantic import ValidationError
 
         # Path traversal in filename should be stripped
         f = FileUpload(
@@ -756,7 +751,7 @@ class TestCryptographicSecurity:
         from opc_manager.data_manager import encrypt_field, decrypt_field
 
         with patch("opc_manager.data_manager._get_encryption_key") as mock_key:
-            import hashlib, base64
+            import hashlib
 
             mock_key.return_value = hashlib.sha256(b"test-encryption-key").digest()
 

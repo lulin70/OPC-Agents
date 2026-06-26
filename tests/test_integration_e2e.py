@@ -9,10 +9,8 @@ mock LLM calls and Streamlit UI, and are independent/idempotent.
 
 import json
 import os
-import sqlite3
 import time
 import threading
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -124,7 +122,7 @@ class TestTaskExecutionWorkflow:
 
     def test_simple_task_from_input_to_result(self, tmp_path, _isolate_data_dir):
         """User types a task -> system processes -> result displayed."""
-        from opc_manager.task_engine_v3 import TaskEngineV3, IntentClassifier
+        from opc_manager.task_engine_v3 import TaskEngineV3
         from opc_manager.task_types import TaskType
 
         engine = TaskEngineV3()
@@ -185,7 +183,6 @@ class TestTaskExecutionWorkflow:
     def test_task_with_export(self, tmp_path, _isolate_data_dir):
         """User executes task, then exports result to markdown."""
         from opc_manager.task_engine_v3 import TaskEngineV3
-        from opc_manager.task_types import TaskType
 
         engine = TaskEngineV3()
         engine.web_search = MagicMock()
@@ -205,7 +202,6 @@ class TestTaskExecutionWorkflow:
     def test_five_task_execution(self, tmp_path, _isolate_data_dir):
         """User executes 5 tasks in sequence (the core 5-task workflow)."""
         from opc_manager.task_engine_v3 import TaskEngineV3
-        from opc_manager.task_types import TaskType
 
         engine = TaskEngineV3()
         engine.web_search = MagicMock()
@@ -301,7 +297,6 @@ class TestSkillMarketplaceWorkflow:
 
     def test_browse_marketplace(self, tmp_path, init_db):
         """User browses the skill marketplace."""
-        from opc_manager.skill_marketplace import MarketplaceSkill, SkillStatus
         from opc_manager.data_manager import execute_write, gen_id
 
         # Insert a skill into external_skills table
@@ -755,7 +750,7 @@ class TestSecurityWorkflow:
         AuditLog._instance = None
         audit = AuditLog()
 
-        record_id = audit.log(
+        audit.log(
             session_id="sec-test",
             operation_type="config_update",
             skill_id="settings",

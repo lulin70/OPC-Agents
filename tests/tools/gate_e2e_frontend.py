@@ -21,11 +21,10 @@ import pytest
 import sys
 import os
 import time
-import threading
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from opc_manager.async_executor import AsyncTaskExecutor, TaskStatus
+from opc_manager.async_executor import AsyncTaskExecutor
 from opc_manager.search_processor import SearchResultProcessor, KNOWLEDGE_BASE
 from opc_manager.llm_content import LLMEnhancedContentGenerator
 

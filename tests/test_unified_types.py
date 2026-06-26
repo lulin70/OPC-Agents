@@ -39,9 +39,6 @@ from opc_manager.unified_types import (
     legacy_intent_to_risk,
     classify_unified,
     UnifiedClassificationResult,
-    CATEGORY_LABELS,
-    CATEGORY_ICONS,
-    FOLLOW_UP_ACTIONS,
 )
 from opc_manager.intent_types import IntentType
 from opc_manager.task_types import TaskType

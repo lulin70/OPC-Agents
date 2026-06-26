@@ -4,7 +4,6 @@ import asyncio
 import threading
 import time
 import unittest
-from unittest.mock import patch, MagicMock
 
 from opc_manager.utils import (
     LLM_CONCURRENCY_LIMIT,

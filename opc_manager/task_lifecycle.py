@@ -247,7 +247,7 @@ class ConsensusConsultant:
         from .consensus_engine import Opinion, OpinionType
 
         # P3-17 修复：引用常量而非硬编码 0.7，避免修改时遗漏
-        from .agent_loop import QUALITY_THRESHOLD_CONSENSUS
+        from .constants import QUALITY_THRESHOLD_CONSENSUS
 
         if evaluation.quality_score >= QUALITY_THRESHOLD_CONSENSUS:
             return None

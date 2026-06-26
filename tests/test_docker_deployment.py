@@ -1,6 +1,5 @@
 """Tests for P2 delight improvements: Docker deployment, onboarding guide, themes, start.sh."""
 
-import os
 import re
 import yaml
 from pathlib import Path
@@ -244,13 +243,8 @@ class TestQuickStartGuide:
         from opc_manager.onboarding import OnboardingManager
 
         mgr = OnboardingManager()
-        content = mgr.get_step_content(
+        mgr.get_step_content(
             mgr.get_step_content.__self__.COMPLETED if False else None
-        )
-        completed_content = (
-            mgr.get_step_content(type("Obj", (object,), {"value": "completed"})())
-            if False
-            else None
         )
         from opc_manager.onboarding import OnboardingStep
 

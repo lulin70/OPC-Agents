@@ -209,7 +209,7 @@ class TestLoggingOnUnhandledType:
 
         with caplog.at_level(logging.WARNING, logger="opc_manager.error_handler"):
             exc = StopIteration("unhandled")
-            friendly = ErrorHandler.translate(exc)
+            ErrorHandler.translate(exc)
         assert any("Unhandled exception type" in rec.message for rec in caplog.records)
 
 

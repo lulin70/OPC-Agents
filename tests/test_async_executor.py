@@ -14,9 +14,7 @@
 
 import unittest
 import time
-import threading
-from typing import List
-from opc_manager.async_executor import AsyncTaskExecutor, TaskStatus, AsyncTask
+from opc_manager.async_executor import AsyncTaskExecutor
 
 
 class TestSubmitReturnsTaskID(unittest.TestCase):
@@ -80,7 +78,6 @@ class TestStatusPolling(unittest.TestCase):
 
     def test_pending_to_running_transition(self):
         """任务状态应从pending变为running"""
-        transition_log = []
 
         def tracking_task(prompt, cancel_event, **kwargs):
             time.sleep(0.1)
@@ -288,8 +285,8 @@ class TestTimeoutAutoCleanup(unittest.TestCase):
         def quick_task(prompt, cancel_event, **kwargs):
             return {"content": "快", "success": True}
 
-        tid1 = self.executor.submit("活跃任务1", execute_func=quick_task)
-        tid2 = self.executor.submit("活跃任务2", execute_func=quick_task)
+        self.executor.submit("活跃任务1", execute_func=quick_task)
+        self.executor.submit("活跃任务2", execute_func=quick_task)
 
         active = self.executor.list_active_tasks()
         self.assertGreaterEqual(len(active), 0)
@@ -334,7 +331,7 @@ class TestGateASYNC01(unittest.TestCase):
         start = time.time()
 
         for i in range(10):
-            task_id = self.executor.submit(
+            self.executor.submit(
                 f"性能测试{i}",
                 execute_func=lambda p, ce: {"content": "", "success": True},
             )
@@ -348,7 +345,6 @@ class TestGateASYNC01(unittest.TestCase):
 
     def test_full_lifecycle_no_crash(self):
         """门禁：完整生命周期(pending→running→done)无崩溃"""
-        errors = []
 
         def robust_task(prompt, cancel_event, **kwargs):
             time.sleep(0.08)

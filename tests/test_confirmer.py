@@ -17,7 +17,6 @@ Run command:
     pytest tests/test_confirmer.py -v --tb=short
 """
 
-import asyncio
 import pytest
 from opc_manager.confirmer import (
     RiskLevel,

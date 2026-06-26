@@ -15,12 +15,10 @@ Run command:
     pytest tests/test_skill_reviews.py -v --tb=short
 """
 
-import os
-import tempfile
 
 import pytest
 
-from opc_manager.skill_reviews import SkillReview, SkillReviewManager
+from opc_manager.skill_reviews import SkillReviewManager
 
 
 @pytest.fixture
@@ -69,7 +67,7 @@ class TestGetReviews:
         """get_reviews returns reviews sorted newest first."""
         import time
 
-        r1 = manager.add_review("skill-1", 5, "First")
+        manager.add_review("skill-1", 5, "First")
         time.sleep(0.01)
         r2 = manager.add_review("skill-1", 3, "Second")
         reviews = manager.get_reviews("skill-1")

@@ -7,23 +7,18 @@ All LLM calls and external dependencies are mocked.
 
 import asyncio
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
-from dataclasses import dataclass
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from opc_manager.strategist_brain import (
     StrategistBrain,
     Intent,
-    Step,
     ExecutionPlan,
-    Constraint,
     ConstraintType,
 )
 from opc_manager.executor_brain import (
     ExecutorBrain,
-    ExecutionResult,
     ExecutionResultType,
     ExecutionStatusType,
-    SKILL_TO_TASK_MAP,
 )
 from opc_manager.reflector_brain import (
     ReflectorBrain,
@@ -33,7 +28,6 @@ from opc_manager.reflector_brain import (
     NextActionType,
     CorrectionStrategy,
     MAX_RETRY_COUNT,
-    QUALITY_THRESHOLD_CORRECTION,
     MAX_CORRECTION_ATTEMPTS,
 )
 from opc_manager.intent_types import IntentType

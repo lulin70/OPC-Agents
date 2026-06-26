@@ -22,7 +22,6 @@ from opc_manager.audit_log import (
     AuditRecord,
     AuditLog,
     AUDIT_MAX_MEMORY_LOGS,
-    AUDIT_SENSITIVE_PATTERNS,
 )
 
 
@@ -152,7 +151,7 @@ class TestLogMethod:
         assert record.input_summary == ""
 
     def test_log_with_failed_status(self, audit_log):
-        record_id = audit_log.log(
+        audit_log.log(
             session_id="sess1",
             operation_type="EMAIL_SEND",
             skill_id="email",

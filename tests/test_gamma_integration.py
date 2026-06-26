@@ -10,13 +10,11 @@ v0.1.8 gamma 集成测试 — G1-G9 全任务覆盖
 """
 
 import asyncio
-import json
 import os
 import sys
 import tempfile
-import time
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -111,7 +109,6 @@ class TestSkillMarketplace(unittest.TestCase):
         from opc_manager.skill_marketplace import (
             MarketplaceSkill,
             PermissionLevel,
-            SkillStatus,
         )
 
         key = self.marketplace.create_api_key("admin", [PermissionLevel.WRITE])

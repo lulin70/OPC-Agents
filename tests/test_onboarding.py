@@ -306,7 +306,7 @@ class TestGetStepContent(unittest.TestCase):
 
     def test_invalid_step_returns_empty_dict(self):
         """无效步骤应返回空字典"""
-        content = self.manager.get_step_content(None)
+        self.manager.get_step_content(None)
         # 当step为None时会使用current_step，所以这里测试的是边界情况
 
 

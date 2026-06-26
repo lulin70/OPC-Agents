@@ -26,7 +26,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from opc_manager.task_engine_v3 import TaskEngineV3, TaskType, TaskResult
+from opc_manager.task_engine_v3 import TaskEngineV3, TaskType
 from opc_manager.llm_content import LLMEnhancedContentGenerator
 from opc_hr.web_search import WebSearchMCP
 

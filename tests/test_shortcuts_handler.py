@@ -18,14 +18,13 @@ import json
 import os
 import subprocess
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
 from opc_manager.shortcuts_handler import (
     ShortcutResult,
     ShortcutsHandler,
-    main as cli_main,
 )
 
 
@@ -41,7 +40,7 @@ def temp_db(tmp_path, monkeypatch):
     _orig_initialized = dm._db_initialized
     from opc_manager.data_manager import _local
 
-    _orig_conn = getattr(_local, "conn", None)
+    getattr(_local, "conn", None)
     dm._db_initialized = False
     if hasattr(_local, "conn") and _local.conn is not None:
         try:
@@ -309,7 +308,7 @@ class TestRecordIncome:
         assert result.data["client"] == "张三"
 
     def test_record_income_stored_in_db(self, temp_db):
-        from opc_manager.data_manager import execute_query, gen_id
+        from opc_manager.data_manager import execute_query
         import time
 
         unique_amt = round(55555.55 + time.monotonic_ns() % 10000, 2)

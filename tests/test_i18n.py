@@ -1,6 +1,5 @@
 """Tests for i18n module — v0.2.0 Sprint 4"""
 
-import pytest
 from opc_manager.i18n import I18nManager, I18N_STRINGS, get_i18n, t
 
 

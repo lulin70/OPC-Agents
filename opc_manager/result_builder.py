@@ -10,7 +10,7 @@
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from .agent_context import AgentContext
 from .task_engine_v3 import TaskType, TaskResult

@@ -38,7 +38,7 @@ class TestLLMCacheConcurrency:
         def reader(thread_id):
             try:
                 for i in range(20):
-                    result = cache.get(
+                    cache.get(
                         model="test-model",
                         temperature=0.3,
                         max_tokens=500,
@@ -177,7 +177,6 @@ class TestSingletonThreadSafety:
 
     def test_llm_cache_singleton_race(self, tmp_path, monkeypatch):
         """Two threads calling get_llm_cache() simultaneously should get same instance."""
-        import os
         from opc_manager import llm_cache
 
         # Reset singleton

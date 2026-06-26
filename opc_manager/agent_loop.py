@@ -19,54 +19,37 @@ AgentLoop已重构为轻量级协调器，具体职责委托给专门组件：
 """
 
 from typing import Dict, List, Optional, Any
-import asyncio
 import logging
 import os
 import time
-import uuid
 
 from .strategist_brain import StrategistBrain
-from .executor_brain import ExecutorBrain, ExecutionResult
+from .executor_brain import ExecutorBrain
 from .reflector_brain import (
     ReflectorBrain,
-    NextAction,
-    NextActionType,
 )
 from .consensus_engine import (
     ConsensusEngine,
     Opinion,
-    OpinionType,
-    Decision,
 )
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
 from .session_context import SessionContextManager
-from .task_engine_v3 import TaskEngineV3, TaskType, TaskResult
+from .task_engine_v3 import TaskEngineV3, TaskResult
 from .correction_manager import CorrectionManager
 from .agent_context import AgentContext, AgentState
 from .task_lifecycle import TaskLifecycleManager, ConsensusConsultant
-from .utils import BoundedDict, EventEmitter
+from .utils import EventEmitter
 from .performance_monitor import get_performance_monitor
 from .confirmer import Confirmer
-from .progress_emitter import ProgressEmitter, ProgressEvent, EventType
+from .progress_emitter import ProgressEmitter
 
 # Shared constants and utilities (eliminates circular dependency)
 from .constants import (
-    MAX_USER_INPUT_LENGTH,
     MAX_RETRY_PER_STEP,
     MAX_CONTEXT_HISTORY,
     MAX_REFLECT_ROUNDS,
-    RETRY_BACKOFF_BASE,
-    RETRY_BACKOFF_CAP,
-    PAUSE_TIMEOUT_SECONDS,
     AGENT_LOOP_TIMEOUT_SECONDS,
-    QUALITY_THRESHOLD_CORRECTION,
-    QUALITY_THRESHOLD_CONSENSUS,
-    MAX_CORRECTION_ATTEMPTS,
-    PARALLEL_VOTE_TIMEOUT,
-    PARALLEL_VOTE_ENABLED,
-    CRITICAL_DECISION_SKILLS,
-    CRITICAL_DECISION_ACTIONS,
 )
 from .agent_utils import (
     context_to_dict as _context_to_dict_impl,
@@ -79,7 +62,7 @@ from .state_manager import StateManager
 from .agent_error_handler import AgentErrorHandler
 from .progress_tracker import ProgressTracker
 from .result_builder import ResultBuilder
-from .task_orchestrator import TaskOrchestrator, RouteDecision
+from .task_orchestrator import TaskOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -429,7 +412,7 @@ class AgentLoop:
         if not context:
             return result
 
-        resume_step = result.pop("resume_step", context.current_step)
+        result.pop("resume_step", context.current_step)
         deadline = time.time() + AGENT_LOOP_TIMEOUT_SECONDS
 
         try:

@@ -35,7 +35,6 @@ from opc_manager.data_manager import (
     get_preference,
     set_preference,
     _add_column_if_not_exists,
-    _db_initialized,
     _get_conn,
     _local,
     DB_PATH,

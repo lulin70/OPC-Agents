@@ -367,7 +367,7 @@ class TestExecuteOperation(unittest.TestCase):
 
     def test_happy_path_read_file(self):
         """read_file 操作正常路径"""
-        result = _run(
+        _run(
             self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"})
         )
         self.tool_system.call_tool.assert_called_once_with(
@@ -376,7 +376,7 @@ class TestExecuteOperation(unittest.TestCase):
 
     def test_happy_path_write_file(self):
         """write_file 操作正常路径"""
-        result = _run(
+        _run(
             self.mixin._execute_operation(
                 "write_file", {"path": "/tmp/out.txt", "content": "hi"}
             )
@@ -409,7 +409,7 @@ class TestExecuteOperation(unittest.TestCase):
 
     def test_default_parameters_empty_dict(self):
         """parameters 默认为空字典"""
-        result = _run(self.mixin._execute_operation("read_file"))
+        _run(self.mixin._execute_operation("read_file"))
         self.tool_system.call_tool.assert_called_once()
 
 
@@ -427,7 +427,7 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_happy_path(self):
         """正常发送通知"""
-        result = _run(
+        _run(
             self.mixin._execute_notification("测试消息", recipient="user@example.com")
         )
         self.tool_system.call_tool.assert_called_once()
@@ -438,7 +438,7 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_cleans_recipient_newlines(self):
         """清理收件人中的换行符（防止头部注入）"""
-        result = _run(
+        _run(
             self.mixin._execute_notification(
                 "消息", recipient="user@test.com\r\nBCC:evil@bad.com"
             )
@@ -465,7 +465,7 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_default_subject(self):
         """默认邮件主题"""
-        result = _run(
+        _run(
             self.mixin._execute_notification("消息", recipient="user@test.com")
         )
         call_args = self.tool_system.call_tool.call_args
@@ -804,77 +804,77 @@ class TestDomainSkillDelegation(unittest.TestCase):
     def test_execute_task_delegates(self, mock_execute):
         """任务技能委托到 task_skill"""
         mock_execute.return_value = {"success": True, "tasks": []}
-        result = self.mixin._execute_task(goal="创建任务")
+        self.mixin._execute_task(goal="创建任务")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.social_skill.execute_goal")
     def test_execute_social_delegates(self, mock_execute):
         """社交技能委托到 social_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_social(goal="社交媒体分析")
+        self.mixin._execute_social(goal="社交媒体分析")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.proposal_skill.execute_goal")
     def test_execute_proposal_delegates(self, mock_execute):
         """方案技能委托到 proposal_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_proposal(goal="写方案")
+        self.mixin._execute_proposal(goal="写方案")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.invoice_skill.execute_goal")
     def test_execute_invoice_delegates(self, mock_execute):
         """发票技能委托到 invoice_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_invoice(goal="开发票")
+        self.mixin._execute_invoice(goal="开发票")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.report_skill.execute_goal")
     def test_execute_report_delegates(self, mock_execute):
         """报告技能委托到 report_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_report(goal="生成报告")
+        self.mixin._execute_report(goal="生成报告")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.calendar_skill.execute_goal")
     def test_execute_calendar_delegates(self, mock_execute):
         """日历技能委托到 calendar_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_calendar(goal="安排会议")
+        self.mixin._execute_calendar(goal="安排会议")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.competitor_skill.execute_goal")
     def test_execute_competitor_delegates(self, mock_execute):
         """竞品技能委托到 competitor_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_competitor(goal="竞品分析")
+        self.mixin._execute_competitor(goal="竞品分析")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.pricing_skill.execute_goal")
     def test_execute_pricing_delegates(self, mock_execute):
         """定价技能委托到 pricing_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_pricing(goal="定价策略")
+        self.mixin._execute_pricing(goal="定价策略")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.tax_reminder_skill.execute_goal")
     def test_execute_tax_reminder_delegates(self, mock_execute):
         """税务提醒技能委托到 tax_reminder_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_tax_reminder(goal="报税提醒")
+        self.mixin._execute_tax_reminder(goal="报税提醒")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.dashboard_skill.execute_goal")
     def test_execute_dashboard_delegates(self, mock_execute):
         """仪表盘技能委托到 dashboard_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_dashboard(goal="查看仪表盘")
+        self.mixin._execute_dashboard(goal="查看仪表盘")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.knowledge_skill.execute_goal")
     def test_execute_knowledge_delegates(self, mock_execute):
         """知识库技能委托到 knowledge_skill"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_knowledge(goal="搜索知识")
+        self.mixin._execute_knowledge(goal="搜索知识")
         mock_execute.assert_called_once()
 
 
@@ -957,13 +957,13 @@ class TestInputValidation(unittest.TestCase):
         """操作 parameters=None 默认为空字典"""
         tool_system = _make_mock_tool_system()
         mixin = _make_mixin(tool_system=tool_system)
-        result = _run(mixin._execute_operation("read_file", parameters=None))
+        _run(mixin._execute_operation("read_file", parameters=None))
 
     def test_notification_none_recipient(self):
         """通知 recipient=None 不抛异常"""
         tool_system = _make_mock_tool_system()
         mixin = _make_mixin(tool_system=tool_system)
-        result = _run(mixin._execute_notification("消息", recipient=None))
+        _run(mixin._execute_notification("消息", recipient=None))
 
 
 # ---------------------------------------------------------------------------
@@ -1033,7 +1033,7 @@ class TestExecuteCRM(unittest.TestCase):
     def test_simple_crm_delegates(self, mock_execute):
         """简单 CRM 查询直接委托"""
         mock_execute.return_value = {"success": True, "customers": []}
-        result = self.mixin._execute_crm(goal="查看客户列表")
+        self.mixin._execute_crm(goal="查看客户列表")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.crm_skill.get_customer")
@@ -1046,7 +1046,7 @@ class TestExecuteCRM(unittest.TestCase):
             return_value={"success": True, "collaborative": True}
         )
         mock_get_customer.return_value = {"name": "张三", "email": "zhang@test.com"}
-        result = self.mixin._execute_crm(goal="给张三发邮件")
+        self.mixin._execute_crm(goal="给张三发邮件")
         self.mixin._execute_collaborative.assert_called_once()
 
     @patch("opc_manager.crm_skill.execute_goal")
@@ -1054,7 +1054,7 @@ class TestExecuteCRM(unittest.TestCase):
         """协作返回 None 时回退到 CRM 执行"""
         self.mixin._execute_collaborative = MagicMock(return_value=None)
         mock_crm_exec.return_value = {"success": True}
-        result = self.mixin._execute_crm(goal="给张三发邮件")
+        self.mixin._execute_crm(goal="给张三发邮件")
         mock_crm_exec.assert_called_once()
 
 
@@ -1073,7 +1073,7 @@ class TestExecuteFinance(unittest.TestCase):
     def test_simple_finance_delegates(self, mock_execute):
         """简单财务查询直接委托"""
         mock_execute.return_value = {"success": True}
-        result = self.mixin._execute_finance(goal="财务分析")
+        self.mixin._execute_finance(goal="财务分析")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.finance_skill.execute_goal")
@@ -1082,7 +1082,7 @@ class TestExecuteFinance(unittest.TestCase):
         self.mixin._execute_collaborative = MagicMock(
             return_value={"success": True, "collaborative": True}
         )
-        result = self.mixin._execute_finance(goal="报税提醒")
+        self.mixin._execute_finance(goal="报税提醒")
         self.mixin._execute_collaborative.assert_called_once()
 
     @patch("opc_manager.finance_skill.execute_goal")
@@ -1090,7 +1090,7 @@ class TestExecuteFinance(unittest.TestCase):
         """协作返回 None 时回退到财务执行"""
         self.mixin._execute_collaborative = MagicMock(return_value=None)
         mock_finance_exec.return_value = {"success": True}
-        result = self.mixin._execute_finance(goal="报税提醒")
+        self.mixin._execute_finance(goal="报税提醒")
         mock_finance_exec.assert_called_once()
 
 

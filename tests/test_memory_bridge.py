@@ -21,7 +21,6 @@ from opc_manager.memory_bridge import (
     is_memory_enabled,
     _get_db_path,
     get_memory_bridge,
-    _CARRYMEM_AVAILABLE,
 )
 
 # ---------------------------------------------------------------------------

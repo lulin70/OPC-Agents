@@ -26,8 +26,7 @@ import time
 import csv
 import io
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock, PropertyMock
-from dataclasses import asdict
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -44,7 +43,6 @@ from frontend.components.timeline_view import (
     _build_from_undo_manager,
     _build_from_audit_log,
     _build_from_progress_emitter,
-    _build_from_chat_history,
     _apply_filters,
     _group_events_by_time,
     _get_undo_description,
@@ -54,7 +52,6 @@ from frontend.components.timeline_view import (
     _export_to_markdown,
     _export_to_png,
     _escape_html,
-    _inject_timeline_css,
 )
 
 
@@ -198,7 +195,6 @@ class TestEventTypeConfig(unittest.TestCase):
 
     def test_colors_are_valid_hex(self):
         """TC-TL-009: 所有颜色值为有效的HEX格式"""
-        import re
 
         hex_pattern = r"^#[0-9A-Fa-f]{6}$"
 
@@ -257,7 +253,7 @@ class TestBuildTimelineFromSession(unittest.TestCase):
     @patch("frontend.components.timeline_data.st")
     def test_events_sorted_descending(self, mock_st):
         """TC-TL-014: 事件按时间戳降序排列"""
-        now = time.time()
+        time.time()
         mock_st.session_state = {
             "deliverables": [
                 {
@@ -1050,7 +1046,7 @@ class TestEdgeCases(unittest.TestCase):
         ]
 
         start = time.time()
-        grouped = _group_events_by_time(large_events, "hour")
+        _group_events_by_time(large_events, "hour")
         elapsed = (time.time() - start) * 1000
 
         self.assertLess(elapsed, 200, f"分组耗时{elapsed:.1f}ms，超过200ms限制")

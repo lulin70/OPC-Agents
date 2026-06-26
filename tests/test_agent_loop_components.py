@@ -9,17 +9,16 @@
 - TaskOrchestrator: 任务编排（路由决策部分）
 """
 
-import asyncio
 import unittest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 
 from opc_manager.state_manager import StateManager
-from opc_manager.agent_error_handler import AgentErrorHandler, ValidationResult
+from opc_manager.agent_error_handler import AgentErrorHandler
 from opc_manager.progress_tracker import ProgressTracker
 from opc_manager.result_builder import ResultBuilder
 from opc_manager.task_orchestrator import TaskOrchestrator, RouteDecision
 from opc_manager.agent_context import AgentContext, AgentState
-from opc_manager.task_engine_v3 import TaskType, TaskResult
+from opc_manager.task_engine_v3 import TaskType
 from opc_manager.progress_emitter import ProgressEmitter, EventType
 
 

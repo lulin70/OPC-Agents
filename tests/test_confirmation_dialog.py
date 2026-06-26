@@ -17,7 +17,7 @@ Run command:
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 import asyncio
 
 from opc_manager.confirmer import (
@@ -419,7 +419,6 @@ class TestRenderConfirmationDialog:
     @patch("streamlit.button")
     def test_confirm_button_clicked(self, mock_button):
         from frontend.components.confirmation_dialog import render_confirmation_dialog
-        import streamlit as st
 
         mock_button.return_value = True
         request = {
@@ -583,10 +582,7 @@ class TestEdgeCases:
     """Edge case tests for boundary conditions and special inputs."""
 
     def test_extremely_long_goal_truncation(self):
-        from frontend.components.confirmation_dialog import (
-            _sanitize_params_display,
-            MAX_GOAL_LENGTH,
-        )
+        pass
 
         long_goal = "x" * 500
         request = {

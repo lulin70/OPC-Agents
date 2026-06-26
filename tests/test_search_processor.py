@@ -16,7 +16,7 @@
 import unittest
 import time
 from unittest.mock import patch
-from opc_manager.search_processor import SearchResultProcessor, ProcessedResult
+from opc_manager.search_processor import SearchResultProcessor
 
 
 class TestKeywordExtraction(unittest.TestCase):

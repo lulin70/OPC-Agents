@@ -20,8 +20,6 @@ Design Principles:
 import streamlit as st
 import time
 import logging
-from datetime import datetime
-from typing import List, Dict, Any, Optional
 
 from opc_manager.i18n import t as _t
 
@@ -31,26 +29,20 @@ from frontend.components.undo_export import *  # noqa: F401,F403
 from frontend.components.undo_actions import *  # noqa: F401,F403
 
 # Explicit imports for use in this module
-from frontend.components.session_utils import _get_undo_manager, _get_current_session_id
+from frontend.components.session_utils import _get_undo_manager
 from frontend.components.undo_display import (
     UndoRecordDisplay,
     OPERATION_TYPE_CONFIG,
     STATUS_CONFIG,
-    _get_operation_description,
     _calculate_remaining_time,
-    _format_time_ago,
     _convert_to_display_record,
 )
 from frontend.components.undo_actions import (
     execute_undo,
     calculate_undo_stats,
-    check_has_active_undo_records,
-    get_latest_undo_record_info,
 )
 from frontend.components.undo_export import (
     _render_export_options,
-    _generate_csv,
-    _generate_json,
 )
 
 logger = logging.getLogger(__name__)
@@ -372,8 +364,6 @@ def render_undo_panel(session_id: str, expand: bool = False):
     )
 
     display_records = [_convert_to_display_record(r) for r in sorted_records]
-
-    active_count = sum(1 for r in display_records if r.status == "active")
 
     if expand or st.session_state.get("show_all_undo", False):
         records_to_show = display_records

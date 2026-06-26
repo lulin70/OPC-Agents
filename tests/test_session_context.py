@@ -14,7 +14,6 @@
 """
 
 import unittest
-import time
 from opc_manager.session_context import (
     SessionContextManager,
     ConversationTurn,

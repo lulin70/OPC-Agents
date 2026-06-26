@@ -1,8 +1,6 @@
 """Unit tests for EmbeddingService and cosine_similarity."""
 
 import os
-import struct
-import sqlite3
 import tempfile
 import unittest
 from unittest.mock import patch, MagicMock

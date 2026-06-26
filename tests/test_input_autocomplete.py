@@ -15,14 +15,10 @@ Run: pytest tests/test_input_autocomplete.py -v
 """
 
 import pytest
-import json
 import time
 import os
 import sys
-import tempfile
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from dataclasses import dataclass
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -40,8 +36,6 @@ from frontend.components.input_autocomplete import (
     update_completion_frequency,
     get_autocomplete_stats,
     clear_completion_cache,
-    CACHE_FILE,
-    CACHE_DIR,
     SKILL_CATEGORY_ICONS,
     SMART_HINTS,
 )
@@ -681,7 +675,7 @@ class TestUIIntegration:
 
         from frontend.components.input_autocomplete import render_autocomplete_input
 
-        result = render_autocomplete_input("Test Label", "test_key")
+        render_autocomplete_input("Test Label", "test_key")
 
         assert "test_key_autocomplete" in mock_session
 

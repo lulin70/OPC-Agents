@@ -21,8 +21,6 @@ import os
 import sys
 import base64
 import threading
-import tempfile
-import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -32,10 +30,6 @@ import pytest
 from opc_manager.settings import (
     SettingsManager,
     SettingsCategory,
-    LLMSettings,
-    SMTPSettings,
-    SecuritySettings,
-    ProfileSettings,
     get_settings,
     SMTP_PRESETS,
 )
@@ -1144,7 +1138,7 @@ class TestEncryptedStorage:
         Scenario: Don't set any API keys, save settings
         Expected: Empty strings in JSON file for sensitive fields (if file exists)
         """
-        settings = get_settings()
+        get_settings()
 
         settings_file = Path(SettingsManager.SETTINGS_FILE)
         if not settings_file.exists():

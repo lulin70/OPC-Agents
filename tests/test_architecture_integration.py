@@ -6,7 +6,7 @@ including the ExecutorBrain direct TaskEngineV3 integration (no TaskEngineAdapte
 
 import asyncio
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
 from opc_manager.task_engine_v3 import TaskEngineV3, TaskResult, TaskType
 from opc_manager.agent_loop import AgentLoop

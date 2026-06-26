@@ -7,7 +7,6 @@ All external calls (requests, settings, semaphore) are mocked.
 
 import unittest
 from unittest.mock import patch, MagicMock
-import time
 
 from opc_manager.simple_llm_service import (
     SimpleLLMService,
@@ -15,9 +14,6 @@ from opc_manager.simple_llm_service import (
     _discover_all_providers,
     _CIRCUIT_BREAKER_THRESHOLD,
     LLM_MAX_RETRIES,
-    LLM_CALL_TIMEOUT,
-    LLM_TOTAL_TIMEOUT,
-    LLM_RETRY_BACKOFF,
 )
 
 

@@ -518,7 +518,7 @@ class TestOllamaBackendAsyncComplete(unittest.TestCase):
                     "test prompt", system_prompt="You are a helpful assistant"
                 )
 
-        result = asyncio.run(run_test())
+        asyncio.run(run_test())
 
         call_args = mock_post.call_args
         payload = call_args.kwargs.get("json") or call_args[1].get("json")

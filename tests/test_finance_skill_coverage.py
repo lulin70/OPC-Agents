@@ -55,7 +55,7 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("OPC_ENCRYPTION_KEY", "test-key-for-encryption-32chars!!")
 
     _orig_initialized = dm._db_initialized
-    _orig_conn = getattr(dm._local, "conn", None)
+    getattr(dm._local, "conn", None)
     _orig_data_dir = dm.DATA_DIR
     _orig_db_path = dm.DB_PATH
 
@@ -373,7 +373,7 @@ class TestUndoRecord:
         count_before = len(
             dm.execute_query("SELECT * FROM finance_records WHERE type='income'")
         )
-        undo_result = undo_record_income(record_id="nonexistent")
+        undo_record_income(record_id="nonexistent")
         count_after = len(
             dm.execute_query("SELECT * FROM finance_records WHERE type='income'")
         )
@@ -391,7 +391,7 @@ class TestUndoRecord:
         count_before = len(
             dm.execute_query("SELECT * FROM finance_records WHERE type='income'")
         )
-        undo_result = undo_record_income()
+        undo_record_income()
         count_after = len(
             dm.execute_query("SELECT * FROM finance_records WHERE type='income'")
         )
@@ -440,7 +440,7 @@ class TestUndoRecord:
         count_before = len(
             dm.execute_query("SELECT * FROM finance_records WHERE type='expense'")
         )
-        undo_result = undo_record_expense()
+        undo_record_expense()
         count_after = len(
             dm.execute_query("SELECT * FROM finance_records WHERE type='expense'")
         )

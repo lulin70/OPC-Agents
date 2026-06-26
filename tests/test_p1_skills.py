@@ -1,7 +1,5 @@
-import json
 import os
 import sys
-import tempfile
 import time
 import unittest
 from unittest.mock import patch
@@ -12,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 class TestSocialSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from opc_manager.data_manager import init_db, _db_initialized, _local
+        from opc_manager.data_manager import init_db, _local
 
         # 重置数据库状态，确保每个测试类获得干净连接
         if hasattr(_local, "conn") and _local.conn:
@@ -168,7 +166,7 @@ class TestProposalSkill(unittest.TestCase):
         self.assertIn("报价单", result["message"])
 
     def test_create_proposal_with_service_type(self):
-        from opc_manager.proposal_skill import create_proposal, SERVICE_TEMPLATES
+        from opc_manager.proposal_skill import create_proposal
 
         result = create_proposal("李总", service_type="开发")
         self.assertTrue(result["success"])

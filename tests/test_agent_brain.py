@@ -5,31 +5,19 @@
 """
 
 import pytest
-import asyncio
 
 from opc_manager import (
     StrategistBrain,
-    Intent,
     IntentType,
-    Constraint,
-    ConstraintType,
-    ExecutionPlan,
-    Step,
     ExecutorBrain,
-    ExecutionResult,
-    ExecutionStatus,
-    ExecutionStatusType,
-    ExecutionResultType,
     ReflectorBrain,
     Evaluation,
     EvaluationResult,
-    NextAction,
     NextActionType,
     CorrectionStrategy,
     ConsensusEngine,
     Opinion,
     OpinionType,
-    Decision,
     DecisionType,
     SkillRegistry,
     Skill,
@@ -582,7 +570,7 @@ class TestPHASE3EndToEnd:
     @pytest.mark.asyncio
     async def test_pause_task(self):
         loop = AgentLoop()
-        result = await loop.run("帮我搜索AI趋势")
+        await loop.run("帮我搜索AI趋势")
         # TaskResult doesn't carry task_id; verify via contexts
         task_id = loop.contexts.keys()[0]
         paused = await loop.pause_task(task_id)

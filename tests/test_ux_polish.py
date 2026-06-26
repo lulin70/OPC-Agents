@@ -7,7 +7,6 @@ Covers:
 - P1-8: Keyboard Shortcut Help Bubbles (session state management)
 """
 
-import pytest
 import sys
 import os
 

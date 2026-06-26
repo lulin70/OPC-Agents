@@ -19,35 +19,29 @@ Tests are independent and idempotent.
 import asyncio
 import json
 import os
-import shutil
-import sqlite3
-import tempfile
 import threading
 import time
-import zipfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opc_manager.onboarding import OnboardingManager, OnboardingStep, OnboardingState
+from opc_manager.onboarding import OnboardingManager, OnboardingStep
 from opc_manager.task_engine_v3 import (
     TaskEngineV3,
     TaskResult,
     TaskType,
     IntentClassifier,
 )
-from opc_manager.agent_loop import AgentLoop, MAX_USER_INPUT_LENGTH
+from opc_manager.agent_loop import AgentLoop
 from opc_manager.undo_manager import UndoManager, OperationType
 from opc_manager.data_manager import (
-    init_db,
     execute_write,
     execute_query,
     gen_id,
     encrypt_field,
     decrypt_field,
 )
-from opc_manager.audit_log import AuditLog, AuditRecord
+from opc_manager.audit_log import AuditLog
 from opc_manager.data_backup import DataBackupManager, _sanitize_value, REDACTED_VALUE
 from opc_manager.skill_reviews import SkillReviewManager
 from opc_manager.i18n import I18nManager
@@ -55,9 +49,8 @@ from opc_manager.secure_storage import SecureKeyStore
 from opc_manager.knowledge_bridge import (
     KnowledgeBridge,
     LocalFolderAdapter,
-    KnowledgeEntry,
 )
-from opc_manager.performance_monitor import PerformanceMonitor, get_performance_monitor
+from opc_manager.performance_monitor import PerformanceMonitor
 from opc_manager.llm_cache import LLMCache
 from opc_manager.task_types import InputValidator
 
@@ -994,7 +987,7 @@ class TestJourney9AuditMonitoring:
 
     def test_audit_log_query_with_filters(self, audit_log):
         """Audit log supports filtering by operation_type and time."""
-        t1 = time.time() - 100
+        time.time() - 100
         audit_log.log("s3", "email", "skill_e", "input", "output", 100)
         audit_log.log("s3", "finance", "skill_f", "input", "output", 200)
         audit_log.log("s3", "email", "skill_e", "input2", "output2", 150)

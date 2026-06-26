@@ -11,7 +11,6 @@
 
 import asyncio
 import logging
-import os
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -19,12 +18,9 @@ from typing import Any, Dict, List, Optional
 from .agent_context import AgentContext, AgentState
 from .intent_classifier import IntentRouter, IntentCategory
 from .reflector_brain import NextAction, NextActionType
-from .task_engine_v3 import TaskType, TaskResult
 from .result_builder import ResultBuilder
 from .progress_tracker import ProgressTracker
-from .agent_error_handler import AgentErrorHandler
 from .constants import (
-    AGENT_LOOP_TIMEOUT_SECONDS,
     CRITICAL_DECISION_SKILLS,
     CRITICAL_DECISION_ACTIONS,
     PARALLEL_VOTE_ENABLED,
@@ -274,7 +270,7 @@ class TaskOrchestrator:
                 )
                 continue
 
-            step_start_time = time.time()
+            time.time()
             enriched_params = self._enrich_step_parameters(
                 step.parameters, context.execution_results
             )
@@ -465,7 +461,6 @@ class TaskOrchestrator:
 
             context.set_state(AgentState.EXECUTING)
             await self.execute_execute_phase(context)
-            start_step = 0
 
             if context.cancel_requested:
                 context.set_state(AgentState.CANCELLED)
@@ -563,7 +558,6 @@ class TaskOrchestrator:
             context_dict = context_to_dict(context)
             planned_action = extract_planned_action(context, step)
 
-            from .consensus_engine import Opinion, OpinionType
 
             decision = await asyncio.wait_for(
                 self._consensus_consultant._consensus.collect_opinions_async(

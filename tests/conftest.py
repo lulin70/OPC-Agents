@@ -20,7 +20,7 @@ import sys
 import tempfile
 import threading
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 

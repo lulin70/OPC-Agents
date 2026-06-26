@@ -9,27 +9,21 @@ Marked with @pytest.mark.integration for CI filtering.
 """
 
 import asyncio
-import json
 import os
-import sqlite3
 import threading
 import time
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opc_manager.agent_loop import AgentLoop, AgentContext, AgentState
-from opc_manager.async_executor import AsyncTaskExecutor, TaskStatus
+from opc_manager.agent_loop import AgentLoop, AgentContext
+from opc_manager.async_executor import AsyncTaskExecutor
 from opc_manager.data_manager import (
-    init_db,
-    execute_write,
     execute_query,
     gen_id,
 )
 from opc_manager.onboarding import OnboardingManager, OnboardingStep
 from opc_manager.task_engine_v3 import TaskEngineV3, TaskResult, TaskType
-from opc_manager.task_types import TaskResult as TaskResultV2
 from opc_manager.undo_manager import UndoManager, OperationType
 from opc_manager.audit_log import AuditLog
 from opc_manager.i18n import I18nManager
@@ -265,7 +259,7 @@ class TestJourneyAsyncPollingFlow:
         task_id = executor.submit("长任务", execute_func=_slow_fn)
         time.sleep(0.2)  # Let it start
 
-        cancelled = executor.cancel(task_id)
+        executor.cancel(task_id)
         # Cancel may or may not succeed depending on timing
         status = executor.get_status(task_id)
         assert status["status"] in ("cancelled", "running", "done", "failed")

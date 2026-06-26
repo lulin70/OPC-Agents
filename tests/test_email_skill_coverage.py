@@ -23,7 +23,6 @@
 
 import asyncio
 import json
-import os
 import smtplib
 from unittest.mock import MagicMock, mock_open, patch
 
@@ -31,12 +30,10 @@ import pytest
 
 import opc_manager.data_manager as dm
 from opc_manager.email_skill import (
-    BLOCKED_EXTENSIONS,
     MAX_BODY_SIZE,
     MAX_DAILY_SENDS,
     MAX_RETRIES,
     RATE_LIMIT_MAX,
-    RATE_LIMIT_WINDOW,
     _check_rate_limit,
     _count_today_sends,
     _get_smtp_config,
@@ -74,7 +71,7 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("OPC_ENCRYPTION_KEY", "test-key-for-encryption-32chars!!")
 
     _orig_initialized = dm._db_initialized
-    _orig_conn = getattr(dm._local, "conn", None)
+    getattr(dm._local, "conn", None)
     _orig_data_dir = dm.DATA_DIR
     _orig_db_path = dm.DB_PATH
 

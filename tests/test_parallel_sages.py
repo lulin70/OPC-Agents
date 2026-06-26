@@ -16,8 +16,6 @@ from unittest.mock import AsyncMock, Mock, patch
 
 from opc_manager.agent_loop import (
     AgentLoop,
-    CRITICAL_DECISION_ACTIONS,
-    CRITICAL_DECISION_SKILLS,
 )
 from opc_manager.consensus_engine import (
     ConsensusEngine,

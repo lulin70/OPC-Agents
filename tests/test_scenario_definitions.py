@@ -13,7 +13,6 @@ Covers:
 """
 
 import unittest
-from typing import Dict, List
 
 from opc_manager.business_types import BusinessType
 from opc_manager.scenario_definitions import (

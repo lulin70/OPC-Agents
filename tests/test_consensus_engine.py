@@ -8,7 +8,7 @@ ConsensusEngine 单元测试
 """
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from opc_manager.consensus_engine import (
     ConsensusEngine,
@@ -16,9 +16,6 @@ from opc_manager.consensus_engine import (
     OpinionType,
     Decision,
     DecisionType,
-    CONFIDENCE_WEIGHT_AVG,
-    CONFIDENCE_WEIGHT_CONSISTENCY,
-    COMPROMISE_CONFIDENCE_FACTOR,
     ESCALATED_CONFIDENCE,
     VETO_CONFIDENCE,
     NO_CONSENSUS_CONFIDENCE,

@@ -22,7 +22,6 @@ from opc_manager.tool_system import (
     _validate_path,
     _validate_input_length,
     _configure_allowed_dirs,
-    _ensure_allowed_dirs,
     AuditLogger,
 )
 

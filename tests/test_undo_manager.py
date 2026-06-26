@@ -123,7 +123,7 @@ class TestPush:
 
     def test_push_sets_expires_at(self, manager):
         now = time.time()
-        op_id = manager.push(
+        manager.push(
             "sess1", OperationType.SOCIAL_PUBLISH, "undo_publish_content", {}, {}
         )
         record = manager._records["sess1"][0]
@@ -241,7 +241,7 @@ class TestListUndoable:
         assert items[1]["operation_id"] == id1
 
     def test_list_filters_out_non_active(self, manager):
-        op_id = manager.push("sess1", OperationType.EMAIL_SEND, "f", {}, {})
+        manager.push("sess1", OperationType.EMAIL_SEND, "f", {}, {})
         manager._records["sess1"][0].status = "undone"
         items = manager.list_undoable("sess1")
         assert len(items) == 0
@@ -251,7 +251,7 @@ class TestListUndoable:
         assert items == []
 
     def test_list_includes_remaining_seconds(self, manager):
-        op_id = manager.push(
+        manager.push(
             "sess1",
             OperationType.EMAIL_SEND,
             "undo_send_email",

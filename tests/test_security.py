@@ -13,9 +13,7 @@ Run: pytest tests/test_security.py -v
 
 import unittest
 import os
-import re
 import tempfile
-from unittest.mock import patch, MagicMock
 
 
 class TestPromptInjection(unittest.TestCase):

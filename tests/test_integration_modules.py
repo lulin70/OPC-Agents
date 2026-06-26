@@ -10,13 +10,8 @@ Streamlit) are mocked. Tests are independent and idempotent.
 """
 
 import asyncio
-import json
-import os
-import sqlite3
 import threading
 import time
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
 from unittest.mock import MagicMock, patch, AsyncMock
 
 import pytest
@@ -124,12 +119,11 @@ class TestThreeBrainPipeline:
     def test_strategist_produces_plan_executor_executes_reflector_evaluates(self):
         """StrategistBrain produces plan, ExecutorBrain executes steps,
         ReflectorBrain evaluates results — full pipeline."""
-        from opc_manager.strategist_brain import StrategistBrain, Intent, ExecutionPlan
+        from opc_manager.strategist_brain import StrategistBrain
         from opc_manager.executor_brain import ExecutorBrain, ExecutionResult
         from opc_manager.reflector_brain import (
             ReflectorBrain,
             Evaluation,
-            EvaluationResult,
             NextAction,
             NextActionType,
         )
@@ -214,7 +208,6 @@ class TestThreeBrainPipeline:
     def test_strategist_plan_steps_passed_to_executor(self):
         """Verify plan steps are correctly passed to executor with right skill_ids."""
         from opc_manager.strategist_brain import StrategistBrain
-        from opc_manager.intent_types import IntentType
 
         strategist = StrategistBrain(llm_service=None)
         intent = strategist.understand_intent("搜索最新的AI趋势")
@@ -237,12 +230,6 @@ class TestTaskEngineSkillRegistry:
     def test_skill_lookup_by_task_type(self):
         """SkillRegistry can find skills by intent keywords."""
         from opc_manager.skill_registry import SkillRegistry
-        from opc_manager.skill_models import (
-            Skill,
-            SkillCategory,
-            SkillInput,
-            SkillOutput,
-        )
 
         registry = SkillRegistry(register_builtins=True, register_external=False)
         # Built-in skills should be registered
@@ -252,12 +239,6 @@ class TestTaskEngineSkillRegistry:
     def test_skill_execution_produces_result(self):
         """Executing a skill through registry produces a dict result."""
         from opc_manager.skill_registry import SkillRegistry
-        from opc_manager.skill_models import (
-            Skill,
-            SkillCategory,
-            SkillInput,
-            SkillOutput,
-        )
 
         registry = SkillRegistry(register_builtins=True, register_external=False)
         # Try to find a built-in skill
@@ -271,7 +252,7 @@ class TestTaskEngineSkillRegistry:
 
     def test_task_engine_uses_skill_registry(self):
         """TaskEngineV3 execute() triggers SkillRegistry for BUSINESS_OPERATION."""
-        from opc_manager.task_engine_v3 import TaskEngineV3, TaskType
+        from opc_manager.task_engine_v3 import TaskEngineV3
 
         engine = TaskEngineV3()
         # Patch SkillRegistry to track calls
@@ -577,7 +558,6 @@ class TestPerformanceMonitorAgentLoop:
     def test_agent_loop_records_metrics(self, performance_monitor):
         """After AgentLoop runs, PerformanceMonitor should have recorded metrics."""
         from opc_manager.performance_monitor import (
-            get_performance_monitor,
             _reset_performance_monitor,
         )
 
@@ -710,7 +690,7 @@ class TestConsensusEngineThreeBrains:
 
     def test_conditional_compromise(self, consensus_engine):
         """All conditional, no disagree → COMPROMISE decision."""
-        from opc_manager.consensus_engine import Opinion, OpinionType, DecisionType
+        from opc_manager.consensus_engine import Opinion, OpinionType
 
         opinions = [
             Opinion(
@@ -1007,7 +987,7 @@ class TestOnboardingSessionContext:
 
     def test_onboarding_state_tracks_progress(self, session_context):
         """Onboarding steps can be tracked through session context."""
-        from opc_manager.onboarding import OnboardingManager, OnboardingStep
+        from opc_manager.onboarding import OnboardingStep
 
         # OnboardingManager uses file-based state, but we can verify
         # the step enum and session context integration
