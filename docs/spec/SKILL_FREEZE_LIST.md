@@ -70,7 +70,7 @@
 invoice_skill → tax_reminder_skill (两者都冻结，依赖链内部自洽)
 proposal_skill → invoice_skill (两者都冻结，依赖链内部自洽)
 task_skill → calendar_skill (task半冻结，calendar完全冻结)
-  ⚠️ 注意: task_skill:43 from calendar_skill import add_event
+  ⚠ 注意: task_skill:43 from calendar_skill import add_event
   → task_skill半冻结，其list_tasks方法不依赖calendar，安全
 dashboard_skill → crm_skill + task_skill (dashboard完全冻结，依赖不影响)
 ```

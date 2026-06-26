@@ -222,7 +222,7 @@ def _render_timeline_event(event: TimelineEvent, is_latest: bool = False):
 
                     <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#9CA3AF;">
                         <span> {cat_badge}</span>
-                        {f'<span>️ {event.duration_ms:.1f}s</span>' if event.duration_ms > 0 else ''}
+                        {f'<span> {event.duration_ms:.1f}s</span>' if event.duration_ms > 0 else ''}
                         {f'<span> {_t("timeline_related_count", count=len(event.related_ids))}</span>' if event.related_ids else ''}
                     </div>
                 </div>

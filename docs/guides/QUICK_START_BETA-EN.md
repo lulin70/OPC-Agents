@@ -115,12 +115,12 @@ Output: SWOT analysis + specific action items
 
 #### Scenario 4: Unified Settings Management (v0.2.0 New)
 ```
-1. Click "⚙️ Settings" in sidebar or top navigation bar
+1. Click "⚙ Settings" in sidebar or top navigation bar
 2. 5 tabs available:
    - 🤖 LLM Config: Manage multiple API Keys, model selection, parameter tuning
    - 📧 SMTP Email: Configure mail server, sender info
    - 🔑 API Keys: View/manage all configured API Keys (encrypted storage)
-   - 🛡️ Security: Data encryption, access control, audit log settings
+   - 🛡 Security: Data encryption, access control, audit log settings
    - 👤 Profile: Business type, preferences, language selection
 3. All changes take effect immediately, no restart needed
 ```
@@ -180,7 +180,7 @@ opc-agents --shortcut daily_report
 
 ---
 
-## ⚠️ Known Beta Limitations
+## ⚠ Known Beta Limitations
 
 ### Current Version Limitations
 
@@ -339,7 +339,7 @@ Thank you for your participation! We value your feedback:
 
 ---
 
-## 🗺️ Roadmap
+## 🗺 Roadmap
 
 ### Near-term Updates (1-2 weeks)
 

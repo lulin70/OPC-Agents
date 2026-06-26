@@ -19,7 +19,7 @@ UI Layout:
 │  最近使用:                                │
 │ [写一份Q2营销方案] [分析竞品数据] [记录收入] │
 │                                              │
-│ ️ 技能快捷入口:                            │
+│  技能快捷入口:                            │
 │ [CRM客户管理] [财务记录] [报告生成] [...]     │
 │                                              │
 │  常用模板:                                │
@@ -109,8 +109,8 @@ SKILL_CATEGORY_ICONS = {
     "utility": "",
     "search": "",
     "analysis": "",
-    "creation": "️",
-    "operation": "️",
+    "creation": "",
+    "operation": "",
     "notification": "",
 }
 
@@ -368,7 +368,7 @@ def _render_skill_shortcuts() -> List[CompletionItem]:
         default_skills = [
             (_t("ac_default_skill_search"), ""),
             (_t("ac_default_skill_analysis"), ""),
-            (_t("ac_default_skill_content"), "️"),
+            (_t("ac_default_skill_content"), ""),
             (_t("ac_default_skill_email"), ""),
             (_t("ac_default_skill_finance"), ""),
             (_t("ac_default_skill_crm"), ""),
@@ -485,7 +485,7 @@ def render_autocomplete_input(
     │  最近使用: (if available)                 │
     │ [suggestion buttons]                        │
     │                                              │
-    │ ️ 技能快捷入口:                            │
+    │  技能快捷入口:                            │
     │ [skill buttons]                              │
     │                                              │
     │  常用模板:                                │

@@ -343,7 +343,7 @@ class TestGetTaskTypeLabel(unittest.TestCase):
     def test_content_generation_label(self):
         """TC-030: 内容生成标签正确"""
         label = get_task_type_label("content_generation")
-        self.assertNotIn("✍️", label)
+        self.assertNotIn("✍", label)
         self.assertIn("内容生成", label)
 
     def test_data_analysis_label(self):

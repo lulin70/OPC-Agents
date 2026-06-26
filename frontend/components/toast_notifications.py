@@ -3,7 +3,7 @@
 Provides toast-style notification UI using Streamlit's built-in st.toast():
 - show_success: Success toast with  icon
 - show_error: Error toast with  icon
-- show_info: Info toast with ️ icon
+- show_info: Info toast with  icon
 """
 
 import streamlit as st
@@ -21,6 +21,6 @@ def show_error(message: str, icon: str = ""):
     st.toast(message, icon=icon)
 
 
-def show_info(message: str, icon: str = "️"):
+def show_info(message: str, icon: str = ""):
     """Show an info toast notification."""
     st.toast(message, icon=icon)

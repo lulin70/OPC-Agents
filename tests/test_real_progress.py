@@ -310,14 +310,14 @@ class TestErrorStateHandling:
             ProgressEvent(
                 event_type=EventType.ERROR,
                 session_id=sid,
-                message="❌ 执行异常: RuntimeError",
+                message="执行异常: RuntimeError",
             )
         )
 
         history = emitter.get_history(sid)
         error_event = history[-1]
         assert error_event["event"] == "error"
-        assert "❌" in error_event["message"]
+        assert "执行异常" in error_event["message"]
         assert "RuntimeError" in error_event["message"]
 
     def test_error_does_not_have_progress(self, emitter):

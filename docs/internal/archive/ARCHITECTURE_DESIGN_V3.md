@@ -1,6 +1,6 @@
 # OPC-Agents 架构设计文档 v3.5 (四角色共识提升版)
 
-> ⚠️ **文档状态说明**: 本文档基于 v3.5 四角色共识编写，部分设计已在 v0.1.5/v0.1.6 中实现（如AsyncTaskExecutor、SessionContextManager、LLMEnhancedContentGenerator、SearchResultProcessor、Protocol降级、质量门禁等）。具体实现状态请参考 `docs/CHANGELOG.md` 和源代码。
+> ⚠ **文档状态说明**: 本文档基于 v3.5 四角色共识编写，部分设计已在 v0.1.5/v0.1.6 中实现（如AsyncTaskExecutor、SessionContextManager、LLMEnhancedContentGenerator、SearchResultProcessor、Protocol降级、质量门禁等）。具体实现状态请参考 `docs/CHANGELOG.md` 和源代码。
 
 ## 更新履历
 
@@ -37,7 +37,7 @@
 │   │  - ChatUI (对话界面)                                 │   │
 │   │  - 📁 成果物管理页 (文件列表+预览+下载)               │   │
 │   │  - 📊 成长飞轮仪表盘                                  │   │
-│   │  - ⚙️ 设置页面                                       │   │
+│   │  - ⚙ 设置页面                                       │   │
 │   │  - execute_task_and_deliver() ← 核心入口             │   │
 │   │  - save_deliverable() ← 文件生成                     │   │
 │   └────────────────────┬────────────────────────────────┘   │
@@ -201,7 +201,7 @@ v3.2交付的成果物文件中发现大量空模板：
 - ✅ 零占位符验证通过（命令行测试）
 - ✅ 方案文档从"不可用"变为"含SMART目标/路线图/资源/风险/验收"
 - ✅ 信息收集从"无数据"变为"8条DuckDuckGo真实结果"
-- ⚠️ Streamlit前端集成存在超时问题（独立于引擎本身）
+- ⚠ Streamlit前端集成存在超时问题（独立于引擎本身）
 
 ---
 
@@ -254,7 +254,7 @@ st.download_button(
 |------|------|------|------|
 | A. 仅内存(session_state) | 最快 | 刷新丢失 | ❌ |
 | **B. 文件系统(deliverables/)** | **简单可靠；可直接查看；可备份** | **多实例需同步** | ✅ |
-| C. 数据库(SQLAlchemy) | 可查询；支持多用户 | 较重；当前不需要 | ⚠️ 预留 |
+| C. 数据库(SQLAlchemy) | 可查询；支持多用户 | 较重；当前不需要 | ⚠ 预留 |
 
 **结论**: 当前使用B方案（文件系统），C方案（数据库）模型已建好作为后续扩展。
 

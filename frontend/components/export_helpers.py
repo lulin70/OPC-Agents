@@ -192,7 +192,7 @@ def _execute_batch_export(format_name: str, DELIVERABLES_DIR):
             if os.path.exists(fp):
                 with open(fp, "rb") as f:
                     st.download_button(
-                        label=f"️ {_t('download')} {os.path.basename(fp)}",
+                        label=f" {_t('download')} {os.path.basename(fp)}",
                         data=f,
                         file_name=os.path.basename(fp),
                         mime=_get_mime_type(fp),
@@ -218,7 +218,7 @@ def _render_single_export_buttons(item: dict, item_id: str):
         ):
             _export_single_with_preview(item, "excel", item_id)
     with col_png:
-        if st.button("️ 图片", key=f"png_{item_id}", help=_t("export_as_png")):
+        if st.button(" 图片", key=f"png_{item_id}", help=_t("export_as_png")):
             _export_single_with_preview(item, "png", item_id)
 
 
@@ -242,8 +242,8 @@ def _render_export_preview(item_data: dict, format_type: str, item_id: str = "")
             "pdf": " PDF {_t('format_pdf_desc')}",
             "word": " Word {_t('format_word_desc')}",
             "excel": " Excel {_t('format_excel_desc')}",
-            "image": "️ PNG {_t('format_png_desc')}",
-            "png": "️ PNG {_t('format_png_desc')}",
+            "image": " PNG {_t('format_png_desc')}",
+            "png": " PNG {_t('format_png_desc')}",
         }
         st.caption(
             format_hints.get(
@@ -337,7 +337,7 @@ def _export_single(item: dict, fmt: str):
             ext = target_fmt.value
             filename = f"{os.path.splitext(item.get('filename', 'export'))[0]}.{ext}"
             st.download_button(
-                label=f"️ {_t('download')} {filename}",
+                label=f" {_t('download')} {filename}",
                 data=file_bytes,
                 file_name=filename,
                 mime=_get_mime_type(f".{ext}"),
@@ -356,7 +356,7 @@ def _render_export_buttons(content: str, formats: list, key_prefix: str):
         "pdf": " PDF",
         "docx": " Word",
         "xlsx": " Excel",
-        "png": "️ 图片",
+        "png": " 图片",
         "html": " HTML",
         "md": " Markdown",
     }

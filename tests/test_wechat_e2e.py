@@ -158,17 +158,17 @@ class TestGatewayConfirmationCard:
             confirm_text="确认执行",
             cancel_text="放弃操作",
         )
-        assert "📋 操作确认" in card
+        assert "操作确认" in card
         assert "类型: 收入" in card
         assert "金额: 3000元" in card
-        assert "✅ 确认执行" in card
-        assert "❌ 放弃操作" in card
+        assert "确认执行" in card
+        assert "放弃操作" in card
 
     def test_build_confirmation_card_empty_params(self):
         """空参数的确认卡片"""
         card = WeChatGateway.build_confirmation_card(title="空确认", params={})
-        assert "📋 空确认" in card
-        assert "✅ 确认" in card
+        assert "空确认" in card
+        assert "确认" in card
 
 
 # ============================================================================
@@ -443,7 +443,7 @@ class TestBridgeAgentIntegration:
         bridge = WeChatAgentBridge(agent_loop=mock_agent_loop, token="test")
         result = await bridge._run_agent("删除账单", "user_confirm")
 
-        assert "📋 操作确认" in result.content
+        assert "操作确认" in result.content
         assert "FINANCE" in result.content
         assert "删除账单记录" in result.content
         assert "65%" in result.content
@@ -488,7 +488,7 @@ class TestBridgeAgentIntegration:
         }
 
         response = bridge._format_response(result)
-        assert "📋 操作确认" in response.content
+        assert "操作确认" in response.content
         assert "EMAIL" in response.content
 
     @pytest.mark.asyncio

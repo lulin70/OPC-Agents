@@ -33,9 +33,9 @@ class ShortcutResult:
     def to_shortcuts_output(self) -> str:
         """Format output for Apple Shortcuts display."""
         if self.success:
-            return f"✅ {self.message}"
+            return f" {self.message}"
         else:
-            return f"❌ {self.message}"
+            return f" {self.message}"
 
     def to_json(self) -> str:
         return json.dumps(
@@ -131,10 +131,10 @@ class ShortcutsHandler:
             i_total = income_rows[0]["total"] if income_rows else 0
 
             status_msg = (
-                f"📊 今日状态 ({today})\n"
+                f" 今日状态 ({today})\n"
                 f"━━━━━━━━━━━━━━━━\n"
-                f"📋 任务数: {t_count}\n"
-                f"💰 收入总计: ¥{i_total:,.0f}\n"
+                f" 任务数: {t_count}\n"
+                f" 收入总计: ¥{i_total:,.0f}\n"
                 f"━━━━━━━━━━━━━━━━"
             )
 
@@ -173,12 +173,12 @@ class ShortcutsHandler:
             )
 
             type_labels = {
-                "document": "📄文档",
-                "report": "📊报告",
-                "proposal": "📝方案",
-                "invoice": "🧾发票",
+                "document": "文档",
+                "report": "报告",
+                "proposal": "方案",
+                "invoice": "发票",
             }
-            label = type_labels.get(dtype, "📁文件")
+            label = type_labels.get(dtype, "文件")
 
             return ShortcutResult(
                 True,
@@ -224,7 +224,7 @@ class ShortcutsHandler:
 
             return ShortcutResult(
                 True,
-                f"💰 收入已记录\n金额: ¥{amount:,.0f}\n客户: {client or '未知'}\n来源: {source or '其他'}",
+                f" 收入已记录\n金额: ¥{amount:,.0f}\n客户: {client or '未知'}\n来源: {source or '其他'}",
                 {"id": iid, "amount": amount, "client": client, "date": today},
             )
 
@@ -259,11 +259,11 @@ class ShortcutsHandler:
             total_income = sum((r.get("amount") or 0) for r in income_rows)
 
             report = (
-                f"📋 OPC-Agent 日报 ({today})\n"
+                f" OPC-Agent 日报 ({today})\n"
                 f"{'='*30}\n\n"
-                f"💰 今日收入: ¥{total_income:,.0f}\n"
+                f" 今日收入: ¥{total_income:,.0f}\n"
                 f"   共 {len(income_rows)} 笔记录\n\n"
-                f"📁 今日成果: {len(deliverable_tasks)} 项\n"
+                f" 今日成果: {len(deliverable_tasks)} 项\n"
             )
 
             if deliverable_tasks:
@@ -276,16 +276,16 @@ class ShortcutsHandler:
                     )
                     report += f"   • [{dtype}] {d.get('title', '')}\n"
 
-            report += f"\n📊 近期任务: {len(tasks)} 条\n"
+            report += f"\n 近期任务: {len(tasks)} 条\n"
 
             if tasks:
                 for t in tasks[:5]:
-                    status = "✅" if t.get("status") == "done" else "⏳"
+                    status = "" if t.get("status") == "done" else ""
                     report += (
                         f"   {status} {t.get('title', t.get('description', ''))[:40]}\n"
                     )
 
-            report += f"\n{'='*30}\n由 OPC-Agents 自动生成 🤖"
+            report += f"\n{'='*30}\n由 OPC-Agents 自动生成 "
 
             return ShortcutResult(
                 True,

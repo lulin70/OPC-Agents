@@ -124,7 +124,7 @@ class ContentGenerationMixin:
         now = time.strftime("%Y年%m月%d")
 
         lines = []
-        lines.append(f"# 📝 {query}\n")
+        lines.append(f"#  {query}\n")
         lines.append(f"> 报告日期: {now} | 由 OPC-Agents 任务执行引擎生成\n")
         if context:
             lines.extend(context)
@@ -286,7 +286,7 @@ class ContentGenerationMixin:
             topic = "本项目"
 
         lines = []
-        lines.append(f"# 📋 {query}\n")
+        lines.append(f"#  {query}\n")
         lines.append(f"> 编制日期: {now} | 版本: V1.0 | OPC-Agents 自动生成\n")
         if context:
             lines.extend(context)
@@ -424,7 +424,7 @@ class ContentGenerationMixin:
 
         now = time.strftime("%Y-%m-%d %H:%M")
         lines = []
-        lines.append(f"# ✍️ {query}\n\n")
+        lines.append(f"#  {query}\n\n")
         lines.append(f"> 生成时间: {now}\n\n")
         if context:
             lines.extend(context)
@@ -441,7 +441,7 @@ class ContentGenerationMixin:
                 lines.append(f"### {i}. {title}\n\n")
                 lines.append(f"{body[:600]}{'...' if len(body) > 600 else ''}\n\n")
                 if href:
-                    lines.append(f"🔗 完整内容: [{title}]({href})\n\n")
+                    lines.append(f" 完整内容: [{title}]({href})\n\n")
         else:
             lines.append(f"以下是针对「{query}」生成的内容：\n\n")
             lines.append(

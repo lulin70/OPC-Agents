@@ -159,8 +159,8 @@ class TestLLMContextFormatting(unittest.TestCase):
         context = self.session.get_context_for_llm()
 
         self.assertIn("=== 第1轮", context)
-        self.assertIn("👤 用户:", context)
-        self.assertIn("🤖 助手:", context)
+        self.assertIn("用户:", context)
+        self.assertIn("助手:", context)
 
     def test_max_turns_parameter_works(self):
         """max_turns参数应限制返回的轮数"""
@@ -335,8 +335,8 @@ class TestGateITERATE01(unittest.TestCase):
 
         self.assertIn("[对话历史", context)
         self.assertIn("=== 第", context)
-        self.assertIn("👤 用户:", context)
-        self.assertIn("🤖 助手:", context)
+        self.assertIn("用户:", context)
+        self.assertIn("助手:", context)
 
         lines = [l for l in context.split("\n") if l.strip()]
         self.assertGreaterEqual(len(lines), 4, "上下文格式应足够详细")

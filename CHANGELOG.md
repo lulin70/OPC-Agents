@@ -93,7 +93,7 @@ All notable changes to OPC-Agents will be documented in this file.
 #### 并行执行引擎修复
 - **P2-13 信号量在重试循环外获取**：parallel_executor.py _execute_single_task 中信号量从重试循环内移到外部，避免任务重试时饿死其他任务。
 - **P2-14 _merge_results 错误消息格式修正**：FIRST_SUCCESS 策略所有任务失败时，聚合所有错误消息为统一格式 "所有任务失败: [task_0: error_0; task_1: error_1; ...]"。
-- **P3-18 ParallelExecutor 标注实验性**：文件头部添加"⚠️ 实验性功能"标注，明确未被三贤者投票流程实际使用。
+- **P3-18 ParallelExecutor 标注实验性**：文件头部添加"⚠ 实验性功能"标注，明确未被三贤者投票流程实际使用。
 
 #### 测试质量提升
 - **test_integration_modules.py 质量分阈值**：从 >= 0.0 提升到 >= 0.7，真正验证评估质量。
@@ -371,7 +371,7 @@ All notable changes to OPC-Agents will be documented in this file.
   - 🔍 Market Research (Dan Koe + The Mom Test)
   - 🚀 Growth Hacker (Justin Welsh Content OS)
   - 👂 Social Listening (Reddit/X/HN pain point mining)
-  - ⚖️ Legal Advisor (contract review + IP protection)
+  - ⚖ Legal Advisor (contract review + IP protection)
   - 🔬 Proposal Review (inversion thinking)
   - 📋 PRD Generation (structured product requirements)
   - 🎨 Domain & Brand (Paul Graham naming)
@@ -380,7 +380,7 @@ All notable changes to OPC-Agents will be documented in this file.
 - **Feature**: Knowledge context injection before task execution
 - **Feature**: Sidebar knowledge base status indicator (📚 知识库(type) N篇)
 - **Config**: `OPC_KB_ENABLED=true`, `OPC_KB_TYPE=obsidian|local|yuque|feishu|notion|siyuan`
-- **Feature**: Flywheel level assessment (🌱新手→🌿熟悉→🌳精通→🏔️专家→🧙大师→👑传奇)
+- **Feature**: Flywheel level assessment (🌱新手→🌿熟悉→🌳精通→🏔专家→🧙大师→👑传奇)
 - **Feature**: Memory-driven skill recommendation (`suggest_skills()`)
 - **Feature**: Stale memory cleanup (`cleanup_stale_memories()`)
 - **Feature**: User data export for portability (`export_user_data()`)
@@ -411,7 +411,7 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ### Final Stabilization (2026-05-18 — Frontend Architecture Reorganization)
 
-#### 🏗️ Architecture Refactor
+#### 🏗 Architecture Refactor
 - **app.py**: 1913→405 lines (-79%), extracted to Router/Renderer architecture
 - **13 new files** created:
   - `frontend/routers/` — 6 routers (base, chat, dashboard, deliverables, marketplace, settings)
@@ -455,7 +455,7 @@ All notable changes to OPC-Agents will be documented in this file.
   | Settings → save → back | 5/6 (83%) | ✅ |
   | Language switch × 6 pages | Core framework ✅ | ✅ |
   | Skill create → market | 4/5 (80%) | ✅ |
-  | Dashboard config | Static ✅ / Interactive manual | ⚠️ |
+  | Dashboard config | Static ✅ / Interactive manual | ⚠ |
 
 #### Known Residuals (P2, non-blocking)
 - Dashboard interactive features (panel toggle, layout switch) — needs manual browser testing
@@ -575,7 +575,7 @@ All notable changes to OPC-Agents will be documented in this file.
 之前: 用户输入 → fake进度条 → 纯文本结果 → 结束
 现在: 用户输入(智能补全💡) → 真实进度(事件驱动📊) 
      → [高风险确认🔐] → 结构化结果卡片(渐变色🎨) 
-     → 智能建议(一键执行⚡) → 撤销历史(可追溯↩️) 
+     → 智能建议(一键执行⚡) → 撤销历史(可追溯↩) 
      → 实时日志(可调试📡) → 操作时间线(全局视角🕐)
 ```
 
@@ -608,7 +608,7 @@ All notable changes to OPC-Agents will be documented in this file.
 
 #### Sprint 3: 数据价值可视化 (P1×2 + P2×2)
 - **DataBackupManager** — ZIP备份/JSON导出/CSV导出/SHA256校验/安全恢复
-- **Dashboard模板化(6面板)** — 收入趋势图📈/客户健康度👥/任务完成率✅/月度财务💰/活动时间线📅/技能统计⏱️
+- **Dashboard模板化(6面板)** — 收入趋势图📈/客户健康度👥/任务完成率✅/月度财务💰/活动时间线📅/技能统计⏱
 - **批量导出入口优化** — 4格式选择+进度条+4图标按钮替代下拉框
 - **SSE实时进度条增强** — 状态标签+进度条+指标卡+事件日志详情
 - 新增文件: data_backup.py, test_data_backup.py(16)
@@ -748,7 +748,7 @@ All notable changes to OPC-Agents will be documented in this file.
 - **Export**: S-14 Jinja2沙箱环境(SandboxedEnvironment), S-15路径穿越防护(os.path.basename)
 - **SSE**: S-18 session_id格式校验(UUID 32-128字符), S-20连接数限制(MAX=100, 超限503)
 
-#### 🏗️ P1-Architecture（4项修复）
+#### 🏗 P1-Architecture（4项修复）
 - **A-02 单例竞态**: 5个单例类(progress_emitter/export_manager/audit_log/confirmer/undo)初始化逻辑全部移入__new__锁内
 - **A-04 延迟导入**: UndoManager._resolve_inverse改为lazy import+异常隔离，单模块失败不影响其他undo
 - **A-05 DB复用**: AuditLog在__new__中一次性init_db()，writer线程复用连接
@@ -762,7 +762,7 @@ All notable changes to OPC-Agents will be documented in this file.
 - 错误消息增强: 包含操作ID和上下文信息
 - 字体回退列表: image_exporter.py支持多平台字体路径
 
-#### ⚙️ P2-Infrastructure（3项修复）
+#### ⚙ P2-Infrastructure（3项修复）
 - .gitignore: +data/templates/, +data/reports/
 - pyproject.toml: 新增export可选依赖组(weasyprint/openpyxl/python-docx/Pillow/Jinja2/markdown)
 - Git清理: 移除5个runtime数据文件跟踪(knowledge/*.json, perf_metrics.json)

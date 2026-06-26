@@ -164,17 +164,17 @@ class TestSeverityAndEmojiHelpers:
         assert ErrorHandler.get_severity_color(severity) == expected_color
 
     @pytest.mark.parametrize(
-        "severity,expected_emoji",
+        "severity",
         [
-            (ErrorSeverity.INFO, "ℹ️"),
-            (ErrorSeverity.WARNING, "⚠️"),
-            (ErrorSeverity.ERROR, "❌"),
-            (ErrorSeverity.CRITICAL, "🔴"),
+            ErrorSeverity.INFO,
+            ErrorSeverity.WARNING,
+            ErrorSeverity.ERROR,
+            ErrorSeverity.CRITICAL,
         ],
     )
-    def test_get_emoji(self, severity, expected_emoji):
-        """Each severity level should return correct emoji."""
-        assert ErrorHandler.get_emoji(severity) == expected_emoji
+    def test_get_emoji(self, severity):
+        """Severity emoji helper returns empty string after emoji removal."""
+        assert ErrorHandler.get_emoji(severity) == ""
 
 
 class TestNestedExceptionPreservation:

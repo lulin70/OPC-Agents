@@ -140,10 +140,10 @@ def _render_undo_record(
             help_text = "此操作将执行逆操作恢复原始状态"
 
             if is_destructive:
-                help_text = "️ 此操作将删除已发布的内容，不可恢复"
+                help_text = " 此操作将删除已发布的内容，不可恢复"
 
             if st.button(
-                "️ 撤销此操作",
+                " 撤销此操作",
                 key=f"undo_btn_{record.operation_id}_{index}",
                 type=btn_type,
                 use_container_width=True,
@@ -177,7 +177,7 @@ def _render_confirmation_dialog(
         index: Index for unique keys
         is_destructive: Whether this is a destructive operation
     """
-    warning_icon = "️" if is_destructive else ""
+    warning_icon = "" if is_destructive else ""
     warning_color = "#DC2626" if is_destructive else "#D97706"
     bg_color = "#FEF2F2" if is_destructive else "#FFFBEB"
 
@@ -297,15 +297,15 @@ def render_undo_panel(session_id: str, expand: bool = False):
 
     Visual Layout:
     ┌─────────────────────────────────────────────┐
-    │ ️ 撤销历史 (最近5分钟内的操作)               │
+    │  撤销历史 (最近5分钟内的操作)               │
     │ ─────────────────────────────────────────── │
     │  可撤销: 3项 | 已撤销: 1项 | 已过期: 2项   │
     │                                              │
     │  新建任务: "Q2营销方案"                    │
-    │    2分钟前 | ️ 还剩28秒可撤销                │
+    │    2分钟前 |  还剩28秒可撤销                │
     │    [撤销此操作]                              │
     │                                              │
-    │ [️ 清除所有已过期记录]                       │
+    │ [ 清除所有已过期记录]                       │
     └─────────────────────────────────────────────┘
 
     Args:
@@ -328,7 +328,7 @@ def render_undo_panel(session_id: str, expand: bool = False):
         border-radius: 8px;
         margin-bottom: 16px;
     ">
-        <span style="font-size: 18px; margin-right: 8px;">️</span>
+        <span style="font-size: 18px; margin-right: 8px;"></span>
         <strong style="color: #3730A3;">撤销历史</strong>
         <span style="color: #6366F1; font-size: 12px;">（最近可撤销的操作）</span>
     </div>
@@ -402,7 +402,7 @@ def render_undo_panel(session_id: str, expand: bool = False):
     if has_expired:
         st.divider()
         if st.button(
-            "️ 清除所有已过期记录",
+            " 清除所有已过期记录",
             key="cleanup_expired",
             use_container_width=True,
             help="移除所有已过期的撤销记录，不会影响已撤销的记录",
@@ -493,7 +493,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
 
         with col_hint:
             if st.button(
-                f"️ 立即撤销",
+                f" 立即撤销",
                 key=f"mini_undo_{task_id}_{op_id}",
                 type="secondary",
                 use_container_width=True,
@@ -543,7 +543,7 @@ def render_batch_undo(session_id: str):
         ]
 
         if len(active_records) < 2:
-            st.info("️ 批量撤销需要至少2个可撤销的操作")
+            st.info(" 批量撤销需要至少2个可撤销的操作")
             return
 
         st.markdown("####  批量撤销")
@@ -591,7 +591,7 @@ def render_batch_undo(session_id: str):
             st.divider()
 
             if st.button(
-                f"️ 批量撤销选中项 ({len(selected_ids)}个)",
+                f" 批量撤销选中项 ({len(selected_ids)}个)",
                 key="batch_undo_execute",
                 type="primary",
                 use_container_width=True,

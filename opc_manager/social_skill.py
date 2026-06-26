@@ -234,7 +234,7 @@ def mark_published(content_id: str) -> Dict[str, Any]:
 
 def _generate_title(platform: str, topic: str, cfg: dict) -> str:
     if platform == "小红书":
-        return f"🔥 {topic}全攻略！一人公司必看"
+        return f" {topic}全攻略！一人公司必看"
     elif platform == "公众号":
         return f"深度解析：{topic}——一人公司实战指南"
     elif platform == "知乎":
@@ -254,10 +254,10 @@ def _generate_body(
     )
 
     if platform == "小红书":
-        body = f"✨ {topic}干货来啦！\n\n"
+        body = f" {topic}干货来啦！\n\n"
         for i, p in enumerate(points[:5], 1):
-            body += f"{i}️⃣ {p}\n\n"
-        body += "💡 以上就是我的经验分享，觉得有用的话点个赞吧～\n\n"
+            body += f"{i}⃣ {p}\n\n"
+        body += " 以上就是我的经验分享，觉得有用的话点个赞吧～\n\n"
         return body[: cfg["max_body"]]
 
     elif platform == "公众号":

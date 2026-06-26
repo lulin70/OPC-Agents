@@ -96,7 +96,7 @@ class ProgressTracker:
         self._emit(
             EventType.STEP_COMPLETE,
             session_id,
-            f"✅ 步骤完成: {skill_id}",
+            f" 步骤完成: {skill_id}",
             progress_pct=progress_pct,
         )
 

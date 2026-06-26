@@ -483,17 +483,15 @@ class FlywheelTracker:
         tips = []
 
         tips.append(
-            "💡 飞轮效应：每增加一种业务类型，\n" "   你的综合效率会呈指数级增长！"
+            " 飞轮效应：每增加一种业务类型，\n" "   你的综合效率会呈指数级增长！"
         )
 
         if state.current_level.value < 3:
             tips.append(
-                "🎯 下一步目标：激活第{}种业务类型".format(len(state.active_types) + 1)
+                " 下一步目标：激活第{}种业务类型".format(len(state.active_types) + 1)
             )
 
-        tips.append(
-            "📈 数据驱动：定期查看你的飞轮报告，\n" "   了解哪些维度需要重点投入"
-        )
+        tips.append(" 数据驱动：定期查看你的飞轮报告，\n" "   了解哪些维度需要重点投入")
 
         return tips
 
@@ -534,7 +532,7 @@ if __name__ == "__main__":
 
     test_user = "demo_user_phase2"
 
-    print(f"\n📊 模拟用户 '{test_user}' 的成长路径:\n")
+    print(f"\n 模拟用户 '{test_user}' 的成长路径:\n")
 
     actions = [
         ("content_calendar", BusinessType.CONTENT_CREATOR, "规划下周内容日历"),
@@ -560,7 +558,7 @@ if __name__ == "__main__":
         print()
 
     print("=" * 70)
-    print("📋 完整飞轮报告:")
+    print(" 完整飞轮报告:")
     print("=" * 70)
 
     report = tracker.generate_flywheel_report(test_user)

@@ -66,9 +66,9 @@ class I18nManager:
 
     def get_available_locales(self) -> list:
         return [
-            {"code": "zh_CN", "name": "中文 🇨🇳"},
-            {"code": "en_US", "name": "English 🇺🇸"},
-            {"code": "ja_JP", "name": "日本語 🇯🇵"},
+            {"code": "zh_CN", "name": "中文"},
+            {"code": "en_US", "name": "English"},
+            {"code": "ja_JP", "name": "日本語"},
         ]
 
 

@@ -48,11 +48,11 @@ class BusinessType(Enum):
     def emoji(self) -> str:
         """Get corresponding emoji icon"""
         emojis = {
-            self.CONTENT_CREATOR: "✍️",
-            self.DIGITAL_PRODUCT: "💰",
-            self.AI_TOOL_BUILDER: "🤖",
-            self.CONSULTANT: "💼",
-            self.ECOMMERCE: "🛒",
-            self.CREATIVE_WORK: "🎨",
+            self.CONTENT_CREATOR: "",
+            self.DIGITAL_PRODUCT: "",
+            self.AI_TOOL_BUILDER: "",
+            self.CONSULTANT: "",
+            self.ECOMMERCE: "",
+            self.CREATIVE_WORK: "",
         }
-        return emojis.get(self, "📌")
+        return emojis.get(self, "")

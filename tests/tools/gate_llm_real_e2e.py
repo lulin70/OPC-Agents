@@ -784,7 +784,7 @@ class LLME2EValidator:
         lines.append(
             f"| 🎯 质量合格 | {stats['quality_passed']}/{stats['quality_passed']+stats['quality_failed']} | {stats['quality_passed']/max(stats['quality_passed']+stats['quality_failed'],1)*100:.0f}% |"
         )
-        lines.append(f"| ⏱️ 平均延迟 | {stats['avg_latency_ms']:.0f}ms | — |")
+        lines.append(f"| ⏱ 平均延迟 | {stats['avg_latency_ms']:.0f}ms | — |")
         lines.append(f"| 🔤 Token消耗 | {stats['total_tokens']} | — |")
         lines.append("")
 
@@ -811,7 +811,7 @@ class LLME2EValidator:
         )
 
         if not gate_overall:
-            lines.append("\n### ⚠️ 门禁未通过 — 阻塞性问题:")
+            lines.append("\n### ⚠ 门禁未通过 — 阻塞性问题:")
             if not gate_llm_pass:
                 lines.append("- 真实API调用比例不足10%（可能全是mock/降级）")
             if not gate_quality_pass:
@@ -916,7 +916,7 @@ def main():
         logger.info("🎉 G-LLM-REAL-01 门禁通过!")
         return 0
     else:
-        logger.warning("⚠️ G-LLM-REAL-01 门禁未通过 — 请查看上方报告")
+        logger.warning("⚠ G-LLM-REAL-01 门禁未通过 — 请查看上方报告")
         return 1
 
 

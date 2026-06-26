@@ -201,7 +201,7 @@ frontend/
 │   ├── _render_tool_buttons()     # 技能编辑器/市场/监控等按钮
 │   └── _render_theme_lang()       # 主题+语言+版本号
 │
-├── pages/                         # ⚠️ 【删除】避免Streamlit multipage干扰
+├── pages/                         # ⚠ 【删除】避免Streamlit multipage干扰
 │   └── (移除此目录或保留空__init__.py做包标记)
 │
 ├── page_modules/                  # 页面渲染模块 (已有, 扩展)

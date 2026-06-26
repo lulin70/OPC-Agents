@@ -146,7 +146,7 @@ i18n 国际化系统              │  ✅  │      │  ~85%  │ 3语种+fall
 | **影响范围** | 所有使用 `_t()` 的页面（chat/deliverables/dashboard/settings/marketplace/growth + sidebar） |
 | **对应 Bug** | Bug #4: i18n routing issues |
 | **根因分析** | app.py 中有 **50+ 处** `_t()` 调用，分散在 6 个页面区域和 sidebar 中。新增页面或重构时极易遗漏注册新 key。现有 `test_i18n.py` 仅验证 I18nManager 自身行为，**不扫描源码中的 `_t()` 调用并与 locale JSON 做交叉校验**。 |
-| **现有测试覆盖** | ⚠️ 仅测试 I18nManager 内部逻辑，无"源码调用 vs 注册表"交叉验证 |
+| **现有测试覆盖** | ⚠ 仅测试 I18nManager 内部逻辑，无"源码调用 vs 注册表"交叉验证 |
 | **硬编码 CJK 证据** | app.py L956: `"技能名称只能包含字母..."`; L957: `"描述不能超过500字符"`; L1191: `"[frontend] 审计日志查询失败"`; shared.py 多处 `_render_batch_export_section` 等 |
 
 ---
@@ -198,10 +198,10 @@ i18n 国际化系统              │  ✅  │      │  ~85%  │ 3语种+fall
 | **影响范围** | 全部 6 个页面 + sidebar |
 | **典型危险代码** | |
 | | • `app.py:L897` — `if st.session_state.get("sidebar_global_search", "").strip():` ✅ 安全 |
-| | • `app.py:L916` — `if st.session_state.detected_type:` ⚠️ 若初始化跳过则 KeyError |
-| | • `app.py:L922` — `if st.session_state.deliverables:` ⚠️ 同上 |
+| | • `app.py:L916` — `if st.session_state.detected_type:` ⚠ 若初始化跳过则 KeyError |
+| | • `app.py:L922` — `if st.session_state.deliverables:` ⚠ 同上 |
 | | • `app.py:L928` — `if "exec_mode" not in st.session_state:` ✅ 有保护 |
-| | • `app.py:L1291` — `len(st.session_state.messages) > 0` ⚠️ 无 .get() |
+| | • `app.py:L1291` — `len(st.session_state.messages) > 0` ⚠ 无 .get() |
 | | • `app.py:L1348` — `has_api_key = _has_api_key()` 后续大量直接引用 |
 | **根因分析** | 初始化块使用 `if "initialized" not in st.session_state:` 作为守卫，但该守卫本身如果因为 import 失败等原因被跳过，后续代码全部裸访 session_state。**无测试模拟初始化失败场景。** |
 | **现有测试覆盖** | ❌ 无 session_state 安全性测试 |
@@ -249,7 +249,7 @@ i18n 国际化系统              │  ✅  │      │  ~85%  │ 3语种+fall
 | GAP-004 | P2 中 | pages/ 冲突 | N/A | ✅ 文件系统检查 |
 | GAP-005 | P1 高 | session_state 安全 | ~400 | ✅ 模式匹配 |
 | GAP-006 | P1 高 | 异步管道错误传播 | ~250 | ✅ 链路测试 |
-| GAP-007 | P1 高 | Page Module 零覆盖 | 2080 | ⚠️ 需手工编写 |
+| GAP-007 | P1 高 | Page Module 零覆盖 | 2080 | ⚠ 需手工编写 |
 
 **核心结论**: 7 个盲区中 **6 个可通过自动化测试/静态分析手段预防**，仅 GAP-007 需要较大规模的手工测试编写投入。
 

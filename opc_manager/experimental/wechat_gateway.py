@@ -194,9 +194,9 @@ class WeChatGateway:
     def build_confirmation_card(
         title: str, params: dict, confirm_text="确认", cancel_text="取消"
     ) -> str:
-        lines = [f"📋 {title}", ""]
+        lines = [f" {title}", ""]
         for k, v in params.items():
             lines.append(f"  {k}: {v}")
         lines.append("")
-        lines.append(f"✅ {confirm_text}  |  ❌ {cancel_text}")
+        lines.append(f" {confirm_text}  |   {cancel_text}")
         return "\n".join(lines)
