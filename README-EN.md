@@ -37,7 +37,7 @@ opc-agents                      # 2. Launch
 
 - **⚡ Three Sages Parallel Voting Architecture Returns**: Switched from serial pipeline (3×RTT) to parallel voting (1×RTT), 3x latency reduction. Inspired by EVA MAGI three-sage synchronous voting + minority report mechanism, key decision points protected by upfront consensus.
 - **🎯 Focus on 3 Core Skills**: Email / Finance / Report. 11 non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
-- **🧠 IntentClassifier 3-Way Smart Routing**: SIMPLE / COMPLEX / GREETING three-way classification. Simple tasks bypass the three sages directly — fast and cost-effective; complex tasks enter parallel voting for quality assurance.
+- **🧠 IntentRouter 3-Way Smart Routing**: SIMPLE / COMPLEX / GREETING three-way classification. Simple tasks bypass the three sages directly — fast and cost-effective; complex tasks enter parallel voting for quality assurance.
 - **🛡 Key Decision Point Upfront Consensus Protection**: ConsensusEngine shifts from "post-hoc remedy" to "upfront gatekeeping", ExecutorBrain gives real opinions (fake opinion rules removed), ReflectorBrain upfront prediction + minority report.
 - **📊 Significant Quality Improvement**: Total coverage 62.41%, core skill test coverage email 16.96% / finance 14.46% (tracked as v0.3.1 tech debt); added 7 real LLM E2E tests (CI auto-runs every Monday).
 - **🌐 i18n Refactor**: 3857 lines → 133 lines logic layer + JSON-ification, backward compatible, drastically reduced maintenance cost.
@@ -75,7 +75,7 @@ Not a chatbot. Not an advice engine. It's a **doer that gets things done**.
 - 🔍 **ReflectorBrain**: Evaluates result quality, upfront prediction + minority report, auto-corrects when substandard
 - 🛡 **ConsensusEngine**: Three sages parallel voting (1×RTT, 3x faster than serial 3×RTT), key decision point upfront protection
 
-**IntentClassifier 3-Way Smart Routing** — Routes by task complexity, saving time and money:
+**IntentRouter 3-Way Smart Routing** — Routes by task complexity, saving time and money:
 - 🟢 **SIMPLE**: Simple tasks execute directly, bypassing the three sages
 - 🟡 **COMPLEX**: Complex tasks enter parallel voting, quality assured
 - 👋 **GREETING**: Greetings/small talk responded directly
@@ -123,7 +123,7 @@ Encounter specific scenarios? Use these together for better results:
 ├─────────────────────────────────────────────────────┤
 │  User Input                                          │
 │       ↓                                              │
-│  IntentClassifier 3-Way Smart Routing                │
+│  IntentRouter 3-Way Smart Routing                │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
 │  │ SIMPLE   │  │ COMPLEX  │  │ GREETING │          │
 │  │ Direct   │  │ Enter    │  │ Direct   │          │
@@ -422,7 +422,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | Version | Date | Milestone |
 |---------|------|-----------|
-| **0.3.0** | **2026-06-19 (Pending Release)** | **Three Sages Parallel Voting Architecture Returns** — Parallel voting (1×RTT, 3x latency reduction) + ConsensusEngine upfront + ExecutorBrain real opinions + ReflectorBrain upfront prediction + IntentClassifier 3-way routing + focus on 3 core skills (email/finance/report) + 11 non-core skills frozen + i18n refactor (3857→133 lines) + coverage 62.87% + real LLM E2E tests |
+| **0.3.0** | **2026-06-19 (Pending Release)** | **Three Sages Parallel Voting Architecture Returns** — Parallel voting (1×RTT, 3x latency reduction) + ConsensusEngine upfront + ExecutorBrain real opinions + ReflectorBrain upfront prediction + IntentRouter 3-way routing + focus on 3 core skills (email/finance/report) + 11 non-core skills frozen + i18n refactor (3857→133 lines) + coverage 62.87% + real LLM E2E tests |
 | **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 3341 tests / 76 files |
 | **0.2.4** | **2026-05-24** | **Memory + Knowledge Enhancement** — CarryMem deep integration + knowledge search optimization + notification system + extended tests |
 | **0.2.3** | **2026-05-24** | **CarryMem Integration** — Cross-session persistent memory (MemoryBridge) + rule engine + flywheel mechanism + LLM cache + skill scoring |

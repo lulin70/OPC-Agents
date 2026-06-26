@@ -1292,19 +1292,6 @@ class TestInputValidationBoundary:
         with pytest.raises(ValidationError):
             AgentConfig(agent_id="", display_name="Test")
 
-    def test_plugin_timeout_enforcement(self):
-        """Verify that plugin execution respects CPU time limits."""
-        # This is a documentation test — the actual enforcement is in plugin_worker.py
-        # which sets resource.RLIMIT_CPU = 30 seconds
-        import resource
-
-        # Just verify the module exists and has the constant
-        try:
-            from opc_manager.experimental.plugin_worker import PluginWorker
-
-            self.assertTrue(hasattr(PluginWorker, "__init__"))
-        except ImportError:
-            pass  # Plugin system is experimental, may not be available
 
 
 # ============================================================================

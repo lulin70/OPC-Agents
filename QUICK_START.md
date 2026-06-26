@@ -28,7 +28,8 @@ cp .env.example .env
 # Edit .env — add your API key (only ONE is needed)
 # For MOKA:  uncomment and set MOKA_API_KEY=your-key
 # For GLM:   uncomment and set GLM_API_KEY=your-key
-# For Ollama: uncomment OLLAMA_ENABLED=true and OLLAMA_BASE_URL=http://host.docker.internal:11434
+# For Ollama: uncomment OLLAMA_ENABLED=true and OLLAMA_BASE_URL=http://localhost:11434
+#   (Docker 场景需用 http://host.docker.internal:11434)
 nano .env
 
 # Start!
@@ -102,7 +103,7 @@ Or try any of these:
 | Problem | Solution |
 |---------|----------|
 | "No LLM provider available" | Set at least one API key in .env |
-| Connection timeout | Check network, try `OLLAMA_BASE_URL=http://host.docker.internal:11434` for Docker+Ollama |
+| Connection timeout | Check network, try `OLLAMA_BASE_URL=http://localhost:11434` (Docker 场景用 `host.docker.internal:11434`) |
 | Port 8501 already in use | Change port: `streamlit run frontend/app.py --server.port 8502` |
 | Data not persisting (Docker) | Verify `opc-data` volume exists: `docker volume ls` |
 

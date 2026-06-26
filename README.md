@@ -37,7 +37,7 @@ opc-agents                      # 2. 启动
 
 - **⚡ 三贤者并行投票架构回归**：从串行流水线（3×RTT）改为并行投票（1×RTT），延迟降低 3 倍。借鉴 EVA MAGI 三贤者同步投票 + 少数派报告机制，关键决策点前置共识保护。
 - **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结 11 个非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
-- **🧠 IntentClassifier 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
+- **🧠 IntentRouter 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
 - **🛡 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
 - **📊 质量大幅提升**：总覆盖率 62.41%，核心 skill 测试覆盖率 email 16.96% / finance 14.46%（已记入 v0.3.1 技术债）；新增 7 个真实 LLM E2E 测试（CI 每周一自动运行）。
 - **🌐 i18n 重构**：3857 行 → 133 行逻辑层 + JSON 化，向后兼容，维护成本骤降。
@@ -75,7 +75,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 - 🔍 **反思脑（ReflectorBrain）**：评估结果质量，前置预判 + 少数派报告，不达标自动修正
 - 🛡 **共识引擎（ConsensusEngine）**：三贤者并行投票（1×RTT，比串行 3×RTT 快 3 倍），关键决策点前置保护
 
-**IntentClassifier 三路智能路由**——按任务复杂度分流，省时省钱：
+**IntentRouter 三路智能路由**——按任务复杂度分流，省时省钱：
 - 🟢 **SIMPLE**：简单任务直接执行，绕过三贤者
 - 🟡 **COMPLEX**：复杂任务进入并行投票，质量有保障
 - 👋 **GREETING**：问候/闲聊直接回应
@@ -123,7 +123,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 ├─────────────────────────────────────────────────────┤
 │  用户输入                                            │
 │       ↓                                              │
-│  IntentClassifier 三路智能路由                       │
+│  IntentRouter 三路智能路由                       │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
 │  │ SIMPLE   │  │ COMPLEX  │  │ GREETING │          │
 │  │ 直接执行  │  │ 进入投票 │  │ 直接回应 │          │
@@ -434,7 +434,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
-| **0.3.0** | **2026-06-19 (待发布)** | **三贤者并行投票架构回归** — 并行投票(1×RTT，延迟降3倍)+ConsensusEngine前置+ExecutorBrain真意见+ReflectorBrain前置预判+IntentClassifier三路路由+聚焦3核心技能(邮件/财务/报告)+11非核心技能冻结+i18n重构(3857→133行)+覆盖率62.87%+真实LLM E2E测试 |
+| **0.3.0** | **2026-06-19 (待发布)** | **三贤者并行投票架构回归** — 并行投票(1×RTT，延迟降3倍)+ConsensusEngine前置+ExecutorBrain真意见+ReflectorBrain前置预判+IntentRouter三路路由+聚焦3核心技能(邮件/财务/报告)+11非核心技能冻结+i18n重构(3857→133行)+覆盖率62.87%+真实LLM E2E测试 |
 | **0.2.5** | **2026-06-07** | **架构统一+安全加固** — 架构统一重构+LLM并发控制+安全加固+3341测试/76文件 |
 | **0.2.4** | **2026-05-24** | **记忆+知识库增强** — CarryMem深度集成+知识库搜索优化+通知系统+扩展测试 |
 | **0.2.3** | **2026-05-24** | **CarryMem集成** — 跨会话持久记忆(MemoryBridge)+规则引擎+飞轮机制+LLM缓存+技能评分 |

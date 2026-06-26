@@ -1,9 +1,7 @@
 """
 OPC-Agents Plugin System
 
-Provides plugin loading, sandboxing, and lifecycle management.
+Note: Plugin system was removed in v0.3.1 (zero production references,
+confirmed by 7-dimension assessment 2026-06-26). This package is kept
+as a placeholder for future plugin architecture redesign.
 """
-
-from opc_manager.plugin_system import PluginManager, PluginSandbox
-
-__all__ = ["PluginManager", "PluginSandbox"]

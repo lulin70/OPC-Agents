@@ -202,61 +202,6 @@ class TestPerformanceMonitor(unittest.TestCase):
         self.assertEqual(stats["misses"], 1)
 
 
-class TestPluginExamples(unittest.TestCase):
-    """V2-5: 插件示例测试"""
-
-    def test_text_summarizer(self):
-        plugin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "plugins")
-        sys.path.insert(0, plugin_dir)
-        import text_summarizer
-
-        result = text_summarizer.summarize(
-            "这是第一句话。这是第二句话。这是第三句话。这是第四句话。这是第五句话。",
-            max_length=50,
-        )
-        self.assertIn("summary", result)
-        self.assertLessEqual(result["summary_length"], 60)
-        sys.path.pop(0)
-
-    def test_data_converter(self):
-        plugin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "plugins")
-        sys.path.insert(0, plugin_dir)
-        import data_converter
-
-        result = data_converter.json_to_table(
-            [{"name": "AI", "score": 95}, {"name": "ML", "score": 88}]
-        )
-        self.assertIn("table", result)
-        self.assertEqual(result["rows"], 2)
-        self.assertIn("|", result["table"])
-        sys.path.pop(0)
-
-    def test_plugin_hot_load(self):
-        from opc_manager.plugin_system import PluginManager, PluginManifest
-
-        tmpdir = tempfile.mkdtemp(prefix="test_hotload_")
-        plugin_file = os.path.join(tmpdir, "hot_plugin.py")
-        with open(plugin_file, "w") as f:
-            f.write(
-                "def initialize(config): pass\ndef run(x=0): return x*2\ndef shutdown(): pass\n"
-            )
-        manager = PluginManager(plugin_dir=tmpdir)
-        manifest = PluginManifest(
-            plugin_id="hot_test",
-            name="Hot",
-            version="1.0",
-            description="Hot load test",
-            author="test",
-            entry_point="hot_plugin.py",
-        )
-        manager.register_plugin(manifest)
-        result = manager.initialize_plugin("hot_test")
-        self.assertTrue(result["success"])
-        result = manager.execute_plugin("hot_test", "run", {"x": 5})
-        self.assertTrue(result["success"])
-        self.assertEqual(result["result"], 10)
-
-
 class TestMCPTransport(unittest.TestCase):
     """V2-4: MCP传输层测试"""
 
