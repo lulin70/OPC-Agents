@@ -2,6 +2,18 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.2] - 2026-06-26
+
+### 高成本技术债消除（DevSquad 驱动，5 阶段推进）
+
+> 基于 v0.3.1 复评（72/B-）遗留的 4 项高成本技术债，详见 `docs/internal/V032_TECH_DEBT_PLAN.md`。
+
+#### Phase 0: 纠正 P0-3 修复方向错误（紧急）
+- **P0-3 修复方向纠正**：三语 README 第42行覆盖率数据从错误的"email 16.96%/finance 14.46%"改回正确的"email_skill 99% / finance_skill 100%（Sprint 2 已从 16.96%/14.46% 基线提升）"
+- **根因**：v0.3.0-beta P0-3 评估未跑实际测试，仅"两文档对照"得出错误结论——把 `COVERAGE_BASELINE.md` 中的 Sprint 2 前历史基线（16.96%/14.46%）当作当前数据，把 README 中正确的当前数据（99%/100%）当作误导性措辞
+- **验证**：`pytest tests/test_email_skill_coverage.py tests/test_finance_skill_coverage.py --cov=opc_manager.email_skill --cov=opc_manager.finance_skill` → email 99% / finance 100%
+- **教训**：覆盖率数据必须以 `pytest --cov` 实测命令输出为唯一权威数据源，不得以文档间对照作为结论依据
+
 ## [0.3.1] - 2026-06-26
 
 ### P1/P2 技术债清理（DevSquad 驱动，3 阶段推进）
@@ -51,6 +63,8 @@ All notable changes to OPC-Agents will be documented in this file.
 
 #### 文档准确性
 - **P0-3 README 覆盖率措辞澄清**：三语 README 第42行误导性"email_skill 99%/finance_skill 100%"改为实际测试覆盖率"email 16.96%/finance 14.46%（已记入 v0.3.1 技术债）"。原措辞将 README 中引用的 skill 模块存在率误当作测试覆盖率。
+
+  > ⚠️ **v0.3.2 纠正**：上述 P0-3 修复方向错误。实测 `pytest --cov` 显示 email_skill 99% / finance_skill 100% 是**正确的当前数据**，16.96%/14.46% 是 `COVERAGE_BASELINE.md` 记录的 Sprint 2 之前**历史基线**（Sprint 2 已提升至 99%/100%，见 `V030_REMEDIATION_PLAN.md:64`）。原评估未跑实际测试，仅"两文档对照"得出错误结论。v0.3.2 Phase 0 已将三语 README 改回 99%/100% 并标注口径。
 
 #### CI/CD 修复
 - **P0-4 CI pipefail**：`python-ci.yml:48` 添加 `set -o pipefail &&` 前缀。原 `pytest | tee` 管道退出码取 tee（恒0），掩盖 12 项测试失败。修复后管道退出码取 pytest，失败将正确阻断 CI。
