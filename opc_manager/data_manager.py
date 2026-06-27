@@ -107,8 +107,14 @@ def encrypt_field(plaintext: str) -> str:
         f = Fernet(fernet_key)
         return f.encrypt(plaintext.encode()).decode()
     except Exception as e:
-        logger.warning("[DataManager] Encryption failed, storing as plaintext: %s", e)
-        return plaintext
+        # [SECURITY] Fail-closed (P0-1 sibling fix, 2026-06-27):
+        # 与 key is None 分支一致，加密失败时拒绝明文落库，
+        # 避免 Fernet 内部异常导致敏感数据静默降级为明文存储。
+        logger.error("[SECURITY] [DataManager] Encryption failed, refusing to store plaintext: %s", e)
+        raise RuntimeError(
+            f"encrypt_field() encryption failed: {e}. Refusing to store plaintext. "
+            f"Check OPC_ENCRYPTION_KEY and cryptography package installation."
+        ) from e
 
 
 def decrypt_field(ciphertext: str) -> Optional[str]:

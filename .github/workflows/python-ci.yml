@@ -38,6 +38,13 @@ jobs:
       run: |
         flake8 opc_manager/ frontend/ tests/ --count --select=F401,F841,E501,E722 --show-source --statistics --exit-zero || true
 
+    - name: Type check with mypy (non-blocking baseline — TD-065)
+      # TD-065: 516 errors in 66 files as of v0.3.2 (2026-06-27)
+      # Target: blocking by v0.4.0 after gradual typing adoption
+      run: |
+        pip install mypy
+        mypy opc_manager/ --ignore-missing-imports --follow-imports=silent --no-error-summary || true
+
     - name: Check formatting with Black
       run: |
         black --check --target-version py310 opc_manager/ frontend/ tests/

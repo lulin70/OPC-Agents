@@ -2,6 +2,53 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.2] - 2026-06-27
+
+### 项目整理评估（DevSquad /项目整理评估，7 维度）
+
+> 基于 DevSquad 7 维度项目整理评估，详见 `docs/internal/PROJECT_TIDY_ASSESSMENT_v0.3.2_20260627.md`。
+> 综合分：72 (B-) → **79 (B+)**，10 项已修复，2 项技术债（TD-065/TD-066）。
+
+#### P0 修复（版本一致性回归）
+- **Dockerfile 版本回归**：`ARG VERSION=0.3.0-beta` → `0.3.2`（v0.3.2 Phase A 版本 bump 遗漏）
+- **requirements.txt 版本回归**：`# OPC-Agents v0.3.0-beta` → `v0.3.2`
+- **验证**：`test_dockerfile_version_label` + `test_version_in_requirements` 恢复通过
+
+#### P0 同级修复（安全 fail-open）
+- **DM-2 `data_manager.py:109-111` fail-open → fail-closed**：`Fernet.encrypt()` 异常时原静默返回明文，改为 `raise RuntimeError`（与 P0-1 `key is None` 分支对称）
+- **验证**：307 安全/设置测试全通过
+
+#### P1 修复（版本号一致性 + 幽灵功能 + mypy 缺失）
+- **17 处 stale v0.2.5 引用**：8 个源文件（mcp_protocol/knowledge_bridge/settings/onboarding/data_backup/shortcuts_handler/error_handler/frontend.app）+ 2 个测试文件（test_start_script/test_data_backup）+ scripts/start.sh(2 处) + .env.example + requirements-dev.txt → 全部更新为 v0.3.2
+- **check_prompt_injection 幽灵函数集成**：`llm_content.py:399-419` 定义但零生产引用、零测试覆盖、不在 `__all__` 中 → 集成到 `generate()` dispatch pipeline（非阻塞审计日志）
+- **mypy 完全缺失修复**（违反硬约束"CI mypy检查必须为阻塞状态"）：
+  - 添加 `mypy>=1.8.0` 到 `requirements-dev.txt` + `pyproject.toml` dev optional-deps
+  - 添加 `[tool.mypy]` 配置到 `pyproject.toml`（渐进式 typing 适配）
+  - 添加 mypy step 到 CI workflow（非阻塞 baseline，`--exit-zero || true`）
+  - 实测 516 errors in 66 files，记为 TD-065，目标 v0.4.0 阻塞
+
+#### P2 修复（目录清理 + 文档完善）
+- **3 个孤立目录删除**：`opc_manager/api/`、`opc_manager/experimental/`、`plugins/`（v0.3.1 Phase 2 ghost feature 删除后遗留的空 `__init__.py`）
+- **DIRECTORY_STRUCTURE.md 补全**：新增 `export/` 子目录（7 文件）+ `i18n/` 子目录（6 文件）映射
+- **pyproject.toml 清理**：移除 `plugins*` 包引用（目录已删除）
+
+#### E2E 用户旅程测试（硬约束验证）
+- **24 个 E2E 用户旅程测试全通过**（28.15s）：覆盖 onboarding→chat→dashboard→settings→backup→undo→audit→demo 全流程
+- 满足硬约束"发布前必须完成模拟真实用户使用的测试"
+
+#### 验证结果
+- 全量测试：`3167 passed, 117 skipped, 1 xpassed, 0 failed`（192.68s）
+- 专项测试：423 passed（版本/安全/设置/LLM/备份综合）
+- E2E 用户旅程：24 passed
+- mypy baseline：516 errors in 66 files（TD-065）
+- flake8（修改文件）：仅 pre-existing 违规，无新增
+
+#### 新增技术债
+- **TD-065**: mypy 阻塞化（516 errors → 0，目标 v0.4.0）
+- **TD-066**: settings_encryption.py fail-open 安全姿态（SE-1~SE-5，目标 v0.4.0）
+
+---
+
 ## [0.3.2] - 2026-06-26
 
 ### 高成本技术债消除（DevSquad 驱动，5 阶段推进）

@@ -99,6 +99,18 @@ tests/          (87 文件)
 | `user_profile.py` | 用户画像 |
 | `persona_manager.py` | 人设管理 |
 
+### export/ 子目录（文档导出，Output 层）
+
+| 文件 | 职责 |
+|---|---|
+| `export/__init__.py` | 导出系统包入口 |
+| `export/manager.py` | 导出管理器 |
+| `export/models.py` | 导出数据模型 |
+| `export/exporters/excel_exporter.py` | Excel 导出器 |
+| `export/exporters/pdf_exporter.py` | PDF 导出器 |
+| `export/exporters/word_exporter.py` | Word 导出器 |
+| `export/exporters/image_exporter.py` | 图片导出器 |
+
 ---
 
 ## S — Skills Layer（技能层）
@@ -189,6 +201,17 @@ tests/          (87 文件)
 | `tool_system.py` | 工具调用框架 |
 | `async_executor.py` | 异步执行器 |
 | `parallel_executor.py` | 并行执行器 |
+
+### i18n/ 子目录（国际化，Infra 层）
+
+| 文件 | 职责 |
+|---|---|
+| `i18n/__init__.py` | i18n 包入口 |
+| `i18n/loader.py` | 翻译加载器 |
+| `i18n/manager.py` | i18n 管理器 |
+| `i18n/locales/zh_CN.json` | 中文翻译（1242 键） |
+| `i18n/locales/en_US.json` | 英文翻译 |
+| `i18n/locales/ja_JP.json` | 日文翻译 |
 
 ---
 

@@ -1,5 +1,5 @@
 # OPC-Agents 开发依赖
-# 版本: 0.2.5
+# 版本: 0.3.2
 
 -r requirements.txt
 
@@ -14,3 +14,4 @@ black>=26.3.1
 flake8>=7.0.0
 bandit>=1.7.0
 pip-audit>=2.7.0
+mypy>=1.8.0

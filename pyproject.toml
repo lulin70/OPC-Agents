@@ -63,10 +63,11 @@ dev = [
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.21.0",
     "pytest-timeout>=2.2.0",
-    "black>=25.0",
+    "black>=25.0.0",
     "flake8>=7.0.0",
     "bandit>=1.7.0",
     "pip-audit>=2.7.0",
+    "mypy>=1.8.0",
     "build>=1.0.0",
     "twine>=5.0.0",
 ]
@@ -109,7 +110,7 @@ Issues = "https://github.com/lulin70/OPC-Agents/issues"
 Changelog = "https://github.com/lulin70/OPC-Agents/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-include = ["opc_manager*", "opc_hr*", "frontend*", "plugins*"]
+include = ["opc_manager*", "opc_hr*", "frontend*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "opc_manager.version.__version__"}
@@ -129,3 +130,21 @@ markers = [
     "security: Security-focused tests (injection, XSS, leakage)",
 ]
 addopts = "-v --tb=short --strict-markers"
+
+[tool.mypy]
+# Mypy configuration — gradual typing adoption (TD-065)
+# Initial baseline: non-blocking in CI, target blocking by v0.4.0
+python_version = "3.10"
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+ignore_missing_imports = true
+follow_imports = "silent"
+# Exclude mixin files (re-export heavy) and generated code
+exclude = [
+    "opc_manager/export/",
+    "opc_manager/i18n/locales/",
+    "tests/",
+]

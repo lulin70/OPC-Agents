@@ -245,6 +245,9 @@ class LLMEnhancedContentGenerator(LLMContentPromptMixin, LLMContentGenerationMix
         """
         start_time = time.time()
 
+        # [SECURITY] Prompt injection detection (non-blocking, audit log only)
+        self.check_prompt_injection(user_input)
+
         template = template.replace("{topic}", user_input)
         business_info = self._extract_business_info(user_input)
         context = self._build_context(search_results or [])

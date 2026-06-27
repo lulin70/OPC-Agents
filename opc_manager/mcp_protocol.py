@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
 MCP_SERVER_NAME = "opc-agents"
-MCP_SERVER_VERSION = "0.2.5"
+MCP_SERVER_VERSION = "0.3.2"
 
 
 @dataclass
