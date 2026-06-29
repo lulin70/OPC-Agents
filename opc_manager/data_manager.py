@@ -28,6 +28,26 @@ _db_init_lock = threading.Lock()
 _ENCRYPTION_KEY_ENV = "OPC_ENCRYPTION_KEY"
 _fallback_key = None
 
+# PBKDF2 key derivation constants (硬约束: 禁止裸 SHA-256, 必须用 PBKDF2-HMAC-SHA256 + salt)
+# BREAKING CHANGE (v0.4.0): 之前使用裸 hashlib.sha256 派生密钥，违反硬约束。
+# 已加密的旧数据需用旧密钥派生方式解密后重新加密，或重置 OPC_ENCRYPTION_KEY。
+_KEY_DERIVATION_SALT = b"opc-agents-settings-v0.4.0"
+_KEY_DERIVATION_ITERATIONS = 100000
+
+
+def _derive_key_pbkdf2(key_str: str) -> bytes:
+    """Derive a Fernet-compatible key from a password string using PBKDF2.
+
+    Uses PBKDF2-HMAC-SHA256 with a project-level salt and 100000 iterations
+    to satisfy the hard constraint: 禁止裸 SHA-256.
+    """
+    return hashlib.pbkdf2_hmac(
+        "sha256",
+        key_str.encode(),
+        _KEY_DERIVATION_SALT,
+        _KEY_DERIVATION_ITERATIONS,
+    )
+
 
 def _get_encryption_key() -> Optional[bytes]:
     global _fallback_key
@@ -42,22 +62,20 @@ def _get_encryption_key() -> Optional[bytes]:
         settings = get_settings()
         key_str = settings.get_encryption_key()
         if key_str:
-            return hashlib.sha256(key_str.encode()).digest()
+            return _derive_key_pbkdf2(key_str)
     except Exception as e:
-        logger.warning("[DataManager] SHA256 key derivation failed: %s", e)
+        logger.warning("[DataManager] PBKDF2 key derivation failed: %s", e)
 
     # 回退到 os.environ（兼容外部设置的环境变量）
     key_str = os.environ.get(_ENCRYPTION_KEY_ENV, "")
     if key_str:
-        return hashlib.sha256(key_str.encode()).digest()
+        return _derive_key_pbkdf2(key_str)
 
     # 无显式密钥时，自动派生基于机器特征的密钥
     # 保证数据至少是加密存储的，而非明文
     if _fallback_key is None:
         machine_id = _derive_machine_key()
-        _fallback_key = hashlib.sha256(
-            f"opc-agents-auto-{machine_id}".encode()
-        ).digest()
+        _fallback_key = _derive_key_pbkdf2(f"opc-agents-auto-{machine_id}")
         logger.info(
             "[SECURITY] OPC_ENCRYPTION_KEY not set. Using auto-derived key "
             "from machine identity. Set OPC_ENCRYPTION_KEY explicitly for "

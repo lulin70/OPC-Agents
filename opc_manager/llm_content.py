@@ -245,56 +245,67 @@ class LLMEnhancedContentGenerator(LLMContentPromptMixin, LLMContentGenerationMix
         """
         start_time = time.time()
 
-        # [SECURITY] Prompt injection detection (non-blocking, audit log only)
-        self.check_prompt_injection(user_input)
+        # [SECURITY] Prompt injection detection — BLOCKING (P1 fix, 2026-06-29).
+        # Previously non-blocking (audit log only), which let injection payloads
+        # reach the LLM. Now: detect → skip LLM generation → force template
+        # fallback so the injected user_input is never sent to the model.
+        injection_detected = self.check_prompt_injection(user_input)
 
         template = template.replace("{topic}", user_input)
         business_info = self._extract_business_info(user_input)
         context = self._build_context(search_results or [])
 
-        try:
-            result = self._try_llm_generation(
-                user_input=user_input,
-                template=template,
-                business_info=business_info,
-                context=context,
-                search_results=search_results or [],
-                business_type=business_type,
-                is_follow_up=is_follow_up,
-            )
-
-            if result.success:
-                latency_ms = (time.time() - start_time) * 1000
-                result.llm_latency_ms = latency_ms
-                result.placeholder_count = self._count_placeholders(result.content)
-                result.business_info_injected = self._check_business_info_injected(
-                    result.content, business_info
+        if not injection_detected:
+            try:
+                result = self._try_llm_generation(
+                    user_input=user_input,
+                    template=template,
+                    business_info=business_info,
+                    context=context,
+                    search_results=search_results or [],
+                    business_type=business_type,
+                    is_follow_up=is_follow_up,
                 )
-                result.quality_score = self._calculate_quality_score(result)
 
-                if result.placeholder_count > 0:
-                    logger.warning(
-                        f"[LLMContentGen] LLM output contains {result.placeholder_count} placeholders, "
-                        f"attempting cleanup..."
-                    )
-                    result.content = self._clean_placeholders(result.content)
+                if result.success:
+                    latency_ms = (time.time() - start_time) * 1000
+                    result.llm_latency_ms = latency_ms
                     result.placeholder_count = self._count_placeholders(result.content)
+                    result.business_info_injected = self._check_business_info_injected(
+                        result.content, business_info
+                    )
+                    result.quality_score = self._calculate_quality_score(result)
 
-                result.content = self._redact_secrets(result.content)
-                result = self._quality_gate(
-                    result, business_info, has_search_results=bool(search_results)
-                )
+                    if result.placeholder_count > 0:
+                        logger.warning(
+                            f"[LLMContentGen] LLM output contains {result.placeholder_count} placeholders, "
+                            f"attempting cleanup..."
+                        )
+                        result.content = self._clean_placeholders(result.content)
+                        result.placeholder_count = self._count_placeholders(result.content)
 
-                logger.info(
-                    f"[LLMContentGen] LLM generation succeeded: "
-                    f"{len(result.content)} chars, "
-                    f"latency {latency_ms:.0f}ms, "
-                    f"quality score {result.quality_score:.1f}"
-                )
-                return result
+                    result.content = self._redact_secrets(result.content)
+                    result = self._quality_gate(
+                        result, business_info, has_search_results=bool(search_results)
+                    )
 
-        except Exception as e:
-            logger.error("[LLMContentGen] LLM generation exception: %s", e)
+                    logger.info(
+                        f"[LLMContentGen] LLM generation succeeded: "
+                        f"{len(result.content)} chars, "
+                        f"latency {latency_ms:.0f}ms, "
+                        f"quality score {result.quality_score:.1f}"
+                    )
+                    return result
+
+            except Exception as e:
+                logger.error("[LLMContentGen] LLM generation exception: %s", e)
+        else:
+            logger.warning(
+                "[SECURITY] Prompt injection detected (%d patterns) — "
+                "skipping LLM generation, forcing template fallback. "
+                "Injected input was NOT sent to the LLM.",
+                len(injection_detected),
+            )
 
         fallback_result = self._fallback_to_template(
             user_input=user_input,
@@ -400,15 +411,20 @@ class LLMEnhancedContentGenerator(LLMContentPromptMixin, LLMContentGenerationMix
 
     @staticmethod
     def check_prompt_injection(text: str) -> List[str]:
-        """Check for common prompt injection patterns and log warnings.
+        """Detect common prompt injection patterns and log warnings.
 
-        Does NOT block content — only logs detected patterns for awareness.
+        The returned list drives a BLOCKING decision in `generate()`: when
+        non-empty, the caller skips LLM generation and forces template
+        fallback so the injected text never reaches the model. This function
+        itself only detects + logs; the blocking happens at the call site.
 
         Args:
             text: Input text to check
 
         Returns:
-            List of detected injection pattern strings (empty if none found)
+            List of detected injection pattern strings (empty if none found).
+            A non-empty list means the input is suspect and should NOT be
+            forwarded to the LLM.
         """
         detected = []
         text_lower = text.lower()

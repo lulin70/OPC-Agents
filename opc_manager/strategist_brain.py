@@ -103,14 +103,18 @@ class ExecutionPlan:
 class StrategistBrain:
     """策略脑 — 负责意图理解和任务规划"""
 
-    def __init__(self, llm_service=None):
+    def __init__(self, llm_service=None, skill_registry=None):
         """
         初始化策略脑
 
         Args:
             llm_service: LLM服务实例，用于意图理解
+            skill_registry: 技能注册表实例，用于动态发现可用技能。
+                传入后 LLM 规划将基于注册表实际技能生成计划，
+                未传入时降级到基础技能集（向后兼容）。
         """
         self.llm_service = llm_service
+        self.skill_registry = skill_registry
         self._cached_user_profile = None
         self._cached_marketplace = None
         self._cache_timestamp: float = 0.0
@@ -498,24 +502,109 @@ class StrategistBrain:
         logger.info("执行计划制定完成: %s 个步骤", len(steps))
         return plan
 
-    def _plan_with_llm(self, intent: Intent) -> Optional[ExecutionPlan]:
-        sub_goals = [si.goal for si in intent.sub_intents] if intent.sub_intents else []
+    def _get_valid_skill_ids(self) -> set:
+        """从 SkillRegistry 动态获取所有有效的技能 ID。
 
-        safe_goal = sanitize_for_llm(intent.goal, 500)
-        safe_sub_goals = (
-            sanitize_for_llm(json.dumps(sub_goals, ensure_ascii=False), 500)
-            if sub_goals
-            else "无"
-        )
+        若注入了 skill_registry，则返回注册表中已注册的技能 ID；
+        否则降级到基础技能集，保持向后兼容。
 
-        prompt = f"""为以下任务制定执行计划，返回JSON格式。
+        Returns:
+            set: 有效技能 ID 集合，始终包含系统技能 intent_analysis / output_result
+        """
+        # 系统技能始终可用，不在 SkillRegistry 中注册
+        system_skills = {"intent_analysis", "output_result"}
+
+        if self.skill_registry is None:
+            # 向后兼容：未注入注册表时使用基础技能集
+            base_skills = {
+                "search",
+                "analysis",
+                "content_generation",
+                "execute_operation",
+                "send_notification",
+            }
+            return base_skills | system_skills
+
+        try:
+            all_skills = self.skill_registry.list_all_skills()
+            registry_ids = {skill.skill_id for skill in all_skills}
+            return registry_ids | system_skills
+        except Exception as e:
+            logger.warning(
+                "从 SkillRegistry 获取技能列表失败，降级到基础技能集: %s", e
+            )
+            base_skills = {
+                "search",
+                "analysis",
+                "content_generation",
+                "execute_operation",
+                "send_notification",
+            }
+            return base_skills | system_skills
+
+    def _build_planning_prompt(
+        self, safe_goal: str, intent_type_value: str, safe_sub_goals: str
+    ) -> str:
+        """构建包含动态技能列表的 LLM 规划提示词。
+
+        从 SkillRegistry 获取已启用的技能，生成 "skill_id(技能名)" 形式的
+        描述列表注入到提示词中，提升 LLM 生成有效 skill_id 的准确率。
+
+        Args:
+            safe_goal: 已脱敏的任务目标
+            intent_type_value: 意图类型字符串
+            safe_sub_goals: 已脱敏的子目标
+
+        Returns:
+            str: 完整的 LLM 规划提示词
+        """
+        if self.skill_registry is not None:
+            try:
+                all_skills = self.skill_registry.list_all_skills()
+                skill_descriptions = [
+                    f"{skill.skill_id}({skill.name})"
+                    for skill in all_skills
+                    if skill.enabled
+                ]
+                if not skill_descriptions:
+                    # 注册表为空时降级到基础技能
+                    skill_descriptions = [
+                        "search(搜索)",
+                        "analysis(分析)",
+                        "content_generation(内容创作)",
+                        "execute_operation(执行操作)",
+                        "send_notification(发送通知)",
+                    ]
+            except Exception as e:
+                logger.warning(
+                    "构建规划提示词时获取技能列表失败，使用基础技能: %s", e
+                )
+                skill_descriptions = [
+                    "search(搜索)",
+                    "analysis(分析)",
+                    "content_generation(内容创作)",
+                    "execute_operation(执行操作)",
+                    "send_notification(发送通知)",
+                ]
+        else:
+            # 未注入注册表，使用基础技能集（向后兼容）
+            skill_descriptions = [
+                "search(搜索)",
+                "analysis(分析)",
+                "content_generation(内容创作)",
+                "execute_operation(执行操作)",
+                "send_notification(发送通知)",
+            ]
+
+        skills_text = ", ".join(skill_descriptions)
+
+        return f"""为以下任务制定执行计划，返回JSON格式。
 
 任务目标: {safe_goal}
-意图类型: {intent.type.value}
+意图类型: {intent_type_value}
 子目标: {safe_sub_goals}
 
-可用技能: search(搜索), analysis(分析), content_generation(内容创作),
-execute_operation(执行操作), send_notification(发送通知), output_result(输出结果)
+可用技能: {skills_text}, output_result(输出结果)
 
 请返回JSON格式:
 {{
@@ -529,7 +618,22 @@ execute_operation(执行操作), send_notification(发送通知), output_result(
 1. 第一步通常是搜索或分析
 2. 后续步骤基于前一步结果
 3. 最后一步是output_result
-4. 复合意图需要多步骤"""
+4. 复合意图需要多步骤
+5. skill_id必须从上述可用技能列表中选择"""
+
+    def _plan_with_llm(self, intent: Intent) -> Optional[ExecutionPlan]:
+        sub_goals = [si.goal for si in intent.sub_intents] if intent.sub_intents else []
+
+        safe_goal = sanitize_for_llm(intent.goal, 500)
+        safe_sub_goals = (
+            sanitize_for_llm(json.dumps(sub_goals, ensure_ascii=False), 500)
+            if sub_goals
+            else "无"
+        )
+
+        prompt = self._build_planning_prompt(
+            safe_goal, intent.type.value, safe_sub_goals
+        )
 
         llm_response = call_llm_service(self.llm_service, prompt)
         if not llm_response:
@@ -544,18 +648,16 @@ execute_operation(执行操作), send_notification(发送通知), output_result(
             if not steps_data:
                 return None
 
+            valid_skill_ids = self._get_valid_skill_ids()
+
             steps = []
             for i, sd in enumerate(steps_data):
                 skill_id = sd.get("skill_id", "output_result")
-                if skill_id not in [
-                    "search",
-                    "analysis",
-                    "content_generation",
-                    "execute_operation",
-                    "send_notification",
-                    "intent_analysis",
-                    "output_result",
-                ]:
+                if skill_id not in valid_skill_ids:
+                    logger.warning(
+                        "LLM生成的技能ID '%s' 不在注册表中，降级为 output_result",
+                        skill_id,
+                    )
                     skill_id = "output_result"
                 steps.append(
                     Step(

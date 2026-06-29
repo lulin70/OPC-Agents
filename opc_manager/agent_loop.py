@@ -100,10 +100,12 @@ class AgentLoop:
         # 初始化核心依赖
         self.task_engine = task_engine or TaskEngineV3()
         self.llm_service = llm_service
-        self.strategist_brain = strategist_brain or StrategistBrain(
-            llm_service=llm_service
-        )
+        # 先创建 skill_registry，再注入到 strategist_brain，
+        # 使 LLM 规划能够动态发现注册表中的全部技能
         self.skill_registry = skill_registry or SkillRegistry()
+        self.strategist_brain = strategist_brain or StrategistBrain(
+            llm_service=llm_service, skill_registry=self.skill_registry
+        )
         self.executor_brain = executor_brain or ExecutorBrain(
             skill_registry=self.skill_registry,
             task_engine=self.task_engine,

@@ -5,8 +5,13 @@ Three-track test strategy:
 - UI E2E (pytest tests/test_ui_e2e_apptest.py): Streamlit AppTest UI-level tests (~8s)
 - E2E (pytest -m e2e): Real API calls to validate actual system behavior (~5min)
 
+E2E tests run by default (SKIP_E2E=0). Each e2e test class self-skips via
+setUpClass when its dependencies are unavailable (no API key, no network).
+Set SKIP_E2E=1 to globally skip all e2e-marked tests.
+
 Run commands:
-  pytest                          # Fast unit tests (mocked, ~50s)
+  pytest                          # All tests including E2E (self-skip if deps missing)
+  SKIP_E2E=1 pytest               # Fast unit tests only (skip all e2e)
   pytest tests/test_ui_e2e_apptest.py  # UI E2E via Streamlit AppTest
   pytest -m e2e                   # All E2E tests (real search + LLM)
   pytest -m e2e_search            # Real search only (no API key needed)
@@ -93,7 +98,12 @@ def pytest_configure(config):
 
 
 def pytest_collection_modifyitems(config, items):
-    skip_e2e = os.environ.get("SKIP_E2E", "1")
+    # P1 fix (2026-06-29): default changed from "1" to "0" so E2E tests run
+    # by default. Individual e2e test classes already self-skip via setUpClass
+    # when their dependencies are unavailable (e.g. no API key, no network),
+    # so a global skip is no longer needed and was hiding dead E2E tests.
+    # Set SKIP_E2E=1 to opt out of E2E tests entirely.
+    skip_e2e = os.environ.get("SKIP_E2E", "0")
     if skip_e2e == "1":
         skip_e2e_marker = pytest.mark.skip(
             reason="E2E tests skipped (set SKIP_E2E=0 to run)"

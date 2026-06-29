@@ -24,7 +24,7 @@ import json
 import logging
 import os
 import sys
-from typing import Optional
+from typing import Any, AsyncGenerator, Dict, Optional
 
 from .version import __version__
 
@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 SSE_AVAILABLE = False
 try:
     from fastapi import FastAPI, Request
+    from fastapi.responses import Response
     from sse_starlette.sse import EventSourceResponse
 
     SSE_AVAILABLE = True
@@ -74,7 +75,7 @@ if SSE_AVAILABLE:
         _enforce_https = os.environ.get("MCP_ENFORCE_HTTPS", "false").lower() == "true"
 
         @app.middleware("http")
-        async def enforce_https_middleware(request, call_next):
+        async def enforce_https_middleware(request, call_next) -> Response:
             if _enforce_https:
                 proto = request.headers.get("x-forwarded-proto", request.url.scheme)
                 if proto != "https":
@@ -111,12 +112,12 @@ if SSE_AVAILABLE:
             return None
 
         @app.get("/sse")
-        async def sse_endpoint(request: Request):
+        async def sse_endpoint(request: Request) -> Response:
             auth_error = _check_auth(request)
             if auth_error:
                 return auth_error
 
-            async def event_generator():
+            async def event_generator() -> AsyncGenerator[Dict[str, str], None]:
                 yield {
                     "event": "endpoint",
                     "data": json.dumps({"type": "endpoint", "url": "/messages"}),
@@ -130,7 +131,7 @@ if SSE_AVAILABLE:
             return EventSourceResponse(event_generator())
 
         @app.post("/messages")
-        async def handle_message(request: Request):
+        async def handle_message(request: Request) -> Any:
             auth_error = _check_auth(request)
             if auth_error:
                 return auth_error
@@ -139,7 +140,7 @@ if SSE_AVAILABLE:
             return result
 
         @app.get("/health")
-        async def health():
+        async def health() -> Dict[str, Any]:
             return {"status": "ok", "transport": "sse", "version": __version__}
 
         return app

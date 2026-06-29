@@ -39,7 +39,7 @@ opc-agents                      # 2. Launch
 - **🎯 Focus on 3 Core Skills**: Email / Finance / Report. 11 non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
 - **🧠 IntentRouter 3-Way Smart Routing**: SIMPLE / COMPLEX / GREETING three-way classification. Simple tasks bypass the three sages directly — fast and cost-effective; complex tasks enter parallel voting for quality assurance.
 - **🛡 Key Decision Point Upfront Consensus Protection**: ConsensusEngine shifts from "post-hoc remedy" to "upfront gatekeeping", ExecutorBrain gives real opinions (fake opinion rules removed), ReflectorBrain upfront prediction + minority report.
-- **📊 Significant Quality Improvement**: Total coverage 62.41%, core skill test coverage email_skill 99% / finance_skill 100% (Sprint 2 improved from 16.96%/14.46% baseline); added 7 real LLM E2E tests (CI auto-runs every Monday).
+- **📊 Significant Quality Improvement**: Total coverage 62.87%, core skill targeted test coverage email_skill 99% / finance_skill 100% (targeted `pytest --cov` scope; under full test suite email_skill 17.0% / finance_skill 14.5%, see `coverage.json`; Sprint 2 improved targeted coverage from 16.96%/14.46% baseline); added 7 real LLM E2E tests (CI auto-runs every Monday).
 - **🌐 i18n Refactor**: 3857 lines → 133 lines logic layer + JSON-ification, backward compatible, drastically reduced maintenance cost.
 
 > 🧪 Want to try it? Read [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) (3-minute setup), demo scripts at [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md), feedback form at [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md).
@@ -180,7 +180,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.2.5
+pip install opc-agents==0.3.3
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography

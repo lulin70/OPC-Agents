@@ -1,0 +1,181 @@
+# OPC-Agents 项目状态
+
+> **最后更新**: 2026-06-29 | **版本**: v0.3.3 (Beta) | **许可**: MIT
+>
+> 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
+
+---
+
+## 1. 当前版本
+
+| 项目 | 值 |
+|------|-----|
+| 版本号 | `0.3.3`（见 [VERSION](../VERSION)） |
+| 状态 | Beta |
+| Python 要求 | ≥ 3.10 |
+| 许可证 | MIT |
+| PyPI 包名 | `opc-agents` |
+| 仓库 | [lulin70/OPC-Agents](https://github.com/lulin70/OPC-Agents) |
+
+---
+
+## 2. 模块清单
+
+### 核心包：`opc_manager/`（99 个 `.py` 文件）
+
+| 类别 | 关键模块 | 职责 |
+|------|----------|------|
+| **三贤者引擎** | `consensus_engine.py`, `executor_brain.py`, `reflector_brain.py`, `strategist_brain.py` | 并行投票架构（asyncio.gather），关键决策点前置共识 |
+| **任务调度** | `task_engine_v3_parallel.py`, `parallel_executor.py`, `intent_classifier.py`, `intent_types.py` | IntentRouter 三路智能路由（SIMPLE/COMPLEX/GREETING） |
+| **核心技能** | `email_skill.py`, `finance_skill.py`, `llm_content.py` | 邮件 / 财务 / 报告生成（v0.3.0 聚焦的 3 个核心 skill） |
+| **内容生成** | `llm_content.py` (facade) + `llm_content_prompt.py` + `llm_content_generation.py` | RAG 混合模式（模板骨架 + LLM 填充），优雅降级到 v3.4 模板 |
+| **数据层** | `data_manager.py`, `settings.py`, `settings_encryption.py`, `secure_storage.py` | SQLite + Fernet 加密 + PBKDF2 密钥派生 |
+| **安全** | `validators.py`, `skill_marketplace.py`, `audit_log.py` | 输入校验 / prompt injection 阻断 / 时序攻击防护 |
+| **技能市场** | `skill_marketplace.py` | 技能发布 / 安装 / HMAC 恒定时间比较 |
+| **i18n** | `i18n/` | 3857 行 → 133 行逻辑层 + JSON 化（中/英/日） |
+| **API** | `api_server.py` | FastAPI REST API（OpenAPI/Swagger） |
+| **导出** | `export/` | 数据导出（CSV/JSON/Markdown） |
+
+### 冻结技能（v0.3.0 冻结，11 个）
+
+详见 [docs/spec/SKILL_FREEZE_LIST.md](spec/SKILL_FREEZE_LIST.md)。聚焦邮件/财务/报告 3 个核心技能，把每个做到真正好用。
+
+---
+
+## 3. 测试摘要
+
+> **口径说明**: 本节数据来自 `pytest --co -q` 实测，覆盖率来自 `coverage.json` 实测值。专项测试覆盖率（`pytest --cov` 单模块）与全量测试套件覆盖率口径不同，详见 [README.md](../README.md) 第 42 行注释。
+
+| 指标 | 值 | 来源 |
+|------|-----|------|
+| 测试用例总数 | 3299 collected | `pytest --co -q` |
+| 全量覆盖率 | 63% | `coverage.json` totals.percent_covered_display |
+| `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
+| `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
+| `email_skill` 专项测试覆盖率 | 99% | `pytest --cov=opc_manager.email_skill` |
+| `finance_skill` 专项测试覆盖率 | 100% | `pytest --cov=opc_manager.finance_skill` |
+| mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |
+| flake8 违规 | 0 | `.flake8` 配置（注：extend-ignore 屏蔽 F401/F841 等，待 Phase 2 移除屏蔽） |
+
+### 测试维度现状（v0.3.3 评估）
+
+- **Happy Path**: 充分（≥50%）
+- **Error Case**: 充分（≥15%）
+- **Boundary**: 不足（<10%，Phase 2 补充）
+- **Performance**: 严重不足（0.83%，硬约束要求 ≥5%，Phase 1 Task #3 扩充）
+- **Configuration**: 充分
+- **Integration**: 充分（24 个 E2E 测试）
+- **Security**: 充分（prompt injection 阻断 + 时序攻击防护 + PBKDF2）
+
+---
+
+## 4. 已知问题
+
+### 🔴 P0 阻塞发布（v0.4.0 发布前必做）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| P0-1 | CHANGELOG/README 覆盖率口径混淆（17% vs 99%） | ✅ 已修复（2026-06-29，README 措辞澄清） |
+| P0-2 | Perf 测试维度 0.83% 违反 ≥5% 硬约束 | ⏳ 待办（Phase 1 Task #3） |
+| P0-3 | 无 v0.3.3 git tag，release.yml 从未触发 | ⏳ 待办（Phase 1 Task #5，需用户确认） |
+| P0-4 | requirements.lock SSH 私有仓库依赖不可复现 | ⏳ 待办（Phase 1 Task #6） |
+| P0-5 | release.yml 缺 PyPI twine upload 步骤 | ⏳ 待办（Phase 1 Task #7） |
+| P0-6 | email/finance 覆盖率全量口径仅 17%/14.5% | ⏳ 待办（Phase 1 Task #2，大型任务） |
+
+### 🟠 P1 重要问题（影响生产就绪）
+
+| # | 问题 | 状态 |
+|---|------|------|
+| P1-1 | 裸 SHA-256 违反硬约束 | ✅ 已修复（2026-06-29，PBKDF2-HMAC-SHA256 + salt） |
+| P1-2 | prompt injection 仅检测不阻断 | ✅ 已修复（2026-06-29，阻断式模板降级） |
+| P1-3 | PROJECT_STATUS.md 缺失 | ✅ 已修复（本文档） |
+| P1-4 | parallel_executor.py 幽灵功能 | ✅ 已修复（2026-06-29，文档化三贤者实际路径） |
+| P1-5 | skill_marketplace.py 时序攻击（`==` 比较哈希） | ✅ 已修复（2026-06-29，`hmac.compare_digest`） |
+| P1-6 | opc_manager 99 文件平铺无子包 | ⏳ 待办（Phase 1 Task #12，需用户确认） |
+| P1-7 | async 函数注解率仅 23% | ⏳ 待办（Phase 1 Task #13） |
+| P1-8 | 715 处 Mock 违反"优先真实组件"铁律 | ⏳ 待办（Phase 1 Task #14，大型任务） |
+
+---
+
+## 5. Phase 1 修复进度
+
+> 完整任务清单见 [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 第四节。
+
+| 评估任务 # | 任务 | 状态 | 完成时间 |
+|------------|------|------|----------|
+| #1 | 覆盖率口径混淆修复 | ✅ 完成 | 2026-06-29 |
+| #2 | email/finance 补真实组件测试 ≥80% | ⏳ 待办 | — |
+| #3 | Perf 维度扩充至 ≥5%（≥162 测试） | ⏳ 待办 | — |
+| #4 | 三语 README 安装命令统一 0.3.3 | ✅ 完成 | 2026-06-29 |
+| #5 | 打 v0.3.3/v0.4.0 git tag | ⏳ 待办（需用户确认） | — |
+| #6 | requirements.lock 移除 SSH 依赖 | ⏳ 待办 | — |
+| #7 | release.yml 补 PyPI twine upload | ⏳ 待办 | — |
+| #8 | PBKDF2 替换裸 SHA-256 | ✅ 完成 | 2026-06-29 |
+| #9 | prompt injection 阻断式升级 | ✅ 完成 | 2026-06-29 |
+| #10 | 新建 PROJECT_STATUS.md | ✅ 完成 | 2026-06-29 |
+| #11 | parallel_executor 三贤者路径文档化 | ✅ 完成 | 2026-06-29 |
+| #12 | opc_manager 拆子包 | ⏳ 待办（需用户确认） | — |
+| #13 | async 函数补类型注解 ≥80% | ⏳ 待办 | — |
+| #14 | test_email_skill mock→真实组件重构 | ⏳ 待办 | — |
+| #15 | skill_marketplace hmac.compare_digest | ✅ 完成 | 2026-06-29 |
+
+**进度**: 8/15 完成（53%），4 项待办，3 项需用户确认或大型任务。
+
+---
+
+## 6. 改进路线图
+
+### Phase 1：v0.4.0 发布前必做（P0+P1）
+
+见上方第 5 节。当前进度 8/15。
+
+### Phase 2：v0.4.1 跟进（P2，预计 2-3 天）
+
+- 拆分 5 个 God 文件（async_executor/scenario_definitions/strategist_brain/tool_system/reflector_brain）
+- 拆分 `_run_worker` 128 行长方法为 3-4 个 ≤40 行子方法
+- data_manager.py 主业务表补索引（finance_records.user_id、tasks.status）
+- 16 处 `assertTrue(len())` → `assertGreater` 批量替换
+- DIRECTORY_STRUCTURE.md 更新到 v0.3.3
+- 三语 README 同步校验 CI
+- skill_marketplace API key 哈希改 PBKDF2
+- 审计日志补链式哈希
+
+### Phase 3：v0.5.0 长期（P3 + 架构演进）
+
+- `tool_system.py` 拆为 tool_registry/tool_audit/tool_handlers_fs/tool_handlers_smtp
+- `opc_hr` 充实或并入 opc_manager/hr/ 子包
+- CI coverage 阈值 62% → 70% → 80%
+- mypy 配置升级为 `disallow_untyped_defs = True`
+- 引入 `radon cc` 圈复杂度门禁
+- 补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR
+
+---
+
+## 7. 关键约束（硬约束清单）
+
+以下约束来自项目级 `project_memory.md`，违反即阻塞发布：
+
+1. 密码存储必须使用带 salt 的 PBKDF2-HMAC-SHA256，禁止裸 SHA-256 ✅
+2. 项目必须包含依赖锁文件以确保构建可复现 ⏳（requirements.lock SSH 依赖待修复）
+3. CI mypy 检查必须为阻塞状态 ✅
+4. 发布前必须完成模拟真实用户使用的测试 ⏳
+5. 项目必须包含 `scripts/start.sh` 一键启动脚本 ✅
+6. ConsensusEngine 必须作为核心决策机制前置介入所有关键决策点 ✅
+7. 三贤者系统必须采用并行投票架构（asyncio.gather）而非串行流水线 ✅
+8. 共识门在关键决策失败时必须安全降级，禁止 fail-open ✅
+9. 版本号必须在所有位置（VERSION/README/代码注释）保持一致 ✅
+
+---
+
+## 8. 文档索引
+
+| 文档 | 路径 | 用途 |
+|------|------|------|
+| 项目 README（中） | [README.md](../README.md) | 用户入口 |
+| 项目 README（英） | [README-EN.md](../README-EN.md) | 英文用户入口 |
+| 项目 README（日） | [README-JP.md](../README-JP.md) | 日文用户入口 |
+| 变更日志 | [CHANGELOG.md](../CHANGELOG.md) | 版本变更记录 |
+| 成熟度评估 | [internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) | 7 维度评估 + Phase 1 任务清单 |
+| 架构设计 | [architecture/PARALLEL_SAGES_DESIGN.md](architecture/PARALLEL_SAGES_DESIGN.md) | 三贤者并行投票架构 |
+| API 文档 | [API.md](API.md) | REST API 接口 |
+| 用户试用指南 | [guides/USER_TRIAL_GUIDE.md](guides/USER_TRIAL_GUIDE.md) | 3 分钟配置 |

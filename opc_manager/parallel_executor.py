@@ -1,7 +1,11 @@
 """
 Parallel Execution Engine for OPC-Agents LLM Call Optimization
 
- 实验性功能：ParallelExecutor 当前未被三贤者投票流程实际使用，保留用于未来多技能并行执行场景。
+ NOTE: This module is reserved for future multi-skill parallel execution scenarios.
+ The three-sages parallel voting (asyncio.gather) is implemented in:
+   - opc_manager/consensus_engine.py (ConsensusEngine.collect_opinions)
+   - opc_manager/task_engine_v3_parallel.py (TaskEngineV3Parallel)
+ This module is NOT used by the three-sages flow. See docs/architecture/PARALLEL_SAGES_DESIGN.md.
 
 Provides controlled parallelism for LLM calls with:
 - Rate limiting (max concurrent API calls to avoid API bans)

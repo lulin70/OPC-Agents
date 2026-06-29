@@ -23,6 +23,10 @@ import logging
 import os
 import secrets
 from pathlib import Path
+
+# PBKDF2 key derivation constants (硬约束: 禁止裸 SHA-256, 必须用 PBKDF2-HMAC-SHA256 + salt)
+_KEY_DERIVATION_SALT = b"opc-agents-settings-v0.4.0"
+_KEY_DERIVATION_ITERATIONS = 100000
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -84,8 +88,16 @@ class SettingsEncryptionMixin:
                 )
                 return
 
-            # 统一使用 SHA-256 派生密钥（与 data_manager.py 一致）
-            key_bytes = hashlib.sha256(key.encode()).digest()
+            # PBKDF2-HMAC-SHA256 with salt + 100000 iterations (硬约束: 禁止裸 SHA-256).
+            # BREAKING CHANGE (v0.4.0): 之前使用裸 hashlib.sha256 派生密钥，违反硬约束。
+            # 已加密的旧数据需用旧密钥派生方式解密后重新加密，或重置 OPC_ENCRYPTION_KEY。
+            # Salt 为项目级常量，与 data_manager.py 的 _KEY_DERIVATION_SALT 保持一致。
+            key_bytes = hashlib.pbkdf2_hmac(
+                "sha256",
+                key.encode(),
+                _KEY_DERIVATION_SALT,
+                _KEY_DERIVATION_ITERATIONS,
+            )
             fernet_key = base64.urlsafe_b64encode(key_bytes)
             self._fernet = Fernet(fernet_key)
             logger.debug("[SettingsManager] Fernet cipher initialized successfully")

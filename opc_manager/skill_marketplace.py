@@ -14,6 +14,7 @@ and ``skill_marketplace_external``.
 """
 
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -295,7 +296,7 @@ class SkillMarketplace:
             if not salt:
                 continue
             check_hash = hashlib.sha256(f"{salt}:{api_key}".encode()).hexdigest()
-            if check_hash == key_hash:
+            if hmac.compare_digest(check_hash, key_hash):
                 return key_info
         return None
 

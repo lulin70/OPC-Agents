@@ -28,6 +28,7 @@ FASTAPI_AVAILABLE = False
 try:
     from fastapi import FastAPI, HTTPException, Header, Depends, Query
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import Response
     from pydantic import BaseModel
 
     FASTAPI_AVAILABLE = True
@@ -65,7 +66,7 @@ if FASTAPI_AVAILABLE:
     )
 
     @app.middleware("http")
-    async def enforce_https_middleware(request, call_next):
+    async def enforce_https_middleware(request, call_next) -> Response:
         if _enforce_https:
             proto = request.headers.get("x-forwarded-proto", request.url.scheme)
             if proto != "https":
@@ -86,7 +87,7 @@ if FASTAPI_AVAILABLE:
         return hashlib.sha256(api_key.encode()).hexdigest()[:16]
 
     @app.middleware("http")
-    async def limit_request_size(request, call_next):
+    async def limit_request_size(request, call_next) -> Response:
         if request.method in ("POST", "PUT"):
             body = await request.body()
             if len(body) > MAX_REQUEST_BODY_BYTES:
@@ -139,7 +140,7 @@ if FASTAPI_AVAILABLE:
             )
 
     @app.post("/api/v1/keys")
-    async def create_api_key(request: APIKeyCreateRequest):
+    async def create_api_key(request: APIKeyCreateRequest) -> Dict[str, Any]:
         perms = [PermissionLevel(p) for p in request.permissions]
         raw_key = marketplace.create_api_key(request.name, perms, request.rate_limit)
         return {"success": True, "api_key": raw_key, "name": request.name}
@@ -147,7 +148,7 @@ if FASTAPI_AVAILABLE:
     @app.post("/api/v1/skills")
     async def register_skill(
         request: SkillRegisterRequest, api_key: str = Depends(_get_api_key)
-    ):
+    ) -> Dict[str, Any]:
         _check_permission(api_key, PermissionLevel.WRITE)
         skill = MarketplaceSkill(
             skill_id=request.skill_id,
@@ -165,7 +166,9 @@ if FASTAPI_AVAILABLE:
         return result
 
     @app.put("/api/v1/skills/{skill_id}/approve")
-    async def approve_skill(skill_id: str, api_key: str = Depends(_get_api_key)):
+    async def approve_skill(
+        skill_id: str, api_key: str = Depends(_get_api_key)
+    ) -> Dict[str, Any]:
         _check_permission(api_key, PermissionLevel.WRITE)
         result = marketplace.approve_skill(skill_id, api_key)
         if not result["success"]:
@@ -176,12 +179,12 @@ if FASTAPI_AVAILABLE:
     async def discover_skills(
         category: Optional[str] = Query(None),
         keyword: Optional[str] = Query(None),
-    ):
+    ) -> Dict[str, Any]:
         results = marketplace.discover_skills(category=category, keyword=keyword)
         return {"skills": results, "total": len(results)}
 
     @app.get("/api/v1/skills/{skill_id}")
-    async def get_skill(skill_id: str):
+    async def get_skill(skill_id: str) -> Dict[str, Any]:
         skill = marketplace.get_skill(skill_id)
         if not skill:
             raise HTTPException(status_code=404, detail=f"Skill not found: {skill_id}")
@@ -192,7 +195,7 @@ if FASTAPI_AVAILABLE:
         skill_id: str,
         request: SkillExecuteRequest,
         api_key: str = Depends(_get_api_key),
-    ):
+    ) -> Dict[str, Any]:
         _check_permission(api_key, PermissionLevel.EXECUTE)
         result = marketplace.execute_skill(skill_id, request.parameters, api_key)
         if not result["success"]:
@@ -200,23 +203,23 @@ if FASTAPI_AVAILABLE:
         return result
 
     @app.get("/api/v1/stats")
-    async def get_stats():
+    async def get_stats() -> Dict[str, Any]:
         return marketplace.get_stats()
 
     @app.get("/api/v1/categories")
-    async def list_categories():
+    async def list_categories() -> Dict[str, Any]:
         return {"categories": marketplace.list_categories()}
 
     @app.get("/api/v1/marketplace/skills")
     async def list_marketplace_skills(
         query: Optional[str] = Query(None),
         category: Optional[str] = Query(None),
-    ):
+    ) -> Dict[str, Any]:
         result = external_marketplace.search_skills(query or "", category or "")
         return result
 
     @app.get("/api/v1/marketplace/stats")
-    async def get_marketplace_stats():
+    async def get_marketplace_stats() -> Dict[str, Any]:
         internal_stats = marketplace.get_stats()
         external_installed = external_marketplace.list_installed()
         return {
@@ -229,7 +232,7 @@ if FASTAPI_AVAILABLE:
         skill_id: str,
         source: str = "opc_official",
         api_key: str = Depends(_get_api_key),
-    ):
+    ) -> Dict[str, Any]:
         result = external_marketplace.install_skill(skill_id, source)
         if not result.get("success") and not result.get("requires_confirmation"):
             raise HTTPException(
@@ -238,7 +241,9 @@ if FASTAPI_AVAILABLE:
         return result
 
     @app.delete("/api/v1/marketplace/{skill_id}/uninstall")
-    async def uninstall_skill(skill_id: str, api_key: str = Depends(_get_api_key)):
+    async def uninstall_skill(
+        skill_id: str, api_key: str = Depends(_get_api_key)
+    ) -> Dict[str, Any]:
         result = external_marketplace.uninstall_skill(skill_id)
         if not result.get("success"):
             raise HTTPException(
@@ -247,11 +252,11 @@ if FASTAPI_AVAILABLE:
         return result
 
     @app.get("/api/v1/marketplace/installed")
-    async def list_installed_skills():
+    async def list_installed_skills() -> Dict[str, Any]:
         return external_marketplace.list_installed()
 
     @app.get("/health")
-    async def health_check():
+    async def health_check() -> Dict[str, Any]:
         return {"status": "ok", "version": __version__}
 
 else:

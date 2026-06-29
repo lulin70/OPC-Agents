@@ -161,6 +161,23 @@ class TestRealLLM(unittest.TestCase):
         cls.generator = LLMEnhancedContentGenerator()
         if not cls.generator.is_available():
             raise unittest.SkipTest("LLM API not available (no API key configured)")
+        # Validate the API key actually works (not just present).
+        # is_available() only checks key existence; an invalid/expired key
+        # would cause test failures instead of a clean skip.
+        try:
+            validation = cls.generator.generate(
+                user_input="test",
+                template="# Test\n{business_context}\n",
+            )
+            if validation.fallback_used:
+                raise unittest.SkipTest(
+                    "LLM API key invalid or LLM unreachable (fallback used). "
+                    "Set a valid API key to run these tests."
+                )
+        except unittest.SkipTest:
+            raise
+        except Exception as e:
+            raise unittest.SkipTest(f"LLM API validation failed: {e}")
 
     def test_llm_generates_chinese_content(self):
         result = self.generator.generate(
@@ -227,6 +244,20 @@ class TestRealE2EWithLLM(unittest.TestCase):
         cls.generator = LLMEnhancedContentGenerator()
         if not cls.generator.is_available():
             raise unittest.SkipTest("LLM API not available")
+        # Validate the API key actually works (see TestRealLLM.setUpClass).
+        try:
+            validation = cls.generator.generate(
+                user_input="test",
+                template="# Test\n{business_context}\n",
+            )
+            if validation.fallback_used:
+                raise unittest.SkipTest(
+                    "LLM API key invalid or LLM unreachable (fallback used)."
+                )
+        except unittest.SkipTest:
+            raise
+        except Exception as e:
+            raise unittest.SkipTest(f"LLM API validation failed: {e}")
 
     def test_full_chinese_pipeline_with_llm(self):
         result = self.engine.execute(
@@ -284,9 +315,9 @@ class TestRealCoreSkills(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if os.environ.get("SKIP_E2E", "1") != "0":
+        if os.environ.get("SKIP_E2E", "0") == "1":
             raise unittest.SkipTest(
-                "Set SKIP_E2E=0 to run core skill E2E tests (requires real API Key)"
+                "E2E tests skipped (set SKIP_E2E=0 or unset to run core skill E2E tests)"
             )
         from opc_manager.simple_llm_service import SimpleLLMService
 

@@ -39,7 +39,7 @@ opc-agents                      # 2. 起動
 - **🎯 3つのコアスキルに集中**: メール / 財務 / レポート。11個の非コアスキルを凍結（[docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md) 参照）、各コアスキルを本当に使いやすくする。
 - **🧠 IntentRouter 3分類スマートルーティング**: SIMPLE / COMPLEX / GREETINGの3分類。簡単なタスクは三賢者をバイパスして直接実行—速くてお得；複雑なタスクのみ並列投票に入り、品質を保証。
 - **🛡 重要意思決定点の事前コンセンサス保護**: ConsensusEngineを「事後補救」から「事前関門」に変更、ExecutorBrainは真の意見を提供（偽意見ルール削除）、ReflectorBrainは事前予測+マイノリティレポート。
-- **📊 品質大幅向上**: 総カバレッジ62.41%、コアスキルテストカバレッジ email_skill 99% / finance_skill 100%（Sprint 2で16.96%/14.46%基線から向上）；実LLM E2Eテスト7件追加（CIが毎週月曜に自動実行）。
+- **📊 品質大幅向上**: 総カバレッジ62.87%、コアスキル対象テストカバレッジ email_skill 99% / finance_skill 100%（対象 `pytest --cov` スコープ、フルテストスイートでは email_skill 17.0% / finance_skill 14.5%、`coverage.json` 参照、Sprint 2で16.96%/14.46%基線から対象カバレッジ向上）；実LLM E2Eテスト7件追加（CIが毎週月曜に自動実行）。
 - **🌐 i18nリファクター**: 3857行 → 133行ロジック層 + JSON化、後方互換、メンテナンスコスト激減。
 
 > 🧪 試してみたい？[docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) をお読みください（3分で設定完了）、デモスクリプトは [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)、フィードバックフォームは [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。
@@ -176,7 +176,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.2.5
+pip install opc-agents==0.3.3
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
