@@ -3,7 +3,7 @@ import time
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Deque, Dict, List, Optional
 from collections import deque
 from queue import Queue, Empty
 from opc_manager.utils import SECONDS_PER_DAY
@@ -91,6 +91,15 @@ class AuditLog:
     _instance = None
     _lock = threading.Lock()
 
+    # Instance attributes initialized in __new__
+    _logs: Deque[AuditRecord]
+    _write_queue: Queue
+    _started: bool
+    _stop_event: threading.Event
+    _cleanup_counter: int
+    _cleanup_needed: bool
+    _writer_thread: Optional[threading.Thread]
+
     def __new__(cls):
         """Create or return singleton instance."""
         if cls._instance is None:
@@ -174,10 +183,10 @@ class AuditLog:
 
     def query(
         self,
-        session_id: str = None,
-        operation_type: str = None,
+        session_id: Optional[str] = None,
+        operation_type: Optional[str] = None,
         limit: int = 50,
-        since: float = None,
+        since: Optional[float] = None,
     ) -> List[dict]:
         if not isinstance(limit, int) or limit < 1:
             raise ValueError("limit must be a positive integer")
@@ -208,7 +217,7 @@ class AuditLog:
                 )
         return results[:limit]
 
-    def get_stats(self, session_id: str = None) -> Dict[str, Any]:
+    def get_stats(self, session_id: Optional[str] = None) -> Dict[str, Any]:
         total = success = failed = 0
         total_duration = 0
         with self._lock:
@@ -229,7 +238,7 @@ class AuditLog:
             "avg_duration_ms": total_duration // max(total, 1),
         }
 
-    def cleanup(self, before_timestamp: float = None) -> int:
+    def cleanup(self, before_timestamp: Optional[float] = None) -> int:
         if before_timestamp is None:
             before_timestamp = time.time() - AUDIT_RETENTION_DAYS * SECONDS_PER_DAY
         with self._lock:

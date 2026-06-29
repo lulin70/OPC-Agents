@@ -13,13 +13,19 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from .agent_context import AgentContext, AgentState
 from .intent_classifier import IntentRouter, IntentCategory
 from .reflector_brain import NextAction, NextActionType
 from .result_builder import ResultBuilder
 from .progress_tracker import ProgressTracker
+
+if TYPE_CHECKING:
+    # 仅用于类型检查：AgentContext.intent/plan 运行时为 Optional[object]，
+    # 此处声明真实类型以便 mypy 正确收窄属性访问（见下文 cast 调用）。
+    from .strategist_brain import ExecutionPlan, Intent
+
 from .constants import (
     CRITICAL_DECISION_SKILLS,
     CRITICAL_DECISION_ACTIONS,
@@ -217,9 +223,10 @@ class TaskOrchestrator:
         if not context.plan:
             raise ValueError("没有执行计划，无法执行")
 
-        total_steps = len(context.plan.steps)
+        plan = cast("ExecutionPlan", context.plan)
+        total_steps = len(plan.steps)
 
-        for i, step in enumerate(context.plan.steps[start_step:]):
+        for i, step in enumerate(plan.steps[start_step:]):
             if context.cancel_requested:
                 return
 
@@ -309,7 +316,8 @@ class TaskOrchestrator:
         """
         logger.info("Phase 3: 观察开始")
 
-        total_steps = len(context.plan.steps) if context.plan else 0
+        plan = cast("Optional[ExecutionPlan]", context.plan)
+        total_steps = len(plan.steps) if plan else 0
         completed_steps = sum(
             1 for r in context.execution_results if r.get("success", False)
         )
@@ -337,7 +345,8 @@ class TaskOrchestrator:
         overall_result = self._result_builder.build_overall_result(context)
 
         loop = asyncio.get_running_loop()
-        expected_intent = {"goal": context.intent.goal} if context.intent else {}
+        intent = cast("Optional[Intent]", context.intent)
+        expected_intent = {"goal": intent.goal} if intent else {}
 
         evaluation = await loop.run_in_executor(
             None,
@@ -413,12 +422,13 @@ class TaskOrchestrator:
                 confidence=evaluation.quality_score,
             )
 
+        plan = cast("Optional[ExecutionPlan]", context.plan)
         plan_dict = None
-        if context.plan:
+        if plan:
             plan_dict = {
                 "steps": [
                     {"id": s.id, "skill_id": s.skill_id, "description": s.description}
-                    for s in context.plan.steps
+                    for s in plan.steps
                 ],
                 "retry_count": context.retry_count,
             }
@@ -633,7 +643,7 @@ class TaskOrchestrator:
             )
 
     def _enrich_step_parameters(
-        self, params: Dict, execution_results: List[Dict]
+        self, params: Optional[Dict], execution_results: List[Dict]
     ) -> Dict:
         """丰富步骤参数。"""
         if not params or not execution_results:
@@ -686,7 +696,7 @@ class TaskOrchestrator:
         return enriched
 
     async def _execute_step_with_retry(
-        self, context: AgentContext, step, enriched_params: Dict = None
+        self, context: AgentContext, step, enriched_params: Optional[Dict] = None
     ):
         """带重试的步骤执行。"""
         step_retries = context.step_retry_counts.get(step.id, 0)

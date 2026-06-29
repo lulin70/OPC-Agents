@@ -250,7 +250,8 @@ def init_db() -> None:
             email TEXT DEFAULT '',
             source TEXT DEFAULT '',
             tags TEXT DEFAULT '',
-            status TEXT NOT NULL DEFAULT 'potential' CHECK(status IN ('potential','first_deal','active','silent','lost')),
+            status TEXT NOT NULL DEFAULT 'potential'
+                CHECK(status IN ('potential','first_deal','active','silent','lost')),
             created_at TEXT NOT NULL,
             last_contact TEXT
         );
@@ -669,7 +670,7 @@ def execute_transaction(statements: List[tuple]) -> bool:
 
 
 @_ensure_db
-def execute_write_returning(sql: str, params: tuple = ()) -> str:
+def execute_write_returning(sql: str, params: tuple = ()) -> Optional[int]:
     _validate_sql(sql)
     with _db_lock:
         conn = _get_conn()
@@ -743,5 +744,5 @@ class DataManager:
     def transaction(self, statements: List[tuple]) -> bool:
         return execute_transaction(statements)
 
-    def write_returning(self, sql: str, params: tuple = ()) -> str:
+    def write_returning(self, sql: str, params: tuple = ()) -> Optional[int]:
         return execute_write_returning(sql, params)

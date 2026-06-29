@@ -8,7 +8,7 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
 import json
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
@@ -53,7 +53,7 @@ SERVICE_TEMPLATES = {
 def create_proposal(
     client_name: str,
     service_type: str = "通用",
-    items: List[Dict[str, Any]] = None,
+    items: Optional[List[Dict[str, Any]]] = None,
     valid_days: int = 30,
     note: str = "",
 ) -> Dict[str, Any]:
@@ -95,7 +95,9 @@ def create_proposal(
 
     try:
         execute_write(
-            "INSERT INTO proposals (id,client_name,service_type,items,total,valid_days,valid_until,status,markdown,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO proposals "
+            "(id,client_name,service_type,items,total,valid_days,valid_until,"
+            "status,markdown,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (
                 proposal_id,
                 client_name,

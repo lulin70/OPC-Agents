@@ -112,8 +112,8 @@ def get_task_dashboard() -> Dict[str, Any]:
     now = time.strftime("%Y-%m-%d")
 
     all_tasks = tasks_result.get("tasks", [])
-    by_status = {}
-    by_priority = {}
+    by_status: dict[str, int] = {}
+    by_priority: dict[str, int] = {}
     overdue = []
 
     for t in all_tasks:
@@ -164,7 +164,10 @@ def generate_dashboard_report() -> Dict[str, Any]:
     md += "## 财务趋势\n\n"
     md += "| 月份 | 收入 | 支出 | 利润 |\n|------|------|------|------|\n"
     for t in finance.get("trend", []):
-        md += f"| {t.get('year_month', '')} | ¥{t.get('income', 0):.2f} | ¥{t.get('expense', 0):.2f} | ¥{t.get('profit', 0):.2f} |\n"
+        md += (
+            f"| {t.get('year_month', '')} | ¥{t.get('income', 0):.2f} | "
+            f"¥{t.get('expense', 0):.2f} | ¥{t.get('profit', 0):.2f} |\n"
+        )
 
     if tasks.get("overdue_count", 0) > 0:
         md += "\n##  逾期任务\n\n"

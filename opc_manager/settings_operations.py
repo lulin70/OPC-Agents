@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set
 
 if TYPE_CHECKING:
     # Import only for static type checkers / pyflakes name resolution. This
@@ -46,13 +46,36 @@ if TYPE_CHECKING:
     # no circular import with the facade. The runtime usages in
     # ``is_configured`` and ``reset_to_defaults`` import the same names lazily
     # inside the method bodies.
-    from opc_manager.settings import SettingsCategory
+    from opc_manager.settings import (
+        LLMSettings,
+        ProfileSettings,
+        SecuritySettings,
+        SettingsCategory,
+        SMTPSettings,
+    )
 
 logger = logging.getLogger(__name__)
 
 
 class SettingsOperationsMixin:
     """Mixin providing user-facing settings operations and callbacks."""
+
+    # Type declarations for cross-mixin attributes (provided by SettingsManager
+    # facade at runtime via __init__). These exist only during type checking;
+    # at runtime they are set by the facade, so the annotations never execute.
+    if TYPE_CHECKING:
+        _security: "SecuritySettings"
+        _llm: "LLMSettings"
+        _smtp: "SMTPSettings"
+        _profile: "ProfileSettings"
+        # ``threading.RLock()`` returns a ``_RLock`` instance (typeshed-private
+        # name); ``Any`` keeps the annotation portable across typeshed versions
+        # while still documenting intent for readers.
+        _data_lock: Any
+        _callbacks: "List[Callable[[str], None]]"
+        SENSITIVE_FIELDS: "Set[str]"
+
+        def _save_to_disk(self) -> None: ...
 
     def test_smtp_connection(self) -> Dict[str, Any]:
         """Test SMTP connection with current settings.

@@ -9,7 +9,7 @@ Legacy config.toml support has been removed in v0.1.0.
 import os
 import threading
 import logging
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +64,9 @@ class ConfigManager:
         "LOG_DIR": "logs",
     }
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: Optional[str] = None):
         self._lock = threading.RLock()
-        self._callbacks = []
+        self._callbacks: List[Callable] = []
         self._config_path = config_path
 
     def _load_config(self) -> Dict[str, Any]:
@@ -144,7 +144,7 @@ class ConfigManager:
             if callback in self._callbacks:
                 self._callbacks.remove(callback)
 
-    def get_model_config(self, model_name: str = None) -> Dict[str, Any]:
+    def get_model_config(self, model_name: Optional[str] = None) -> Dict[str, Any]:
         with self._lock:
             cfg = self._load_config()
             if not model_name:
@@ -157,7 +157,7 @@ class ConfigManager:
             models = cfg.get("models", {})
             return [key for key in models if key != "default"]
 
-    def get(self, section: str, key: str = None, default: Any = None) -> Any:
+    def get(self, section: str, key: Optional[str] = None, default: Any = None) -> Any:
         with self._lock:
             cfg = self._load_config()
             if section in cfg:

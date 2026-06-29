@@ -39,7 +39,7 @@ class ScenarioEngineV2:
         self.persona_manager = None
 
     def process(
-        self, user_input: str, user_context: Dict[str, Any] = None
+        self, user_input: str, user_context: Optional[Dict[str, Any]] = None
     ) -> ScenarioResult:
         """
         Process user input and return scenario matching result
@@ -71,7 +71,7 @@ class ScenarioEngineV2:
             except Exception as e:
                 logger.error("BusinessTypeDetector failed, using default type: %s", e)
 
-        candidates = []
+        candidates: List[Dict[str, Any]] = []
         for scenario_id, config in self.scenarios.items():
             is_target_type = detected_type in config.target_business_types or len(
                 config.target_business_types
@@ -168,7 +168,7 @@ class ScenarioEngineV2:
         return self.scenarios.get(scenario_id)
 
     def list_scenarios(
-        self, business_type: BusinessType = None
+        self, business_type: Optional[BusinessType] = None
     ) -> List[Dict[str, Any]]:
         """
         List all scenarios (can be filtered by business type)
@@ -270,6 +270,9 @@ if __name__ == "__main__":
         if result.matched:
             print(f"Scenario ID: {result.scenario_id}")
             print(f"Confidence: {result.confidence:.2f}")
-            print(f"Detected business type: {result.detected_business_type.value}")
-            print(f"Workflow steps: {len(result.workflow)}")
+            if result.detected_business_type:
+                print(
+                    f"Detected business type: {result.detected_business_type.value}"
+                )
+            print(f"Workflow steps: {len(result.workflow or [])}")
         print("-" * 40)

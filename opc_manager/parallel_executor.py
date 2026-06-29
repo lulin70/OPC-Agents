@@ -31,7 +31,7 @@ v1.0.0 - Initial implementation for OPC-Agents parallel optimization
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Dict
+from typing import Any, Callable, List, Dict, Optional
 from enum import Enum
 import logging
 
@@ -85,7 +85,7 @@ class TaskResult:
 
     success: bool
     result: Any = None
-    error: str = None
+    error: Optional[str] = None
     execution_time_ms: float = 0.0
     task_index: int = 0
     retries_used: int = 0

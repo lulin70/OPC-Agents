@@ -84,7 +84,7 @@ class Evaluation:
     result: EvaluationResult  # 评估结果类型
     quality_score: float  # 质量评分 (0.0-1.0)
     deviation_analysis: str  # 偏差分析
-    key_findings: List[str] = None  # 关键发现
+    key_findings: Optional[List[str]] = None  # 关键发现
 
     def __post_init__(self):
         if self.key_findings is None:
@@ -97,7 +97,7 @@ class NextAction:
 
     action_type: NextActionType  # 行动类型
     reason: str  # 行动原因
-    parameters: Dict[str, Any] = None  # 行动参数
+    parameters: Optional[Dict[str, Any]] = None  # 行动参数
     confidence: float = 0.0  # 决策置信度
 
     def __post_init__(self):
@@ -492,7 +492,7 @@ class ReflectorBrain:
             suggestions.append("• 增加执行步骤的详细程度")
             suggestions.append("• 引入人工复核环节")
 
-        if any("超时" in finding for finding in evaluation.key_findings):
+        if any("超时" in finding for finding in (evaluation.key_findings or [])):
             suggestions.append("• 增加超时时间设置")
             suggestions.append("• 优化执行流程，减少不必要的步骤")
 
@@ -664,7 +664,7 @@ class ReflectorBrain:
                 # 优先使用 dataclasses.asdict 序列化为结构化 JSON
                 from dataclasses import asdict, is_dataclass
 
-                if is_dataclass(intent):
+                if is_dataclass(intent) and not isinstance(intent, type):
                     intent = json.dumps(
                         asdict(intent), ensure_ascii=False, default=str
                     )[:300]
@@ -680,7 +680,7 @@ class ReflectorBrain:
             try:
                 from dataclasses import asdict, is_dataclass
 
-                if is_dataclass(plan):
+                if is_dataclass(plan) and not isinstance(plan, type):
                     plan = json.dumps(asdict(plan), ensure_ascii=False, default=str)[
                         :300
                     ]

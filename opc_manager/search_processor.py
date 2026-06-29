@@ -30,7 +30,7 @@ import json
 import logging
 import os
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -521,7 +521,7 @@ class SearchResultProcessor:
         return filtered
 
     def _score_relevance(
-        self, query: str, results: List[Dict], keywords: List[str] = None
+        self, query: str, results: List[Dict], keywords: Optional[List[str]] = None
     ) -> List[Dict]:
         """Simplified TF-IDF scoring: title weight ×2 + snippet overlap
 
@@ -623,7 +623,7 @@ class SearchResultProcessor:
         if not os.path.isdir(kb_dir):
             return []
 
-        entries = []
+        entries: List[Dict] = []
         query_lower = query.lower()
         keywords = set(query_lower.replace("的", " ").replace("了", " ").split())
         keywords = {kw for kw in keywords if len(kw) >= 2}

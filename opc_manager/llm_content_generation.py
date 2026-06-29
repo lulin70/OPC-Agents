@@ -26,7 +26,7 @@ MAX_LLM_OUTPUT_LENGTH is defined locally here (used only by _call_llm_api).
 
 import re
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from .utils import _llm_thread_semaphore
 from .llm_content import GenerationResult
@@ -44,6 +44,14 @@ class LLMContentGenerationMixin:
     composed facade instance via Python's MRO.
     """
 
+    # Type declarations for cross-mixin / facade attributes resolved at runtime.
+    # _build_prompt / _enforce_structure are provided by LLMContentPromptMixin.
+    # _llm_caller / llm_timeout are set by the facade __init__.
+    _build_prompt: Callable[..., str]
+    _enforce_structure: Callable[[str, str], str]
+    _llm_caller: Optional[Callable[[str], Optional[str]]]
+    llm_timeout: int
+
     def _try_llm_generation(
         self,
         user_input: str,
@@ -51,7 +59,7 @@ class LLMContentGenerationMixin:
         business_info: Dict[str, List[str]],
         context: str,
         search_results: List[Dict],
-        business_type: str = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
     ) -> GenerationResult:
         """Attempt LLM generation (core RAG flow)
@@ -242,7 +250,7 @@ class LLMContentGenerationMixin:
 
         score -= min(result.placeholder_count * 5, 25)
 
-        injection_rate = 0
+        injection_rate = 0.0
         total_info_items = len(result.business_info_injected)
         if total_info_items > 0:
             injection_rate = min(total_info_items / 4.0, 1.0)

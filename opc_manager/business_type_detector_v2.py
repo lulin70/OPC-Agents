@@ -124,14 +124,17 @@ class BusinessTypeDetectorV2(
         self.confidence_threshold = 0.12
         self.enable_llm = enable_llm
         self.llm_service = llm_service
-        self._stats = {"total_detections": 0, "method_distribution": {}}
+        self._stats: Dict[str, Any] = {
+            "total_detections": 0,
+            "method_distribution": {},
+        }
 
     def detect(
         self,
         input_text: str,
         user_profile: Optional[Dict] = None,
         history: Optional[List[Dict]] = None,
-        min_confidence: float = None,
+        min_confidence: Optional[float] = None,
     ) -> DetectionResult:
         """
         Detect user's business type (V2 Enhanced)
@@ -223,8 +226,8 @@ class BusinessTypeDetectorV2(
         confidence: float,
         method: str,
         input_text: str,
-        matched_keywords: List[str] = None,
-        detected_patterns: List[str] = None,
+        matched_keywords: Optional[List[str]] = None,
+        detected_patterns: Optional[List[str]] = None,
         reasoning: str = "",
     ) -> DetectionResult:
         """Build standardized detection result"""

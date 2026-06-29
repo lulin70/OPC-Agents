@@ -243,7 +243,11 @@ def _generate_title(platform: str, topic: str, cfg: dict) -> str:
         return ""
     elif platform == "微博":
         return ""
-    return f"【{topic}】一人公司实战分享：请在此补充关于{topic}的核心观点、实操方法和注意事项。建议从以下角度展开：1) 为什么{topic}对一人公司重要；2) 具体执行步骤和工具推荐；3) 常见误区和避坑建议。"
+    return (
+        f"【{topic}】一人公司实战分享：请在此补充关于{topic}的核心观点、实操方法和注意事项。"
+        f"建议从以下角度展开：1) 为什么{topic}对一人公司重要；"
+        f"2) 具体执行步骤和工具推荐；3) 常见误区和避坑建议。"
+    )
 
 
 def _generate_body(
@@ -379,7 +383,8 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         name = name.strip().strip("，。、的")
         if name:
             rows = execute_query(
-                "SELECT id FROM social_content WHERE platform=? AND topic LIKE ? AND status='draft' ORDER BY created_at DESC LIMIT 1",
+                "SELECT id FROM social_content WHERE platform=? AND topic LIKE ? "
+                "AND status='draft' ORDER BY created_at DESC LIMIT 1",
                 (platform_name, f"%{name}%"),
             )
             if rows:

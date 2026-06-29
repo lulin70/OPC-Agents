@@ -39,9 +39,9 @@ class TaskResult:
     success: bool
     content: str
     task_type: TaskType
-    sources: List[Dict[str, str]] = None
+    sources: Optional[List[Dict[str, str]]] = None
     execution_time_ms: float = 0
-    error: str = None
+    error: Optional[str] = None
     deliverable_format: str = ""
     search_results: List[Dict] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)

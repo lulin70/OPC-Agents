@@ -31,11 +31,14 @@ import platform
 import sys
 import threading
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 
-logger = None
+# loguru.Logger and logging.Logger share the same call surface (warning/info/error/debug)
+# but are distinct types; annotate as Any to unify them without runtime overhead.
+# no-redef suppressed: conditional logger import is a standard Python idiom.
+logger: Any = None
 try:
-    from loguru import logger
+    from loguru import logger  # type: ignore[no-redef]
 except ImportError:
     import logging
 

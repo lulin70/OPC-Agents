@@ -64,7 +64,10 @@ def create_invoice(
 
     try:
         execute_write(
-            "INSERT INTO invoices (id,invoice_no,client_name,amount,item,tax_rate,tax_amount,total_with_tax,proposal_id,status,markdown,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO invoices "
+            "(id,invoice_no,client_name,amount,item,tax_rate,tax_amount,"
+            "total_with_tax,proposal_id,status,markdown,created_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 invoice_id,
                 invoice_no,
@@ -150,7 +153,11 @@ def _render_invoice_md(invoice: dict) -> str:
     md += f"**开票日期**: {invoice['created_at'][:10]}  \n\n"
     md += f"| 项目 | 金额 | 税率 | 税额 | 价税合计 |\n"
     md += f"|------|------|------|------|--------|\n"
-    md += f"| {invoice['item']} | ¥{invoice['amount']:.2f} | {invoice['tax_rate']*100:.0f}% | ¥{invoice['tax_amount']:.2f} | ¥{invoice['total_with_tax']:.2f} |\n\n"
+    md += (
+        f"| {invoice['item']} | ¥{invoice['amount']:.2f} | "
+        f"{invoice['tax_rate']*100:.0f}% | ¥{invoice['tax_amount']:.2f} | "
+        f"¥{invoice['total_with_tax']:.2f} |\n\n"
+    )
     md += f"**价税合计: ¥{invoice['total_with_tax']:.2f}**\n\n"
     md += "---\n*本发票由OPC-Agents生成，仅供参考*\n"
     return md

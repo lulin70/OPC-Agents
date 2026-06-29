@@ -21,7 +21,7 @@ DetectionResult is imported from the facade module; the facade defines it
 before importing the mixins to keep the import cycle safe.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Set, TYPE_CHECKING
 
 from opc_manager.business_types import BusinessType
 from opc_manager.business_type_detector_v2 import DetectionResult
@@ -36,6 +36,11 @@ class BusinessTypeDetectorScoringMixin:
     instances. Cross-mixin calls (e.g. self._detect_by_keywords) are resolved
     at runtime on the composed facade instance.
     """
+
+    if TYPE_CHECKING:
+        negation_words: Set[str]
+
+        def _detect_by_keywords(self, text: str) -> DetectionResult: ...
 
     def _calculate_enhanced_score(self, text_lower: str, config: Dict) -> float:
         """
@@ -69,7 +74,7 @@ class BusinessTypeDetectorScoringMixin:
             if phrase.lower() in text_lower
         )
 
-        synonym_matches = 0
+        synonym_matches: float = 0.0
         synonyms = config.get("synonyms", {})
         for base_word, syn_list in synonyms.items():
             if base_word.lower() in text_lower:

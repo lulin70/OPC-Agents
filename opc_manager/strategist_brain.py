@@ -53,10 +53,10 @@ class Intent:
 
     goal: str  # 核心目标
     type: IntentType  # 意图类型
-    constraints: List[Constraint] = None  # 约束条件列表
-    context: Dict[str, Any] = None  # 上下文信息
+    constraints: Optional[List[Constraint]] = None  # 约束条件列表
+    context: Optional[Dict[str, Any]] = None  # 上下文信息
     confidence: float = 1.0  # 置信度
-    sub_intents: List["Intent"] = None  # 子意图列表（复合意图时使用）
+    sub_intents: Optional[List["Intent"]] = None  # 子意图列表（复合意图时使用）
 
     def __post_init__(self):
         if self.constraints is None:
@@ -74,8 +74,8 @@ class Step:
     id: str  # 步骤唯一标识
     skill_id: str  # 技能ID
     description: str  # 步骤描述
-    parameters: Dict[str, Any] = None  # 执行参数
-    dependencies: List[str] = None  # 依赖的步骤ID列表
+    parameters: Optional[Dict[str, Any]] = None  # 执行参数
+    dependencies: Optional[List[str]] = None  # 依赖的步骤ID列表
     retry_count: int = 0  # 重试次数
 
     def __post_init__(self):
@@ -92,7 +92,7 @@ class ExecutionPlan:
     plan_id: str  # 计划唯一标识
     intent: Intent  # 关联的意图
     steps: List[Step]  # 步骤列表
-    resources: Dict[str, Any] = None  # 资源配置
+    resources: Optional[Dict[str, Any]] = None  # 资源配置
     estimated_time: int = 0  # 预估执行时间（秒）
 
     def __post_init__(self):
@@ -514,7 +514,8 @@ class StrategistBrain:
 意图类型: {intent.type.value}
 子目标: {safe_sub_goals}
 
-可用技能: search(搜索), analysis(分析), content_generation(内容创作), execute_operation(执行操作), send_notification(发送通知), output_result(输出结果)
+可用技能: search(搜索), analysis(分析), content_generation(内容创作),
+execute_operation(执行操作), send_notification(发送通知), output_result(输出结果)
 
 请返回JSON格式:
 {{
@@ -588,7 +589,7 @@ class StrategistBrain:
                 description="分析用户需求和约束条件",
                 parameters={
                     "goal": intent.goal,
-                    "constraints": [c.type.value for c in intent.constraints],
+                    "constraints": [c.type.value for c in (intent.constraints or [])],
                 },
             )
         )
@@ -625,7 +626,7 @@ class StrategistBrain:
     def _generate_skill_steps(
         self, intent: Intent, start_id: int, dep_id: str
     ) -> List[Step]:
-        steps = []
+        steps: List[Step] = []
         step_id = start_id
 
         if intent.type == IntentType.COMBINED:

@@ -13,7 +13,7 @@
 - skill_executors.py: All _execute_* method implementations (mixin)
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 import asyncio
 import json
 import logging
@@ -29,6 +29,10 @@ from opc_manager.skill_models import (
 )
 from opc_manager.skill_builtin import register_builtin_skills
 from opc_manager.skill_executors import SkillExecutorMixin
+
+if TYPE_CHECKING:
+    # 仅为类型检查导入，避免循环依赖；运行时在方法内部懒加载
+    from opc_manager.skill_marketplace import ExternalSkillMarketplace
 
 __all__ = [
     "SkillRegistry",
@@ -68,6 +72,8 @@ class SkillRegistry(SkillExecutorMixin):
     _instance = None
     _instance_lock = threading.Lock()
     _init_lock = threading.Lock()
+    # 仅类型注解，不创建类属性（保留单例 __init__ 的 hasattr 守卫语义）
+    _initialized: bool
 
     def __new__(
         cls,
@@ -108,7 +114,7 @@ class SkillRegistry(SkillExecutorMixin):
             self.category_index: Dict[str, List[str]] = {}
             self.keyword_index: Dict[str, List[str]] = {}
             self._collab_in_progress = False
-            self._external_marketplace = None
+            self._external_marketplace: Optional["ExternalSkillMarketplace"] = None
 
             if register_builtins:
                 register_builtin_skills(self)
@@ -243,7 +249,7 @@ class SkillRegistry(SkillExecutorMixin):
             self.category_index[category_name] = []
         self.category_index[category_name].append(skill.skill_id)
 
-        for keyword in skill.intent_keywords:
+        for keyword in (skill.intent_keywords or []):
             if keyword not in self.keyword_index:
                 self.keyword_index[keyword] = []
             self.keyword_index[keyword].append(skill.skill_id)
@@ -304,7 +310,7 @@ class SkillRegistry(SkillExecutorMixin):
         """
         return list(self.skills.values())
 
-    async def execute_skill(
+    async def execute_skill(  # type: ignore[override]  # 参数名 skill_id 为公开 API，不可改为父类的 skill_name
         self, skill_id: str, context: Optional[SkillContext] = None, **kwargs
     ) -> Dict[str, Any]:
         skill = self.get_skill(skill_id)
@@ -412,10 +418,10 @@ class SkillRegistry(SkillExecutorMixin):
         self._collab_in_progress = True
         try:
             results = []
-            context_data = {}
+            context_data: Dict[str, Any] = {}
             for skill_id in collab["skills"]:
                 skill = self.get_skill(skill_id)
-                if not skill or not skill.execute:
+                if not skill or skill.execute is None:
                     continue
 
                 enriched_goal = goal

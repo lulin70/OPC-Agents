@@ -219,8 +219,8 @@ class LLMEnhancedContentGenerator(LLMContentPromptMixin, LLMContentGenerationMix
         self,
         user_input: str,
         template: str,
-        search_results: List[Dict] = None,
-        business_type: str = None,
+        search_results: Optional[List[Dict]] = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
         **kwargs,
     ) -> GenerationResult:

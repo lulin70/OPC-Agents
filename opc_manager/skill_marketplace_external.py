@@ -397,7 +397,7 @@ class ExternalSkillMarketplace:
         }
 
     def connect_mcp(
-        self, server_url: str, capabilities: List[str] = None
+        self, server_url: str, capabilities: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         if not server_url.startswith("https://"):
             return {"success": False, "error": "MCP服务器URL必须使用HTTPS"}
@@ -407,7 +407,7 @@ class ExternalSkillMarketplace:
             return {"success": False, "error": f"已连接该MCP服务器: {server_id}"}
 
         try:
-            from opc_manager.mcp_protocol import MCPClient
+            from opc_manager.mcp_protocol import MCPClient  # type: ignore[attr-defined]
 
             client = MCPClient(server_url)
             discovered_tools = (

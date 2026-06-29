@@ -77,7 +77,7 @@ class PersonaManager:
     4. Provide response formatting interface
     """
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: Optional[str] = None):
         """
         Initialize persona manager
 
@@ -163,9 +163,9 @@ class PersonaManager:
 
     def get_persona(
         self,
-        user_id: str = None,
-        business_type: BusinessType = None,
-        context: Dict[str, Any] = None,
+        user_id: Optional[str] = None,
+        business_type: Optional[BusinessType] = None,
+        context: Optional[Dict[str, Any]] = None,
     ) -> Optional[PersonaConfig]:
         """
         Get persona configuration for user
@@ -277,7 +277,7 @@ class PersonaManager:
         return base_response
 
     def get_greeting(
-        self, user_id: str = None, business_type: BusinessType = None
+        self, user_id: Optional[str] = None, business_type: Optional[BusinessType] = None
     ) -> str:
         """Get greeting message"""
         persona = self.get_persona(user_id=user_id, business_type=business_type)
@@ -287,8 +287,8 @@ class PersonaManager:
 
     def get_task_acceptance(
         self,
-        user_id: str = None,
-        business_type: BusinessType = None,
+        user_id: Optional[str] = None,
+        business_type: Optional[BusinessType] = None,
         task_description: str = "",
     ) -> str:
         """Get task acceptance response"""
@@ -299,8 +299,8 @@ class PersonaManager:
 
     def get_completion_message(
         self,
-        user_id: str = None,
-        business_type: BusinessType = None,
+        user_id: Optional[str] = None,
+        business_type: Optional[BusinessType] = None,
         deliverable: str = "成果",
     ) -> str:
         """Get task completion message"""
@@ -336,7 +336,7 @@ class PersonaManager:
             "config_path": self.config_path,
         }
 
-    def clear_cache(self, user_id: str = None):
+    def clear_cache(self, user_id: Optional[str] = None):
         """
         Clear cache
 
@@ -415,7 +415,7 @@ if __name__ == "__main__":
     test_user = "test_switch_user"
     manager.get_persona(user_id=test_user, business_type=BusinessType.CONTENT_CREATOR)
     print(
-        f"\n初始状态: {manager._cache.get(test_user).display_name if test_user in manager._cache else 'None'}"
+        f"\n初始状态: {manager._cache[test_user].display_name if test_user in manager._cache else 'None'}"
     )
 
     success = manager.switch_persona(

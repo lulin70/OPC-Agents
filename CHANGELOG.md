@@ -2,6 +2,46 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
+## [0.3.3] - 2026-06-28
+
+### 技术债清理（TD-065 + TD-066 + flake8 E501）
+
+> 基于 DevSquad 技术债清理计划，详见 `docs/internal/V033_TECH_DEBT_CLEANUP_PLAN.md`。
+> 消除 v0.3.2 遗留全部技术债，满足硬约束 "CI mypy检查必须为阻塞状态" 和 "禁止fail-open直接执行"。
+
+#### TD-066: settings_encryption.py fail-open → fail-closed (P0 安全修复)
+
+- **SE-2/SE-3**: `ImportError` 和 broad except 从 `_fernet = None`（fail-open）→ `raise RuntimeError`（fail-closed）
+- **SE-5**: `_encrypt_value` 加密失败从 `return plaintext`（fail-open）→ `raise RuntimeError`（fail-closed），与 data_manager.py DM-2 对称
+- **SE-1/SE-4/SE-6**: 保留 fail-open 但添加 `[SECURITY]` 日志标签（防御性分支，与 data_manager.py decrypt_field 对称）
+- 新增 7 项 fail-closed 测试（`TestSettingsEncryptionFailClosed`）
+
+#### TD-065: mypy 516 errors → 0 (CI 阻塞化)
+
+- **516 errors → 0 errors** in 102 source files (100% 消除)
+- 根因级类型注解修复：TYPE_CHECKING block（mixin 跨模块属性声明）、PEP 484 implicit Optional、cast 类型收窄、Set/List/Dict 类型注解
+- 仅使用 2 处 `# type: ignore`（均有明确注释说明原因：MCPClient 动态导入、FastAPI else 分支）
+- **CI mypy 步骤已阻塞化**：移除 `|| true` 后缀，满足硬约束
+
+#### flake8 E501: 35 项 → 0
+
+- 35 处行过长（>120 字符）全部通过真实断行修复（SQL 字符串拼接、f-string 括号换行、CSS 断行）
+- 未使用任何 `# noqa: E501` 忽略
+
+#### Bug 修复
+
+- **`execute_write_returning` 返回类型回归**：v0.3.2 mypy 修复误将 `cursor.lastrowid`（int）包装为 `str()`，导致 `isinstance(rowid, int)` 测试失败。修复为 `Optional[int]` + 原始 lastrowid 返回。
+
+### 验证
+
+- mypy: 0 errors in 102 source files ✓
+- flake8 E501: 0 violations ✓
+- flake8 F401/F841/E722: 0 violations ✓
+- 全量测试: 3174 passed / 89 skipped / 0 failed ✓
+- E2E 用户旅程: 24 passed ✓
+- 版本一致性测试: 93 passed ✓
+- 安全测试: 247 passed ✓
+
 ## [0.3.2] - 2026-06-27
 
 ### 项目整理评估（DevSquad /项目整理评估，7 维度）

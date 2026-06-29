@@ -93,7 +93,7 @@ class SecureProvider(Protocol):
 @runtime_checkable
 class MonitorProvider(Protocol):
     def is_available(self) -> bool: ...
-    def track(self, event: str, data: Dict[str, Any] = None) -> None: ...
+    def track(self, event: str, data: Optional[Dict[str, Any]] = None) -> None: ...
 
 
 class NullLLMProvider:
@@ -139,14 +139,14 @@ class NullMonitorProvider:
     def is_available(self) -> bool:
         return False
 
-    def track(self, event: str, data: Dict[str, Any] = None) -> None:
+    def track(self, event: str, data: Optional[Dict[str, Any]] = None) -> None:
         pass
 
 
-_llm_provider = None
-_search_provider = None
-_secure_provider = None
-_monitor_provider = None
+_llm_provider: Optional[LLMProvider] = None
+_search_provider: Optional[SearchProvider] = None
+_secure_provider: Optional[SecureProvider] = None
+_monitor_provider: Optional[MonitorProvider] = None
 _provider_lock = threading.Lock()
 
 

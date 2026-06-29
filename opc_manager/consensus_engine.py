@@ -370,7 +370,10 @@ class ConsensusEngine:
         Returns:
             Dict[str, Any]: 修订建议
         """
-        suggestions = {"suggestions": [], "next_steps": []}
+        suggestions: dict[str, list[dict[str, Any]]] = {
+            "suggestions": [],
+            "next_steps": [],
+        }
 
         # 分析意见
         disagree_opinions = [
@@ -428,7 +431,9 @@ class ConsensusEngine:
 
             init_db()
             execute_write(
-                "INSERT INTO consensus_decisions (id, timestamp, opinion_count, decision_type, approved, confidence, detail) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO consensus_decisions "
+                "(id, timestamp, opinion_count, decision_type, approved, confidence, detail) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     gen_id(),
                     entry["timestamp"],
@@ -448,7 +453,8 @@ class ConsensusEngine:
 
             init_db()
             rows = execute_query(
-                "SELECT timestamp, opinion_count, decision_type, approved, confidence FROM consensus_decisions ORDER BY timestamp DESC LIMIT ?",
+                "SELECT timestamp, opinion_count, decision_type, approved, confidence "
+                "FROM consensus_decisions ORDER BY timestamp DESC LIMIT ?",
                 (self.MAX_LOG_SIZE,),
             )
             if rows:

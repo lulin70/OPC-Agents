@@ -18,7 +18,7 @@ AgentLoop已重构为轻量级协调器，具体职责委托给专门组件：
 为保持向后兼容，AgentLoop保留了原有的公共接口和辅助方法。
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, cast
 import logging
 import os
 import time
@@ -85,13 +85,13 @@ class AgentLoop:
 
     def __init__(
         self,
-        strategist_brain: StrategistBrain = None,
-        executor_brain: ExecutorBrain = None,
-        reflector_brain: ReflectorBrain = None,
-        consensus_engine: ConsensusEngine = None,
-        skill_registry: SkillRegistry = None,
-        tool_system: ToolSystem = None,
-        session_manager: SessionContextManager = None,
+        strategist_brain: Optional[StrategistBrain] = None,
+        executor_brain: Optional[ExecutorBrain] = None,
+        reflector_brain: Optional[ReflectorBrain] = None,
+        consensus_engine: Optional[ConsensusEngine] = None,
+        skill_registry: Optional[SkillRegistry] = None,
+        tool_system: Optional[ToolSystem] = None,
+        session_manager: Optional[SessionContextManager] = None,
         task_engine=None,
         llm_service=None,
         max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
@@ -151,7 +151,11 @@ class AgentLoop:
 
         # 保持向后兼容：contexts属性指向StateManager的contexts
         self.contexts = self._state_manager.contexts
-        self._lifecycle = TaskLifecycleManager(self.contexts, self.executor_brain)
+        # TaskLifecycleManager 期望 dict，但 StateManager.contexts 返回 BoundedDict
+        # BoundedDict 实现 dict-like 接口，运行时兼容；使用 cast 消除类型差异
+        self._lifecycle = TaskLifecycleManager(
+            cast(dict, self.contexts), self.executor_brain
+        )
 
         self.max_reflect_rounds = max_reflect_rounds
         self.max_retry_per_step = max_retry_per_step
@@ -169,7 +173,7 @@ class AgentLoop:
         validation_result = self._error_handler.validate_input(user_input)
         if not validation_result.is_valid:
             return self._error_handler.build_validation_error_result(
-                validation_result.error
+                validation_result.error or ""
             )
 
         _perf_start = time.time()
@@ -273,16 +277,18 @@ class AgentLoop:
             TaskResult如果需要返回（确认失败），None如果继续执行
         """
         intent_type = (
-            agent_context.intent.type.name if agent_context.intent else "UNKNOWN"
+            cast(Any, agent_context.intent).type.name
+            if agent_context.intent
+            else "UNKNOWN"
         )
-        goal = agent_context.intent.goal if agent_context.intent else ""
+        goal = cast(Any, agent_context.intent).goal if agent_context.intent else ""
         confidence = (
             getattr(agent_context.intent, "confidence", 0.85)
             if agent_context.intent
             else 0.85
         )
         confirm_result = await self.confirmer.check_confirmation(
-            session_id=agent_context.session_id,
+            session_id=agent_context.session_id or "",
             intent_type=intent_type,
             goal=goal,
             confidence=confidence,
@@ -353,11 +359,11 @@ class AgentLoop:
         return self._orchestrator._enrich_step_parameters(params, execution_results)
 
     async def _execute_step_with_retry(
-        self, context: AgentContext, step, enriched_params: Dict = None
+        self, context: AgentContext, step, enriched_params: Optional[Dict] = None
     ):
         """带重试的步骤执行 [向后兼容委托]"""
         return await self._orchestrator._execute_step_with_retry(
-            context, step, enriched_params
+            context, step, enriched_params if enriched_params is not None else {}
         )
 
     def _generate_greeting_response(self, user_input: str) -> str:
@@ -422,11 +428,13 @@ class AgentLoop:
 
             if loop_result is not None:
                 if loop_result.get("cancelled"):
-                    return self._result_builder.build_result(context, cancelled=True)
-                return self._result_builder.build_loop_error_result(loop_result)
+                    # resume_task 返回类型为 Dict[str, Any]，但 build_result 返回 TaskResult；
+                    # 失败路径返回 dict，成功路径返回 TaskResult，保持现状以维持向后兼容
+                    return self._result_builder.build_result(context, cancelled=True)  # type: ignore[return-value]
+                return self._result_builder.build_loop_error_result(loop_result)  # type: ignore[return-value]
 
             self._state_manager.set_state(context, AgentState.COMPLETED)
-            return self._result_builder.build_result(context)
+            return self._result_builder.build_result(context)  # type: ignore[return-value]
 
         except Exception as e:
             self._state_manager.set_state(context, AgentState.FAILED)

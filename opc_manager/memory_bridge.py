@@ -466,7 +466,7 @@ class MemoryBridge:
             logger.warning("[MemoryBridge] Lesson stats failed: %s", e)
 
         # 计算飞轮等级 (0-5)
-        score = 0
+        score = 0.0
         score += min(metrics["memory_count"] / 20, 1.0) * 2  # 记忆深度 (0-2分)
         score += min(metrics["rule_count"] / 10, 1.0) * 2  # 规则密度 (0-2分)
         score += min(metrics["confirmed_lessons"] / 5, 1.0) * 1  # 经验沉淀 (0-1分)
@@ -548,7 +548,11 @@ class MemoryBridge:
         if not self._enabled:
             return {"memories": [], "rules": [], "flywheel": {}}
 
-        export = {"memories": [], "rules": [], "flywheel": self.get_flywheel_status()}
+        export: Dict[str, Any] = {
+            "memories": [],
+            "rules": [],
+            "flywheel": self.get_flywheel_status(),
+        }
 
         try:
             # 导出记忆

@@ -28,15 +28,40 @@ the methods that use it, and ``LLM_PROVIDERS`` comes from ``opc_manager.config``
 import json
 import logging
 import os
-from typing import Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 from opc_manager.config import LLM_PROVIDERS
+
+if TYPE_CHECKING:
+    from cryptography.fernet import Fernet
+    from opc_manager.settings import (
+        LLMSettings,
+        ProfileSettings,
+        SecuritySettings,
+        SMTPSettings,
+    )
 
 logger = logging.getLogger(__name__)
 
 
 class SettingsPersistenceMixin:
     """Mixin providing JSON disk persistence and SecureKeyStore integration."""
+
+    # Type declarations for cross-mixin attributes (provided by SettingsManager facade).
+    # These exist only during type checking; at runtime they are set by the facade.
+    if TYPE_CHECKING:
+        _settings_file: "Path"
+        _llm: "LLMSettings"
+        _smtp: "SMTPSettings"
+        _security: "SecuritySettings"
+        _profile: "ProfileSettings"
+        _fernet: "Optional[Fernet]"
+
+        def _encrypt_value(self, plaintext: str) -> str: ...
+        def _decrypt_value(self, ciphertext: str) -> Optional[str]: ...
+        def _looks_like_encrypted(self, value: str) -> bool: ...
+        def _looks_like_base64(self, value: str) -> bool: ...
 
     def _load_from_disk(self) -> None:
         """Load settings from JSON file if exists.

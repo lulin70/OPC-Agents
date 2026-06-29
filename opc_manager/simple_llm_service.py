@@ -16,7 +16,7 @@ _CIRCUIT_BREAKER_THRESHOLD = 3
 LLM_TOTAL_TIMEOUT = 90
 
 
-def discover_llm_config() -> Dict[str, str]:
+def discover_llm_config() -> Dict[str, Any]:
     config = {"api_key": "", "base_url": "", "model": "", "is_ollama": False}
 
     # 优先通过 SettingsManager 获取（不通过 os.environ）
@@ -134,7 +134,12 @@ def _discover_all_providers() -> List[Dict[str, Any]]:
 
 class SimpleLLMService:
 
-    def __init__(self, api_key: str = None, base_url: str = None, model: str = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         self._circuit_breaker: Dict[str, int] = {}
         if api_key and base_url and model:
             self._api_key = api_key
@@ -177,7 +182,7 @@ class SimpleLLMService:
         self,
         provider: Dict[str, Any],
         prompt: str,
-        system_prompt: str,
+        system_prompt: Optional[str],
         max_tokens: int,
         timeout: int,
     ) -> Optional[str]:
@@ -217,7 +222,7 @@ class SimpleLLMService:
     def complete(
         self,
         prompt: str,
-        system_prompt: str = None,
+        system_prompt: Optional[str] = None,
         max_tokens: int = 500,
         timeout: int = LLM_CALL_TIMEOUT,
     ) -> Optional[str]:
@@ -317,7 +322,7 @@ class SimpleLLMService:
         return None
 
     def _call_openai_compat(
-        self, prompt: str, system_prompt: str, max_tokens: int, timeout: int
+        self, prompt: str, system_prompt: Optional[str], max_tokens: int, timeout: int
     ) -> Optional[str]:
         messages = []
         if system_prompt:
@@ -346,7 +351,7 @@ class SimpleLLMService:
         return content.strip() if content else None
 
     def _call_ollama(
-        self, prompt: str, system_prompt: str, max_tokens: int, timeout: int
+        self, prompt: str, system_prompt: Optional[str], max_tokens: int, timeout: int
     ) -> Optional[str]:
         payload = {
             "model": self._model,

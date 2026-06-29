@@ -157,7 +157,7 @@ def send_email(
             use_ssl = config.get("ssl", True)
 
             if use_ssl:
-                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=SMTP_TIMEOUT)
+                server: smtplib.SMTP = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=SMTP_TIMEOUT)
             else:
                 server = smtplib.SMTP(smtp_host, smtp_port, timeout=SMTP_TIMEOUT)
                 try:
@@ -183,7 +183,9 @@ def send_email(
 
             body_digest = hashlib.sha256(body.encode()).hexdigest()[:16]
             execute_write(
-                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO email_history "
+                "(id,to_addr,subject,body,status,template_name,created_at) "
+                "VALUES (?,?,?,?,?,?,?)",
                 (record_id, to, subject, body, "sent", template_name, now),
             )
             AuditLogger.log(
@@ -198,7 +200,9 @@ def send_email(
                 continue
             body_digest = hashlib.sha256(body.encode()).hexdigest()[:16]
             execute_write(
-                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO email_history "
+                "(id,to_addr,subject,body,status,template_name,created_at) "
+                "VALUES (?,?,?,?,?,?,?)",
                 (record_id, to, subject, body, "failed", template_name, now),
             )
             AuditLogger.log("email_failed", {"to": to, "error": "smtp_error"})
@@ -266,7 +270,8 @@ def create_template(
 
 def list_email_history(limit: int = 20) -> List[Dict[str, Any]]:
     return execute_query(
-        "SELECT id, to_addr, subject, status, template_name, created_at FROM email_history ORDER BY created_at DESC LIMIT ?",
+        "SELECT id, to_addr, subject, status, template_name, created_at "
+        "FROM email_history ORDER BY created_at DESC LIMIT ?",
         (limit,),
     )
 

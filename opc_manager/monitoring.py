@@ -9,6 +9,7 @@ Beta-stage core features:
 
 import os
 import logging
+from typing import Optional
 
 _logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ def init_monitoring():
         _logger.info("SENTRY_DSN未配置，错误追踪未启用")
 
 
-def track_event(event_name: str, properties: dict = None):
+def track_event(event_name: str, properties: Optional[dict] = None):
     """Track user event
 
     Args:
@@ -79,7 +80,7 @@ def track_event(event_name: str, properties: dict = None):
         pass
 
 
-def track_error(error: Exception, context: dict = None):
+def track_error(error: Exception, context: Optional[dict] = None):
     """Track error
 
     Args:

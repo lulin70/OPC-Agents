@@ -120,7 +120,9 @@ def create_reminder(
 
     try:
         execute_write(
-            "INSERT INTO tax_reminders (id,task,deadline,tax_type,amount_estimate,status,created_at) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO tax_reminders "
+            "(id,task,deadline,tax_type,amount_estimate,status,created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
             (reminder_id, task, deadline, tax_type, amount_estimate, "pending", now),
         )
     except Exception as e:

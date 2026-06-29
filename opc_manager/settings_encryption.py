@@ -23,7 +23,11 @@ import logging
 import os
 import secrets
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from cryptography.fernet import Fernet
+    from opc_manager.settings import SecuritySettings
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +39,15 @@ class SettingsEncryptionMixin:
     one-time migration from the old truncate+pad derivation to SHA-256.
     """
 
+    # Type declarations for cross-mixin attributes (provided by SettingsManager facade).
+    # These exist only during type checking; at runtime they are set by the facade.
+    if TYPE_CHECKING:
+        _security: "SecuritySettings"
+        _fernet: "Optional[Fernet]"
+        SETTINGS_FILE: str
+
+        def _save_to_disk(self) -> None: ...
+
     def _init_fernet(self) -> None:
         """Initialize Fernet cipher using encryption key.
 
@@ -44,6 +57,13 @@ class SettingsEncryptionMixin:
 
         Key derivation: SHA-256 hash (unified with data_manager.py).
         Migration: If old-derivation encrypted data is found, re-encrypt with new key.
+
+        Security posture (TD-066 fix, 2026-06-28):
+        - SE-1 (no key): fail-open + [SECURITY] warning (defensive; _ensure_encryption_key
+          auto-generates a key in normal flow, so this branch is rarely reached).
+        - SE-2 (ImportError): fail-closed — cryptography is a hard dependency.
+        - SE-3 (broad except): fail-closed — initialization failure must not silently
+          degrade to plaintext mode.
         """
         try:
             from cryptography.fernet import Fernet
@@ -54,8 +74,13 @@ class SettingsEncryptionMixin:
                 # 仅回退读取外部设置的环境变量（兼容 docker/start.sh 部署）
                 key = os.environ.get("OPC_ENCRYPTION_KEY", "")
             if not key:
+                # [SECURITY] SE-1 fail-open (TD-066): no key available.
+                # _ensure_encryption_key() auto-generates a key in normal flow,
+                # so this branch is defensive only. Keep plaintext mode to avoid
+                # blocking startup when auto-generation is intentionally disabled.
                 logger.warning(
-                    "[SettingsManager] No encryption key available, sensitive fields stored as plaintext"
+                    "[SECURITY] [SettingsManager] No encryption key available, "
+                    "sensitive fields stored as plaintext"
                 )
                 return
 
@@ -66,15 +91,31 @@ class SettingsEncryptionMixin:
             logger.debug("[SettingsManager] Fernet cipher initialized successfully")
 
         except ImportError:
-            logger.warning(
-                "[SettingsManager] cryptography package not installed. "
+            # [SECURITY] SE-2 fail-closed (TD-066): cryptography is a hard dependency
+            # declared in requirements.txt. Silent degradation to plaintext mode
+            # would mask a broken environment and leak sensitive fields to disk.
+            logger.error(
+                "[SECURITY] [SettingsManager] cryptography package not installed. "
                 "Install with: pip install cryptography. "
-                "Sensitive fields will be stored as plaintext."
+                "Refusing to degrade to plaintext mode."
             )
-            self._fernet = None
+            raise RuntimeError(
+                "cryptography package is not installed. SettingsEncryptionMixin "
+                "refuses to degrade to plaintext mode. Install with: "
+                "pip install cryptography"
+            )
         except Exception as e:
-            logger.error("[SettingsManager] Failed to initialize Fernet: %s", e)
-            self._fernet = None
+            # [SECURITY] SE-3 fail-closed (TD-066): initialization failure must not
+            # silently degrade to plaintext mode (symmetric with SE-2).
+            logger.error(
+                "[SECURITY] [SettingsManager] Failed to initialize Fernet: %s. "
+                "Refusing to degrade to plaintext mode.",
+                e,
+            )
+            raise RuntimeError(
+                f"_init_fernet() failed: {e}. Refusing to degrade to plaintext mode. "
+                f"Check OPC_ENCRYPTION_KEY and cryptography package installation."
+            ) from e
 
     def _decrypt_with_old_key(self, ciphertext: str) -> Optional[str]:
         """Try to decrypt using the old key derivation method (truncate+pad).
@@ -109,17 +150,41 @@ class SettingsEncryptionMixin:
             plaintext: Plain text value to encrypt (e.g., API key, password)
 
         Returns:
-            Encrypted string (base64-encoded), or original plaintext if encryption unavailable
+            Encrypted string (base64-encoded), or original plaintext if empty.
+
+        Security posture (TD-066 fix, 2026-06-28):
+        - SE-4 (_fernet is None): fail-open + [SECURITY] warning (symmetric with SE-1;
+          _fernet is None only when _init_fernet decided to keep plaintext mode).
+        - SE-5 (encrypt exception): fail-closed — refuse to store plaintext on
+          internal Fernet failures (symmetric with data_manager.py DM-2 fix).
         """
-        if not plaintext or not self._fernet:
+        if not plaintext:
+            return plaintext
+        if not self._fernet:
+            # [SECURITY] SE-4 fail-open (TD-066): _fernet is None means _init_fernet
+            # decided to keep plaintext mode (SE-1 branch). Keep existing behavior
+            # to avoid blocking startup, but record a warning.
+            logger.warning(
+                "[SECURITY] [SettingsManager] Fernet unavailable, storing value as plaintext"
+            )
             return plaintext
 
         try:
             encrypted = self._fernet.encrypt(plaintext.encode("utf-8"))
             return encrypted.decode("utf-8")
         except Exception as e:
-            logger.error("[SettingsManager] Failed to encrypt value: %s", e)
-            return plaintext
+            # [SECURITY] SE-5 fail-closed (TD-066): encryption failure must not
+            # silently store plaintext (symmetric with data_manager.py DM-2 fix,
+            # 2026-06-27). Refuse to store plaintext on internal Fernet failures.
+            logger.error(
+                "[SECURITY] [SettingsManager] Failed to encrypt value: %s. "
+                "Refusing to store plaintext.",
+                e,
+            )
+            raise RuntimeError(
+                f"_encrypt_value() failed: {e}. Refusing to store plaintext. "
+                f"Check Fernet key and cryptography package installation."
+            ) from e
 
     def _decrypt_value(self, ciphertext: str) -> Optional[str]:
         """Decrypt a previously encrypted value.
@@ -129,9 +194,23 @@ class SettingsEncryptionMixin:
 
         Returns:
             Decrypted plain text, None if decryption fails (corrupt/invalid token)
+
+        Security posture (TD-066 fix, 2026-06-28):
+        - SE-6 (_fernet is None): fail-open + [SECURITY] warning (symmetric with
+          data_manager.py decrypt_field — return original value to avoid data loss
+          when the value may already be plaintext from a legacy install).
         """
-        if not ciphertext or not self._fernet:
-            return ciphertext if ciphertext else None
+        if not ciphertext:
+            return None
+        if not self._fernet:
+            # [SECURITY] SE-6 fail-open (TD-066): Fernet unavailable.
+            # Return original ciphertext (which may be plaintext from a legacy
+            # install) to avoid data loss. Symmetric with data_manager.py
+            # decrypt_field() which returns ciphertext when key is None.
+            logger.warning(
+                "[SECURITY] [SettingsManager] Fernet unavailable, returning original value as-is"
+            )
+            return ciphertext
 
         try:
             decrypted = self._fernet.decrypt(ciphertext.encode("utf-8"))

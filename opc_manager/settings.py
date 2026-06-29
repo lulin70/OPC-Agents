@@ -307,14 +307,14 @@ class SettingsManager(
             "host": self._smtp.host
             or self._retrieve_sensitive_key("OPC_SMTP_HOST")
             or "",
-            "port": self._smtp.port,
+            "port": str(self._smtp.port),
             "username": self._smtp.username
             or self._retrieve_sensitive_key("OPC_SMTP_USER")
             or "",
             "password": self._smtp.password
             or self._retrieve_sensitive_key("OPC_SMTP_PASS")
             or "",
-            "tls": self._smtp.tls,
+            "tls": str(self._smtp.tls),
             "from_email": self._smtp.from_email,
         }
 

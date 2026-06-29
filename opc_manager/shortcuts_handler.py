@@ -20,12 +20,13 @@ import sys
 import json
 import argparse
 from datetime import datetime
+from typing import Any, Optional
 
 
 class ShortcutResult:
     """Standardized result format for Shortcuts consumption."""
 
-    def __init__(self, success: bool, message: str, data: dict = None):
+    def __init__(self, success: bool, message: str, data: Optional[dict[Any, Any]] = None):
         self.success = success
         self.message = message
         self.data = data or {}
@@ -209,7 +210,9 @@ class ShortcutsHandler:
             now = datetime.now().isoformat()
 
             execute_write(
-                "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                "INSERT INTO finance_records "
+                "(id, type, amount, category, source, date, note, created_at) "
+                "VALUES (?,?,?,?,?,?,?,?)",
                 (
                     iid,
                     "income",
@@ -252,7 +255,8 @@ class ShortcutsHandler:
                 (today,),
             )
             deliverable_tasks = execute_query(
-                "SELECT * FROM tasks WHERE tags LIKE 'deliverable:%' AND DATE(created_at)=? ORDER BY created_at DESC LIMIT 5",
+                "SELECT * FROM tasks WHERE tags LIKE 'deliverable:%' "
+                "AND DATE(created_at)=? ORDER BY created_at DESC LIMIT 5",
                 (today,),
             )
 

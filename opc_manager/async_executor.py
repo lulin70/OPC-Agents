@@ -102,7 +102,7 @@ class AsyncTask:
     error_message: Optional[str] = None
     thread_ref: Optional[threading.Thread] = None
     execute_func: Optional[Any] = None
-    cancel_event: Optional[threading.Event] = field(default_factory=threading.Event)
+    cancel_event: threading.Event = field(default_factory=threading.Event)
     retry_count: int = 0
     max_retries: int = 2
     next_retry_at: Optional[float] = None
@@ -351,7 +351,10 @@ class AsyncTaskExecutor:
                     if running_elapsed > self.default_timeout:
                         task.status = TaskStatus.FAILED
                         task.completed_at = time.time()
-                        task.error_message = f"Task RUNNING for {running_elapsed:.0f}s (timeout: {self.default_timeout}s)"
+                        task.error_message = (
+                            f"Task RUNNING for {running_elapsed:.0f}s "
+                            f"(timeout: {self.default_timeout}s)"
+                        )
                         logger.warning(
                             "[AsyncTaskExecutor] RUNNING timeout: %s", task_id
                         )
@@ -389,8 +392,10 @@ class AsyncTaskExecutor:
             bool: Whether cancellation was successfully initiated
 
         Note:
-            - cancel() is asynchronous, after calling you need to wait for get_status() to confirm status becomes cancelled
-            - For long-running search/LLM calls, it may take a few seconds to respond to cancellation
+            - cancel() is asynchronous, after calling you need to wait for
+              get_status() to confirm status becomes cancelled
+            - For long-running search/LLM calls, it may take a few seconds to
+              respond to cancellation
         """
         with self._lock:
             task = self._tasks.get(task_id)

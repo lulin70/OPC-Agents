@@ -38,7 +38,9 @@ class UserProfile:
         interaction_id = dm.gen_id()
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         dm.execute_write(
-            "INSERT INTO interaction_log (id, intent_type, goal, skill_used, success, user_feedback, created_at) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO interaction_log "
+            "(id, intent_type, goal, skill_used, success, user_feedback, created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
             (
                 interaction_id,
                 intent_type,
@@ -52,7 +54,9 @@ class UserProfile:
 
     def get_preferred_skills(self, intent_type: str) -> List[str]:
         rows = _get_dm().execute_query(
-            "SELECT skill_used, COUNT(*) as cnt FROM interaction_log WHERE intent_type=? AND success=1 GROUP BY skill_used ORDER BY cnt DESC LIMIT 10",
+            "SELECT skill_used, COUNT(*) as cnt FROM interaction_log "
+            "WHERE intent_type=? AND success=1 "
+            "GROUP BY skill_used ORDER BY cnt DESC LIMIT 10",
             (intent_type,),
         )
         return [row["skill_used"] for row in rows]
@@ -113,11 +117,14 @@ class UserProfile:
         recommendations = []
 
         failed_rows = dm.execute_query(
-            "SELECT intent_type, goal, COUNT(*) as cnt FROM interaction_log WHERE success=0 GROUP BY intent_type ORDER BY cnt DESC LIMIT 5"
+            "SELECT intent_type, goal, COUNT(*) as cnt FROM interaction_log "
+            "WHERE success=0 GROUP BY intent_type ORDER BY cnt DESC LIMIT 5"
         )
         for row in failed_rows:
             top_skill_rows = dm.execute_query(
-                "SELECT skill_used, COUNT(*) as cnt FROM interaction_log WHERE intent_type=? AND success=1 GROUP BY skill_used ORDER BY cnt DESC LIMIT 1",
+                "SELECT skill_used, COUNT(*) as cnt FROM interaction_log "
+                "WHERE intent_type=? AND success=1 "
+                "GROUP BY skill_used ORDER BY cnt DESC LIMIT 1",
                 (row["intent_type"],),
             )
             reason = f"意图 '{row['intent_type']}' 频繁失败({row['cnt']}次)"
@@ -136,7 +143,8 @@ class UserProfile:
             )
 
         unknown_rows = dm.execute_query(
-            "SELECT goal, COUNT(*) as cnt FROM interaction_log WHERE intent_type='unknown' GROUP BY goal ORDER BY cnt DESC LIMIT 5"
+            "SELECT goal, COUNT(*) as cnt FROM interaction_log "
+            "WHERE intent_type='unknown' GROUP BY goal ORDER BY cnt DESC LIMIT 5"
         )
         for row in unknown_rows:
             recommendations.append(

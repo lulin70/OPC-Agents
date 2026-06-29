@@ -20,9 +20,12 @@ TaskEngineV3 inherits from this mixin, so all external callers see no change.
 
 import time
 import logging
-from typing import List, Optional, Dict
+from typing import TYPE_CHECKING, List, Optional, Dict, Tuple
 
 from opc_manager.task_types import InputValidator
+
+if TYPE_CHECKING:
+    from opc_manager.llm_content import LLMEnhancedContentGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +42,26 @@ class ContentGenerationMixin:
     2. Fall back to rule-based template generation with real search data
     """
 
+    # Type declarations for cross-mixin attributes/methods (provided by the
+    # TaskEngineV3 facade at runtime). Declared under TYPE_CHECKING so they
+    # exist only for static analysis, never at runtime.
+    if TYPE_CHECKING:
+        llm_content_gen: "Optional[LLMEnhancedContentGenerator]"
+
+        def _search(
+            self, query: str, max_results: int = 8
+        ) -> Tuple[List[Dict], List[Dict]]: ...
+
+        def _extract_search_query(self, user_input: str) -> str: ...
+
     def _try_llm_generate(
         self,
         query: str,
         search_results: List[Dict],
         doc_type: str = "report",
-        business_type: str = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
-        title: str = None,
+        title: Optional[str] = None,
     ) -> Optional[str]:
         """Attempt LLM-enhanced content generation, returns None on failure"""
         if not self.llm_content_gen:
@@ -64,7 +79,9 @@ class ContentGenerationMixin:
                 user_input=query,
                 template=template,
                 search_results=search_results,
-                business_type=business_type,
+                # llm_content.generate accepts None at runtime (default=None)
+                # but is typed as str; root-cause fix is out of this file's scope.
+                business_type=business_type,  # type: ignore[arg-type]
                 is_follow_up=is_follow_up,
             )
             if (
@@ -93,9 +110,9 @@ class ContentGenerationMixin:
         query: str,
         context: List[str],
         search_results: List[Dict],
-        business_type: str = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
-        llm_query: str = None,
+        llm_query: Optional[str] = None,
     ) -> str:
         """Generate report-type document — Structured, data-supported, actionable
 
@@ -240,11 +257,12 @@ class ContentGenerationMixin:
         query: str,
         context: List[str],
         search_results: List[Dict],
-        business_type: str = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
-        llm_query: str = None,
+        llm_query: Optional[str] = None,
     ) -> str:
-        """Generate plan/proposal-type document — With SMART goals, 3-phase roadmap, resources, risks, acceptance criteria
+        """Generate plan/proposal-type document — With SMART goals, 3-phase
+        roadmap, resources, risks, acceptance criteria
 
         This is the most complex template in content generation, because "plan" is users' most frequent need.
 
@@ -398,9 +416,9 @@ class ContentGenerationMixin:
         query: str,
         context: List[str],
         search_results: List[Dict],
-        business_type: str = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
-        llm_query: str = None,
+        llm_query: Optional[str] = None,
     ) -> str:
         """General content generation — Fallback template when unable to determine if report or plan
 

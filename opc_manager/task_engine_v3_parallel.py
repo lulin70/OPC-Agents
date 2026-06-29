@@ -20,7 +20,7 @@ via the composed TaskEngineV3 instance.
 
 import time
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional, List, Dict, Tuple, Any
 
 from opc_manager.task_types import TaskType, TaskResult
 
@@ -67,6 +67,45 @@ class TaskEngineParallelMixin:
     - self._emit_progress (TaskEngineV3 facade)
     - self._parallel_executor (instance attribute, lazy-initialized here)
     """
+
+    # Type declarations for cross-mixin attributes/methods (provided by the
+    # TaskEngineV3 facade at runtime). Declared under TYPE_CHECKING so they
+    # exist only for static analysis, never at runtime.
+    if TYPE_CHECKING:
+        _parallel_executor: Optional[ParallelExecutor]
+
+        def _search(
+            self, query: str, max_results: int = 8
+        ) -> Tuple[List[Dict], List[Dict]]: ...
+
+        def _extract_search_query(self, user_input: str) -> str: ...
+
+        def _gen_real_content(
+            self,
+            query: str,
+            context: List[str],
+            search_results: List[Dict],
+            business_type: Optional[str] = None,
+            is_follow_up: bool = False,
+            llm_query: Optional[str] = None,
+        ) -> str: ...
+
+        def _execute_data_analysis(
+            self,
+            search_query: str,
+            llm_query: Optional[str] = None,
+            business_type: Optional[str] = None,
+            is_follow_up: bool = False,
+        ) -> TaskResult: ...
+
+        def _emit_progress(
+            self,
+            session_id: str,
+            event_type: "EventType",
+            message: str,
+            progress_pct: Optional[int] = None,
+            detail: Optional[Dict[str, Any]] = None,
+        ) -> None: ...
 
     def _get_parallel_executor(self) -> Optional[ParallelExecutor]:
         """Get or create ParallelExecutor instance (lazy initialization)
@@ -115,7 +154,7 @@ class TaskEngineParallelMixin:
 
         return self._parallel_executor
 
-    def _should_parallelize(self, prompt: str, task_type: TaskType = None) -> bool:
+    def _should_parallelize(self, prompt: str, task_type: Optional[TaskType] = None) -> bool:
         """Intelligent decision: should this task be parallelized?
 
         Uses heuristic rules to determine if parallel execution would be beneficial.
@@ -526,7 +565,7 @@ class TaskEngineParallelMixin:
             return self._execute_data_analysis_serial(prompt, session_id).content
 
     def _execute_data_analysis_serial(
-        self, search_query: str, session_id: str = None
+        self, search_query: str, session_id: Optional[str] = None
     ) -> TaskResult:
         """Serial data analysis fallback (preserves original behavior)"""
         return self._execute_data_analysis(search_query)

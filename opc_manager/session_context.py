@@ -151,7 +151,7 @@ class SessionContextManager:
         assistant_response: str,
         task_type: Optional[str] = None,
         filepath: Optional[str] = None,
-        sources: List[Dict] = None,
+        sources: Optional[List[Dict]] = None,
         **metadata,
     ) -> ConversationTurn:
         """Record a complete conversation turn
@@ -386,7 +386,7 @@ class SessionContextManager:
 
     def _group_by_turn_id(self) -> List[Dict[str, Any]]:
         """Group chronological turns list by turn_id"""
-        groups = {}
+        groups: Dict[int, Dict[str, Any]] = {}
         for turn in self._turns:
             tid = turn.turn_id
             if tid not in groups:

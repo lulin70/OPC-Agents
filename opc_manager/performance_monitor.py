@@ -187,7 +187,7 @@ class PerformanceMonitor:
         if not self._metrics:
             return {"total_operations": 0}
 
-        by_op = {}
+        by_op: dict[str, list[float]] = {}
         for m in self._metrics:
             if m.operation not in by_op:
                 by_op[m.operation] = []

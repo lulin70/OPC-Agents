@@ -7,7 +7,7 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
@@ -80,9 +80,9 @@ def calculate_pricing(
         if cost <= 0:
             return {"success": False, "error": "成本定价法需要提供cost参数"}
         margin = cfg["default_margin"]
-        price = cost * (1 + margin)
+        price = cost * (1 + cast(float, margin))
         result.update(
-            {"cost": cost, "margin": f"{margin*100:.0f}%", "price": round(price, 2)}
+            {"cost": cost, "margin": f"{cast(float, margin)*100:.0f}%", "price": round(price, 2)}
         )
 
     elif method == "价值定价":
@@ -91,7 +91,7 @@ def calculate_pricing(
                 "success": False,
                 "error": "价值定价法需要提供cost参数(作为最低参考)",
             }
-        value_multiplier = cfg["default_margin"] + 1.0
+        value_multiplier = cast(float, cfg["default_margin"]) + 1.0
         perceived_value = cost * 2.5
         price = perceived_value * value_multiplier
         result.update(

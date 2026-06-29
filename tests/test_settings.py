@@ -1153,5 +1153,122 @@ class TestEncryptedStorage:
         ), "Empty password should remain empty"
 
 
+class TestSettingsEncryptionFailClosed:
+    """Test suite for TD-066 fail-closed security posture (2026-06-28).
+
+    Validates that SettingsEncryptionMixin refuses to silently degrade to
+    plaintext mode on internal failures (SE-2/SE-3/SE-5), while preserving
+    fail-open behavior for legitimate no-key scenarios (SE-1/SE-4/SE-6)
+    to avoid blocking startup or losing data.
+    """
+
+    def _make_mixin(self):
+        """Build a bare SettingsEncryptionMixin instance with minimal attrs."""
+        from opc_manager.settings_encryption import SettingsEncryptionMixin
+        from opc_manager.settings import SecuritySettings
+
+        m = SettingsEncryptionMixin.__new__(SettingsEncryptionMixin)
+        m._security = SecuritySettings()
+        m._fernet = None
+        return m
+
+    def test_se2_init_fernet_raises_on_import_error(self):
+        """Verify: SE-2 fail-closed — ImportError raises RuntimeError.
+
+        Scenario: cryptography package not installed (simulated).
+        Expected: RuntimeError raised, NOT silent degradation to plaintext mode.
+        """
+        from unittest.mock import patch
+
+        m = self._make_mixin()
+        # Simulate cryptography not installed
+        with patch.dict("sys.modules", {"cryptography": None, "cryptography.fernet": None}):
+            with patch("builtins.__import__", side_effect=ImportError("simulated")):
+                with pytest.raises(RuntimeError, match="cryptography package is not installed"):
+                    m._init_fernet()
+
+    def test_se3_init_fernet_raises_on_internal_failure(self):
+        """Verify: SE-3 fail-closed — broad exception raises RuntimeError.
+
+        Scenario: Fernet constructor raises an unexpected exception.
+        Expected: RuntimeError raised, NOT silent degradation to plaintext mode.
+        """
+        from unittest.mock import patch
+
+        m = self._make_mixin()
+        m._security.encryption_key = "test-key-32-chars-long-1234567890"
+
+        # Force Fernet() to raise an unexpected exception
+        with patch("cryptography.fernet.Fernet", side_effect=RuntimeError("internal failure")):
+            with pytest.raises(RuntimeError, match="_init_fernet\\(\\) failed"):
+                m._init_fernet()
+
+    def test_se5_encrypt_value_raises_on_fernet_failure(self):
+        """Verify: SE-5 fail-closed — encrypt exception raises RuntimeError.
+
+        Scenario: _fernet.encrypt() raises an internal exception.
+        Expected: RuntimeError raised (symmetric with data_manager.py DM-2),
+        NOT silent return of plaintext.
+        """
+        from unittest.mock import MagicMock
+
+        m = self._make_mixin()
+        # Mock a Fernet that fails on encrypt
+        broken_fernet = MagicMock()
+        broken_fernet.encrypt.side_effect = RuntimeError("encrypt failed")
+        m._fernet = broken_fernet
+
+        with pytest.raises(RuntimeError, match="_encrypt_value\\(\\) failed"):
+            m._encrypt_value("sk-secret-key")
+
+    def test_se4_encrypt_value_returns_plaintext_when_fernet_none(self):
+        """Verify: SE-4 fail-open — _fernet is None returns plaintext.
+
+        Scenario: _init_fernet decided plaintext mode (SE-1 branch).
+        Expected: Plaintext returned with [SECURITY] warning (NOT raise),
+        to avoid blocking startup when auto-generation is disabled.
+        """
+        m = self._make_mixin()
+        m._fernet = None  # Simulate SE-1 plaintext mode
+
+        result = m._encrypt_value("sk-plaintext-key")
+        assert result == "sk-plaintext-key"
+
+    def test_se6_decrypt_value_returns_original_when_fernet_none(self):
+        """Verify: SE-6 fail-open — _fernet is None returns original ciphertext.
+
+        Scenario: _fernet unavailable, value may be plaintext from legacy install.
+        Expected: Original value returned (NOT raise), to avoid data loss.
+        Symmetric with data_manager.py decrypt_field() behavior.
+        """
+        m = self._make_mixin()
+        m._fernet = None
+
+        result = m._decrypt_value("possibly-plaintext-value")
+        assert result == "possibly-plaintext-value"
+
+    def test_encrypt_value_empty_string_returns_empty(self):
+        """Verify: Empty plaintext short-circuits without calling Fernet.
+
+        Scenario: Empty API key/password passed to _encrypt_value.
+        Expected: Empty string returned (no encryption attempted).
+        """
+        m = self._make_mixin()
+        m._fernet = None
+
+        assert m._encrypt_value("") == ""
+
+    def test_decrypt_value_empty_string_returns_none(self):
+        """Verify: Empty ciphertext short-circuits without calling Fernet.
+
+        Scenario: Empty ciphertext passed to _decrypt_value.
+        Expected: None returned (no decryption attempted).
+        """
+        m = self._make_mixin()
+        m._fernet = None
+
+        assert m._decrypt_value("") is None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

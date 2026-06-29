@@ -26,7 +26,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, TYPE_CHECKING
 
 from opc_manager.skill_models import SkillContext
 
@@ -42,10 +42,29 @@ class SkillExecutorMixin:
     inline implementations.
     """
 
+    # Attributes provided by SkillRegistry (parent class in mixin pattern).
+    # Declared as Any; actual types defined in parent. No runtime value.
+    search_processor: Any
+    llm_service: Any
+    tool_system: Any
+    _web_search: Any
+    _content_generator: Any
+
+    if TYPE_CHECKING:
+        # Method stubs - actual implementation in SkillRegistry (mixin parent).
+        # Only visible to mypy; runtime resolves via parent class MRO.
+        async def execute_skill(
+            self, skill_name: str, context: Any = None, **kwargs: Any
+        ) -> Dict[str, Any]: ...
+
+        def _execute_collaborative(
+            self, goal: str, context: Any = None
+        ) -> Optional[Dict[str, Any]]: ...
+
     def _execute_intent_analysis(
         self,
         user_input: str,
-        context: dict = None,
+        context: Optional[dict] = None,
         _context: Optional[SkillContext] = None,
     ) -> Dict[str, Any]:
         """执行意图分析"""
@@ -113,7 +132,7 @@ class SkillExecutorMixin:
         return []
 
     async def _execute_analysis(
-        self, data: list = None, goal: str = "", _context: Optional[SkillContext] = None
+        self, data: Optional[list] = None, goal: str = "", _context: Optional[SkillContext] = None
     ) -> Dict[str, Any]:
         if self.llm_service is not None:
             try:
@@ -172,7 +191,7 @@ class SkillExecutorMixin:
         return self._rule_based_content_generation(goal, format)
 
     async def _call_llm_generate(
-        self, user_input: str, template: str, search_results: list = None
+        self, user_input: str, template: str, search_results: Optional[list] = None
     ):
         try:
             from opc_manager.llm_content import LLMEnhancedContentGenerator
@@ -256,7 +275,7 @@ class SkillExecutorMixin:
         except (json.JSONDecodeError, IndexError, AttributeError):
             pass
 
-        result = {
+        result: Dict[str, Any] = {
             "analysis_result": content,
             "summary": "",
             "key_findings": [],
@@ -320,7 +339,23 @@ class SkillExecutorMixin:
             data_summary = "\n".join(f"- {item}" for item in items)
 
         return {
-            "analysis_result": f"# {goal} 分析报告\n\n## 摘要\n\n基于现有数据的分析。\n\n## 关键发现\n\n- 需要更多数据支持深度分析\n- 建议结合搜索结果进行LLM增强分析\n\n## 数据概览\n\n{data_summary}\n\n## SWOT分析\n\n### 优势\n- 数据可用，可进行基础分析\n\n### 劣势\n- 缺乏LLM深度推理能力\n\n### 机会\n- 可通过启用LLM服务获得更高质量分析\n\n### 威胁\n- 数据不足可能导致分析偏差\n\n## 行动清单\n\n1. 收集更多相关数据\n2. 启用LLM服务进行深度分析\n",
+            "analysis_result": (
+                f"# {goal} 分析报告\n\n"
+                "## 摘要\n\n基于现有数据的分析。\n\n"
+                "## 关键发现\n\n"
+                "- 需要更多数据支持深度分析\n"
+                "- 建议结合搜索结果进行LLM增强分析\n\n"
+                "## 数据概览\n\n"
+                f"{data_summary}\n\n"
+                "## SWOT分析\n\n"
+                "### 优势\n- 数据可用，可进行基础分析\n\n"
+                "### 劣势\n- 缺乏LLM深度推理能力\n\n"
+                "### 机会\n- 可通过启用LLM服务获得更高质量分析\n\n"
+                "### 威胁\n- 数据不足可能导致分析偏差\n\n"
+                "## 行动清单\n\n"
+                "1. 收集更多相关数据\n"
+                "2. 启用LLM服务进行深度分析\n"
+            ),
             "summary": f"基于现有数据的{goal}分析",
             "key_findings": [
                 "需要更多数据支持深度分析",
@@ -346,7 +381,7 @@ class SkillExecutorMixin:
     async def _execute_operation(
         self,
         operation: str,
-        parameters: dict = None,
+        parameters: Optional[dict] = None,
         _context: Optional[SkillContext] = None,
     ) -> Dict[str, Any]:
         params = parameters or {}
@@ -371,7 +406,7 @@ class SkillExecutorMixin:
     async def _execute_notification(
         self,
         message: str,
-        recipient: str = None,
+        recipient: Optional[str] = None,
         _context: Optional[SkillContext] = None,
     ) -> Dict[str, Any]:
         if self.tool_system is not None:
@@ -400,7 +435,7 @@ class SkillExecutorMixin:
 
     def _execute_output(
         self,
-        data: dict = None,
+        data: Optional[dict] = None,
         format: str = "markdown",
         _context: Optional[SkillContext] = None,
     ) -> Dict[str, Any]:

@@ -135,7 +135,10 @@ def get_competitor_report(competitor_id: str = "") -> Dict[str, Any]:
     md += "| 竞品 | 网址 | 动态数 | 最近更新 |\n"
     md += "|------|------|--------|----------|\n"
     for c in all_competitors["competitors"]:
-        md += f"| {c['name']} | {c.get('url') or '—'} | {c.get('snapshot_count', 0)} | {c.get('last_snapshot') or '—'} |\n"
+        md += (
+            f"| {c['name']} | {c.get('url') or '—'} | "
+            f"{c.get('snapshot_count', 0)} | {c.get('last_snapshot') or '—'} |\n"
+        )
     md += f"\n---\n*由OPC-Agents生成 · {time.strftime('%Y-%m-%d')}*\n"
 
     return {"success": True, "markdown": md, "count": all_competitors["count"]}

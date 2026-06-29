@@ -50,7 +50,7 @@ class SkillParameter:
     enum_values: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        d = {
+        d: Dict[str, Any] = {
             "name": self.name,
             "type": self.param_type.value,
             "description": self.description,

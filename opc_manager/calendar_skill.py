@@ -35,7 +35,9 @@ def add_event(
 
     try:
         execute_write(
-            "INSERT INTO calendar_events (id,title,event_date,event_time,duration_min,description,repeat,reminder_min,status,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO calendar_events "
+            "(id,title,event_date,event_time,duration_min,description,"
+            "repeat,reminder_min,status,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (
                 event_id,
                 title,
@@ -80,14 +82,14 @@ def get_day_schedule(date: str = "") -> Dict[str, Any]:
 
     events = []
     for row in rows:
-        e = dict(row)
-        e["date"] = e["event_date"]
-        e["time"] = e["event_time"]
-        e["duration_min"] = e.get("duration_min", 60)
-        e["description"] = e.get("description", "")
-        e["repeat"] = e.get("repeat", "")
-        e["status"] = e.get("status", "active")
-        events.append(e)
+        event = dict(row)
+        event["date"] = event["event_date"]
+        event["time"] = event["event_time"]
+        event["duration_min"] = event.get("duration_min", 60)
+        event["description"] = event.get("description", "")
+        event["repeat"] = event.get("repeat", "")
+        event["status"] = event.get("status", "active")
+        events.append(event)
 
     return {"success": True, "date": date, "events": events, "count": len(events)}
 
@@ -104,7 +106,8 @@ def get_week_schedule(start_date: str = "") -> Dict[str, Any]:
 
     try:
         all_rows = execute_query(
-            "SELECT * FROM calendar_events WHERE event_date BETWEEN ? AND ? AND status!='cancelled' ORDER BY event_date, event_time",
+            "SELECT * FROM calendar_events WHERE event_date BETWEEN ? AND ? "
+            "AND status!='cancelled' ORDER BY event_date, event_time",
             (start_date, end),
         )
     except Exception as e:
@@ -122,14 +125,14 @@ def get_week_schedule(start_date: str = "") -> Dict[str, Any]:
         day_rows = rows_by_date.get(day_str, [])
         events = []
         for row in day_rows:
-            e = dict(row)
-            e["date"] = e["event_date"]
-            e["time"] = e["event_time"]
-            e["duration_min"] = e.get("duration_min", 60)
-            e["description"] = e.get("description", "")
-            e["repeat"] = e.get("repeat", "")
-            e["status"] = e.get("status", "active")
-            events.append(e)
+            event = dict(row)
+            event["date"] = event["event_date"]
+            event["time"] = event["event_time"]
+            event["duration_min"] = event.get("duration_min", 60)
+            event["description"] = event.get("description", "")
+            event["repeat"] = event.get("repeat", "")
+            event["status"] = event.get("status", "active")
+            events.append(event)
         days.append(
             {"success": True, "date": day_str, "events": events, "count": len(events)}
         )
@@ -158,7 +161,8 @@ def get_month_schedule(year_month: str = "") -> Dict[str, Any]:
 
     try:
         all_rows = execute_query(
-            "SELECT * FROM calendar_events WHERE event_date BETWEEN ? AND ? AND status!='cancelled' ORDER BY event_date, event_time",
+            "SELECT * FROM calendar_events WHERE event_date BETWEEN ? AND ? "
+            "AND status!='cancelled' ORDER BY event_date, event_time",
             (start_str, end_str),
         )
     except Exception as e:
@@ -177,14 +181,14 @@ def get_month_schedule(year_month: str = "") -> Dict[str, Any]:
         day_rows = rows_by_date.get(day_str, [])
         events = []
         for row in day_rows:
-            e = dict(row)
-            e["date"] = e["event_date"]
-            e["time"] = e["event_time"]
-            e["duration_min"] = e.get("duration_min", 60)
-            e["description"] = e.get("description", "")
-            e["repeat"] = e.get("repeat", "")
-            e["status"] = e.get("status", "active")
-            events.append(e)
+            event = dict(row)
+            event["date"] = event["event_date"]
+            event["time"] = event["event_time"]
+            event["duration_min"] = event.get("duration_min", 60)
+            event["description"] = event.get("description", "")
+            event["repeat"] = event.get("repeat", "")
+            event["status"] = event.get("status", "active")
+            events.append(event)
         days.append({"date": day_str, "events": events, "count": len(events)})
         current += timedelta(days=1)
 
@@ -229,9 +233,9 @@ def get_upcoming_reminders(minutes_ahead: int = 60) -> Dict[str, Any]:
 
     reminders = []
     for row in rows:
-        e = dict(row)
-        event_time = e.get("event_time", "")
-        reminder_min = e.get("reminder_min", 15)
+        event = dict(row)
+        event_time = event.get("event_time", "")
+        reminder_min = event.get("reminder_min", 15)
         try:
             h, m = map(int, event_time.split(":"))
             event_minutes = h * 60 + m
@@ -239,12 +243,12 @@ def get_upcoming_reminders(minutes_ahead: int = 60) -> Dict[str, Any]:
             now_minutes = now_h * 60 + now_m
             diff = event_minutes - now_minutes
             if 0 <= diff <= minutes_ahead + reminder_min:
-                e["date"] = e["event_date"]
-                e["time"] = e["event_time"]
-                e["duration_min"] = e.get("duration_min", 60)
-                e["description"] = e.get("description", "")
-                e["repeat"] = e.get("repeat", "")
-                reminders.append({**e, "minutes_until": diff})
+                event["date"] = event["event_date"]
+                event["time"] = event["event_time"]
+                event["duration_min"] = event.get("duration_min", 60)
+                event["description"] = event.get("description", "")
+                event["repeat"] = event.get("repeat", "")
+                reminders.append({**event, "minutes_until": diff})
         except (ValueError, AttributeError):
             continue
 

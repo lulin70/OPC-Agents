@@ -79,7 +79,9 @@ def add_customer(
     encrypted_email = encrypt_field(email) if email else ""
     try:
         execute_write(
-            "INSERT INTO customers (id,name,company,title,phone,email,source,tags,status,created_at,last_contact) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO customers "
+            "(id,name,company,title,phone,email,source,tags,status,created_at,last_contact) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (
                 customer_id,
                 name,
@@ -172,7 +174,7 @@ def add_deal(
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     deal_id = gen_id()
     try:
-        stmts = [
+        stmts: list = [
             (
                 "INSERT INTO deals (id,customer_id,date,description,amount,status,created_at) VALUES (?,?,?,?,?,?,?)",
                 (deal_id, customer_id, date, description, amount, status, now),

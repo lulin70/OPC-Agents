@@ -12,6 +12,14 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+# 显式注解为 Type[Exception]，使 import 成功时 (type[具体异常]，为其子类) 与
+# import 失败时 (Exception) 均兼容，避免 mypy [assignment]/[misc] 错误。
+_OpenAIAPIError: Type[Exception]
+APIConnectionError: Type[Exception]
+RateLimitError: Type[Exception]
+APITimeoutError: Type[Exception]
+_SQLiteDBError: Type[Exception]
+
 try:
     from openai import (
         APIError as _OpenAIAPIError,

@@ -31,7 +31,9 @@ def create_article(
 
     try:
         execute_write(
-            "INSERT INTO knowledge_articles (id,title,content,tags,category,status,word_count,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO knowledge_articles "
+            "(id,title,content,tags,category,status,word_count,created_at,updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
             (
                 article_id,
                 title,
@@ -96,7 +98,7 @@ def update_article(
     existing = dict(rows[0])
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
 
-    updates = []
+    updates: list[tuple[str, Any]] = []
 
     if title:
         updates.append(("title", title))
@@ -175,7 +177,10 @@ def search_articles(
         params.extend([f"%{query}%", f"%{query}%", f"%{query}%"])
 
     where_clause = " AND ".join(conditions) if conditions else "1=1"
-    sql = f"SELECT id,title,tags,category,word_count,updated_at FROM knowledge_articles WHERE {where_clause} ORDER BY updated_at DESC"
+    sql = (
+        f"SELECT id,title,tags,category,word_count,updated_at "
+        f"FROM knowledge_articles WHERE {where_clause} ORDER BY updated_at DESC"
+    )
 
     try:
         rows = execute_query(sql, tuple(params))

@@ -204,7 +204,10 @@ class AuditLogger:
 
     @classmethod
     def query(
-        cls, event_type: str = None, start_time: str = None, end_time: str = None
+        cls,
+        event_type: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
     ) -> List[Dict]:
         results = []
         try:
@@ -246,7 +249,7 @@ class ToolParameter:
     required: bool = True
     description: str = ""
     default: Any = None
-    allowed_values: List[Any] = None
+    allowed_values: Optional[List[Any]] = None
 
     def __post_init__(self):
         if self.allowed_values is None:
@@ -626,7 +629,7 @@ class ToolSystem:
             f.write(content)
 
     async def _execute_file_list(
-        self, dir_path: str, pattern: str = None
+        self, dir_path: str, pattern: Optional[str] = None
     ) -> Dict[str, Any]:
         try:
             _validate_input_length("file_path", dir_path)
@@ -652,7 +655,9 @@ class ToolSystem:
             raise Exception(f"文件列表获取失败: {str(e)}")
 
     @staticmethod
-    def _list_files_sync(safe_path: str, pattern: str = None) -> List[Dict[str, Any]]:
+    def _list_files_sync(
+        safe_path: str, pattern: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         files = os.listdir(safe_path)
         if pattern:
             files = fnmatch.filter(files, pattern)
@@ -690,7 +695,11 @@ class ToolSystem:
         }
 
     async def _execute_send_email(
-        self, to: str, subject: str, body: str, attachments: list = None
+        self,
+        to: str,
+        subject: str,
+        body: str,
+        attachments: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         to = to.replace("\r", "").replace("\n", "")
         subject = subject.replace("\r", "").replace("\n", "")
@@ -745,7 +754,10 @@ class ToolSystem:
             "attachments": attachments or [],
             "timestamp": timestamp,
             "status": "logged",
-            "note": "SMTP not configured. Notification logged to file. Configure OPC_SMTP_HOST/USER/PASS for actual email delivery.",
+            "note": (
+                "SMTP not configured. Notification logged to file. "
+                "Configure OPC_SMTP_HOST/USER/PASS for actual email delivery."
+            ),
         }
 
         try:
@@ -777,7 +789,7 @@ class ToolSystem:
         subject: str,
         body: str,
         use_tls: bool,
-        attachments: list = None,
+        attachments: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         import smtplib
         from email.mime.text import MIMEText
@@ -818,7 +830,7 @@ class ToolSystem:
             json.dump(notification, f, ensure_ascii=False, indent=2)
 
     async def _execute_run_command(
-        self, command: str, cwd: str = None
+        self, command: str, cwd: Optional[str] = None
     ) -> Dict[str, Any]:
         try:
             _validate_input_length("command_arg", command)

@@ -255,5 +255,5 @@ if FASTAPI_AVAILABLE:
         return {"status": "ok", "version": __version__}
 
 else:
-    app = None
+    app = None  # type: ignore[assignment]
     logger.warning("FastAPI not available. Install with: pip install fastapi uvicorn")

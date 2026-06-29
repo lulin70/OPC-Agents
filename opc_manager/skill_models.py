@@ -12,7 +12,7 @@ extracted to avoid circular imports between skill_registry, skill_builtin, and s
 - Skill: Complete skill definition with metadata
 """
 
-from typing import Dict, List, Any, Callable
+from typing import Dict, List, Any, Callable, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -70,7 +70,7 @@ class Skill:
     execute: Callable[..., Dict[str, Any]]
     enabled: bool = True  # 是否启用
     version: str = "1.0"  # 版本号
-    intent_keywords: List[str] = None  # 触发意图的关键词
+    intent_keywords: Optional[List[str]] = None  # 触发意图的关键词
     frozen: Any = False  # False=活跃, True=完全冻结, "semi"=半冻结
     frozen_date: str = ""  # 冻结日期
 

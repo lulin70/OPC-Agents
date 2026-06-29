@@ -50,7 +50,7 @@ class ProgressEvent:
     event_type: EventType
     session_id: str
     message: str
-    progress_pct: int = None
+    progress_pct: Optional[int] = None
     detail: Dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=lambda: time.time())
     unified_category: Optional[str] = None
@@ -103,7 +103,7 @@ class ProgressEvent:
         )
 
     def to_dict(self) -> dict:
-        d = {
+        d: Dict[str, Any] = {
             "event": self.event_type.value,
             "session_id": self.session_id,
             "message": self.message,
@@ -138,10 +138,15 @@ class ProgressEmitter:
         _max_history: Maximum events kept in history (default: 200).
     """
 
-    _instance = None
+    _instance: Optional["ProgressEmitter"] = None
     _lock = threading.Lock()
     MAX_HISTORY_SIZE = 200
     MAX_SESSIONS = 50  # Maximum number of sessions to keep history for
+
+    # Instance attributes (initialized in __new__ for singleton pattern)
+    _subscribers: Dict[str, List[Callable[[str], None]]]
+    _history: Dict[str, List[dict]]
+    _max_history: int
 
     def __new__(cls):
         """Create or return singleton instance."""

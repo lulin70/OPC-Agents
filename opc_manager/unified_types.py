@@ -13,8 +13,10 @@ Design Principles:
 5. Extensible: Easy to add new categories without breaking changes
 
 Migration Strategy:
-- Phase 1: Dual-track operation (current) - New code uses UnifiedTaskCategory, old interfaces still support IntentType/TaskType strings
-- Phase 2: Gradual migration - Convert all internal calls to use UnifiedTaskCategory, keep old serialization compatibility
+- Phase 1: Dual-track operation (current) - New code uses UnifiedTaskCategory,
+  old interfaces still support IntentType/TaskType strings
+- Phase 2: Gradual migration - Convert all internal calls to use UnifiedTaskCategory,
+  keep old serialization compatibility
 - Phase 3: Cleanup (future) - Remove old IntentType/TaskType enums, keep only UnifiedTaskCategory
 """
 
@@ -186,7 +188,7 @@ def unify_intent_from_enum(intent_enum: IntentType) -> UnifiedTaskCategory:
     return INTENT_TO_UNIFIED_MAP.get(intent_enum, UnifiedTaskCategory.GENERAL_CHAT)
 
 
-def unify_task(task_type: TaskType, context: str = None) -> UnifiedTaskCategory:
+def unify_task(task_type: TaskType, context: Optional[str] = None) -> UnifiedTaskCategory:
     """Convert TaskEngineV3's TaskType to unified category with optional context enhancement.
 
     Args:
@@ -545,7 +547,9 @@ class UnifiedClassificationResult:
 
 
 def classify_unified(
-    intent_type: str = None, task_type: TaskType = None, context: str = None
+    intent_type: Optional[str] = None,
+    task_type: Optional[TaskType] = None,
+    context: Optional[str] = None,
 ) -> UnifiedClassificationResult:
     """Main entry point: Classify operation into unified category with full metadata.
 

@@ -15,7 +15,14 @@ runtime via the composed TaskEngineV3 instance.
 
 import re
 import logging
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Lazy imports under TYPE_CHECKING to avoid circular imports and runtime
+    # cost. These attributes are provided at runtime by the TaskEngineV3
+    # facade that composes this mixin.
+    from opc_manager.search_cache import SearchCache
+    from opc_manager.search_processor import SearchResultProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +39,17 @@ class TaskEngineSearchMixin:
     - self._search_cache (SearchCache): LRU cache for search results
     - self.web_search (WebSearchMCP): Optional web search backend
     """
+
+    if TYPE_CHECKING:
+        # Attributes provided by the TaskEngineV3 facade at runtime.
+        # Declared under TYPE_CHECKING so they exist only for static
+        # analysis, never at runtime (consistent with task_engine_v3_executors.py).
+        _search_cache: "SearchCache"
+        _search_processor: Optional["SearchResultProcessor"]
+        # web_search holds a WebSearchMCP instance at runtime or None before
+        # lazy init; typed as Any because WebSearchMCP lives in opc_hr and is
+        # not guaranteed importable at static-analysis time.
+        web_search: Any
 
     def _search(
         self, query: str, max_results: int = 8
@@ -67,7 +85,7 @@ class TaskEngineSearchMixin:
             ]
             return cached, sources
 
-        results = []
+        results: List[Dict] = []
         sources = []
         if not self.web_search:
             return results, sources

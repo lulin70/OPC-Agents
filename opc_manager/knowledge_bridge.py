@@ -284,10 +284,14 @@ class YuqueAdapter(KnowledgeAdapter):
         if not self._available:
             return []
         try:
+            import urllib.parse
             import urllib.request
             import json
 
-            url = f"{os.environ.get('YUQUE_API_BASE', 'https://www.yuque.com/api/v2')}/search?q={urllib.parse.quote(query)}&limit={max_results}"
+            url = (
+                f"{os.environ.get('YUQUE_API_BASE', 'https://www.yuque.com/api/v2')}"
+                f"/search?q={urllib.parse.quote(query)}&limit={max_results}"
+            )
             req = urllib.request.Request(
                 url,
                 headers={
@@ -380,10 +384,14 @@ class FeishuAdapter(KnowledgeAdapter):
         if not token:
             return []
         try:
+            import urllib.parse
             import urllib.request
             import json
 
-            url = f"{os.environ.get('FEISHU_SEARCH_URL', 'https://open.feishu.cn/open-apis/suite/docs/search')}?query={urllib.parse.quote(query)}&page_size={max_results}"
+            url = (
+                f"{os.environ.get('FEISHU_SEARCH_URL', 'https://open.feishu.cn/open-apis/suite/docs/search')}"
+                f"?query={urllib.parse.quote(query)}&page_size={max_results}"
+            )
             req = urllib.request.Request(
                 url,
                 headers={

@@ -18,7 +18,7 @@ import json
 import logging
 import os
 import time
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -30,6 +30,10 @@ from opc_manager.skill_marketplace_external import (
     NETWORK_WHITELIST,
     SANDBOX_MAX_MEMORY_MB,
 )
+
+if TYPE_CHECKING:
+    # 仅为类型检查导入，避免运行时循环依赖；运行时在 execute_skill 中懒加载
+    from .skill_registry import SkillRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +100,8 @@ class SkillMarketplace:
         os.makedirs(self._data_dir, exist_ok=True)
         self._api_keys: Dict[str, APIKey] = {}
         self._skills: Dict[str, MarketplaceSkill] = {}
+        # 懒加载的技能注册表，首次执行技能时实例化
+        self._skill_registry: Optional["SkillRegistry"] = None
         self._load_data()
         self._seed_default_skills()
 
@@ -248,20 +254,20 @@ class SkillMarketplace:
 
         try:
             skills_data = {}
-            for k, v in self._skills.items():
+            for k, skill in self._skills.items():
                 skills_data[k] = {
-                    "skill_id": v.skill_id,
-                    "name": v.name,
-                    "description": v.description,
-                    "version": v.version,
-                    "category": v.category,
-                    "author": v.author,
-                    "permissions": [p.value for p in v.permissions],
-                    "dependencies": v.dependencies,
-                    "status": v.status.value,
-                    "created_at": v.created_at,
-                    "updated_at": v.updated_at,
-                    "config": v.config,
+                    "skill_id": skill.skill_id,
+                    "name": skill.name,
+                    "description": skill.description,
+                    "version": skill.version,
+                    "category": skill.category,
+                    "author": skill.author,
+                    "permissions": [p.value for p in skill.permissions],
+                    "dependencies": skill.dependencies,
+                    "status": skill.status.value,
+                    "created_at": skill.created_at,
+                    "updated_at": skill.updated_at,
+                    "config": skill.config,
                 }
             with open(self._skills_file, "w") as f:
                 json.dump(skills_data, f, ensure_ascii=False, indent=2)

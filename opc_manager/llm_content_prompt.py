@@ -26,7 +26,7 @@ Module-level constants moved here (used only by these methods):
 """
 
 import re
-from typing import Dict, List
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 
 FORBIDDEN_PATTERNS = [
@@ -74,6 +74,13 @@ class LLMContentPromptMixin:
     Cross-mixin calls (e.g. self._detect_language) are resolved at runtime on
     the composed facade instance via Python's MRO.
     """
+
+    if TYPE_CHECKING:
+        # Attributes/methods provided by the composed facade
+        # (LLMEnhancedContentGenerator). Declared here for mypy; resolved at
+        # runtime via Python's MRO on the facade instance.
+        _detect_language: Callable[[str], str]
+        max_content_length: int
 
     BUSINESS_TYPE_PERSONAS = {
         "content_creator": {
@@ -123,7 +130,12 @@ class LLMContentPromptMixin:
         Returns:
             Dictionary containing extracted info: {'product_name':[...], 'numbers':[...], 'targets':[...]}
         """
-        info = {"product_name": [], "numbers": [], "targets": [], "keywords": []}
+        info: Dict[str, List[str]] = {
+            "product_name": [],
+            "numbers": [],
+            "targets": [],
+            "keywords": [],
+        }
 
         product_match = re.findall(BUSINESS_INFO_PATTERNS["product_name"], user_input)
         info["product_name"] = list(set(product_match))
@@ -193,7 +205,7 @@ class LLMContentPromptMixin:
         template: str,
         business_info: Dict[str, List[str]],
         context: str,
-        business_type: str = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
     ) -> str:
         """Assemble complete prompt for LLM
@@ -248,7 +260,8 @@ class LLMContentPromptMixin:
         )
 
         persona = self.BUSINESS_TYPE_PERSONAS.get(
-            business_type, self.BUSINESS_TYPE_PERSONAS.get("content_creator")
+            business_type or "content_creator",
+            self.BUSINESS_TYPE_PERSONAS.get("content_creator"),
         )
         if persona is None:
             persona = self.BUSINESS_TYPE_PERSONAS["content_creator"]

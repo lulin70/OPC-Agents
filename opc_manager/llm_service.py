@@ -253,7 +253,7 @@ class LLMService:
 专业领域：{expertise}
 回复要求：简洁、有温度、带适当emoji。每条回复不超过200字。"""
 
-    def __init__(self, config: LLMConfig = None):
+    def __init__(self, config: Optional[LLMConfig] = None):
         self.config = config or LLMConfig()
         self.backend = self._create_backend(self.config.provider)
         self.usage_tracker = UsageTracker(config.cost_budget_daily if config else 5.0)
@@ -266,7 +266,7 @@ class LLMService:
         return backend_cls(self.config)
 
     async def detect_business_type_by_llm(
-        self, user_input: str, history: list = None, max_retries: int = 2
+        self, user_input: str, history: Optional[list] = None, max_retries: int = 2
     ) -> dict:
         """Detect business type using LLM
 
@@ -343,7 +343,7 @@ class LLMService:
         return {"business_type": "unknown", "confidence": 0.0, "reasoning": "未知错误"}
 
     async def generate_persona_response(
-        self, user_input: str, persona_config: dict, context: dict = None
+        self, user_input: str, persona_config: dict, context: Optional[dict] = None
     ) -> str:
         """Generate stylized response based on persona configuration"""
         tone = persona_config.get("style_overrides", {}).get("tone", "专业温暖")

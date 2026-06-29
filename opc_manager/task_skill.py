@@ -9,7 +9,7 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
@@ -43,7 +43,9 @@ def create_task(
     task_id = gen_id()
     try:
         execute_write(
-            "INSERT INTO tasks (id,title,description,priority,status,due_date,tags,created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO tasks "
+            "(id,title,description,priority,status,due_date,tags,created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (task_id, title, description, priority, "pending", due_date, tags, now),
         )
         AuditLogger.log("task_created", {"id": task_id, "title": title[:50]})
@@ -101,9 +103,9 @@ _TASK_WHERE_COLUMNS = {"status", "due_date", "priority"}
 
 
 def list_tasks(
-    status: str = None, due_date: str = "", priority_max: int = -1, limit: int = 50
+    status: Optional[str] = None, due_date: str = "", priority_max: int = -1, limit: int = 50
 ) -> Dict[str, Any]:
-    conditions = []
+    conditions: list[tuple[str, str, Any]] = []
     params: list = []
     if status == "all":
         pass
@@ -141,7 +143,8 @@ def list_tasks(
 def get_today_tasks() -> Dict[str, Any]:
     today = time.strftime("%Y-%m-%d")
     rows = execute_query(
-        "SELECT * FROM tasks WHERE status IN ('pending','in_progress') AND (due_date<=? OR due_date='') ORDER BY priority ASC",
+        "SELECT * FROM tasks WHERE status IN ('pending','in_progress') "
+        "AND (due_date<=? OR due_date='') ORDER BY priority ASC",
         (today,),
     )
     for r in rows:
@@ -183,7 +186,8 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         done_count = done_result.get("count", 0)
         rate = round(done_count / total * 100, 1) if total > 0 else 0
         overdue_rows = execute_query(
-            "SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('done','cancelled') AND due_date < ? AND due_date != ''",
+            "SELECT COUNT(*) as cnt FROM tasks "
+            "WHERE status NOT IN ('done','cancelled') AND due_date < ? AND due_date != ''",
             (time.strftime("%Y-%m-%d"),),
         )
         overdue_count = overdue_rows[0]["cnt"] if overdue_rows else 0

@@ -25,7 +25,7 @@ import asyncio
 import time
 import threading
 import logging
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, Optional, TYPE_CHECKING
 
 from opc_manager.task_content_generators import ContentGenerationMixin
 from opc_manager.task_engine_v3_search import TaskEngineSearchMixin
@@ -61,7 +61,10 @@ logger = logging.getLogger(__name__)
 _PARALLEL_EXEC_TIMEOUT = 120
 
 
-class TaskEngineV3(
+# Facade composes multiple mixins; mypy reports spurious MRO signature
+# conflicts between ContentGenerationMixin (real impl) and
+# TaskEngineExecutorsMixin (TYPE_CHECKING stubs). Suppressed below.
+class TaskEngineV3(  # type: ignore[misc]
     ContentGenerationMixin,
     TaskEngineSearchMixin,
     TaskEngineExecutorsMixin,
@@ -151,11 +154,11 @@ class TaskEngineV3(
 
     def _emit_progress(
         self,
-        session_id: str,
+        session_id: Optional[str],
         event_type: "EventType",
         message: str,
-        progress_pct: int = None,
-        detail: Dict[str, Any] = None,
+        progress_pct: Optional[int] = None,
+        detail: Optional[Dict[str, Any]] = None,
     ):
         """安全地发射进度事件（带降级保护）
 
@@ -195,9 +198,9 @@ class TaskEngineV3(
     def execute(
         self,
         user_input: str,
-        session_ctx: "SessionContextManager" = None,
-        business_type: str = None,
-        task_type_hint: "TaskType" = None,
+        session_ctx: Optional["SessionContextManager"] = None,
+        business_type: Optional[str] = None,
+        task_type_hint: Optional["TaskType"] = None,
     ) -> TaskResult:
         """Main entry — Process user input and return complete task result (v3.5 enhanced).
 
@@ -207,7 +210,7 @@ class TaskEngineV3(
         """
         start_time = time.time()
 
-        session_id = (
+        session_id: Optional[str] = (
             getattr(session_ctx, "_session_id", None)
             or getattr(session_ctx, "session_id", None)
             if session_ctx
@@ -233,7 +236,7 @@ class TaskEngineV3(
         try:
             from opc_manager.validators import TaskRequest
 
-            TaskRequest(user_input=sanitized)
+            TaskRequest(user_input=sanitized, business_type=None)
         except Exception:
             return TaskResult(
                 success=False,

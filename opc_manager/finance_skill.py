@@ -20,7 +20,9 @@ def record_income(
     record_id = gen_id()
     try:
         execute_write(
-            "INSERT INTO finance_records (id,type,amount,category,source,date,note,created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO finance_records "
+            "(id,type,amount,category,source,date,note,created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (record_id, "income", amount, category, source, date, note, now),
         )
         AuditLogger.log(
@@ -50,7 +52,9 @@ def record_expense(
     record_id = gen_id()
     try:
         execute_write(
-            "INSERT INTO finance_records (id,type,amount,category,source,date,note,created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO finance_records "
+            "(id,type,amount,category,source,date,note,created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (record_id, "expense", amount, category, source, date, note, now),
         )
         AuditLogger.log(

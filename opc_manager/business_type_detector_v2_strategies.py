@@ -23,10 +23,15 @@ before importing the mixins to keep the import cycle safe.
 """
 
 import re
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from opc_manager.business_types import BusinessType
 from opc_manager.business_type_detector_v2 import DetectionResult
+
+if TYPE_CHECKING:
+    # Imported here to avoid a circular import at runtime; only needed for
+    # type annotations on the ``llm_service`` attribute below.
+    from opc_manager.llm_service import LLMService
 
 
 class BusinessTypeDetectorStrategiesMixin:
@@ -37,6 +42,32 @@ class BusinessTypeDetectorStrategiesMixin:
     paths when no match is found). Cross-mixin calls (e.g. scoring helpers)
     are resolved at runtime on the composed facade instance.
     """
+
+    # Type declarations for cross-mixin attributes and helpers (provided by
+    # the BusinessTypeDetectorV2 facade at runtime). These exist only during
+    # type checking; at runtime they are set/inherited from the facade and
+    # the sibling scoring mixin.
+    if TYPE_CHECKING:
+        patterns: Dict[BusinessType, List[str]]
+        type_keywords: Dict[BusinessType, Dict[str, Any]]
+        enable_llm: bool
+        llm_service: "Optional[LLMService]"
+
+        def _calculate_enhanced_score(
+            self, text_lower: str, config: Dict
+        ) -> float: ...
+
+        def _extract_matched_keywords_enhanced(
+            self, text_lower: str, config: Dict
+        ) -> List[str]: ...
+
+        def detect(
+            self,
+            input_text: str,
+            user_profile: Optional[Dict] = None,
+            history: Optional[List[Dict]] = None,
+            min_confidence: Optional[float] = None,
+        ) -> DetectionResult: ...
 
     def _detect_by_pattern(self, input_text: str) -> Optional[DetectionResult]:
         """Detect business type via regex pattern matching"""

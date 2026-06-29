@@ -88,14 +88,21 @@ def generate_monthly_report(year_month: str = "") -> Dict[str, Any]:
 
     md += "## 客户概况\n\n"
     md += f"- 客户总数: {crm_stats.get('total', 0)}\n"
-    md += f"- 活跃: {crm_stats.get('active', 0)} | 潜在: {crm_stats.get('potential', 0)} | 沉默: {crm_stats.get('silent', 0)}\n"
+    md += (
+        f"- 活跃: {crm_stats.get('active', 0)} | "
+        f"潜在: {crm_stats.get('potential', 0)} | "
+        f"沉默: {crm_stats.get('silent', 0)}\n"
+    )
     md += f"- 需跟进: {silent.get('count', 0)}个客户超过30天未联系\n\n"
 
     md += "## 近3月趋势\n\n"
     md += "| 月份 | 收入 | 支出 | 利润 |\n"
     md += "|------|------|------|------|\n"
     for t in trend:
-        md += f"| {t.get('year_month', '')} | ¥{t.get('income', 0):.2f} | ¥{t.get('expense', 0):.2f} | ¥{t.get('profit', 0):.2f} |\n"
+        md += (
+            f"| {t.get('year_month', '')} | ¥{t.get('income', 0):.2f} | "
+            f"¥{t.get('expense', 0):.2f} | ¥{t.get('profit', 0):.2f} |\n"
+        )
 
     pending_tasks = list_tasks()
     done_tasks = list_tasks(status="done")
@@ -173,7 +180,8 @@ def generate_annual_report(year: str = "") -> Dict[str, Any]:
     md += f"- 活跃: {crm_stats.get('active', 0)} | 流失: {crm_stats.get('lost', 0)}\n\n"
 
     deal_rows = execute_query(
-        "SELECT COUNT(*) as cnt, COALESCE(SUM(amount),0) as total_amount FROM deals WHERE status='closed_won' AND date LIKE ?",
+        "SELECT COUNT(*) as cnt, COALESCE(SUM(amount),0) as total_amount "
+        "FROM deals WHERE status='closed_won' AND date LIKE ?",
         (f"{year}%",),
     )
     deal_count = deal_rows[0]["cnt"] if deal_rows else 0

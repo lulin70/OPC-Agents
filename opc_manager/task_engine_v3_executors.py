@@ -21,10 +21,15 @@ runtime via the composed TaskEngineV3 instance.
 
 import time
 import logging
+from typing import TYPE_CHECKING, Optional, List, Dict, Tuple
 
 from opc_manager.utils import SECONDS_PER_DAY
 from opc_manager.skill_registry import SkillRegistry
 from opc_manager.task_types import TaskType, TaskResult, InputValidator
+
+if TYPE_CHECKING:
+    # Lazy import to avoid circular dependency; only needed for type checking.
+    from opc_manager.scenario_engine_v2 import ScenarioEngineV2
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +55,65 @@ class TaskEngineExecutorsMixin:
     - self.scenario_engine (lazy-initialized backend)
     """
 
+    # Type declarations for cross-mixin attributes/methods (provided by the
+    # TaskEngineV3 facade at runtime). Declared under TYPE_CHECKING so they
+    # exist only for static analysis, never at runtime.
+    if TYPE_CHECKING:
+        scenario_engine: "ScenarioEngineV2"
+
+        def _search(
+            self, query: str, max_results: int = 8
+        ) -> Tuple[List[Dict], List[Dict]]: ...
+
+        def _extract_search_query(self, user_input: str) -> str: ...
+
+        def _gen_real_report(
+            self,
+            query: str,
+            context: List[str],
+            search_results: List[Dict],
+            business_type: Optional[str] = None,
+            is_follow_up: bool = False,
+            llm_query: Optional[str] = None,
+        ) -> str: ...
+
+        def _gen_real_plan(
+            self,
+            query: str,
+            context: List[str],
+            search_results: List[Dict],
+            business_type: Optional[str] = None,
+            is_follow_up: bool = False,
+            llm_query: Optional[str] = None,
+        ) -> str: ...
+
+        def _gen_real_content(
+            self,
+            query: str,
+            context: List[str],
+            search_results: List[Dict],
+            business_type: Optional[str] = None,
+            is_follow_up: bool = False,
+            llm_query: Optional[str] = None,
+        ) -> str: ...
+
+        def _try_llm_generate(
+            self,
+            query: str,
+            search_results: List[Dict],
+            doc_type: str = "report",
+            business_type: Optional[str] = None,
+            is_follow_up: bool = False,
+            title: Optional[str] = None,
+        ) -> Optional[str]: ...
+
+        def _gen_writing_for_step(self, desc: str, query: str) -> str: ...
+
     def _execute_info_collection(
         self,
         search_query: str,
-        llm_query: str = None,
-        business_type: str = None,
+        llm_query: Optional[str] = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
     ) -> TaskResult:
         """Path A: Information collection — Real web search + structured research report
@@ -151,8 +210,8 @@ class TaskEngineExecutorsMixin:
     def _execute_content_generation(
         self,
         search_query: str,
-        llm_query: str = None,
-        business_type: str = None,
+        llm_query: Optional[str] = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
     ) -> TaskResult:
         """Path B: Content generation — Search reference materials first, then generate specific document
@@ -236,8 +295,8 @@ class TaskEngineExecutorsMixin:
     def _execute_data_analysis(
         self,
         search_query: str,
-        llm_query: str = None,
-        business_type: str = None,
+        llm_query: Optional[str] = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
     ) -> TaskResult:
         """Path C: Data analysis — SWOT framework + search data + action recommendations
@@ -343,8 +402,8 @@ class TaskEngineExecutorsMixin:
     def _execute_scenario_based(
         self,
         search_query: str,
-        llm_query: str = None,
-        business_type: str = None,
+        llm_query: Optional[str] = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
     ) -> TaskResult:
         """Path D: Scenario execution — Multi-step workflow based on ScenarioEngineV2
@@ -375,6 +434,8 @@ class TaskEngineExecutorsMixin:
                 return self._execute_fallback(search_query)
 
             config = scenario_result.scenario_config
+            if config is None:
+                return self._execute_fallback(search_query)
             workflow_steps = config.workflow_steps
             deliverable = config.deliverable_template
 
@@ -539,8 +600,8 @@ class TaskEngineExecutorsMixin:
     def _execute_business_operation(
         self,
         search_query: str,
-        llm_query: str = None,
-        business_type: str = None,
+        llm_query: Optional[str] = None,
+        business_type: Optional[str] = None,
         is_follow_up: bool = False,
     ) -> TaskResult:
         if llm_query is None:
@@ -610,7 +671,7 @@ class TaskEngineExecutorsMixin:
         )
 
     def _execute_general_chat(
-        self, search_query: str, llm_query: str = None, is_follow_up: bool = False
+        self, search_query: str, llm_query: Optional[str] = None, is_follow_up: bool = False
     ) -> TaskResult:
         """Path E: Chat/greeting/help — Fallback path
 

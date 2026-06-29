@@ -9,7 +9,7 @@ import json
 import time
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, cast
 from dataclasses import dataclass, field
 from enum import Enum
 import os
@@ -166,7 +166,7 @@ class OnboardingManager:
     def get_current_step(self) -> OnboardingStep:
         return self._state.current_step
 
-    def get_step_content(self, step: OnboardingStep = None) -> Dict[str, Any]:
+    def get_step_content(self, step: Optional[OnboardingStep] = None) -> Dict[str, Any]:
         """Get content for a specific onboarding step."""
         step = step or self._state.current_step
 
@@ -247,7 +247,7 @@ class OnboardingManager:
                 "action_target": None,
             },
         }
-        return contents.get(step, {})
+        return cast(Dict[str, Any], contents.get(step, {}))
 
     def advance_to_step(self, step: OnboardingStep) -> bool:
         """Advance to a specific step."""

@@ -222,9 +222,9 @@ class Confirmer:
         intent_type: str,
         goal: str,
         confidence: float,
-        params: dict = None,
-        confirm_callback: Callable[
-            [ConfirmationRequest], Awaitable[ConfirmationResult]
+        params: Optional[dict] = None,
+        confirm_callback: Optional[
+            Callable[[ConfirmationRequest], Awaitable[ConfirmationResult]]
         ] = None,
         unified_category=None,
     ) -> ConfirmationResult:
@@ -277,7 +277,7 @@ class Confirmer:
             unified_category=unified_category.value if unified_category else None,
         )
 
-        if confirm_callback:
+        if confirm_callback is not None:
             result = await confirm_callback(request)
             if result.confirmed:
                 self._record_success(session_id, intent_type)

@@ -50,7 +50,7 @@ class ExecutionResultType(Enum):
 @dataclass
 class ExecutionResult:
     success: bool
-    data: Dict[str, Any] = None
+    data: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     result_type: ExecutionResultType = ExecutionResultType.SUCCESS
     execution_time: float = 0.0

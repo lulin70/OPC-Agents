@@ -59,7 +59,8 @@ class PDFExporter:
 
     def _get_default_css(self):
         return """
-        body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; margin: 40px; line-height: 1.6; }
+        body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+               margin: 40px; line-height: 1.6; }
         h1, h2, h3 { color: #1a1a1a; border-bottom: 1px solid #eee; padding-bottom: 8px; }
         table { border-collapse: collapse; width: 100%; margin: 16px 0; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }

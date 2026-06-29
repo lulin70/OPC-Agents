@@ -1,5 +1,5 @@
 """
-Data Backup Manager — v0.3.2 Data import/export system.
+Data Backup Manager — v0.3.3 Data import/export system.
 
 Provides:
 - Full data export (ZIP archive containing JSON + attachments)
@@ -49,7 +49,7 @@ REDACTED_VALUE = "***REDACTED***"
 class BackupManifest:
     version: str = BACKUP_VERSION
     created_at: str = ""
-    created_by: str = "OPC-Agents v0.3.2"
+    created_by: str = "OPC-Agents v0.3.3"
     total_files: int = 0
     total_size_bytes: int = 0
     checksum_sha256: str = ""
@@ -111,7 +111,7 @@ def _sanitize_value(data: Any) -> Any:
 class DataBackupManager:
     """Manages data backup, restore, and export operations."""
 
-    def __init__(self, base_dir: str = None):
+    def __init__(self, base_dir: Optional[str] = None):
         self._base_dir = Path(base_dir) if base_dir else Path.cwd()
         self._backup_dir = self._base_dir / BACKUP_DIR
         self._backup_dir.mkdir(parents=True, exist_ok=True)
@@ -215,8 +215,8 @@ class DataBackupManager:
         sha256 = hashlib.sha256()
         for file_path, rel_path in sorted(files_to_backup):
             sha256.update(str(rel_path).encode())
-            with open(file_path, "rb") as f:
-                for chunk in iter(lambda: f.read(65536), b""):
+            with open(file_path, "rb") as fh:
+                for chunk in iter(lambda: fh.read(65536), b""):
                     sha256.update(chunk)
         manifest.checksum_sha256 = sha256.hexdigest()
 
@@ -347,8 +347,8 @@ class DataBackupManager:
         """
         if format_type == "zip":
             path, _ = self.create_backup(include_attachments=False)
-            with open(path, "rb") as f:
-                return f.read()
+            with open(path, "rb") as fh:
+                return fh.read()
 
         elif format_type == "json":
             data = {}
@@ -364,7 +364,7 @@ class DataBackupManager:
 
             result = {
                 "exported_at": datetime.now().isoformat(),
-                "exporter": "OPC-Agents v0.3.2",
+                "exporter": "OPC-Agents v0.3.3",
                 "tables": list(data.keys()),
                 "data": data,
                 "_meta": {"sanitized": True},
