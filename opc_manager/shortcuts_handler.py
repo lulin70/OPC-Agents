@@ -82,7 +82,7 @@ class ShortcutsHandler:
             llm = SimpleLLMService()
 
             prompt = f"""你是一个专业的AI助手。请完成以下任务，直接给出结果：
-            
+
 任务：{task_text}
 
 要求：

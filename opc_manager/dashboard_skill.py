@@ -151,7 +151,7 @@ def generate_dashboard_report() -> Dict[str, Any]:
     f_data = overview.get("finance", {})
     c_data = overview.get("crm", {})
     t_data = overview.get("tasks", {})
-    md += f"| 指标 | 数值 |\n|------|------|\n"
+    md += "| 指标 | 数值 |\n|------|------|\n"
     md += f"| 本月收入 | ¥{f_data.get('month_income', 0):.2f} |\n"
     md += f"| 本月支出 | ¥{f_data.get('month_expense', 0):.2f} |\n"
     md += f"| 本月利润 | ¥{f_data.get('month_profit', 0):.2f} |\n"

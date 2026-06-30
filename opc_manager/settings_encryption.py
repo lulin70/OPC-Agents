@@ -23,11 +23,11 @@ import logging
 import os
 import secrets
 from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 # PBKDF2 key derivation constants (硬约束: 禁止裸 SHA-256, 必须用 PBKDF2-HMAC-SHA256 + salt)
 _KEY_DERIVATION_SALT = b"opc-agents-settings-v0.4.0"
 _KEY_DERIVATION_ITERATIONS = 100000
-from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from cryptography.fernet import Fernet

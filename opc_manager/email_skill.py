@@ -302,7 +302,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         m = re.search(r"邮箱[：:]\s*(\S+)", goal)
         if m:
             to = m.group(1).strip()
-            goal = goal[: m.start()] + goal[m.end() :]
+            goal = goal[:m.start()] + goal[m.end():]
     if not to:
         m = re.search(r"收件人[：:]\s*(\S+)", goal)
         if m:
@@ -313,7 +313,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
                 looked_up = _lookup_email_by_name(recipient)
                 if looked_up:
                     to = looked_up
-            goal = goal[: m.start()] + goal[m.end() :]
+            goal = goal[:m.start()] + goal[m.end():]
     if not to:
         m = re.search(r"给(.+?)(发邮件|写信|发信|发一封|回邮件|邮件)", goal)
         if m:
@@ -326,7 +326,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
                     to = looked_up
                     if not subject:
                         subject = f"关于{recipient}"
-            goal = goal[: m.start()] + goal[m.end() :]
+            goal = goal[:m.start()] + goal[m.end():]
 
     if to and subject and body:
         return send_email(to, subject, body)

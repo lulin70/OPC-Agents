@@ -294,41 +294,41 @@ class SkillExecutorMixin:
                 result["summary"] = section.strip().split("\n", 1)[-1].strip()
             elif "关键发现" in section_lower:
                 lines = [
-                    l.strip().lstrip("-•*0-9. ")
-                    for l in section.strip().split("\n")
-                    if l.strip().startswith(("-", "•", "*"))
-                    or any(l.strip().startswith(f"{i}.") for i in range(1, 10))
+                    line.strip().lstrip("-•*0-9. ")
+                    for line in section.strip().split("\n")
+                    if line.strip().startswith(("-", "•", "*"))
+                    or any(line.strip().startswith(f"{i}.") for i in range(1, 10))
                 ]
                 result["key_findings"] = lines
             elif "优势" in section_lower or "strengths" in section_lower:
                 result["swot"]["strengths"] = [
-                    l.strip().lstrip("-•*0-9. ")
-                    for l in section.strip().split("\n")
-                    if l.strip() and not l.strip().startswith("#")
+                    line.strip().lstrip("-•*0-9. ")
+                    for line in section.strip().split("\n")
+                    if line.strip() and not line.strip().startswith("#")
                 ]
             elif "劣势" in section_lower or "weaknesses" in section_lower:
                 result["swot"]["weaknesses"] = [
-                    l.strip().lstrip("-•*0-9. ")
-                    for l in section.strip().split("\n")
-                    if l.strip() and not l.strip().startswith("#")
+                    line.strip().lstrip("-•*0-9. ")
+                    for line in section.strip().split("\n")
+                    if line.strip() and not line.strip().startswith("#")
                 ]
             elif "机会" in section_lower or "opportunities" in section_lower:
                 result["swot"]["opportunities"] = [
-                    l.strip().lstrip("-•*0-9. ")
-                    for l in section.strip().split("\n")
-                    if l.strip() and not l.strip().startswith("#")
+                    line.strip().lstrip("-•*0-9. ")
+                    for line in section.strip().split("\n")
+                    if line.strip() and not line.strip().startswith("#")
                 ]
             elif "威胁" in section_lower or "threats" in section_lower:
                 result["swot"]["threats"] = [
-                    l.strip().lstrip("-•*0-9. ")
-                    for l in section.strip().split("\n")
-                    if l.strip() and not l.strip().startswith("#")
+                    line.strip().lstrip("-•*0-9. ")
+                    for line in section.strip().split("\n")
+                    if line.strip() and not line.strip().startswith("#")
                 ]
             elif "行动" in section_lower:
                 result["action_items"] = [
-                    l.strip().lstrip("-•*0-9. ")
-                    for l in section.strip().split("\n")
-                    if l.strip() and not l.strip().startswith("#")
+                    line.strip().lstrip("-•*0-9. ")
+                    for line in section.strip().split("\n")
+                    if line.strip() and not line.strip().startswith("#")
                 ]
         return result
 

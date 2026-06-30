@@ -236,14 +236,14 @@ if __name__ == "__main__":
     print("=" * 60)
 
     stats = engine.get_statistics()
-    print(f"\n Engine statistics:")
+    print("\n Engine statistics:")
     print(f"   Total scenarios: {stats['total_scenarios']}")
     print(
         f"   Supported business types: {', '.join(stats['business_types_supported'])}"
     )
     print(f"   Version: {stats['version']}")
 
-    print(f"\n All scenarios:")
+    print("\n All scenarios:")
     for scenario in engine.list_scenarios():
         types_str = ", ".join(scenario["target_business_types"])
         print(f"   [{scenario['id']}] {scenario['name']}")

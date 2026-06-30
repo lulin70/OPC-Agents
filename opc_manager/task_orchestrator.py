@@ -568,7 +568,6 @@ class TaskOrchestrator:
             context_dict = context_to_dict(context)
             planned_action = extract_planned_action(context, step)
 
-
             decision = await asyncio.wait_for(
                 self._consensus_consultant._consensus.collect_opinions_async(
                     self._strategist_opinion_async(context_dict, decision_point),

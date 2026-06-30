@@ -151,8 +151,8 @@ def _render_invoice_md(invoice: dict) -> str:
     md += f"**发票号码**: {invoice['invoice_no']}  \n"
     md += f"**购方名称**: {invoice['client_name']}  \n"
     md += f"**开票日期**: {invoice['created_at'][:10]}  \n\n"
-    md += f"| 项目 | 金额 | 税率 | 税额 | 价税合计 |\n"
-    md += f"|------|------|------|------|--------|\n"
+    md += "| 项目 | 金额 | 税率 | 税额 | 价税合计 |\n"
+    md += "|------|------|------|------|--------|\n"
     md += (
         f"| {invoice['item']} | ¥{invoice['amount']:.2f} | "
         f"{invoice['tax_rate']*100:.0f}% | ¥{invoice['tax_amount']:.2f} | "

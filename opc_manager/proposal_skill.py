@@ -8,7 +8,7 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional, Optional
+from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
@@ -196,7 +196,7 @@ def update_proposal_status(proposal_id: str, status: str) -> Dict[str, Any]:
 
 
 def _render_proposal_md(proposal: dict) -> str:
-    md = f"# 服务报价单\n\n"
+    md = "# 服务报价单\n\n"
     md += f"**客户**: {proposal['client_name']}  \n"
     md += f"**服务类型**: {proposal['service_type']}  \n"
     md += f"**有效期至**: {proposal['valid_until']}  \n"

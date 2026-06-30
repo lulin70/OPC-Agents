@@ -43,7 +43,7 @@ def generate_weekly_report(week_note: str = "") -> Dict[str, Any]:
     else:
         md += "- （暂无待办）\n"
 
-    md += f"\n## 客户动态\n\n"
+    md += "\n## 客户动态\n\n"
     md += f"- 客户总数: {crm_stats.get('total', 0)}\n"
     md += f"- 活跃客户: {crm_stats.get('active', 0)}\n"
     md += f"- 沉默客户: {silent.get('count', 0)}（超过30天未联系）\n"
@@ -68,8 +68,8 @@ def generate_monthly_report(year_month: str = "") -> Dict[str, Any]:
     md = f"# 月度经营报告 {year_month}\n\n"
     md += "## 财务概况\n\n"
     if finance.get("success"):
-        md += f"| 指标 | 金额 | 环比变化 |\n"
-        md += f"|------|------|--------|\n"
+        md += "| 指标 | 金额 | 环比变化 |\n"
+        md += "|------|------|--------|\n"
         md += f"| 收入 | ¥{finance['income']:.2f} | {finance.get('income_change', 'N/A')} |\n"
         md += f"| 支出 | ¥{finance['expense']:.2f} | {finance.get('expense_change', 'N/A')} |\n"
         md += f"| 利润 | ¥{finance['profit']:.2f} | — |\n\n"
@@ -175,7 +175,7 @@ def generate_annual_report(year: str = "") -> Dict[str, Any]:
             md += f"| {t['year_month']} | ¥{t['income']:.2f} | ¥{t['expense']:.2f} | ¥{t['profit']:.2f} |\n"
         md += "\n"
 
-    md += f"## 客户概况\n\n"
+    md += "## 客户概况\n\n"
     md += f"- 客户总数: {crm_stats.get('total', 0)}\n"
     md += f"- 活跃: {crm_stats.get('active', 0)} | 流失: {crm_stats.get('lost', 0)}\n\n"
 

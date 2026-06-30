@@ -9,7 +9,7 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md
 
 import logging
 import time
-from typing import Any, Dict, Optional, Optional
+from typing import Any, Dict, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger

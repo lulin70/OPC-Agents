@@ -191,7 +191,7 @@ class ProgressEmitter:
         history = self._history.setdefault(event.session_id, [])
         history.append(event.to_dict())
         if len(history) > self._max_history:
-            history[:] = history[-self._max_history :]
+            history[:] = history[-self._max_history:]
         self._prune_old_sessions()
 
     def subscribe(self, session_id: str, callback: Callable[[str], None]):

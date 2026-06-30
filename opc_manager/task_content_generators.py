@@ -156,7 +156,7 @@ class ContentGenerationMixin:
         if not topic:
             topic = query
 
-        lines.append(f"## 一、背景与目的\n\n")
+        lines.append("## 一、背景与目的\n\n")
         lines.append(
             f"本报告围绕「**{topic}**」展开。以下是经过信息检索和分析后的完整报告。\n\n"
         )
@@ -165,8 +165,8 @@ class ContentGenerationMixin:
                 f"报告编制参考了 {len(search_results)} 条相关信息源，涵盖行业动态、最佳实践案例和数据趋势。\n\n"
             )
 
-        lines.append(f"## 二、现状梳理\n\n")
-        lines.append(f"### 2.1 当前情况概述\n\n")
+        lines.append("## 二、现状梳理\n\n")
+        lines.append("### 2.1 当前情况概述\n\n")
         if search_results and len(search_results) > 0:
             first_result = search_results[0]
             body = first_result.get("body", "") or first_result.get("snippet", "")
@@ -188,34 +188,34 @@ class ContentGenerationMixin:
                 f"针对「{topic}」，当前需要关注的核心要素包括：市场环境变化、用户需求演进、技术能力匹配度、资源约束条件等。\n\n"
             )
 
-        lines.append(f"### 2.2 关键数据点\n\n")
-        lines.append(f"| 维度 | 当前状态 | 目标/基准 | 差距分析 |\n")
-        lines.append(f"|------|---------|----------|--------|\n")
-        lines.append(f"| 效率指标 | 0（首次建立基线） | 行业前25%水平 | 持续改进 |\n")
+        lines.append("### 2.2 关键数据点\n\n")
+        lines.append("| 维度 | 当前状态 | 目标/基准 | 差距分析 |\n")
+        lines.append("|------|---------|----------|--------|\n")
+        lines.append("| 效率指标 | 0（首次建立基线） | 行业前25%水平 | 持续改进 |\n")
         lines.append(
-            f"| 质量指标 | 0（首次建立基线） | 客户满意度≥4.5/5 | 缺陷密度<0.5/KLOC |\n"
+            "| 质量指标 | 0（首次建立基线） | 客户满意度≥4.5/5 | 缺陷密度<0.5/KLOC |\n"
         )
         lines.append(
-            f"| 成本指标 | 0（首次建立基线） | 控制在预算±10%内 | ROI>1.5 |\n\n"
+            "| 成本指标 | 0（首次建立基线） | 控制在预算±10%内 | ROI>1.5 |\n\n"
         )
 
-        lines.append(f"## 三、分析与洞察\n\n")
-        lines.append(f"### 3.1 主要发现\n\n")
+        lines.append("## 三、分析与洞察\n\n")
+        lines.append("### 3.1 主要发现\n\n")
         lines.append(
-            f"**发现一**: 相关领域正在向智能化、自动化方向快速发展，效率提升成为核心竞争力。\n\n"
+            "**发现一**: 相关领域正在向智能化、自动化方向快速发展，效率提升成为核心竞争力。\n\n"
         )
         lines.append(
-            f"**发现二**: 用户对个性化、即时响应的需求持续增长，标准化产品与服务需要增强定制化能力。\n\n"
+            "**发现二**: 用户对个性化、即时响应的需求持续增长，标准化产品与服务需要增强定制化能力。\n\n"
         )
         lines.append(
-            f"**发现三**: 数据驱动决策已成为标配，缺乏数据分析能力的团队在竞争中处于劣势。\n\n"
+            "**发现三**: 数据驱动决策已成为标配，缺乏数据分析能力的团队在竞争中处于劣势。\n\n"
         )
 
         if search_results and len(search_results) >= 2:
             second = search_results[1]
             s_body = second.get("body", "") or second.get("snippet", "")
             if s_body:
-                lines.append(f"### 3.2 补充信息\n\n")
+                lines.append("### 3.2 补充信息\n\n")
                 lines.append(
                     f"此外，以下信息值得关注：\n\n{s_body[:300]}{'...' if len(s_body) > 300 else ''}\n\n"
                 )
@@ -225,16 +225,16 @@ class ContentGenerationMixin:
                         f"来源: [{second.get('title', '')}]({second_href})\n\n"
                     )
 
-        lines.append(f"## 四、结论与建议\n\n")
-        lines.append(f"### 4.1 核心结论\n\n")
+        lines.append("## 四、结论与建议\n\n")
+        lines.append("### 4.1 核心结论\n\n")
         lines.append(f"综合以上分析，针对「{topic}」得出以下结论：\n\n")
-        lines.append(f"1. **短期（1-2周内）**: 聚焦数据采集和基线建立，明确当前起点\n")
-        lines.append(f"2. **中期（1-3个月）**: 基于数据优化关键流程，提升效率和质量\n")
-        lines.append(f"3. **长期（6个月+）**: 建立可持续的改进机制，形成闭环管理\n\n")
+        lines.append("1. **短期（1-2周内）**: 聚焦数据采集和基线建立，明确当前起点\n")
+        lines.append("2. **中期（1-3个月）**: 基于数据优化关键流程，提升效率和质量\n")
+        lines.append("3. **长期（6个月+）**: 建立可持续的改进机制，形成闭环管理\n\n")
 
-        lines.append(f"### 4.2 具体行动项\n\n")
-        lines.append(f"| 优先级 | 行动项 | 责任人 | 截止时间 | 验收标准 |\n")
-        lines.append(f"|--------|--------|--------|---------|--------|\n")
+        lines.append("### 4.2 具体行动项\n\n")
+        lines.append("| 优先级 | 行动项 | 责任人 | 截止时间 | 验收标准 |\n")
+        lines.append("|--------|--------|--------|---------|--------|\n")
         lines.append(
             f"| P0 | 完成{topic}相关的数据收集和分析 | 项目负责人 | 本周内 | 输出数据清单 |\n"
         )
@@ -242,12 +242,12 @@ class ContentGenerationMixin:
             f"| P1 | 基于{topic}制定详细执行计划 | 项目负责人 | 下周初 | 计划文档评审通过 |\n"
         )
         lines.append(
-            f"| P2 | 启动试点实施并跟踪效果 | 执行团队 | 两周内 | 试点数据达标 |\n\n"
+            "| P2 | 启动试点实施并跟踪效果 | 执行团队 | 两周内 | 试点数据达标 |\n\n"
         )
 
-        lines.append(f"---\n> 本报告由 OPC-Agents 基于网络搜索和结构化分析自动生成。\n")
+        lines.append("---\n> 本报告由 OPC-Agents 基于网络搜索和结构化分析自动生成。\n")
         lines.append(
-            f"> 建议将此报告作为工作基础，结合实际情况填充具体数据和责任人。\n"
+            "> 建议将此报告作为工作基础，结合实际情况填充具体数据和责任人。\n"
         )
 
         return "".join(lines)
@@ -309,104 +309,104 @@ class ContentGenerationMixin:
         if context:
             lines.extend(context)
 
-        lines.append(f"## 一、项目概览\n\n")
-        lines.append(f"| 项目要素 | 内容 |\n")
-        lines.append(f"|---------|------|\n")
+        lines.append("## 一、项目概览\n\n")
+        lines.append("| 项目要素 | 内容 |\n")
+        lines.append("|---------|------|\n")
         lines.append(f"| 项目名称 | {topic} |\n")
         lines.append(f"| 编制日期 | {now} |\n")
-        lines.append(f"| 执行周期 | 建议6-8周分阶段推进 |\n")
-        lines.append(f"| 成功标准 | 可量化、可验收的具体指标 |\n\n")
+        lines.append("| 执行周期 | 建议6-8周分阶段推进 |\n")
+        lines.append("| 成功标准 | 可量化、可验收的具体指标 |\n\n")
 
-        lines.append(f"## 二、目标设定（SMART原则）\n\n")
-        lines.append(f"### 2.1 总体目标\n\n")
+        lines.append("## 二、目标设定（SMART原则）\n\n")
+        lines.append("### 2.1 总体目标\n\n")
         lines.append(f"完成「{topic}」的全流程落地，实现从规划到执行的闭环管理。\n\n")
 
-        lines.append(f"### 2.2 具体指标（示例，需根据实际调整）\n\n")
-        lines.append(f"| 指标维度 | 当前基线 | Q2目标 | 衡量方式 |\n")
-        lines.append(f"|---------|---------|-------|--------|\n")
-        lines.append(f"| 效率提升 | 0（首次建立基线） | 提升30% | 单位产出/人天 |\n")
-        lines.append(f"| 质量达标率 | 0（首次建立基线） | ≥95% | 缺陷率/交付量 |\n")
-        lines.append(f"| 成本控制 | 0（首次建立基线） | 预算内完成 | 实际支出/预算 |\n")
+        lines.append("### 2.2 具体指标（示例，需根据实际调整）\n\n")
+        lines.append("| 指标维度 | 当前基线 | Q2目标 | 衡量方式 |\n")
+        lines.append("|---------|---------|-------|--------|\n")
+        lines.append("| 效率提升 | 0（首次建立基线） | 提升30% | 单位产出/人天 |\n")
+        lines.append("| 质量达标率 | 0（首次建立基线） | ≥95% | 缺陷率/交付量 |\n")
+        lines.append("| 成本控制 | 0（首次建立基线） | 预算内完成 | 实际支出/预算 |\n")
         lines.append(
-            f"| 时间准时率 | 0（首次建立基线） | ≥90% | 按期交付数/总任务数 |\n\n"
+            "| 时间准时率 | 0（首次建立基线） | ≥90% | 按期交付数/总任务数 |\n\n"
         )
 
-        lines.append(f"## 三、实施路线图\n\n")
-        lines.append(f"### 第一阶段：准备与启动（第1-2周）\n\n")
-        lines.append(f"| 序号 | 任务 | 产出 | 负责人 | 时间 |\n")
-        lines.append(f"|-----|------|------|--------|------|\n")
+        lines.append("## 三、实施路线图\n\n")
+        lines.append("### 第一阶段：准备与启动（第1-2周）\n\n")
+        lines.append("| 序号 | 任务 | 产出 | 负责人 | 时间 |\n")
+        lines.append("|-----|------|------|--------|------|\n")
         lines.append(
             f"| 1.1 | 明确{topic}的范围和边界 | 项目章程 | 项目负责人 | 第1周 |\n"
         )
-        lines.append(f"| 1.2 | 收集现有数据和资料 | 数据清单 | 分析人员 | 第1周 |\n")
+        lines.append("| 1.2 | 收集现有数据和资料 | 数据清单 | 分析人员 | 第1周 |\n")
         lines.append(
-            f"| 1.3 | 识别关键干系人和决策者 | 干系人名单 | 项目负责人 | 第1周 |\n"
+            "| 1.3 | 识别关键干系人和决策者 | 干系人名单 | 项目负责人 | 第1周 |\n"
         )
-        lines.append(f"| 1.4 | 制定详细WBS和工作计划 | 项目计划 | 全体成员 | 第2周 |\n")
-        lines.append(f"| 1.5 | 启动会暨任务分配 | 会议纪要 | 项目负责人 | 第2周 |\n\n")
+        lines.append("| 1.4 | 制定详细WBS和工作计划 | 项目计划 | 全体成员 | 第2周 |\n")
+        lines.append("| 1.5 | 启动会暨任务分配 | 会议纪要 | 项目负责人 | 第2周 |\n\n")
 
-        lines.append(f"### 第二阶段：核心执行（第3-5周）\n\n")
-        lines.append(f"| 序号 | 任务 | 产出 | 负责人 | 时间 |\n")
-        lines.append(f"|-----|------|------|--------|------|\n")
+        lines.append("### 第二阶段：核心执行（第3-5周）\n\n")
+        lines.append("| 序号 | 任务 | 产出 | 负责人 | 时间 |\n")
+        lines.append("|-----|------|------|--------|------|\n")
         lines.append(
             f"| 2.1 | {topic}主体内容开发/执行 | 初稿/原型 | 执行团队 | 第3-4周 |\n"
         )
-        lines.append(f"| 2.2 | 中间评审和质量检查 | 评审记录 | 质量保证 | 第4周 |\n")
-        lines.append(f"| 2.3 | 根据反馈修改完善 | 修订版 | 执行团队 | 第5周 |\n")
-        lines.append(f"| 2.4 | 内部预演和最终确认 | 最终版 | 全体成员 | 第5周 |\n\n")
+        lines.append("| 2.2 | 中间评审和质量检查 | 评审记录 | 质量保证 | 第4周 |\n")
+        lines.append("| 2.3 | 根据反馈修改完善 | 修订版 | 执行团队 | 第5周 |\n")
+        lines.append("| 2.4 | 内部预演和最终确认 | 最终版 | 全体成员 | 第5周 |\n\n")
 
-        lines.append(f"### 第三阶段：交付与复盘（第6-8周）\n\n")
-        lines.append(f"| 序号 | 任务 | 产出 | 负责人 | 时间 |\n")
-        lines.append(f"|-----|------|------|--------|------|\n")
+        lines.append("### 第三阶段：交付与复盘（第6-8周）\n\n")
+        lines.append("| 序号 | 任务 | 产出 | 负责人 | 时间 |\n")
+        lines.append("|-----|------|------|--------|------|\n")
         lines.append(
-            f"| 3.1 | 正式交付物制作和发布 | 交付成果 | 项目负责人 | 第6周 |\n"
+            "| 3.1 | 正式交付物制作和发布 | 交付成果 | 项目负责人 | 第6周 |\n"
         )
         lines.append(
-            f"| 3.2 | 用户培训/交接（如适用） | 培训材料 | 项目负责人 | 第7周 |\n"
+            "| 3.2 | 用户培训/交接（如适用） | 培训材料 | 项目负责人 | 第7周 |\n"
         )
-        lines.append(f"| 3.3 | 效果评估和数据收集 | 评估报告 | 分析人员 | 第7-8周 |\n")
-        lines.append(f"| 3.4 | 经验总结和知识沉淀 | 复盘报告 | 全体成员 | 第8周 |\n\n")
+        lines.append("| 3.3 | 效果评估和数据收集 | 评估报告 | 分析人员 | 第7-8周 |\n")
+        lines.append("| 3.4 | 经验总结和知识沉淀 | 复盘报告 | 全体成员 | 第8周 |\n\n")
 
-        lines.append(f"## 四、资源配置\n\n")
-        lines.append(f"| 资源类型 | 配置建议 | 备注 |\n")
-        lines.append(f"|---------|---------|------|\n")
+        lines.append("## 四、资源配置\n\n")
+        lines.append("| 资源类型 | 配置建议 | 备注 |\n")
+        lines.append("|---------|---------|------|\n")
         lines.append(
-            f"| 人力资源 | 核心成员3-5人，按角色分工 | 含项目负责人、执行、质保 |\n"
+            "| 人力资源 | 核心成员3-5人，按角色分工 | 含项目负责人、执行、质保 |\n"
         )
-        lines.append(f"| 技术工具 | 根据具体需求配置 | 列出所需工具清单 |\n")
-        lines.append(f"| 外部支持 | 视需要引入专家顾问 | 预留10-15%预算 |\n")
-        lines.append(f"| 预算估算 | 建议预留应急储备15% | 详细预算表另行编制 |\n\n")
+        lines.append("| 技术工具 | 根据具体需求配置 | 列出所需工具清单 |\n")
+        lines.append("| 外部支持 | 视需要引入专家顾问 | 预留10-15%预算 |\n")
+        lines.append("| 预算估算 | 建议预留应急储备15% | 详细预算表另行编制 |\n\n")
 
-        lines.append(f"## 五、风险管理\n\n")
-        lines.append(f"| 风险描述 | 可能性 | 影响 | 应对措施 | 负责人 |\n")
-        lines.append(f"|---------|-------|------|---------|--------|\n")
+        lines.append("## 五、风险管理\n\n")
+        lines.append("| 风险描述 | 可能性 | 影响 | 应对措施 | 负责人 |\n")
+        lines.append("|---------|-------|------|---------|--------|\n")
         lines.append(
-            f"| 需求变更频繁 | 中 | 高 | 设立变更控制委员会(CCB)，严格变更流程 | 项目负责人 |\n"
+            "| 需求变更频繁 | 中 | 高 | 设立变更控制委员会(CCB)，严格变更流程 | 项目负责人 |\n"
         )
         lines.append(
-            f"| 关键资源不可用 | 低 | 高 | 提前锁定核心人员，准备备选方案 | 项目负责人 |\n"
+            "| 关键资源不可用 | 低 | 高 | 提前锁定核心人员，准备备选方案 | 项目负责人 |\n"
         )
         lines.append(
-            f"| 技术方案不确定 | 中 | 中 | 设置技术验证节点(PoC)，尽早排除风险 | 技术负责人 |\n"
+            "| 技术方案不确定 | 中 | 中 | 设置技术验证节点(PoC)，尽早排除风险 | 技术负责人 |\n"
         )
         lines.append(
-            f"| 进度延期 | 中 | 中 | 设置每周检查点，偏差超20%即升级处理 | 全体成员 |\n\n"
+            "| 进度延期 | 中 | 中 | 设置每周检查点，偏差超20%即升级处理 | 全体成员 |\n\n"
         )
 
-        lines.append(f"## 六、验收标准\n\n")
-        lines.append(f"本方案的交付需满足以下标准：\n\n")
-        lines.append(f"- [ ] 所有计划的任务项均有明确的负责人和截止时间\n")
-        lines.append(f"- [ ] 阶段性产出物已通过内部评审\n")
-        lines.append(f"- [ ] 最终交付物符合预设的质量标准和格式要求\n")
-        lines.append(f"- [ ] 实际成本控制在预算范围内（±10%）\n")
-        lines.append(f"- [ ] 关键干系人对交付成果签字确认\n")
-        lines.append(f"- [ ] 项目过程文档完整归档\n\n")
+        lines.append("## 六、验收标准\n\n")
+        lines.append("本方案的交付需满足以下标准：\n\n")
+        lines.append("- [ ] 所有计划的任务项均有明确的负责人和截止时间\n")
+        lines.append("- [ ] 阶段性产出物已通过内部评审\n")
+        lines.append("- [ ] 最终交付物符合预设的质量标准和格式要求\n")
+        lines.append("- [ ] 实际成本控制在预算范围内（±10%）\n")
+        lines.append("- [ ] 关键干系人对交付成果签字确认\n")
+        lines.append("- [ ] 项目过程文档完整归档\n\n")
 
         lines.append(
-            f"---\n> 本方案由 OPC-Agents 基于行业最佳实践和网络搜索信息自动生成。\n"
+            "---\n> 本方案由 OPC-Agents 基于行业最佳实践和网络搜索信息自动生成。\n"
         )
         lines.append(
-            f"> 方案中的时间节点、资源分配和风险应对措施均为基于行业标准给出的具体建议，可直接作为工作启动依据。\n"
+            "> 方案中的时间节点、资源分配和风险应对措施均为基于行业标准给出的具体建议，可直接作为工作启动依据。\n"
         )
 
         return "".join(lines)
@@ -447,7 +447,7 @@ class ContentGenerationMixin:
         if context:
             lines.extend(context)
 
-        lines.append(f"## 正文\n\n")
+        lines.append("## 正文\n\n")
         if search_results:
             lines.append(
                 f"基于网络搜索到的 {len(search_results)} 条相关信息，以下是针对「{query}」的内容：\n\n"
@@ -463,10 +463,10 @@ class ContentGenerationMixin:
         else:
             lines.append(f"以下是针对「{query}」生成的内容：\n\n")
             lines.append(
-                f"请提供更多背景信息以便生成更精准的内容。目前可根据已有信息进行初步梳理。\n"
+                "请提供更多背景信息以便生成更精准的内容。目前可根据已有信息进行初步梳理。\n"
             )
 
-        lines.append(f"\n---\n*由 OPC-Agents 自动生成*\n")
+        lines.append("\n---\n*由 OPC-Agents 自动生成*\n")
         return "".join(lines)
 
     def _gen_writing_for_step(self, desc: str, query: str) -> str:

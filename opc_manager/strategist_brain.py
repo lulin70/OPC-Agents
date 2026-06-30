@@ -441,11 +441,11 @@ class StrategistBrain:
         goal = user_input.strip()
         for pattern, replacement in complex_patterns:
             if goal.startswith(pattern):
-                goal = replacement + goal[len(pattern) :].strip()
+                goal = replacement + goal[len(pattern):].strip()
                 break
         for prefix in prefixes_to_remove:
             if goal.startswith(prefix):
-                goal = goal[len(prefix) :].strip()
+                goal = goal[len(prefix):].strip()
                 break
         while goal and goal[-1] in suffix_particles:
             goal = goal[:-1].strip()

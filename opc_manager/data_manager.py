@@ -1,4 +1,5 @@
 import base64
+import functools
 import hashlib
 import logging
 import os
@@ -205,9 +206,6 @@ def _get_conn() -> sqlite3.Connection:
         except OSError as e:
             logger.debug("[DataManager] chmod failed: %s", e)
     return _local.conn
-
-
-import functools
 
 
 def _ensure_db(func):

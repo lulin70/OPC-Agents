@@ -62,6 +62,7 @@ class SkillRegistryProtocol(Protocol):
 @runtime_checkable
 class LLMProvider(Protocol):
     def is_available(self) -> bool: ...
+
     def generate(
         self, prompt: str, system_prompt: str = "", **kwargs
     ) -> Optional[str]: ...
@@ -70,6 +71,7 @@ class LLMProvider(Protocol):
 @runtime_checkable
 class LLMServiceProtocol(Protocol):
     def is_available(self) -> bool: ...
+
     def generate(
         self, prompt: str, system_prompt: str = "", **kwargs
     ) -> Optional[str]: ...

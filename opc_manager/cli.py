@@ -46,8 +46,8 @@ def main():
     else:
         example_file = os.path.join(workspace, ".env.example")
         if os.path.exists(example_file):
-            print(f"提示: 未找到 .env 文件（已找到 .env.example 模板）")
-            print(f"  请执行: cp .env.example .env && 编辑 .env 填入你的 API Key")
+            print("提示: 未找到 .env 文件（已找到 .env.example 模板）")
+            print("  请执行: cp .env.example .env && 编辑 .env 填入你的 API Key")
         print(f"提示: 工作目录为 {workspace}，可通过 OPC_WORKSPACE 环境变量修改")
         load_dotenv()
 

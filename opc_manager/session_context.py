@@ -143,7 +143,7 @@ class SessionContextManager:
         self._next_turn_id = 1
         self._lock = threading.RLock()
 
-        logger.info("[SessionContextManager] Initialized: " f"max_turns=%s", max_turns)
+        logger.info("[SessionContextManager] Initialized: " "max_turns=%s", max_turns)
 
     def add_turn(
         self,

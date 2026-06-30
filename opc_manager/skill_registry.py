@@ -429,12 +429,12 @@ class SkillRegistry(SkillExecutorMixin):
                     crm_data = context_data["crm"]
                     if isinstance(crm_data, dict) and crm_data.get("customer"):
                         cust = crm_data["customer"]
-                        enriched_goal = f"{goal} 收件人:{cust.get('name','')} 邮箱:{cust.get('email','')}"
+                        enriched_goal = f"{goal} 收件人:{cust.get('name', '')} 邮箱:{cust.get('email', '')}"
                 elif skill_id == "finance" and "crm" in context_data:
                     crm_data = context_data["crm"]
                     if isinstance(crm_data, dict) and crm_data.get("deal"):
                         deal = crm_data["deal"]
-                        enriched_goal = f"{goal} 金额:{deal.get('amount',0)} 来源:{deal.get('description','')}"
+                        enriched_goal = f"{goal} 金额:{deal.get('amount', 0)} 来源:{deal.get('description', '')}"
 
                 try:
                     result = skill.execute(goal=enriched_goal, _context=_context)

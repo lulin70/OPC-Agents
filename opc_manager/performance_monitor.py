@@ -125,7 +125,7 @@ class PerformanceMonitor:
         with self._lock:
             self._metrics.append(metric)
             if len(self._metrics) > self._max_metrics:
-                self._metrics = self._metrics[-self._max_metrics :]
+                self._metrics = self._metrics[-self._max_metrics:]
             now = time.time()
             if now - self._last_persist > self._persist_interval:
                 self._last_persist = now

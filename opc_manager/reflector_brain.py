@@ -421,7 +421,7 @@ class ReflectorBrain:
             else:
                 action = NextAction(
                     action_type=NextActionType.CONTINUE,
-                    reason=f"结果可接受，继续执行",
+                    reason="结果可接受，继续执行",
                     confidence=evaluation.quality_score,
                 )
 
@@ -447,7 +447,7 @@ class ReflectorBrain:
             else:
                 action = NextAction(
                     action_type=NextActionType.RETRY,
-                    reason=f"结果较差，尝试重试",
+                    reason="结果较差，尝试重试",
                     confidence=0.5,
                 )
 
@@ -471,7 +471,7 @@ class ReflectorBrain:
             else:
                 action = NextAction(
                     action_type=NextActionType.ABANDON,
-                    reason=f"执行失败，无法完成任务",
+                    reason="执行失败，无法完成任务",
                     confidence=0.8,
                 )
 

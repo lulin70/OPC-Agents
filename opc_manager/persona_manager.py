@@ -360,13 +360,13 @@ if __name__ == "__main__":
     print("=" * 60)
 
     stats = manager.get_statistics()
-    print(f"\n 统计信息:")
+    print("\n 统计信息:")
     print(f"   总变体数: {stats['total_variants']}")
     print(f"   缓存用户数: {stats['cached_users']}")
     print(f"   基础人格: {stats['base_persona_name']}")
     print(f"   配置版本: {stats['config_version']}")
 
-    print(f"\n 可用人格列表:")
+    print("\n 可用人格列表:")
     personas = manager.list_available_personas()
     for p in personas:
         print(f"   [{p['emoji']}] {p['display_name']} ({p['id']})")

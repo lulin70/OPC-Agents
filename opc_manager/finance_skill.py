@@ -237,7 +237,7 @@ def parse_amount_from_text(text: str) -> Optional[float]:
             return float(m.group(1))
     m = re.search(r"(\d+\.?\d*)", text)
     if m:
-        after = text[m.end() :].lstrip()
+        after = text[m.end():].lstrip()
         if after and after[0] in "月年号日":
             return None
         return float(m.group(1))
