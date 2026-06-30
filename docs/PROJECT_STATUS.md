@@ -137,13 +137,13 @@
 - ✅ flake8 tests/ 清零（119→0，28 文件，E402 合理忽略）
 - ✅ DIRECTORY_STRUCTURE.md 更新到 v0.3.3
 - ✅ PROJECT_STATUS.md 同步真实进度
+- ✅ data_manager.py 补索引（finance_records.date/type + tasks.status/created_at）
+- ✅ 16 处 `assertTrue(len())` → `assertGreater` 批量替换
+- ✅ async_executor.py God file 拆分（913→448 行，facade + 3 mixin）
 
 #### 待办
 
-- 拆分 5 个 God 文件（async_executor/scenario_definitions/strategist_brain/tool_system/reflector_brain）
-- 拆分 `_run_worker` 128 行长方法为 3-4 个 ≤40 行子方法
-- data_manager.py 主业务表补索引（finance_records.user_id、tasks.status）
-- 16 处 `assertTrue(len())` → `assertGreater` 批量替换
+- 拆分 4 个 God 文件（scenario_definitions/strategist_brain/tool_system/reflector_brain）
 - 三语 README 同步校验 CI
 - skill_marketplace API key 哈希改 PBKDF2
 - 审计日志补链式哈希
