@@ -118,3 +118,35 @@ jobs:
           echo "Version mismatch: VERSION=$VERSION_FILE, version.py=$VERSION_PY"
           exit 1
         fi
+
+    - name: Verify README consistency (三语版本号/模块数/测试数对齐)
+      run: |
+        python - <<'PYEOF'
+        import re, sys
+        VERSION = open("VERSION").read().strip()
+        EXPECTED_MODULE_COUNT = 99
+        EXPECTED_TEST_COUNT = 3299
+        readmes = ["README.md", "README-EN.md", "README-JP.md"]
+        errors = []
+        for path in readmes:
+            text = open(path, encoding="utf-8").read()
+            # 版本号必须出现且与 VERSION 文件一致
+            if VERSION not in text:
+                errors.append(f"{path}: 版本号 {VERSION} 未找到")
+            # pip install 命令中的版本号
+            pip_pattern = rf"opc-agents=={re.escape(VERSION)}"
+            if not re.search(pip_pattern, text):
+                errors.append(f"{path}: pip install opc-agents=={VERSION} 未找到")
+            # 模块数对齐
+            if f"{EXPECTED_MODULE_COUNT}" not in text:
+                errors.append(f"{path}: 模块数 {EXPECTED_MODULE_COUNT} 未找到")
+            # 测试数对齐
+            if f"{EXPECTED_TEST_COUNT}" not in text:
+                errors.append(f"{path}: 测试数 {EXPECTED_TEST_COUNT} 未找到")
+        if errors:
+            print("README 一致性校验失败：")
+            for e in errors:
+                print(f"  - {e}")
+            sys.exit(1)
+        print(f"✓ 三语 README 一致性校验通过（版本 {VERSION}, 模块 {EXPECTED_MODULE_COUNT}, 测试 {EXPECTED_TEST_COUNT}）")
+        PYEOF
