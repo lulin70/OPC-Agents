@@ -387,7 +387,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # Test suite (76 test files, 3299 tests, 100% pass)
+├── tests/                 # Test suite (76 test files, 3305 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
@@ -406,7 +406,7 @@ OPC-Agents/
 # Install dev dependencies
 pip install -r requirements-dev.txt
 
-# Run all tests (3299 test cases)
+# Run all tests (3305 test cases)
 PYTHONPATH=. pytest tests/ -v
 
 # Run with coverage report
@@ -423,7 +423,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 | Version | Date | Milestone |
 |---------|------|-----------|
 | **0.3.0** | **2026-06-19 (Pending Release)** | **Three Sages Parallel Voting Architecture Returns** — Parallel voting (1×RTT, 3x latency reduction) + ConsensusEngine upfront + ExecutorBrain real opinions + ReflectorBrain upfront prediction + IntentRouter 3-way routing + focus on 3 core skills (email/finance/report) + 11 non-core skills frozen + i18n refactor (3857→133 lines) + coverage 62.87% + real LLM E2E tests |
-| **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 3299 tests / 76 files |
+| **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 3305 tests / 76 files |
 | **0.2.4** | **2026-05-24** | **Memory + Knowledge Enhancement** — CarryMem deep integration + knowledge search optimization + notification system + extended tests |
 | **0.2.3** | **2026-05-24** | **CarryMem Integration** — Cross-session persistent memory (MemoryBridge) + rule engine + flywheel mechanism + LLM cache + skill scoring |
 | **0.2.2** | **2026-05-21** | **CarryMem + Knowledge Base + Flywheel** — Cross-session persistent memory + rule engine + 6 KB adapters + flywheel mechanism + LLM cache + skill reviews + frontend modularization + E2E tests (1952 tests / 56 files) |

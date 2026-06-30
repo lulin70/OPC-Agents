@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-06-30 | **版本**: v0.3.3 (Beta) | **许可**: MIT
+> **最后更新**: 2026-06-30（Phase 2 第 11 项完成） | **版本**: v0.3.3 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -48,7 +48,7 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 3299 collected | `pytest --co -q` |
+| 测试用例总数 | 3305 collected | `pytest --co -q`（含 6 个链式哈希测试） |
 | 全量覆盖率 | 63% | `coverage.json` totals.percent_covered_display |
 | `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
 | `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
@@ -140,13 +140,15 @@
 - ✅ data_manager.py 补索引（finance_records.date/type + tasks.status/created_at）
 - ✅ 16 处 `assertTrue(len())` → `assertGreater` 批量替换
 - ✅ async_executor.py God file 拆分（913→448 行，facade + 3 mixin）
+- ✅ mypy 15 errors 修复（async_executor_worker.py mixin 属性类型声明）
+- ✅ skill_marketplace API key 哈希改 PBKDF2（裸 SHA-256 → PBKDF2-HMAC-SHA256 + salt）
+- ✅ 三语 README 数据校正（模块数 90→99，测试数 3341→3299）+ 一致性校验 CI
+- ✅ 审计日志链式哈希（prev_hash/current_hash + verify_chain() + DB 迁移 v6→v7 + writer drain bug 修复）
 
 #### 待办
 
 - 拆分 4 个 God 文件（scenario_definitions/strategist_brain/tool_system/reflector_brain）
-- 三语 README 同步校验 CI
-- skill_marketplace API key 哈希改 PBKDF2
-- 审计日志补链式哈希
+- Phase 1 #3: Perf 维度扩充至 ≥5%（≥162 测试）
 
 ### Phase 3：v0.5.0 长期（P3 + 架构演进）
 
