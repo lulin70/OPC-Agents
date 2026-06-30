@@ -294,7 +294,7 @@ OPC-Agents/
 │   │   └── settings_page.py    # 设置管理页（666行）
 │   ├── routers/            # 路由模块
 │   └── renderers/          # 渲染模块
-├── opc_manager/           # 核心业务逻辑（90个.py模块）
+├── opc_manager/           # 核心业务逻辑（99个.py模块）
 │   ├── cli.py             # CLI入口（pip install后opc-agents命令）
 │   ├── agent_loop.py      # 执行循环（Plan→Act→Observe→Reflect四阶段闭环）
 │   ├── strategist_brain.py# 策略脑（意图理解+任务规划+复合意图拆解）
@@ -399,7 +399,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # 测试套件（76个测试文件，3341测试用例，100%通过）
+├── tests/                 # 测试套件（76个测试文件，3299测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）
@@ -418,7 +418,7 @@ OPC-Agents/
 # 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 运行全部测试（3341个用例）
+# 运行全部测试（3299个用例）
 PYTHONPATH=. pytest tests/ -v
 
 # 运行并生成覆盖率报告
@@ -428,14 +428,14 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **测试覆盖范围**：全部90个opc_manager模块 + 前端38模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **测试覆盖范围**：全部99个opc_manager模块 + 前端38模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## 版本历史
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
 | **0.3.0** | **2026-06-19 (待发布)** | **三贤者并行投票架构回归** — 并行投票(1×RTT，延迟降3倍)+ConsensusEngine前置+ExecutorBrain真意见+ReflectorBrain前置预判+IntentRouter三路路由+聚焦3核心技能(邮件/财务/报告)+11非核心技能冻结+i18n重构(3857→133行)+覆盖率62.87%+真实LLM E2E测试 |
-| **0.2.5** | **2026-06-07** | **架构统一+安全加固** — 架构统一重构+LLM并发控制+安全加固+3341测试/76文件 |
+| **0.2.5** | **2026-06-07** | **架构统一+安全加固** — 架构统一重构+LLM并发控制+安全加固+3299测试/76文件 |
 | **0.2.4** | **2026-05-24** | **记忆+知识库增强** — CarryMem深度集成+知识库搜索优化+通知系统+扩展测试 |
 | **0.2.3** | **2026-05-24** | **CarryMem集成** — 跨会话持久记忆(MemoryBridge)+规则引擎+飞轮机制+LLM缓存+技能评分 |
 | **0.2.2** | **2026-05-21** | **CarryMem+知识库+飞轮** — 跨会话持久记忆+规则引擎+6种知识库适配+飞轮机制+LLM缓存+技能评分+前端模块化+E2E测试（1952测试/56文件） |

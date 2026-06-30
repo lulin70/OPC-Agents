@@ -296,7 +296,7 @@ OPC-Agents/
 │   │   └── settings_page.py    # 設定管理ページ（666行）
 │   ├── routers/            # ルーターモジュール
 │   └── renderers/          # レンダラーモジュール
-├── opc_manager/           # コアビジネスロジック（90個の.pyモジュール）
+├── opc_manager/           # コアビジネスロジック（99個の.pyモジュール）
 │   ├── cli.py             # CLIエントリポイント
 │   ├── agent_loop.py      # 実行ループ
 │   ├── strategist_brain.py# 戦略脳
@@ -383,7 +383,7 @@ OPC-Agents/
 │   ├── plugin_config.json
 │   ├── data_converter.py
 │   └── text_summarizer.py
-├── tests/                 # テストスイート（76テストファイル、3341テスト、100%合格）
+├── tests/                 # テストスイート（76テストファイル、3299テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
@@ -402,7 +402,7 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行（3341テストケース）
+# 全テストを実行（3299テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行
@@ -412,14 +412,14 @@ PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
 ```
 
-> **テストカバレッジ範囲**：全90個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
+> **テストカバレッジ範囲**：全99個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）
 
 ## バージョン履歴
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
 | **0.3.0** | **2026-06-19（リリース待ち）** | **三賢者並列投票アーキテクチャ回帰** — 並列投票(1×RTT、レイテンシ3分の1)+ConsensusEngine事前+ExecutorBrain真の意見+ReflectorBrain事前予測+IntentRouter 3分類ルーティング+3コアスキル集中(メール/財務/レポート)+11非コアスキル凍結+i18nリファクター(3857→133行)+カバレッジ62.87%+実LLM E2Eテスト |
-| **0.2.5** | **2026-06-07** | **アーキテクチャ統合+セキュリティ強化** — アーキテクチャ統合リファクター+LLM同時実行制御+セキュリティ強化+3341テスト/76ファイル |
+| **0.2.5** | **2026-06-07** | **アーキテクチャ統合+セキュリティ強化** — アーキテクチャ統合リファクター+LLM同時実行制御+セキュリティ強化+3299テスト/76ファイル |
 | **0.2.4** | **2026-05-24** | **記憶+ナレッジベース強化** — CarryMem深層統合+ナレッジ検索最適化+通知システム+拡張テスト |
 | **0.2.3** | **2026-05-24** | **CarryMem統合** — クロスセッション永続記憶(MemoryBridge)+ルールエンジン+フライホイール機構+LLMキャッシュ+スキルスコアリング |
 | **0.2.2** | **2026-05-21** | **CarryMem+ナレッジベース+フライホイール** — クロスセッション永続記憶+ルールエンジン+6種KBアダプタ+フライホイール機構+LLMキャッシュ+スキルレビュー+フロントエンドモジュラー化+E2Eテスト（1952テスト/56ファイル） |

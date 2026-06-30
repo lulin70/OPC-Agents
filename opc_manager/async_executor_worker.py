@@ -25,10 +25,12 @@ defines them before importing the mixins to keep the import cycle safe
 (see async_executor.py).
 """
 
+from __future__ import annotations
+
 import threading
 import time
 import logging
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 from .async_executor import AsyncTask, TaskStatus
 
@@ -42,6 +44,14 @@ class WorkerMixin:
     Cross-mixin calls (e.g. self._schedule_retry) are resolved at runtime on
     the composed facade instance via Python's MRO.
     """
+
+    # 类型声明（由 facade AsyncTaskExecutor.__init__ 设置，mixin 模式下需显式声明供 mypy 识别）
+    _lock: threading.RLock
+    _tasks: Dict[str, AsyncTask]
+    _save_callback: Optional[Callable]
+    max_concurrent: int
+    max_history: int
+    retry_backoff_base: float
 
     def _run_worker(self, task_id: str, execute_func: Callable, **kwargs):
         """Background worker thread: execute actual task

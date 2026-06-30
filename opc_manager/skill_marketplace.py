@@ -38,6 +38,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# PBKDF2 迭代次数（硬约束：禁止裸 SHA-256，与 data_manager._KEY_DERIVATION_ITERATIONS 一致）
+_API_KEY_ITERATIONS = 100000
+
 
 class PermissionLevel(str, Enum):
     READ = "read"
@@ -282,7 +285,11 @@ class SkillMarketplace:
 
         raw_key = f"opc_{secrets.token_hex(16)}"
         salt = secrets.token_hex(8)
-        key_hash = hashlib.sha256(f"{salt}:{raw_key}".encode()).hexdigest()
+        # PBKDF2-HMAC-SHA256 + per-key salt（硬约束：禁止裸 SHA-256，与 data_manager.py 一致）
+        # BREAKING CHANGE (v0.4.0): 旧 SHA-256 哈希的 API key 需重新签发
+        key_hash = hashlib.pbkdf2_hmac(
+            "sha256", raw_key.encode(), salt.encode(), _API_KEY_ITERATIONS
+        ).hex()
         self._api_keys[key_hash] = APIKey(
             key_hash=key_hash, name=name, permissions=permissions, rate_limit=rate_limit
         )
@@ -295,7 +302,9 @@ class SkillMarketplace:
             salt = key_info.salt
             if not salt:
                 continue
-            check_hash = hashlib.sha256(f"{salt}:{api_key}".encode()).hexdigest()
+            check_hash = hashlib.pbkdf2_hmac(
+                "sha256", api_key.encode(), salt.encode(), _API_KEY_ITERATIONS
+            ).hex()
             if hmac.compare_digest(check_hash, key_hash):
                 return key_info
         return None
