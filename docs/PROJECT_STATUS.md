@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-06-29 | **版本**: v0.3.3 (Beta) | **许可**: MIT
+> **最后更新**: 2026-06-30 | **版本**: v0.3.3 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -55,7 +55,7 @@
 | `email_skill` 专项测试覆盖率 | 99% | `pytest --cov=opc_manager.email_skill` |
 | `finance_skill` 专项测试覆盖率 | 100% | `pytest --cov=opc_manager.finance_skill` |
 | mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |
-| flake8 违规 | 0 | `.flake8` 配置（注：extend-ignore 屏蔽 F401/F841 等，待 Phase 2 移除屏蔽） |
+| flake8 违规 | 0 | `flake8 opc_manager/ tests/` = 0（Phase 2 P0 清零：opc_manager 143→0 + tests 119→0） |
 
 ### 测试维度现状（v0.3.3 评估）
 
@@ -78,9 +78,9 @@
 | P0-1 | CHANGELOG/README 覆盖率口径混淆（17% vs 99%） | ✅ 已修复（2026-06-29，README 措辞澄清） |
 | P0-2 | Perf 测试维度 0.83% 违反 ≥5% 硬约束 | ⏳ 待办（Phase 1 Task #3） |
 | P0-3 | 无 v0.3.3 git tag，release.yml 从未触发 | ⏳ 待办（Phase 1 Task #5，需用户确认） |
-| P0-4 | requirements.lock SSH 私有仓库依赖不可复现 | ⏳ 待办（Phase 1 Task #6） |
-| P0-5 | release.yml 缺 PyPI twine upload 步骤 | ⏳ 待办（Phase 1 Task #7） |
-| P0-6 | email/finance 覆盖率全量口径仅 17%/14.5% | ⏳ 待办（Phase 1 Task #2，大型任务） |
+| P0-4 | requirements.lock SSH 私有仓库依赖不可复现 | ✅ 已修复（2026-06-29，carrymem==0.4.0，移除本地路径） |
+| P0-5 | release.yml 缺 PyPI twine upload 步骤 | ✅ 已修复（2026-06-29，新增 publish-pypi job） |
+| P0-6 | email/finance 覆盖率全量口径仅 17%/14.5% | ⏳ 待办（大型任务，专项测试覆盖率已达 99%/100%） |
 
 ### 🟠 P1 重要问题（影响生产就绪）
 
@@ -92,7 +92,7 @@
 | P1-4 | parallel_executor.py 幽灵功能 | ✅ 已修复（2026-06-29，文档化三贤者实际路径） |
 | P1-5 | skill_marketplace.py 时序攻击（`==` 比较哈希） | ✅ 已修复（2026-06-29，`hmac.compare_digest`） |
 | P1-6 | opc_manager 99 文件平铺无子包 | ⏳ 待办（Phase 1 Task #12，需用户确认） |
-| P1-7 | async 函数注解率仅 23% | ⏳ 待办（Phase 1 Task #13） |
+| P1-7 | async 函数注解率仅 23% | ✅ 已修复（2026-06-29，AST 实测 87.5%，84/96） |
 | P1-8 | 715 处 Mock 违反"优先真实组件"铁律 | ⏳ 待办（Phase 1 Task #14，大型任务） |
 
 ---
@@ -104,22 +104,22 @@
 | 评估任务 # | 任务 | 状态 | 完成时间 |
 |------------|------|------|----------|
 | #1 | 覆盖率口径混淆修复 | ✅ 完成 | 2026-06-29 |
-| #2 | email/finance 补真实组件测试 ≥80% | ⏳ 待办 | — |
+| #2 | email/finance 补真实组件测试 ≥80% | ⏳ 待办（大型任务） | — |
 | #3 | Perf 维度扩充至 ≥5%（≥162 测试） | ⏳ 待办 | — |
 | #4 | 三语 README 安装命令统一 0.3.3 | ✅ 完成 | 2026-06-29 |
 | #5 | 打 v0.3.3/v0.4.0 git tag | ⏳ 待办（需用户确认） | — |
-| #6 | requirements.lock 移除 SSH 依赖 | ⏳ 待办 | — |
-| #7 | release.yml 补 PyPI twine upload | ⏳ 待办 | — |
+| #6 | requirements.lock 移除 SSH 依赖 | ✅ 完成 | 2026-06-29 |
+| #7 | release.yml 补 PyPI twine upload | ✅ 完成 | 2026-06-29 |
 | #8 | PBKDF2 替换裸 SHA-256 | ✅ 完成 | 2026-06-29 |
 | #9 | prompt injection 阻断式升级 | ✅ 完成 | 2026-06-29 |
 | #10 | 新建 PROJECT_STATUS.md | ✅ 完成 | 2026-06-29 |
 | #11 | parallel_executor 三贤者路径文档化 | ✅ 完成 | 2026-06-29 |
 | #12 | opc_manager 拆子包 | ⏳ 待办（需用户确认） | — |
-| #13 | async 函数补类型注解 ≥80% | ⏳ 待办 | — |
-| #14 | test_email_skill mock→真实组件重构 | ⏳ 待办 | — |
+| #13 | async 函数补类型注解 ≥80% | ✅ 完成（87.5%，AST 实测 84/96） | 2026-06-29 |
+| #14 | test_email_skill mock→真实组件重构 | ⏳ 待办（大型任务） | — |
 | #15 | skill_marketplace hmac.compare_digest | ✅ 完成 | 2026-06-29 |
 
-**进度**: 8/15 完成（53%），4 项待办，3 项需用户确认或大型任务。
+**进度**: 11/15 完成（73%），2 项待办（大型任务），2 项需用户确认。
 
 ---
 
@@ -127,15 +127,23 @@
 
 ### Phase 1：v0.4.0 发布前必做（P0+P1）
 
-见上方第 5 节。当前进度 8/15。
+见上方第 5 节。当前进度 11/15（73%）。
 
-### Phase 2：v0.4.1 跟进（P2，预计 2-3 天）
+### Phase 2：v0.4.1 跟进（P2）
+
+#### 已完成（2026-06-30）
+
+- ✅ flake8 opc_manager/ 清零（143→0，28 文件）
+- ✅ flake8 tests/ 清零（119→0，28 文件，E402 合理忽略）
+- ✅ DIRECTORY_STRUCTURE.md 更新到 v0.3.3
+- ✅ PROJECT_STATUS.md 同步真实进度
+
+#### 待办
 
 - 拆分 5 个 God 文件（async_executor/scenario_definitions/strategist_brain/tool_system/reflector_brain）
 - 拆分 `_run_worker` 128 行长方法为 3-4 个 ≤40 行子方法
 - data_manager.py 主业务表补索引（finance_records.user_id、tasks.status）
 - 16 处 `assertTrue(len())` → `assertGreater` 批量替换
-- DIRECTORY_STRUCTURE.md 更新到 v0.3.3
 - 三语 README 同步校验 CI
 - skill_marketplace API key 哈希改 PBKDF2
 - 审计日志补链式哈希
