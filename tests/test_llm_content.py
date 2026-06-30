@@ -50,7 +50,7 @@ class TestRAGModeGeneration(unittest.TestCase):
 
         self.assertIsInstance(result, GenerationResult)
         self.assertIsNotNone(result.content)
-        self.assertTrue(len(result.content) > 0)
+        self.assertGreater(len(result.content), 0)
 
     def test_generate_with_search_results(self):
         """有搜索结果时应构建上下文并传递给生成流程"""

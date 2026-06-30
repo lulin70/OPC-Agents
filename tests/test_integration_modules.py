@@ -393,9 +393,9 @@ class TestDataManagerDataBackup:
                     "income",
                     1000.0 * (i + 1),
                     "咨询费",
-                    f"客户{i+1}",
+                    f"客户{i + 1}",
                     "2026-01-01",
-                    f"记录{i+1}",
+                    f"记录{i + 1}",
                     now,
                 ),
             )

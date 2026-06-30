@@ -93,7 +93,7 @@ class TestAsyncExecutorIntegration:
         for i in range(3):
             tid = self.executor.submit(f"阻塞任务{i}", execute_func=blocker)
             task_ids.append(tid)
-            assert tid is not None, f"第{i+1}个任务应成功提交"
+            assert tid is not None, f"第{i + 1}个任务应成功提交"
             time.sleep(0.05)
 
         rejected = self.executor.submit("超额任务", execute_func=blocker)

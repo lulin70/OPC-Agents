@@ -171,7 +171,7 @@ class TestE2EKnowledgeSearch(unittest.TestCase):
                 kb = KnowledgeBridge()
                 if kb.enabled:
                     results = kb.search("marketing")
-                    self.assertTrue(len(results) > 0)
+                    self.assertGreater(len(results), 0)
                     # Title comes from filename (without .md extension)
                     self.assertIn("marketing", results[0].title.lower())
                 else:

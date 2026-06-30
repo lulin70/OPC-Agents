@@ -71,7 +71,7 @@ class TestRealSearch(unittest.TestCase):
                 self.assertIn("title", r)
                 self.assertIn("href", r)
                 self.assertIn("body", r)
-                self.assertTrue(len(r["title"]) > 0)
+                self.assertGreater(len(r["title"]), 0)
 
     def test_search_performance_under_15s(self):
         start = time.time()

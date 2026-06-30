@@ -219,7 +219,7 @@ class TestStrategistBrainHelpers(unittest.TestCase):
     def test_extract_constraints_count(self):
         constraints = self.brain._extract_constraints("写3份报告")
         count_constraints = [c for c in constraints if c.type == ConstraintType.COUNT]
-        self.assertTrue(len(count_constraints) > 0)
+        self.assertGreater(len(count_constraints), 0)
 
     def test_to_dict(self):
         d = self.brain.to_dict()

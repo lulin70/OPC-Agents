@@ -38,7 +38,7 @@ class TestLocalFolderKeywordFallback(unittest.TestCase):
     def test_keyword_search_finds_match(self):
         adapter = LocalFolderAdapter(self.tmpdir)
         results = adapter.search("marketing")
-        self.assertTrue(len(results) > 0)
+        self.assertGreater(len(results), 0)
         self.assertEqual(results[0].title, "marketing")
 
     @patch.dict(os.environ, {"OPC_EMBEDDING_ENABLED": "false"})
@@ -51,7 +51,7 @@ class TestLocalFolderKeywordFallback(unittest.TestCase):
     def test_keyword_search_tag_match(self):
         adapter = LocalFolderAdapter(self.tmpdir)
         results = adapter.search("strategy")
-        self.assertTrue(len(results) > 0)
+        self.assertGreater(len(results), 0)
 
     @patch.dict(os.environ, {"OPC_EMBEDDING_ENABLED": "false"})
     def test_max_results_limit(self):
@@ -110,7 +110,7 @@ class TestLocalFolderSemanticSearch(unittest.TestCase):
 
         adapter = LocalFolderAdapter(self.tmpdir)
         results = adapter.search("revenue")
-        self.assertTrue(len(results) > 0)
+        self.assertGreater(len(results), 0)
         # All results should have relevance_score > 0
         for r in results:
             self.assertGreater(r.relevance_score, 0.0)

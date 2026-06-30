@@ -678,8 +678,8 @@ class TestParseAnalysisResult(unittest.TestCase):
         )
         result = self.mixin._parse_analysis_result(content, "测试")
         self.assertIn("摘要内容", result["summary"])
-        self.assertTrue(len(result["key_findings"]) > 0)
-        self.assertTrue(len(result["swot"]["strengths"]) > 0)
+        self.assertGreater(len(result["key_findings"]), 0)
+        self.assertGreater(len(result["swot"]["strengths"]), 0)
 
     def test_parse_invalid_json_falls_back(self):
         """无效 JSON 时回退到 Markdown 解析"""
@@ -703,8 +703,8 @@ class TestParseAnalysisResult(unittest.TestCase):
             "## threats\n\n- T1\n"
         )
         result = self.mixin._parse_analysis_result(content, "测试")
-        self.assertTrue(len(result["swot"]["strengths"]) > 0)
-        self.assertTrue(len(result["swot"]["weaknesses"]) > 0)
+        self.assertGreater(len(result["swot"]["strengths"]), 0)
+        self.assertGreater(len(result["swot"]["weaknesses"]), 0)
 
 
 # ---------------------------------------------------------------------------

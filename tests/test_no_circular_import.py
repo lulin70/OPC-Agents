@@ -92,7 +92,7 @@ class TestNoCircularImport:
             for i, line in enumerate(lines):
                 if "def __getattr__" in line and not line.startswith(" "):
                     pytest.fail(
-                        f"{fname} L{i+1}: 模块级 __getattr__ 延迟导入: {line.strip()}"
+                        f"{fname} L{i + 1}: 模块级 __getattr__ 延迟导入: {line.strip()}"
                     )
 
     def test_package_symbols_eagerly_available(self):

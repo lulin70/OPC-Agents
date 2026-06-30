@@ -655,7 +655,7 @@ class TestExtractMatchedKeywords(unittest.TestCase):
         config = self.detector.type_keywords[BusinessType.ECOMMERCE]
         matched = self.detector._extract_matched_keywords_enhanced("网店运营", config)
         # "网店" is a synonym of "电商"
-        self.assertTrue(len(matched) > 0)
+        self.assertGreater(len(matched), 0)
 
     def test_max_12_keywords(self):
         config = self.detector.type_keywords[BusinessType.CONTENT_CREATOR]

@@ -527,7 +527,7 @@ QUERIES_LAYER5_PERFORMANCE = [
     *(
         [
             QueryTestCase(
-                id=f"L5-{i+6:03d}",
+                id=f"L5-{i + 6:03d}",
                 category=f"性能-批量{i}",
                 user_input=f"生成第{i}份周报模板，包含本周进展、下周计划和风险提示",
                 expected_keywords=[f"第{i}份", "周报"],
@@ -798,21 +798,21 @@ class LLME2EValidator:
         lines.append("|------|------|------|")
         lines.append(f"| 总查询数 | {stats['total']} | 100% |")
         lines.append(
-            f"| ✅ 成功 | {stats['success']} | {stats['success']/max(stats['total'], 1)*100:.0f}% |"
+            f"| ✅ 成功 | {stats['success']} | {stats['success'] / max(stats['total'], 1) * 100:.0f}% |"
         )
         lines.append(
-            f"| 🤖 LLM RAG模式 | {stats['llm_mode']} | {stats['llm_mode']/max(stats['total'], 1)*100:.0f}% |"
+            f"| 🤖 LLM RAG模式 | {stats['llm_mode']} | {stats['llm_mode'] / max(stats['total'], 1) * 100:.0f}% |"
         )
         lines.append(
-            f"| 📋 降级模式 | {stats['fallback_mode']} | {stats['fallback_mode']/max(stats['total'], 1)*100:.0f}% |"
+            f"| 📋 降级模式 | {stats['fallback_mode']} | {stats['fallback_mode'] / max(stats['total'], 1) * 100:.0f}% |"
         )
         lines.append(
-            f"| ❌ 失败 | {stats['error']} | {stats['error']/max(stats['total'], 1)*100:.0f}% |"
+            f"| ❌ 失败 | {stats['error']} | {stats['error'] / max(stats['total'], 1) * 100:.0f}% |"
         )
         lines.append(
             f"| 🎯 质量合格 | {stats['quality_passed']}/"
-            f"{stats['quality_passed']+stats['quality_failed']} | "
-            f"{stats['quality_passed']/max(stats['quality_passed']+stats['quality_failed'], 1)*100:.0f}% |"
+            f"{stats['quality_passed'] + stats['quality_failed']} | "
+            f"{stats['quality_passed'] / max(stats['quality_passed'] + stats['quality_failed'], 1) * 100:.0f}% |"
         )
         lines.append(f"| ⏱ 平均延迟 | {stats['avg_latency_ms']:.0f}ms | — |")
         lines.append(f"| 🔤 Token消耗 | {stats['total_tokens']} | — |")
@@ -831,10 +831,10 @@ class LLME2EValidator:
         lines.append("| 门禁 | 标准 | 实际 | 通过? |")
         lines.append("|------|------|------|------|")
         lines.append(
-            f"| G-LLM-REAL-01a: 真实API占比 | ≥10% | {llm_rate*100:.1f}% | {'✅' if gate_llm_pass else '❌'} |"
+            f"| G-LLM-REAL-01a: 真实API占比 | ≥10% | {llm_rate * 100:.1f}% | {'✅' if gate_llm_pass else '❌'} |"
         )
         lines.append(
-            f"| G-LLM-REAL-01b: 质量合格率 | ≥70% | {quality_rate*100:.1f}% | {'✅' if gate_quality_pass else '❌'} |"
+            f"| G-LLM-REAL-01b: 质量合格率 | ≥70% | {quality_rate * 100:.1f}% | {'✅' if gate_quality_pass else '❌'} |"
         )
         lines.append(
             f"| **综合** | **两项都过** | **—** | {'✅ **PASS**' if gate_overall else '❌ **FAIL**'} |"

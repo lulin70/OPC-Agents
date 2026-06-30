@@ -223,7 +223,7 @@ class TestRenderActionButtons(unittest.TestCase):
         button_calls = [
             call for call in mock_st.button.call_args_list if "下载" in str(call)
         ]
-        self.assertTrue(len(button_calls) > 0)
+        self.assertGreater(len(button_calls), 0)
         call_kwargs = (
             button_calls[0].kwargs if hasattr(button_calls[0], "kwargs") else {}
         )
@@ -238,7 +238,7 @@ class TestRenderActionButtons(unittest.TestCase):
         copy_calls = [
             call for call in mock_st.button.call_args_list if "复制" in str(call)
         ]
-        self.assertTrue(len(copy_calls) > 0)
+        self.assertGreater(len(copy_calls), 0)
 
     @patch("frontend.components.result_cards.st")
     def test_export_format_buttons(self, mock_st):
@@ -268,7 +268,7 @@ class TestRenderContentPreview(unittest.TestCase):
         mock_st.session_state = {}
         _render_content_preview(long_content, max_chars=200)
         call_args_list = mock_st.markdown.call_args_list
-        self.assertTrue(len(call_args_list) > 0, "应该至少调用一次st.markdown")
+        self.assertGreater(len(call_args_list), 0, "应该至少调用一次st.markdown")
         found_truncated = False
         for call in call_args_list:
             call_content = str(call[0][0]) if call[0] and len(call[0]) > 0 else ""

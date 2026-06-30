@@ -194,10 +194,10 @@ class TestConcurrencyControl:
         for i in range(3):
             start_idx = execution_order.index(f"start_{i}")
             if i > 0:
-                prev_end_idx = execution_order.index(f"end_{i-1}")
+                prev_end_idx = execution_order.index(f"end_{i - 1}")
                 assert (
                     start_idx > prev_end_idx
-                ), f"Task {i} started before task {i-1} finished"
+                ), f"Task {i} started before task {i - 1} finished"
 
 
 class TestTimeoutHandling:
