@@ -22,7 +22,7 @@ BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 
 _db_lock = threading.RLock()
 _local = threading.local()
-_db_version = 6
+_db_version = 7
 _db_initialized = False
 _db_init_lock = threading.Lock()
 
@@ -467,6 +467,8 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
             _migrate_v4_to_v5(conn)
         if current < 6:
             _migrate_v5_to_v6(conn)
+        if current < 7:
+            _migrate_v6_to_v7(conn)
         conn.execute(
             "INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', ?)",
             (str(_db_version),),
@@ -534,6 +536,17 @@ def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
         CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at);
     """)
+
+
+def _migrate_v6_to_v7(conn: sqlite3.Connection) -> None:
+    """v6→v7: audit_log 补链式哈希列（prev_hash, current_hash）。
+
+    链式哈希用于防篡改：每条记录的 current_hash = sha256(prev_hash + timestamp
+    + operation_type + input_hash)，prev_hash = 上一条记录的 current_hash。
+    旧数据（v6 及之前）两列为空字符串，不影响向后兼容。
+    """
+    _add_column_if_not_exists(conn, "audit_log", "prev_hash", "TEXT DEFAULT ''")
+    _add_column_if_not_exists(conn, "audit_log", "current_hash", "TEXT DEFAULT ''")
 
 
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")

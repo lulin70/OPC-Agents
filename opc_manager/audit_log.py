@@ -35,6 +35,9 @@ class AuditRecord:
         duration_ms: Operation duration in milliseconds.
         status: Operation status ('success', 'failed', 'cancelled').
         error_msg: Error message if operation failed.
+        prev_hash: Previous record's current_hash (chain integrity).
+        current_hash: This record's hash = sha256(prev_hash + timestamp
+            + operation_type + input_hash). First record uses GENESIS_HASH.
     """
 
     id: str
@@ -49,7 +52,12 @@ class AuditRecord:
     duration_ms: int
     status: str
     error_msg: str = ""
+    prev_hash: str = ""
+    current_hash: str = ""
 
+
+# Genesis hash for the first record in the chain (64 hex zeros).
+GENESIS_HASH = "0" * 64
 
 AUDIT_MAX_MEMORY_LOGS = 1000
 AUDIT_WRITE_BATCH_SIZE = 10
@@ -99,6 +107,7 @@ class AuditLog:
     _cleanup_counter: int
     _cleanup_needed: bool
     _writer_thread: Optional[threading.Thread]
+    _last_hash: str  # 链式哈希：最后一条记录的 current_hash
 
     def __new__(cls):
         """Create or return singleton instance."""
@@ -113,6 +122,7 @@ class AuditLog:
                     cls._instance._cleanup_counter = 0
                     cls._instance._cleanup_needed = False
                     cls._instance._writer_thread = None
+                    cls._instance._last_hash = GENESIS_HASH
         return cls._instance
 
     @staticmethod
@@ -135,6 +145,26 @@ class AuditLog:
         except Exception as e:
             logger.warning("AuditLog failed to initialize database connection: %s", e)
 
+    def _recover_last_hash(self) -> None:
+        """进程重启后从 DB 恢复链式哈希的最后一条 current_hash。
+
+        保证重启后新日志与旧日志形成连续链，防止链断裂导致防篡改失效。
+        仅在首次 log() 时调用一次（持有 _lock）。
+        """
+        try:
+            from opc_manager.data_manager import init_db, execute_query
+
+            init_db()
+            rows = execute_query(
+                "SELECT current_hash FROM audit_log "
+                "WHERE current_hash != '' ORDER BY timestamp DESC LIMIT 1"
+            )
+            if rows and rows[0]["current_hash"]:
+                self._last_hash = rows[0]["current_hash"]
+                logger.info("AuditLog chain hash recovered from DB")
+        except Exception as e:
+            logger.warning("AuditLog failed to recover chain hash: %s", e)
+
     def log(
         self,
         session_id: str,
@@ -150,23 +180,37 @@ class AuditLog:
         import uuid
 
         input_text = input_text or ""
-        record = AuditRecord(
-            id=uuid.uuid4().hex[:12],
-            session_id=session_id,
-            user_id=user_id,
-            timestamp=time.time(),
-            operation_type=operation_type,
-            skill_id=skill_id,
-            input_hash=hashlib.sha256(input_text.encode()).hexdigest(),
-            input_summary=self._audit_sanitize(input_text),
-            output_summary=(
-                self._audit_sanitize(str(output_data))[:500] if output_data else ""
-            ),
-            duration_ms=duration_ms,
-            status=status,
-            error_msg=error_msg[:500],
-        )
+        input_hash = hashlib.sha256(input_text.encode()).hexdigest()
+        timestamp = time.time()
         with self._lock:
+            # 首次调用时从 DB 恢复链式哈希（进程重启后保证链连续）
+            if not self._started and self._last_hash == GENESIS_HASH:
+                self._recover_last_hash()
+            # 链式哈希计算（持有锁，保证链顺序与 log() 调用顺序一致）
+            prev_hash = self._last_hash
+            current_hash = hashlib.sha256(
+                f"{prev_hash}{timestamp}{operation_type}{input_hash}".encode()
+            ).hexdigest()
+            self._last_hash = current_hash
+
+            record = AuditRecord(
+                id=uuid.uuid4().hex[:12],
+                session_id=session_id,
+                user_id=user_id,
+                timestamp=timestamp,
+                operation_type=operation_type,
+                skill_id=skill_id,
+                input_hash=input_hash,
+                input_summary=self._audit_sanitize(input_text),
+                output_summary=(
+                    self._audit_sanitize(str(output_data))[:500] if output_data else ""
+                ),
+                duration_ms=duration_ms,
+                status=status,
+                error_msg=error_msg[:500],
+                prev_hash=prev_hash,
+                current_hash=current_hash,
+            )
             self._logs.append(record)
             self._write_queue.put(record)
 
@@ -216,6 +260,63 @@ class AuditLog:
                     }
                 )
         return results[:limit]
+
+    def verify_chain(self, limit: int = 1000) -> Dict[str, Any]:
+        """验证审计日志链式哈希完整性。
+
+        从 DB 读取最近 limit 条记录，验证：
+        1. 每条 current_hash = sha256(prev_hash + timestamp + operation_type + input_hash)
+        2. 每条 prev_hash = 上一条 current_hash（首条 prev_hash = GENESIS_HASH 或空）
+
+        Returns:
+            {"valid": bool, "total": int, "verified": int, "broken_at": Optional[str]}
+            broken_at 为断裂处的 record id（如有）
+        """
+        try:
+            from opc_manager.data_manager import init_db, execute_query
+
+            init_db()
+            rows = execute_query(
+                "SELECT id, timestamp, operation_type, input_hash, "
+                "prev_hash, current_hash FROM audit_log "
+                "WHERE current_hash != '' ORDER BY timestamp ASC LIMIT ?",
+                (limit,),
+            )
+        except Exception as e:
+            logger.warning("AuditLog verify_chain query failed: %s", e)
+            return {"valid": False, "total": 0, "verified": 0, "broken_at": None, "error": str(e)}
+
+        if not rows:
+            return {"valid": True, "total": 0, "verified": 0, "broken_at": None}
+
+        prev_expected = GENESIS_HASH
+        verified = 0
+        for row in rows:
+            # prev_hash 连续性检查
+            if row["prev_hash"] and row["prev_hash"] != prev_expected:
+                return {
+                    "valid": False,
+                    "total": len(rows),
+                    "verified": verified,
+                    "broken_at": row["id"],
+                    "error": f"prev_hash mismatch at {row['id']}",
+                }
+            # current_hash 重算验证
+            recomputed = hashlib.sha256(
+                f"{row['prev_hash']}{row['timestamp']}{row['operation_type']}{row['input_hash']}".encode()
+            ).hexdigest()
+            if recomputed != row["current_hash"]:
+                return {
+                    "valid": False,
+                    "total": len(rows),
+                    "verified": verified,
+                    "broken_at": row["id"],
+                    "error": f"current_hash mismatch at {row['id']}",
+                }
+            verified += 1
+            prev_expected = row["current_hash"]
+
+        return {"valid": True, "total": len(rows), "verified": verified, "broken_at": None}
 
     def get_stats(self, session_id: Optional[str] = None) -> Dict[str, Any]:
         total = success = failed = 0
@@ -296,6 +397,8 @@ class AuditLog:
                                 r.duration_ms,
                                 r.status,
                                 r.error_msg,
+                                r.prev_hash,
+                                r.current_hash,
                             )
                             for r in batch
                         ]
@@ -304,8 +407,8 @@ class AuditLog:
                             INSERT OR IGNORE INTO audit_log
                             (id, session_id, user_id, timestamp, operation_type,
                              skill_id, input_hash, input_summary, output_summary,
-                             duration_ms, status, error_msg)
-                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                             duration_ms, status, error_msg, prev_hash, current_hash)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                         """,
                             values,
                             many=True,
@@ -333,6 +436,15 @@ class AuditLog:
                     break
 
             # Flush any remaining records before exiting.
+            # Drain queue: sentinel may have arrived before all records were processed.
+            while True:
+                try:
+                    remaining = self._write_queue.get_nowait()
+                    if remaining is None:
+                        continue
+                    batch.append(remaining)
+                except Empty:
+                    break
             if batch:
                 try:
                     values = [
@@ -349,6 +461,8 @@ class AuditLog:
                             r.duration_ms,
                             r.status,
                             r.error_msg,
+                            r.prev_hash,
+                            r.current_hash,
                         )
                         for r in batch
                     ]
@@ -357,8 +471,8 @@ class AuditLog:
                         INSERT OR IGNORE INTO audit_log
                         (id, session_id, user_id, timestamp, operation_type,
                          skill_id, input_hash, input_summary, output_summary,
-                         duration_ms, status, error_msg)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                         duration_ms, status, error_msg, prev_hash, current_hash)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """,
                         values,
                         many=True,

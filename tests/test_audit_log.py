@@ -352,5 +352,105 @@ class TestSingletonPattern:
         assert a1 is not a2
 
 
+class TestChainHash:
+    """Test suite for audit log chain hash (防篡改链式哈希)."""
+
+    @pytest.fixture(autouse=True)
+    def clean_audit_db(self):
+        """清空 audit_log 表并重置 _last_hash，保证测试隔离。"""
+        try:
+            from opc_manager.data_manager import init_db, execute_write
+            init_db()
+            execute_write("DELETE FROM audit_log", (), many=False)
+        except Exception:
+            pass
+        yield
+
+    def test_first_record_uses_genesis_prev_hash(self, audit_log):
+        """首条记录 prev_hash = GENESIS_HASH（全零）。"""
+        audit_log._last_hash = "0" * 64  # 确保 genesis
+        audit_log.log(
+            session_id="s1", operation_type="TEST", skill_id="test",
+            input_text="first", output_data="ok", duration_ms=10,
+        )
+        audit_log.stop(wait=True)
+        with audit_log._lock:
+            records = list(audit_log._logs)
+        assert len(records) == 1
+        assert records[0].prev_hash == "0" * 64
+        assert records[0].current_hash != ""
+        assert records[0].current_hash != "0" * 64
+
+    def test_chain_links_consecutive_records(self, audit_log):
+        """连续记录链式链接：第二条 prev_hash = 第一条 current_hash。"""
+        audit_log._last_hash = "0" * 64  # 确保 genesis
+        audit_log.log(
+            session_id="s1", operation_type="OP1", skill_id="test",
+            input_text="first", output_data="ok", duration_ms=10,
+        )
+        audit_log.log(
+            session_id="s1", operation_type="OP2", skill_id="test",
+            input_text="second", output_data="ok", duration_ms=10,
+        )
+        audit_log.stop(wait=True)
+        with audit_log._lock:
+            records = list(audit_log._logs)
+        assert len(records) == 2
+        assert records[1].prev_hash == records[0].current_hash
+        assert records[0].current_hash != records[1].current_hash
+
+    def test_current_hash_deterministic(self, audit_log):
+        """相同输入产生相同 current_hash（可重算验证）。"""
+        import hashlib
+
+        audit_log._last_hash = "0" * 64  # 确保 genesis
+        audit_log.log(
+            session_id="s1", operation_type="DETERMINISTIC", skill_id="test",
+            input_text="payload", output_data="ok", duration_ms=5,
+        )
+        audit_log.stop(wait=True)
+        with audit_log._lock:
+            r = audit_log._logs[-1]
+        # 重算 current_hash
+        recomputed = hashlib.sha256(
+            f"{r.prev_hash}{r.timestamp}{r.operation_type}{r.input_hash}".encode()
+        ).hexdigest()
+        assert r.current_hash == recomputed
+
+    def test_last_hash_updated_after_log(self, audit_log):
+        """log() 后 _last_hash 更新为最新 current_hash。"""
+        audit_log.log(
+            session_id="s1", operation_type="UPDATE", skill_id="test",
+            input_text="x", output_data="y", duration_ms=1,
+        )
+        audit_log.stop(wait=True)
+        with audit_log._lock:
+            last_record = audit_log._logs[-1]
+        assert audit_log._last_hash == last_record.current_hash
+
+    def test_verify_chain_valid_after_multiple_logs(self, audit_log):
+        """多条记录后 verify_chain() 返回 valid=True。"""
+        audit_log._last_hash = "0" * 64  # 确保 genesis
+        for i in range(5):
+            audit_log.log(
+                session_id="s1", operation_type=f"OP{i}", skill_id="test",
+                input_text=f"input{i}", output_data="ok", duration_ms=i,
+            )
+        audit_log.stop(wait=True)
+        # 等待后台 writer 线程完成 DB 写入（全量测试环境下时序更敏感）
+        import time as _time
+        _time.sleep(0.3)
+        result = audit_log.verify_chain(limit=100)
+        assert result["valid"] is True
+        assert result["verified"] == 5
+        assert result["broken_at"] is None
+
+    def test_verify_chain_empty_db_valid(self, audit_log):
+        """空 DB 时 verify_chain() 返回 valid=True。"""
+        result = audit_log.verify_chain(limit=100)
+        assert result["valid"] is True
+        assert result["total"] == 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])
