@@ -19,7 +19,10 @@ def _mock_llm_complete(*args, **kwargs):
     """Mock LLM that returns valid JSON for strategist/reflector brains."""
     prompt = args[0] if args else kwargs.get("prompt", "")
     if "plan" in prompt.lower() or "intent" in prompt.lower():
-        return '{"intent": "content_generation", "steps": [{"skill_id": "content_generation", "parameters": {"query": "test"}}]}'
+        return (
+            '{"intent": "content_generation", "steps": '
+            '[{"skill_id": "content_generation", "parameters": {"query": "test"}}]}'
+        )
     if "reflect" in prompt.lower() or "quality" in prompt.lower():
         return '{"quality_score": 0.9, "should_continue": false}'
     return "Task completed successfully."

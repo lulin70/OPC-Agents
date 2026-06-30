@@ -656,7 +656,11 @@ class TestParseAnalysisResult(unittest.TestCase):
 
     def test_parse_json_with_code_block(self):
         """解析带 ```json 代码块的 JSON"""
-        content = '```json\n{"summary": "摘要", "key_findings": [], "swot": {"strengths": [], "weaknesses": [], "opportunities": [], "threats": []}, "action_items": []}\n```'
+        content = (
+            '```json\n{"summary": "摘要", "key_findings": [], "swot": '
+            '{"strengths": [], "weaknesses": [], "opportunities": [], "threats": []}, '
+            '"action_items": []}\n```'
+        )
         result = self.mixin._parse_analysis_result(content, "测试")
         self.assertEqual(result["summary"], "摘要")
 

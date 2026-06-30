@@ -118,21 +118,21 @@ class TestGetAvailableLocales:
     def test_zh_cn_locale_info(self):
         manager = I18nManager()
         locales = manager.get_available_locales()
-        zh = next((l for l in locales if l["code"] == "zh_CN"), None)
+        zh = next((line for line in locales if line["code"] == "zh_CN"), None)
         assert zh is not None
         assert "中文" in zh["name"]
 
     def test_en_us_locale_info(self):
         manager = I18nManager()
         locales = manager.get_available_locales()
-        en = next((l for l in locales if l["code"] == "en_US"), None)
+        en = next((line for line in locales if line["code"] == "en_US"), None)
         assert en is not None
         assert "English" in en["name"]
 
     def test_ja_jp_locale_info(self):
         manager = I18nManager()
         locales = manager.get_available_locales()
-        ja = next((l for l in locales if l["code"] == "ja_JP"), None)
+        ja = next((line for line in locales if line["code"] == "ja_JP"), None)
         assert ja is not None
         assert "日本語" in ja["name"]
 

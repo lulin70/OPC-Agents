@@ -240,7 +240,8 @@ class TestRateLimit:
         now = _time.strftime("%Y-%m-%dT%H:%M:%S")
         for i in range(3):
             dm.execute_write(
-                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) "
+                "VALUES (?,?,?,?,?,?,?)",
                 (f"id{i}", "to@test.com", "s", "b", "sent", "", now),
             )
         assert _count_today_sends() == 3
@@ -256,7 +257,8 @@ class TestRateLimit:
         now = _time.strftime("%Y-%m-%dT%H:%M:%S")
         for i in range(RATE_LIMIT_MAX):
             dm.execute_write(
-                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) "
+                "VALUES (?,?,?,?,?,?,?)",
                 (f"r{i}", "same@test.com", "s", "b", "sent", "", now),
             )
         assert _check_rate_limit("same@test.com") is False
@@ -549,7 +551,8 @@ class TestEmailHistory:
         now = _time.strftime("%Y-%m-%dT%H:%M:%S")
         for i in range(5):
             dm.execute_write(
-                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) "
+                "VALUES (?,?,?,?,?,?,?)",
                 (f"h{i}", f"to{i}@test.com", f"subject{i}", "b", "sent", "", now),
             )
         history = list_email_history(limit=3)
@@ -734,7 +737,8 @@ class TestUndoSendEmail:
 
         now = _time.strftime("%Y-%m-%dT%H:%M:%S")
         dm.execute_write(
-            "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
             ("undo1", "to@test.com", "s", "b", "sent", "", now),
         )
         result = undo_send_email(record_id="undo1")
@@ -748,7 +752,8 @@ class TestUndoSendEmail:
 
         now = _time.strftime("%Y-%m-%dT%H:%M:%S")
         dm.execute_write(
-            "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO email_history (id,to_addr,subject,body,status,template_name,created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
             ("latest1", "to@test.com", "s", "b", "sent", "", now),
         )
         result = undo_send_email()

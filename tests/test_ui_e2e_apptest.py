@@ -134,7 +134,7 @@ class TestUIAppLaunch:
         all_text += " " + " ".join(t.value for t in at.text)
         assert (
             "OPC" in all_text or "一人公司" in all_text
-        ), f"App title not found in rendered text"
+        ), "App title not found in rendered text"
 
     def test_version_displayed_in_sidebar(self, isolated_data_env):
         """Version string is shown in sidebar."""
@@ -242,7 +242,7 @@ class TestUIChatPageDemoMode:
         all_markdown = " ".join(m.value for m in at.markdown)
         assert (
             "demo" in all_markdown.lower() or "演示" in all_markdown
-        ), f"Demo banner not found"
+        ), "Demo banner not found"
 
     def test_chat_page_shows_demo_info(self, isolated_data_env):
         """Chat page in demo mode shows info about available features."""

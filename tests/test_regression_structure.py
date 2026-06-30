@@ -11,7 +11,10 @@ def test_no_pages_directory_exists():
     """C1: frontend/pages/ must NOT exist (Streamlit auto-detection bug)."""
     assert not os.path.isdir(
         PAGES_DIR
-    ), f"frontend/pages/ directory exists! Streamlit will auto-detect .py files as multipage links. Move files to page_modules/"
+    ), (
+        "frontend/pages/ directory exists! Streamlit will auto-detect .py files "
+        "as multipage links. Move files to page_modules/"
+    )
 
 
 def test_no_py_files_in_pages_dir_if_exists():

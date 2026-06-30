@@ -284,7 +284,7 @@ class TestBuildConfirmCallback:
         result = asyncio.run(cb(request))
         assert result.confirmed is True
         assert result.method == "skipped"
-        assert f"trust_boost_skip_session_SOCIAL" in st.session_state
+        assert "trust_boost_skip_session_SOCIAL" in st.session_state
 
     def test_callback_pending_state_when_no_choice(self):
         from frontend.components.confirmation_dialog import build_confirm_callback

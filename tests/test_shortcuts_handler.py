@@ -209,11 +209,13 @@ class TestQueryStatus:
         today = __import__("datetime").date.today().isoformat()
         now = __import__("datetime").datetime.now().isoformat()
         execute_write(
-            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (gen_id(), "income", 5000, "咨询费", "咨询费", today, "qs_client", now),
         )
         execute_write(
-            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (gen_id(), "income", 3000, "服务费", "服务费", today, "qs_client2", now),
         )
 
@@ -366,13 +368,14 @@ class TestDailyReport:
                 did,
                 f"周报文档_{unique_tag}",
                 "done",
-                f"deliverable:report",
+                "deliverable:report",
                 f"{today}T11:00:00",
             ),
         )
         iid = gen_id()
         execute_write(
-            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (iid, "income", 6000, "咨询", "咨询", today, f"王五_{unique_tag}", now),
         )
 

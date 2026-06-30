@@ -337,7 +337,7 @@ class TestGateITERATE01(unittest.TestCase):
         self.assertIn("用户:", context)
         self.assertIn("助手:", context)
 
-        lines = [l for l in context.split("\n") if l.strip()]
+        lines = [line for line in context.split("\n") if line.strip()]
         self.assertGreaterEqual(len(lines), 4, "上下文格式应足够详细")
 
 

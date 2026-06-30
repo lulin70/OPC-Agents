@@ -282,7 +282,7 @@ class TestBuildTimelineFromSession(unittest.TestCase):
             {
                 "id": f"del_{i}",
                 "prompt": f"任务{i}",
-                "created_at": f"2024-01-{(i%30)+1:02d} 12:00:00",
+                "created_at": f"2024-01-{(i % 30) + 1:02d} 12:00:00",
             }
             for i in range(MAX_TIMELINE_EVENTS + 100)
         ]

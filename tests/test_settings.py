@@ -423,7 +423,7 @@ class TestAutoGenerateKey:
             len(hex_chars) >= 10
         ), f"Key should have sufficient character diversity (got {len(hex_chars)} unique chars)"
 
-        byte_values = [int(key[i : i + 2], 16) for i in range(0, 64, 2)]
+        byte_values = [int(key[i:i + 2], 16) for i in range(0, 64, 2)]
         assert (
             min(byte_values) < 32 and max(byte_values) > 223
         ), "Key bytes should span full 0-255 range (high entropy indicator)"

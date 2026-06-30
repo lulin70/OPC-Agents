@@ -204,7 +204,7 @@ class TestProgressEventToSSE:
         sse = event.to_sse()
         assert sse.startswith("data: ")
         assert sse.endswith("\n\n")
-        data = json.loads(sse[len("data: ") :])
+        data = json.loads(sse[len("data: "):])
         assert data["event"] == "complete"
         assert data["progress"] == 100
 

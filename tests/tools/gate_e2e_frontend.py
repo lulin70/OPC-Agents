@@ -104,7 +104,8 @@ class TestAsyncFlowGate:
         """并发限制执行"""
         executor = AsyncTaskExecutor(max_concurrent=2, default_timeout=10)
 
-        blocker = lambda prompt, **kw: time.sleep(30)
+        def blocker(prompt, **kw):
+            return time.sleep(30)
 
         t1 = executor.submit("任务1", execute_func=blocker)
         t2 = executor.submit("任务2", execute_func=blocker)

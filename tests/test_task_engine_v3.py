@@ -66,7 +66,8 @@ MOCK_LLM_RESPONSE = (
     "- Week 2 (Apr 8-14): SEO optimization sprint targeting 50 keywords\n"
     "- Week 3 (Apr 15-21): Community building with 2 AMAs and 5 expert posts\n"
     "- Week 4 (Apr 22-30): Paid acquisition test with 10000 CNY budget\n\n"
-    "## Budget\nTotal: 50000 CNY\n- Content creation: 20000 CNY\n- Paid ads: 15000 CNY\n- Tools & software: 15000 CNY\n\n"
+    "## Budget\nTotal: 50000 CNY\n- Content creation: 20000 CNY\n- Paid ads: 15000 CNY\n"
+    "- Tools & software: 15000 CNY\n\n"
     "## Risk Mitigation\n- If MAU < 6000 by Week 2: Double content output and add influencer partnerships\n"
     "- If conversion < 3%: A/B test pricing page and onboarding flow\n"
     "- Reserve 20% budget (10000 CNY) as emergency fund\n"
@@ -390,7 +391,7 @@ class TestZeroPlaceholderGate(unittest.TestCase):
         for pattern in self.FORBIDDEN_PATTERNS:
             if pattern in (content or ""):
                 idx = content.index(pattern)
-                context = content[max(0, idx - 50) : idx + 80]
+                context = content[max(0, idx - 50):idx + 80]
                 self.fail(
                     f"[{label}] 发现禁止的占位符 '{pattern}'！\n"
                     f"上下文: ...{context}..."
@@ -417,7 +418,8 @@ class TestZeroPlaceholderGate(unittest.TestCase):
         self._assert_no_placeholders(result.content, "review步骤")
 
     def test_source_code_itself_clean(self):
-        import tokenize, io
+        import tokenize
+        import io
 
         filepath = os.path.join(
             os.path.dirname(__file__), "..", "opc_manager", "task_engine_v3.py"

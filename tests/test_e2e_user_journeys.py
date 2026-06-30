@@ -319,7 +319,8 @@ class TestJourneyCrossPageState:
 
         task_id = gen_id()
         execute_write(
-            "INSERT INTO tasks (id, title, description, priority, status, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
+            "INSERT INTO tasks (id, title, description, priority, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'))",
             (task_id, "营销方案", "Q2营销方案已完成", 2, "done"),
         )
 
@@ -363,7 +364,8 @@ class TestJourneyCrossPageState:
         # Save a deliverable (simulating Chat save action)
         deliverable_id = gen_id()
         execute_write(
-            "INSERT INTO interaction_log (id, intent_type, goal, skill_used, success, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
+            "INSERT INTO interaction_log (id, intent_type, goal, skill_used, success, created_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'))",
             (deliverable_id, "content_generation", "Q2营销方案", "content_skill", 1),
         )
 
@@ -544,14 +546,16 @@ class TestJourneyErrorRecovery:
         # Valid write
         task_id = gen_id()
         execute_write(
-            "INSERT INTO tasks (id, title, description, priority, status, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
+            "INSERT INTO tasks (id, title, description, priority, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'))",
             (task_id, "正常任务", "描述", 2, "pending"),
         )
 
         # Duplicate write (should not crash)
         try:
             execute_write(
-                "INSERT INTO tasks (id, title, description, priority, status, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
+                "INSERT INTO tasks (id, title, description, priority, status, created_at) "
+                "VALUES (?, ?, ?, ?, ?, datetime('now'))",
                 (task_id, "重复任务", "描述", 2, "pending"),
             )
         except Exception:
@@ -560,7 +564,8 @@ class TestJourneyErrorRecovery:
         # Subsequent valid write still works
         task_id2 = gen_id()
         execute_write(
-            "INSERT INTO tasks (id, title, description, priority, status, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
+            "INSERT INTO tasks (id, title, description, priority, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'))",
             (task_id2, "恢复后的任务", "描述", 2, "pending"),
         )
         rows = execute_query("SELECT * FROM tasks WHERE id = ?", (task_id2,))
@@ -582,7 +587,8 @@ class TestJourneyDataLifecycle:
         # Step 1: Create original data
         task_id = gen_id()
         execute_write(
-            "INSERT INTO tasks (id, title, description, priority, status, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
+            "INSERT INTO tasks (id, title, description, priority, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'))",
             (task_id, "原始任务", "原始内容", 2, "pending"),
         )
 
@@ -725,7 +731,8 @@ class TestJourneyDemoMode:
 
         # Insert demo data
         execute_write(
-            "INSERT INTO finance_records (id, type, amount, category, date, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
+            "INSERT INTO finance_records (id, type, amount, category, date, created_at) "
+            "VALUES (?, ?, ?, ?, ?, datetime('now'))",
             (gen_id(), "income", 10000.0, "服务收入", "2026-06-01"),
         )
 

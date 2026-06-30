@@ -51,7 +51,8 @@ class TestAsyncExecutorIntegration:
 
     def test_get_status_pending_state(self):
         """测试提交后初始状态应为pending或running"""
-        slow_func = lambda prompt, **kw: time.sleep(5)
+        def slow_func(prompt, **kw):
+            time.sleep(5)
         task_id = self.executor.submit("测试状态查询", execute_func=slow_func)
         time.sleep(0.2)
 
@@ -69,7 +70,8 @@ class TestAsyncExecutorIntegration:
 
     def test_cancel_pending_task(self):
         """测试取消pending状态的任务"""
-        slow_func = lambda prompt, **kw: time.sleep(10)
+        def slow_func(prompt, **kw):
+            time.sleep(10)
         task_id = self.executor.submit("慢任务", execute_func=slow_func)
         time.sleep(0.05)
 
@@ -84,7 +86,8 @@ class TestAsyncExecutorIntegration:
 
     def test_concurrent_limit(self):
         """测试并发数达到上限后应拒绝新任务"""
-        blocker = lambda prompt, **kw: time.sleep(60)
+        def blocker(prompt, **kw):
+            time.sleep(60)
 
         task_ids = []
         for i in range(3):
@@ -277,7 +280,7 @@ class TestEndToEndFlow:
             time.sleep(0.1)
 
         assert completed == 3, f"应有3个任务完成，实际: {completed}"
-        print(f"✅ 并发测试通过: 3个任务全部完成")
+        print("✅ 并发测试通过: 3个任务全部完成")
 
 
 class TestPerformanceGuarantees:

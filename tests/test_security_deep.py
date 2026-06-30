@@ -1288,7 +1288,6 @@ class TestInputValidationBoundary:
             AgentConfig(agent_id="", display_name="Test")
 
 
-
 # ============================================================================
 # 7. LLM Prompt Injection Deep Tests
 # ============================================================================

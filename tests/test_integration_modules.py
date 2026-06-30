@@ -337,7 +337,8 @@ class TestDataManagerAuditLog:
         record_id = dm.gen_id()
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         dm.execute_write(
-            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (
                 record_id,
                 "income",
@@ -385,7 +386,8 @@ class TestDataManagerDataBackup:
         for i in range(5):
             rid = dm.gen_id()
             dm.execute_write(
-                "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+                "VALUES (?,?,?,?,?,?,?,?)",
                 (
                     rid,
                     "income",
@@ -735,7 +737,8 @@ class TestUndoManagerDataManager:
         record_id = dm.gen_id()
         now = time.strftime("%Y-%m-%dT%H:%M:%S")
         dm.execute_write(
-            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (
                 record_id,
                 "income",
@@ -1071,7 +1074,8 @@ class TestDataManagerTransaction:
         result = dm.execute_transaction(
             [
                 (
-                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+                    "VALUES (?,?,?,?,?,?,?,?)",
                     (
                         rid1,
                         "income",
@@ -1084,7 +1088,8 @@ class TestDataManagerTransaction:
                     ),
                 ),
                 (
-                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+                    "VALUES (?,?,?,?,?,?,?,?)",
                     (
                         rid2,
                         "income",
@@ -1115,7 +1120,8 @@ class TestDataManagerTransaction:
         result = dm.execute_transaction(
             [
                 (
-                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) VALUES (?,?,?,?,?,?,?,?)",
+                    "INSERT INTO finance_records (id, type, amount, category, source, date, note, created_at) "
+                    "VALUES (?,?,?,?,?,?,?,?)",
                     (
                         rid1,
                         "income",

@@ -176,7 +176,7 @@ class TestMemoryLeaks:
 
         assert (
             len(project_leaks) == 0
-        ), f"Memory leaks detected in project code:\n" + "\n".join(
+        ), "Memory leaks detected in project code:\n" + "\n".join(
             str(s) for s in project_leaks[:5]
         )
 
@@ -206,7 +206,7 @@ class TestMemoryLeaks:
         ]
         tracemalloc.stop()
 
-        assert len(project_leaks) == 0, f"Memory leaks in BoundedDict:\n" + "\n".join(
+        assert len(project_leaks) == 0, "Memory leaks in BoundedDict:\n" + "\n".join(
             str(s) for s in project_leaks[:5]
         )
 
@@ -234,7 +234,7 @@ class TestMemoryLeaks:
         ]
         tracemalloc.stop()
 
-        assert len(project_leaks) == 0, f"SettingsManager memory growth:\n" + "\n".join(
+        assert len(project_leaks) == 0, "SettingsManager memory growth:\n" + "\n".join(
             str(s) for s in project_leaks[:5]
         )
 

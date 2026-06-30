@@ -261,7 +261,7 @@ class TestFinanceSkillBugFix:
         ]
         assert (
             len(wrong_refs) == 0
-        ), f"Found wrong table name 'finances' in:\n" + "\n".join(wrong_refs)
+        ), "Found wrong table name 'finances' in:\n" + "\n".join(wrong_refs)
 
     def test_uses_correct_table_finance_records(self):
         """finance_skill.py undo functions must use finance_records table."""

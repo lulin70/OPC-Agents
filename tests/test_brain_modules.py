@@ -103,7 +103,10 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
 
     @patch("opc_manager.strategist_brain.call_llm_service")
     def test_llm_returns_valid_intent(self, mock_llm):
-        mock_llm.return_value = '{"goal": "分析数据", "intent_type": "analysis", "confidence": 0.9, "sub_intents": [], "constraints": []}'
+        mock_llm.return_value = (
+            '{"goal": "分析数据", "intent_type": "analysis", '
+            '"confidence": 0.9, "sub_intents": [], "constraints": []}'
+        )
         mock_svc = MagicMock()
         brain = StrategistBrain(llm_service=mock_svc)
         intent = brain.understand_intent("分析数据")
@@ -526,7 +529,10 @@ class TestReflectorBrainEvaluate(unittest.TestCase):
 
     @patch("opc_manager.reflector_brain.call_llm_service")
     def test_llm_returns_valid_evaluation(self, mock_llm):
-        mock_llm.return_value = '{"quality_score": 0.85, "result_level": "GOOD", "deviation_analysis": "OK", "key_findings": ["fine"]}'
+        mock_llm.return_value = (
+            '{"quality_score": 0.85, "result_level": "GOOD", '
+            '"deviation_analysis": "OK", "key_findings": ["fine"]}'
+        )
         mock_svc = MagicMock()
         brain = ReflectorBrain(llm_service=mock_svc)
         actual = {"success": True, "data": {"content": "good"}}

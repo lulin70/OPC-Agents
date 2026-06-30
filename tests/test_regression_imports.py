@@ -129,7 +129,10 @@ class TestCriticalDependencies:
                     return
         assert (
             has_in_app or has_in_renderer
-        ), "read_file() is used but neither defined nor imported in app.py or deliverables_renderer.py - will cause NameError"
+        ), (
+            "read_file() is used but neither defined nor imported in app.py or "
+            "deliverables_renderer.py - will cause NameError"
+        )
 
     def test_t_function_is_imported_or_defined(self):
         """The i18n shorthand t() must be importable."""
@@ -204,7 +207,7 @@ class TestImportStructure:
                         "(private submodule path)"
                     )
 
-        assert len(suspicious) == 0, f"Suspicious import paths found:\n" + "\n".join(
+        assert len(suspicious) == 0, "Suspicious import paths found:\n" + "\n".join(
             suspicious
         )
 
@@ -289,6 +292,6 @@ class TestModuleLevelStatements:
 
         assert (
             len(problems) == 0
-        ), f"Module-level calls to non-builtin/non-imported functions:\n" + "\n".join(
+        ), "Module-level calls to non-builtin/non-imported functions:\n" + "\n".join(
             problems
         )

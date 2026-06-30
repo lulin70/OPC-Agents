@@ -278,4 +278,4 @@ class TestGetErrorHandlerFactory:
         """Multiple calls should return same class (not necessarily same instance)."""
         h1 = get_error_handler()
         h2 = get_error_handler()
-        assert type(h1) == type(h2)
+        assert isinstance(h1, type(h2))

@@ -277,8 +277,8 @@ class TestCollectEngineLogs:
                 mock_path.return_value.__truediv__ = lambda self, other: Path(temp_file)
 
                 logs = collect_engine_logs()
-                assert any(l.source == "engine" for l in logs)
-                assert any("TaskEngineV3" in l.message for l in logs)
+                assert any(line.source == "engine" for line in logs)
+                assert any("TaskEngineV3" in line.message for line in logs)
         finally:
             os.unlink(temp_file)
 
@@ -369,7 +369,7 @@ class TestCollectProgressLogs:
 
         logs = collect_progress_logs(session_id="test_session_12345")
         assert len(logs) == 2
-        assert all(l.source == "progress" for l in logs)
+        assert all(line.source == "progress" for line in logs)
         assert logs[0].extra["event_type"] == "step_start"
         assert logs[0].extra["progress_pct"] == 10
         assert "[STEP_START] (10%)" in logs[0].message
@@ -446,7 +446,7 @@ class TestCollectAllLogs:
     def test_aggregation_from_all_sources(self, mock_app, *args):
         logs = collect_all_logs()
         assert len(logs) == 2
-        assert all(l.source == "app" for l in logs)
+        assert all(line.source == "app" for line in logs)
 
     def test_result_limited_to_default_display_limit(self):
         many_entries = [
@@ -502,8 +502,8 @@ class TestCollectAllLogs:
                             return_value=[],
                         ):
                             logs = collect_all_logs(since_timestamp=time.time() - 60)
-                            assert any(l.timestamp == time.time() for l in logs)
-                            assert not any(l.timestamp == old_ts for l in logs)
+                            assert any(line.timestamp == time.time() for line in logs)
+                            assert not any(line.timestamp == old_ts for line in logs)
 
     def test_results_sorted_by_timestamp(self):
         entries = [
@@ -532,7 +532,7 @@ class TestCollectAllLogs:
                             return_value=[],
                         ):
                             logs = collect_all_logs()
-                            timestamps = [l.timestamp for l in logs]
+                            timestamps = [line.timestamp for line in logs]
                             assert timestamps == sorted(timestamps)
 
 
@@ -721,7 +721,7 @@ class TestFilterLogic:
         ]
         min_level_pos = LOG_LEVEL_ORDER.index("DEBUG")
         allowed_levels = set(LOG_LEVEL_ORDER[min_level_pos:])
-        filtered = [l for l in logs if l.level in allowed_levels]
+        filtered = [line for line in logs if line.level in allowed_levels]
         assert len(filtered) == 3
 
     def test_level_filter_warning_excludes_debug_and_info(self):
@@ -733,9 +733,9 @@ class TestFilterLogic:
         ]
         min_level_pos = LOG_LEVEL_ORDER.index("WARNING")
         allowed_levels = set(LOG_LEVEL_ORDER[min_level_pos:])
-        filtered = [l for l in logs if l.level in allowed_levels]
+        filtered = [line for line in logs if line.level in allowed_levels]
         assert len(filtered) == 2
-        assert all(l.level in ("WARNING", "ERROR") for l in filtered)
+        assert all(line.level in ("WARNING", "ERROR") for line in filtered)
 
     def test_source_filter(self):
         logs = [
@@ -743,9 +743,9 @@ class TestFilterLogic:
             create_sample_entry(source="engine"),
             create_sample_entry(source="audit"),
         ]
-        filtered = [l for l in logs if l.source in ("app", "audit")]
+        filtered = [line for line in logs if line.source in ("app", "audit")]
         assert len(filtered) == 2
-        assert set(l.source for l in filtered) == {"app", "audit"}
+        assert set(line.source for line in filtered) == {"app", "audit"}
 
     def test_keyword_search_case_insensitive(self):
         logs = [
@@ -754,7 +754,7 @@ class TestFilterLogic:
             create_sample_entry(message="Database query executed"),
         ]
         keyword = "database"
-        filtered = [l for l in logs if keyword.lower() in l.message.lower()]
+        filtered = [line for line in logs if keyword.lower() in line.message.lower()]
         assert len(filtered) == 2
 
     def test_combined_filters(self):
@@ -771,18 +771,18 @@ class TestFilterLogic:
 
         min_level_pos = LOG_LEVEL_ORDER.index("WARNING")
         allowed_levels = set(LOG_LEVEL_ORDER[min_level_pos:])
-        filtered = [l for l in logs if l.level in allowed_levels]
-        filtered = [l for l in filtered if l.source in ("app", "audit")]
+        filtered = [line for line in logs if line.level in allowed_levels]
+        filtered = [line for line in filtered if line.source in ("app", "audit")]
 
         assert len(filtered) == 2
-        assert all(l.level in ("WARNING", "ERROR", "CRITICAL") for l in filtered)
-        assert all(l.source in ("app", "audit") for l in filtered)
+        assert all(line.level in ("WARNING", "ERROR", "CRITICAL") for line in filtered)
+        assert all(line.source in ("app", "audit") for line in filtered)
 
     def test_empty_result_from_filters(self):
         logs = [create_sample_entry(level="DEBUG")]
         min_level_pos = LOG_LEVEL_ORDER.index("ERROR")
         allowed_levels = set(LOG_LEVEL_ORDER[min_level_pos:])
-        filtered = [l for l in logs if l.level in allowed_levels]
+        filtered = [line for line in logs if line.level in allowed_levels]
         assert len(filtered) == 0
 
 

@@ -217,7 +217,11 @@ QUERIES_LAYER2_QUALITY = [
     QueryTestCase(
         id="L2-009",
         category="内容生成-会议纪要",
-        user_input="将以下会议记录整理成结构化纪要:\n参会人:张三(CEO)、李四(CTO)、王五(CPO)\n议题: Q2产品路线图优先级\n结论: 先做移动端适配，数据分析延后到Q3\n行动项: 李四出技术方案(周五前)，王五做竞品调研(下周三)",
+        user_input=(
+            "将以下会议记录整理成结构化纪要:\n参会人:张三(CEO)、李四(CTO)、王五(CPO)\n"
+            "议题: Q2产品路线图优先级\n结论: 先做移动端适配，数据分析延后到Q3\n"
+            "行动项: 李四出技术方案(周五前)，王五做竞品调研(下周三)"
+        ),
         expected_keywords=["张三", "李四", "王五", "Q2", "移动端", "周五", "下周三"],
         forbidden_patterns=["___", "待确认"],
         min_length=400,
@@ -242,7 +246,11 @@ QUERIES_LAYER2_QUALITY = [
     QueryTestCase(
         id="L2-012",
         category="数据分析-竞品对比",
-        user_input="对比以下三个AI写作工具的功能矩阵:\nChatGPT: 多模态对话, $20/月, 支持插件\nJasper: 营销文案专用, $49/月, 品牌语音\nCopy.ai: 社媒短文, $36/月, 模板丰富\n我们的定位是什么?",
+        user_input=(
+            "对比以下三个AI写作工具的功能矩阵:\n"
+            "ChatGPT: 多模态对话, $20/月, 支持插件\nJasper: 营销文案专用, $49/月, 品牌语音\n"
+            "Copy.ai: 社媒短文, $36/月, 模板丰富\n我们的定位是什么?"
+        ),
         expected_keywords=["ChatGPT", "Jasper", "Copy.ai", "20", "49", "36"],
         forbidden_patterns=["___", "各有优劣"],
         min_length=600,
@@ -258,7 +266,11 @@ QUERIES_LAYER2_QUALITY = [
     QueryTestCase(
         id="L2-014",
         category="数据分析-A/B测试",
-        user_input="解释以下A/B测试结果:\n版本A(红色按钮): CTR 4.2%, 转化率 1.8%, 样本量 5000\n版本B(蓝色按钮): CTR 3.9%, 转化率 2.1%, 样本量 5000\np-value = 0.03\n应该选哪个版本?",
+        user_input=(
+            "解释以下A/B测试结果:\n版本A(红色按钮): CTR 4.2%, 转化率 1.8%, 样本量 5000\n"
+            "版本B(蓝色按钮): CTR 3.9%, 转化率 2.1%, 样本量 5000\n"
+            "p-value = 0.03\n应该选哪个版本?"
+        ),
         expected_keywords=["4.2%", "3.9%", "1.8%", "2.1%", "0.03", "p-value"],
         forbidden_patterns=["___", " statistically significant but..."],
         min_length=400,
@@ -352,7 +364,10 @@ QUERIES_LAYER3_BOUNDARY = [
     QueryTestCase(
         id="L3-004",
         category="边界-多语言混合",
-        user_input="Help me write a business plan for 我的一人公司, targeting the US market with $500K funding goal in Q3 2026",
+        user_input=(
+            "Help me write a business plan for 我的一人公司, targeting the US market "
+            "with $500K funding goal in Q3 2026"
+        ),
         expected_keywords=["business plan", "一人公司", "US", "$500K", "Q3"],
         forbidden_patterns=["___"],
         min_length=300,
@@ -482,7 +497,11 @@ QUERIES_LAYER5_PERFORMANCE = [
     QueryTestCase(
         id="L5-004",
         category="性能-复杂查询",
-        user_input="基于以下背景制定详细的6个月产品路线图:\n当前: MVP阶段，核心功能已完成80%，有200个活跃用户\n目标: 达到1000个付费用户，月收入$10K\n资源: 团队3人(1后端+1前端+1运营)\n竞争: 有3个直接竞品，价格区间$5-$20",
+        user_input=(
+            "基于以下背景制定详细的6个月产品路线图:\n当前: MVP阶段，核心功能已完成80%，有200个活跃用户\n"
+            "目标: 达到1000个付费用户，月收入$10K\n"
+            "资源: 团队3人(1后端+1前端+1运营)\n竞争: 有3个直接竞品，价格区间$5-$20"
+        ),
         expected_keywords=["6个月", "路线图", "MVP", "200", "1000", "$10K", "3人"],
         forbidden_patterns=["___", "后续迭代"],
         min_length=1200,
@@ -685,7 +704,10 @@ class LLME2EValidator:
         numbers_found = len(re.findall(number_pattern, content))
         date_pattern = r"\d{4}[-年]\d{1,2}[-月]\d{1,2}[日]?|\d{1,2}[/月]\d{1,2}[日]?"
         dates_found = len(re.findall(date_pattern, content))
-        action_pattern = r"(?:实施|执行|部署|发布|提交|创建|发送|联系|召开|启动|完成|优化|改进|调整|增加|减少|提升|降低)[^。，]*?(?:方案|计划|报告|文档|代码|功能|页面|邮件|会议)"
+        action_pattern = (
+            r"(?:实施|执行|部署|发布|提交|创建|发送|联系|召开|启动|完成|优化|改进|调整|增加|减少|提升|降低)"
+            r"[^。，]*?(?:方案|计划|报告|文档|代码|功能|页面|邮件|会议)"
+        )
         actions_found = len(re.findall(action_pattern, content))
         specificity_score = min((numbers_found + dates_found + actions_found), 3)
         scores["S2_具体性"] = specificity_score
@@ -763,23 +785,25 @@ class LLME2EValidator:
 
         stats = self.stats
         lines.append("## 总体统计")
-        lines.append(f"| 指标 | 数值 | 占比 |")
-        lines.append(f"|------|------|------|")
+        lines.append("| 指标 | 数值 | 占比 |")
+        lines.append("|------|------|------|")
         lines.append(f"| 总查询数 | {stats['total']} | 100% |")
         lines.append(
-            f"| ✅ 成功 | {stats['success']} | {stats['success']/max(stats['total'],1)*100:.0f}% |"
+            f"| ✅ 成功 | {stats['success']} | {stats['success']/max(stats['total'], 1)*100:.0f}% |"
         )
         lines.append(
-            f"| 🤖 LLM RAG模式 | {stats['llm_mode']} | {stats['llm_mode']/max(stats['total'],1)*100:.0f}% |"
+            f"| 🤖 LLM RAG模式 | {stats['llm_mode']} | {stats['llm_mode']/max(stats['total'], 1)*100:.0f}% |"
         )
         lines.append(
-            f"| 📋 降级模式 | {stats['fallback_mode']} | {stats['fallback_mode']/max(stats['total'],1)*100:.0f}% |"
+            f"| 📋 降级模式 | {stats['fallback_mode']} | {stats['fallback_mode']/max(stats['total'], 1)*100:.0f}% |"
         )
         lines.append(
-            f"| ❌ 失败 | {stats['error']} | {stats['error']/max(stats['total'],1)*100:.0f}% |"
+            f"| ❌ 失败 | {stats['error']} | {stats['error']/max(stats['total'], 1)*100:.0f}% |"
         )
         lines.append(
-            f"| 🎯 质量合格 | {stats['quality_passed']}/{stats['quality_passed']+stats['quality_failed']} | {stats['quality_passed']/max(stats['quality_passed']+stats['quality_failed'],1)*100:.0f}% |"
+            f"| 🎯 质量合格 | {stats['quality_passed']}/"
+            f"{stats['quality_passed']+stats['quality_failed']} | "
+            f"{stats['quality_passed']/max(stats['quality_passed']+stats['quality_failed'], 1)*100:.0f}% |"
         )
         lines.append(f"| ⏱ 平均延迟 | {stats['avg_latency_ms']:.0f}ms | — |")
         lines.append(f"| 🔤 Token消耗 | {stats['total_tokens']} | — |")
@@ -795,8 +819,8 @@ class LLME2EValidator:
         gate_quality_pass = quality_rate >= 0.70
         gate_overall = gate_llm_pass and gate_quality_pass
 
-        lines.append(f"| 门禁 | 标准 | 实际 | 通过? |")
-        lines.append(f"|------|------|------|------|")
+        lines.append("| 门禁 | 标准 | 实际 | 通过? |")
+        lines.append("|------|------|------|------|")
         lines.append(
             f"| G-LLM-REAL-01a: 真实API占比 | ≥10% | {llm_rate*100:.1f}% | {'✅' if gate_llm_pass else '❌'} |"
         )
