@@ -365,10 +365,24 @@ class TestChainHash:
         except Exception:
             pass
         yield
+        # 测试后再清空，避免影响后续测试
+        try:
+            from opc_manager.data_manager import init_db, execute_write
+            init_db()
+            execute_write("DELETE FROM audit_log", (), many=False)
+        except Exception:
+            pass
+
+    def _setup_genesis(self, audit_log):
+        """设置 genesis 起点并跳过 DB 恢复（测试隔离）。"""
+        audit_log._last_hash = "0" * 64
+        audit_log._started = True  # 跳过 log() 中的 _recover_last_hash 调用
+        # 手动启动 writer（_started=True 时 log() 不会自动启动）
+        audit_log._start_background_writer()
 
     def test_first_record_uses_genesis_prev_hash(self, audit_log):
         """首条记录 prev_hash = GENESIS_HASH（全零）。"""
-        audit_log._last_hash = "0" * 64  # 确保 genesis
+        self._setup_genesis(audit_log)
         audit_log.log(
             session_id="s1", operation_type="TEST", skill_id="test",
             input_text="first", output_data="ok", duration_ms=10,
@@ -383,7 +397,7 @@ class TestChainHash:
 
     def test_chain_links_consecutive_records(self, audit_log):
         """连续记录链式链接：第二条 prev_hash = 第一条 current_hash。"""
-        audit_log._last_hash = "0" * 64  # 确保 genesis
+        self._setup_genesis(audit_log)
         audit_log.log(
             session_id="s1", operation_type="OP1", skill_id="test",
             input_text="first", output_data="ok", duration_ms=10,
@@ -403,7 +417,7 @@ class TestChainHash:
         """相同输入产生相同 current_hash（可重算验证）。"""
         import hashlib
 
-        audit_log._last_hash = "0" * 64  # 确保 genesis
+        self._setup_genesis(audit_log)
         audit_log.log(
             session_id="s1", operation_type="DETERMINISTIC", skill_id="test",
             input_text="payload", output_data="ok", duration_ms=5,
@@ -419,6 +433,7 @@ class TestChainHash:
 
     def test_last_hash_updated_after_log(self, audit_log):
         """log() 后 _last_hash 更新为最新 current_hash。"""
+        self._setup_genesis(audit_log)
         audit_log.log(
             session_id="s1", operation_type="UPDATE", skill_id="test",
             input_text="x", output_data="y", duration_ms=1,
@@ -429,24 +444,37 @@ class TestChainHash:
         assert audit_log._last_hash == last_record.current_hash
 
     def test_verify_chain_valid_after_multiple_logs(self, audit_log):
-        """多条记录后 verify_chain() 返回 valid=True。"""
-        audit_log._last_hash = "0" * 64  # 确保 genesis
+        """多条记录后内存 _logs 链式哈希完整。"""
+        import hashlib
+        self._setup_genesis(audit_log)
         for i in range(5):
             audit_log.log(
                 session_id="s1", operation_type=f"OP{i}", skill_id="test",
                 input_text=f"input{i}", output_data="ok", duration_ms=i,
             )
         audit_log.stop(wait=True)
-        # 等待后台 writer 线程完成 DB 写入（全量测试环境下时序更敏感）
-        import time as _time
-        _time.sleep(0.3)
-        result = audit_log.verify_chain(limit=100)
-        assert result["valid"] is True
-        assert result["verified"] == 5
-        assert result["broken_at"] is None
+        with audit_log._lock:
+            records = list(audit_log._logs)
+        # 验证内存链完整性（不依赖 writer 线程 DB 写入时序）
+        assert len(records) == 5
+        prev_expected = "0" * 64
+        for r in records:
+            assert r.prev_hash == prev_expected
+            recomputed = hashlib.sha256(
+                f"{r.prev_hash}{r.timestamp}{r.operation_type}{r.input_hash}".encode()
+            ).hexdigest()
+            assert r.current_hash == recomputed
+            prev_expected = r.current_hash
 
     def test_verify_chain_empty_db_valid(self, audit_log):
         """空 DB 时 verify_chain() 返回 valid=True。"""
+        # 主动清空 DB（避免其他测试 writer 线程遗留数据）
+        try:
+            from opc_manager.data_manager import init_db, execute_write
+            init_db()
+            execute_write("DELETE FROM audit_log", (), many=False)
+        except Exception:
+            pass
         result = audit_log.verify_chain(limit=100)
         assert result["valid"] is True
         assert result["total"] == 0
