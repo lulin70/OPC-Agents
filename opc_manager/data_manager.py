@@ -529,6 +529,10 @@ def _migrate_v5_to_v6(conn: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_log(session_id);
         CREATE INDEX IF NOT EXISTS idx_audit_time ON audit_log(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_finance_date ON finance_records(date);
+        CREATE INDEX IF NOT EXISTS idx_finance_type ON finance_records(type);
+        CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+        CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at);
     """)
 
 
