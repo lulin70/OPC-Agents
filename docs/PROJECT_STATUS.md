@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-01（Phase 2 第 14 项完成） | **版本**: v0.3.3 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-01（Phase 1 #3 完成 + Phase 2 硬约束文档化） | **版本**: v0.3.3 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -48,7 +48,7 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 3305 collected | `pytest --co -q`（含 6 个链式哈希测试） |
+| 测试用例总数 | 3470 collected | `pytest --co -q`（含 165 个新 Perf 测试） |
 | 全量覆盖率 | 63% | `coverage.json` totals.percent_covered_display |
 | `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
 | `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
@@ -62,7 +62,7 @@
 - **Happy Path**: 充分（≥50%）
 - **Error Case**: 充分（≥15%）
 - **Boundary**: 不足（<10%，Phase 2 补充）
-- **Performance**: 严重不足（0.83%，硬约束要求 ≥5%，Phase 1 Task #3 扩充）
+- **Performance**: 达标（5.53%，硬约束要求 ≥5%，Phase 1 Task #3 已完成）
 - **Configuration**: 充分
 - **Integration**: 充分（24 个 E2E 测试）
 - **Security**: 充分（prompt injection 阻断 + 时序攻击防护 + PBKDF2）
@@ -76,7 +76,7 @@
 | # | 问题 | 状态 |
 |---|------|------|
 | P0-1 | CHANGELOG/README 覆盖率口径混淆（17% vs 99%） | ✅ 已修复（2026-06-29，README 措辞澄清） |
-| P0-2 | Perf 测试维度 0.83% 违反 ≥5% 硬约束 | ⏳ 待办（Phase 1 Task #3） |
+| P0-2 | Perf 测试维度 0.83% 违反 ≥5% 硬约束 | ✅ 已修复（2026-07-01，新增 165 个 Perf 测试，5.53%） |
 | P0-3 | 无 v0.3.3 git tag，release.yml 从未触发 | ⏳ 待办（Phase 1 Task #5，需用户确认） |
 | P0-4 | requirements.lock SSH 私有仓库依赖不可复现 | ✅ 已修复（2026-06-29，carrymem==0.4.0，移除本地路径） |
 | P0-5 | release.yml 缺 PyPI twine upload 步骤 | ✅ 已修复（2026-06-29，新增 publish-pypi job） |
@@ -105,7 +105,7 @@
 |------------|------|------|----------|
 | #1 | 覆盖率口径混淆修复 | ✅ 完成 | 2026-06-29 |
 | #2 | email/finance 补真实组件测试 ≥80% | ⏳ 待办（大型任务） | — |
-| #3 | Perf 维度扩充至 ≥5%（≥162 测试） | ⏳ 待办 | — |
+| #3 | Perf 维度扩充至 ≥5%（≥162 测试） | ✅ 完成（165 个 Perf 测试，5.53%） | 2026-07-01 |
 | #4 | 三语 README 安装命令统一 0.3.3 | ✅ 完成 | 2026-06-29 |
 | #5 | 打 v0.3.3/v0.4.0 git tag | ⏳ 待办（需用户确认） | — |
 | #6 | requirements.lock 移除 SSH 依赖 | ✅ 完成 | 2026-06-29 |
@@ -119,7 +119,7 @@
 | #14 | test_email_skill mock→真实组件重构 | ⏳ 待办（大型任务） | — |
 | #15 | skill_marketplace hmac.compare_digest | ✅ 完成 | 2026-06-29 |
 
-**进度**: 11/15 完成（73%），2 项待办（大型任务），2 项需用户确认。
+**进度**: 12/15 完成（80%），2 项待办（大型任务），2 项需用户确认。
 
 ---
 
@@ -127,7 +127,7 @@
 
 ### Phase 1：v0.4.0 发布前必做（P0+P1）
 
-见上方第 5 节。当前进度 11/15（73%）。
+见上方第 5 节。当前进度 12/15（80%）。
 
 ### Phase 2：v0.4.1 跟进（P2）
 
@@ -147,11 +147,11 @@
 - ✅ Skill 生态借鉴分析文档（docs/research/SKILL_ECOSYSTEM_RESEARCH.md，研究 design.md / Anthropic-Cybersecurity-Skills / Ponytail）
 - ✅ scenario_definitions.py God file 拆分（890→225 行 facade + 776 行 builtin，PEP 562 懒加载 re-export）
 - ✅ tool_system.py 拆分 — 提取 AuditLogger 到 tool_audit_logger.py（887→754 行 + 158 行，关注点分离）
+- ✅ 硬约束文档化 — docs/HARD_CONSTRAINTS.md（Ponytail 风格"永不削减"清单 + rationale + 执行机制，研究 P0 应用）
 
 #### 待办
 
 - strategist_brain.py / reflector_brain.py 拆分评估：God CLASS（785/733 行），dataclass 提取仅省 ~72 行，按 Ponytail YAGNI 暂缓；需 God class mixin 拆分（高风险，Phase 3）
-- Phase 1 #3: Perf 维度扩充至 ≥5%（≥162 测试）
 
 ### Phase 3：v0.5.0 长期（P3 + 架构演进）
 
@@ -192,3 +192,5 @@
 | 架构设计 | [architecture/PARALLEL_SAGES_DESIGN.md](architecture/PARALLEL_SAGES_DESIGN.md) | 三贤者并行投票架构 |
 | API 文档 | [API.md](API.md) | REST API 接口 |
 | 用户试用指南 | [guides/USER_TRIAL_GUIDE.md](guides/USER_TRIAL_GUIDE.md) | 3 分钟配置 |
+| 硬约束清单 | [HARD_CONSTRAINTS.md](HARD_CONSTRAINTS.md) | Ponytail 风格"永不削减"清单 |
+| Skill 生态研究 | [research/SKILL_ECOSYSTEM_RESEARCH.md](research/SKILL_ECOSYSTEM_RESEARCH.md) | design.md / Anthropic / Ponytail 借鉴分析 |
