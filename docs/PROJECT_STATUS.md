@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-06-30（Phase 2 第 11 项完成） | **版本**: v0.3.3 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-01（Phase 2 第 14 项完成） | **版本**: v0.3.3 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -144,10 +144,13 @@
 - ✅ skill_marketplace API key 哈希改 PBKDF2（裸 SHA-256 → PBKDF2-HMAC-SHA256 + salt）
 - ✅ 三语 README 数据校正（模块数 90→99，测试数 3341→3299）+ 一致性校验 CI
 - ✅ 审计日志链式哈希（prev_hash/current_hash + verify_chain() + DB 迁移 v6→v7 + writer drain bug 修复）
+- ✅ Skill 生态借鉴分析文档（docs/research/SKILL_ECOSYSTEM_RESEARCH.md，研究 design.md / Anthropic-Cybersecurity-Skills / Ponytail）
+- ✅ scenario_definitions.py God file 拆分（890→225 行 facade + 776 行 builtin，PEP 562 懒加载 re-export）
+- ✅ tool_system.py 拆分 — 提取 AuditLogger 到 tool_audit_logger.py（887→754 行 + 158 行，关注点分离）
 
 #### 待办
 
-- 拆分 4 个 God 文件（scenario_definitions/strategist_brain/tool_system/reflector_brain）
+- strategist_brain.py / reflector_brain.py 拆分评估：God CLASS（785/733 行），dataclass 提取仅省 ~72 行，按 Ponytail YAGNI 暂缓；需 God class mixin 拆分（高风险，Phase 3）
 - Phase 1 #3: Perf 维度扩充至 ≥5%（≥162 测试）
 
 ### Phase 3：v0.5.0 长期（P3 + 架构演进）
