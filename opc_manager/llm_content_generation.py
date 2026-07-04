@@ -26,7 +26,7 @@ MAX_LLM_OUTPUT_LENGTH is defined locally here (used only by _call_llm_api).
 
 import re
 import logging
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Any
 
 from .utils import _llm_thread_semaphore
 from .llm_content import GenerationResult
@@ -140,7 +140,7 @@ class LLMContentGenerationMixin:
                     logger.debug("[LLMContentGen] Cache hit for prompt")
                     return cached
 
-            payload = {
+            payload: Dict[str, Any] = {
                 "model": model,
                 "messages": [
                     {

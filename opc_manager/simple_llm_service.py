@@ -333,7 +333,7 @@ class SimpleLLMService:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._api_key}",
         }
-        payload = {
+        payload: Dict[str, Any] = {
             "model": self._model,
             "messages": messages,
             "max_tokens": max_tokens,
@@ -353,7 +353,7 @@ class SimpleLLMService:
     def _call_ollama(
         self, prompt: str, system_prompt: Optional[str], max_tokens: int, timeout: int
     ) -> Optional[str]:
-        payload = {
+        payload: Dict[str, Any] = {
             "model": self._model,
             "prompt": prompt,
             "stream": False,

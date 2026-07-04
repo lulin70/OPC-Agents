@@ -33,7 +33,7 @@ try:
 except ImportError:
     import logging
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)  # type: ignore[assignment]
 
 
 @runtime_checkable
