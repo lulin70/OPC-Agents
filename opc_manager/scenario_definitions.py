@@ -164,7 +164,9 @@ class ScenarioResult:
 
 # Public symbols defined directly in this module. Anything not listed here will
 # be resolved via __getattr__ below.
-__all__ = [
+# PEP 562 lazy re-exports: names below are resolved at runtime by __getattr__,
+# so flake8 F822 ("undefined name in __all__") is a false positive here.
+__all__ = [  # noqa: F822
     "OutputSpec",
     "DeliverableTemplate",
     "WorkflowStep",
