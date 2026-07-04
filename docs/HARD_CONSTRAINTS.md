@@ -68,7 +68,7 @@ OPC-Agents 采纳同一理念：**简化可以，但以下约束永不妥协**�
 
 | # | 约束 | Rationale | 执行机制 | 状态 |
 |---|------|-----------|----------|------|
-| Q1 | 发布前必须完成模拟真实用户使用的 E2E 测试 | 单元测试不覆盖集成路径；E2E = 真实用户视角 | `SKIP_E2E` 默认 "0"（不跳过） | ✅ |
+| Q1 | 发布前必须完成模拟真实用户使用的 E2E 测试 | 单元测试不覆盖集成路径；E2E = 真实用户视角 | `SKIP_E2E` 默认 "0"（不跳过）+ Playwright 真实浏览器 E2E（`tests/e2e/test_ui_playwright.py`，21 用例覆盖启动/导航/Chat/Deliverables 下载/Dashboard/Settings/多语言/健康检查） | ✅ |
 | Q2 | E2E 测试默认不跳过（`SKIP_E2E` 默认值为 "0"） | 全局跳过 = 死测试陷阱；默认运行 = 暴露真实问题 | 环境变量检查 | ✅ |
 | Q3 | 所有 async 函数必须包含返回类型注解（注解率 ≥80%） | 无注解 = 类型不可推断 = mypy 0 errors 的假象 | AST 检查 `node.returns is not None` | ✅ (87.5%) |
 | Q4 | CI mypy 检查必须为阻塞状态（exit code 非零即失败） | mypy 非阻塞 = 类型错误被忽略 | CI workflow `continue-on-error: false` | ✅ |
