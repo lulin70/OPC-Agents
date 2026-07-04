@@ -148,3 +148,9 @@ exclude = [
     "opc_manager/i18n/locales/",
     "tests/",
 ]
+
+# numpy 2.x stub uses PEP 695 `type` statement that mypy 2.1.0 cannot parse
+# on Python 3.12. Ignore numpy stub errors (third-party, not our code).
+[[tool.mypy.overrides]]
+module = "numpy.*"
+ignore_errors = true
