@@ -134,7 +134,8 @@ addopts = "-v --tb=short --strict-markers"
 [tool.mypy]
 # Mypy configuration — gradual typing adoption (TD-065)
 # Initial baseline: non-blocking in CI, target blocking by v0.4.0
-python_version = "3.10"
+# Note: do NOT pin python_version — let mypy use runtime version so that
+# PEP 695 `type` statements in numpy 2.x stubs parse correctly on 3.12.
 warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -148,9 +149,3 @@ exclude = [
     "opc_manager/i18n/locales/",
     "tests/",
 ]
-
-# numpy 2.x stub uses PEP 695 `type` statement that mypy 2.1.0 cannot parse
-# on Python 3.12. Ignore numpy stub errors (third-party, not our code).
-[[tool.mypy.overrides]]
-module = "numpy.*"
-ignore_errors = true
