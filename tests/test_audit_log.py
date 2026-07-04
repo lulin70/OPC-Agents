@@ -360,6 +360,7 @@ class TestChainHash:
         """清空 audit_log 表并重置 _last_hash，保证测试隔离。"""
         try:
             from opc_manager.data_manager import init_db, execute_write
+
             init_db()
             execute_write("DELETE FROM audit_log", (), many=False)
         except Exception:
@@ -368,6 +369,7 @@ class TestChainHash:
         # 测试后再清空，避免影响后续测试
         try:
             from opc_manager.data_manager import init_db, execute_write
+
             init_db()
             execute_write("DELETE FROM audit_log", (), many=False)
         except Exception:
@@ -384,8 +386,12 @@ class TestChainHash:
         """首条记录 prev_hash = GENESIS_HASH（全零）。"""
         self._setup_genesis(audit_log)
         audit_log.log(
-            session_id="s1", operation_type="TEST", skill_id="test",
-            input_text="first", output_data="ok", duration_ms=10,
+            session_id="s1",
+            operation_type="TEST",
+            skill_id="test",
+            input_text="first",
+            output_data="ok",
+            duration_ms=10,
         )
         audit_log.stop(wait=True)
         with audit_log._lock:
@@ -399,12 +405,20 @@ class TestChainHash:
         """连续记录链式链接：第二条 prev_hash = 第一条 current_hash。"""
         self._setup_genesis(audit_log)
         audit_log.log(
-            session_id="s1", operation_type="OP1", skill_id="test",
-            input_text="first", output_data="ok", duration_ms=10,
+            session_id="s1",
+            operation_type="OP1",
+            skill_id="test",
+            input_text="first",
+            output_data="ok",
+            duration_ms=10,
         )
         audit_log.log(
-            session_id="s1", operation_type="OP2", skill_id="test",
-            input_text="second", output_data="ok", duration_ms=10,
+            session_id="s1",
+            operation_type="OP2",
+            skill_id="test",
+            input_text="second",
+            output_data="ok",
+            duration_ms=10,
         )
         audit_log.stop(wait=True)
         with audit_log._lock:
@@ -419,8 +433,12 @@ class TestChainHash:
 
         self._setup_genesis(audit_log)
         audit_log.log(
-            session_id="s1", operation_type="DETERMINISTIC", skill_id="test",
-            input_text="payload", output_data="ok", duration_ms=5,
+            session_id="s1",
+            operation_type="DETERMINISTIC",
+            skill_id="test",
+            input_text="payload",
+            output_data="ok",
+            duration_ms=5,
         )
         audit_log.stop(wait=True)
         with audit_log._lock:
@@ -435,8 +453,12 @@ class TestChainHash:
         """log() 后 _last_hash 更新为最新 current_hash。"""
         self._setup_genesis(audit_log)
         audit_log.log(
-            session_id="s1", operation_type="UPDATE", skill_id="test",
-            input_text="x", output_data="y", duration_ms=1,
+            session_id="s1",
+            operation_type="UPDATE",
+            skill_id="test",
+            input_text="x",
+            output_data="y",
+            duration_ms=1,
         )
         audit_log.stop(wait=True)
         with audit_log._lock:
@@ -446,11 +468,16 @@ class TestChainHash:
     def test_verify_chain_valid_after_multiple_logs(self, audit_log):
         """多条记录后内存 _logs 链式哈希完整。"""
         import hashlib
+
         self._setup_genesis(audit_log)
         for i in range(5):
             audit_log.log(
-                session_id="s1", operation_type=f"OP{i}", skill_id="test",
-                input_text=f"input{i}", output_data="ok", duration_ms=i,
+                session_id="s1",
+                operation_type=f"OP{i}",
+                skill_id="test",
+                input_text=f"input{i}",
+                output_data="ok",
+                duration_ms=i,
             )
         audit_log.stop(wait=True)
         with audit_log._lock:
@@ -471,6 +498,7 @@ class TestChainHash:
         # 主动清空 DB（避免其他测试 writer 线程遗留数据）
         try:
             from opc_manager.data_manager import init_db, execute_write
+
             init_db()
             execute_write("DELETE FROM audit_log", (), many=False)
         except Exception:

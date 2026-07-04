@@ -423,7 +423,7 @@ class TestAutoGenerateKey:
             len(hex_chars) >= 10
         ), f"Key should have sufficient character diversity (got {len(hex_chars)} unique chars)"
 
-        byte_values = [int(key[i:i + 2], 16) for i in range(0, 64, 2)]
+        byte_values = [int(key[i : i + 2], 16) for i in range(0, 64, 2)]
         assert (
             min(byte_values) < 32 and max(byte_values) > 223
         ), "Key bytes should span full 0-255 range (high entropy indicator)"
@@ -1182,9 +1182,13 @@ class TestSettingsEncryptionFailClosed:
 
         m = self._make_mixin()
         # Simulate cryptography not installed
-        with patch.dict("sys.modules", {"cryptography": None, "cryptography.fernet": None}):
+        with patch.dict(
+            "sys.modules", {"cryptography": None, "cryptography.fernet": None}
+        ):
             with patch("builtins.__import__", side_effect=ImportError("simulated")):
-                with pytest.raises(RuntimeError, match="cryptography package is not installed"):
+                with pytest.raises(
+                    RuntimeError, match="cryptography package is not installed"
+                ):
                     m._init_fernet()
 
     def test_se3_init_fernet_raises_on_internal_failure(self):
@@ -1199,7 +1203,9 @@ class TestSettingsEncryptionFailClosed:
         m._security.encryption_key = "test-key-32-chars-long-1234567890"
 
         # Force Fernet() to raise an unexpected exception
-        with patch("cryptography.fernet.Fernet", side_effect=RuntimeError("internal failure")):
+        with patch(
+            "cryptography.fernet.Fernet", side_effect=RuntimeError("internal failure")
+        ):
             with pytest.raises(RuntimeError, match="_init_fernet\\(\\) failed"):
                 m._init_fernet()
 

@@ -23,7 +23,6 @@ from opc_manager.scenario_definitions import (
     DeliverableTemplate,
 )
 
-
 # ==================== Built-in scenario definitions ====================
 
 

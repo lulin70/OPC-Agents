@@ -127,7 +127,10 @@ class ScenarioResult:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary format"""
-        result: Dict[str, Any] = {"matched": self.matched, "confidence": self.confidence}
+        result: Dict[str, Any] = {
+            "matched": self.matched,
+            "confidence": self.confidence,
+        }
         if self.matched:
             result.update(
                 {

@@ -18,7 +18,6 @@ other at module load time.
 import os
 from enum import Enum
 
-
 DATA_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "data", "marketplace"
 )

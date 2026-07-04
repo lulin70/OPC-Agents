@@ -671,7 +671,10 @@ class TaskEngineExecutorsMixin:
         )
 
     def _execute_general_chat(
-        self, search_query: str, llm_query: Optional[str] = None, is_follow_up: bool = False
+        self,
+        search_query: str,
+        llm_query: Optional[str] = None,
+        is_follow_up: bool = False,
     ) -> TaskResult:
         """Path E: Chat/greeting/help — Fallback path
 

@@ -319,27 +319,27 @@ def _parse_customer_from_text(text: str) -> Dict[str, Any]:
     m = re.search(r"1[3-9]\d{9}", text)
     if m:
         result["phone"] = m.group(0)
-        text = text[:m.start()] + text[m.end():]
+        text = text[: m.start()] + text[m.end() :]
 
     m = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text)
     if m:
         result["email"] = m.group(0)
-        text = text[:m.start()] + text[m.end():]
+        text = text[: m.start()] + text[m.end() :]
 
     m = re.search(r"(?:公司|企业|机构|工作室)[：:]*\s*([^\s,，。、]+)", text)
     if m:
         result["company"] = m.group(1)
-        text = text[:m.start()] + text[m.end():]
+        text = text[: m.start()] + text[m.end() :]
 
     m = re.search(r"(?:来源|渠道)[：:]*\s*([^\s,，。、]+)", text)
     if m:
         result["source"] = m.group(1)
-        text = text[:m.start()] + text[m.end():]
+        text = text[: m.start()] + text[m.end() :]
 
     m = re.search(r"(?:标签|标记)[：:]*\s*([^\s,，。、]+)", text)
     if m:
         result["tags"] = m.group(1)
-        text = text[:m.start()] + text[m.end():]
+        text = text[: m.start()] + text[m.end() :]
 
     for kw in [
         "帮我",

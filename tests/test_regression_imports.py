@@ -127,9 +127,7 @@ class TestCriticalDependencies:
                 )
                 if has_in_renderer:
                     return
-        assert (
-            has_in_app or has_in_renderer
-        ), (
+        assert has_in_app or has_in_renderer, (
             "read_file() is used but neither defined nor imported in app.py or "
             "deliverables_renderer.py - will cause NameError"
         )

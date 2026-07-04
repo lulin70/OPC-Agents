@@ -153,7 +153,10 @@ def test_datamanager_crud_timing(operation, data_size):
         start = time.perf_counter()
         dm.execute_write(_FINANCE_INSERT_SQL, params=rows, many=True)
         elapsed = time.perf_counter() - start
-        assert dm.execute_query("SELECT COUNT(*) as c FROM finance_records")[0]["c"] == data_size
+        assert (
+            dm.execute_query("SELECT COUNT(*) as c FROM finance_records")[0]["c"]
+            == data_size
+        )
     elif operation == "query":
         dm.execute_write(_FINANCE_INSERT_SQL, params=rows, many=True)
         start = time.perf_counter()
@@ -177,10 +180,14 @@ def test_datamanager_crud_timing(operation, data_size):
             "DELETE FROM finance_records WHERE category = ?", ("perf_cat",)
         )
         elapsed = time.perf_counter() - start
-        assert dm.execute_query("SELECT COUNT(*) as c FROM finance_records")[0]["c"] == 0
+        assert (
+            dm.execute_query("SELECT COUNT(*) as c FROM finance_records")[0]["c"] == 0
+        )
 
     threshold = 3.0 if data_size == 1000 else 1.5
-    assert elapsed < threshold, f"{operation} {data_size} rows: {elapsed:.3f}s > {threshold}s"
+    assert (
+        elapsed < threshold
+    ), f"{operation} {data_size} rows: {elapsed:.3f}s > {threshold}s"
 
 
 @pytest.mark.parametrize("bulk_size", [10, 50, 100, 200, 500])
@@ -247,7 +254,16 @@ def test_datamanager_transaction_timing(txn_size):
     stmts = [
         (
             _FINANCE_INSERT_SQL,
-            (dm.gen_id(), "income", 10.0 + i, "txn_cat", f"s_{i}", "2024-01-01", f"n_{i}", now),
+            (
+                dm.gen_id(),
+                "income",
+                10.0 + i,
+                "txn_cat",
+                f"s_{i}",
+                "2024-01-01",
+                f"n_{i}",
+                now,
+            ),
         )
         for i in range(txn_size)
     ]
@@ -281,7 +297,9 @@ def test_auditlog_operation_timing(operation, log_count):
         if operation == "log":
             start = time.perf_counter()
             for i in range(log_count):
-                audit.log("sess_perf", "TEST_OP", "skill", f"input2_{i}", f"out2_{i}", 10)
+                audit.log(
+                    "sess_perf", "TEST_OP", "skill", f"input2_{i}", f"out2_{i}", 10
+                )
             elapsed = time.perf_counter() - start
         elif operation == "query":
             start = time.perf_counter()
@@ -656,7 +674,9 @@ def test_lrucache_operation_timing(operation, cache_size):
             cache.put(f"put_key_{i}", f"put_val_{i}")
         elapsed = time.perf_counter() - start
     else:  # evict
-        small_cache = LRUCache(max_size=cache_size // 2 if cache_size >= 4 else 5, ttl=300)
+        small_cache = LRUCache(
+            max_size=cache_size // 2 if cache_size >= 4 else 5, ttl=300
+        )
         start = time.perf_counter()
         for i in range(cache_size):
             small_cache.put(f"evict_key_{i}", f"evict_val_{i}")
@@ -688,7 +708,9 @@ def test_validator_timing(validator, input_length):
         elapsed = time.perf_counter() - start
         assert isinstance(result, str)
     else:  # extract_json_from_llm
-        json_text = 'Some prefix {"key": "value", "num": 42} suffix ' + "B" * input_length
+        json_text = (
+            'Some prefix {"key": "value", "num": 42} suffix ' + "B" * input_length
+        )
         start = time.perf_counter()
         result = extract_json_from_llm(json_text)
         elapsed = time.perf_counter() - start
@@ -972,7 +994,9 @@ def test_skill_marketplace_create_api_key_timing(tmp_path):
 
     mp = SkillMarketplace(data_dir=str(tmp_path / "mp"))
     start = time.perf_counter()
-    raw_key = mp.create_api_key("timing_test", [PermissionLevel.READ, PermissionLevel.WRITE])
+    raw_key = mp.create_api_key(
+        "timing_test", [PermissionLevel.READ, PermissionLevel.WRITE]
+    )
     elapsed = time.perf_counter() - start
     assert raw_key.startswith("opc_")
     assert elapsed < 2.0, f"create_api_key: {elapsed:.3f}s"
@@ -1018,4 +1042,6 @@ def test_concurrent_lrucache_timing(operation, thread_count):
     elapsed = time.perf_counter() - start
 
     assert len(errors) == 0, f"Concurrent errors: {errors}"
-    assert elapsed < 5.0, f"concurrent {operation} {thread_count} threads: {elapsed:.3f}s"
+    assert (
+        elapsed < 5.0
+    ), f"concurrent {operation} {thread_count} threads: {elapsed:.3f}s"

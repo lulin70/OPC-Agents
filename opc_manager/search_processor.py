@@ -376,7 +376,7 @@ class SearchResultProcessor:
         cleaned = query
         for prefix in prefixes_to_remove:
             if cleaned.startswith(prefix):
-                cleaned = cleaned[len(prefix):]
+                cleaned = cleaned[len(prefix) :]
                 break
 
         try:
@@ -456,7 +456,7 @@ class SearchResultProcessor:
             if length > n:
                 continue
             for i in range(n - length + 1):
-                word = text[i:i + length]
+                word = text[i : i + length]
                 if word not in STOP_WORDS_CN:
                     candidates.append(word)
 

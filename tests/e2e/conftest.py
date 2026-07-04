@@ -114,7 +114,10 @@ def streamlit_server() -> Generator[str, None, None]:
     # 预创建 onboarding marker 文件，跳过新手引导覆盖层
     # 否则 onboarding overlay 会阻挡主内容渲染
     import tempfile
-    onboarding_marker = Path(tempfile.gettempdir()) / f"opc_e2e_onboarding_{os.getpid()}.marker"
+
+    onboarding_marker = (
+        Path(tempfile.gettempdir()) / f"opc_e2e_onboarding_{os.getpid()}.marker"
+    )
     onboarding_marker.parent.mkdir(parents=True, exist_ok=True)
     onboarding_marker.write_text(str(time.time()), encoding="utf-8")
     env["OPC_ONBOARDING_MARKER"] = str(onboarding_marker)
@@ -146,7 +149,9 @@ def streamlit_server() -> Generator[str, None, None]:
     )
 
     try:
-        _wait_for_server(base_url, timeout=60.0, proc=proc, log_path="/tmp/opc_streamlit_e2e.log")
+        _wait_for_server(
+            base_url, timeout=60.0, proc=proc, log_path="/tmp/opc_streamlit_e2e.log"
+        )
         yield base_url
     finally:
         proc.terminate()
@@ -208,7 +213,9 @@ def page(playwright_browser: Any, streamlit_server: str) -> Generator[Any, None,
 
 
 @pytest.fixture
-def context_with_download(playwright_browser: Any, streamlit_server: str) -> Generator[Any, None, None]:
+def context_with_download(
+    playwright_browser: Any, streamlit_server: str
+) -> Generator[Any, None, None]:
     """带下载支持的浏览器 context（用于 FD-004 下载按钮测试）。
 
     使用 accept_downloads=True 确保能捕获下载事件。

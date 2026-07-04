@@ -51,8 +51,10 @@ class TestAsyncExecutorIntegration:
 
     def test_get_status_pending_state(self):
         """测试提交后初始状态应为pending或running"""
+
         def slow_func(prompt, **kw):
             time.sleep(5)
+
         task_id = self.executor.submit("测试状态查询", execute_func=slow_func)
         time.sleep(0.2)
 
@@ -70,8 +72,10 @@ class TestAsyncExecutorIntegration:
 
     def test_cancel_pending_task(self):
         """测试取消pending状态的任务"""
+
         def slow_func(prompt, **kw):
             time.sleep(10)
+
         task_id = self.executor.submit("慢任务", execute_func=slow_func)
         time.sleep(0.05)
 
@@ -86,6 +90,7 @@ class TestAsyncExecutorIntegration:
 
     def test_concurrent_limit(self):
         """测试并发数达到上限后应拒绝新任务"""
+
         def blocker(prompt, **kw):
             time.sleep(60)
 

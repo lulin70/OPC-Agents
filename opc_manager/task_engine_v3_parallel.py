@@ -154,7 +154,9 @@ class TaskEngineParallelMixin:
 
         return self._parallel_executor
 
-    def _should_parallelize(self, prompt: str, task_type: Optional[TaskType] = None) -> bool:
+    def _should_parallelize(
+        self, prompt: str, task_type: Optional[TaskType] = None
+    ) -> bool:
         """Intelligent decision: should this task be parallelized?
 
         Uses heuristic rules to determine if parallel execution would be beneficial.

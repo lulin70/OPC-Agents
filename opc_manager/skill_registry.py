@@ -249,7 +249,7 @@ class SkillRegistry(SkillExecutorMixin):
             self.category_index[category_name] = []
         self.category_index[category_name].append(skill.skill_id)
 
-        for keyword in (skill.intent_keywords or []):
+        for keyword in skill.intent_keywords or []:
             if keyword not in self.keyword_index:
                 self.keyword_index[keyword] = []
             self.keyword_index[keyword].append(skill.skill_id)

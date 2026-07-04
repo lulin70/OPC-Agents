@@ -178,7 +178,9 @@ class ResultBuilder:
             self._session_manager.add_turn(
                 user_input=context.user_input,
                 assistant_response=result_summary,
-                task_type=cast(Any, context.intent).type.value if context.intent else None,
+                task_type=(
+                    cast(Any, context.intent).type.value if context.intent else None
+                ),
             )
         except Exception as e:
             logger.warning("会话历史记录失败: %s", e)

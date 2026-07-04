@@ -441,11 +441,11 @@ class StrategistBrain:
         goal = user_input.strip()
         for pattern, replacement in complex_patterns:
             if goal.startswith(pattern):
-                goal = replacement + goal[len(pattern):].strip()
+                goal = replacement + goal[len(pattern) :].strip()
                 break
         for prefix in prefixes_to_remove:
             if goal.startswith(prefix):
-                goal = goal[len(prefix):].strip()
+                goal = goal[len(prefix) :].strip()
                 break
         while goal and goal[-1] in suffix_particles:
             goal = goal[:-1].strip()
@@ -530,9 +530,7 @@ class StrategistBrain:
             registry_ids = {skill.skill_id for skill in all_skills}
             return registry_ids | system_skills
         except Exception as e:
-            logger.warning(
-                "从 SkillRegistry 获取技能列表失败，降级到基础技能集: %s", e
-            )
+            logger.warning("从 SkillRegistry 获取技能列表失败，降级到基础技能集: %s", e)
             base_skills = {
                 "search",
                 "analysis",
@@ -576,9 +574,7 @@ class StrategistBrain:
                         "send_notification(发送通知)",
                     ]
             except Exception as e:
-                logger.warning(
-                    "构建规划提示词时获取技能列表失败，使用基础技能: %s", e
-                )
+                logger.warning("构建规划提示词时获取技能列表失败，使用基础技能: %s", e)
                 skill_descriptions = [
                     "search(搜索)",
                     "analysis(分析)",
