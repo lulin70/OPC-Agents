@@ -53,9 +53,7 @@ class BusinessTypeDetectorStrategiesMixin:
         enable_llm: bool
         llm_service: "Optional[LLMService]"
 
-        def _calculate_enhanced_score(
-            self, text_lower: str, config: Dict
-        ) -> float: ...
+        def _calculate_enhanced_score(self, text_lower: str, config: Dict) -> float: ...
 
         def _extract_matched_keywords_enhanced(
             self, text_lower: str, config: Dict

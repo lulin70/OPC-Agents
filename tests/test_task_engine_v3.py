@@ -391,7 +391,7 @@ class TestZeroPlaceholderGate(unittest.TestCase):
         for pattern in self.FORBIDDEN_PATTERNS:
             if pattern in (content or ""):
                 idx = content.index(pattern)
-                context = content[max(0, idx - 50):idx + 80]
+                context = content[max(0, idx - 50) : idx + 80]
                 self.fail(
                     f"[{label}] 发现禁止的占位符 '{pattern}'！\n"
                     f"上下文: ...{context}..."

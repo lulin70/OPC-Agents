@@ -171,7 +171,7 @@ class UndoManager:
             records = self._records[session_id]
             records.append(record)
             if len(records) > self.MAX_PER_SESSION:
-                self._records[session_id] = records[-self.MAX_PER_SESSION:]
+                self._records[session_id] = records[-self.MAX_PER_SESSION :]
             # Trim total undo stack across all sessions
             total = sum(len(v) for v in self._records.values())
             limit = MAX_UNDO_HISTORY

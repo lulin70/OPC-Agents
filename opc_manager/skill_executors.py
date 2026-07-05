@@ -132,7 +132,10 @@ class SkillExecutorMixin:
         return []
 
     async def _execute_analysis(
-        self, data: Optional[list] = None, goal: str = "", _context: Optional[SkillContext] = None
+        self,
+        data: Optional[list] = None,
+        goal: str = "",
+        _context: Optional[SkillContext] = None,
     ) -> Dict[str, Any]:
         if self.llm_service is not None:
             try:

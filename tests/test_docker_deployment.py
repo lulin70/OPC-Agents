@@ -243,9 +243,7 @@ class TestQuickStartGuide:
         from opc_manager.onboarding import OnboardingManager
 
         mgr = OnboardingManager()
-        mgr.get_step_content(
-            mgr.get_step_content.__self__.COMPLETED if False else None
-        )
+        mgr.get_step_content(mgr.get_step_content.__self__.COMPLETED if False else None)
         from opc_manager.onboarding import OnboardingStep
 
         step_content = mgr.get_step_content(OnboardingStep.COMPLETED)

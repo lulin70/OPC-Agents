@@ -103,7 +103,10 @@ _TASK_WHERE_COLUMNS = {"status", "due_date", "priority"}
 
 
 def list_tasks(
-    status: Optional[str] = None, due_date: str = "", priority_max: int = -1, limit: int = 50
+    status: Optional[str] = None,
+    due_date: str = "",
+    priority_max: int = -1,
+    limit: int = 50,
 ) -> Dict[str, Any]:
     conditions: list[tuple[str, str, Any]] = []
     params: list = []

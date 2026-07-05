@@ -28,7 +28,6 @@ Module-level constants moved here (used only by these methods):
 import re
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
-
 FORBIDDEN_PATTERNS = [
     "___",
     "待填写",

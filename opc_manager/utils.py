@@ -83,7 +83,7 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
             if depth > 0:
                 depth -= 1
             if depth == 0 and start >= 0:
-                candidate = text[start:i + 1]
+                candidate = text[start : i + 1]
                 try:
                     return json.loads(candidate)
                 except json.JSONDecodeError:
@@ -102,7 +102,7 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
             if depth > 0:
                 depth -= 1
             if depth == 0 and start >= 0:
-                candidate = text[start:i + 1]
+                candidate = text[start : i + 1]
                 try:
                     parsed = json.loads(candidate)
                     if (

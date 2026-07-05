@@ -26,7 +26,9 @@ from typing import Any, Optional
 class ShortcutResult:
     """Standardized result format for Shortcuts consumption."""
 
-    def __init__(self, success: bool, message: str, data: Optional[dict[Any, Any]] = None):
+    def __init__(
+        self, success: bool, message: str, data: Optional[dict[Any, Any]] = None
+    ):
         self.success = success
         self.message = message
         self.data = data or {}

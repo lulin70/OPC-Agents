@@ -13,7 +13,6 @@ import os
 import sys
 import tempfile
 
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from frontend.page_modules._marketplace_page import (

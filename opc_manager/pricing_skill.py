@@ -82,7 +82,11 @@ def calculate_pricing(
         margin = cfg["default_margin"]
         price = cost * (1 + cast(float, margin))
         result.update(
-            {"cost": cost, "margin": f"{cast(float, margin)*100:.0f}%", "price": round(price, 2)}
+            {
+                "cost": cost,
+                "margin": f"{cast(float, margin)*100:.0f}%",
+                "price": round(price, 2),
+            }
         )
 
     elif method == "价值定价":

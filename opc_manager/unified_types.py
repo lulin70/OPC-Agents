@@ -188,7 +188,9 @@ def unify_intent_from_enum(intent_enum: IntentType) -> UnifiedTaskCategory:
     return INTENT_TO_UNIFIED_MAP.get(intent_enum, UnifiedTaskCategory.GENERAL_CHAT)
 
 
-def unify_task(task_type: TaskType, context: Optional[str] = None) -> UnifiedTaskCategory:
+def unify_task(
+    task_type: TaskType, context: Optional[str] = None
+) -> UnifiedTaskCategory:
     """Convert TaskEngineV3's TaskType to unified category with optional context enhancement.
 
     Args:

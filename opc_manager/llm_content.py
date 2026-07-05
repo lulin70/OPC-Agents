@@ -282,7 +282,9 @@ class LLMEnhancedContentGenerator(LLMContentPromptMixin, LLMContentGenerationMix
                             f"attempting cleanup..."
                         )
                         result.content = self._clean_placeholders(result.content)
-                        result.placeholder_count = self._count_placeholders(result.content)
+                        result.placeholder_count = self._count_placeholders(
+                            result.content
+                        )
 
                     result.content = self._redact_secrets(result.content)
                     result = self._quality_gate(

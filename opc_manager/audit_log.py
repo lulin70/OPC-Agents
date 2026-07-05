@@ -284,7 +284,13 @@ class AuditLog:
             )
         except Exception as e:
             logger.warning("AuditLog verify_chain query failed: %s", e)
-            return {"valid": False, "total": 0, "verified": 0, "broken_at": None, "error": str(e)}
+            return {
+                "valid": False,
+                "total": 0,
+                "verified": 0,
+                "broken_at": None,
+                "error": str(e),
+            }
 
         if not rows:
             return {"valid": True, "total": 0, "verified": 0, "broken_at": None}
@@ -316,7 +322,12 @@ class AuditLog:
             verified += 1
             prev_expected = row["current_hash"]
 
-        return {"valid": True, "total": len(rows), "verified": verified, "broken_at": None}
+        return {
+            "valid": True,
+            "total": len(rows),
+            "verified": verified,
+            "broken_at": None,
+        }
 
     def get_stats(self, session_id: Optional[str] = None) -> Dict[str, Any]:
         total = success = failed = 0

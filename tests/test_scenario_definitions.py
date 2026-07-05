@@ -362,7 +362,9 @@ class TestBuiltInScenarioCompleteness(unittest.TestCase):
 
     def test_each_scenario_has_nonempty_name(self):
         for sid, scenario in BUILT_IN_SCENARIOS.items():
-            self.assertGreater(len(scenario.name), 0, f"Scenario '{sid}' has empty name")
+            self.assertGreater(
+                len(scenario.name), 0, f"Scenario '{sid}' has empty name"
+            )
 
     def test_each_scenario_has_nonempty_description(self):
         for sid, scenario in BUILT_IN_SCENARIOS.items():
