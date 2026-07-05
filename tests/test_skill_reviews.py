@@ -15,7 +15,6 @@ Run command:
     pytest tests/test_skill_reviews.py -v --tb=short
 """
 
-
 import pytest
 
 from opc_manager.skill_reviews import SkillReviewManager

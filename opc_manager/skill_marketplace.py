@@ -407,24 +407,13 @@ class SkillMarketplace:
                 self._skill_registry = SkillRegistry()
             import asyncio
 
+            _new_loop = asyncio.new_event_loop()
             try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = None
-
-            if loop and loop.is_running():
-                import concurrent.futures
-
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    future = pool.submit(
-                        asyncio.run,
-                        self._skill_registry.execute_skill(skill_id, **parameters),
-                    )
-                    exec_result = future.result(timeout=60)
-            else:
-                exec_result = asyncio.run(
+                exec_result = _new_loop.run_until_complete(
                     self._skill_registry.execute_skill(skill_id, **parameters)
                 )
+            finally:
+                _new_loop.close()
 
             if isinstance(exec_result, dict):
                 return {

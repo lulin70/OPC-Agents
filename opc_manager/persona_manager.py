@@ -277,7 +277,9 @@ class PersonaManager:
         return base_response
 
     def get_greeting(
-        self, user_id: Optional[str] = None, business_type: Optional[BusinessType] = None
+        self,
+        user_id: Optional[str] = None,
+        business_type: Optional[BusinessType] = None,
     ) -> str:
         """Get greeting message"""
         persona = self.get_persona(user_id=user_id, business_type=business_type)

@@ -271,8 +271,6 @@ if __name__ == "__main__":
             print(f"Scenario ID: {result.scenario_id}")
             print(f"Confidence: {result.confidence:.2f}")
             if result.detected_business_type:
-                print(
-                    f"Detected business type: {result.detected_business_type.value}"
-                )
+                print(f"Detected business type: {result.detected_business_type.value}")
             print(f"Workflow steps: {len(result.workflow or [])}")
         print("-" * 40)

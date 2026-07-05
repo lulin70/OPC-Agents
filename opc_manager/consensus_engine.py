@@ -425,7 +425,7 @@ class ConsensusEngine:
         }
         self._decision_log.append(entry)
         if len(self._decision_log) > self.MAX_LOG_SIZE:
-            self._decision_log = self._decision_log[-self.MAX_LOG_SIZE:]
+            self._decision_log = self._decision_log[-self.MAX_LOG_SIZE :]
         try:
             from opc_manager.data_manager import execute_write, init_db, gen_id
 

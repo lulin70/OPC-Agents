@@ -246,9 +246,7 @@ class ContentGenerationMixin:
         )
 
         lines.append("---\n> 本报告由 OPC-Agents 基于网络搜索和结构化分析自动生成。\n")
-        lines.append(
-            "> 建议将此报告作为工作基础，结合实际情况填充具体数据和责任人。\n"
-        )
+        lines.append("> 建议将此报告作为工作基础，结合实际情况填充具体数据和责任人。\n")
 
         return "".join(lines)
 
@@ -358,9 +356,7 @@ class ContentGenerationMixin:
         lines.append("### 第三阶段：交付与复盘（第6-8周）\n\n")
         lines.append("| 序号 | 任务 | 产出 | 负责人 | 时间 |\n")
         lines.append("|-----|------|------|--------|------|\n")
-        lines.append(
-            "| 3.1 | 正式交付物制作和发布 | 交付成果 | 项目负责人 | 第6周 |\n"
-        )
+        lines.append("| 3.1 | 正式交付物制作和发布 | 交付成果 | 项目负责人 | 第6周 |\n")
         lines.append(
             "| 3.2 | 用户培训/交接（如适用） | 培训材料 | 项目负责人 | 第7周 |\n"
         )

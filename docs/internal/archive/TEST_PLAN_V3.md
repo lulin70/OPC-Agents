@@ -177,7 +177,7 @@ def test_plan_document_quality():
 | FD-001 | 文件生成到deliverables/ | 验收 | P0 | ✅ 通过 |
 | FD-002 | 文件命名规则正确 | 单元 | P1 | ✅ 通过 |
 | FD-003 | 文件内容完整性 | 验收 | P0 | ✅ 通过 |
-| FD-004 | 下载按钮数据正确 | E2E | P1 | ⚠ Streamlit问题 |
+| FD-004 | 下载按钮数据正确 | E2E | P1 | ✅ 通过（Playwright 真实浏览器验证，TC_H09） |
 | FD-005 | 成果物库列表更新 | 集成 | P1 | ✅ 通过 |
 | **真实搜索测试** |||||
 | RS-001 | DuckDuckGo搜索返回结果 | 集成 | P0 | ✅ 通过 |

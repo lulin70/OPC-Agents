@@ -367,9 +367,7 @@ class TestExecuteOperation(unittest.TestCase):
 
     def test_happy_path_read_file(self):
         """read_file 操作正常路径"""
-        _run(
-            self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"})
-        )
+        _run(self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"}))
         self.tool_system.call_tool.assert_called_once_with(
             "file_read", {"path": "/tmp/test.txt"}
         )
@@ -427,9 +425,7 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_happy_path(self):
         """正常发送通知"""
-        _run(
-            self.mixin._execute_notification("测试消息", recipient="user@example.com")
-        )
+        _run(self.mixin._execute_notification("测试消息", recipient="user@example.com"))
         self.tool_system.call_tool.assert_called_once()
         call_args = self.tool_system.call_tool.call_args
         self.assertEqual(call_args[0][0], "send_email")
@@ -465,9 +461,7 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_default_subject(self):
         """默认邮件主题"""
-        _run(
-            self.mixin._execute_notification("消息", recipient="user@test.com")
-        )
+        _run(self.mixin._execute_notification("消息", recipient="user@test.com"))
         call_args = self.tool_system.call_tool.call_args
         self.assertEqual(call_args[0][1]["subject"], "OPC-Agents 通知")
 
