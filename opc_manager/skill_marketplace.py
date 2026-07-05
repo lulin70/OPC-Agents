@@ -422,9 +422,13 @@ class SkillMarketplace:
                     )
                     exec_result = future.result(timeout=60)
             else:
-                exec_result = asyncio.run(
-                    self._skill_registry.execute_skill(skill_id, **parameters)
-                )
+                _new_loop = asyncio.new_event_loop()
+                try:
+                    exec_result = _new_loop.run_until_complete(
+                        self._skill_registry.execute_skill(skill_id, **parameters)
+                    )
+                finally:
+                    _new_loop.close()
 
             if isinstance(exec_result, dict):
                 return {

@@ -644,16 +644,20 @@ class TaskEngineExecutorsMixin:
                         )
                         skill_result = future.result(timeout=_SKILL_EXEC_TIMEOUT)
                 except RuntimeError:
-                    skill_result = _asyncio.run(
-                        registry.execute_skill(
-                            "execute_operation",
-                            operation=search_query,
-                            parameters={
-                                "goal": search_query,
-                                "business_type": business_type,
-                            },
+                    _new_loop = _asyncio.new_event_loop()
+                    try:
+                        skill_result = _new_loop.run_until_complete(
+                            registry.execute_skill(
+                                "execute_operation",
+                                operation=search_query,
+                                parameters={
+                                    "goal": search_query,
+                                    "business_type": business_type,
+                                },
+                            )
                         )
-                    )
+                    finally:
+                        _new_loop.close()
                 if skill_result and skill_result.get("success"):
                     content = str(skill_result.get("data", ""))
                     return TaskResult(
