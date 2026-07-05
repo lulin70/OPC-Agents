@@ -277,28 +277,17 @@ class MCPServer:
                     import asyncio
 
                     try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            import concurrent.futures
-
-                            with concurrent.futures.ThreadPoolExecutor() as pool:
-                                future = pool.submit(
-                                    asyncio.run,
-                                    self.skill_registry.execute_skill(
-                                        matched_skills[0].skill_id,
-                                        context=None,
-                                        goal=user_input,
-                                    ),
-                                )
-                                result = future.result(timeout=30)
-                        else:
-                            result = loop.run_until_complete(
+                        _new_loop = asyncio.new_event_loop()
+                        try:
+                            result = _new_loop.run_until_complete(
                                 self.skill_registry.execute_skill(
                                     matched_skills[0].skill_id,
                                     context=None,
                                     goal=user_input,
                                 )
                             )
+                        finally:
+                            _new_loop.close()
                         if result.get("success") and result.get("data"):
                             data = result["data"]
                             content = (

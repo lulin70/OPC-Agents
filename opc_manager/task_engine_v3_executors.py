@@ -625,39 +625,20 @@ class TaskEngineExecutorsMixin:
             if skill and skill.enabled:
                 import asyncio as _asyncio
 
+                _new_loop = _asyncio.new_event_loop()
                 try:
-                    _asyncio.get_running_loop()
-                    # Already in async context, use thread pool
-                    from concurrent.futures import ThreadPoolExecutor
-
-                    with ThreadPoolExecutor(max_workers=1) as executor:
-                        future = executor.submit(
-                            _asyncio.run,
-                            registry.execute_skill(
-                                "execute_operation",
-                                operation=search_query,
-                                parameters={
-                                    "goal": search_query,
-                                    "business_type": business_type,
-                                },
-                            ),
+                    skill_result = _new_loop.run_until_complete(
+                        registry.execute_skill(
+                            "execute_operation",
+                            operation=search_query,
+                            parameters={
+                                "goal": search_query,
+                                "business_type": business_type,
+                            },
                         )
-                        skill_result = future.result(timeout=_SKILL_EXEC_TIMEOUT)
-                except RuntimeError:
-                    _new_loop = _asyncio.new_event_loop()
-                    try:
-                        skill_result = _new_loop.run_until_complete(
-                            registry.execute_skill(
-                                "execute_operation",
-                                operation=search_query,
-                                parameters={
-                                    "goal": search_query,
-                                    "business_type": business_type,
-                                },
-                            )
-                        )
-                    finally:
-                        _new_loop.close()
+                    )
+                finally:
+                    _new_loop.close()
                 if skill_result and skill_result.get("success"):
                     content = str(skill_result.get("data", ""))
                     return TaskResult(
