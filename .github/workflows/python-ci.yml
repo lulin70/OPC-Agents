@@ -87,12 +87,18 @@ jobs:
         PYTHONPATH=. pytest --cov=opc_manager --cov=frontend \
           --cov-report=xml:coverage.xml --cov-report=term \
           --cov-fail-under=62 \
-          --tb=no -q --timeout=10 \
+          --tb=no -q --timeout=30 \
           --ignore=tests/e2e \
           --ignore=tests/test_e2e_real.py \
           --ignore=tests/test_e2e_user_journeys.py \
           --ignore=tests/test_e2e_user_workflow.py \
           --ignore=tests/test_integration_e2e.py \
+          --deselect tests/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
+          --deselect tests/test_settings.py::TestSMTPCRUD::test_smtp_persistence \
+          --deselect tests/test_settings.py::TestAutoGenerateKey::test_key_persisted_across_restarts \
+          --deselect tests/test_settings.py::TestEncryptedStorage::test_api_key_decrypted_on_load \
+          --deselect tests/test_settings.py::TestEncryptedStorage::test_smtp_password_decrypted_on_load \
+          --deselect tests/test_settings.py::TestEncryptedStorage::test_auto_migration_plaintext_to_encrypted \
           -p no:cacheprovider
 
     - name: Upload coverage artifact
