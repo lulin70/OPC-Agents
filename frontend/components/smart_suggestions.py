@@ -622,7 +622,7 @@ def execute_suggestion(suggestion: Suggestion) -> None:
             target_tab = suggestion.action_payload.get("target_tab", "")
             tab_key_map = {
                 " Dashboard": "dashboard",
-                " Dashboard": "dashboard",
+                "Dashboard": "dashboard",
                 " 仪表盘": "dashboard",
             }
             nav_key = tab_key_map.get(target_tab, target_tab)

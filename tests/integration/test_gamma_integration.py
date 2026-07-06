@@ -1,0 +1,386 @@
+"""
+v0.1.8 gamma 集成测试 — G1-G9 全任务覆盖
+
+覆盖维度：
+- Happy Path: 正常输入→预期输出
+- Error Case: 非法输入/空值/越界
+- Boundary: 空字符串/None/最大值
+- Integration: 模块间协作场景
+- Security: 权限/注入/越权
+"""
+
+import asyncio
+import os
+import sys
+import tempfile
+import unittest
+from unittest.mock import MagicMock
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from opc_manager.intent_types import IntentType, INTENT_TO_TASK_MAP, SKILL_TO_TASK_MAP
+from opc_manager.task_engine_v3 import TaskType
+
+
+class TestIntentAndSkillMappings(unittest.TestCase):
+    """G1: IntentType→TaskType and skill→TaskType mapping tests (replaces deprecated TaskEngineAdapter tests)."""
+
+    def test_intent_to_task_mapping_completeness(self):
+        for intent in IntentType:
+            self.assertIn(
+                intent, INTENT_TO_TASK_MAP, f"IntentType.{intent.name} 未映射"
+            )
+
+    def test_skill_to_task_mapping_known_skills(self):
+        known_skills = [
+            "search",
+            "analysis",
+            "content_generation",
+            "execute_operation",
+            "send_notification",
+            "intent_analysis",
+            "output_result",
+        ]
+        for skill in known_skills:
+            self.assertIn(skill, SKILL_TO_TASK_MAP, f"skill_id '{skill}' 未映射")
+
+
+class TestSkillMarketplace(unittest.TestCase):
+    """G6: 技能市场API测试"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="test_marketplace_")
+        from opc_manager.skill_marketplace import SkillMarketplace
+
+        self.marketplace = SkillMarketplace(data_dir=self.tmpdir)
+
+    def test_create_api_key(self):
+        from opc_manager.skill_marketplace import PermissionLevel
+
+        key = self.marketplace.create_api_key(
+            "test_key", [PermissionLevel.READ, PermissionLevel.WRITE]
+        )
+        self.assertTrue(key.startswith("opc_"))
+
+    def test_authenticate_valid_key(self):
+        from opc_manager.skill_marketplace import PermissionLevel
+
+        key = self.marketplace.create_api_key("test", [PermissionLevel.READ])
+        key_info = self.marketplace.authenticate(key)
+        self.assertIsNotNone(key_info)
+        self.assertEqual(key_info.name, "test")
+
+    def test_authenticate_invalid_key(self):
+        result = self.marketplace.authenticate("invalid_key")
+        self.assertIsNone(result)
+
+    def test_register_skill(self):
+        from opc_manager.skill_marketplace import MarketplaceSkill, PermissionLevel
+
+        key = self.marketplace.create_api_key("admin", [PermissionLevel.WRITE])
+        skill = MarketplaceSkill(
+            skill_id="test_skill",
+            name="Test Skill",
+            description="A test skill",
+            version="1.0",
+            category="test",
+            author="tester",
+        )
+        result = self.marketplace.register_skill(skill, key)
+        self.assertTrue(result["success"])
+        self.assertEqual(result["status"], "pending")
+
+    def test_register_skill_no_permission(self):
+        from opc_manager.skill_marketplace import MarketplaceSkill, PermissionLevel
+
+        key = self.marketplace.create_api_key("reader", [PermissionLevel.READ])
+        skill = MarketplaceSkill(
+            skill_id="test_skill",
+            name="Test",
+            description="Test",
+            version="1.0",
+            category="test",
+            author="tester",
+        )
+        result = self.marketplace.register_skill(skill, key)
+        self.assertFalse(result["success"])
+
+    def test_discover_skills(self):
+        from opc_manager.skill_marketplace import (
+            MarketplaceSkill,
+            PermissionLevel,
+        )
+
+        key = self.marketplace.create_api_key("admin", [PermissionLevel.WRITE])
+        skill = MarketplaceSkill(
+            skill_id="discover_test",
+            name="Discoverable",
+            description="Can be found",
+            version="1.0",
+            category="analytics",
+            author="tester",
+        )
+        self.marketplace.register_skill(skill, key)
+        self.marketplace.approve_skill("discover_test", key)
+        results = self.marketplace.discover_skills(category="analytics")
+        self.assertEqual(len(results), 1)
+
+    def test_execute_skill_not_approved(self):
+        from opc_manager.skill_marketplace import MarketplaceSkill, PermissionLevel
+
+        key = self.marketplace.create_api_key(
+            "admin", [PermissionLevel.WRITE, PermissionLevel.EXECUTE]
+        )
+        skill = MarketplaceSkill(
+            skill_id="pending_skill",
+            name="Pending",
+            description="Not approved",
+            version="1.0",
+            category="test",
+            author="tester",
+        )
+        self.marketplace.register_skill(skill, key)
+        result = self.marketplace.execute_skill("pending_skill", {}, key)
+        self.assertFalse(result["success"])
+
+    def test_marketplace_stats(self):
+        stats = self.marketplace.get_stats()
+        self.assertIn("total_skills", stats)
+        self.assertIn("total_api_keys", stats)
+
+
+class TestMCPProtocol(unittest.TestCase):
+    """G7: MCP协议测试"""
+
+    def setUp(self):
+        from opc_manager.mcp_protocol import MCPServer
+
+        self.server = MCPServer()
+
+    def test_initialize(self):
+        response = self.server.handle_request(
+            {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+        )
+        self.assertEqual(response["result"]["serverInfo"]["name"], "opc-agents")
+
+    def test_tools_list(self):
+        response = self.server.handle_request(
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
+        )
+        tools = response["result"]["tools"]
+        self.assertGreaterEqual(len(tools), 4)
+
+    def test_resources_list(self):
+        response = self.server.handle_request(
+            {"jsonrpc": "2.0", "id": 3, "method": "resources/list", "params": {}}
+        )
+        resources = response["result"]["resources"]
+        self.assertGreaterEqual(len(resources), 3)
+
+    def test_prompts_list(self):
+        response = self.server.handle_request(
+            {"jsonrpc": "2.0", "id": 4, "method": "prompts/list", "params": {}}
+        )
+        prompts = response["result"]["prompts"]
+        self.assertGreaterEqual(len(prompts), 2)
+
+    def test_unknown_method(self):
+        response = self.server.handle_request(
+            {"jsonrpc": "2.0", "id": 5, "method": "unknown/method", "params": {}}
+        )
+        self.assertIn("error", response)
+
+    def test_register_custom_tool(self):
+        from opc_manager.mcp_protocol import MCPTool
+
+        self.server.register_tool(
+            MCPTool(
+                name="custom_tool",
+                description="Custom",
+                input_schema={"type": "object"},
+            )
+        )
+        response = self.server.handle_request(
+            {"jsonrpc": "2.0", "id": 6, "method": "tools/list", "params": {}}
+        )
+        tool_names = [t["name"] for t in response["result"]["tools"]]
+        self.assertIn("custom_tool", tool_names)
+
+    def test_server_stats(self):
+        stats = self.server.get_stats()
+        self.assertIn("tools", stats)
+        self.assertIn("protocol_version", stats)
+
+
+class TestSkillEditor(unittest.TestCase):
+    """G9: 技能编辑器测试"""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp(prefix="test_skills_")
+        from opc_manager.skill_editor import SkillEditor
+
+        self.editor = SkillEditor(skills_dir=self.tmpdir)
+
+    def test_create_skill(self):
+        from opc_manager.skill_editor import CustomSkill, SkillParameter, ParameterType
+
+        skill = CustomSkill(
+            skill_id="test_skill",
+            name="Test Skill",
+            description="A test",
+            input_parameters=[
+                SkillParameter(
+                    name="topic", param_type=ParameterType.STRING, description="Topic"
+                )
+            ],
+        )
+        result = self.editor.create_skill(skill)
+        self.assertTrue(result["success"])
+
+    def test_create_duplicate_skill(self):
+        from opc_manager.skill_editor import CustomSkill
+
+        skill = CustomSkill(skill_id="dup", name="Dup", description="Duplicate")
+        self.editor.create_skill(skill)
+        result = self.editor.create_skill(skill)
+        self.assertFalse(result["success"])
+
+    def test_update_skill(self):
+        from opc_manager.skill_editor import CustomSkill
+
+        skill = CustomSkill(
+            skill_id="update_me", name="Original", description="Original desc"
+        )
+        self.editor.create_skill(skill)
+        result = self.editor.update_skill(
+            "update_me", {"name": "Updated", "description": "New desc"}
+        )
+        self.assertTrue(result["success"])
+        updated = self.editor.get_skill("update_me")
+        self.assertEqual(updated["name"], "Updated")
+
+    def test_delete_skill(self):
+        from opc_manager.skill_editor import CustomSkill
+
+        skill = CustomSkill(
+            skill_id="delete_me", name="Delete", description="To delete"
+        )
+        self.editor.create_skill(skill)
+        result = self.editor.delete_skill("delete_me")
+        self.assertTrue(result["success"])
+        self.assertIsNone(self.editor.get_skill("delete_me"))
+
+    def test_preview_skill(self):
+        from opc_manager.skill_editor import CustomSkill, SkillParameter, ParameterType
+
+        skill = CustomSkill(
+            skill_id="preview_test",
+            name="Preview",
+            description="Preview test",
+            template="# {{topic}}\n\nDetails about {{topic}}.",
+            input_parameters=[
+                SkillParameter(name="topic", param_type=ParameterType.STRING)
+            ],
+        )
+        self.editor.create_skill(skill)
+        result = self.editor.preview_skill("preview_test", {"topic": "AI"})
+        self.assertTrue(result["success"])
+        self.assertIn("AI", result["preview"])
+
+    def test_test_skill_missing_params(self):
+        from opc_manager.skill_editor import CustomSkill, SkillParameter, ParameterType
+
+        skill = CustomSkill(
+            skill_id="test_missing",
+            name="Missing",
+            description="Missing params",
+            input_parameters=[
+                SkillParameter(
+                    name="required_param",
+                    param_type=ParameterType.STRING,
+                    required=True,
+                )
+            ],
+        )
+        self.editor.create_skill(skill)
+        result = self.editor.test_skill("test_missing", {})
+        self.assertFalse(result["success"])
+
+    def test_list_skills(self):
+        from opc_manager.skill_editor import CustomSkill
+
+        for i in range(3):
+            skill = CustomSkill(
+                skill_id=f"list_{i}", name=f"Skill {i}", description=f"Test {i}"
+            )
+            self.editor.create_skill(skill)
+        skills = self.editor.list_skills()
+        self.assertEqual(len(skills), 3)
+
+    def test_editor_stats(self):
+        stats = self.editor.get_stats()
+        self.assertIn("total_skills", stats)
+        self.assertIn("skills_dir", stats)
+
+
+class TestAgentLoopIntegration(unittest.TestCase):
+    """G1-G5 集成测试：AgentLoop + TaskEngineAdapter + 超时 + 降级"""
+
+    def test_agent_loop_timeout_constant(self):
+        from opc_manager.agent_loop import AGENT_LOOP_TIMEOUT_SECONDS
+
+        self.assertEqual(AGENT_LOOP_TIMEOUT_SECONDS, 120)
+
+    def test_skip_reflect_mode(self):
+        os.environ["OPC_SKIP_REFLECT"] = "true"
+        try:
+            from opc_manager.agent_loop import AgentLoop
+            from opc_manager.task_engine_v3 import TaskEngineV3
+
+            mock_engine = MagicMock(spec=TaskEngineV3)
+            mock_engine.execute.return_value = MagicMock(
+                success=True,
+                content="fast result",
+                task_type=TaskType.GENERAL_CHAT,
+                sources=[],
+                execution_time_ms=50,
+                error=None,
+                deliverable_format="text",
+                search_results=[],
+            )
+            loop_instance = AgentLoop(task_engine=mock_engine)
+            result = asyncio.new_event_loop().run_until_complete(
+                loop_instance.run("test fast mode")
+            )
+            self.assertTrue(result.success)
+        finally:
+            os.environ.pop("OPC_SKIP_REFLECT", None)
+
+    def test_agent_loop_with_task_engine(self):
+        from opc_manager.agent_loop import AgentLoop
+        from opc_manager.task_engine_v3 import TaskEngineV3
+
+        mock_engine = MagicMock(spec=TaskEngineV3)
+        mock_engine.execute.return_value = MagicMock(
+            success=True,
+            content="adapter result",
+            task_type=TaskType.CONTENT_GENERATION,
+            sources=["src1"],
+            execution_time_ms=100,
+            error=None,
+            deliverable_format="markdown",
+            search_results=[],
+        )
+        loop_instance = AgentLoop(task_engine=mock_engine)
+        os.environ["OPC_SKIP_REFLECT"] = "true"
+        try:
+            result = asyncio.new_event_loop().run_until_complete(
+                loop_instance.run("test adapter integration")
+            )
+            self.assertTrue(result.success)
+        finally:
+            os.environ.pop("OPC_SKIP_REFLECT", None)
+
+
+if __name__ == "__main__":
+    unittest.main()

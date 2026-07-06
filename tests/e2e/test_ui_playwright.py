@@ -198,7 +198,7 @@ class TestUJ01AppLaunchAndNavigation:
         expected_zh = ["对话", "成果物", "Dashboard", "成长", "技能市场", "设置"]
         for label in expected_zh:
             assert any(
-                label in l for l in labels
+                label in nav for nav in labels
             ), f"导航选项 '{label}' 未找到，实际: {labels}"
 
     def test_TC_H03_all_pages_navigable(self, page):
@@ -442,7 +442,7 @@ class TestUJ07LanguageSwitching:
 
         # 记录切换前的导航文本（中文）
         labels_before = _get_nav_labels(page)
-        assert any("对话" in l for l in labels_before), "切换前应为中文"
+        assert any("对话" in nav for nav in labels_before), "切换前应为中文"
 
         # 点击语言选择器展开下拉
         lang_selector.click()
@@ -457,7 +457,7 @@ class TestUJ07LanguageSwitching:
             # 验证导航文本变为英文
             labels_after = _get_nav_labels(page)
             assert any(
-                "Chat" in l for l in labels_after
+                "Chat" in nav for nav in labels_after
             ), f"切换到英文后导航文本未变化: {labels_after}"
 
             # 切回中文，避免影响后续测试

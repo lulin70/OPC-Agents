@@ -1,0 +1,38 @@
+# Pre-commit hooks for OPC-Agents
+# ASSESSMENT_D01 P1-6: 补充本地门控，防止 ruff/mypy/black 错误进入 CI
+# 安装: pip install pre-commit && pre-commit install
+# 手动运行: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^(opc_manager|frontend|tests|scripts)/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        files: ^opc_manager/.*\.py$
+        args: [--ignore-missing-imports, --follow-imports=silent]
+        additional_dependencies: []
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: ^(opc_manager|frontend|tests|scripts)/.*\.py$
+        args: [--target-version, py310]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict

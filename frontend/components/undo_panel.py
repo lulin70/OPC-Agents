@@ -483,7 +483,7 @@ def render_mini_undo_hint(session_id: str, task_id: str = "latest"):
 
         with col_hint:
             if st.button(
-                f" 立即撤销",
+                " 立即撤销",
                 key=f"mini_undo_{task_id}_{op_id}",
                 type="secondary",
                 use_container_width=True,
@@ -565,7 +565,7 @@ def render_batch_undo(session_id: str):
 
             with col_check:
                 if st.checkbox(
-                    f"选择",
+                    "选择",
                     key=f"batch_select_{r.operation_id}_{idx}",
                     value=False,
                 ):

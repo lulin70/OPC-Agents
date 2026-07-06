@@ -29,12 +29,13 @@ jobs:
     - name: Run tests
       run: |
         # P2 修复：排除需要 API Key 的 E2E 测试，避免无 secrets 时失败
+        # P2-13: tests/ 分层后，这些 E2E 测试已迁入 tests/e2e/
         python -m pytest tests/ -q --tb=short --no-cov \
-          --ignore=tests/test_e2e_real.py \
-          --ignore=tests/test_e2e_user_journeys.py \
-          --ignore=tests/test_e2e_user_workflow.py \
-          --ignore=tests/test_integration_e2e.py \
-          --ignore=tests/test_ui_e2e_apptest.py
+          --ignore=tests/e2e/test_e2e_real.py \
+          --ignore=tests/e2e/test_e2e_user_journeys.py \
+          --ignore=tests/e2e/test_e2e_user_workflow.py \
+          --ignore=tests/e2e/test_integration_e2e.py \
+          --ignore=tests/e2e/test_ui_e2e_apptest.py
 
     - name: Security scan with Bandit
       run: |
@@ -51,11 +52,11 @@ jobs:
         python -m pytest tests/ -q --tb=short \
           --cov=opc_manager --cov=frontend \
           --cov-fail-under=62 \
-          --ignore=tests/test_e2e_real.py \
-          --ignore=tests/test_e2e_user_journeys.py \
-          --ignore=tests/test_e2e_user_workflow.py \
-          --ignore=tests/test_integration_e2e.py \
-          --ignore=tests/test_ui_e2e_apptest.py
+          --ignore=tests/e2e/test_e2e_real.py \
+          --ignore=tests/e2e/test_e2e_user_journeys.py \
+          --ignore=tests/e2e/test_e2e_user_workflow.py \
+          --ignore=tests/e2e/test_integration_e2e.py \
+          --ignore=tests/e2e/test_ui_e2e_apptest.py
 
   build-and-push-ghcr:
     needs: test

@@ -21,9 +21,8 @@ import os
 import re
 import shlex
 import time
-from datetime import datetime, timezone
 
-from opc_manager.tool_audit_logger import AuditLogger, AUDIT_LOG_FILE
+from opc_manager.tool_audit_logger import AuditLogger
 
 logger = logging.getLogger(__name__)
 

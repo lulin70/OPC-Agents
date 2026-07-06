@@ -201,7 +201,7 @@ opc-agents
 ```bash
 git clone https://github.com/lulin70/OPC-Agents.git
 cd OPC-Agents
-chmod +x install.sh start.sh
+chmod +x scripts/install.sh scripts/start.sh
 ./scripts/install.sh
 
 # 安装加密依赖
@@ -379,12 +379,6 @@ OPC-Agents/
 │   ├── confirmer.py                  # 确认机制
 │   ├── progress_emitter.py           # 进度事件发射器
 │   └── version.py         # 版本号管理（SSOT）
-│   ├── experimental/      # 🧪 实验性模块（experimental，未纳入核心流程，不作为正式特性宣称）
-│   │   ├── wechat_agent.py    # 💬 微信E2E智能体（experimental 实验性）
-│   │   ├── wechat_gateway.py  # 💬 微信网关（experimental 实验性）
-│   │   └── plugin_worker.py   # 🔌 插件工作器
-├── opc_manager/api/        # API事件模块
-│   └── events.py          # 事件定义
 ├── opc_manager/export/     # 导出模块
 │   ├── manager.py          # 导出管理器
 │   ├── models.py           # 导出模型
@@ -395,20 +389,17 @@ OPC-Agents/
 │       └── image_exporter.py
 ├── opc_hr/                # 搜索与知识库
 │   └── web_search.py      # DuckDuckGo网络搜索
-├── plugins/               # 社区插件
-│   ├── plugin_config.json
-│   ├── data_converter.py
-│   └── text_summarizer.py
-├── tests/                 # 测试套件（76个测试文件，3305测试用例，100%通过）
+├── tests/                 # 测试套件（87个测试文件，3359测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）
+├── scripts/               # 部署与运维脚本
+│   ├── install.sh         # 一键安装脚本
+│   └── start.sh           # 一键启动脚本
 ├── requirements.txt       # 核心依赖
 ├── requirements-dev.txt   # 开发依赖（含black/flake8/pytest）
 ├── .env.example           # 环境变量模板
 ├── .env.local             # 加密密钥自动生成（gitignore保护）
-├── install.sh             # 一键安装脚本
-├── start.sh               # 一键启动脚本
 └── VERSION                # 版本号文件
 ```
 
@@ -434,7 +425,10 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
-| **0.3.0** | **2026-06-19 (待发布)** | **三贤者并行投票架构回归** — 并行投票(1×RTT，延迟降3倍)+ConsensusEngine前置+ExecutorBrain真意见+ReflectorBrain前置预判+IntentRouter三路路由+聚焦3核心技能(邮件/财务/报告)+11非核心技能冻结+i18n重构(3857→133行)+覆盖率62.87%+真实LLM E2E测试 |
+| **0.3.3** | **2026-06-28** | **技术债清理** — TD-065 mypy 516→0 errors（CI 阻塞化）+ TD-066 settings_encryption fail-open→fail-closed + flake8 E501 清零 + 3174 passed |
+| **0.3.2** | **2026-06-27** | **项目整理评估修复** — DevSquad 7 维度评估 72→79 (B+) + 17 处版本号同步 + check_prompt_injection 幽灵函数集成 + mypy CI 集成 + 3167 passed |
+| **0.3.1** | **2026-06-26** | **幽灵功能清除** — 删除 api/events + experimental/wechat + plugin_system + plugins/ 共 ~2196 行死代码 + flake8 F401/F841 348 项清零 + 3165 passed |
+| **0.3.0** | **2026-06-19** | **三贤者并行投票架构回归** — 并行投票(1×RTT，延迟降3倍)+ConsensusEngine前置+ExecutorBrain真意见+ReflectorBrain前置预判+IntentRouter三路路由+聚焦3核心技能(邮件/财务/报告)+9非核心技能冻结+i18n重构(3857→133行)+覆盖率62.87%+真实LLM E2E测试 |
 | **0.2.5** | **2026-06-07** | **架构统一+安全加固** — 架构统一重构+LLM并发控制+安全加固+3305测试/76文件 |
 | **0.2.4** | **2026-05-24** | **记忆+知识库增强** — CarryMem深度集成+知识库搜索优化+通知系统+扩展测试 |
 | **0.2.3** | **2026-05-24** | **CarryMem集成** — 跨会话持久记忆(MemoryBridge)+规则引擎+飞轮机制+LLM缓存+技能评分 |

@@ -107,6 +107,13 @@ def streamlit_server() -> Generator[str, None, None]:
     env["MOKA_API_KEY"] = ""
     env["GLM_API_KEY"] = ""
     env["OPENAI_API_KEY"] = ""
+    # 隔离本地 .env.encrypted 中保存的真实 API key。
+    # app.py 启动时调用 init_secure_storage()，其 load_to_env() 会无条件下发
+    # os.environ[name] = value 覆盖上面的空值，导致 _has_api_key() 返回 True，
+    # is_demo_mode() 返回 False，Demo 横幅不渲染，E2E 测试 TC_H04 失败。
+    # 指向不存在路径后，_load_storage 返回空 keys（secure_storage.py:222-223），
+    # load_to_env 循环不执行，env 空值得以保留。
+    env["OPC_SECURE_STORAGE"] = f"/tmp/opc_e2e_no_secure_{os.getpid()}.missing"
     # 避免测试期间弹窗干扰
     env["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
     env["BROWSER"] = "none"  # 防止 streamlit 自动打开浏览器

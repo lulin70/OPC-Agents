@@ -426,8 +426,6 @@ class TaskEngineExecutorsMixin:
         if llm_query is None:
             llm_query = search_query
         try:
-            pass
-
             scenario_result = self.scenario_engine.process(search_query)
 
             if not scenario_result.matched:

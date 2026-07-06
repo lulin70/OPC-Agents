@@ -3,10 +3,6 @@
 import streamlit as st
 import os
 import re
-
-# Memory bounds — prevent unbounded list growth in long sessions
-MAX_CHAT_MESSAGES = 100  # Keep last 100 messages in memory
-MAX_DELIVERABLES = 50  # Keep last 50 deliverables in memory
 import html
 import time
 import json
@@ -44,6 +40,10 @@ from frontend.components.confirmation_dialog import (
     clear_pending_confirmation,
 )
 from frontend.components.undo_panel import render_mini_undo_hint
+
+# Memory bounds — prevent unbounded list growth in long sessions
+MAX_CHAT_MESSAGES = 100  # Keep last 100 messages in memory
+MAX_DELIVERABLES = 50  # Keep last 50 deliverables in memory
 
 logger = logging.getLogger(__name__)
 

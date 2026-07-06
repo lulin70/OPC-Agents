@@ -379,10 +379,15 @@ class SkillRegistry(SkillExecutorMixin):
 
     def to_dict(self) -> Dict[str, Any]:
         """
-        将技能注册表转换为字典
+        Serialize registry to a read-only state snapshot.
+
+        Note: Skill.execute is a callable and cannot be serialized.
+        Therefore to_dict is a read-only snapshot (for debugging/monitoring),
+        and there is no corresponding from_dict — the registry must be
+        rebuilt via register_skill() calls.
 
         Returns:
-            Dict[str, Any]: 状态字典
+            Dict[str, Any]: Read-only state snapshot.
         """
         return {
             "type": "skill_registry",
@@ -397,9 +402,6 @@ class SkillRegistry(SkillExecutorMixin):
                 for sid, s in self.skills.items()
             },
         }
-
-    def from_dict(self, data: Dict[str, Any]) -> None:
-        pass
 
     def _execute_collaborative(
         self, goal: str, _context: Optional[SkillContext] = None

@@ -63,23 +63,24 @@ jobs:
       # These 6 tests pass locally but fail in CI (provider resets to default 'moka'
       # after singleton recreation — likely relative path / cwd issue in CI container).
       # Tracked as P1 — see docs/PROJECT_STATUS.md.
+      # P2-13: tests/ 分层为 unit/integration/e2e，路径已更新
       run: |
         set -o pipefail && PYTHONPATH=. pytest --tb=long -v --junitxml=test-results.xml --ignore=tests/e2e \
-          --deselect tests/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
-          --deselect tests/test_settings.py::TestSMTPCRUD::test_smtp_persistence \
-          --deselect tests/test_settings.py::TestAutoGenerateKey::test_key_persisted_across_restarts \
-          --deselect tests/test_settings.py::TestEncryptedStorage::test_api_key_decrypted_on_load \
-          --deselect tests/test_settings.py::TestEncryptedStorage::test_smtp_password_decrypted_on_load \
-          --deselect tests/test_settings.py::TestEncryptedStorage::test_auto_migration_plaintext_to_encrypted \
+          --deselect tests/integration/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
+          --deselect tests/integration/test_settings.py::TestSMTPCRUD::test_smtp_persistence \
+          --deselect tests/integration/test_settings.py::TestAutoGenerateKey::test_key_persisted_across_restarts \
+          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_api_key_decrypted_on_load \
+          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_smtp_password_decrypted_on_load \
+          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_auto_migration_plaintext_to_encrypted \
           2>&1 | tee test-output.txt
 
     - name: Run E2E tests (Playwright UI)
       # E2E 测试单独运行：Playwright sync_playwright 会创建独立事件循环线程，
       # 与后续单元测试中的 asyncio.run() 冲突（Python 3.12 检测到运行中循环会抛 RuntimeError）。
-      # 分离运行避免事件循环污染。continue-on-error: UI 测试失败不阻塞合并（后续修复）。
-      continue-on-error: true
+      # 分离运行避免事件循环污染。
+      # E2E 为强制门：失败必须阻塞合并（ASSESSMENT_D01 P0-4 修复，原 || true 吞掉失败）。
       run: |
-        PYTHONPATH=. pytest tests/e2e/ --tb=short -v --timeout=120 2>&1 | tee e2e-output.txt || true
+        PYTHONPATH=. pytest tests/e2e/ --tb=short -v --timeout=120 2>&1 | tee e2e-output.txt
 
     - name: Coverage report
       if: matrix.python-version == '3.11'
@@ -89,16 +90,12 @@ jobs:
           --cov-fail-under=62 \
           --tb=no -q --timeout=30 \
           --ignore=tests/e2e \
-          --ignore=tests/test_e2e_real.py \
-          --ignore=tests/test_e2e_user_journeys.py \
-          --ignore=tests/test_e2e_user_workflow.py \
-          --ignore=tests/test_integration_e2e.py \
-          --deselect tests/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
-          --deselect tests/test_settings.py::TestSMTPCRUD::test_smtp_persistence \
-          --deselect tests/test_settings.py::TestAutoGenerateKey::test_key_persisted_across_restarts \
-          --deselect tests/test_settings.py::TestEncryptedStorage::test_api_key_decrypted_on_load \
-          --deselect tests/test_settings.py::TestEncryptedStorage::test_smtp_password_decrypted_on_load \
-          --deselect tests/test_settings.py::TestEncryptedStorage::test_auto_migration_plaintext_to_encrypted \
+          --deselect tests/integration/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
+          --deselect tests/integration/test_settings.py::TestSMTPCRUD::test_smtp_persistence \
+          --deselect tests/integration/test_settings.py::TestAutoGenerateKey::test_key_persisted_across_restarts \
+          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_api_key_decrypted_on_load \
+          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_smtp_password_decrypted_on_load \
+          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_auto_migration_plaintext_to_encrypted \
           -p no:cacheprovider
 
     - name: Upload coverage artifact

@@ -36,7 +36,7 @@ opc-agents                      # 2. Launch
 > Full changes see [CHANGELOG.md](CHANGELOG.md), architecture design see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md).
 
 - **⚡ Three Sages Parallel Voting Architecture Returns**: Switched from serial pipeline (3×RTT) to parallel voting (1×RTT), 3x latency reduction. Inspired by EVA MAGI three-sage synchronous voting + minority report mechanism, key decision points protected by upfront consensus.
-- **🎯 Focus on 3 Core Skills**: Email / Finance / Report. 11 non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
+- **🎯 Focus on 3 Core Skills**: Email / Finance / Report. 9 non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
 - **🧠 IntentRouter 3-Way Smart Routing**: SIMPLE / COMPLEX / GREETING three-way classification. Simple tasks bypass the three sages directly — fast and cost-effective; complex tasks enter parallel voting for quality assurance.
 - **🛡 Key Decision Point Upfront Consensus Protection**: ConsensusEngine shifts from "post-hoc remedy" to "upfront gatekeeping", ExecutorBrain gives real opinions (fake opinion rules removed), ReflectorBrain upfront prediction + minority report.
 - **📊 Significant Quality Improvement**: Total coverage 62.87%, core skill targeted test coverage email_skill 99% / finance_skill 100% (targeted `pytest --cov` scope; under full test suite email_skill 17.0% / finance_skill 14.5%, see `coverage.json`; Sprint 2 improved targeted coverage from 16.96%/14.46% baseline); added 7 real LLM E2E tests (CI auto-runs every Monday).
@@ -151,7 +151,7 @@ Encounter specific scenarios? Use these together for better results:
 │  │ 📧 email     │ │ 💰 finance   │ │ 📊 report    ││
 │  │ SMTP+tpl+lim │ │ inc/exp+rpt  │ │ wk/mo/yr rpt ││
 │  └──────────────┘ └──────────────┘ └──────────────┘│
-│  (Other 11 non-core skills frozen, see SKILL_FREEZE)│
+│  (Other 9 non-core skills frozen, see SKILL_FREEZE)│
 ├─────────────────────────────────────────────────────┤
 │  External Extensions                                 │
 │  ┌──────────────┐  ┌──────────────┐                │
@@ -207,7 +207,7 @@ opc-agents
 ```bash
 git clone https://github.com/lulin70/OPC-Agents.git
 cd OPC-Agents
-chmod +x install.sh start.sh
+chmod +x scripts/install.sh scripts/start.sh
 ./scripts/install.sh
 
 # Install encryption dependency
@@ -367,12 +367,6 @@ OPC-Agents/
 │   ├── confirmer.py                  # Confirmation mechanism
 │   ├── progress_emitter.py           # Progress event emitter
 │   └── version.py         # Version management (SSOT)
-│   ├── experimental/      # Experimental modules (not in core flow)
-│   │   ├── wechat_agent.py    # 💬 WeChat E2E agent
-│   │   ├── wechat_gateway.py  # 💬 WeChat gateway
-│   │   └── plugin_worker.py   # 🔌 Plugin worker
-├── opc_manager/api/        # API events module
-│   └── events.py          # Event definitions
 ├── opc_manager/export/     # Export module
 │   ├── manager.py          # Export manager
 │   ├── models.py           # Export models
@@ -383,20 +377,17 @@ OPC-Agents/
 │       └── image_exporter.py
 ├── opc_hr/                # Search & knowledge base
 │   └── web_search.py      # DuckDuckGo web search
-├── plugins/               # Community plugins
-│   ├── plugin_config.json
-│   ├── data_converter.py
-│   └── text_summarizer.py
-├── tests/                 # Test suite (76 test files, 3305 tests, 100% pass)
+├── tests/                 # Test suite (87 test files, 3359 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
+├── scripts/               # Deployment & ops scripts
+│   ├── install.sh         # One-click install script
+│   └── start.sh           # One-click launch script
 ├── requirements.txt       # Core dependencies
 ├── requirements-dev.txt   # Dev dependencies (black/flake8/pytest)
 ├── .env.example           # Environment variable template
 ├── .env.local             # Auto-generated encryption key (gitignore protected)
-├── install.sh             # One-click install script
-├── start.sh               # One-click launch script
 └── VERSION                # Version file
 ```
 
@@ -422,7 +413,10 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | Version | Date | Milestone |
 |---------|------|-----------|
-| **0.3.0** | **2026-06-19 (Pending Release)** | **Three Sages Parallel Voting Architecture Returns** — Parallel voting (1×RTT, 3x latency reduction) + ConsensusEngine upfront + ExecutorBrain real opinions + ReflectorBrain upfront prediction + IntentRouter 3-way routing + focus on 3 core skills (email/finance/report) + 11 non-core skills frozen + i18n refactor (3857→133 lines) + coverage 62.87% + real LLM E2E tests |
+| **0.3.3** | **2026-06-28** | **Tech Debt Cleanup** — TD-065 mypy 516→0 errors (CI blocking) + TD-066 settings_encryption fail-open→fail-closed + flake8 E501 cleared + 3174 passed |
+| **0.3.2** | **2026-06-27** | **Project Tidy Assessment Fix** — DevSquad 7-dim assessment 72→79 (B+) + 17 version sync + check_prompt_injection ghost function integrated + mypy CI integration + 3167 passed |
+| **0.3.1** | **2026-06-26** | **Ghost Feature Removal** — Deleted api/events + experimental/wechat + plugin_system + plugins/ (~2196 lines dead code) + flake8 F401/F841 348 items cleared + 3165 passed |
+| **0.3.0** | **2026-06-19** | **Three Sages Parallel Voting Architecture Returns** — Parallel voting (1×RTT, 3x latency reduction) + ConsensusEngine upfront + ExecutorBrain real opinions + ReflectorBrain upfront prediction + IntentRouter 3-way routing + focus on 3 core skills (email/finance/report) + 9 non-core skills frozen + i18n refactor (3857→133 lines) + coverage 62.87% + real LLM E2E tests |
 | **0.2.5** | **2026-06-07** | **Architecture Unification + Security Hardening** — Architecture unification refactor + LLM concurrency control + security hardening + 3305 tests / 76 files |
 | **0.2.4** | **2026-05-24** | **Memory + Knowledge Enhancement** — CarryMem deep integration + knowledge search optimization + notification system + extended tests |
 | **0.2.3** | **2026-05-24** | **CarryMem Integration** — Cross-session persistent memory (MemoryBridge) + rule engine + flywheel mechanism + LLM cache + skill scoring |

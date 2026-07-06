@@ -6,7 +6,7 @@ Falls back gracefully when network is unavailable.
 """
 
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 

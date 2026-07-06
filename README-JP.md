@@ -203,7 +203,7 @@ opc-agents
 ```bash
 git clone https://github.com/lulin70/OPC-Agents.git
 cd OPC-Agents
-chmod +x install.sh start.sh
+chmod +x scripts/install.sh scripts/start.sh
 ./scripts/install.sh
 
 # 暗号化依存パッケージをインストール
@@ -363,12 +363,6 @@ OPC-Agents/
 │   ├── confirmer.py                  # 確認メカニズム
 │   ├── progress_emitter.py           # 進捗イベントエミッター
 │   └── version.py         # バージョン管理（SSOT）
-│   ├── experimental/      # 実験的モジュール（コアフロー外）
-│   │   ├── wechat_agent.py    # 💬 WeChat E2Eエージェント
-│   │   ├── wechat_gateway.py  # 💬 WeChatゲートウェイ
-│   │   └── plugin_worker.py   # 🔌 プラグインワーカー
-├── opc_manager/api/        # APIイベントモジュール
-│   └── events.py          # イベント定義
 ├── opc_manager/export/     # エクスポートモジュール
 │   ├── manager.py          # エクスポートマネージャー
 │   ├── models.py           # エクスポートモデル
@@ -379,20 +373,17 @@ OPC-Agents/
 │       └── image_exporter.py
 ├── opc_hr/                # 検索＆ナレッジベース
 │   └── web_search.py      # DuckDuckGo Web検索
-├── plugins/               # コミュニティプラグイン
-│   ├── plugin_config.json
-│   ├── data_converter.py
-│   └── text_summarizer.py
-├── tests/                 # テストスイート（76テストファイル、3305テスト、100%合格）
+├── tests/                 # テストスイート（87テストファイル、3359テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
+├── scripts/               # デプロイ＆運用スクリプト
+│   ├── install.sh         # ワンクリックインストールスクリプト
+│   └── start.sh           # ワンクリック起動スクリプト
 ├── requirements.txt       # コア依存パッケージ
 ├── requirements-dev.txt   # 開発依存パッケージ
 ├── .env.example           # 環境変数テンプレート
 ├── .env.local             # 自動生成暗号化キー（gitignore保護）
-├── install.sh             # ワンクリックインストールスクリプト
-├── start.sh               # ワンクリック起動スクリプト
 └── VERSION                # バージョンファイル
 ```
 
@@ -418,7 +409,10 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
-| **0.3.0** | **2026-06-19（リリース待ち）** | **三賢者並列投票アーキテクチャ回帰** — 並列投票(1×RTT、レイテンシ3分の1)+ConsensusEngine事前+ExecutorBrain真の意見+ReflectorBrain事前予測+IntentRouter 3分類ルーティング+3コアスキル集中(メール/財務/レポート)+11非コアスキル凍結+i18nリファクター(3857→133行)+カバレッジ62.87%+実LLM E2Eテスト |
+| **0.3.3** | **2026-06-28** | **技術債務クリーンアップ** — TD-065 mypy 516→0エラー（CIブロッキング）+ TD-066 settings_encryption fail-open→fail-closed + flake8 E501ゼロ化 + 3174 passed |
+| **0.3.2** | **2026-06-27** | **プロジェクト整理評価修正** — DevSquad 7次元評価 72→79 (B+) + 17箇所バージョン同期 + check_prompt_injectionゴースト関数統合 + mypy CI統合 + 3167 passed |
+| **0.3.1** | **2026-06-26** | **ゴースト機能削除** — api/events + experimental/wechat + plugin_system + plugins/削除（~2196行デッドコード）+ flake8 F401/F841 348項目ゼロ化 + 3165 passed |
+| **0.3.0** | **2026-06-19** | **三賢者並列投票アーキテクチャ回帰** — 並列投票(1×RTT、レイテンシ3分の1)+ConsensusEngine事前+ExecutorBrain真の意見+ReflectorBrain事前予測+IntentRouter 3分類ルーティング+3コアスキル集中(メール/財務/レポート)+9非コアスキル凍結+i18nリファクター(3857→133行)+カバレッジ62.87%+実LLM E2Eテスト |
 | **0.2.5** | **2026-06-07** | **アーキテクチャ統合+セキュリティ強化** — アーキテクチャ統合リファクター+LLM同時実行制御+セキュリティ強化+3305テスト/76ファイル |
 | **0.2.4** | **2026-05-24** | **記憶+ナレッジベース強化** — CarryMem深層統合+ナレッジ検索最適化+通知システム+拡張テスト |
 | **0.2.3** | **2026-05-24** | **CarryMem統合** — クロスセッション永続記憶(MemoryBridge)+ルールエンジン+フライホイール機構+LLMキャッシュ+スキルスコアリング |

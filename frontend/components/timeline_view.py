@@ -48,15 +48,6 @@ from frontend.components.timeline_data import (
     _get_category_labels,
     _get_status_labels,
 )
-from frontend.components.timeline_filters import (
-    _render_timeline_stats,
-    _render_timeline_filters,
-    _group_events_by_time,
-)
-from frontend.components.timeline_export import (
-    _render_export_section,
-    _escape_html,
-)
 
 logger = logging.getLogger(__name__)
 

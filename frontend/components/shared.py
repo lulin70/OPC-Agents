@@ -241,9 +241,9 @@ def _render_language_selector():
     current = i18n.locale
     selected = st.selectbox(
         _t("lang_selector"),
-        options=[l["code"] for l in locales],
-        format_func=lambda x: next(l["name"] for l in locales if l["code"] == x),
-        index=[l["code"] for l in locales].index(current),
+        options=[loc["code"] for loc in locales],
+        format_func=lambda x: next(loc["name"] for loc in locales if loc["code"] == x),
+        index=[loc["code"] for loc in locales].index(current),
         key="lang_selector",
     )
     if selected != current:

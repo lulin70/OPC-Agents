@@ -1,6 +1,5 @@
 """Remove U+FE0F emoji variant selector remnants from Python source files."""
 import argparse
-import os
 
 FE0F = "\ufe0f"
 

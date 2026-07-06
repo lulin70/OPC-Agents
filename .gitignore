@@ -76,6 +76,7 @@ task_workspaces/
 # Test artifacts
 test_results.xml
 test-output.txt
+e2e-output.txt
 coverage/
 coverage.xml
 coverage.json

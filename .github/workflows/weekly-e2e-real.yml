@@ -33,11 +33,11 @@ jobs:
         MOKA_API_BASE: ${{ secrets.MOKA_API_BASE }}
         MOKA_MODEL: ${{ secrets.MOKA_MODEL }}
       run: |
-        PYTHONPATH=. pytest tests/test_e2e_real.py -m e2e_core_skill -v --tb=long 2>&1 | tee e2e-output.txt
+        PYTHONPATH=. pytest tests/e2e/test_e2e_real.py -m e2e_core_skill -v --tb=long 2>&1 | tee e2e-output.txt
 
     - name: Run integration E2E tests
       run: |
-        PYTHONPATH=. pytest tests/test_integration_e2e.py -v --tb=long 2>&1 | tee -a e2e-output.txt
+        PYTHONPATH=. pytest tests/e2e/test_integration_e2e.py -v --tb=long 2>&1 | tee -a e2e-output.txt
 
     - name: Upload E2E report artifact
       if: always()
@@ -73,14 +73,14 @@ jobs:
               ``,
               `**失败时间**: ${date}`,
               `**运行链接**: ${runUrl}`,
-              `**测试范围**: tests/test_e2e_real.py -m e2e_core_skill`,
+              `**测试范围**: tests/e2e/test_e2e_real.py -m e2e_core_skill`,
               ``,
               `### 可能影响`,
               `核心技能（email/finance/report）可能存在问题，需要人工排查。`,
               ``,
               `### 下一步`,
               `1. 查看 E2E 报告 artifact`,
-              `2. 在本地复现：\`SKIP_E2E=0 pytest tests/test_e2e_real.py -m e2e_core_skill -v\``,
+              `2. 在本地复现：\`SKIP_E2E=0 pytest tests/e2e/test_e2e_real.py -m e2e_core_skill -v\``,
               `3. 修复后关闭此 Issue`,
             ].join('\n'),
             labels: ['bug', 'e2e', 'auto-generated']
