@@ -6,23 +6,26 @@
 > 违反 Simplicity First / Surgical Changes 原则。本文档提供导航价值，零代码风险。
 >
 > v0.3.3 更新：实测 opc_manager/ 顶层 99 个 .py（含子目录 110），tests/ 顶层 87 个 .py（含子目录 90）。
+>
+> P2-15 更新（2026-07-05）：StrategistBrain + ReflectorBrain God Class 拆分完成，
+> 新增 10 个独立服务模块（Facade 模式，向后兼容）。文件数 99→109。
 
 ## 分层总览
 
 ```
-opc_manager/   (99 文件)
+opc_manager/   (109 文件，P2-15 后)
 ├── I  — Input        (6 文件)   用户输入 → 意图识别 → 校验
-├── C  — Control     (22 文件)   业务逻辑、引擎编排、状态管理
+├── C  — Control     (32 文件)   业务逻辑、引擎编排、状态管理（含 P2-15 拆出的 10 个 Brain 服务）
 ├── O  — Output      (21 文件)   内容生成、搜索、进度、检测
 ├── S  — Skills      (24 文件)   可插拔技能模块 + 技能市场
 └── F  — Infra       (26 文件)   数据、配置、安全、监控、协议
 
-tests/          (87 文件)
-├── 单元测试      (按被测模块命名)
-├── 集成测试      (test_integration_*.py)
-├── E2E 测试      (test_e2e_*.py, test_user_journey.py)
-├── 安全测试      (test_security*.py)
-└── 工具脚本      (tools/)
+tests/          (90 文件，P2-13 后分层)
+├── unit/          (49 文件)   纯 mock，无 IO
+├── integration/   (29 文件)   跨模块 DB/文件系统
+├── e2e/           (8 文件)    真实服务/浏览器
+├── tools/         (3 文件)    gate 脚本（非 pytest）
+└── conftest.py              autouse fixture 必需保留根目录
 ```
 
 ---
@@ -46,15 +49,27 @@ tests/          (87 文件)
 
 三贤者架构核心：策略脑 → 执行脑 → 反思脑 + 共识引擎 + 任务引擎。
 
+> **P2-15 拆分说明**：StrategistBrain（884→176 行）和 ReflectorBrain（841→222 行）
+> 已重构为 Facade，公共 API 完全向后兼容；具体职责拆到 10 个独立服务模块。
+> 调用方（agent_loop.py 等）零改动。
+
 | 文件 | 职责 |
 |---|---|
 | `agent_loop.py` | Agent 执行循环（主入口） |
 | `agent_context.py` | Agent 上下文与状态机 |
 | `agent_error_handler.py` | Agent 错误处理 |
 | `agent_utils.py` | Agent 工具函数 |
-| `strategist_brain.py` | **策略脑**：意图分解、执行计划生成 |
+| `strategist_brain.py` | **策略脑 Facade**（P2-15 后 176 行）：意图分解、执行计划生成，委托给下方 3 个服务 |
+| `strategist_models.py` | [P2-15] 策略脑数据模型（ConstraintType/Constraint/Intent/Step/ExecutionPlan） |
+| `intent_understanding_service.py` | [P2-15] 意图理解服务（understand_intent + 9 个相关方法） |
+| `planning_service.py` | [P2-15] 任务规划服务（plan + 5 个规划方法） |
+| `external_skill_resolver.py` | [P2-15] 外部技能解析（用户偏好 + 技能市场降级查找） |
 | `executor_brain.py` | **执行脑**：步骤执行、结果收集 |
-| `reflector_brain.py` | **反思脑**：质量评估、纠偏策略 |
+| `reflector_brain.py` | **反思脑 Facade**（P2-15 后 222 行）：质量评估、纠偏策略，委托给下方 3 个服务 |
+| `reflector_models.py` | [P2-15] 反思脑数据模型（Evaluation/NextAction + 常量） |
+| `quality_evaluator.py` | [P2-15] 质量评估服务（evaluate_result + 5 个评估方法 + 权重常量） |
+| `next_action_decider.py` | [P2-15] 行动决策服务（decide_next_action + 改进/修正策略 + 占位符检测） |
+| `consequence_predictor.py` | [P2-15] 后果预判服务（predict_consequence + LLM/规则/异步版本） |
 | `consensus_engine.py` | **共识引擎**：三贤者并行投票决策 |
 | `confirmer.py` | 确认器（关键操作前用户确认） |
 | `correction_manager.py` | 纠偏管理 |

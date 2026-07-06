@@ -149,3 +149,29 @@ exclude = [
     "opc_manager/i18n/locales/",
     "tests/",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+# P2-14 虚拟分层: isort 配置作为"软约束"
+# 不在 select 中强制启用 I 规则（避免一次性改动 434 个文件违反 Surgical Changes），
+# 但配置 sections/known-first-party，让开发者在 IDE 或手动 `ruff check --select I --fix`
+# 时按 opc_manager 单列 section 排序，强化层次感知。
+[tool.ruff.lint.isort]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "opc_manager",
+    "first-party",
+    "local-folder",
+]
+sections.opc_manager = ["opc_manager"]
+
+[tool.ruff.lint.per-file-ignores]
+# app.py must run init steps (load_dotenv, init_monitoring, init_secure_storage)
+# before importing frontend modules — E402 is intentional for Streamlit bootstrap.
+"frontend/app.py" = ["E402"]
+# Test files dynamically modify sys.path before importing project modules.
+"tests/e2e/test_docker_deployment.py" = ["E402"]

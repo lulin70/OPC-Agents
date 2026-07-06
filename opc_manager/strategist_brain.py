@@ -5,103 +5,47 @@
 - 理解用户意图
 - 制定执行计划
 - 规划资源分配
+
+[P2-15] Step 5: 意图理解 + 任务规划 + 外部技能解析职责已全部抽到独立服务，
+StrategistBrain 作为 Facade 保留公共 API 向后兼容。
 """
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
-from enum import Enum
-import json
-import re
-import uuid
+from typing import Any, Dict, Optional
 import logging
 
-from opc_manager.intent_types import IntentType, INTENT_KEYWORDS, INTENT_STEP_MAP
-from opc_manager.utils import (
-    extract_json_from_llm,
-    sanitize_for_llm,
-    call_llm_service,
+from opc_manager.intent_types import IntentType, INTENT_KEYWORDS
+# [P2-15] Step 1: 数据模型抽到 strategist_models.py，此处 re-export 保向后兼容
+from opc_manager.strategist_models import (  # noqa: F401
+    ConstraintType,
+    Constraint,
+    Intent,
+    Step,
+    ExecutionPlan,
 )
+# [P2-15] Step 3: 服务抽到独立模块，Facade 委托
+from opc_manager.intent_understanding_service import IntentUnderstandingService
+from opc_manager.planning_service import PlanningService
+# [P2-15] Step 5: 外部技能解析抽到 ExternalSkillResolver
+from opc_manager.external_skill_resolver import ExternalSkillResolver
 
 logger = logging.getLogger(__name__)
 
 ESTIMATED_TIME_PER_STEP = 30
-_CACHE_TTL = 300.0  # 5 minutes cache expiry
 
-
-class ConstraintType(Enum):
-    """约束类型枚举"""
-
-    TIME = "time"  # 时间约束
-    COUNT = "count"  # 数量约束
-    FORMAT = "format"  # 格式约束
-    SCOPE = "scope"  # 范围约束
-    BUDGET = "budget"  # 预算约束
-
-
-@dataclass
-class Constraint:
-    """约束对象"""
-
-    type: ConstraintType
-    value: Any
-    description: str = ""
-
-
-@dataclass
-class Intent:
-    """意图对象 - 表示用户的核心目标和约束"""
-
-    goal: str  # 核心目标
-    type: IntentType  # 意图类型
-    constraints: Optional[List[Constraint]] = None  # 约束条件列表
-    context: Optional[Dict[str, Any]] = None  # 上下文信息
-    confidence: float = 1.0  # 置信度
-    sub_intents: Optional[List["Intent"]] = None  # 子意图列表（复合意图时使用）
-
-    def __post_init__(self):
-        if self.constraints is None:
-            self.constraints = []
-        if self.context is None:
-            self.context = {}
-        if self.sub_intents is None:
-            self.sub_intents = []
-
-
-@dataclass
-class Step:
-    """执行步骤对象"""
-
-    id: str  # 步骤唯一标识
-    skill_id: str  # 技能ID
-    description: str  # 步骤描述
-    parameters: Optional[Dict[str, Any]] = None  # 执行参数
-    dependencies: Optional[List[str]] = None  # 依赖的步骤ID列表
-    retry_count: int = 0  # 重试次数
-
-    def __post_init__(self):
-        if self.parameters is None:
-            self.parameters = {}
-        if self.dependencies is None:
-            self.dependencies = []
-
-
-@dataclass
-class ExecutionPlan:
-    """执行计划对象"""
-
-    plan_id: str  # 计划唯一标识
-    intent: Intent  # 关联的意图
-    steps: List[Step]  # 步骤列表
-    resources: Optional[Dict[str, Any]] = None  # 资源配置
-    estimated_time: int = 0  # 预估执行时间（秒）
-
-    def __post_init__(self):
-        if self.resources is None:
-            self.resources = {}
+__all__ = [
+    "StrategistBrain",
+    "ConstraintType",
+    "Constraint",
+    "Intent",
+    "Step",
+    "ExecutionPlan",
+    "IntentType",
+    "ESTIMATED_TIME_PER_STEP",
+]
 
 
 class StrategistBrain:
-    """策略脑 — 负责意图理解和任务规划"""
+    """策略脑 — 负责意图理解和任务规划（Facade）"""
 
     def __init__(self, llm_service=None, skill_registry=None):
         """
@@ -115,9 +59,6 @@ class StrategistBrain:
         """
         self.llm_service = llm_service
         self.skill_registry = skill_registry
-        self._cached_user_profile = None
-        self._cached_marketplace = None
-        self._cache_timestamp: float = 0.0
 
         self.intent_keywords = INTENT_KEYWORDS
 
@@ -130,690 +71,36 @@ class StrategistBrain:
             ConstraintType.BUDGET: ["预算", "费用", "成本"],
         }
 
+        # [P2-15] Step 5: 外部技能解析委托给 ExternalSkillResolver
+        self._external_skill_resolver = ExternalSkillResolver()
+
+        # [P2-15] Step 3: 委托给独立服务
+        self._intent_service = IntentUnderstandingService(
+            llm_service=llm_service,
+            intent_keywords=self.intent_keywords,
+            constraint_keywords=self.constraint_keywords,
+            external_fallback=self._external_skill_resolver.resolve,
+        )
+        self._planning_service = PlanningService(
+            llm_service=llm_service,
+            skill_registry=skill_registry,
+        )
+
     def understand_intent(
         self, user_input: str, context: Optional[Dict] = None
     ) -> Intent:
-        logger.info("开始理解意图: %s...", user_input[:50])
+        """理解用户意图。
 
-        if self.llm_service:
-            try:
-                intent = self._understand_intent_with_llm(user_input, context)
-                if intent and intent.confidence > 0.5:
-                    logger.info(
-                        "LLM意图理解成功: %s (置信度: %.2f)",
-                        intent.type.name,
-                        intent.confidence,
-                    )
-                    return intent
-                logger.info("LLM意图理解置信度不足，降级到关键词匹配")
-            except Exception as e:
-                logger.warning("LLM意图理解失败，降级到关键词匹配: %s", e)
-
-        intent_type = self._detect_intent_type(user_input)
-        constraints = self._extract_constraints(user_input)
-        goal = self._extract_goal(user_input, intent_type)
-
-        if context is None:
-            context = {}
-
-        if intent_type == IntentType.UNKNOWN:
-            fallback_result = self._fallback_to_external(user_input, goal)
-            if fallback_result:
-                intent_type = IntentType.EXTENDED_SKILL
-                context.update(fallback_result.get("context", {}))
-                goal = fallback_result.get("goal", goal)
-
-        confidence = self._calculate_confidence(user_input, intent_type)
-
-        sub_intents = []
-        if intent_type == IntentType.COMBINED:
-            sub_intents = self._decompose_intent(user_input)
-
-        intent = Intent(
-            goal=goal,
-            type=intent_type,
-            constraints=constraints,
-            context=context,
-            confidence=confidence,
-            sub_intents=sub_intents,
-        )
-
-        logger.info(
-            "意图理解完成: %s - '%s' (置信度: %.2f, 子意图: %s)",
-            intent.type.name,
-            goal,
-            confidence,
-            len(sub_intents),
-        )
-        return intent
-
-    def _understand_intent_with_llm(
-        self, user_input: str, context: Optional[Dict] = None
-    ) -> Optional[Intent]:
-        sanitized_input = sanitize_for_llm(user_input, 500)
-
-        prompt = f"""分析以下用户请求，返回JSON格式的意图分析结果。
-
-用户请求: {sanitized_input}
-
-请返回如下JSON格式（不要包含其他内容）:
-{{
-  "goal": "用户的核心目标（一句话描述）",
-  "intent_type": "analysis|creation|operation|search|notification|combined",
-  "confidence": 0.0-1.0的置信度,
-  "sub_intents": ["子意图1", "子意图2"],
-  "constraints": ["约束1", "约束2"]
-}}
-
-意图类型说明:
-- analysis: 分析/调研/评估/竞品分析/SWOT/对比
-- creation: 写/创建/生成/制作/起草/方案/报告/计划
-- operation: 执行/操作/处理/整理/转换
-- search: 搜索/查找/查询/了解
-- notification: 通知/提醒/发送/告知
-- combined: 包含两个及以上不同类型的子任务"""
-
-        llm_response = call_llm_service(self.llm_service, prompt)
-        if not llm_response:
-            return None
-
-        try:
-            data = extract_json_from_llm(llm_response)
-            if not data:
-                return None
-
-            intent_type_str = data.get("intent_type", "unknown")
-            intent_type = IntentType.UNKNOWN
-            for it in IntentType:
-                if it.value == intent_type_str:
-                    intent_type = it
-                    break
-
-            goal = data.get("goal", user_input)
-            confidence = min(1.0, max(0.0, float(data.get("confidence", 0.5))))
-
-            sub_intents = []
-            for sub_goal in data.get("sub_intents", []):
-                sub_type = self._detect_intent_type(sub_goal)
-                sub_intents.append(
-                    Intent(
-                        goal=sub_goal,
-                        type=sub_type,
-                        confidence=self._calculate_confidence(sub_goal, sub_type),
-                    )
-                )
-
-            constraints = []
-            for c_str in data.get("constraints", []):
-                constraints.append(
-                    Constraint(
-                        type=self._infer_constraint_type(c_str),
-                        value=None,
-                        description=c_str,
-                    )
-                )
-            constraints.extend(self._extract_constraints(user_input))
-
-            return Intent(
-                goal=goal,
-                type=intent_type,
-                constraints=constraints,
-                context=context or {},
-                confidence=confidence,
-                sub_intents=sub_intents,
-            )
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.warning("LLM意图解析失败: %s", e)
-            return None
-
-    def _fallback_to_external(
-        self, user_input: str, goal: str
-    ) -> Optional[Dict[str, Any]]:
-        import time as _time
-
-        if _time.time() - self._cache_timestamp > _CACHE_TTL:
-            self._cached_user_profile = None
-            self._cached_marketplace = None
-            self._cache_timestamp = _time.time()
-        try:
-            from opc_manager.user_profile import UserProfile
-
-            if self._cached_user_profile is None:
-                self._cached_user_profile = UserProfile()
-            preferred = self._cached_user_profile.get_preference(
-                f"preferred_skill:{user_input[:20]}"
-            )
-            if preferred:
-                return {
-                    "goal": goal,
-                    "context": {"skill_id": preferred, "source": "user_preference"},
-                }
-        except Exception as e:
-            logger.debug("查询用户偏好失败: %s", e)
-
-        try:
-            from opc_manager.skill_marketplace import ExternalSkillMarketplace
-
-            if self._cached_marketplace is None:
-                self._cached_marketplace = ExternalSkillMarketplace()
-            search_result = self._cached_marketplace.search_skills(user_input)
-            if search_result.get("success") and search_result.get("results"):
-                best_match = search_result["results"][0]
-                return {
-                    "goal": goal,
-                    "context": {
-                        "skill_id": best_match.get("skill_id", ""),
-                        "source": "marketplace",
-                        "trust_level": best_match.get("trust_level", "unverified"),
-                    },
-                }
-        except Exception as e:
-            logger.debug("搜索外部技能市场失败: %s", e)
-
-        return None
-
-    def _detect_intent_type(self, user_input: str) -> IntentType:
-        matched_types = []
-        for intent_type, keywords in self.intent_keywords.items():
-            sorted_keywords = sorted(keywords, key=len, reverse=True)
-            for keyword in sorted_keywords:
-                if keyword in user_input:
-                    matched_types.append(intent_type)
-                    break
-
-        if len(matched_types) >= 2:
-            return IntentType.COMBINED
-        elif matched_types:
-            return matched_types[0]
-        else:
-            return IntentType.UNKNOWN
-
-    def _decompose_intent(self, user_input: str) -> List[Intent]:
-        sub_intents = []
-        separators = ["然后", "接着", "再", "并且", "以及", "还有", "和", "，", "、"]
-        segments = [user_input]
-        for sep in separators:
-            new_segments = []
-            for seg in segments:
-                parts = seg.split(sep)
-                new_segments.extend([p.strip() for p in parts if p.strip()])
-            segments = new_segments
-            if len(segments) >= 4:
-                break
-
-        if len(segments) < 2:
-            segments = [user_input]
-
-        for segment in segments:
-            seg_type = self._detect_single_intent_type(segment)
-            goal = self._extract_goal(segment, seg_type)
-            confidence = self._calculate_confidence(segment, seg_type)
-            sub_intents.append(Intent(goal=goal, type=seg_type, confidence=confidence))
-
-        return sub_intents
-
-    def _detect_single_intent_type(self, text: str) -> IntentType:
-        for intent_type, keywords in self.intent_keywords.items():
-            sorted_keywords = sorted(keywords, key=len, reverse=True)
-            for keyword in sorted_keywords:
-                if keyword in text:
-                    return intent_type
-        return IntentType.UNKNOWN
-
-    def _infer_constraint_type(self, constraint_text: str) -> ConstraintType:
-        schedule_keywords = [
-            "时间",
-            "日期",
-            "截止",
-            "时限",
-            "期限",
-            "按时",
-            "尽快",
-            "今天",
-            "本周",
-            "明天",
-        ]
-        budget_keywords = ["预算", "费用", "成本", "花费", "金额", "价格", "开销"]
-        quality_keywords = ["质量", "标准", "要求", "规范", "精度", "准确", "可靠"]
-        for kw in schedule_keywords:
-            if kw in constraint_text:
-                return ConstraintType.TIME
-        for kw in budget_keywords:
-            if kw in constraint_text:
-                return ConstraintType.BUDGET
-        for kw in quality_keywords:
-            if kw in constraint_text:
-                return ConstraintType.SCOPE
-        return ConstraintType.SCOPE
-
-    def _extract_constraints(self, user_input: str) -> List[Constraint]:
+        [P2-15] Step 3: 委托给 IntentUnderstandingService，保留 Facade API 向后兼容。
         """
-        从用户输入中提取约束条件
-
-        Args:
-            user_input: 用户输入文本
-
-        Returns:
-            List[Constraint]: 约束条件列表
-        """
-        constraints = []
-
-        for constraint_type, keywords in self.constraint_keywords.items():
-            for keyword in keywords:
-                if keyword in user_input:
-                    constraints.append(
-                        Constraint(
-                            type=constraint_type,
-                            value=None,
-                            description=f"包含约束关键词: {keyword}",
-                        )
-                    )
-                    break
-
-        number_matches = re.findall(r"(\d+)\s*(个|份|项|篇)", user_input)
-        if number_matches:
-            constraints.append(
-                Constraint(
-                    type=ConstraintType.COUNT,
-                    value=int(number_matches[0][0]),
-                    description=f"数量限制为: {number_matches[0][0]}",
-                )
-            )
-
-        return constraints
-
-    def _extract_goal(self, user_input: str, intent_type: IntentType) -> str:
-        """
-        提取核心目标
-
-        Args:
-            user_input: 用户输入文本
-            intent_type: 意图类型
-
-        Returns:
-            str: 核心目标描述
-        """
-        # 简单的目标提取：移除常见前缀词
-        prefixes_to_remove = ["帮我", "请帮我", "我想", "我需要", "能不能"]
-        suffix_particles = ["吧", "呢", "吗", "啊", "呀", "哦"]
-        complex_patterns = [("能不能帮我", ""), ("请帮我", "")]
-
-        goal = user_input.strip()
-        for pattern, replacement in complex_patterns:
-            if goal.startswith(pattern):
-                goal = replacement + goal[len(pattern) :].strip()
-                break
-        for prefix in prefixes_to_remove:
-            if goal.startswith(prefix):
-                goal = goal[len(prefix) :].strip()
-                break
-        while goal and goal[-1] in suffix_particles:
-            goal = goal[:-1].strip()
-
-        return goal
-
-    def _calculate_confidence(self, user_input: str, intent_type: IntentType) -> float:
-        """
-        计算意图识别的置信度
-
-        Args:
-            user_input: 用户输入文本
-            intent_type: 意图类型
-
-        Returns:
-            float: 置信度 (0.0-1.0)
-        """
-        if intent_type == IntentType.UNKNOWN:
-            return 0.3
-
-        # 根据匹配的关键词数量计算置信度
-        confidence = 0.5
-        keywords = self.intent_keywords.get(intent_type, [])
-        matched_count = sum(1 for kw in keywords if kw in user_input)
-
-        if matched_count >= 2:
-            confidence = min(0.95, 0.5 + matched_count * 0.15)
-        elif matched_count == 1:
-            confidence = 0.7
-
-        return confidence
+        return self._intent_service.understand_intent(user_input, context)
 
     def plan(self, intent: Intent) -> ExecutionPlan:
-        logger.info("开始制定执行计划: %s...", intent.goal[:50])
+        """制定执行计划。
 
-        if self.llm_service:
-            try:
-                plan = self._plan_with_llm(intent)
-                if plan and plan.steps:
-                    logger.info("LLM规划完成: %s 个步骤", len(plan.steps))
-                    return plan
-                logger.info("LLM规划失败，降级到规则规划")
-            except Exception as e:
-                logger.warning("LLM规划异常，降级到规则规划: %s", e)
-
-        plan_id = f"plan_{uuid.uuid4().hex[:8]}"
-        steps = self._generate_steps(intent)
-        estimated_time = len(steps) * ESTIMATED_TIME_PER_STEP
-
-        plan = ExecutionPlan(
-            plan_id=plan_id, intent=intent, steps=steps, estimated_time=estimated_time
-        )
-
-        logger.info("执行计划制定完成: %s 个步骤", len(steps))
-        return plan
-
-    def _get_valid_skill_ids(self) -> set:
-        """从 SkillRegistry 动态获取所有有效的技能 ID。
-
-        若注入了 skill_registry，则返回注册表中已注册的技能 ID；
-        否则降级到基础技能集，保持向后兼容。
-
-        Returns:
-            set: 有效技能 ID 集合，始终包含系统技能 intent_analysis / output_result
+        [P2-15] Step 3: 委托给 PlanningService，保留 Facade API 向后兼容。
         """
-        # 系统技能始终可用，不在 SkillRegistry 中注册
-        system_skills = {"intent_analysis", "output_result"}
-
-        if self.skill_registry is None:
-            # 向后兼容：未注入注册表时使用基础技能集
-            base_skills = {
-                "search",
-                "analysis",
-                "content_generation",
-                "execute_operation",
-                "send_notification",
-            }
-            return base_skills | system_skills
-
-        try:
-            all_skills = self.skill_registry.list_all_skills()
-            registry_ids = {skill.skill_id for skill in all_skills}
-            return registry_ids | system_skills
-        except Exception as e:
-            logger.warning("从 SkillRegistry 获取技能列表失败，降级到基础技能集: %s", e)
-            base_skills = {
-                "search",
-                "analysis",
-                "content_generation",
-                "execute_operation",
-                "send_notification",
-            }
-            return base_skills | system_skills
-
-    def _build_planning_prompt(
-        self, safe_goal: str, intent_type_value: str, safe_sub_goals: str
-    ) -> str:
-        """构建包含动态技能列表的 LLM 规划提示词。
-
-        从 SkillRegistry 获取已启用的技能，生成 "skill_id(技能名)" 形式的
-        描述列表注入到提示词中，提升 LLM 生成有效 skill_id 的准确率。
-
-        Args:
-            safe_goal: 已脱敏的任务目标
-            intent_type_value: 意图类型字符串
-            safe_sub_goals: 已脱敏的子目标
-
-        Returns:
-            str: 完整的 LLM 规划提示词
-        """
-        if self.skill_registry is not None:
-            try:
-                all_skills = self.skill_registry.list_all_skills()
-                skill_descriptions = [
-                    f"{skill.skill_id}({skill.name})"
-                    for skill in all_skills
-                    if skill.enabled
-                ]
-                if not skill_descriptions:
-                    # 注册表为空时降级到基础技能
-                    skill_descriptions = [
-                        "search(搜索)",
-                        "analysis(分析)",
-                        "content_generation(内容创作)",
-                        "execute_operation(执行操作)",
-                        "send_notification(发送通知)",
-                    ]
-            except Exception as e:
-                logger.warning("构建规划提示词时获取技能列表失败，使用基础技能: %s", e)
-                skill_descriptions = [
-                    "search(搜索)",
-                    "analysis(分析)",
-                    "content_generation(内容创作)",
-                    "execute_operation(执行操作)",
-                    "send_notification(发送通知)",
-                ]
-        else:
-            # 未注入注册表，使用基础技能集（向后兼容）
-            skill_descriptions = [
-                "search(搜索)",
-                "analysis(分析)",
-                "content_generation(内容创作)",
-                "execute_operation(执行操作)",
-                "send_notification(发送通知)",
-            ]
-
-        skills_text = ", ".join(skill_descriptions)
-
-        return f"""为以下任务制定执行计划，返回JSON格式。
-
-任务目标: {safe_goal}
-意图类型: {intent_type_value}
-子目标: {safe_sub_goals}
-
-可用技能: {skills_text}, output_result(输出结果)
-
-请返回JSON格式:
-{{
-  "steps": [
-    {{"skill_id": "技能名", "description": "步骤描述", "parameters": {{"key": "value"}}}},
-    ...
-  ]
-}}
-
-规则:
-1. 第一步通常是搜索或分析
-2. 后续步骤基于前一步结果
-3. 最后一步是output_result
-4. 复合意图需要多步骤
-5. skill_id必须从上述可用技能列表中选择"""
-
-    def _plan_with_llm(self, intent: Intent) -> Optional[ExecutionPlan]:
-        sub_goals = [si.goal for si in intent.sub_intents] if intent.sub_intents else []
-
-        safe_goal = sanitize_for_llm(intent.goal, 500)
-        safe_sub_goals = (
-            sanitize_for_llm(json.dumps(sub_goals, ensure_ascii=False), 500)
-            if sub_goals
-            else "无"
-        )
-
-        prompt = self._build_planning_prompt(
-            safe_goal, intent.type.value, safe_sub_goals
-        )
-
-        llm_response = call_llm_service(self.llm_service, prompt)
-        if not llm_response:
-            return None
-
-        try:
-            data = extract_json_from_llm(llm_response)
-            if not data:
-                return None
-
-            steps_data = data.get("steps", [])
-            if not steps_data:
-                return None
-
-            valid_skill_ids = self._get_valid_skill_ids()
-
-            steps = []
-            for i, sd in enumerate(steps_data):
-                skill_id = sd.get("skill_id", "output_result")
-                if skill_id not in valid_skill_ids:
-                    logger.warning(
-                        "LLM生成的技能ID '%s' 不在注册表中，降级为 output_result",
-                        skill_id,
-                    )
-                    skill_id = "output_result"
-                steps.append(
-                    Step(
-                        id=f"step_{i+1}",
-                        skill_id=skill_id,
-                        description=sd.get("description", f"执行步骤{i+1}"),
-                        parameters=sd.get("parameters", {"goal": intent.goal}),
-                        dependencies=[f"step_{i}"] if i > 0 else [],
-                    )
-                )
-
-            plan_id = f"plan_{uuid.uuid4().hex[:8]}"
-            return ExecutionPlan(
-                plan_id=plan_id,
-                intent=intent,
-                steps=steps,
-                estimated_time=len(steps) * ESTIMATED_TIME_PER_STEP,
-            )
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.warning("LLM规划结果解析失败: %s", e)
-            return None
-
-    def _generate_steps(self, intent: Intent) -> List[Step]:
-        steps = []
-        step_id = 1
-
-        steps.append(
-            Step(
-                id=f"step_{step_id}",
-                skill_id="intent_analysis",
-                description="分析用户需求和约束条件",
-                parameters={
-                    "goal": intent.goal,
-                    "constraints": [c.type.value for c in (intent.constraints or [])],
-                },
-            )
-        )
-        step_id += 1
-
-        if intent.type == IntentType.COMBINED and intent.sub_intents:
-            prev_step_id = "step_1"
-            for sub_intent in intent.sub_intents:
-                sub_steps = self._generate_skill_steps(
-                    sub_intent, step_id, prev_step_id
-                )
-                steps.extend(sub_steps)
-                if sub_steps:
-                    prev_step_id = sub_steps[-1].id
-                    step_id += len(sub_steps)
-        else:
-            skill_steps = self._generate_skill_steps(intent, step_id, "step_1")
-            steps.extend(skill_steps)
-            if skill_steps:
-                step_id += len(skill_steps)
-
-        steps.append(
-            Step(
-                id=f"step_{step_id}",
-                skill_id="output_result",
-                description="输出最终结果",
-                parameters={"format": "markdown"},
-                dependencies=[steps[-1].id] if len(steps) > 1 else [],
-            )
-        )
-
-        return steps
-
-    def _generate_skill_steps(
-        self, intent: Intent, start_id: int, dep_id: str
-    ) -> List[Step]:
-        steps: List[Step] = []
-        step_id = start_id
-
-        if intent.type == IntentType.COMBINED:
-            if intent.sub_intents:
-                for sub in intent.sub_intents[:3]:
-                    sub_steps = self._generate_skill_steps(
-                        sub, step_id, dep_id if not steps else steps[-1].id
-                    )
-                    steps.extend(sub_steps)
-                    step_id += len(sub_steps)
-            else:
-                steps.append(
-                    Step(
-                        id=f"step_{step_id}",
-                        skill_id="search",
-                        description="搜索相关信息和数据",
-                        parameters={"query": intent.goal, "max_results": 10},
-                        dependencies=[dep_id],
-                    )
-                )
-                step_id += 1
-                steps.append(
-                    Step(
-                        id=f"step_{step_id}",
-                        skill_id="analysis",
-                        description="进行深度分析",
-                        parameters={"goal": intent.goal},
-                        dependencies=[steps[-1].id],
-                    )
-                )
-                step_id += 1
-                steps.append(
-                    Step(
-                        id=f"step_{step_id}",
-                        skill_id="content_generation",
-                        description="生成内容",
-                        parameters={"goal": intent.goal, "format": "markdown"},
-                        dependencies=[steps[-1].id],
-                    )
-                )
-        elif intent.type == IntentType.ANALYSIS:
-            steps.append(
-                Step(
-                    id=f"step_{step_id}",
-                    skill_id="search",
-                    description="搜索相关信息和数据",
-                    parameters={"query": intent.goal, "max_results": 10},
-                    dependencies=[dep_id],
-                )
-            )
-            step_id += 1
-            steps.append(
-                Step(
-                    id=f"step_{step_id}",
-                    skill_id="analysis",
-                    description="进行深度分析",
-                    parameters={"goal": intent.goal},
-                    dependencies=[steps[-1].id],
-                )
-            )
-        elif intent.type == IntentType.SEARCH:
-            steps.append(
-                Step(
-                    id=f"step_{step_id}",
-                    skill_id="search",
-                    description="执行搜索",
-                    parameters={"query": intent.goal, "max_results": 15},
-                    dependencies=[dep_id],
-                )
-            )
-        else:
-            mapping = INTENT_STEP_MAP.get(intent.type)
-            if mapping:
-                skill_id, desc = mapping
-                params = {"goal": intent.goal}
-                if intent.type == IntentType.EXTENDED_SKILL and intent.context:
-                    params["skill_id"] = intent.context.get("skill_id", "")
-                    params["source"] = intent.context.get("source", "")
-                steps.append(
-                    Step(
-                        id=f"step_{step_id}",
-                        skill_id=skill_id,
-                        description=desc,
-                        parameters=params,
-                        dependencies=[dep_id],
-                    )
-                )
-
-        return steps
+        return self._planning_service.plan(intent)
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -838,6 +125,8 @@ class StrategistBrain:
                 if val is not None:
                     parsed[val] = v
             self.intent_keywords = parsed
+            # 同步到 IntentUnderstandingService
+            self._intent_service.intent_keywords = parsed
         if "constraint_keywords" in data:
             parsed = {}
             for k, v in data["constraint_keywords"].items():
@@ -845,6 +134,8 @@ class StrategistBrain:
                 if val is not None:
                     parsed[val] = v
             self.constraint_keywords = parsed
+            # 同步到 IntentUnderstandingService
+            self._intent_service.constraint_keywords = parsed
 
     def express_opinion(
         self, context: Dict[str, Any], decision_point: Optional[str] = None
