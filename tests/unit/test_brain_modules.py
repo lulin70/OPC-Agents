@@ -15,6 +15,7 @@ from opc_manager.strategist_brain import (
     ExecutionPlan,
     ConstraintType,
 )
+from opc_manager.external_skill_resolver import ExternalSkillResolver
 from opc_manager.executor_brain import (
     ExecutorBrain,
     ExecutionResultType,
@@ -74,13 +75,17 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
         intent = self.brain.understand_intent("分析市场然后写报告")
         self.assertEqual(intent.type, IntentType.COMBINED)
 
-    @patch.object(StrategistBrain, "_fallback_to_external", return_value=None)
+    @patch.object(ExternalSkillResolver, "resolve", return_value=None)
     def test_unknown_intent_for_unrecognized_input(self, mock_fallback):
+        # [P2-15] patch 在 setUp 之后生效，需重新注入到 IntentUnderstandingService
+        self.brain._intent_service._external_fallback = mock_fallback
         intent = self.brain.understand_intent("随便说说")
         self.assertEqual(intent.type, IntentType.UNKNOWN)
 
-    @patch.object(StrategistBrain, "_fallback_to_external", return_value=None)
+    @patch.object(ExternalSkillResolver, "resolve", return_value=None)
     def test_empty_input_gives_unknown(self, mock_fallback):
+        # [P2-15] patch 在 setUp 之后生效，需重新注入到 IntentUnderstandingService
+        self.brain._intent_service._external_fallback = mock_fallback
         intent = self.brain.understand_intent("")
         self.assertEqual(intent.type, IntentType.UNKNOWN)
 
@@ -93,7 +98,7 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
         self.assertGreaterEqual(intent.confidence, 0.0)
         self.assertLessEqual(intent.confidence, 1.0)
 
-    @patch("opc_manager.strategist_brain.call_llm_service", return_value=None)
+    @patch("opc_manager.intent_understanding_service.call_llm_service", return_value=None)
     def test_llm_failure_falls_back_to_keywords(self, mock_llm):
         mock_svc = MagicMock()
         mock_svc.complete.return_value = None
@@ -101,7 +106,7 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
         intent = brain.understand_intent("分析市场趋势")
         self.assertEqual(intent.type, IntentType.ANALYSIS)
 
-    @patch("opc_manager.strategist_brain.call_llm_service")
+    @patch("opc_manager.intent_understanding_service.call_llm_service")
     def test_llm_returns_valid_intent(self, mock_llm):
         mock_llm.return_value = (
             '{"goal": "分析数据", "intent_type": "analysis", '
@@ -113,7 +118,7 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
         self.assertEqual(intent.type, IntentType.ANALYSIS)
         self.assertAlmostEqual(intent.confidence, 0.9)
 
-    @patch("opc_manager.strategist_brain.call_llm_service")
+    @patch("opc_manager.intent_understanding_service.call_llm_service")
     def test_llm_malformed_response_falls_back(self, mock_llm):
         mock_llm.return_value = "NOT JSON AT ALL"
         mock_svc = MagicMock()
@@ -127,7 +132,7 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
         intent = self.brain.understand_intent(long_input)
         self.assertEqual(intent.type, IntentType.ANALYSIS)
 
-    @patch.object(StrategistBrain, "_fallback_to_external", return_value=None)
+    @patch.object(ExternalSkillResolver, "resolve", return_value=None)
     def test_notification_intent(self, mock_fallback):
         intent = self.brain.understand_intent("发送通知给团队")
         self.assertEqual(intent.type, IntentType.NOTIFICATION)
@@ -173,7 +178,7 @@ class TestStrategistBrainPlan(unittest.TestCase):
         plan = self.brain.plan(intent)
         self.assertGreater(len(plan.steps), 2)
 
-    @patch("opc_manager.strategist_brain.call_llm_service", return_value=None)
+    @patch("opc_manager.planning_service.call_llm_service", return_value=None)
     def test_plan_llm_failure_falls_back(self, mock_llm):
         mock_svc = MagicMock()
         brain = StrategistBrain(llm_service=mock_svc)
@@ -196,28 +201,29 @@ class TestStrategistBrainHelpers(unittest.TestCase):
         self.brain = StrategistBrain(llm_service=None)
 
     def test_extract_goal_removes_prefix(self):
-        goal = self.brain._extract_goal("帮我分析数据", IntentType.ANALYSIS)
+        # [P2-15] helper 已抽到 IntentUnderstandingService
+        goal = self.brain._intent_service._extract_goal("帮我分析数据", IntentType.ANALYSIS)
         self.assertNotIn("帮我", goal)
 
     def test_extract_goal_removes_suffix_particles(self):
-        goal = self.brain._extract_goal("分析数据吧", IntentType.ANALYSIS)
+        goal = self.brain._intent_service._extract_goal("分析数据吧", IntentType.ANALYSIS)
         self.assertNotIn("吧", goal)
 
     def test_calculate_confidence_unknown_low(self):
-        conf = self.brain._calculate_confidence("随便说说", IntentType.UNKNOWN)
+        conf = self.brain._intent_service._calculate_confidence("随便说说", IntentType.UNKNOWN)
         self.assertAlmostEqual(conf, 0.3)
 
     def test_calculate_confidence_single_keyword(self):
-        conf = self.brain._calculate_confidence("分析数据", IntentType.ANALYSIS)
+        conf = self.brain._intent_service._calculate_confidence("分析数据", IntentType.ANALYSIS)
         self.assertAlmostEqual(conf, 0.7)
 
     def test_extract_constraints_time(self):
-        constraints = self.brain._extract_constraints("今天完成分析")
+        constraints = self.brain._intent_service._extract_constraints("今天完成分析")
         types = [c.type for c in constraints]
         self.assertIn(ConstraintType.TIME, types)
 
     def test_extract_constraints_count(self):
-        constraints = self.brain._extract_constraints("写3份报告")
+        constraints = self.brain._intent_service._extract_constraints("写3份报告")
         count_constraints = [c for c in constraints if c.type == ConstraintType.COUNT]
         self.assertGreater(len(count_constraints), 0)
 
@@ -519,7 +525,7 @@ class TestReflectorBrainEvaluate(unittest.TestCase):
         evaluation = self.brain.evaluate_result(actual, expected)
         self.assertTrue(any("失败" in f for f in evaluation.key_findings))
 
-    @patch("opc_manager.reflector_brain.call_llm_service", return_value=None)
+    @patch("opc_manager.quality_evaluator.call_llm_service", return_value=None)
     def test_llm_failure_falls_back_to_rules(self, mock_llm):
         mock_svc = MagicMock()
         brain = ReflectorBrain(llm_service=mock_svc)
@@ -527,7 +533,7 @@ class TestReflectorBrainEvaluate(unittest.TestCase):
         evaluation = brain.evaluate_result(actual, {"goal": "test"})
         self.assertIsInstance(evaluation, Evaluation)
 
-    @patch("opc_manager.reflector_brain.call_llm_service")
+    @patch("opc_manager.quality_evaluator.call_llm_service")
     def test_llm_returns_valid_evaluation(self, mock_llm):
         mock_llm.return_value = (
             '{"quality_score": 0.85, "result_level": "GOOD", '
@@ -539,7 +545,7 @@ class TestReflectorBrainEvaluate(unittest.TestCase):
         evaluation = brain.evaluate_result(actual, {"goal": "test"})
         self.assertEqual(evaluation.result, EvaluationResult.GOOD)
 
-    @patch("opc_manager.reflector_brain.call_llm_service")
+    @patch("opc_manager.quality_evaluator.call_llm_service")
     def test_llm_malformed_response_falls_back(self, mock_llm):
         mock_llm.return_value = "NOT JSON"
         mock_svc = MagicMock()

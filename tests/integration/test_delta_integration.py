@@ -79,7 +79,7 @@ class TestStrategistBrainLLM(unittest.TestCase):
         mock_llm.complete.return_value = llm_response
         mock_llm.generate.return_value = llm_response
         brain = StrategistBrain(llm_service=mock_llm)
-        intent = Intent(goal="分析AI趋势", type=brain._detect_intent_type("分析AI趋势"))
+        intent = Intent(goal="分析AI趋势", type=brain._intent_service._detect_intent_type("分析AI趋势"))
         plan = brain.plan(intent)
         self.assertGreaterEqual(len(plan.steps), 1)
 

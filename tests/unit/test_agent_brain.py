@@ -548,12 +548,12 @@ class TestPHASE3EndToEnd:
     def test_reflector_check_placeholders(self):
         brain = ReflectorBrain()
         results = [{"success": True, "data": {"content": "结果[待补充]内容"}}]
-        assert brain._check_placeholders(results) is True
+        assert brain._next_action_decider._check_placeholders(results) is True
 
     def test_reflector_check_no_placeholders(self):
         brain = ReflectorBrain()
         results = [{"success": True, "data": {"content": "结果完整内容"}}]
-        assert brain._check_placeholders(results) is False
+        assert brain._next_action_decider._check_placeholders(results) is False
 
     def test_composite_intent_decomposition(self):
         brain = StrategistBrain()
