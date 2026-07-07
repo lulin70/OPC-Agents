@@ -176,6 +176,10 @@ jobs:
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+    - name: Lowercase repository name for Docker tag
+      id: repo
+      run: echo "REPO_LC=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
     - name: Generate changelog
       id: changelog
       run: |
@@ -207,7 +211,7 @@ jobs:
 
           ### Docker (GHCR)
           ```bash
-          docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+          docker pull ghcr.io/${{ steps.repo.outputs.REPO_LC }}:${{ steps.version.outputs.VERSION }}
           ```
 
           ### Quick Start (from source)
