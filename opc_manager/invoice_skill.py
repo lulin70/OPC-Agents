@@ -178,7 +178,10 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["税务", "报税", "税日历"]):
         if get_tax_calendar is None:
-            return {"success": False, "error": "税务日历功能已下线（tax_reminder_skill 已移除）"}
+            return {
+                "success": False,
+                "error": "税务日历功能已下线（tax_reminder_skill 已移除）",
+            }
         return get_tax_calendar()
 
     if any(kw in goal for kw in ["列表", "查看"]):

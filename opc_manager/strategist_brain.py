@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
 import logging
 
 from opc_manager.intent_types import IntentType, INTENT_KEYWORDS
+
 # [P2-15] Step 1: 数据模型抽到 strategist_models.py，此处 re-export 保向后兼容
 from opc_manager.strategist_models import (  # noqa: F401
     ConstraintType,
@@ -22,9 +23,11 @@ from opc_manager.strategist_models import (  # noqa: F401
     Step,
     ExecutionPlan,
 )
+
 # [P2-15] Step 3: 服务抽到独立模块，Facade 委托
 from opc_manager.intent_understanding_service import IntentUnderstandingService
 from opc_manager.planning_service import PlanningService
+
 # [P2-15] Step 5: 外部技能解析抽到 ExternalSkillResolver
 from opc_manager.external_skill_resolver import ExternalSkillResolver
 

@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 import logging
 
 from .consensus_engine import Opinion
+
 # [P2-15] Step 1: 数据模型抽到 reflector_models.py，此处 re-export 保向后兼容
 from .reflector_models import (  # noqa: F401
     EvaluationResult,
@@ -22,11 +23,14 @@ from .reflector_models import (  # noqa: F401
     Evaluation,
     NextAction,
 )
+
 # [P2-15] Step 2: 后果预判职责抽到 ConsequencePredictor
 from .consequence_predictor import ConsequencePredictor
+
 # [P2-15] Step 4: 质量评估 + 行动决策抽到独立服务
 from .quality_evaluator import QualityEvaluator
 from .next_action_decider import NextActionDecider
+
 # 评估权重常量（re-export 保向后兼容，实际定义在 quality_evaluator.py）
 from .quality_evaluator import (  # noqa: F401
     WEIGHT_SUCCESS,
@@ -37,6 +41,7 @@ from .quality_evaluator import (  # noqa: F401
     WEIGHT_ALL_STEPS_DONE,
     PENALTY_ERROR,
 )
+
 # 行动决策常量（re-export 保向后兼容，实际定义在 next_action_decider.py）
 from .next_action_decider import (  # noqa: F401
     MAX_RETRY_COUNT,

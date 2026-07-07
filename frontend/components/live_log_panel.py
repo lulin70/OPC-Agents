@@ -648,14 +648,20 @@ def _render_filter_bar(logs: List[LogEntry]) -> Tuple[List[LogEntry], Dict[str, 
     if min_level_index != _t("log_level_all"):
         min_level_pos = LOG_LEVEL_ORDER.index(min_level_index)
         allowed_levels = set(LOG_LEVEL_ORDER[min_level_pos:])
-        filtered_logs = [entry for entry in filtered_logs if entry.level in allowed_levels]
+        filtered_logs = [
+            entry for entry in filtered_logs if entry.level in allowed_levels
+        ]
 
     if selected_sources:
-        filtered_logs = [entry for entry in filtered_logs if entry.source in selected_sources]
+        filtered_logs = [
+            entry for entry in filtered_logs if entry.source in selected_sources
+        ]
 
     if search_keyword:
         keyword_lower = search_keyword.lower()
-        filtered_logs = [entry for entry in filtered_logs if keyword_lower in entry.message.lower()]
+        filtered_logs = [
+            entry for entry in filtered_logs if keyword_lower in entry.message.lower()
+        ]
 
     filter_state = {
         "min_level": min_level_index,

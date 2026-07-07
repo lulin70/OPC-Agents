@@ -35,10 +35,14 @@ class IntentUnderstandingService:
         llm_service=None,
         intent_keywords: Optional[Dict] = None,
         constraint_keywords: Optional[Dict[ConstraintType, List[str]]] = None,
-        external_fallback: Optional[Callable[[str, str], Optional[Dict[str, Any]]]] = None,
+        external_fallback: Optional[
+            Callable[[str, str], Optional[Dict[str, Any]]]
+        ] = None,
     ):
         self.llm_service = llm_service
-        self.intent_keywords = intent_keywords if intent_keywords is not None else INTENT_KEYWORDS
+        self.intent_keywords = (
+            intent_keywords if intent_keywords is not None else INTENT_KEYWORDS
+        )
         self.constraint_keywords = (
             constraint_keywords
             if constraint_keywords is not None

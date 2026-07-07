@@ -110,7 +110,9 @@ class TestOrphanTCalls:
         guard, not a strict linter. New orphans beyond the baseline will fail."""
         all_i18n_keys = _get_all_i18n_keys_flat()
 
-        app_py = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "app.py")
+        app_py = os.path.join(
+            os.path.dirname(__file__), "..", "..", "frontend", "app.py"
+        )
         with open(app_py, "r", encoding="utf-8") as f:
             source = f.read()
 
@@ -241,7 +243,9 @@ class TestCJKHardcodedStrings:
     def test_app_py_cjk_violation_count_is_reasonable(self):
         """app.py is expected to have some CJK strings (demo data, docstrings,
         logger messages) but should not grow unboundedly."""
-        full_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "app.py")
+        full_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "frontend", "app.py"
+        )
         violations = self._find_hardcoded_cjk_strings(full_path)
 
         assert len(violations) <= 10, (

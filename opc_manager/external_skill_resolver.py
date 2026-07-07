@@ -28,9 +28,7 @@ class ExternalSkillResolver:
         self._cached_marketplace: Any = None
         self._cache_timestamp: float = 0.0
 
-    def resolve(
-        self, user_input: str, goal: str
-    ) -> Optional[Dict[str, Any]]:
+    def resolve(self, user_input: str, goal: str) -> Optional[Dict[str, Any]]:
         """查找匹配的外部技能。
 
         依次查询:

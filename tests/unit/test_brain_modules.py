@@ -98,7 +98,9 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
         self.assertGreaterEqual(intent.confidence, 0.0)
         self.assertLessEqual(intent.confidence, 1.0)
 
-    @patch("opc_manager.intent_understanding_service.call_llm_service", return_value=None)
+    @patch(
+        "opc_manager.intent_understanding_service.call_llm_service", return_value=None
+    )
     def test_llm_failure_falls_back_to_keywords(self, mock_llm):
         mock_svc = MagicMock()
         mock_svc.complete.return_value = None
@@ -202,19 +204,27 @@ class TestStrategistBrainHelpers(unittest.TestCase):
 
     def test_extract_goal_removes_prefix(self):
         # [P2-15] helper 已抽到 IntentUnderstandingService
-        goal = self.brain._intent_service._extract_goal("帮我分析数据", IntentType.ANALYSIS)
+        goal = self.brain._intent_service._extract_goal(
+            "帮我分析数据", IntentType.ANALYSIS
+        )
         self.assertNotIn("帮我", goal)
 
     def test_extract_goal_removes_suffix_particles(self):
-        goal = self.brain._intent_service._extract_goal("分析数据吧", IntentType.ANALYSIS)
+        goal = self.brain._intent_service._extract_goal(
+            "分析数据吧", IntentType.ANALYSIS
+        )
         self.assertNotIn("吧", goal)
 
     def test_calculate_confidence_unknown_low(self):
-        conf = self.brain._intent_service._calculate_confidence("随便说说", IntentType.UNKNOWN)
+        conf = self.brain._intent_service._calculate_confidence(
+            "随便说说", IntentType.UNKNOWN
+        )
         self.assertAlmostEqual(conf, 0.3)
 
     def test_calculate_confidence_single_keyword(self):
-        conf = self.brain._intent_service._calculate_confidence("分析数据", IntentType.ANALYSIS)
+        conf = self.brain._intent_service._calculate_confidence(
+            "分析数据", IntentType.ANALYSIS
+        )
         self.assertAlmostEqual(conf, 0.7)
 
     def test_extract_constraints_time(self):

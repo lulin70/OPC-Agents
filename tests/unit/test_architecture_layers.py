@@ -23,49 +23,98 @@ OPC_MANAGER_DIR = PROJECT_ROOT / "opc_manager"
 
 # 层次分类（与 DIRECTORY_STRUCTURE.md 一致）
 INFRA_FILES = {
-    "config.py", "constants.py", "data_manager.py", "data_backup.py",
-    "settings.py", "settings_encryption.py", "settings_persistence.py",
+    "config.py",
+    "constants.py",
+    "data_manager.py",
+    "data_backup.py",
+    "settings.py",
+    "settings_encryption.py",
+    "settings_persistence.py",
     "settings_operations.py",
-    "secure_storage.py", "audit_log.py", "monitoring.py", "performance_monitor.py",
+    "secure_storage.py",
+    "audit_log.py",
+    "monitoring.py",
+    "performance_monitor.py",
     "error_handler.py",
-    "protocols.py", "mcp_protocol.py", "mcp_transport.py",
-    "embedding_service.py", "memory_bridge.py", "knowledge_bridge.py",
-    "utils.py", "version.py", "unified_types.py", "tool_system.py",
-    "async_executor.py", "parallel_executor.py",
+    "protocols.py",
+    "mcp_protocol.py",
+    "mcp_transport.py",
+    "embedding_service.py",
+    "memory_bridge.py",
+    "knowledge_bridge.py",
+    "utils.py",
+    "version.py",
+    "unified_types.py",
+    "tool_system.py",
+    "async_executor.py",
+    "parallel_executor.py",
 }
 
 INPUT_FILES = {
-    "cli.py", "intent_classifier.py", "intent_types.py",
-    "shortcuts_handler.py", "validators.py", "onboarding.py",
+    "cli.py",
+    "intent_classifier.py",
+    "intent_types.py",
+    "shortcuts_handler.py",
+    "validators.py",
+    "onboarding.py",
 }
 
 # Brain Facade 和拆出的服务都在 Control 层
 CONTROL_FILES = {
-    "agent_loop.py", "agent_context.py", "agent_error_handler.py", "agent_utils.py",
-    "strategist_brain.py", "strategist_models.py",
-    "intent_understanding_service.py", "planning_service.py",
+    "agent_loop.py",
+    "agent_context.py",
+    "agent_error_handler.py",
+    "agent_utils.py",
+    "strategist_brain.py",
+    "strategist_models.py",
+    "intent_understanding_service.py",
+    "planning_service.py",
     "external_skill_resolver.py",
     "executor_brain.py",
-    "reflector_brain.py", "reflector_models.py",
-    "quality_evaluator.py", "next_action_decider.py", "consequence_predictor.py",
-    "consensus_engine.py", "confirmer.py", "correction_manager.py",
-    "task_engine_v3.py", "task_engine_v3_search.py", "task_engine_v3_executors.py",
-    "task_engine_v3_parallel.py", "task_orchestrator.py", "task_lifecycle.py",
-    "task_content_generators.py", "task_types.py",
-    "scenario_engine_v2.py", "scenario_definitions.py",
-    "state_manager.py", "session_context.py",
+    "reflector_brain.py",
+    "reflector_models.py",
+    "quality_evaluator.py",
+    "next_action_decider.py",
+    "consequence_predictor.py",
+    "consensus_engine.py",
+    "confirmer.py",
+    "correction_manager.py",
+    "task_engine_v3.py",
+    "task_engine_v3_search.py",
+    "task_engine_v3_executors.py",
+    "task_engine_v3_parallel.py",
+    "task_orchestrator.py",
+    "task_lifecycle.py",
+    "task_content_generators.py",
+    "task_types.py",
+    "scenario_engine_v2.py",
+    "scenario_definitions.py",
+    "state_manager.py",
+    "session_context.py",
 }
 
 SKILL_FILES = {
-    "competitor_skill.py", "crm_skill.py",
-    "dashboard_skill.py", "email_skill.py", "finance_skill.py",
-    "invoice_skill.py", "knowledge_skill.py", "pricing_skill.py",
-    "report_skill.py", "social_skill.py",
+    "competitor_skill.py",
+    "crm_skill.py",
+    "dashboard_skill.py",
+    "email_skill.py",
+    "finance_skill.py",
+    "invoice_skill.py",
+    "knowledge_skill.py",
+    "pricing_skill.py",
+    "report_skill.py",
+    "social_skill.py",
     "task_skill.py",
-    "skill_registry.py", "skill_builtin.py", "skill_editor.py",
-    "skill_executors.py", "skill_models.py", "skill_reviews.py",
-    "skill_marketplace.py", "skill_marketplace_api.py",
-    "skill_marketplace_constants.py", "skill_marketplace_external.py",
+    "skill_registry.py",
+    "skill_builtin.py",
+    "skill_editor.py",
+    "skill_executors.py",
+    "skill_models.py",
+    "skill_reviews.py",
+    "skill_marketplace.py",
+    "skill_marketplace_api.py",
+    "skill_marketplace_constants.py",
+    "skill_marketplace_external.py",
 }
 
 
@@ -101,7 +150,11 @@ def _extract_internal_imports(file_path: Path) -> Set[str]:
                 elif alias.name == "opc_manager":
                     internal.add("__init__")
         elif isinstance(node, ast.ImportFrom):
-            if node.level == 0 and node.module and node.module.startswith("opc_manager."):
+            if (
+                node.level == 0
+                and node.module
+                and node.module.startswith("opc_manager.")
+            ):
                 parts = node.module.split(".")
                 if len(parts) >= 2:
                     internal.add(parts[1])
@@ -124,8 +177,9 @@ def _list_py_files(layer_files: Set[str]) -> list:
 class TestInfraLayerIsolation:
     """F 层（基础设施）必须独立，不依赖业务层。"""
 
-    @pytest.mark.parametrize("file_path", _list_py_files(INFRA_FILES),
-                             ids=lambda p: p.name)
+    @pytest.mark.parametrize(
+        "file_path", _list_py_files(INFRA_FILES), ids=lambda p: p.name
+    )
     def test_infra_does_not_import_control(self, file_path: Path):
         imports = _extract_internal_imports(file_path)
         forbidden = CONTROL_FILES - {file_path.name}
@@ -135,14 +189,13 @@ class TestInfraLayerIsolation:
             f"IOC 规则：Infra 必须独立于业务层，否则形成循环依赖。"
         )
 
-    @pytest.mark.parametrize("file_path", _list_py_files(INFRA_FILES),
-                             ids=lambda p: p.name)
+    @pytest.mark.parametrize(
+        "file_path", _list_py_files(INFRA_FILES), ids=lambda p: p.name
+    )
     def test_infra_does_not_import_skills(self, file_path: Path):
         imports = _extract_internal_imports(file_path)
         leaked = imports & SKILL_FILES
-        assert not leaked, (
-            f"F 层 {file_path.name} 不应导入 S 层技能模块: {leaked}."
-        )
+        assert not leaked, f"F 层 {file_path.name} 不应导入 S 层技能模块: {leaked}."
 
 
 # ===================================================================
@@ -151,8 +204,9 @@ class TestInfraLayerIsolation:
 class TestSkillsLayerIsolation:
     """S 层（技能）不应引用引擎/Brain，避免技能反向依赖控制层。"""
 
-    @pytest.mark.parametrize("file_path", _list_py_files(SKILL_FILES),
-                             ids=lambda p: p.name)
+    @pytest.mark.parametrize(
+        "file_path", _list_py_files(SKILL_FILES), ids=lambda p: p.name
+    )
     def test_skills_do_not_import_control(self, file_path: Path):
         imports = _extract_internal_imports(file_path)
         leaked = imports & CONTROL_FILES
@@ -168,23 +222,21 @@ class TestSkillsLayerIsolation:
 class TestInputLayerIsolation:
     """I 层（输入）只依赖 F，不依赖业务层。"""
 
-    @pytest.mark.parametrize("file_path", _list_py_files(INPUT_FILES),
-                             ids=lambda p: p.name)
+    @pytest.mark.parametrize(
+        "file_path", _list_py_files(INPUT_FILES), ids=lambda p: p.name
+    )
     def test_input_does_not_import_control(self, file_path: Path):
         imports = _extract_internal_imports(file_path)
         leaked = imports & CONTROL_FILES
-        assert not leaked, (
-            f"I 层 {file_path.name} 不应导入 C 层控制模块: {leaked}."
-        )
+        assert not leaked, f"I 层 {file_path.name} 不应导入 C 层控制模块: {leaked}."
 
-    @pytest.mark.parametrize("file_path", _list_py_files(INPUT_FILES),
-                             ids=lambda p: p.name)
+    @pytest.mark.parametrize(
+        "file_path", _list_py_files(INPUT_FILES), ids=lambda p: p.name
+    )
     def test_input_does_not_import_skills(self, file_path: Path):
         imports = _extract_internal_imports(file_path)
         leaked = imports & SKILL_FILES
-        assert not leaked, (
-            f"I 层 {file_path.name} 不应导入 S 层技能模块: {leaked}."
-        )
+        assert not leaked, f"I 层 {file_path.name} 不应导入 S 层技能模块: {leaked}."
 
 
 # ===================================================================
@@ -213,4 +265,6 @@ class TestBrainServicesNoCircularImport:
             mod = importlib.import_module(f"opc_manager.{module_name}")
             assert mod is not None
         except ImportError as e:
-            pytest.fail(f"Brain 服务模块 {module_name} 导入失败（可能存在循环依赖）: {e}")
+            pytest.fail(
+                f"Brain 服务模块 {module_name} 导入失败（可能存在循环依赖）: {e}"
+            )
