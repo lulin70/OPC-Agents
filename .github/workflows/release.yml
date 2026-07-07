@@ -138,13 +138,28 @@ jobs:
           exit 1
         fi
 
+    - name: Check if version already exists on PyPI
+      id: check_version
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+        STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://pypi.org/pypi/opc-agents/${VERSION}/json)
+        if [ "$STATUS" = "200" ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Version $VERSION already exists on PyPI, will skip upload"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Version $VERSION not found on PyPI, will upload"
+        fi
+
     - name: Publish to PyPI
+      if: steps.check_version.outputs.exists == 'false'
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: twine upload dist/*
 
     - name: Verify PyPI publish
+      if: steps.check_version.outputs.exists == 'false'
       run: |
         sleep 15
         pip install --dry-run opc-agents==${{ steps.version.outputs.VERSION }} || \
@@ -152,6 +167,7 @@ jobs:
 
   create-release:
     needs: [test, build-and-push-ghcr, publish-pypi]
+    if: always() && needs.test.result == 'success' && needs.build-and-push-ghcr.result == 'success'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
