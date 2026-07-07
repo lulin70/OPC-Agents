@@ -174,7 +174,6 @@ class TestEventTypeConfig(unittest.TestCase):
             "income_recorded",
             "expense_recorded",
             "email_sent",
-            "proposal_created",
             "error_occurred",
             "undo_action",
             "confirmation_required",
@@ -184,6 +183,10 @@ class TestEventTypeConfig(unittest.TestCase):
 
         for event_type in required_types:
             self.assertIn(event_type, EVENT_TYPE_CONFIG)
+
+    def test_proposal_created_removed(self):
+        """TC-TL-007b: proposal_created 已随 proposal_skill 一并移除（v0.3.4冻结清理）"""
+        self.assertNotIn("proposal_created", EVENT_TYPE_CONFIG)
 
     def test_config_has_required_keys(self):
         """TC-TL-008: 每个配置项包含必要字段"""

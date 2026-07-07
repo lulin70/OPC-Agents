@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-01（Phase 1 #3 完成 + Phase 2 硬约束文档化） | **版本**: v0.3.3 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-07（P0-2 冻结技能移除 + P0-1 发布链路修复，v0.3.4 发布） | **版本**: v0.3.4 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.3`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.4`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -77,7 +77,7 @@
 |---|------|------|
 | P0-1 | CHANGELOG/README 覆盖率口径混淆（17% vs 99%） | ✅ 已修复（2026-06-29，README 措辞澄清） |
 | P0-2 | Perf 测试维度 0.83% 违反 ≥5% 硬约束 | ✅ 已修复（2026-07-01，新增 165 个 Perf 测试，5.53%） |
-| P0-3 | 无 v0.3.3 git tag，release.yml 从未触发 | ⏳ 待办（Phase 1 Task #5，需用户确认） |
+| P0-3 | 无 v0.3.3 git tag，release.yml 从未触发 | ✅ 已修复（2026-07-07，创建 v0.3.4 tag，触发首次 release.yml 发布管道） |
 | P0-4 | requirements.lock SSH 私有仓库依赖不可复现 | ✅ 已修复（2026-06-29，carrymem==0.4.0，移除本地路径） |
 | P0-5 | release.yml 缺 PyPI twine upload 步骤 | ✅ 已修复（2026-06-29，新增 publish-pypi job） |
 | P0-6 | email/finance 覆盖率全量口径仅 17%/14.5% | ⏳ 待办（大型任务，专项测试覆盖率已达 99%/100%） |
@@ -107,7 +107,7 @@
 | #2 | email/finance 补真实组件测试 ≥80% | ⏳ 待办（大型任务） | — |
 | #3 | Perf 维度扩充至 ≥5%（≥162 测试） | ✅ 完成（165 个 Perf 测试，5.53%） | 2026-07-01 |
 | #4 | 三语 README 安装命令统一 0.3.3 | ✅ 完成 | 2026-06-29 |
-| #5 | 打 v0.3.3/v0.4.0 git tag | ⏳ 待办（需用户确认） | — |
+| #5 | 打 v0.3.4 git tag | ✅ 完成（v0.3.4 tag 触发首次 release.yml） | 2026-07-07 |
 | #6 | requirements.lock 移除 SSH 依赖 | ✅ 完成 | 2026-06-29 |
 | #7 | release.yml 补 PyPI twine upload | ✅ 完成 | 2026-06-29 |
 | #8 | PBKDF2 替换裸 SHA-256 | ✅ 完成 | 2026-06-29 |

@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.3 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.4 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -176,7 +176,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.3
+pip install opc-agents==0.3.4
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
@@ -409,6 +409,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| **0.3.4** | **2026-07-07** | **凍結スキル完全削除+リリースパイプライン修正** — tax_reminder/calendar/proposal 3凍結スキル削除 + 90件i18n孤立キークリーンアップ + release.yml E2E分離修正 + 初回release.ymlパイプライントリガー |
 | **0.3.3** | **2026-06-28** | **技術債務クリーンアップ** — TD-065 mypy 516→0エラー（CIブロッキング）+ TD-066 settings_encryption fail-open→fail-closed + flake8 E501ゼロ化 + 3174 passed |
 | **0.3.2** | **2026-06-27** | **プロジェクト整理評価修正** — DevSquad 7次元評価 72→79 (B+) + 17箇所バージョン同期 + check_prompt_injectionゴースト関数統合 + mypy CI統合 + 3167 passed |
 | **0.3.1** | **2026-06-26** | **ゴースト機能削除** — api/events + experimental/wechat + plugin_system + plugins/削除（~2196行デッドコード）+ flake8 F401/F841 348項目ゼロ化 + 3165 passed |

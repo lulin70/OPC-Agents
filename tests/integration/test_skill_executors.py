@@ -812,13 +812,6 @@ class TestDomainSkillDelegation(unittest.TestCase):
         self.mixin._execute_social(goal="社交媒体分析")
         mock_execute.assert_called_once()
 
-    @patch("opc_manager.proposal_skill.execute_goal")
-    def test_execute_proposal_delegates(self, mock_execute):
-        """方案技能委托到 proposal_skill"""
-        mock_execute.return_value = {"success": True}
-        self.mixin._execute_proposal(goal="写方案")
-        mock_execute.assert_called_once()
-
     @patch("opc_manager.invoice_skill.execute_goal")
     def test_execute_invoice_delegates(self, mock_execute):
         """发票技能委托到 invoice_skill"""
@@ -833,13 +826,6 @@ class TestDomainSkillDelegation(unittest.TestCase):
         self.mixin._execute_report(goal="生成报告")
         mock_execute.assert_called_once()
 
-    @patch("opc_manager.calendar_skill.execute_goal")
-    def test_execute_calendar_delegates(self, mock_execute):
-        """日历技能委托到 calendar_skill"""
-        mock_execute.return_value = {"success": True}
-        self.mixin._execute_calendar(goal="安排会议")
-        mock_execute.assert_called_once()
-
     @patch("opc_manager.competitor_skill.execute_goal")
     def test_execute_competitor_delegates(self, mock_execute):
         """竞品技能委托到 competitor_skill"""
@@ -852,13 +838,6 @@ class TestDomainSkillDelegation(unittest.TestCase):
         """定价技能委托到 pricing_skill"""
         mock_execute.return_value = {"success": True}
         self.mixin._execute_pricing(goal="定价策略")
-        mock_execute.assert_called_once()
-
-    @patch("opc_manager.tax_reminder_skill.execute_goal")
-    def test_execute_tax_reminder_delegates(self, mock_execute):
-        """税务提醒技能委托到 tax_reminder_skill"""
-        mock_execute.return_value = {"success": True}
-        self.mixin._execute_tax_reminder(goal="报税提醒")
         mock_execute.assert_called_once()
 
     @patch("opc_manager.dashboard_skill.execute_goal")

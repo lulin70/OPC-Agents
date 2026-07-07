@@ -11,7 +11,18 @@ from typing import Any, Dict
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
-from opc_manager.tax_reminder_skill import get_tax_calendar, TAX_CALENDAR  # noqa: F401
+
+try:
+    from opc_manager.tax_reminder_skill import (  # noqa: F401
+        TAX_CALENDAR,
+        get_tax_calendar,
+    )
+except ImportError:
+    # tax_reminder_skill was removed in v0.3.4 (frozen skills cleanup).
+    # invoice_skill is itself frozen; degrade gracefully.
+    get_tax_calendar = None  # type: ignore[assignment]
+    TAX_CALENDAR = []  # type: ignore[assignment]
+
 from opc_manager.utils import SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
@@ -166,6 +177,8 @@ def _render_invoice_md(invoice: dict) -> str:
 def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["税务", "报税", "税日历"]):
+        if get_tax_calendar is None:
+            return {"success": False, "error": "税务日历功能已下线（tax_reminder_skill 已移除）"}
         return get_tax_calendar()
 
     if any(kw in goal for kw in ["列表", "查看"]):

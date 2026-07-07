@@ -48,8 +48,6 @@ logger = logging.getLogger(__name__)
 
 SKILL_COLLABORATIONS = {
     "crm_to_email": {"trigger": ["跟进", "发邮件"], "skills": ["crm", "email"]},
-    # P1 修复：finance_to_tax 已删除（tax_reminder 已冻结 v0.3.0）
-    # "finance_to_tax": {"trigger": ["记账", "报税"], "skills": ["finance", "tax_reminder"]},
     "deal_to_income": {"trigger": ["成交", "收款"], "skills": ["crm", "finance"]},
     "report_full": {
         "trigger": ["经营报告", "全面报告"],
@@ -59,10 +57,6 @@ SKILL_COLLABORATIONS = {
         "trigger": ["成交后发邮件", "成交通知"],
         "skills": ["crm", "email"],
     },
-    # P1 修复：report_to_calendar 已删除（calendar 已冻结 v0.3.0）
-    # "report_to_calendar": {"trigger": ["报告截止", "报告日程"], "skills": ["report", "calendar"]},
-    # P1 修复：proposal_to_email 已删除（proposal 已冻结 v0.3.0）
-    # "proposal_to_email": {"trigger": ["报价后发邮件", "报价通知"], "skills": ["proposal", "email"]},
 }
 
 

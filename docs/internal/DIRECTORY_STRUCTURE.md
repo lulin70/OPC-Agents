@@ -134,11 +134,12 @@ tests/          (90 文件，P2-13 后分层)
 
 可插拔技能模块 + 技能市场 + 技能注册。
 
-### 业务技能（14 个）
+### 业务技能（11 个）
+
+> v0.3.4 移除 3 个冻结技能：`calendar_skill.py` / `proposal_skill.py` / `tax_reminder_skill.py`（见 [SKILL_FREEZE_LIST.md](../spec/SKILL_FREEZE_LIST.md#v034-冻结技能彻底移除)）
 
 | 文件 | 职责 |
 |---|---|
-| `calendar_skill.py` | 日历管理 |
 | `competitor_skill.py` | 竞品分析 |
 | `crm_skill.py` | 客户关系管理 |
 | `dashboard_skill.py` | 仪表盘 |
@@ -147,11 +148,9 @@ tests/          (90 文件，P2-13 后分层)
 | `invoice_skill.py` | 发票管理 |
 | `knowledge_skill.py` | 知识库 |
 | `pricing_skill.py` | 定价策略 |
-| `proposal_skill.py` | 方案撰写 |
 | `report_skill.py` | 报告生成 |
 | `social_skill.py` | 社交媒体 |
 | `task_skill.py` | 任务管理 |
-| `tax_reminder_skill.py` | 税务提醒 |
 
 ### 技能基础设施（10 个）
 

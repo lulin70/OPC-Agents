@@ -111,12 +111,6 @@ EVENT_TYPE_CONFIG = {
         "category": "communication",
         "i18n_key": "timeline_email_sent",
     },
-    "proposal_created": {
-        "icon": "",
-        "color": "#8B5CF6",
-        "category": "work",
-        "i18n_key": "timeline_proposal_created",
-    },
     "error_occurred": {
         "icon": "",
         "color": "#EF4444",
@@ -328,9 +322,7 @@ def _get_undo_description(record) -> str:
         "email_send": "timeline_op_email_send",
         "record_income": "timeline_op_record_income",
         "record_expense": "timeline_op_record_expense",
-        "add_event": "timeline_op_add_event",
         "add_deal": "timeline_op_add_deal",
-        "create_proposal": "timeline_op_create_proposal",
         "create_invoice": "timeline_op_create_invoice",
         "add_customer": "timeline_op_add_customer",
         "add_follow_up": "timeline_op_add_follow_up",
@@ -448,8 +440,6 @@ def _map_audit_operation_to_event(
         "income_record": ("income_recorded", "", "finance"),
         "record_expense": ("expense_recorded", "", "finance"),
         "expense_record": ("expense_recorded", "", "finance"),
-        "create_proposal": ("proposal_created", "", "work"),
-        "proposal_create": ("proposal_created", "", "work"),
         "execute_skill": ("skill_executed", "", "work"),
         "skill_run": ("skill_executed", "", "work"),
     }

@@ -26,13 +26,10 @@
 - [task_skill — 待办技能](#task_skill--待办技能)
 - [crm_skill — CRM技能](#crm_skill--crm技能)
 - [social_skill — 社媒技能](#social_skill--社媒技能)
-- [proposal_skill — 报价技能](#proposal_skill--报价技能)
 - [invoice_skill — 发票技能](#invoice_skill--发票技能)
 - [report_skill — 报告技能](#report_skill--报告技能)
-- [calendar_skill — 日程技能](#calendar_skill--日程技能)
 - [competitor_skill — 竞品技能](#competitor_skill--竞品技能)
 - [pricing_skill — 定价技能](#pricing_skill--定价技能)
-- [tax_reminder_skill — 税务提醒技能](#tax_reminder_skill--税务提醒技能)
 - [dashboard_skill — 看板技能](#dashboard_skill--看板技能)
 - [knowledge_skill — 知识库技能](#knowledge_skill--知识库技能)
 - [skill_marketplace — 技能市场](#skill_marketplace--技能市场)
@@ -330,13 +327,13 @@ class IntentType(Enum):
     TASK = "task"
     CRM = "crm"
     SOCIAL = "social"
-    PROPOSAL = "proposal"
+    PROPOSAL = "proposal"  # v0.3.4: skill 已移除，枚举值保留用于意图识别层（IntentType 仍用于分类路由）
     INVOICE = "invoice"
     REPORT = "report"
-    CALENDAR = "calendar"
+    CALENDAR = "calendar"  # v0.3.4: skill 已移除，枚举值保留用于意图识别层
     COMPETITOR = "competitor"
     PRICING = "pricing"
-    TAX_REMINDER = "tax_reminder"
+    TAX_REMINDER = "tax_reminder"  # v0.3.4: skill 已移除，枚举值保留用于意图识别层
     DASHBOARD = "dashboard"
     KNOWLEDGE = "knowledge"
     EXTENDED_SKILL = "extended_skill"
@@ -1570,90 +1567,11 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]
 
 ---
 
-## proposal_skill — 报价技能
-
-> 模块路径: `opc_manager.proposal_skill`
-
-服务报价单生成和管理。
-
-### `create_proposal(client_name, service_type, items, valid_days, note)`
-
-创建报价单，自动生成Markdown文档。
-
-```python
-def create_proposal(client_name: str, service_type: str = "通用",
-                    items: List[Dict[str, Any]] = None,
-                    valid_days: int = 30,
-                    note: str = "") -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `client_name` | `str` | 客户名称（必填） |
-| `service_type` | `str` | 服务类型（咨询/培训/设计/开发/通用） |
-| `items` | `List[Dict]` | 服务项目列表（为空时使用模板） |
-| `valid_days` | `int` | 有效天数（默认30） |
-| `note` | `str` | 备注 |
-
-**返回值**: `{"success": bool, "id": str, "total": float, "valid_until": str, "markdown": str}`
-
----
-
-### `list_proposals(status)`
-
-列出报价单。
-
-```python
-def list_proposals(status: str = "") -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `status` | `str` | 状态筛选（draft/sent/accepted/rejected/expired） |
-
-**返回值**: `{"success": bool, "proposals": List, "count": int}`
-
----
-
-### `update_proposal_status(proposal_id, status)`
-
-更新报价单状态。
-
-```python
-def update_proposal_status(proposal_id: str, status: str) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `proposal_id` | `str` | 报价单ID |
-| `status` | `str` | 新状态（draft/sent/accepted/rejected/expired） |
-
-**返回值**: `{"success": bool, "message": str}`
-
----
-
-### `execute_goal(goal, _context, **kwargs)`
-
-报价技能统一委托入口，根据目标文本自动路由到创建报价/列表/状态更新等操作。
-
-```python
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `goal` | `str` | 用户目标文本（如"帮我给客户做报价单"） |
-| `_context` | `SkillContext` | 技能上下文（可选） |
-
-**返回值**: `Dict[str, Any]` — 委托到具体操作函数的返回值
-
----
-
 ## invoice_skill — 发票技能
 
 > 模块路径: `opc_manager.invoice_skill`
 
-发票生成和税务日历查询。
+发票生成。（v0.3.4：税务日历查询功能随 `tax_reminder_skill` 移除而降级，`get_tax_calendar` 不可用时返回提示信息）
 
 ### `create_invoice(client_name, amount, item, tax_rate, invoice_type)`
 
@@ -1790,117 +1708,6 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `goal` | `str` | 用户目标文本（如"帮我生成周报"） |
-| `_context` | `SkillContext` | 技能上下文（可选） |
-
-**返回值**: `Dict[str, Any]` — 委托到具体操作函数的返回值
-
----
-
-## calendar_skill — 日程技能
-
-> 模块路径: `opc_manager.calendar_skill`
-
-日程事件管理和提醒。
-
-### `add_event(title, date, time_str, duration_min, description, reminder_min, repeat)`
-
-添加日程事件。
-
-```python
-def add_event(title: str, date: str, time_str: str = "",
-              duration_min: int = 60, description: str = "",
-              reminder_min: int = 15, repeat: str = "") -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `title` | `str` | 日程标题（必填） |
-| `date` | `str` | 日期（YYYY-MM-DD，必填） |
-| `time_str` | `str` | 时间（HH:MM） |
-| `duration_min` | `int` | 时长（分钟，默认60） |
-| `description` | `str` | 描述 |
-| `reminder_min` | `int` | 提前提醒分钟数（默认15） |
-| `repeat` | `str` | 重复规则 |
-
-**返回值**: `{"success": bool, "id": str, "message": str, "reminder": str}`
-
----
-
-### `get_day_schedule(date)`
-
-获取某天的日程安排。
-
-```python
-def get_day_schedule(date: str = "") -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `date` | `str` | 日期（YYYY-MM-DD，默认今天） |
-
-**返回值**: `{"success": bool, "date": str, "events": List, "count": int}`
-
----
-
-### `get_week_schedule(start_date)`
-
-获取一周日程。
-
-```python
-def get_week_schedule(start_date: str = "") -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `start_date` | `str` | 周起始日期（默认本周一） |
-
-**返回值**: `{"success": bool, "start_date": str, "days": List}`
-
----
-
-### `cancel_event(event_id)`
-
-取消日程事件。
-
-```python
-def cancel_event(event_id: str) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `event_id` | `str` | 事件ID |
-
-**返回值**: `{"success": bool, "message": str}`
-
----
-
-### `get_upcoming_reminders(minutes_ahead)`
-
-获取即将到来的提醒。
-
-```python
-def get_upcoming_reminders(minutes_ahead: int = 60) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `minutes_ahead` | `int` | 提前分钟数（默认60） |
-
-**返回值**: `{"success": bool, "reminders": List, "count": int}` — 每项含 `minutes_until`
-
----
-
-### `execute_goal(goal, _context, **kwargs)`
-
-日程技能统一委托入口，根据目标文本自动路由到添加事件/日程查询/取消/提醒等操作。
-
-```python
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `goal` | `str` | 用户目标文本（如"帮我安排明天下午3点开会"） |
 | `_context` | `SkillContext` | 技能上下文（可选） |
 
 **返回值**: `Dict[str, Any]` — 委托到具体操作函数的返回值
@@ -2108,97 +1915,6 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `goal` | `str` | 用户目标文本（如"帮我算一下咨询怎么定价"） |
-| `_context` | `SkillContext` | 技能上下文（可选） |
-
-**返回值**: `Dict[str, Any]` — 委托到具体操作函数的返回值
-
----
-
-## tax_reminder_skill — 税务提醒技能
-
-> 模块路径: `opc_manager.tax_reminder_skill`
-
-税务截止日提醒和完成跟踪。
-
-### `check_upcoming_deadlines(days_ahead)`
-
-检查即将到来的税务截止日。
-
-```python
-def check_upcoming_deadlines(days_ahead: int = 30) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `days_ahead` | `int` | 提前天数（默认30） |
-
-**返回值**: `{"success": bool, "check_date": str, "upcoming": List, "count": int}` — 每项含 `days_remaining` 和 `urgency`
-
----
-
-### `create_reminder(task, deadline, tax_type, amount_estimate)`
-
-创建税务提醒。
-
-```python
-def create_reminder(task: str, deadline: str, tax_type: str = "增值税",
-                    amount_estimate: float = 0) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `task` | `str` | 提醒任务（必填） |
-| `deadline` | `str` | 截止日期（YYYY-MM-DD，必填） |
-| `tax_type` | `str` | 税种（默认"增值税"） |
-| `amount_estimate` | `float` | 预估金额 |
-
-**返回值**: `{"success": bool, "id": str, "message": str}`
-
----
-
-### `complete_reminder(reminder_id)`
-
-完成税务提醒。
-
-```python
-def complete_reminder(reminder_id: str) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `reminder_id` | `str` | 提醒ID |
-
-**返回值**: `{"success": bool, "message": str}`
-
----
-
-### `get_tax_checklist(month)`
-
-获取月度税务清单（含完成状态）。
-
-```python
-def get_tax_checklist(month: int = 0) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `month` | `int` | 月份（0=当月） |
-
-**返回值**: `{"success": bool, "month": int, "checklist": List, "total": int, "completed": int}`
-
----
-
-### `execute_goal(goal, _context, **kwargs)`
-
-税务提醒技能统一委托入口，根据目标文本自动路由到截止日检查/创建提醒/完成/清单等操作。
-
-```python
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]
-```
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `goal` | `str` | 用户目标文本（如"检查近期税务截止日"） |
 | `_context` | `SkillContext` | 技能上下文（可选） |
 
 **返回值**: `Dict[str, Any]` — 委托到具体操作函数的返回值

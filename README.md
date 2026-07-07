@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.3 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.4 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -174,7 +174,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.3
+pip install opc-agents==0.3.4
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -339,13 +339,10 @@ OPC-Agents/
 │   ├── task_skill.py      # ✅ 待办技能（创建/完成/列表/今日待办）
 │   ├── crm_skill.py       # 👥 CRM技能（客户管理+合作跟踪+沉默预警）
 │   ├── social_skill.py    # 📱 社媒技能（5平台内容生成+草稿管理）
-│   ├── proposal_skill.py  # 📋 报价技能（5类服务模板+Markdown渲染）
-│   ├── invoice_skill.py   # 🧾 发票技能（自动计算+税额+税务日历）
+│   ├── invoice_skill.py   # 🧾 发票技能（自动计算+税额）
 │   ├── report_skill.py    # 📊 报告技能（周报/月报/年报自动生成）
-│   ├── calendar_skill.py  # 📅 日程技能（事件管理+提醒+周视图）
 │   ├── competitor_skill.py# 🔍 竞品技能（监控+动态记录+分析报告）
 │   ├── pricing_skill.py   # 💲 定价技能（4种定价法+行业基准+建议）
-│   ├── tax_reminder_skill.py# 🧾 税务提醒技能（截止日+清单+完成跟踪）
 │   ├── dashboard_skill.py # 📈 看板技能（概览+财务+CRM+待办仪表盘）
 │   ├── knowledge_skill.py # 📚 知识库技能（文章CRUD+分类+搜索+统计）
 │   ├── skill_marketplace.py # 🔌 技能市场V2（搜索/安装/详情/筛选/版本锁定+MCP发现）
@@ -425,6 +422,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| **0.3.4** | **2026-07-07** | **冻结技能彻底移除 + 发布链路修复** — 删除 tax_reminder/calendar/proposal 3 个冻结技能 + 90 条 i18n 孤儿键清理 + release.yml E2E 隔离修复 + 首次触发 release.yml 发布管道 |
 | **0.3.3** | **2026-06-28** | **技术债清理** — TD-065 mypy 516→0 errors（CI 阻塞化）+ TD-066 settings_encryption fail-open→fail-closed + flake8 E501 清零 + 3174 passed |
 | **0.3.2** | **2026-06-27** | **项目整理评估修复** — DevSquad 7 维度评估 72→79 (B+) + 17 处版本号同步 + check_prompt_injection 幽灵函数集成 + mypy CI 集成 + 3167 passed |
 | **0.3.1** | **2026-06-26** | **幽灵功能清除** — 删除 api/events + experimental/wechat + plugin_system + plugins/ 共 ~2196 行死代码 + flake8 F401/F841 348 项清零 + 3165 passed |

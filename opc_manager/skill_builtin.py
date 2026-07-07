@@ -5,18 +5,17 @@ This module contains the built-in skill definitions and registration logic
 extracted from SkillRegistry._register_builtin_skills().
 
 === Design Notes ===
-- Contains all 21 built-in skill definitions with their inputs, outputs, and intent keywords
+- Contains all 18 built-in skill definitions with their inputs, outputs, and intent keywords
 - Provides register_builtin_skills(registry) function that registers all skills
 - Each skill definition follows the Skill dataclass schema from skill_registry
 
-=== Built-in Skills (21 total) ===
+=== Built-in Skills (18 total) ===
 Utility: intent_analysis, output_result
 Search: search
 Analysis: analysis, competitor_watch, pricing, dashboard
-Creation: content_generation, social_publish, proposal, report
+Creation: content_generation, social_publish, report
 Operation: execute_operation, send_notification, email, finance,
-           task_manager, crm, invoice, calendar, knowledge_mgmt
-Notification: tax_reminder
+           task_manager, crm, invoice, knowledge_mgmt
 """
 
 import logging
@@ -299,20 +298,6 @@ def register_builtin_skills(registry) -> None:
     )
     registry.register_skill(social_skill)
 
-    proposal_skill = Skill(
-        skill_id="proposal",
-        name="报价提案",
-        description="生成报价单和提案",
-        category=SkillCategory.CREATION,
-        inputs=[SkillInput(name="goal", type="str", description="报价目标")],
-        outputs=[SkillOutput(name="result", type="dict", description="报价结果")],
-        execute=registry._execute_proposal,
-        intent_keywords=INTENT_KEYWORDS.get(
-            SKILL_INTENT_MAP.get("proposal", IntentType.UNKNOWN), []
-        ),
-    )
-    registry.register_skill(proposal_skill)
-
     invoice_skill = Skill(
         skill_id="invoice",
         name="发票税务",
@@ -341,20 +326,6 @@ def register_builtin_skills(registry) -> None:
     )
     registry.register_skill(report_skill)
 
-    calendar_skill = Skill(
-        skill_id="calendar",
-        name="日程管理",
-        description="日程安排+提醒",
-        category=SkillCategory.OPERATION,
-        inputs=[SkillInput(name="goal", type="str", description="日程目标")],
-        outputs=[SkillOutput(name="result", type="dict", description="日程结果")],
-        execute=registry._execute_calendar,
-        intent_keywords=INTENT_KEYWORDS.get(
-            SKILL_INTENT_MAP.get("calendar", IntentType.UNKNOWN), []
-        ),
-    )
-    registry.register_skill(calendar_skill)
-
     competitor_skill = Skill(
         skill_id="competitor_watch",
         name="竞品监控",
@@ -382,20 +353,6 @@ def register_builtin_skills(registry) -> None:
         ),
     )
     registry.register_skill(pricing_skill)
-
-    tax_reminder_skill = Skill(
-        skill_id="tax_reminder",
-        name="税务提醒",
-        description="税务截止提醒+申报清单",
-        category=SkillCategory.NOTIFICATION,
-        inputs=[SkillInput(name="goal", type="str", description="税务提醒目标")],
-        outputs=[SkillOutput(name="result", type="dict", description="提醒结果")],
-        execute=registry._execute_tax_reminder,
-        intent_keywords=INTENT_KEYWORDS.get(
-            SKILL_INTENT_MAP.get("tax_reminder", IntentType.UNKNOWN), []
-        ),
-    )
-    registry.register_skill(tax_reminder_skill)
 
     dashboard_skill = Skill(
         skill_id="dashboard",
@@ -429,15 +386,12 @@ def register_builtin_skills(registry) -> None:
     # See docs/spec/SKILL_FREEZE_LIST.md for rationale and revival conditions
     _FROZEN_DATE = "2026-06-19"
     _FULLY_FROZEN = {
-        "calendar",
         "competitor_watch",
         "dashboard",
         "invoice",
         "knowledge_mgmt",
         "pricing",
-        "proposal",
         "social_publish",
-        "tax_reminder",
     }
     _SEMI_FROZEN = {"task_manager", "crm"}  # referenced by email/report core skills
 
@@ -454,7 +408,7 @@ def register_builtin_skills(registry) -> None:
 
     logger.info(
         "[SkillBuiltin] Registered %d built-in skills (%d fully frozen, %d semi-frozen)",
-        21,
+        18,
         len(_FULLY_FROZEN),
         len(_SEMI_FROZEN),
     )

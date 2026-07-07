@@ -71,16 +71,18 @@
 
 冻结技能的覆盖率不作为v0.3.0的关注重点，仅记录基线。
 
+> v0.3.4 已彻底移除 3 个冻结技能：`tax_reminder_skill.py` / `proposal_skill.py` / `calendar_skill.py`（见 [SKILL_FREEZE_LIST.md](../spec/SKILL_FREEZE_LIST.md#v034-冻结技能彻底移除)）。下表保留历史覆盖率记录，标灰项已从代码库删除。
+
 | 模块 | 覆盖率 | 状态 |
 |------|--------|------|
 | dashboard_skill.py | 92.93% (92/99) | 完全冻结 |
-| tax_reminder_skill.py | 85.37% (105/123) | 完全冻结 |
+| ~~tax_reminder_skill.py~~ | ~~85.37% (105/123)~~ | ~~v0.3.4 移除~~ |
 | pricing_skill.py | 75.42% (89/118) | 完全冻结 |
 | knowledge_skill.py | 68.55% (109/159) | 完全冻结 |
-| proposal_skill.py | 68.97% (80/116) | 完全冻结 |
+| ~~proposal_skill.py~~ | ~~68.97% (80/116)~~ | ~~v0.3.4 移除~~ |
 | competitor_skill.py | 58.06% (72/124) | 完全冻结 |
 | invoice_skill.py | 57.89% (55/95) | 完全冻结 |
-| calendar_skill.py | 51.03% (99/194) | 完全冻结 |
+| ~~calendar_skill.py~~ | ~~51.03% (99/194)~~ | ~~v0.3.4 移除~~ |
 | social_skill.py | 36.68% (73/199) | 完全冻结 |
 | task_skill.py | 29.92% (38/127) | 半冻结 |
 | crm_skill.py | 12.97% (31/239) | 半冻结 |

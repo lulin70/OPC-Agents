@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.3 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.4 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -180,7 +180,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.3
+pip install opc-agents==0.3.4
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography
@@ -413,6 +413,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.3.4** | **2026-07-07** | **Frozen Skills Removal + Release Pipeline Fix** — Deleted tax_reminder/calendar/proposal 3 frozen skills + 90 i18n orphan keys cleaned + release.yml E2E isolation fix + first release.yml pipeline trigger |
 | **0.3.3** | **2026-06-28** | **Tech Debt Cleanup** — TD-065 mypy 516→0 errors (CI blocking) + TD-066 settings_encryption fail-open→fail-closed + flake8 E501 cleared + 3174 passed |
 | **0.3.2** | **2026-06-27** | **Project Tidy Assessment Fix** — DevSquad 7-dim assessment 72→79 (B+) + 17 version sync + check_prompt_injection ghost function integrated + mypy CI integration + 3167 passed |
 | **0.3.1** | **2026-06-26** | **Ghost Feature Removal** — Deleted api/events + experimental/wechat + plugin_system + plugins/ (~2196 lines dead code) + flake8 F401/F841 348 items cleared + 3165 passed |

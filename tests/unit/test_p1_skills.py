@@ -638,13 +638,12 @@ class TestSkillRegistryP1(unittest.TestCase):
         self.assertIsNotNone(skill)
         self.assertIn("小红书", skill.intent_keywords)
 
-    def test_proposal_skill_registered(self):
+    def test_proposal_skill_removed(self):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
-        skill = registry.get_skill("proposal")
-        self.assertIsNotNone(skill)
-        self.assertIn("报价", skill.intent_keywords)
+        # proposal skill was removed in v0.3.4 (frozen skills cleanup)
+        self.assertIsNone(registry.get_skill("proposal"))
 
     def test_invoice_skill_registered(self):
         from opc_manager.skill_registry import SkillRegistry
@@ -662,13 +661,12 @@ class TestSkillRegistryP1(unittest.TestCase):
         self.assertIsNotNone(skill)
         self.assertIn("周报", skill.intent_keywords)
 
-    def test_calendar_skill_registered(self):
+    def test_calendar_skill_removed(self):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
-        skill = registry.get_skill("calendar")
-        self.assertIsNotNone(skill)
-        self.assertIn("日程", skill.intent_keywords)
+        # calendar skill was removed in v0.3.4 (frozen skills cleanup)
+        self.assertIsNone(registry.get_skill("calendar"))
 
     def test_total_skill_count(self):
         from opc_manager.skill_registry import SkillRegistry
@@ -684,13 +682,14 @@ class TestSkillRegistryP1(unittest.TestCase):
         skill_ids = [s.skill_id for s in skills]
         self.assertIn("social_publish", skill_ids)
 
-    def test_find_by_intent_proposal(self):
+    def test_find_by_intent_proposal_removed(self):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
         skills = registry.find_by_intent("给张总出个报价")
         skill_ids = [s.skill_id for s in skills]
-        self.assertIn("proposal", skill_ids)
+        # proposal skill removed in v0.3.4; intent no longer maps to a skill
+        self.assertNotIn("proposal", skill_ids)
 
     def test_find_by_intent_invoice(self):
         from opc_manager.skill_registry import SkillRegistry
@@ -708,13 +707,14 @@ class TestSkillRegistryP1(unittest.TestCase):
         skill_ids = [s.skill_id for s in skills]
         self.assertIn("report", skill_ids)
 
-    def test_find_by_intent_calendar(self):
+    def test_find_by_intent_calendar_removed(self):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
         skills = registry.find_by_intent("安排明天会议")
         skill_ids = [s.skill_id for s in skills]
-        self.assertIn("calendar", skill_ids)
+        # calendar skill removed in v0.3.4; intent no longer maps to a skill
+        self.assertNotIn("calendar", skill_ids)
 
     @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_execute_social(self):
@@ -732,14 +732,6 @@ class TestSkillRegistryP1(unittest.TestCase):
         result = registry._execute_social("帮我发个帖子")
         self.assertFalse(result["success"])
         self.assertIn("平台", result["error"])
-
-    def test_execute_proposal_no_client(self):
-        from opc_manager.skill_registry import SkillRegistry
-
-        registry = SkillRegistry(register_builtins=True)
-        result = registry._execute_proposal("帮我出个报价")
-        self.assertFalse(result["success"])
-        self.assertIn("客户", result["error"])
 
     def test_execute_invoice_no_amount(self):
         from opc_manager.skill_registry import SkillRegistry

@@ -40,18 +40,14 @@ from frontend.components.confirmation_dialog import (
     clear_pending_confirmation,
 )
 from frontend.components.undo_panel import render_mini_undo_hint
-
-# Memory bounds — prevent unbounded list growth in long sessions
-MAX_CHAT_MESSAGES = 100  # Keep last 100 messages in memory
-MAX_DELIVERABLES = 50  # Keep last 50 deliverables in memory
+from frontend.managers.session_manager import SessionStateManager
 
 logger = logging.getLogger(__name__)
 
 
 def _save_feedback(task_id, feedback_type):
     """Save user feedback for a task to JSON file and session state."""
-    feedback_key = f"fb_{task_id}"
-    st.session_state.quality_feedback[feedback_key] = feedback_type
+    SessionStateManager().set_feedback(task_id, feedback_type)
     safe_task_id = re.sub(r"[^\w-]", "", task_id)
     try:
         os.makedirs(
@@ -76,7 +72,7 @@ def _save_feedback(task_id, feedback_type):
 
 def _render_chat_history():
     """Render chat message history with deliverable downloads."""
-    for msg in st.session_state.messages:
+    for msg in SessionStateManager().messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg.get("deliverable_path"):
@@ -112,23 +108,20 @@ def _render_chat_history():
 
 def _render_chat_input():
     """Render chat input area and return the user prompt, or None."""
-    pending = st.session_state.pop("pending_prompt", None)
+    mgr = SessionStateManager()
+    pending = mgr.pop_pending_prompt()
     if pending:
         prompt = pending
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
-            st.session_state.messages = st.session_state.messages[-MAX_CHAT_MESSAGES:]
+        mgr.add_message({"role": "user", "content": prompt})
         _save_chat_history()
         with st.chat_message("user"):
             st.markdown(prompt)
     elif prompt := render_autocomplete_input(
         label=_t("chat_input_placeholder"),
         key="user_input_main",
-        session_history=st.session_state.get("messages", []),
+        session_history=mgr.messages,
     ):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
-            st.session_state.messages = st.session_state.messages[-MAX_CHAT_MESSAGES:]
+        mgr.add_message({"role": "user", "content": prompt})
         _save_chat_history()
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -153,12 +146,9 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
     result_filepath = task_status.get("result_filepath")
     result_deliverable_record = task_status.get("result_deliverable_record")
 
+    mgr = SessionStateManager()
     if result_deliverable_record:
-        st.session_state.deliverables.insert(0, result_deliverable_record)
-        if len(st.session_state.deliverables) > MAX_DELIVERABLES:
-            st.session_state.deliverables = st.session_state.deliverables[
-                :MAX_DELIVERABLES
-            ]
+        mgr.add_deliverable(result_deliverable_record)
 
     if result_content:
         from frontend.components.result_cards import render_result_card
@@ -174,7 +164,7 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
         )
 
         feedback_key = f"fb_{task_id}"
-        if feedback_key not in st.session_state.quality_feedback:
+        if not mgr.has_feedback(task_id):
             fb_cols = st.columns([1, 1, 6])
             with fb_cols[0]:
                 if st.button(_t("chat_feedback_good"), key=f"good_{task_id}"):
@@ -186,9 +176,9 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
                     _save_feedback(task_id, "bad")
                     st.info(_t("chat_feedback_improve"))
                     st.rerun()
-        elif st.session_state.quality_feedback.get(feedback_key) == "good":
+        elif mgr.get_feedback(task_id) == "good":
             st.caption(_t("chat_feedback_good_caption"))
-        elif st.session_state.quality_feedback.get(feedback_key) == "bad":
+        elif mgr.get_feedback(task_id) == "bad":
             st.caption(_t("chat_feedback_bad_caption"))
 
         _render_quick_undo_button(
@@ -233,9 +223,7 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
         }
         if result_filepath and os.path.exists(result_filepath):
             msg_record["deliverable_path"] = result_filepath
-        st.session_state.messages.append(msg_record)
-        if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
-            st.session_state.messages = st.session_state.messages[-MAX_CHAT_MESSAGES:]
+        mgr.add_message(msg_record)
         _save_chat_history()
 
         from frontend.components.smart_suggestions import (
@@ -259,8 +247,8 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
                     else 0
                 ),
             },
-            deliverables=st.session_state.get("deliverables", []),
-            feedback_history=list(st.session_state.get("quality_feedback", {}).items()),
+            deliverables=mgr.deliverables,
+            feedback_history=mgr.feedback_items(),
         )
 
         suggestion_context["session_id"] = session_id
@@ -303,9 +291,10 @@ def render_chat_page():
         st.markdown("---")
         st.caption(f" {_t('chat_demo_api_hint')}")
         st.stop()
-    if len(st.session_state.messages) > 0:
+    page_mgr = SessionStateManager()
+    if page_mgr.message_count() > 0:
         st.caption(f" {_t('chat_history_saved')}")
-    if len(st.session_state.messages) == 0:
+    if page_mgr.message_count() == 0:
         st.markdown(f"## {_t('chat_welcome_title')}")
         st.markdown(
             f"{_t('chat_welcome_desc_1')}**{_t('chat_welcome_desc_2')}**"
@@ -343,8 +332,11 @@ def render_chat_page():
                     key=f"core_{sc['id']}",
                     use_container_width=True,
                 ):
-                    st.session_state.pending_prompt = sc.get(
-                        "prompt", _t("scenario_execute_core", name=_t(sc["title"]))
+                    page_mgr.set_pending_prompt(
+                        sc.get(
+                            "prompt",
+                            _t("scenario_execute_core", name=_t(sc["title"])),
+                        )
                     )
                     st.rerun()
 
@@ -361,14 +353,17 @@ def render_chat_page():
                     key=f"more_{sc['id']}",
                     use_container_width=True,
                 ):
-                    st.session_state.pending_prompt = sc.get(
-                        "prompt", _t("scenario_execute_more", name=_t(sc["title"]))
+                    page_mgr.set_pending_prompt(
+                        sc.get(
+                            "prompt",
+                            _t("scenario_execute_more", name=_t(sc["title"])),
+                        )
                     )
                     st.rerun()
 
     _render_chat_history()
 
-    if len(st.session_state.messages) == 0:
+    if page_mgr.message_count() == 0:
         with st.container():
             st.markdown(f"### {_t('chat_try_ask')}")
             example_cols = st.columns(2)
@@ -380,7 +375,7 @@ def render_chat_page():
             for i, (title, query) in enumerate(EXAMPLE_QUERIES):
                 with example_cols[i % 2]:
                     if st.button(title, key=f"example_{i}", use_container_width=True):
-                        st.session_state.pending_prompt = query
+                        page_mgr.set_pending_prompt(query)
                         st.rerun()
 
     prompt = _render_chat_input()
@@ -409,9 +404,8 @@ def render_chat_page():
                 st.info(_t("chat_followup_detected"))
 
         detected_type, confidence, method = safe_detect(prompt)
-        st.session_state.detected_type = detected_type
         persona_name, persona_tone = safe_get_persona(detected_type)
-        st.session_state.detected_name = persona_name
+        page_mgr.set_detected(detected_type, persona_name)
         safe_track_flywheel(detected_type)
 
         task_id = executor.submit(
@@ -663,15 +657,9 @@ def render_chat_page():
                         f"{friendly_hint}\n\n"
                         f"<details><summary>{_t('chat_tech_details')}</summary>\n\n`{safe_error}`\n</details>"
                     )
-                    st.session_state.messages.append(
-                        {"role": "assistant", "content": fallback}
-                    )
-                    if len(st.session_state.messages) > MAX_CHAT_MESSAGES:
-                        st.session_state.messages = st.session_state.messages[
-                            -MAX_CHAT_MESSAGES:
-                        ]
+                    page_mgr.add_message({"role": "assistant", "content": fallback})
                     _save_chat_history()
-                    st.session_state.last_failed_prompt = prompt
+                    page_mgr.set_last_failed_prompt(prompt)
                     break
 
                 elif current_status == "cancelled":
@@ -689,8 +677,8 @@ def render_chat_page():
                 status_container.update(label=_t("chat_status_timeout"), state="error")
                 st.warning(_t("chat_timeout_hint"))
 
-    failed_prompt = st.session_state.pop("last_failed_prompt", None)
+    failed_prompt = page_mgr.pop_last_failed_prompt()
     if failed_prompt:
         if st.button(f" {_t('chat_retry')}", key=f"retry_{int(time.time()*1000)}"):
-            st.session_state.pending_prompt = failed_prompt
+            page_mgr.set_pending_prompt(failed_prompt)
             st.rerun()

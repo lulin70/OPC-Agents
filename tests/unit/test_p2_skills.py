@@ -202,95 +202,6 @@ class TestPricingSkill(unittest.TestCase):
         self.assertTrue(required.issubset(set(PRICING_METHODS.keys())))
 
 
-@unittest.skip("tax_reminder_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
-class TestTaxReminderSkill(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from opc_manager.data_manager import init_db
-        import opc_manager.data_manager as dm
-
-        if hasattr(dm._local, "conn") and dm._local.conn:
-            try:
-                dm._local.conn.close()
-            except Exception:
-                pass
-            dm._local.conn = None
-        dm._db_initialized = False
-        init_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        import opc_manager.data_manager as dm
-
-        if hasattr(dm._local, "conn") and dm._local.conn:
-            try:
-                dm._local.conn.close()
-            except Exception:
-                pass
-            dm._local.conn = None
-        dm._db_initialized = False
-
-    def test_check_upcoming_deadlines(self):
-        from opc_manager.tax_reminder_skill import check_upcoming_deadlines
-
-        result = check_upcoming_deadlines(days_ahead=365)
-        self.assertTrue(result["success"])
-        self.assertIn("upcoming", result)
-
-    def test_create_reminder(self):
-        from opc_manager.tax_reminder_skill import create_reminder
-
-        result = create_reminder("增值税申报", "2025-06-15", tax_type="增值税")
-        self.assertTrue(result["success"])
-
-    def test_create_reminder_empty_task(self):
-        from opc_manager.tax_reminder_skill import create_reminder
-
-        result = create_reminder("", "2025-06-15")
-        self.assertFalse(result["success"])
-
-    def test_create_reminder_invalid_date(self):
-        from opc_manager.tax_reminder_skill import create_reminder
-
-        result = create_reminder("测试", "2025/06/15")
-        self.assertFalse(result["success"])
-
-    def test_complete_reminder(self):
-        from opc_manager.tax_reminder_skill import create_reminder, complete_reminder
-
-        created = create_reminder("个税申报", "2025-06-30", tax_type="个税")
-        rid = created["id"]
-        result = complete_reminder(rid)
-        self.assertTrue(result["success"])
-
-    def test_complete_nonexistent_reminder(self):
-        from opc_manager.tax_reminder_skill import complete_reminder
-
-        result = complete_reminder("nonexistent")
-        self.assertFalse(result["success"])
-
-    def test_list_reminders(self):
-        from opc_manager.tax_reminder_skill import list_reminders
-
-        result = list_reminders()
-        self.assertTrue(result["success"])
-
-    def test_get_tax_checklist(self):
-        from opc_manager.tax_reminder_skill import get_tax_checklist
-
-        result = get_tax_checklist(month=4)
-        self.assertTrue(result["success"])
-        self.assertGreater(result["total"], 0)
-
-    def test_urgency_levels(self):
-        from opc_manager.tax_reminder_skill import _urgency_level
-
-        self.assertEqual(_urgency_level(1), "紧急")
-        self.assertEqual(_urgency_level(5), "重要")
-        self.assertEqual(_urgency_level(10), "关注")
-        self.assertEqual(_urgency_level(20), "提前准备")
-
-
 @unittest.skip("dashboard_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestDashboardSkill(unittest.TestCase):
     @classmethod
@@ -603,13 +514,12 @@ class TestSkillRegistryP2(unittest.TestCase):
         self.assertIsNotNone(skill)
         self.assertIn("定价", skill.intent_keywords)
 
-    def test_tax_reminder_skill_registered(self):
+    def test_tax_reminder_skill_removed(self):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
-        skill = registry.get_skill("tax_reminder")
-        self.assertIsNotNone(skill)
-        self.assertIn("税务提醒", skill.intent_keywords)
+        # tax_reminder skill was removed in v0.3.4 (frozen skills cleanup)
+        self.assertIsNone(registry.get_skill("tax_reminder"))
 
     def test_dashboard_skill_registered(self):
         from opc_manager.skill_registry import SkillRegistry
@@ -631,7 +541,8 @@ class TestSkillRegistryP2(unittest.TestCase):
         from opc_manager.skill_registry import SkillRegistry
 
         registry = SkillRegistry(register_builtins=True)
-        self.assertGreaterEqual(len(registry.skills), 21)
+        # 3 frozen skills (proposal/calendar/tax_reminder) removed in v0.3.4: 21→18
+        self.assertGreaterEqual(len(registry.skills), 18)
 
     @unittest.skip("competitor_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_execute_competitor_add(self):
@@ -646,13 +557,6 @@ class TestSkillRegistryP2(unittest.TestCase):
 
         registry = SkillRegistry(register_builtins=True)
         result = registry._execute_pricing("定价建议")
-        self.assertTrue(result["success"])
-
-    def test_execute_tax_reminder_check(self):
-        from opc_manager.skill_registry import SkillRegistry
-
-        registry = SkillRegistry(register_builtins=True)
-        result = registry._execute_tax_reminder("税务提醒")
         self.assertTrue(result["success"])
 
     def test_execute_dashboard_overview(self):

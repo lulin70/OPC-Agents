@@ -2,7 +2,53 @@
 
 All notable changes to OPC-Agents will be documented in this file.
 
-## [Unreleased] - 2026-07-04
+## [Unreleased]
+
+## [0.3.4] - 2026-07-07
+
+### P0-2 冻结技能彻底移除（Phase A/B/C）
+
+> v0.3.0 冻结的 3 个技能（tax_reminder/calendar/proposal）在 v0.3.4 彻底移除。
+> 详见 `docs/spec/SKILL_FREEZE_LIST.md`。
+
+#### Phase A: 后端代码移除
+
+- 删除 3 个技能文件：`tax_reminder_skill.py` / `calendar_skill.py` / `proposal_skill.py`
+- `skill_executors.py`: 移除 3 个 `_execute_*` 方法
+- `skill_builtin.py`: 移除 3 个 `Skill()` 注册 + `_FULLY_FROZEN` 条目
+- `undo_manager.py`: 移除 `ADD_EVENT`/`CREATE_PROPOSAL` 枚举值与映射
+- `invoice_skill.py`: `tax_reminder` import 改为 try/except lazy import（优雅降级）
+- `skill_registry.py`: 清理注释占位符
+- `frontend/routers/base_router.py`: 移除 tax_reminder 场景按钮
+- `frontend/managers/session_manager.py`: 新增 SessionStateManager 适配器（160 行）
+
+#### Phase B: 前端代码 + i18n 孤儿键清理
+
+- `undo_display.py`: 移除 `ADD_EVENT`/`CREATE_PROPOSAL` 配置和描述生成分支
+- `timeline_data.py`: 移除 `proposal_created` 事件配置 + `type_label_keys` + `audit_log` 映射
+- 3 语种 i18n（`zh_CN.json`/`en_US.json`/`ja_JP.json`）各移除 10 个孤儿键（共 90 条）
+
+#### Phase C: 文档更新
+
+- `API.md`: 移除 3 个完整 API 章节 + `IntentType` 枚举值添加 v0.3.4 注释
+- `DIRECTORY_STRUCTURE.md`: 业务技能 14→11
+- `COVERAGE_BASELINE.md`: 3 个冻结技能覆盖率条目标删除线
+- `SKILL_FREEZE_LIST.md`: 添加完整 v0.3.4 移除章节
+
+#### 测试同步
+
+- `test_timeline_view.py`: 移除 `proposal_created` 断言 + 新增 `test_proposal_created_removed`
+- `test_undo_panel.py`: 4 处测试改为验证分支移除
+- `test_p2_skills.py`: 删除 `TestTaxReminderSkill` 类
+- `test_architecture_layers.py`: `SKILL_FILES` 集合移除 3 个文件
+
+### P0-1 发布链路修复
+
+#### 修复
+
+- **release.yml E2E 隔离**：测试步骤和覆盖率门禁步骤从 5 个独立 `--ignore=tests/e2e/test_*.py` 改为整体 `--ignore=tests/e2e`，并添加 6 个 `--deselect` 标志（与 `python-ci.yml` 一致），避免 Playwright `sync_playwright` 事件循环污染后续单元测试的 `asyncio.run()`
+- **版本号 bump**：0.3.3 → 0.3.4（VERSION / version.py / 三语 README）
+- **首次 git tag**：创建 v0.3.4 tag，触发首次 release.yml 发布管道（v0.3.0-v0.3.3 均无 tag，release.yml 从未触发）
 
 ### UI E2E 测试 — Playwright 真实浏览器自动化
 

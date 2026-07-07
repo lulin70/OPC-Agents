@@ -216,13 +216,6 @@ SCENARIOS_MORE = [
         "prompt": "帮我制定产品或服务的最优定价策略",
     },
     {
-        "id": "tax_reminder",
-        "icon": "",
-        "title": "scenario_tax_reminder_title",
-        "desc": "scenario_tax_reminder_desc",
-        "prompt": "提醒我即将到期的税务申报和合规事项",
-    },
-    {
         "id": "opc_creative_planning",
         "icon": "",
         "title": "scenario_opc_creative_planning_title",
@@ -313,6 +306,12 @@ def init_session_state():
         "last_failed_prompt": None,
         "onboarding_complete": False,
         "onboarding_step": 0,
+        # Chat-related keys previously initialised lazily by app.py /
+        # chat_router.py, which caused latent KeyErrors when accessed before
+        # being set. Initialising them here makes access order-independent.
+        "quality_feedback": {},
+        "detected_type": None,
+        "detected_name": None,
     }
     for key, default in defaults.items():
         if key not in st.session_state:

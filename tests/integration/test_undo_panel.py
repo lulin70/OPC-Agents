@@ -2,7 +2,7 @@
 Undo Panel UI Component Tests — Comprehensive test suite for undo visualization.
 
 Covers:
-- Operation description generation for all 11 operation types
+- Operation description generation for all 8 operation types
 - Remaining time calculation with urgency levels (9 scenarios)
 - Time ago formatting (5 scenarios)
 - Display record conversion and field population
@@ -158,7 +158,10 @@ class TestOperationDescription:
         assert "¥200" in desc
         assert "办公用品" in desc
 
-    def test_add_event_with_title(self):
+    def test_add_event_branch_removed(self):
+        """ADD_EVENT 已随 calendar_skill 一并移除（v0.3.4冻结清理）。
+        _get_operation_description 应走 fallback 路径，不再返回日程相关文案。
+        """
         record = UndoRecordDisplay(
             operation_id="op1",
             operation_type="ADD_EVENT",
@@ -171,8 +174,7 @@ class TestOperationDescription:
             status="active",
         )
         desc = _get_operation_description(record)
-        assert "新建日程" in desc
-        assert "Q2营销方案会议" in desc
+        assert "新建日程" not in desc
 
     def test_add_deal_with_value(self):
         record = UndoRecordDisplay(
@@ -191,7 +193,10 @@ class TestOperationDescription:
         assert "企业版合同" in desc
         assert "¥50000" in desc
 
-    def test_create_proposal_with_client(self):
+    def test_create_proposal_branch_removed(self):
+        """CREATE_PROPOSAL 已随 proposal_skill 一并移除（v0.3.4冻结清理）。
+        _get_operation_description 应走 fallback 路径，不再返回方案相关文案。
+        """
         record = UndoRecordDisplay(
             operation_id="op1",
             operation_type="CREATE_PROPOSAL",
@@ -204,8 +209,7 @@ class TestOperationDescription:
             status="active",
         )
         desc = _get_operation_description(record)
-        assert "创建方案" in desc
-        assert "数字化转型方案" in desc
+        assert "创建方案" not in desc
 
     def test_create_invoice_with_number(self):
         record = UndoRecordDisplay(
@@ -384,7 +388,7 @@ class TestCalculateRemainingTime:
         now = time.time()
         record = UndoRecordDisplay(
             operation_id="op1",
-            operation_type="ADD_EVENT",
+            operation_type="CREATE_INVOICE",
             session_id="s1",
             inverse_func_name="f",
             inverse_args={},
@@ -830,9 +834,7 @@ class TestEdgeCases:
             "EMAIL_SEND",
             "RECORD_INCOME",
             "RECORD_EXPENSE",
-            "ADD_EVENT",
             "ADD_DEAL",
-            "CREATE_PROPOSAL",
             "CREATE_INVOICE",
             "ADD_CUSTOMER",
             "ADD_FOLLOW_UP",

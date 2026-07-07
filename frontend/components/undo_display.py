@@ -67,23 +67,11 @@ OPERATION_TYPE_CONFIG = {
         "color": "#F59E0B",
         "bg_color": "#FFFBEB",
     },
-    "ADD_EVENT": {
-        "icon": "",
-        "label": _t("undo_op_add_event"),
-        "color": "#8B5CF6",
-        "bg_color": "#F5F3FF",
-    },
     "ADD_DEAL": {
         "icon": "",
         "label": _t("undo_op_add_deal"),
         "color": "#06B6D4",
         "bg_color": "#ECFEFF",
-    },
-    "CREATE_PROPOSAL": {
-        "icon": "",
-        "label": _t("undo_op_create_proposal"),
-        "color": "#6366F1",
-        "bg_color": "#EEF2FF",
     },
     "CREATE_INVOICE": {
         "icon": "",
@@ -173,12 +161,6 @@ def _get_operation_description(record: UndoRecordDisplay) -> str:
             return _t("undo_desc_expense", amount=amount)
         return _t("undo_op_record_expense")
 
-    elif op_type in ("ADD_EVENT",):
-        title = args.get("title", "") or result.get("title", "")
-        if title:
-            return _t("undo_desc_event", title=title[:30])
-        return _t("undo_op_add_event")
-
     elif op_type in ("ADD_DEAL",):
         deal_name = args.get("deal_name", "") or result.get("deal_name", "")
         value = args.get("value", 0) or result.get("value", 0)
@@ -187,15 +169,6 @@ def _get_operation_description(record: UndoRecordDisplay) -> str:
         elif deal_name:
             return _t("undo_desc_deal", deal_name=deal_name)
         return _t("undo_op_add_deal")
-
-    elif op_type in ("CREATE_PROPOSAL",):
-        title = args.get("title", "") or result.get("title", "")
-        client = args.get("client", "") or result.get("client", "")
-        if title and client:
-            return _t("undo_desc_proposal_client", title=title[:25], client=client)
-        elif title:
-            return _t("undo_desc_proposal", title=title[:30])
-        return _t("undo_op_create_proposal")
 
     elif op_type in ("CREATE_INVOICE",):
         invoice_num = args.get("invoice_number", "") or result.get("invoice_number", "")

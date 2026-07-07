@@ -22,9 +22,7 @@ class OperationType(Enum):
     EMAIL_SEND = "email_send"
     RECORD_INCOME = "record_income"
     RECORD_EXPENSE = "record_expense"
-    ADD_EVENT = "add_event"
     ADD_DEAL = "add_deal"
-    CREATE_PROPOSAL = "create_proposal"
     CREATE_INVOICE = "create_invoice"
     ADD_CUSTOMER = "add_customer"
     ADD_FOLLOW_UP = "add_follow_up"
@@ -35,9 +33,7 @@ UNDO_WINDOWS_SECONDS = {
     OperationType.EMAIL_SEND: 300,
     OperationType.RECORD_INCOME: 1800,
     OperationType.RECORD_EXPENSE: 1800,
-    OperationType.ADD_EVENT: 3600,
     OperationType.ADD_DEAL: 3600,
-    OperationType.CREATE_PROPOSAL: 3600,
     OperationType.CREATE_INVOICE: 3600,
     OperationType.ADD_CUSTOMER: 300,
     OperationType.ADD_FOLLOW_UP: 1800,
@@ -59,8 +55,6 @@ ALLOWED_FUNC_NAMES = {
     "undo_record_expense",
     "undo_add_customer",
     "undo_send_email",
-    "undo_add_event",
-    "undo_create_proposal",
     "undo_create_invoice",
     "undo_publish_content",
     "undo_complete_task",
@@ -347,8 +341,6 @@ class UndoManager:
             finance_skill,
             crm_skill,
             email_skill,
-            calendar_skill,
-            proposal_skill,
             invoice_skill,
             social_skill,
             task_skill,
@@ -359,8 +351,6 @@ class UndoManager:
             "undo_record_expense": finance_skill.undo_record_expense,
             "undo_add_customer": crm_skill.undo_add_customer,
             "undo_send_email": email_skill.undo_send_email,
-            "undo_add_event": calendar_skill.undo_add_event,
-            "undo_create_proposal": proposal_skill.undo_create_proposal,
             "undo_create_invoice": invoice_skill.undo_create_invoice,
             "undo_publish_content": social_skill.undo_publish_content,
             "undo_complete_task": task_skill.undo_complete_task,

@@ -9,9 +9,9 @@ Implemented as a mixin class (SkillExecutorMixin) to preserve all method signatu
   - Core executors: _execute_intent_analysis, _execute_search, _execute_analysis,
     _execute_content_generation, _execute_operation, _execute_notification, _execute_output
   - Domain-specific executors: _execute_email, _execute_finance, _execute_task,
-    _execute_crm, _execute_social, _execute_proposal, _execute_invoice,
-    _execute_report, _execute_calendar, _execute_competitor, _execute_pricing,
-    _execute_tax_reminder, _execute_dashboard, _execute_knowledge
+    _execute_crm, _execute_social, _execute_invoice,
+    _execute_report, _execute_competitor, _execute_pricing,
+    _execute_dashboard, _execute_knowledge
   - Helper methods: _do_web_search, _call_llm_generate, _get_analysis_template,
     _get_content_template, _parse_analysis_result, _rule_based_analysis,
     _rule_based_content_generation
@@ -508,13 +508,6 @@ class SkillExecutorMixin:
 
         return execute_goal(goal, _context)
 
-    def _execute_proposal(
-        self, goal: str, _context: Optional[SkillContext] = None
-    ) -> Dict[str, Any]:
-        from opc_manager.proposal_skill import execute_goal
-
-        return execute_goal(goal, _context)
-
     def _execute_invoice(
         self, goal: str, _context: Optional[SkillContext] = None
     ) -> Dict[str, Any]:
@@ -529,13 +522,6 @@ class SkillExecutorMixin:
 
         return execute_goal(goal, _context)
 
-    def _execute_calendar(
-        self, goal: str, _context: Optional[SkillContext] = None
-    ) -> Dict[str, Any]:
-        from opc_manager.calendar_skill import execute_goal
-
-        return execute_goal(goal, _context)
-
     def _execute_competitor(
         self, goal: str, _context: Optional[SkillContext] = None
     ) -> Dict[str, Any]:
@@ -547,13 +533,6 @@ class SkillExecutorMixin:
         self, goal: str, _context: Optional[SkillContext] = None
     ) -> Dict[str, Any]:
         from opc_manager.pricing_skill import execute_goal
-
-        return execute_goal(goal, _context)
-
-    def _execute_tax_reminder(
-        self, goal: str, _context: Optional[SkillContext] = None
-    ) -> Dict[str, Any]:
-        from opc_manager.tax_reminder_skill import execute_goal
 
         return execute_goal(goal, _context)
 

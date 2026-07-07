@@ -51,9 +51,9 @@ class TestOperationTypeEnum:
 
     def test_all_operation_types_covered(self):
         types = list(OperationType)
-        assert len(types) >= 10
-        assert OperationType.ADD_EVENT in types
+        assert len(types) >= 8
         assert OperationType.CREATE_INVOICE in types
+        assert OperationType.EMAIL_SEND in types
 
 
 class TestUndoWindows:
@@ -235,7 +235,7 @@ class TestListUndoable:
         import time as _time
 
         _time.sleep(0.01)
-        id2 = manager.push("sess1", OperationType.ADD_EVENT, "f", {}, {})
+        id2 = manager.push("sess1", OperationType.CREATE_INVOICE, "f", {}, {})
         items = manager.list_undoable("sess1")
         assert items[0]["operation_id"] == id2
         assert items[1]["operation_id"] == id1

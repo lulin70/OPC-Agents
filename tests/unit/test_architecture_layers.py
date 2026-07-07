@@ -57,11 +57,11 @@ CONTROL_FILES = {
 }
 
 SKILL_FILES = {
-    "calendar_skill.py", "competitor_skill.py", "crm_skill.py",
+    "competitor_skill.py", "crm_skill.py",
     "dashboard_skill.py", "email_skill.py", "finance_skill.py",
     "invoice_skill.py", "knowledge_skill.py", "pricing_skill.py",
-    "proposal_skill.py", "report_skill.py", "social_skill.py",
-    "task_skill.py", "tax_reminder_skill.py",
+    "report_skill.py", "social_skill.py",
+    "task_skill.py",
     "skill_registry.py", "skill_builtin.py", "skill_editor.py",
     "skill_executors.py", "skill_models.py", "skill_reviews.py",
     "skill_marketplace.py", "skill_marketplace_api.py",
