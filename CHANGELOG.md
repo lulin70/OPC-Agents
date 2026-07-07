@@ -47,7 +47,10 @@ All notable changes to OPC-Agents will be documented in this file.
 #### 修复
 
 - **release.yml E2E 隔离**：测试步骤和覆盖率门禁步骤从 5 个独立 `--ignore=tests/e2e/test_*.py` 改为整体 `--ignore=tests/e2e`，并添加 6 个 `--deselect` 标志（与 `python-ci.yml` 一致），避免 Playwright `sync_playwright` 事件循环污染后续单元测试的 `asyncio.run()`
-- **版本号 bump**：0.3.3 → 0.3.4（VERSION / version.py / 三语 README）
+- **CI/Release 添加 `pip install -e .`**：修复 `test_cli_help_runs` 子进程找不到 `opc_manager` 包的 CI 环境问题
+- **覆盖率阈值调整**：62% → 59%（P0-2 移除 3 个有覆盖率的冻结技能后，总覆盖率从 63% 降至 60%）
+- **Black 格式化**：11 个 pre-existing 违规文件修复（external_skill_resolver/invoice_skill/reflector_brain/strategist_brain/intent_understanding_service/live_log_panel/test_delta_integration/test_architecture_layers/test_regression_smoke/test_regression_i18n/test_brain_modules）
+- **版本号 bump**：0.3.3 → 0.3.4（VERSION / version.py / 三语 README / requirements.txt / requirements-dev.txt / start.sh / data_backup.py / frontend/app.py / HARD_CONSTRAINTS.md）
 - **首次 git tag**：创建 v0.3.4 tag，触发首次 release.yml 发布管道（v0.3.0-v0.3.3 均无 tag，release.yml 从未触发）
 
 ### UI E2E 测试 — Playwright 真实浏览器自动化

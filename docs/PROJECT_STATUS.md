@@ -49,7 +49,7 @@
 | 指标 | 值 | 来源 |
 |------|-----|------|
 | 测试用例总数 | 3470 collected | `pytest --co -q`（含 165 个新 Perf 测试） |
-| 全量覆盖率 | 63% | `coverage.json` totals.percent_covered_display |
+| 全量覆盖率 | 60% | `coverage.json` totals.percent_covered_display（v0.3.4 移除 3 个冻结技能后下降） |
 | `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
 | `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
 | `email_skill` 专项测试覆盖率 | 99% | `pytest --cov=opc_manager.email_skill` |
