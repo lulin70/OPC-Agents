@@ -74,6 +74,10 @@ jobs:
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+    - name: Lowercase repository name for Docker tag
+      id: repo
+      run: echo "REPO_LC=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
 
@@ -90,8 +94,8 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
-          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ steps.repo.outputs.REPO_LC }}:${{ steps.version.outputs.VERSION }}
+          ghcr.io/${{ steps.repo.outputs.REPO_LC }}:latest
         build-args: |
           VERSION=${{ steps.version.outputs.VERSION }}
 
