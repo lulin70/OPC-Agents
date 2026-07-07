@@ -52,6 +52,10 @@ All notable changes to OPC-Agents will be documented in this file.
 - **Black 格式化**：11 个 pre-existing 违规文件修复（external_skill_resolver/invoice_skill/reflector_brain/strategist_brain/intent_understanding_service/live_log_panel/test_delta_integration/test_architecture_layers/test_regression_smoke/test_regression_i18n/test_brain_modules）
 - **版本号 bump**：0.3.3 → 0.3.4（VERSION / version.py / 三语 README / requirements.txt / requirements-dev.txt / start.sh / data_backup.py / frontend/app.py / HARD_CONSTRAINTS.md）
 - **首次 git tag**：创建 v0.3.4 tag，触发首次 release.yml 发布管道（v0.3.0-v0.3.3 均无 tag，release.yml 从未触发）
+- **GHCR Docker tag 大小写**：添加 `Lowercase repository name` step，将 `github.repository`（`lulin70/OPC-Agents`）转小写后用于 Docker tag（`ghcr.io/lulin70/opc-agents:0.3.4`），修复 `repository name must be lowercase` 错误
+- **PyPI 发布幂等性**：添加 `Check if version already exists on PyPI` 步骤，检测到版本已存在时跳过上传，避免重复推送 tag 时因 `File already exists` 失败
+- **create-release 容错**：用 `if: always() && needs.test.result == 'success' && needs.build-and-push-ghcr.result == 'success'` 让 create-release 在 publish-pypi 失败/跳过时也能运行
+- **create-release docker pull 命令小写**：GitHub Release body 中 docker pull 命令使用 lowercase repository name，修复用户复制后因大小写不匹配导致 `docker pull` 失败的问题
 
 ### UI E2E 测试 — Playwright 真实浏览器自动化
 
