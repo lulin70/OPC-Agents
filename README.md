@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.4 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.5 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -174,7 +174,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.4
+pip install opc-agents==0.3.5
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -422,6 +422,7 @@ PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| **0.3.5** | **2026-07-09** | **成熟度修复 + God Class 拆分** — DevSquad 7 维度评估 18 项 P0+P1+P2 修复（ruff 43→0 / 三语 README / 幽灵函数清理 / pre-commit hooks）+ tests/ 分层 unit/integration/e2e（87 文件迁移）+ StrategistBrain/ReflectorBrain Facade 拆分（884→176 / 841→222 行）+ 虚拟分层架构守护（96 测试）+ Dockerfile 版本号同步 |
 | **0.3.4** | **2026-07-07** | **冻结技能彻底移除 + 发布链路修复** — 删除 tax_reminder/calendar/proposal 3 个冻结技能 + 90 条 i18n 孤儿键清理 + release.yml E2E 隔离修复 + 首次触发 release.yml 发布管道 |
 | **0.3.3** | **2026-06-28** | **技术债清理** — TD-065 mypy 516→0 errors（CI 阻塞化）+ TD-066 settings_encryption fail-open→fail-closed + flake8 E501 清零 + 3174 passed |
 | **0.3.2** | **2026-06-27** | **项目整理评估修复** — DevSquad 7 维度评估 72→79 (B+) + 17 处版本号同步 + check_prompt_injection 幽灵函数集成 + mypy CI 集成 + 3167 passed |

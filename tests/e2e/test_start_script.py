@@ -27,11 +27,16 @@ class TestStartScript:
         ), "start.sh is not executable (user execute bit missing)"
 
     def test_start_sh_contains_version(self):
-        """start.sh must contain v0.3.4 version marker."""
+        """start.sh must contain current version marker (read from VERSION file)."""
+        version_path = os.path.join(PROJECT_ROOT, "VERSION")
+        with open(version_path, "r") as f:
+            current_version = f.read().strip()
         path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
-        assert "v0.3.4" in content, "start.sh missing v0.3.4 version string"
+        assert f"v{current_version}" in content, (
+            f"start.sh missing v{current_version} version string"
+        )
 
     def test_start_sh_auto_creates_venv(self):
         """start.sh should auto-create virtual environment."""

@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-07（P0-2 冻结技能移除 + P0-1 发布链路修复，v0.3.4 发布） | **版本**: v0.3.4 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-09（P0+P1+P2 成熟度修复完成，v0.3.5 发布） | **版本**: v0.3.5 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.4`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.5`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -91,7 +91,7 @@
 | P1-3 | PROJECT_STATUS.md 缺失 | ✅ 已修复（本文档） |
 | P1-4 | parallel_executor.py 幽灵功能 | ✅ 已修复（2026-06-29，文档化三贤者实际路径） |
 | P1-5 | skill_marketplace.py 时序攻击（`==` 比较哈希） | ✅ 已修复（2026-06-29，`hmac.compare_digest`） |
-| P1-6 | opc_manager 99 文件平铺无子包 | ⏳ 待办（Phase 1 Task #12，需用户确认） |
+| P1-6 | opc_manager 99 文件平铺无子包 | ✅ 已修复（2026-07-05，P2-14 虚拟分层：DIRECTORY_STRUCTURE.md 7 层映射 + ruff isort 软约束 + 96 个架构守护测试） |
 | P1-7 | async 函数注解率仅 23% | ✅ 已修复（2026-06-29，AST 实测 87.5%，84/96） |
 | P1-8 | 715 处 Mock 违反"优先真实组件"铁律 | ⏳ 待办（Phase 1 Task #14，大型任务） |
 
@@ -114,12 +114,12 @@
 | #9 | prompt injection 阻断式升级 | ✅ 完成 | 2026-06-29 |
 | #10 | 新建 PROJECT_STATUS.md | ✅ 完成 | 2026-06-29 |
 | #11 | parallel_executor 三贤者路径文档化 | ✅ 完成 | 2026-06-29 |
-| #12 | opc_manager 拆子包 | ⏳ 待办（需用户确认） | — |
+| #12 | opc_manager 拆子包 | ✅ 完成（2026-07-05，P2-14 虚拟分层替代物理子包化） | 2026-07-05 |
 | #13 | async 函数补类型注解 ≥80% | ✅ 完成（87.5%，AST 实测 84/96） | 2026-06-29 |
 | #14 | test_email_skill mock→真实组件重构 | ⏳ 待办（大型任务） | — |
 | #15 | skill_marketplace hmac.compare_digest | ✅ 完成 | 2026-06-29 |
 
-**进度**: 12/15 完成（80%），2 项待办（大型任务），2 项需用户确认。
+**进度**: 13/15 完成（87%），2 项待办（大型任务）。
 
 ---
 
@@ -149,9 +149,18 @@
 - ✅ tool_system.py 拆分 — 提取 AuditLogger 到 tool_audit_logger.py（887→754 行 + 158 行，关注点分离）
 - ✅ 硬约束文档化 — docs/HARD_CONSTRAINTS.md（Ponytail 风格"永不削减"清单 + rationale + 执行机制，研究 P0 应用）
 
-#### 待办
+#### 已完成（2026-07-05）
 
-- strategist_brain.py / reflector_brain.py 拆分评估：God CLASS（785/733 行），dataclass 提取仅省 ~72 行，按 Ponytail YAGNI 暂缓；需 God class mixin 拆分（高风险，Phase 3）
+- ✅ strategist_brain.py 拆分（884→176 行 Facade + 4 个独立服务：strategist_models / intent_understanding_service / planning_service / external_skill_resolver）
+- ✅ reflector_brain.py 拆分（841→222 行 Facade + 4 个独立服务：reflector_models / quality_evaluator / next_action_decider / consequence_predictor）
+- ✅ tests/ 分层为 unit(49)/integration(29)/e2e(8)，87 文件迁移
+- ✅ 虚拟分层 — DIRECTORY_STRUCTURE.md 7 层映射 + ruff isort 软约束 + 96 个架构守护测试
+- ✅ P0+P1 成熟度问题修复（18 项：版本号同步/幽灵函数清理/pre-commit/ruff 43 错误清零/三语 README/E2E 门控等）
+
+#### 待办（大型任务）
+
+- email/finance 全量覆盖率提升（专项已达 99%/100%，全量口径仅 17%/14.5%）
+- 715 处 Mock → 真实组件重构（P1-8）
 
 ### Phase 3：v0.5.0 长期（P3 + 架构演进）
 

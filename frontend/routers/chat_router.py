@@ -163,7 +163,6 @@ def _handle_task_result(task_id, task_status, prompt, status_container):
             f"{_t('chat_deliverable_created')}: {os.path.basename(result_filepath) if result_filepath else _t('chat_task_complete')}"
         )
 
-        feedback_key = f"fb_{task_id}"
         if not mgr.has_feedback(task_id):
             fb_cols = st.columns([1, 1, 6])
             with fb_cols[0]:

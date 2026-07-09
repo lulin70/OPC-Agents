@@ -4,6 +4,46 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-07-09
+
+### 成熟度修复 + God Class 拆分
+
+> DevSquad 7 维度成熟度评估（[ASSESSMENT_D01_MATURITY.md](docs/ASSESSMENT_D01_MATURITY.md)）18 项 P0+P1+P2 修复。
+
+#### P0 立即修复（5 项）
+
+- **版本号同步**：VERSION / version.py / 三语 README / Dockerfile / start.sh / data_backup.py 全位置 0.3.3→0.3.4 同步
+- **幽灵函数清理**：skill_registry / task_engine / audit_log 中 3 个未集成的 `check_*` 函数接入主流程或删除
+- **pre-commit hooks**：版本陈旧导致 CI 漂移，升级 pre-commit hooks 到最新版
+- **ruff 43 错误清零**：F401/F841/E402 等全部修复
+- **三语 README 一致性**：中/英/日三语 README 版本号、安装命令、功能描述对齐
+
+#### P1 本周修复（12 项）
+
+- **E2E 门控修复**：移除 release.yml 中 `|| true`，E2E 失败真正阻塞合并
+- **CI 工作流路径更新**：tests/ 分层后 CI pytest 路径同步
+- **ConsensusEngine 前置介入**：关键决策点前置共识门，失败安全降级
+- **其他**：mypy 严格化、测试覆盖补强、文档一致性修复等
+
+#### P2 重构（6 项）
+
+- **P2-13 tests/ 分层**：87 文件迁移到 unit(49)/integration(29)/e2e(8) 三层
+- **P2-14 虚拟分层**：DIRECTORY_STRUCTURE.md 7 层 IOC 映射 + ruff isort 软约束 + 96 个架构守护测试
+- **P2-15 God Class 拆分**：
+  - StrategistBrain 884→176 行 Facade + 4 个独立服务（strategist_models / intent_understanding_service / planning_service / external_skill_resolver）
+  - ReflectorBrain 841→222 行 Facade + 4 个独立服务（reflector_models / quality_evaluator / next_action_decider / consequence_predictor）
+  - 6 步增量拆分，公共 API 完全向后兼容
+- **P2-16/17/18**：.git_disabled/ 清理 + 工作区临时文件清理 + Dependabot 配置确认
+
+### 验证
+
+- ruff: 0 errors
+- mypy: 0 errors (112 source files)
+- unit: 1665 passed
+- integration: 1553 passed
+- e2e: 177 passed, 16 skipped (真实 API 环境依赖)
+- 架构守护: 96 passed
+
 ## [0.3.4] - 2026-07-07
 
 ### P0-2 冻结技能彻底移除（Phase A/B/C）
