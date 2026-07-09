@@ -34,9 +34,9 @@ class TestStartScript:
         path = os.path.join(PROJECT_ROOT, "scripts", "start.sh")
         with open(path, "r") as f:
             content = f.read()
-        assert f"v{current_version}" in content, (
-            f"start.sh missing v{current_version} version string"
-        )
+        assert (
+            f"v{current_version}" in content
+        ), f"start.sh missing v{current_version} version string"
 
     def test_start_sh_auto_creates_venv(self):
         """start.sh should auto-create virtual environment."""
