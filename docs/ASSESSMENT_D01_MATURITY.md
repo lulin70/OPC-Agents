@@ -27,7 +27,7 @@
 
 ## 维度 1：代码走读（架构 / 安全 / 测试 / 性能 / 可维护性 / 文档 / 集成）
 
-**评估方式**: Explore Agent 全量扫描 opc_manager/ + opc_hr/ + frontend/
+**评估方式**: Explore Agent 全量扫描 opc_manager/ + frontend/
 
 ### 1.1 架构 [P2 一般]
 - `opc_manager/` 扁平化严重：95+ 文件平铺在根，仅 `export/` 和 `i18n/` 是子包

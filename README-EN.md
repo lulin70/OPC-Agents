@@ -375,8 +375,6 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── opc_hr/                # Search & knowledge base
-│   └── web_search.py      # DuckDuckGo web search
 ├── tests/                 # Test suite (89 test files, 3396 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation

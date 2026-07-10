@@ -384,8 +384,6 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── opc_hr/                # 搜索与知识库
-│   └── web_search.py      # DuckDuckGo网络搜索
 ├── tests/                 # 测试套件（89个测试文件，3396测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档

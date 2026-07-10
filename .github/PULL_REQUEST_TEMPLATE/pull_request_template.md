@@ -64,7 +64,6 @@ Fixes #<issue_number>
 <!-- 这个 PR 可能影响的功能模块 -->
 
 - [ ] 核心功能 (opc_manager)
-- [ ] 人事部 (opc_hr)
 - [ ] 财务部 (opc_finance)
 - [ ] Web 界面
 - [ ] 数据库

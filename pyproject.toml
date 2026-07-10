@@ -110,7 +110,7 @@ Issues = "https://github.com/lulin70/OPC-Agents/issues"
 Changelog = "https://github.com/lulin70/OPC-Agents/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-include = ["opc_manager*", "opc_hr*", "frontend*"]
+include = ["opc_manager*", "frontend*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "opc_manager.version.__version__"}

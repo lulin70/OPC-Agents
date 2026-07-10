@@ -113,7 +113,7 @@ class TaskEngineV3(  # type: ignore[misc]
                 return
 
             try:
-                from opc_hr.web_search import WebSearchMCP
+                from opc_manager.web_search import WebSearchMCP
 
                 self.web_search = WebSearchMCP()
                 logger.info("[TaskEngineV3] WebSearch initialized successfully")

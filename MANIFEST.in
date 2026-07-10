@@ -8,7 +8,6 @@ include requirements.txt
 include requirements-dev.txt
 
 recursive-include opc_manager *.py *.typed *.yaml
-recursive-include opc_hr *.py
 recursive-include frontend *.py
 
 exclude install.sh

@@ -47,8 +47,8 @@ class TaskEngineSearchMixin:
         _search_cache: "SearchCache"
         _search_processor: Optional["SearchResultProcessor"]
         # web_search holds a WebSearchMCP instance at runtime or None before
-        # lazy init; typed as Any because WebSearchMCP lives in opc_hr and is
-        # not guaranteed importable at static-analysis time.
+        # lazy init; typed as Any because WebSearchMCP is an optional dep
+        # and is not guaranteed importable at static-analysis time.
         web_search: Any
 
     def _search(

@@ -371,8 +371,6 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── opc_hr/                # 検索＆ナレッジベース
-│   └── web_search.py      # DuckDuckGo Web検索
 ├── tests/                 # テストスイート（89テストファイル、3396テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
