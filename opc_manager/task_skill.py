@@ -136,10 +136,11 @@ def list_tasks(
             params.append(val)
     where = " AND ".join(where_parts)
     params.append(limit)
-    rows = execute_query(
-        f"SELECT * FROM tasks WHERE {where} ORDER BY priority ASC, due_date ASC LIMIT ?",
-        tuple(params),
-    )
+    if where:
+        sql = f"SELECT * FROM tasks WHERE {where} ORDER BY priority ASC, due_date ASC LIMIT ?"
+    else:
+        sql = "SELECT * FROM tasks ORDER BY priority ASC, due_date ASC LIMIT ?"
+    rows = execute_query(sql, tuple(params))
     for r in rows:
         r["priority_label"] = PRIORITY_LABELS.get(r["priority"], "P2普通")
     return {"success": True, "tasks": rows, "count": len(rows)}
