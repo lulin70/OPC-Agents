@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.5 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.6 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -180,7 +180,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.5
+pip install opc-agents==0.3.6
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography
@@ -411,6 +411,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.3.6** | **2026-07-10** | **Tech Debt Cleanup P2-P3** — install.bat removal (pip install cross-platform) + task_skill SQL parameterization (IN/NOT IN placeholders) + web_search.py migration from opc_hr/ to opc_manager/ (eliminate fake layering) + fix 2 failing tests + CI coverage threshold 59%→65% |
 | **0.3.5** | **2026-07-09** | **Maturity Fixes + God Class Split** — DevSquad 7-dimension assessment 18 P0+P1+P2 fixes (ruff 43→0 / trilingual README / ghost function cleanup / pre-commit hooks) + tests/ layering unit/integration/e2e (87 files migrated) + StrategistBrain/ReflectorBrain Facade split (884→176 / 841→222 lines) + virtual layering architecture guard (96 tests) + Dockerfile version sync |
 | **0.3.4** | **2026-07-07** | **Frozen Skills Removal + Release Pipeline Fix** — Deleted tax_reminder/calendar/proposal 3 frozen skills + 90 i18n orphan keys cleaned + release.yml E2E isolation fix + first release.yml pipeline trigger |
 | **0.3.3** | **2026-06-28** | **Tech Debt Cleanup** — TD-065 mypy 516→0 errors (CI blocking) + TD-066 settings_encryption fail-open→fail-closed + flake8 E501 cleared + 3174 passed |

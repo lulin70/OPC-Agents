@@ -4,6 +4,22 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-07-10
+
+### 技术债清理批次 P2-P3
+
+> DevSquad 7 维度评估后续技术债清理，基于 [TECH_DEBT_20260625.md](docs/internal/TECH_DEBT_20260625.md) 优先级清单。
+
+#### P2: install.bat 清理
+
+- **install.bat 删除**：引用不存在的 start.bat（L119），创建已移除的 plugins/ 目录。pip install 为跨平台推荐方式，无需维护两份安装脚本（Simplicity First）
+
+#### P3: 技术债细化清理
+
+- **P3-1 task_skill.py SQL 参数化**：IN/NOT IN 操作符从 f-string 拼接改为 `?` 占位符 + tuple 参数，消除 SQL 注入模式脆弱性（3 处修改）
+- **P3-2 web_search.py 迁移**：从 opc_hr/ 假分层目录迁移到 opc_manager/web_search.py，消除"hr"（人力资源）命名与内容（网络搜索）不符的问题。更新 16 处引用（import / pyproject.toml / MANIFEST.in / 三语 README / PROJECT_STATUS / ASSESSMENT / PR 模板）
+- **P3-3 测试覆盖率提升**：修复 2 个失败测试（test_run_simple_task 用 MagicMock 注入依赖避免真实 LLM 调用超时；test_parallel_faster_than_serial 放宽延迟阈值 0.6→1.0 + 行为验证，DELAY=0.3s 被 5.27s 固定开销淹没）。CI 覆盖率阈值 59%→65%（实际覆盖率已达 70%）
+
 ## [0.3.5] - 2026-07-09
 
 ### 成熟度修复 + God Class 拆分
