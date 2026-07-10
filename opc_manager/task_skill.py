@@ -117,7 +117,7 @@ def list_tasks(
     elif status:
         conditions.append(("status", "=", status))
     else:
-        conditions.append(("status", "NOT IN", "('done')"))
+        conditions.append(("status", "NOT IN", ("done",)))
     if due_date:
         conditions.append(("due_date", "<=", due_date))
     if priority_max >= 0:
@@ -128,7 +128,9 @@ def list_tasks(
         if col not in _TASK_WHERE_COLUMNS:
             continue
         if op in ("IN", "NOT IN"):
-            where_parts.append(f"{col} {op} {val}")
+            placeholders = ",".join("?" for _ in val)
+            where_parts.append(f"{col} {op} ({placeholders})")
+            params.extend(val)
         else:
             where_parts.append(f"{col}{op}?")
             params.append(val)
@@ -146,9 +148,9 @@ def list_tasks(
 def get_today_tasks() -> Dict[str, Any]:
     today = time.strftime("%Y-%m-%d")
     rows = execute_query(
-        "SELECT * FROM tasks WHERE status IN ('pending','in_progress') "
+        "SELECT * FROM tasks WHERE status IN (?, ?) "
         "AND (due_date<=? OR due_date='') ORDER BY priority ASC",
-        (today,),
+        ("pending", "in_progress", today),
     )
     for r in rows:
         r["priority_label"] = PRIORITY_LABELS.get(r["priority"], "P2普通")
