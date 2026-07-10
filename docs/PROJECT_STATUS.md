@@ -166,7 +166,7 @@
 
 - `tool_system.py` 拆为 tool_registry/tool_audit/tool_handlers_fs/tool_handlers_smtp
 - ~~`opc_hr` 充实或并入 opc_manager/hr/ 子包~~ ✅ 已解决 (2026-07-10): web_search.py 迁移到 opc_manager/web_search.py，消除 opc_hr 假分层目录
-- CI coverage 阈值 62% → 70% → 80%
+- CI coverage 阈值 62% → 65% ✅ (2026-07-10) → 70% → 80%
 - mypy 配置升级为 `disallow_untyped_defs = True`
 - 引入 `radon cc` 圈复杂度门禁
 - 补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR

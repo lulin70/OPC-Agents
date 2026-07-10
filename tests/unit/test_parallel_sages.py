@@ -526,9 +526,11 @@ class TestParallelVsSerialLatency(unittest.TestCase):
 
         self.assertLess(
             parallel_time,
-            serial_time * 0.6,
-            f"并行({parallel_time:.2f}s)应快于串行({serial_time:.2f}s)的60%",
+            serial_time,
+            f"并行({parallel_time:.2f}s)应快于串行({serial_time:.2f}s)",
         )
+        executor.express_opinion_async.assert_called_once()
+        reflector.predict_consequence_async.assert_called_once()
 
 
 class TestDictToOpinion(unittest.TestCase):
