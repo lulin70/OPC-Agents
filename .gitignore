@@ -65,6 +65,9 @@ data/notifications/
 data/completions_cache.json
 data/settings.json
 data/onboarding.json
+data/knowledge/
+data/role_templates/
+data/custom_skills/
 data/*.db
 data/*.db-wal
 data/*.db-shm

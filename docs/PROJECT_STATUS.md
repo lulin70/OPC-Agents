@@ -48,7 +48,7 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 3470 collected | `pytest --co -q`（含 165 个新 Perf 测试） |
+| 测试用例总数 | 3396 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration） |
 | 全量覆盖率 | 60% | `coverage.json` totals.percent_covered_display（v0.3.4 移除 3 个冻结技能后下降） |
 | `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
 | `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
@@ -127,7 +127,7 @@
 
 ### Phase 1：v0.4.0 发布前必做（P0+P1）
 
-见上方第 5 节。当前进度 12/15（80%）。
+见上方第 5 节。当前进度 13/15（87%）。
 
 ### Phase 2：v0.4.1 跟进（P2）
 
@@ -178,9 +178,9 @@
 以下约束来自项目级 `project_memory.md`，违反即阻塞发布：
 
 1. 密码存储必须使用带 salt 的 PBKDF2-HMAC-SHA256，禁止裸 SHA-256 ✅
-2. 项目必须包含依赖锁文件以确保构建可复现 ⏳（requirements.lock SSH 依赖待修复）
+2. 项目必须包含依赖锁文件以确保构建可复现 ✅
 3. CI mypy 检查必须为阻塞状态 ✅
-4. 发布前必须完成模拟真实用户使用的测试 ⏳
+4. 发布前必须完成模拟真实用户使用的测试 ✅（Playwright E2E 21 用例 + 用户旅程 24 用例）
 5. 项目必须包含 `scripts/start.sh` 一键启动脚本 ✅
 6. ConsensusEngine 必须作为核心决策机制前置介入所有关键决策点 ✅
 7. 三贤者系统必须采用并行投票架构（asyncio.gather）而非串行流水线 ✅

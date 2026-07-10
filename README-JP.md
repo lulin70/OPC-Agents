@@ -31,7 +31,7 @@ opc-agents                      # 2. 起動
 
 ---
 
-## 🆕 v0.3.0 ハイライト（リリース待ち）
+## 🆕 v0.3.5 ハイライト
 
 > 完全な変更履歴は [CHANGELOG.md](CHANGELOG.md)、アーキテクチャ設計は [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md) を参照。
 
@@ -373,7 +373,7 @@ OPC-Agents/
 │       └── image_exporter.py
 ├── opc_hr/                # 検索＆ナレッジベース
 │   └── web_search.py      # DuckDuckGo Web検索
-├── tests/                 # テストスイート（87テストファイル、3359テスト、100%合格）
+├── tests/                 # テストスイート（89テストファイル、3396テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
@@ -393,14 +393,14 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行（3305テストケース）
+# 全テストを実行（3396テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行
 PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 # 特定モジュールテストを実行
-PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
+PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_onboarding.py tests/unit/test_i18n.py -v
 ```
 
 > **テストカバレッジ範囲**：全99個のopc_managerモジュール + フロントエンド38モジュール + 新モジュール（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）

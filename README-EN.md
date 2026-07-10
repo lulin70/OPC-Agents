@@ -31,7 +31,7 @@ opc-agents                      # 2. Launch
 
 ---
 
-## 🆕 v0.3.0 Highlights (Pending Release)
+## 🆕 v0.3.5 Highlights
 
 > Full changes see [CHANGELOG.md](CHANGELOG.md), architecture design see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md).
 
@@ -377,7 +377,7 @@ OPC-Agents/
 │       └── image_exporter.py
 ├── opc_hr/                # Search & knowledge base
 │   └── web_search.py      # DuckDuckGo web search
-├── tests/                 # Test suite (87 test files, 3359 tests, 100% pass)
+├── tests/                 # Test suite (89 test files, 3396 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
@@ -397,14 +397,14 @@ OPC-Agents/
 # Install dev dependencies
 pip install -r requirements-dev.txt
 
-# Run all tests (3305 test cases)
+# Run all tests (3396 test cases)
 PYTHONPATH=. pytest tests/ -v
 
 # Run with coverage report
 PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 # Run specific module tests
-PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
+PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_onboarding.py tests/unit/test_i18n.py -v
 ```
 
 > **Test Coverage**: All 99 opc_manager modules + 38 frontend modules + new modules (settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat, etc.)

@@ -31,7 +31,7 @@ opc-agents                      # 2. 启动
 
 ---
 
-## 🆕 v0.3.0 亮点（待发布）
+## 🆕 v0.3.5 亮点
 
 > 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)。
 
@@ -386,7 +386,7 @@ OPC-Agents/
 │       └── image_exporter.py
 ├── opc_hr/                # 搜索与知识库
 │   └── web_search.py      # DuckDuckGo网络搜索
-├── tests/                 # 测试套件（87个测试文件，3359测试用例，100%通过）
+├── tests/                 # 测试套件（89个测试文件，3396测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）
@@ -406,14 +406,14 @@ OPC-Agents/
 # 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 运行全部测试（3305个用例）
+# 运行全部测试（3396个用例）
 PYTHONPATH=. pytest tests/ -v
 
 # 运行并生成覆盖率报告
 PYTHONPATH=. pytest tests/ --cov=opc_manager --cov-report=term-missing
 
 # 运行特定模块测试
-PYTHONPATH=. pytest tests/test_settings.py tests/test_onboarding.py tests/test_i18n.py -v
+PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_onboarding.py tests/unit/test_i18n.py -v
 ```
 
 > **测试覆盖范围**：全部99个opc_manager模块 + 前端38模块 + 新增模块（settings/onboarding/backup/i18n/dashboard/shortcuts/marketplace_v2/error_handler/wechat等）

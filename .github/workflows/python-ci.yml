@@ -153,7 +153,7 @@ jobs:
         import re, sys
         VERSION = open("VERSION").read().strip()
         EXPECTED_MODULE_COUNT = 99
-        EXPECTED_TEST_COUNT = 3305
+        EXPECTED_TEST_COUNT = 3396
         readmes = ["README.md", "README-EN.md", "README-JP.md"]
         errors = []
         for path in readmes:
