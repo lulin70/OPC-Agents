@@ -64,7 +64,7 @@ class ExportManager:
     ) -> bytes:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self.export_sync, data, fmt, template_id, opts
+            None, lambda: self.export_sync(data, fmt, template_id, **opts)
         )
 
     def _load_template(self, template_id: str, fmt: ExportFormat) -> str:

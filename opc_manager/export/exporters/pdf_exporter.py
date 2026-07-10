@@ -14,7 +14,7 @@ class PDFExporter:
 
     def _md_to_html(self, data, template):
         if template:
-            from jinja2 import SandboxedEnvironment
+            from jinja2.sandbox import SandboxedEnvironment
 
             env = SandboxedEnvironment()
             j_template = env.from_string(template)
