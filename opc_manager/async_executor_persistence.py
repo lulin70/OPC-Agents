@@ -26,7 +26,9 @@ import hashlib
 import os
 import time
 import logging
+import threading
 from pathlib import Path
+from typing import Any, Optional
 
 from .async_executor import AsyncTask, TaskStatus
 
@@ -40,6 +42,13 @@ class PersistenceMixin:
     Cross-mixin calls (e.g. self._schedule_retry) are resolved at runtime on
     the composed facade instance via Python's MRO.
     """
+
+    # Attributes provided by the composed facade (AsyncTaskExecutor) at runtime
+    persist_dir: Optional[str]
+    max_retries: int
+    _tasks: dict
+    _lock: threading.RLock
+    _schedule_retry: Any
 
     def _load_persisted_tasks(self) -> None:
         """Load task states from persistence directory on startup

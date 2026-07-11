@@ -26,7 +26,7 @@ class WebSearchMCP:
                 from ddgs import DDGS
             except ImportError:
                 # 兼容旧包名 duckduckgo_search
-                from duckduckgo_search import DDGS
+                from duckduckgo_search import DDGS  # type: ignore[assignment,no-redef]
 
             self._dds = DDGS()
             logger.info("[WebSearchMCP] DuckDuckGo search initialized")

@@ -197,6 +197,7 @@ class SettingsManager(
 
     _instance = None
     _lock = threading.Lock()
+    _initialized: bool = False
 
     SETTINGS_FILE = "data/settings.json"
     SENSITIVE_FIELDS = {"api_key", "password", "encryption_key"}
