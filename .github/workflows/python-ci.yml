@@ -88,7 +88,7 @@ jobs:
       run: |
         PYTHONPATH=. pytest --cov=opc_manager --cov=frontend \
           --cov-report=xml:coverage.xml --cov-report=term \
-          --cov-fail-under=62 \
+          --cov-fail-under=64 \
           --tb=no -q --timeout=30 \
           --ignore=tests/e2e \
           --deselect tests/integration/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
@@ -106,6 +106,33 @@ jobs:
         name: coverage-report
         path: coverage.xml
         retention-days: 14
+
+    - name: Cyclomatic complexity report (radon cc, non-blocking)
+      # Non-blocking: report C/D/E/F grade functions. Will become blocking
+      # once high-complexity functions are refactored (TD-066).
+      if: matrix.python-version == '3.11'
+      run: |
+        pip install radon
+        echo "===== CYCLOMATIC COMPLEXITY REPORT (C+ grade) ====="
+        radon cc opc_manager/ -s -n C || true
+        echo "===== COMPLEXITY SUMMARY ====="
+        radon cc opc_manager/ -s -n C -j -O /tmp/radon_cc.json || true
+        python3 -c "
+        import json
+        try:
+            data = json.load(open('/tmp/radon_cc.json'))
+            total = sum(len(v) for v in data.values())
+            grades = {}
+            for file_funcs in data.values():
+                for func in file_funcs:
+                    g = func.get('grade', '?')
+                    grades[g] = grades.get(g, 0) + 1
+            print(f'Total C+ blocks: {total}')
+            for g in sorted(grades):
+                print(f'  {g}: {grades[g]} blocks')
+        except Exception as e:
+            print(f'radon summary parse error: {e}')
+        " || true
 
     - name: Verify Docker build
       run: docker build -t opc-agents-test .
@@ -153,7 +180,7 @@ jobs:
         import re, sys
         VERSION = open("VERSION").read().strip()
         EXPECTED_MODULE_COUNT = 99
-        EXPECTED_TEST_COUNT = 3630
+        EXPECTED_TEST_COUNT = 3717
         readmes = ["README.md", "README-EN.md", "README-JP.md"]
         errors = []
         for path in readmes:

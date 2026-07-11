@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.7 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.8 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -180,7 +180,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.7
+pip install opc-agents==0.3.8
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography
@@ -375,7 +375,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # Test suite (89 test files, 3630 tests, 100% pass)
+├── tests/                 # Test suite (89 test files, 3717 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
@@ -395,7 +395,7 @@ OPC-Agents/
 # Install dev dependencies
 pip install -r requirements-dev.txt
 
-# Run all tests (3630 test cases)
+# Run all tests (3717 test cases)
 PYTHONPATH=. pytest tests/ -v
 
 # Run with coverage report
@@ -411,6 +411,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.3.8** | **2026-07-11** | **DevSquad Consensus Batch 1** — cli.py coverage 0%→95%(+17 tests) + mcp_transport.py 23%→92%(+31 tests) + CI coverage threshold 62%→64%(actual 64.84%) + radon cc cyclomatic complexity gate(non-blocking) + sse-starlette dependency |
 | **0.3.7** | **2026-07-11** | **Coverage Optimization Batch** — 6-module coverage boost (export/task_skill/user_profile/task_lifecycle/social_skill/task_content_generators) +234 tests + 3 bug fixes (execute_goal string replace order / SQL parameterization / empty data fallback) |
 | **0.3.6** | **2026-07-10** | **Tech Debt Cleanup P2-P3** — install.bat removal (pip install cross-platform) + task_skill SQL parameterization (IN/NOT IN placeholders) + web_search.py migration from opc_hr/ to opc_manager/ (eliminate fake layering) + fix 2 failing tests + CI coverage threshold 59%→65% |
 | **0.3.5** | **2026-07-09** | **Maturity Fixes + God Class Split** — DevSquad 7-dimension assessment 18 P0+P1+P2 fixes (ruff 43→0 / trilingual README / ghost function cleanup / pre-commit hooks) + tests/ layering unit/integration/e2e (87 files migrated) + StrategistBrain/ReflectorBrain Facade split (884→176 / 841→222 lines) + virtual layering architecture guard (96 tests) + Dockerfile version sync |

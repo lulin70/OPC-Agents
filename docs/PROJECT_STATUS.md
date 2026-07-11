@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-11（覆盖率优化批次完成，v0.3.7 发布） | **版本**: v0.3.7 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-11（DevSquad 共识推进第一批完成，v0.3.8 发布） | **版本**: v0.3.8 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.7`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.8`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -48,8 +48,8 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 3630 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration） |
-| 全量覆盖率 | 60% | `coverage.json` totals.percent_covered_display（v0.3.4 移除 3 个冻结技能后下降） |
+| 测试用例总数 | 3717 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration） |
+| 全量覆盖率 | 64.84% | `coverage.json` totals.percent_covered_display（v0.3.8 cli.py 0%→95% + mcp_transport.py 23%→92% 后提升，目标 65% 下一批次达成） |
 | `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
 | `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
 | `email_skill` 专项测试覆盖率 | 99% | `pytest --cov=opc_manager.email_skill` |
@@ -166,9 +166,9 @@
 
 - `tool_system.py` 拆为 tool_registry/tool_audit/tool_handlers_fs/tool_handlers_smtp
 - ~~`opc_hr` 充实或并入 opc_manager/hr/ 子包~~ ✅ 已解决 (2026-07-10): web_search.py 迁移到 opc_manager/web_search.py，消除 opc_hr 假分层目录
-- CI coverage 阈值 62% (含 frontend 总覆盖率 ~64%, opc_manager 单独 ~74%) → 目标 65% → 80%
+- ~~CI coverage 阈值 62% (含 frontend 总覆盖率 ~64%, opc_manager 单独 ~74%) → 目标 65%~~ ✅ 部分完成 (2026-07-11): `--cov-fail-under=64`（实际 64.84%），目标 65% 下一批次达成
 - ~~mypy 配置升级为 `disallow_untyped_defs = True`~~ ✅ 部分完成 (2026-07-11): 全局启用，30 模块通过严格检查，83 模块 per-module 豁免（渐进式移除）
-- 引入 `radon cc` 圈复杂度门禁
+- ~~引入 `radon cc` 圈复杂度门禁~~ ✅ 已完成 (2026-07-11): CI non-blocking 报告（C/D/E/F 级函数），TD-066 待高复杂度函数降级后转 blocking
 - ~~补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR~~ ✅ 已完成 (2026-07-11): [ADR-001](architecture/ADR-001-IntentRouter-design.md) / [ADR-002](architecture/ADR-002-ToolSystem-design.md) / [ADR-003](architecture/ADR-003-TaskEngineV3-design.md)
 
 ---

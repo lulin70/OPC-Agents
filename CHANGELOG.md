@@ -4,6 +4,38 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-07-11
+
+### DevSquad 共识推进第一批
+
+> DevSquad 多角色评估达成共识，推进 P0（测试数同步）+ P1-A（cli/mcp_transport 覆盖率）+ P1-B（radon cc 门禁）+ P1-C（覆盖率阈值提升）。
+
+#### 覆盖率提升（2 模块，+48 测试）
+
+- **cli.py**: 17 tests, 覆盖率 0%→95%（TestVersionFlag/TestHelpFlag/TestNormalStartup/TestErrorHandling/TestSecureStorageInit）
+- **mcp_transport.py**: 31 tests, 覆盖率 23%→92%（TestCreateMcpServer/TestSseAppHealth/TestSseAppAuth/TestSseAppHttps/TestStdioTransportInit/TestStdioTransportRun/TestStartSseServer/TestMain）
+
+#### CI 质量门禁升级
+
+- CI 覆盖率阈值 62%→64%（`--cov-fail-under=64`，实际覆盖率 64.84%，目标 65% 下一批次达成）
+- 引入 `radon cc` 圈复杂度门禁（non-blocking 报告，C/D/E/F 级函数，TD-066 待转 blocking）
+- 新增 `sse-starlette>=1.6.0` 依赖（mcp_transport SSE 端点测试所需）
+
+#### 文档同步
+
+- 测试用例总数 3669→3717（CI `EXPECTED_TEST_COUNT` 同步）
+- 版本号 0.3.7→0.3.8 全位置同步（VERSION / version.py / 三语 README / requirements / data_backup / PROJECT_STATUS / ASSESSMENT_D01）
+- 三语 README 版本历史新增 0.3.8 里程碑行
+
+### 验证
+
+- ruff: 0 errors
+- mypy: 0 errors
+- black: 通过
+- 全量测试: 3717 collected, 3636 passed, 80 skipped, 1 failed(环境问题:子进程未安装opc_manager,安装后通过)
+- 覆盖率: 64.84%（v0.3.7 64% → v0.3.8 64.84%，+0.84%）
+- CI: 待推送验证
+
 ## [0.3.7] - 2026-07-11
 
 ### 覆盖率优化批次

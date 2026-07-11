@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.7 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.8 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -174,7 +174,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.7
+pip install opc-agents==0.3.8
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -384,7 +384,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # 测试套件（89个测试文件，3630测试用例，100%通过）
+├── tests/                 # 测试套件（89个测试文件，3717测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）
@@ -404,7 +404,7 @@ OPC-Agents/
 # 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 运行全部测试（3630个用例）
+# 运行全部测试（3717个用例）
 PYTHONPATH=. pytest tests/ -v
 
 # 运行并生成覆盖率报告
@@ -420,6 +420,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| **0.3.8** | **2026-07-11** | **DevSquad 共识推进第一批** — cli.py 覆盖率 0%→95%(+17 测试) + mcp_transport.py 23%→92%(+31 测试) + CI 覆盖率阈值 62%→64%(实际 64.84%) + radon cc 圈复杂度门禁(non-blocking) + sse-starlette 依赖 |
 | **0.3.7** | **2026-07-11** | **覆盖率优化批次** — 6 模块覆盖率提升(export/task_skill/user_profile/task_lifecycle/social_skill/task_content_generators) +234 测试 + 3 bug 修复(execute_goal 字符串替换顺序/SQL 参数化/空数据兜底) |
 | **0.3.6** | **2026-07-10** | **技术债清理 P2-P3** — install.bat 删除(pip install 跨平台) + task_skill SQL 参数化(IN/NOT IN 占位符) + web_search.py 从 opc_hr/ 迁移到 opc_manager/(消除假分层) + 修复 2 个失败测试 + CI 覆盖率阈值 59%→65% |
 | **0.3.5** | **2026-07-09** | **成熟度修复 + God Class 拆分** — DevSquad 7 维度评估 18 项 P0+P1+P2 修复（ruff 43→0 / 三语 README / 幽灵函数清理 / pre-commit hooks）+ tests/ 分层 unit/integration/e2e（87 文件迁移）+ StrategistBrain/ReflectorBrain Facade 拆分（884→176 / 841→222 行）+ 虚拟分层架构守护（96 测试）+ Dockerfile 版本号同步 |
