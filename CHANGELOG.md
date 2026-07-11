@@ -4,6 +4,36 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-07-11
+
+### DevSquad 共识推进第二批 — P2 高复杂度函数降级
+
+> DevSquad 多角色评估达成共识，对 radon cc C/D/E 级高复杂度函数进行拆分降级，消除技术债 TD-066 的核心障碍。
+
+#### 高复杂度函数降级（4 函数）
+
+- **`extract_json_from_llm`** (utils.py): D(27)→A(4) — 提取 3 个策略函数（`_extract_from_markdown_fences` B(7) / `_extract_from_brace_depth` B(9) / `_extract_from_bracket_depth` C(12)），主函数简化为 `or` 链调度
+- **`email_skill.execute_goal`**: D(23)→C(11) — 提取 `_extract_recipient_from_goal`（收件人 3 模式解析）+ `_clean_body_text`（body 清理），`_EMAIL_BODY_CLEAN_PATTERNS` 提升到模块级
+- **`crm_skill.execute_goal`**: D(26)→C(13) — 提取 `_clean_name_from_goal`（通用名称清理）+ 4 个意图处理函数（`_handle_follow_up` / `_handle_search` / `_handle_deal` / `_handle_add_customer`），主函数简化为 6 分支调度
+- **`TaskEngineV3.execute`**: E(31)→B 级以下 — 提取 4 个辅助方法（`_enrich_with_context` / `_try_parallel_execution` 通用化 / `_dispatch_task` / `_finalize_result`），消除重复并行代码，主函数从 277 行缩减至约 80 行
+
+#### radon cc 验证
+
+降级后 4 个目标函数均不再出现在 D/E/F 级列表中，剩余 C 级函数为业务逻辑固有复杂度（如 `send_email` C(19) 为 SMTP 重试+SSL 判断）。
+
+#### 文档同步
+
+- 版本号 0.3.8→0.3.9 全位置同步（VERSION / version.py / 三语 README / requirements / data_backup / PROJECT_STATUS / ASSESSMENT_D01）
+- 三语 README 版本历史新增 0.3.9 里程碑行
+
+### 验证
+
+- ruff: 0 errors
+- black: 通过
+- radon cc: 4 个目标函数全部降级（D/E→A/B/C）
+- 全量测试: 3717 collected, 3637 passed, 80 skipped, 0 failed
+- 覆盖率: 64.84%（未变，重构不改变测试覆盖）
+
 ## [0.3.8] - 2026-07-11
 
 ### DevSquad 共识推进第一批

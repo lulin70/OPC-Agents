@@ -294,12 +294,20 @@ def _lookup_email_by_name(name: str) -> str:
     return ""
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
-    init_db()
-    to = kwargs.get("to", "")
-    subject = kwargs.get("subject", "")
-    body = kwargs.get("body", "")
+_EMAIL_BODY_CLEAN_PATTERNS = [
+    r"给.+?(发邮件|写信|发信|发一封|回邮件|邮件)",
+    r"发一封邮件",
+    r"发邮件",
+    r"写信给.*?$",
+    r"帮我",
+]
 
+
+def _extract_recipient_from_goal(goal: str, to: str, subject: str) -> tuple:
+    """Extract recipient from goal text using multiple patterns.
+
+    Returns (to, subject, goal) where goal has matched portions removed.
+    """
     if not to:
         m = re.search(r"邮箱[：:]\s*(\S+)", goal)
         if m:
@@ -329,6 +337,24 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
                     if not subject:
                         subject = f"关于{recipient}"
             goal = goal[: m.start()] + goal[m.end() :]
+    return to, subject, goal
+
+
+def _clean_body_text(body: str) -> str:
+    """Clean body text by removing email trigger phrases."""
+    cleaned = body
+    for pattern in _EMAIL_BODY_CLEAN_PATTERNS:
+        cleaned = re.sub(pattern, "", cleaned)
+    return cleaned.strip().strip("，。、的")
+
+
+def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+    init_db()
+    to = kwargs.get("to", "")
+    subject = kwargs.get("subject", "")
+    body = kwargs.get("body", "")
+
+    to, subject, goal = _extract_recipient_from_goal(goal, to, subject)
 
     if to and subject and body:
         return send_email(to, subject, body)
@@ -345,16 +371,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
         subject = subject or f"关于{goal}"
         body = body or goal
         if body == goal:
-            cleaned = body
-            for pattern in [
-                r"给.+?(发邮件|写信|发信|发一封|回邮件|邮件)",
-                r"发一封邮件",
-                r"发邮件",
-                r"写信给.*?$",
-                r"帮我",
-            ]:
-                cleaned = re.sub(pattern, "", cleaned)
-            cleaned = cleaned.strip().strip("，。、的")
+            cleaned = _clean_body_text(body)
             if cleaned:
                 body = cleaned
         return send_email(to, subject, body)

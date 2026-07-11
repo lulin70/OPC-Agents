@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.8 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.9 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -176,7 +176,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.8
+pip install opc-agents==0.3.9
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
@@ -407,6 +407,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| **0.3.9** | **2026-07-11** | **高複雑度関数リファクタリング(P2)** — TaskEngineV3.execute E(31)→B + extract_json_from_llm D(27)→A(4) + crm_skill.execute_goal D(26)→C(13) + email_skill.execute_goal D(23)→C(11)、4つのヘルパーメソッド抽出で重複並列コードを削除 |
 | **0.3.8** | **2026-07-11** | **DevSquadコンセンサス第1弾** — cli.pyカバレッジ0%→95%(+17テスト) + mcp_transport.py 23%→92%(+31テスト) + CIカバレッジ閾値62%→64%(実際64.84%) + radon cc循環的複雑度ゲート(非ブロッキング) + sse-starlette依存関係 |
 | **0.3.7** | **2026-07-11** | **カバレッジ最適化バッチ** — 6モジュールのカバレッジ向上(export/task_skill/user_profile/task_lifecycle/social_skill/task_content_generators) +234テスト + 3バグ修正(execute_goal文字列置換順序/SQLパラメータ化/空データフォールバック) |
 | **0.3.6** | **2026-07-10** | **技術債務クリーンアップ P2-P3** — install.bat削除(pip installクロスプラットフォーム) + task_skill SQLパラメータ化(IN/NOT INプレースホルダー) + web_search.pyをopc_hr/からopc_manager/へ移行(偽装階層解消) + 2つの失敗テスト修正 + CIカバレッジ閾値59%→65% |

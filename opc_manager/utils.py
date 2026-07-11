@@ -26,6 +26,8 @@ SECONDS_PER_DAY = 86400
 _llm_thread_semaphore = threading.Semaphore(LLM_CONCURRENCY_LIMIT)
 _llm_async_semaphore: Optional[asyncio.Semaphore] = None
 
+_JSON_FENCE_RE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL)
+
 
 def get_llm_async_semaphore() -> asyncio.Semaphore:
     """Get or create the global async LLM concurrency semaphore."""
@@ -47,19 +49,8 @@ _INJECTION_PATTERNS = [
 ]
 
 
-def extract_json_from_llm(text: str) -> Optional[dict]:
-    """Extract JSON from LLM output with multiple strategies.
-
-    Strategies (in order):
-    1. Extract from markdown code fences (```json ... ```)
-    2. Brace-depth counter for JSON objects
-    3. Bracket-depth counter for JSON arrays (returns first element if dict)
-    """
-    if not text:
-        return None
-
-    # Strategy 1: Markdown code fence extraction
-    _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL)
+def _extract_from_markdown_fences(text: str) -> Optional[dict]:
+    """Strategy 1: Extract JSON from markdown code fences (```json ... ```)."""
     for match in _JSON_FENCE_RE.finditer(text):
         candidate = match.group(1).strip()
         try:
@@ -70,8 +61,11 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
                 return parsed[0]
         except json.JSONDecodeError:
             continue
+    return None
 
-    # Strategy 2: Brace-depth counter for JSON objects
+
+def _extract_from_brace_depth(text: str) -> Optional[dict]:
+    """Strategy 2: Brace-depth counter for JSON objects."""
     depth = 0
     start = -1
     for i, ch in enumerate(text):
@@ -89,8 +83,11 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
                 except json.JSONDecodeError:
                     start = -1
                     continue
+    return None
 
-    # Strategy 3: Bracket-depth counter for JSON arrays
+
+def _extract_from_bracket_depth(text: str) -> Optional[dict]:
+    """Strategy 3: Bracket-depth counter for JSON arrays (returns first dict element)."""
     depth = 0
     start = -1
     for i, ch in enumerate(text):
@@ -114,8 +111,25 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
                 except json.JSONDecodeError:
                     start = -1
                     continue
-
     return None
+
+
+def extract_json_from_llm(text: str) -> Optional[dict]:
+    """Extract JSON from LLM output with multiple strategies.
+
+    Strategies (in order):
+    1. Extract from markdown code fences (```json ... ```)
+    2. Brace-depth counter for JSON objects
+    3. Bracket-depth counter for JSON arrays (returns first element if dict)
+    """
+    if not text:
+        return None
+
+    return (
+        _extract_from_markdown_fences(text)
+        or _extract_from_brace_depth(text)
+        or _extract_from_bracket_depth(text)
+    )
 
 
 def call_llm_service(
