@@ -4,6 +4,52 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-07-11
+
+### DevSquad 共识推进第三批 — P3-1 覆盖率提升 + 源码 bug 修复
+
+> DevSquad 多角色评估达成共识，推进 P3-1（覆盖率提升至 65%+），通过为 P2 重构的 crm_skill.py 补充测试，发现并修复 3 个源码 bug。
+
+#### 新增测试（64 tests）
+
+- **`tests/unit/test_crm_skill.py`**: 64 tests，覆盖率 14.8%→70%+
+  - `_clean_name_from_goal`（5 tests）— 纯函数名称清理
+  - `_parse_customer_from_text`（4 tests）— 文本解析
+  - `add_customer`（6 tests）— 客户录入 CRUD + 验证
+  - `get_customer`（5 tests）— 按 ID/姓名查询 + 关联 deals
+  - `search_customers`（3 tests）— 多条件搜索
+  - `add_deal`（4 tests）— 合作记录 + 状态联动
+  - `get_silent_customers`（2 tests）— 沉默客户检测
+  - `update_customer_status`（2 tests）— 状态更新 + 验证
+  - `get_customer_stats`（2 tests）— 统计聚合
+  - `add_follow_up` / `get_follow_ups`（5 tests）— 跟进管理
+  - `_handle_follow_up` / `_handle_search` / `_handle_deal` / `_handle_add_customer`（12 tests）— P2 重构辅助函数
+  - `execute_goal`（7 tests）— 分发路由全覆盖
+  - `undo_add_customer` / `undo_add_deal` / `undo_add_follow_up`（7 tests）— 撤销操作
+
+#### 源码 bug 修复（3 个，由测试发现）
+
+- **`_handle_deal` 金额字符串清理 bug**: `str(3000.0)` = `"3000.0"` 但文本中是 `"3000"`，导致金额未被清理，客户名残留数字后缀。修复：同时添加 `str(amount)` 和 `str(int(amount))`（当 amount 为整数时）
+- **`_handle_search` 缺少关键词 bug**: "查张三" 中的 "查" 未被清理（只清理了 "帮我查"），导致 `get_customer(name="查张三")` 查不到 "张三"。修复：添加 "查" 和 "找" 到清理关键词
+- **`undo_add_customer/deal/follow_up` 非确定性排序 bug**: `ORDER BY created_at DESC` 在同秒创建的记录上非确定性。修复：改用 `ORDER BY rowid DESC` 确保 SQLite 插入顺序
+
+#### CI 质量门禁升级
+
+- CI 覆盖率阈值 64%→65%（`--cov-fail-under=65`，实际覆盖率 66%）
+- 测试用例总数 3717→3781（CI `EXPECTED_TEST_COUNT` 同步）
+
+#### 文档同步
+
+- 版本号 0.3.9→0.3.10 全位置同步
+- 三语 README 版本历史新增 0.3.10 里程碑行
+
+### 验证
+
+- ruff: 0 errors
+- black: 通过
+- 全量测试: 3781 collected, 3701 passed, 80 skipped, 0 failed
+- 覆盖率: 66%（v0.3.9 64.84% → v0.3.10 66%，+1.16%）
+
 ## [0.3.9] - 2026-07-11
 
 ### DevSquad 共识推进第二批 — P2 高复杂度函数降级

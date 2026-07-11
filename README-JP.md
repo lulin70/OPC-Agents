@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.9 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.10 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -176,7 +176,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.9
+pip install opc-agents==0.3.10
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
@@ -371,7 +371,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # テストスイート（89テストファイル、3717テスト、100%合格）
+├── tests/                 # テストスイート（89テストファイル、3781テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
@@ -391,7 +391,7 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行（3717テストケース）
+# 全テストを実行（3781テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行
@@ -407,6 +407,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| **0.3.10** | **2026-07-11** | **crm_skill テスト+カバレッジ向上(P3-1)** — 64個のcrm_skillテスト追加（カバレッジ14.8%→70%+）、3件のソースバグ修正（_handle_deal金額文字列クリーンアップ / _handle_search「查」「找」キーワード欠落 / undo非決定的並び替え）、CIカバレッジ閾値64%→65%（実際66%）、テスト数3717→3781 |
 | **0.3.9** | **2026-07-11** | **高複雑度関数リファクタリング(P2)** — TaskEngineV3.execute E(31)→B + extract_json_from_llm D(27)→A(4) + crm_skill.execute_goal D(26)→C(13) + email_skill.execute_goal D(23)→C(11)、4つのヘルパーメソッド抽出で重複並列コードを削除 |
 | **0.3.8** | **2026-07-11** | **DevSquadコンセンサス第1弾** — cli.pyカバレッジ0%→95%(+17テスト) + mcp_transport.py 23%→92%(+31テスト) + CIカバレッジ閾値62%→64%(実際64.84%) + radon cc循環的複雑度ゲート(非ブロッキング) + sse-starlette依存関係 |
 | **0.3.7** | **2026-07-11** | **カバレッジ最適化バッチ** — 6モジュールのカバレッジ向上(export/task_skill/user_profile/task_lifecycle/social_skill/task_content_generators) +234テスト + 3バグ修正(execute_goal文字列置換順序/SQLパラメータ化/空データフォールバック) |

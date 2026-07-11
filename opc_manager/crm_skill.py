@@ -388,7 +388,9 @@ def _handle_follow_up(goal: str) -> Dict[str, Any]:
 
 def _handle_search(goal: str) -> Dict[str, Any]:
     """Handle search intent: 帮我查张三的联系方式 → get_customer."""
-    name = _clean_name_from_goal(goal, ["帮我查", "帮我找", "的联系方式", "客户"])
+    name = _clean_name_from_goal(
+        goal, ["帮我查", "帮我找", "的联系方式", "客户", "查", "找"]
+    )
     if name:
         return get_customer(name=name)
     return {"success": False, "error": "请提供客户姓名"}
@@ -399,9 +401,12 @@ def _handle_deal(goal: str) -> Dict[str, Any]:
     from opc_manager.finance_skill import parse_amount_from_text
 
     amount = parse_amount_from_text(goal)
-    keywords = ["合作", "成交", "签约", "了", "帮我", "的", "记录"] + (
-        [str(amount)] if amount else []
-    )
+    amount_strs = []
+    if amount:
+        amount_strs = [str(amount)]
+        if amount == int(amount):
+            amount_strs.append(str(int(amount)))
+    keywords = ["合作", "成交", "签约", "了", "帮我", "的", "记录"] + amount_strs
     name = _clean_name_from_goal(goal, keywords)
     if name:
         result = get_customer(name=name)
@@ -462,9 +467,7 @@ def undo_add_customer(customer_id=None, **kwargs):
     if customer_id:
         execute_write("DELETE FROM customers WHERE id=?", (customer_id,))
     else:
-        latest = execute_query(
-            "SELECT id FROM customers ORDER BY created_at DESC LIMIT 1"
-        )
+        latest = execute_query("SELECT id FROM customers ORDER BY rowid DESC LIMIT 1")
         if latest:
             execute_write("DELETE FROM customers WHERE id=?", (latest[0]["id"],))
     return {"success": True, "message": "客户记录已撤销"}
@@ -475,7 +478,7 @@ def undo_add_deal(deal_id=None, **kwargs):
     if deal_id:
         execute_write("DELETE FROM deals WHERE id=?", (deal_id,))
     else:
-        latest = execute_query("SELECT id FROM deals ORDER BY created_at DESC LIMIT 1")
+        latest = execute_query("SELECT id FROM deals ORDER BY rowid DESC LIMIT 1")
         if latest:
             execute_write("DELETE FROM deals WHERE id=?", (latest[0]["id"],))
     return {"success": True, "message": "合作记录已撤销"}
@@ -486,9 +489,7 @@ def undo_add_follow_up(follow_up_id=None, **kwargs):
     if follow_up_id:
         execute_write("DELETE FROM follow_ups WHERE id=?", (follow_up_id,))
     else:
-        latest = execute_query(
-            "SELECT id FROM follow_ups ORDER BY created_at DESC LIMIT 1"
-        )
+        latest = execute_query("SELECT id FROM follow_ups ORDER BY rowid DESC LIMIT 1")
         if latest:
             execute_write("DELETE FROM follow_ups WHERE id=?", (latest[0]["id"],))
     return {"success": True, "message": "跟进记录已撤销"}
