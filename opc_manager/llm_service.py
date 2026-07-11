@@ -70,9 +70,9 @@ class OpenAIBackend(LLMBackend):
 
     def __init__(self, config: LLMConfig):
         self.config = config
-        self.client = None
+        self.client: Any = None
 
-    async def _get_client(self):
+    async def _get_client(self) -> Any:
         if self.client is None:
             try:
                 import openai
@@ -207,7 +207,7 @@ class UsageTracker:
         self.daily_budget = daily_budget
         self.daily_usage: Dict[str, Dict] = {}
 
-    def record(self, user_id: str, usage: dict, cost_usd: float = 0.0):
+    def record(self, user_id: str, usage: dict, cost_usd: float = 0.0) -> None:
         today = datetime.now().strftime("%Y-%m-%d")
         if today not in self.daily_usage:
             self.daily_usage[today] = {"tokens": 0, "cost": 0.0, "calls": 0}
@@ -365,7 +365,7 @@ class LLMService:
             logger.warning("Persona generation failed: %s", e)
             return f"抱歉，暂时无法生成风格化回复。（{type(e).__name__}）"
 
-    def switch_provider(self, new_provider: LLMProvider, **overrides):
+    def switch_provider(self, new_provider: LLMProvider, **overrides: Any) -> None:
         """Dynamically switch LLM backend"""
         new_config = LLMConfig(
             **{**self.config.__dict__, "provider": new_provider, **overrides}

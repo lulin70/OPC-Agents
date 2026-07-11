@@ -7,7 +7,7 @@ Provides centralized error mapping and context-aware message formatting.
 
 import logging
 import traceback
-from typing import Dict, Any, Type, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, Type
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -115,7 +115,7 @@ class UserFriendlyError(Exception):
         self.severity = severity
         self.traceback_str = traceback.format_exc()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.user_message
 
 
@@ -164,7 +164,13 @@ class ErrorHandler:
         )
 
     @staticmethod
-    def safe_execute(func, *args, on_error=None, context="", **kwargs):
+    def safe_execute(
+        func: Callable[..., Any],
+        *args: Any,
+        on_error: Optional[Callable[["UserFriendlyError"], None]] = None,
+        context: str = "",
+        **kwargs: Any,
+    ) -> Any:
         try:
             return func(*args, **kwargs)
         except Exception as e:

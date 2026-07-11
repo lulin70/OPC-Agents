@@ -12,7 +12,7 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md
 import logging
 import re
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from opc_manager.data_manager import (
     encrypt_field,
@@ -439,7 +439,9 @@ def _handle_add_customer(goal: str) -> Dict[str, Any]:
     )
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[Any] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["跟进"]):
         return _handle_follow_up(goal)
@@ -462,7 +464,9 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     return search_customers()
 
 
-def undo_add_customer(customer_id=None, **kwargs):
+def undo_add_customer(
+    customer_id: Optional[str] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if customer_id:
         execute_write("DELETE FROM customers WHERE id=?", (customer_id,))
@@ -473,7 +477,7 @@ def undo_add_customer(customer_id=None, **kwargs):
     return {"success": True, "message": "客户记录已撤销"}
 
 
-def undo_add_deal(deal_id=None, **kwargs):
+def undo_add_deal(deal_id: Optional[str] = None, **kwargs: Any) -> Dict[str, Any]:
     init_db()
     if deal_id:
         execute_write("DELETE FROM deals WHERE id=?", (deal_id,))
@@ -484,7 +488,9 @@ def undo_add_deal(deal_id=None, **kwargs):
     return {"success": True, "message": "合作记录已撤销"}
 
 
-def undo_add_follow_up(follow_up_id=None, **kwargs):
+def undo_add_follow_up(
+    follow_up_id: Optional[str] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if follow_up_id:
         execute_write("DELETE FROM follow_ups WHERE id=?", (follow_up_id,))

@@ -31,7 +31,7 @@ class PersonaConfig:
     proactive_rules: List[Dict[str, str]]
     response_patterns: Dict[str, List[str]]
 
-    def get_template(self, template_name: str, **kwargs) -> str:
+    def get_template(self, template_name: str, **kwargs: Any) -> str:
         """
         Get dialogue template and fill variables
 
@@ -97,7 +97,7 @@ class PersonaManager:
 
         self._load_config()
 
-    def _load_config(self):
+    def _load_config(self) -> None:
         """Load YAML configuration file"""
         if not os.path.exists(self.config_path):
             logger.warning("Config file not found - %s", self.config_path)
@@ -135,7 +135,7 @@ class PersonaManager:
             logger.error("Failed to load config: %s", e)
             self._load_fallback_config()
 
-    def _load_fallback_config(self):
+    def _load_fallback_config(self) -> None:
         """Load fallback config when YAML file is unavailable"""
         logger.warning("Using built-in default config")
         self.base_persona = {
@@ -243,7 +243,7 @@ class PersonaManager:
             return False
 
     def format_response(
-        self, persona: PersonaConfig, template_name: str, **kwargs
+        self, persona: PersonaConfig, template_name: str, **kwargs: Any
     ) -> str:
         """
         Format response using specified persona
@@ -338,7 +338,7 @@ class PersonaManager:
             "config_path": self.config_path,
         }
 
-    def clear_cache(self, user_id: Optional[str] = None):
+    def clear_cache(self, user_id: Optional[str] = None) -> None:
         """
         Clear cache
 

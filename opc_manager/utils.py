@@ -133,7 +133,7 @@ def extract_json_from_llm(text: str) -> Optional[dict]:
 
 
 def call_llm_service(
-    llm_service, prompt: str, max_tokens: int = 500, timeout: int = 15
+    llm_service: Any, prompt: str, max_tokens: int = 500, timeout: int = 15
 ) -> Optional[str]:
     if not llm_service:
         return None
@@ -247,15 +247,15 @@ class BoundedDict:
         with self._lock:
             return self._data.pop(key, default)
 
-    def items(self):
+    def items(self) -> List[Any]:
         with self._lock:
             return list(self._data.items())
 
-    def values(self):
+    def values(self) -> List[Any]:
         with self._lock:
             return list(self._data.values())
 
-    def keys(self):
+    def keys(self) -> List[str]:
         with self._lock:
             return list(self._data.keys())
 

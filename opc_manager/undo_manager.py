@@ -7,7 +7,7 @@ financial records, CRM actions, etc.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import logging
 import threading
@@ -103,7 +103,7 @@ class UndoManager:
         CLEANUP_INTERVAL: Seconds between cleanup cycles (from UNDO_CLEANUP_INTERVAL).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize UndoManager with empty records and lock."""
         self.MAX_PER_SESSION = UNDO_MAX_PER_SESSION
         self.CLEANUP_INTERVAL = UNDO_CLEANUP_INTERVAL
@@ -301,7 +301,7 @@ class UndoManager:
         with self._lock:
             return list(self._records.get(session_id, []))
 
-    def cleanup_expired(self):
+    def cleanup_expired(self) -> None:
         """Remove all expired undo records."""
         now = time.time()
         with self._lock:
@@ -322,7 +322,7 @@ class UndoManager:
         return uuid.uuid4().hex[:12]
 
     @staticmethod
-    def _resolve_inverse(func_name: str):
+    def _resolve_inverse(func_name: str) -> Optional[Callable]:
         """Resolve inverse function name to callable.
 
         Args:

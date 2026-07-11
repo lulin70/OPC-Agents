@@ -123,11 +123,11 @@ class SecureKeyStore:
                 os.environ.get("OPC_SECURE_STORAGE", ".env.encrypted")
             )
 
-        self._fernet = None
+        self._fernet: Optional[Any] = None
         self._lock = threading.Lock()
         self._init_fernet()
 
-    def _init_fernet(self):
+    def _init_fernet(self) -> None:
         try:
             from cryptography.fernet import Fernet
 
@@ -232,7 +232,7 @@ class SecureKeyStore:
             logger.error("[SecureKeyStore] Failed to load storage: %s", e)
             return {"version": self.VERSION, "keys": {}}
 
-    def _save_storage(self, data: Dict):
+    def _save_storage(self, data: Dict) -> None:
         tmp_path = self._storage_path.with_suffix(".tmp")
         with open(tmp_path, "w") as f:
             json.dump(data, f, indent=2)
@@ -244,7 +244,7 @@ class SecureKeyStore:
         os.replace(tmp_path, self._storage_path)
 
 
-def init_secure_storage():
+def init_secure_storage() -> None:
     """Initialize secure storage at application startup
 
     Called by cli.py and app.py before ConfigManager initialization.

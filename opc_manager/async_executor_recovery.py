@@ -26,8 +26,9 @@ importing the mixins to keep the import cycle safe (see async_executor.py).
 import threading
 import time
 import logging
+from typing import Any, Dict
 
-from .async_executor import TaskStatus
+from .async_executor import AsyncTask, TaskStatus
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,18 @@ class RecoveryMixin:
     resolved at runtime on the composed facade instance via Python's MRO.
     """
 
-    def _zombie_scan_loop(self):
+    # Attributes provided by the composed facade (AsyncTaskExecutor) at runtime
+    _shutdown: bool
+    _shutdown_event: threading.Event
+    zombie_check_interval: float
+    default_timeout: int
+    _lock: threading.RLock
+    _tasks: Dict[str, AsyncTask]
+    _schedule_retry: Any
+    _run_worker: Any
+    _default_execute: Any
+
+    def _zombie_scan_loop(self) -> None:
         """Background loop that periodically scans for zombie tasks
 
         Zombie tasks are tasks stuck in PENDING or RUNNING state beyond timeout.
@@ -58,7 +70,7 @@ class RecoveryMixin:
             except Exception as e:
                 logger.error("[AsyncTaskExecutor] Zombie scan error: %s", e)
 
-    def _scan_zombies(self):
+    def _scan_zombies(self) -> None:
         now = time.time()
         retry_candidates = []
         with self._lock:
@@ -90,7 +102,7 @@ class RecoveryMixin:
         for task in retry_candidates:
             self._schedule_retry(task)
 
-    def _process_retries(self):
+    def _process_retries(self) -> None:
         now = time.time()
         to_retry = []
         with self._lock:

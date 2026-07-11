@@ -62,9 +62,9 @@ class MemoryBridge:
         bridge.record_failure("帮我写营销方案", "方案太泛，缺少具体数据")
     """
 
-    def __init__(self):
-        self._cm = None
-        self._rule_engine = None
+    def __init__(self) -> None:
+        self._cm: Optional[Any] = None
+        self._rule_engine: Optional[Any] = None
         self._enabled = False
         self._memory_count = 0
 
@@ -113,7 +113,7 @@ class MemoryBridge:
             return self._memory_count
 
     @property
-    def rule_engine(self):
+    def rule_engine(self) -> Any:
         """懒加载 RuleEngine"""
         if not self._enabled or not self._cm:
             return None
@@ -422,7 +422,7 @@ class MemoryBridge:
             "db_path": _get_db_path(),
         }
 
-    def close(self):
+    def close(self) -> None:
         """清理资源"""
         if self._cm:
             try:

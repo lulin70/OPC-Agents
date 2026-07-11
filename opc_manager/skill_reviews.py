@@ -28,7 +28,7 @@ class SkillReview:
     created_at: float = 0.0
     updated_at: float = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.review_id:
             self.review_id = str(uuid.uuid4())
         if not self.created_at:
@@ -47,13 +47,13 @@ class SkillReviewManager:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._ensure_table()
 
-    def close(self):
+    def close(self) -> None:
         """Close the persistent database connection."""
         if self._conn:
             self._conn.close()
-            self._conn = None
+            self._conn = None  # type: ignore[assignment]
 
-    def _ensure_table(self):
+    def _ensure_table(self) -> None:
         with self._lock:
             conn = self._conn
             conn.execute("""
@@ -212,7 +212,7 @@ class SkillReviewManager:
         self._update_skill_rating(skill_id)
         return True
 
-    def _update_skill_rating(self, skill_id: str):
+    def _update_skill_rating(self, skill_id: str) -> None:
         """Update the rating column in external_skills table."""
         avg = self.get_average_rating(skill_id)
 

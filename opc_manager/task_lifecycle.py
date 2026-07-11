@@ -8,12 +8,17 @@ import asyncio
 import json as _json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from .agent_context import AgentContext, AgentState
 from .consensus_engine import DecisionType, Opinion, OpinionType
 from .executor_brain import ExecutorBrain
 from .reflector_brain import Evaluation
+
+if TYPE_CHECKING:
+    from .strategist_brain import StrategistBrain
+    from .reflector_brain import ReflectorBrain, NextAction
+    from .consensus_engine import ConsensusEngine, Decision
 
 logger = logging.getLogger(__name__)
 
@@ -204,8 +209,12 @@ class ConsensusConsultant:
     """
 
     def __init__(
-        self, strategist_brain, reflector_brain, consensus_engine, executor_brain=None
-    ):
+        self,
+        strategist_brain: "StrategistBrain",
+        reflector_brain: "ReflectorBrain",
+        consensus_engine: "ConsensusEngine",
+        executor_brain: Optional[ExecutorBrain] = None,
+    ) -> None:
         """Initialize with brain and engine references.
 
         Args:
@@ -224,8 +233,8 @@ class ConsensusConsultant:
         self,
         context: AgentContext,
         evaluation: Evaluation,
-        reflector_action,
-    ):
+        reflector_action: "NextAction",
+    ) -> Optional["NextAction"]:
         """Consult the consensus engine if quality is below threshold.
 
         共识咨询（二级补救保障）[S2-T4]
@@ -384,7 +393,7 @@ class ConsensusConsultant:
         return f"已完成{len(results)}步，最近成功={success}"
 
     async def log_decision(
-        self, context: AgentContext, evaluation: Evaluation, decision
+        self, context: AgentContext, evaluation: Evaluation, decision: "Decision"
     ) -> None:
         """Log a consensus decision to the database.
 
@@ -393,7 +402,7 @@ class ConsensusConsultant:
             evaluation: Evaluation result.
             decision: Consensus decision.
         """
-        log_entry = {
+        log_entry: Dict[str, Any] = {
             "task_id": context.task_id,
             "quality_score": evaluation.quality_score,
             "result_level": evaluation.result.name,

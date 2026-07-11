@@ -14,7 +14,7 @@ from typing import Optional
 _logger = logging.getLogger(__name__)
 
 
-def init_monitoring():
+def init_monitoring() -> None:
     """Initialize monitoring system
 
     Priority:
@@ -57,7 +57,7 @@ def init_monitoring():
         _logger.info("SENTRY_DSN未配置，错误追踪未启用")
 
 
-def track_event(event_name: str, properties: Optional[dict] = None):
+def track_event(event_name: str, properties: Optional[dict] = None) -> None:
     """Track user event
 
     Args:
@@ -80,7 +80,7 @@ def track_event(event_name: str, properties: Optional[dict] = None):
         pass
 
 
-def track_error(error: Exception, context: Optional[dict] = None):
+def track_error(error: Exception, context: Optional[dict] = None) -> None:
     """Track error
 
     Args:

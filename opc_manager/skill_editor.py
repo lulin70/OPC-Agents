@@ -90,7 +90,7 @@ class CustomSkill:
     created_at: float = 0.0
     updated_at: float = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.created_at == 0.0:
             self.created_at = time.time()
         if self.updated_at == 0.0:
@@ -254,7 +254,9 @@ class SkillEditor:
             "output_format": skill.output_format.value,
         }
 
-    def publish_to_marketplace(self, skill_id: str, marketplace=None) -> Dict[str, Any]:
+    def publish_to_marketplace(
+        self, skill_id: str, marketplace: Optional[Any] = None
+    ) -> Dict[str, Any]:
         skill = self._skills.get(skill_id)
         if not skill:
             return {"success": False, "error": f"技能不存在: {skill_id}"}

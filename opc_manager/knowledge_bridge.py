@@ -75,7 +75,9 @@ class KnowledgeAdapter(ABC):
         """列出知识来源"""
         ...
 
-    def _urlopen_with_timeout(self, request, timeout: int = _HTTP_TIMEOUT_DEFAULT):
+    def _urlopen_with_timeout(
+        self, request: Any, timeout: int = _HTTP_TIMEOUT_DEFAULT
+    ) -> Any:
         """Open URL with configurable timeout, propagating timeout errors clearly."""
         import urllib.request
         import socket
@@ -103,7 +105,7 @@ class LocalFolderAdapter(KnowledgeAdapter):
             self._embedding_svc.init_cache(self._path)
             self._build_index()
 
-    def _build_index(self):
+    def _build_index(self) -> None:
         """构建文件索引（懒加载：只存metadata，不存全文）"""
         for root, dirs, files in os.walk(self._path):
             # 跳过隐藏目录
@@ -604,7 +606,7 @@ class KnowledgeBridge:
         prompt = kb.build_knowledge_prompt("营销策略")
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._adapter: Optional[KnowledgeAdapter] = None
         self._enabled = False
         self._kb_type = ""

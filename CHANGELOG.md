@@ -4,6 +4,40 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-07-11
+
+### DevSquad 共识推进第五批 — P3-3 mypy 豁免移除 Batch 2
+
+> 26 个模块从 mypy per-module overrides 移除（37→11），88 个函数注解补全，mypy `disallow_untyped_defs = true` 覆盖范围扩大。
+
+#### 类型注解补全（26 模块，Batch 2）
+
+Batch 2 覆盖 3-5 个未类型化函数的 21 模块 + 2 个未类型化函数的 5 模块，共 26 个模块：
+
+- **2-error 模块（5 个）**：`data_manager`（`_ensure_db` 装饰器 + `wrapper`）/ `error_handler`（`__str__` + `safe_execute`）/ `llm_cache`（`close` + `_ensure_table`）/ `skill_editor`（`__post_init__` + `publish_to_marketplace`）/ `skill_marketplace`（2 个 `__post_init__`）
+- **3-error 模块（9 个）**：`strategist_models` / `secure_storage` / `monitoring` / `shortcuts_handler` / `memory_bridge` / `tool_system` / `finance_skill` / `undo_manager` / `async_executor_recovery`
+- **4-error 模块（9 个）**：`skill_reviews` / `knowledge_bridge` / `utils` / `performance_monitor` / `social_skill` / `crm_skill` / `llm_service` / `task_engine_v3` / `task_lifecycle`
+- **5-error 模块（3 个）**：`persona_manager` / `mcp_transport` / `async_executor_worker`
+
+#### 预先存在错误修复（18 个）
+
+添加注解后 mypy 开始检查函数体，暴露并修复了 18 个预先存在错误：
+- **assignment（4 个）**：`secure_storage._fernet` / `memory_bridge._rule_engine` 添加 `Optional[Any]` 声明；`llm_cache._conn` / `skill_reviews._conn` 使用 `# type: ignore[assignment]`
+- **attr-defined（14 个）**：`WorkerMixin` 添加 `_shutdown`/`_shutdown_event` 声明；`RecoveryMixin` 添加 9 个 facade 属性声明（`_shutdown`/`_shutdown_event`/`zombie_check_interval`/`default_timeout`/`_lock`/`_tasks`/`_schedule_retry`/`_run_worker`/`_default_execute`）
+
+#### pyproject.toml 变更
+
+- **mypy overrides**: 37 模块 → 11 模块（Batch 2 的 26 个模块移除豁免）
+- **剩余 11 模块**: Batch 3（6+ untyped funcs），最大范围，后续推进
+
+### 验证
+
+- mypy: 0 errors（113 files, Success）
+- Black: 2 文件格式化后全量通过（121 files unchanged）
+- 全量测试: 3866 passed, 114 skipped, 1 failed（`test_moka_takes_priority_over_ollama` — 预先存在的本地测试隔离问题，单独运行通过，CI v0.3.12 验证通过）
+- 测试总数: 3781（CI 配置: --ignore=tests/e2e + 6 deselected），匹配 EXPECTED_TEST_COUNT=3781
+- 覆盖率: 未变（仅类型注解，无逻辑变更，CI 阈值 65%，实际 66%）
+
 ## [0.3.12] - 2026-07-11
 
 ### DevSquad 共识推进第四批 — P3-3 mypy 豁免移除 Batch 1

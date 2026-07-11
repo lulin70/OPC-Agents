@@ -34,7 +34,7 @@ class PerformanceMetric:
     timestamp: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp == 0.0:
             self.timestamp = time.time()
 
@@ -96,7 +96,7 @@ class PerformanceMonitor:
         os.path.dirname(os.path.dirname(__file__)), "data", "perf_metrics.json"
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._metrics: List[PerformanceMetric] = []
         self._llm_cache = LRUCache()
         self._max_metrics = 1000
@@ -105,7 +105,7 @@ class PerformanceMonitor:
         self._last_persist = 0.0
 
     def record(
-        self, operation: str, duration_ms: float, success: bool = True, **metadata
+        self, operation: str, duration_ms: float, success: bool = True, **metadata: Any
     ) -> None:
         """Record a performance metric and check SLA thresholds.
 
@@ -248,7 +248,7 @@ class PerformanceMonitor:
                 ]
             persist_dir = os.path.dirname(self.PERSIST_FILE)
 
-            def _write():
+            def _write() -> None:
                 os.makedirs(persist_dir, exist_ok=True)
                 with open(self.PERSIST_FILE, "w") as f:
                     json.dump(data, f)

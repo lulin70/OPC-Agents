@@ -83,9 +83,9 @@ class TaskEngineV3(  # type: ignore[misc]
     TaskResult(success=False). External dependency failures degrade gracefully.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.web_search = None
-        self.scenario_engine = None
+        self.scenario_engine: Any = None
         self.llm_content_gen = None
         self._initialized = False
         self._search_cache = SearchCache()
@@ -95,7 +95,7 @@ class TaskEngineV3(  # type: ignore[misc]
 
     _init_lock = threading.Lock()
 
-    def _ensure_initialized(self):
+    def _ensure_initialized(self) -> None:
         """Lazy initialization of external dependencies — Only loaded on first execute
 
         Design intent:
@@ -159,7 +159,7 @@ class TaskEngineV3(  # type: ignore[misc]
         message: str,
         progress_pct: Optional[int] = None,
         detail: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         """安全地发射进度事件（带降级保护）
 
         设计意图：
@@ -246,7 +246,7 @@ class TaskEngineV3(  # type: ignore[misc]
         try:
             from concurrent.futures import ThreadPoolExecutor
 
-            def _run_parallel():
+            def _run_parallel() -> Any:
                 loop = asyncio.new_event_loop()
                 try:
                     return loop.run_until_complete(parallel_func(sanitized, session_id))

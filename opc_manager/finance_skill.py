@@ -177,7 +177,9 @@ def _prev_month(ym: str) -> str:
     return f"{y}-{m:02d}"
 
 
-def undo_record_income(record_id=None, **kwargs):
+def undo_record_income(
+    record_id: Optional[str] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if record_id:
         rows = execute_write(
@@ -201,7 +203,9 @@ def undo_record_income(record_id=None, **kwargs):
     }
 
 
-def undo_record_expense(record_id=None, **kwargs):
+def undo_record_expense(
+    record_id: Optional[str] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if record_id:
         rows = execute_write(
@@ -346,7 +350,9 @@ _FINANCE_INTENT_DISPATCH: List[tuple] = [
 ]
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[Any] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     amount = parse_amount_from_text(goal)
     for keywords, handler in _FINANCE_INTENT_DISPATCH:

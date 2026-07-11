@@ -24,7 +24,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, Optional
 
 from .version import __version__
 
@@ -75,7 +75,9 @@ if SSE_AVAILABLE:
         _enforce_https = os.environ.get("MCP_ENFORCE_HTTPS", "false").lower() == "true"
 
         @app.middleware("http")
-        async def enforce_https_middleware(request, call_next) -> Response:
+        async def enforce_https_middleware(
+            request: Request, call_next: Callable[[Request], Awaitable[Response]]
+        ) -> Response:
             if _enforce_https:
                 proto = request.headers.get("x-forwarded-proto", request.url.scheme)
                 if proto != "https":
@@ -89,7 +91,7 @@ if SSE_AVAILABLE:
 
         MCP_API_KEY = os.environ.get("MCP_API_KEY", "")
 
-        def _check_auth(request: Request):
+        def _check_auth(request: Request) -> Optional[Response]:
             """Check MCP_API_KEY authentication. Returns error response or None."""
             if not MCP_API_KEY:
                 from fastapi.responses import JSONResponse
@@ -189,7 +191,7 @@ class StdioTransport:
         logger.info("MCP stdio transport stopped")
 
 
-def main():
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="OPC-Agents MCP Transport")
@@ -212,7 +214,7 @@ def main():
             sys.exit(1)
 
 
-def start_sse_server(app, host: str = "127.0.0.1", port: int = 8901):
+def start_sse_server(app: Any, host: str = "127.0.0.1", port: int = 8901) -> None:
     """Start SSE server with security checks.
 
     Security rules:

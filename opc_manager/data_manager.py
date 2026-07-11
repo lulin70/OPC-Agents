@@ -10,7 +10,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -211,9 +211,9 @@ def _get_conn() -> sqlite3.Connection:
     return _local.conn
 
 
-def _ensure_db(func):
+def _ensure_db(func: Callable) -> Callable:
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         if not _db_initialized:
             init_db()
         return func(*args, **kwargs)

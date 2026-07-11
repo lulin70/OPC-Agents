@@ -30,7 +30,7 @@ from __future__ import annotations
 import threading
 import time
 import logging
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from .async_executor import AsyncTask, TaskStatus
 
@@ -52,8 +52,10 @@ class WorkerMixin:
     max_concurrent: int
     max_history: int
     retry_backoff_base: float
+    _shutdown: bool
+    _shutdown_event: threading.Event
 
-    def _run_worker(self, task_id: str, execute_func: Callable, **kwargs):
+    def _run_worker(self, task_id: str, execute_func: Callable, **kwargs: Any) -> None:
         """Background worker thread: execute actual task
 
         Execution flow:
@@ -218,7 +220,7 @@ class WorkerMixin:
             "sources": result.sources,
         }
 
-    def _cleanup_old_tasks(self):
+    def _cleanup_old_tasks(self) -> None:
         """Cleanup old task records to control memory usage
 
         Cleanup strategy:
@@ -250,7 +252,7 @@ class WorkerMixin:
                 "[AsyncTaskExecutor] Cleaned up %s old task records", len(to_remove)
             )
 
-    def _schedule_retry(self, task: AsyncTask):
+    def _schedule_retry(self, task: AsyncTask) -> None:
         if task.cancel_event.is_set():
             return
 
@@ -278,7 +280,7 @@ class WorkerMixin:
             f"scheduled for {task.task_id} in {delay:.0f}s"
         )
 
-        def _do_retry():
+        def _do_retry() -> None:
             time.sleep(delay)
             if self._shutdown or task.cancel_event.is_set():
                 return

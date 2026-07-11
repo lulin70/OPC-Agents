@@ -117,7 +117,7 @@ class ToolParameter:
     default: Any = None
     allowed_values: Optional[List[Any]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.allowed_values is None:
             self.allowed_values = []
 
@@ -174,7 +174,7 @@ class ToolSystem:
         if register_builtins:
             self._register_builtin_tools()
 
-    def _register_builtin_tools(self):
+    def _register_builtin_tools(self) -> None:
         file_read_tool = Tool(
             tool_id="file_read",
             name="读取文件",
@@ -339,7 +339,7 @@ class ToolSystem:
         self,
         tool_id: str,
         user_permission: PermissionLevel = PermissionLevel.PUBLIC,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """调用工具
 

@@ -9,7 +9,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
 from opc_manager.tool_system import AuditLogger
@@ -74,7 +74,9 @@ def _load_platforms() -> dict:
 PLATFORMS = _load_platforms()
 
 
-def _generate_with_llm(platform, topic, key_points, tone):
+def _generate_with_llm(
+    platform: str, topic: str, key_points: str, tone: str
+) -> Optional[Dict[str, Any]]:
     try:
         from opc_manager.simple_llm_service import SimpleLLMService
 
@@ -317,7 +319,7 @@ def _get_publish_guide(platform: str) -> str:
     return guides.get(platform, "请手动发布到对应平台")
 
 
-def _extract_topic(goal, platform_name):
+def _extract_topic(goal: str, platform_name: str) -> str:
     patterns = [
         r"(?:发|写|生成|发布)(?:一篇|一个)?(?:关于|论)?[「「](.+?)[」」](?:的|内容|文章|帖子)?",
         r"(?:发|写|生成|发布)(?:一篇|一个)?(?:关于|论)?[\"'](.+?)[\"'](?:的|内容|文章|帖子)?",
@@ -347,7 +349,9 @@ def _extract_topic(goal, platform_name):
     return topic.strip().strip("，。、") or "今日分享"
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[Any] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     platform = ""
     for p in ["小红书", "公众号", "推特", "微博", "知乎"]:
@@ -399,7 +403,9 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     return generate_content(platform, topic)
 
 
-def undo_publish_content(content_id=None, **kwargs):
+def undo_publish_content(
+    content_id: Optional[str] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if content_id:
         rows = execute_query(

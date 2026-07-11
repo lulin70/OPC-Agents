@@ -56,10 +56,10 @@ class ShortcutResult:
 class ShortcutsHandler:
     """Handles Apple Shortcuts actions for OPC-Agents."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._init_components()
 
-    def _init_components(self):
+    def _init_components(self) -> None:
         """Lazy-initialize required components."""
         from opc_manager.settings import get_settings
         from opc_manager.data_manager import init_db
@@ -308,7 +308,7 @@ class ShortcutsHandler:
             return ShortcutResult(False, f"生成日报失败: {str(e)}")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="OPC-Agents Apple Shortcuts Handler",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-11（DevSquad 共识推进 P3-3 Batch 1 完成，v0.3.12 发布） | **版本**: v0.3.12 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-11（DevSquad 共识推进 P3-3 Batch 2 完成，v0.3.13 发布） | **版本**: v0.3.13 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.12`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.13`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -167,7 +167,7 @@
 - `tool_system.py` 拆为 tool_registry/tool_audit/tool_handlers_fs/tool_handlers_smtp
 - ~~`opc_hr` 充实或并入 opc_manager/hr/ 子包~~ ✅ 已解决 (2026-07-10): web_search.py 迁移到 opc_manager/web_search.py，消除 opc_hr 假分层目录
 - ~~CI coverage 阈值 62% (含 frontend 总覆盖率 ~64%, opc_manager 单独 ~74%) → 目标 65%~~ ✅ 已完成 (2026-07-11, v0.3.10): `--cov-fail-under=65`（实际 66%），crm_skill 64 tests + 3 bug 修复
-- ~~mypy 配置升级为 `disallow_untyped_defs = True`~~ ⏳ 进行中 (2026-07-11, v0.3.12 Batch 1): 全局启用，Batch 1 已移除 46 模块从 per-module overrides（83→37），返回类型+参数类型注解补全（`__init__`/`__post_init__`/`execute_goal`/`undo_*`/`**kwargs: Any` 等），mypy `disallow_untyped_defs = true` 全局生效。剩余 37 模块待 Batch 2（25 模块，3-5 untyped）+ Batch 3（12 模块，6+ untyped）渐进式移除
+- ~~mypy 配置升级为 `disallow_untyped_defs = True`~~ ⏳ 进行中 (2026-07-11, v0.3.13 Batch 2): Batch 1+2 已移除 72 模块从 per-module overrides（83→11），134 个函数注解补全。剩余 11 模块（Batch 3，6+ untyped funcs）待后续推进
 - ~~引入 `radon cc` 圈复杂度门禁~~ ✅ 已完成 (2026-07-11, v0.3.8): CI non-blocking 报告 → ✅ v0.3.11 转 D+ blocking
 - ~~高复杂度函数降级（TD-066 核心）~~ ✅ 已完成 (2026-07-11, v0.3.9+v0.3.11): v0.3.9 降级 4 个 D/E 级函数 + v0.3.11 降级 6 个 D/E 级函数（`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)），radon cc D+ blocking 门禁已生效
 - ~~补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR~~ ✅ 已完成 (2026-07-11): [ADR-001](architecture/ADR-001-IntentRouter-design.md) / [ADR-002](architecture/ADR-002-ToolSystem-design.md) / [ADR-003](architecture/ADR-003-TaskEngineV3-design.md)

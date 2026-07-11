@@ -152,48 +152,23 @@ exclude = [
     "tests/",
 ]
 
-# Per-module overrides: 37 modules with untyped functions (TD-065 Phase 2)
+# Per-module overrides: 11 modules with untyped functions (TD-065 Phase 3)
 # v0.3.12: Batch 1 (46 modules) annotated and removed from overrides.
-# Remaining 37 modules span Batch 2 (3-5 untyped funcs) and Batch 3 (6+ untyped funcs).
+# v0.3.13: Batch 2 (26 modules) annotated and removed from overrides.
+# Remaining 11 modules are Batch 3 (6+ untyped funcs) — largest scope, future work.
 # Remove modules from this list as they become fully typed.
 [[tool.mypy.overrides]]
 module = [
     "opc_manager.agent_loop",
-    "opc_manager.async_executor_recovery",
-    "opc_manager.async_executor_worker",
     "opc_manager.audit_log",
     "opc_manager.confirmer",
     "opc_manager.correction_manager",
-    "opc_manager.crm_skill",
-    "opc_manager.data_manager",
-    "opc_manager.error_handler",
-    "opc_manager.finance_skill",
     "opc_manager.flywheel_tracker",
-    "opc_manager.knowledge_bridge",
-    "opc_manager.llm_cache",
-    "opc_manager.llm_service",
-    "opc_manager.mcp_transport",
-    "opc_manager.memory_bridge",
-    "opc_manager.monitoring",
     "opc_manager.onboarding",
-    "opc_manager.performance_monitor",
-    "opc_manager.persona_manager",
     "opc_manager.progress_emitter",
     "opc_manager.protocols",
-    "opc_manager.secure_storage",
-    "opc_manager.shortcuts_handler",
-    "opc_manager.skill_editor",
-    "opc_manager.skill_marketplace",
     "opc_manager.skill_registry",
-    "opc_manager.skill_reviews",
-    "opc_manager.social_skill",
-    "opc_manager.strategist_models",
-    "opc_manager.task_engine_v3",
-    "opc_manager.task_lifecycle",
     "opc_manager.task_orchestrator",
-    "opc_manager.tool_system",
-    "opc_manager.undo_manager",
-    "opc_manager.utils",
     "opc_manager.validators",
 ]
 disallow_untyped_defs = false

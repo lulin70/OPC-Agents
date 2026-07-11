@@ -33,13 +33,13 @@ class LLMCache:
         except Exception as e:
             logger.warning("[LLMCache] Startup cleanup failed: %s", e)
 
-    def close(self):
+    def close(self) -> None:
         """Close the persistent database connection."""
         if self._conn:
             self._conn.close()
-            self._conn = None
+            self._conn = None  # type: ignore[assignment]
 
-    def _ensure_table(self):
+    def _ensure_table(self) -> None:
         """Create cache table if not exists."""
         with self._lock:
             conn = self._conn

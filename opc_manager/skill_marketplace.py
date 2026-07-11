@@ -72,7 +72,7 @@ class MarketplaceSkill:
     updated_at: float = 0.0
     config: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.created_at == 0.0:
             self.created_at = time.time()
         if self.updated_at == 0.0:
@@ -90,7 +90,7 @@ class APIKey:
     rate_limit: int = 100
     salt: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.created_at == 0.0:
             self.created_at = time.time()
 

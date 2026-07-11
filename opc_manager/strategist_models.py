@@ -41,7 +41,7 @@ class Intent:
     confidence: float = 1.0  # 置信度
     sub_intents: Optional[List["Intent"]] = None  # 子意图列表（复合意图时使用）
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.constraints is None:
             self.constraints = []
         if self.context is None:
@@ -61,7 +61,7 @@ class Step:
     dependencies: Optional[List[str]] = None  # 依赖的步骤ID列表
     retry_count: int = 0  # 重试次数
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.parameters is None:
             self.parameters = {}
         if self.dependencies is None:
@@ -78,6 +78,6 @@ class ExecutionPlan:
     resources: Optional[Dict[str, Any]] = None  # 资源配置
     estimated_time: int = 0  # 预估执行时间（秒）
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.resources is None:
             self.resources = {}
