@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.10 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.11 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -180,7 +180,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.10
+pip install opc-agents==0.3.11
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography
@@ -411,6 +411,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.3.11** | **2026-07-11** | **radon cc D+ Blocking Gate (P3-2)** — All 6 D/E grade functions downgraded (`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)), CI radon cc converted from non-blocking to D+ blocking, Dockerfile/start.sh version fix (0.3.5→0.3.11) |
 | **0.3.10** | **2026-07-11** | **crm_skill Tests + Coverage Boost (P3-1)** — Added 64 crm_skill tests (coverage 14.8%→70%+), fixed 3 source bugs (_handle_deal amount string cleanup / _handle_search missing "查""找" keywords / undo non-deterministic ordering), CI coverage threshold 64%→65% (actual 66%), test count 3717→3781 |
 | **0.3.9** | **2026-07-11** | **High-Complexity Function Refactoring (P2)** — TaskEngineV3.execute E(31)→B + extract_json_from_llm D(27)→A(4) + crm_skill.execute_goal D(26)→C(13) + email_skill.execute_goal D(23)→C(11), extracted 4 helper methods eliminating duplicate parallel code |
 | **0.3.8** | **2026-07-11** | **DevSquad Consensus Batch 1** — cli.py coverage 0%→95%(+17 tests) + mcp_transport.py 23%→92%(+31 tests) + CI coverage threshold 62%→64%(actual 64.84%) + radon cc cyclomatic complexity gate(non-blocking) + sse-starlette dependency |

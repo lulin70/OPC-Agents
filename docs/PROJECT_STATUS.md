@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-11（DevSquad 共识推进第三批完成，v0.3.10 发布） | **版本**: v0.3.10 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-11（DevSquad 共识推进第三批 P3-2 完成，v0.3.11 发布） | **版本**: v0.3.11 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.10`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.11`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -168,8 +168,8 @@
 - ~~`opc_hr` 充实或并入 opc_manager/hr/ 子包~~ ✅ 已解决 (2026-07-10): web_search.py 迁移到 opc_manager/web_search.py，消除 opc_hr 假分层目录
 - ~~CI coverage 阈值 62% (含 frontend 总覆盖率 ~64%, opc_manager 单独 ~74%) → 目标 65%~~ ✅ 已完成 (2026-07-11, v0.3.10): `--cov-fail-under=65`（实际 66%），crm_skill 64 tests + 3 bug 修复
 - ~~mypy 配置升级为 `disallow_untyped_defs = True`~~ ✅ 部分完成 (2026-07-11): 全局启用，30 模块通过严格检查，83 模块 per-module 豁免（渐进式移除）
-- ~~引入 `radon cc` 圈复杂度门禁~~ ✅ 已完成 (2026-07-11): CI non-blocking 报告（C/D/E/F 级函数），TD-066 待高复杂度函数降级后转 blocking
-- ~~高复杂度函数降级（TD-066 核心）~~ ✅ 已完成 (2026-07-11, v0.3.9): 4 个 D/E 级函数全部降级（`extract_json_from_llm` D(27)→A(4) / `email_skill.execute_goal` D(23)→C(11) / `crm_skill.execute_goal` D(26)→C(13) / `TaskEngineV3.execute` E(31)→B 级以下），radon cc 门禁可择机转 blocking
+- ~~引入 `radon cc` 圈复杂度门禁~~ ✅ 已完成 (2026-07-11, v0.3.8): CI non-blocking 报告 → ✅ v0.3.11 转 D+ blocking
+- ~~高复杂度函数降级（TD-066 核心）~~ ✅ 已完成 (2026-07-11, v0.3.9+v0.3.11): v0.3.9 降级 4 个 D/E 级函数 + v0.3.11 降级 6 个 D/E 级函数（`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)），radon cc D+ blocking 门禁已生效
 - ~~补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR~~ ✅ 已完成 (2026-07-11): [ADR-001](architecture/ADR-001-IntentRouter-design.md) / [ADR-002](architecture/ADR-002-ToolSystem-design.md) / [ADR-003](architecture/ADR-003-TaskEngineV3-design.md)
 
 ---

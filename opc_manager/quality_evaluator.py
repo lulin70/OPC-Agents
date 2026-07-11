@@ -27,6 +27,73 @@ WEIGHT_ALL_STEPS_DONE = 0.15
 PENALTY_ERROR = 0.3
 
 
+# ---------------------------------------------------------------------------
+# Quality scoring factor functions (extracted from _calculate_quality_score
+# to reduce cyclomatic complexity D(28) → A/B level functions)
+# ---------------------------------------------------------------------------
+
+
+def _score_success(actual: Dict[str, Any]) -> Optional[float]:
+    """Factor: execution success."""
+    if actual.get("success", False):
+        return WEIGHT_SUCCESS
+    return None
+
+
+def _score_data_completeness(actual: Dict[str, Any]) -> Optional[float]:
+    """Factor: data completeness (non-empty dict / list / str)."""
+    data = actual.get("data")
+    if data is None:
+        return None
+    if isinstance(data, dict) and len(data) > 0:
+        return WEIGHT_DATA_COMPLETE_DICT
+    if isinstance(data, (list, str)) and len(data) > 0:
+        return WEIGHT_DATA_COMPLETE_OTHER
+    return None
+
+
+def _score_relevance(
+    actual: Dict[str, Any], expected: Dict[str, Any]
+) -> Optional[float]:
+    """Factor: result relevance to goal keywords."""
+    goal = expected.get("goal", "")
+    data = actual.get("data")
+    if not (goal and isinstance(data, dict)):
+        return None
+    result_str = str(data).lower()
+    goal_str = goal.lower()
+    cn_keywords = re.findall(r"[\u4e00-\u9fff]+", goal_str)
+    en_keywords = [w for w in goal_str.split() if re.match(r"[a-zA-Z]", w)]
+    keywords = cn_keywords[:5] + en_keywords[:5] or [goal_str[:20]]
+    if any(kw in result_str for kw in keywords):
+        return WEIGHT_RELEVANCE
+    return None
+
+
+def _score_timeliness(actual: Dict[str, Any]) -> Optional[float]:
+    """Factor: execution time within 0-60 seconds."""
+    execution_time = actual.get("execution_time", 0)
+    if isinstance(execution_time, (int, float)) and 0 < execution_time < 60:
+        return WEIGHT_TIMELY
+    return None
+
+
+def _score_steps_completion(actual: Dict[str, Any]) -> Optional[float]:
+    """Factor: all steps in results list completed successfully."""
+    data = actual.get("data")
+    if not isinstance(data, dict):
+        return None
+    results = data.get("results", [])
+    if not isinstance(results, list) or not results:
+        return None
+    completed = sum(
+        1 for r in results if isinstance(r, dict) and r.get("success", False)
+    )
+    if completed == len(results):
+        return WEIGHT_ALL_STEPS_DONE
+    return None
+
+
 class QualityEvaluator:
     """质量评估器 — 评估执行结果质量。
 
@@ -163,48 +230,14 @@ class QualityEvaluator:
             logger.warning("expected_intent 不是dict类型: %s", type(expected))
             expected = {}
 
-        score = 0.0
-        factors = []
-
-        if actual.get("success", False):
-            factors.append(("执行成功", WEIGHT_SUCCESS))
-
-        data = actual.get("data")
-        if data is not None:
-            if isinstance(data, dict) and len(data) > 0:
-                factors.append(("数据完整", WEIGHT_DATA_COMPLETE_DICT))
-            elif isinstance(data, (list, str)) and len(data) > 0:
-                factors.append(("数据完整", WEIGHT_DATA_COMPLETE_OTHER))
-
-        goal = expected.get("goal", "")
-        if goal and isinstance(data, dict):
-            result_str = str(data).lower()
-            goal_str = goal.lower()
-            cn_keywords = re.findall(r"[\u4e00-\u9fff]+", goal_str)
-            en_keywords = [w for w in goal_str.split() if re.match(r"[a-zA-Z]", w)]
-            keywords = cn_keywords[:5] + en_keywords[:5]
-            if not keywords:
-                keywords = [goal_str[:20]]
-            if any(kw in result_str for kw in keywords):
-                factors.append(("结果相关", WEIGHT_RELEVANCE))
-
-        execution_time = actual.get("execution_time", 0)
-        if isinstance(execution_time, (int, float)) and 0 < execution_time < 60:
-            factors.append(("执行及时", WEIGHT_TIMELY))
-
-        if isinstance(data, dict):
-            results = data.get("results", [])
-            if isinstance(results, list) and len(results) > 0:
-                completed_steps = sum(
-                    1
-                    for r in results
-                    if isinstance(r, dict) and r.get("success", False)
-                )
-                total_steps = len(results)
-                if total_steps > 0 and completed_steps == total_steps:
-                    factors.append(("步骤全完成", WEIGHT_ALL_STEPS_DONE))
-
-        score = sum(weight for _, weight in factors)
+        factors = [
+            _score_success(actual),
+            _score_data_completeness(actual),
+            _score_relevance(actual, expected),
+            _score_timeliness(actual),
+            _score_steps_completion(actual),
+        ]
+        score = sum(f for f in factors if f is not None)
 
         if actual.get("error"):
             score = max(0.0, score - PENALTY_ERROR)

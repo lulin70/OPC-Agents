@@ -221,6 +221,56 @@ def _ensure_jieba():
             pass
 
 
+# ---------------------------------------------------------------------------
+# Keyword extraction helpers (extracted from _extract_keywords to reduce
+# cyclomatic complexity D(29) → A/B level functions)
+# ---------------------------------------------------------------------------
+
+_QUERY_PREFIXES = ["帮我", "请", "能否", "可以", "需要", "想要", "希望", "协助"]
+
+_REGEX_SPLIT_PATTERN = re.compile(
+    r'[\s,，。！？、；：""'
+    r"（）\[\]{}|\\/+_\-*&^%$#@!~`《》【】…—–·]"
+)
+_SUB_TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9]+|[\u4e00-\u9fff]+")
+_CN_PATTERN = re.compile(r"^[\u4e00-\u9fff]+$")
+_EN_PATTERN = re.compile(r"^[a-zA-Z0-9]+$")
+
+
+def _remove_query_prefixes(query: str) -> str:
+    """Remove common prefixes (帮我/请/能否 etc.) from query."""
+    for prefix in _QUERY_PREFIXES:
+        if query.startswith(prefix):
+            return query[len(prefix):]
+    return query
+
+
+def _regex_tokenize(cleaned: str) -> List[str]:
+    """Tokenize text using regex split and enhance with sub-token extraction."""
+    enhanced: List[str] = []
+    for token in _REGEX_SPLIT_PATTERN.split(cleaned):
+        token = token.strip()
+        if not token:
+            continue
+        parts = _SUB_TOKEN_PATTERN.findall(token)
+        if parts:
+            enhanced.extend(parts)
+        else:
+            enhanced.append(token)
+    return enhanced
+
+
+def _dedup_keywords(keywords: List[str]) -> List[str]:
+    """Remove duplicates while preserving order."""
+    seen: set = set()
+    result: List[str] = []
+    for kw in keywords:
+        if kw not in seen:
+            seen.add(kw)
+            result.append(kw)
+    return result
+
+
 class SearchResultProcessor:
     """Search result post-processor — Improves DuckDuckGo Chinese search relevance
 
@@ -347,6 +397,39 @@ class SearchResultProcessor:
                 processing_time_ms=processing_time,
             )
 
+    def _collect_keywords_from_tokens(
+        self, tokens: List[str], split_chinese: bool = False
+    ) -> List[str]:
+        """Collect filtered keywords from tokens.
+
+        Args:
+            tokens: Raw token list (from jieba or regex tokenizer)
+            split_chinese: If True, apply sliding-window split to Chinese tokens
+                (used by regex fallback path). If False, keep Chinese tokens as-is
+                (used by jieba path).
+
+        Returns:
+            Filtered keyword list (no dedup, dedup is caller's responsibility)
+        """
+        keywords: List[str] = []
+        for token in tokens:
+            token = token.strip()
+            if not token:
+                continue
+            if _CN_PATTERN.match(token):
+                if len(token) >= 2 and token not in STOP_WORDS_CN:
+                    if split_chinese:
+                        for st in self._split_chinese_words(token):
+                            if len(st) >= 2 and st not in STOP_WORDS_CN:
+                                keywords.append(st)
+                    else:
+                        keywords.append(token)
+            elif _EN_PATTERN.match(token):
+                lower_token = token.lower()
+                if len(lower_token) >= 2 and lower_token not in STOP_WORDS_EN:
+                    keywords.append(lower_token)
+        return keywords
+
     def _extract_keywords(self, query: str) -> List[str]:
         """Extract core keywords from query
 
@@ -363,88 +446,17 @@ class SearchResultProcessor:
         Returns:
             Keyword list (lowercase English + original Chinese)
         """
-        prefixes_to_remove = [
-            "帮我",
-            "请",
-            "能否",
-            "可以",
-            "需要",
-            "想要",
-            "希望",
-            "协助",
-        ]
-        cleaned = query
-        for prefix in prefixes_to_remove:
-            if cleaned.startswith(prefix):
-                cleaned = cleaned[len(prefix) :]
-                break
-
+        cleaned = _remove_query_prefixes(query)
         try:
             _ensure_jieba()
             import jieba
 
-            jieba_tokens = list(jieba.cut(cleaned))
-            keywords = []
-            for token in jieba_tokens:
-                token = token.strip()
-                if not token:
-                    continue
-                if re.match(r"^[\u4e00-\u9fff]+$", token):
-                    if len(token) >= 2 and token not in STOP_WORDS_CN:
-                        keywords.append(token)
-                elif re.match(r"^[a-zA-Z0-9]+$", token):
-                    lower_token = token.lower()
-                    if len(lower_token) >= 2 and lower_token not in STOP_WORDS_EN:
-                        keywords.append(lower_token)
-
-            seen = set()
-            unique_keywords = []
-            for kw in keywords:
-                if kw not in seen:
-                    seen.add(kw)
-                    unique_keywords.append(kw)
-            return unique_keywords
+            tokens = list(jieba.cut(cleaned))
+            keywords = self._collect_keywords_from_tokens(tokens, split_chinese=False)
         except ImportError:
-            pass
-
-        tokens = re.split(
-            r'[\s,，。！？、；：""' r"（）\[\]{}|\\/+_\-*&^%$#@!~`《》【】…—–·]",
-            cleaned,
-        )
-
-        enhanced_tokens = []
-        for token in tokens:
-            token = token.strip()
-            if not token:
-                continue
-
-            parts = re.findall(r"[a-zA-Z0-9]+|[\u4e00-\u9fff]+", token)
-            if parts:
-                enhanced_tokens.extend(parts)
-            else:
-                enhanced_tokens.append(token)
-
-        keywords = []
-        for token in enhanced_tokens:
-            if re.match(r"^[\u4e00-\u9fff]+$", token):
-                if len(token) >= 2 and token not in STOP_WORDS_CN:
-                    sub_tokens = self._split_chinese_words(token)
-                    for st in sub_tokens:
-                        if len(st) >= 2 and st not in STOP_WORDS_CN:
-                            keywords.append(st)
-            elif re.match(r"^[a-zA-Z0-9]+$", token):
-                lower_token = token.lower()
-                if len(lower_token) >= 2 and lower_token not in STOP_WORDS_EN:
-                    keywords.append(lower_token)
-
-        seen = set()
-        unique_keywords = []
-        for kw in keywords:
-            if kw not in seen:
-                seen.add(kw)
-                unique_keywords.append(kw)
-
-        return unique_keywords
+            tokens = _regex_tokenize(cleaned)
+            keywords = self._collect_keywords_from_tokens(tokens, split_chinese=True)
+        return _dedup_keywords(keywords)
 
     MAX_SLIDING_WINDOW_INPUT_LEN = 50
 

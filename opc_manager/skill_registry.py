@@ -397,63 +397,87 @@ class SkillRegistry(SkillExecutorMixin):
             },
         }
 
+    def _find_collaboration(
+        self, goal: str
+    ) -> tuple:
+        """Find matching collaboration config by trigger keywords. Returns (cfg, collab_id) or (None, None)."""
+        for collab_id, cfg in SKILL_COLLABORATIONS.items():
+            if any(t in goal for t in cfg["trigger"]):
+                return cfg, collab_id
+        return None, None
+
+    def _enrich_goal_for_skill(
+        self, skill_id: str, goal: str, context_data: Dict[str, Any]
+    ) -> str:
+        """Enrich goal with context data from previous skill results (e.g. CRM customer/deal)."""
+        crm_data = context_data.get("crm")
+        if not isinstance(crm_data, dict):
+            return goal
+        if skill_id == "email" and crm_data.get("customer"):
+            cust = crm_data["customer"]
+            return f"{goal} 收件人:{cust.get('name', '')} 邮箱:{cust.get('email', '')}"
+        if skill_id == "finance" and crm_data.get("deal"):
+            deal = crm_data["deal"]
+            return f"{goal} 金额:{deal.get('amount', 0)} 来源:{deal.get('description', '')}"
+        return goal
+
+    def _run_collab_skills(
+        self,
+        collab: Dict[str, Any],
+        goal: str,
+        _context: Optional[SkillContext],
+    ) -> tuple:
+        """Execute all skills in a collaboration. Returns (results, context_data)."""
+        results: list = []
+        context_data: Dict[str, Any] = {}
+        for skill_id in collab["skills"]:
+            skill = self.get_skill(skill_id)
+            if not skill or skill.execute is None:
+                continue
+            enriched_goal = self._enrich_goal_for_skill(skill_id, goal, context_data)
+            try:
+                result = skill.execute(goal=enriched_goal, _context=_context)
+                results.append({"skill_id": skill_id, "result": result})
+                context_data[skill_id] = result
+            except Exception as e:
+                results.append(
+                    {
+                        "skill_id": skill_id,
+                        "result": {"success": False, "error": str(e)},
+                    }
+                )
+        return results, context_data
+
+    def _build_collab_result(
+        self,
+        results: list,
+        collab_name: Optional[str],
+        collab: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Build collaboration result dict from individual skill results."""
+        return {
+            "success": any(
+                isinstance(r["result"], dict) and r["result"].get("success")
+                for r in results
+            ),
+            "collaboration": collab_name,
+            "results": results,
+            "message": f"协作执行完成: {' → '.join(collab['skills'])}",
+        }
+
     def _execute_collaborative(
         self, goal: str, _context: Optional[SkillContext] = None
     ) -> Optional[Dict[str, Any]]:
         if self._collab_in_progress:
             return None
-        collab = None
-        collab_name = None
-        for collab_id, cfg in SKILL_COLLABORATIONS.items():
-            if any(t in goal for t in cfg["trigger"]):
-                collab = cfg
-                collab_name = collab_id
-                break
+        collab, collab_name = self._find_collaboration(goal)
         if not collab:
             return None
         self._collab_in_progress = True
         try:
-            results = []
-            context_data: Dict[str, Any] = {}
-            for skill_id in collab["skills"]:
-                skill = self.get_skill(skill_id)
-                if not skill or skill.execute is None:
-                    continue
-
-                enriched_goal = goal
-                if skill_id == "email" and "crm" in context_data:
-                    crm_data = context_data["crm"]
-                    if isinstance(crm_data, dict) and crm_data.get("customer"):
-                        cust = crm_data["customer"]
-                        enriched_goal = f"{goal} 收件人:{cust.get('name', '')} 邮箱:{cust.get('email', '')}"
-                elif skill_id == "finance" and "crm" in context_data:
-                    crm_data = context_data["crm"]
-                    if isinstance(crm_data, dict) and crm_data.get("deal"):
-                        deal = crm_data["deal"]
-                        enriched_goal = f"{goal} 金额:{deal.get('amount', 0)} 来源:{deal.get('description', '')}"
-
-                try:
-                    result = skill.execute(goal=enriched_goal, _context=_context)
-                    results.append({"skill_id": skill_id, "result": result})
-                    context_data[skill_id] = result
-                except Exception as e:
-                    results.append(
-                        {
-                            "skill_id": skill_id,
-                            "result": {"success": False, "error": str(e)},
-                        }
-                    )
-
+            results, _ = self._run_collab_skills(collab, goal, _context)
             if results:
-                return {
-                    "success": any(
-                        isinstance(r["result"], dict) and r["result"].get("success")
-                        for r in results
-                    ),
-                    "collaboration": collab_name,
-                    "results": results,
-                    "message": f"协作执行完成: {' → '.join(collab['skills'])}",
-                }
+                return self._build_collab_result(results, collab_name, collab)
         finally:
             self._collab_in_progress = False
         return None

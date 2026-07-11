@@ -4,6 +4,31 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-07-11
+
+### DevSquad 共识推进第三批 — P3-2 radon cc D+ blocking 门禁
+
+> 6 个 D/E 级高复杂度函数全部降级至 C 级以下，CI radon cc 门禁从 non-blocking 转 D+ blocking。
+
+#### 高复杂度函数降级（6 functions）
+
+- **`skill_executors.py::_parse_analysis_result`** E(36)→A(2) — 提取 6 个模块级辅助函数（`_extract_json_block` / `_try_parse_json_content` / `_extract_section_lines` / `_extract_key_findings` / `_parse_markdown_sections`），主函数变为 3 行薄编排层
+- **`finance_skill.py::execute_goal`** D(30)→A(4) — dispatch 表 + handler 函数（`_handle_accounting` / `_handle_income` / `_handle_expense` / `_handle_report` / `_handle_trend` / `_handle_categories`），参照 crm_skill 重构模式
+- **`search_processor.py::_extract_keywords`** D(29)→A(2) — jieba 分词 + 正则 fallback 双路径重构，预编译正则到模块级常量
+- **`quality_evaluator.py::_calculate_quality_score`** D(28)→B(6) — 5 个评分因子提取为独立函数（`_score_success` / `_score_data_completeness` / `_score_relevance` / `_score_timeliness` / `_score_steps_completion`）
+- **`task_engine_v3_parallel.py::_parallel_data_analysis`** D(22)→A(4) — 封装重复的 progress emit 检查 + 拆分任务构建/结果收集/报告格式化
+- **`skill_registry.py::_execute_collaborative`** D(21)→A(4) — 提取 4 个辅助方法（`_find_collaboration` / `_enrich_goal_for_skill` / `_run_collab_skills` / `_build_collab_result`）
+
+#### CI 门禁变更
+
+- **radon cc**: non-blocking → D+ blocking（complexity ≥ 21 的函数将阻断 CI）
+- **EXPECTED_TEST_COUNT**: 3717 → 3781（修正 CI README 一致性检查的期望值）
+
+#### 版本同步修复
+
+- **Dockerfile**: `ARG VERSION=0.3.5` → `0.3.11`（自 v0.3.5 起未同步）
+- **scripts/start.sh**: `v0.3.5` → `v0.3.11`（2 处，自 v0.3.5 起未同步）
+
 ## [0.3.10] - 2026-07-11
 
 ### DevSquad 共识推进第三批 — P3-1 覆盖率提升 + 源码 bug 修复

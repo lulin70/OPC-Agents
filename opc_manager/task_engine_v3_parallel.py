@@ -400,6 +400,109 @@ class TaskEngineParallelMixin:
         )
         return content
 
+    def _emit_parallel_progress(
+        self,
+        session_id: str,
+        event_type: Any,
+        message: str,
+        progress_pct: int = 0,
+        detail: Optional[Dict] = None,
+    ) -> None:
+        """Emit progress event if progress emitter is available and session_id is set."""
+        if _PROGRESS_EMITTER_AVAILABLE and session_id:
+            self._emit_progress(
+                session_id,
+                event_type,
+                message,
+                progress_pct=progress_pct,
+                detail=detail or {},
+            )
+
+    def _build_analysis_tasks(self, base_query: str) -> list:
+        """Build parallel analysis task list (trend / compare / risk dimensions)."""
+        return [
+            TaskSpec(
+                func=lambda q=base_query + " 趋势 发展 历史数据": self._search(
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
+                ),
+                description="趋势分析搜索",
+                timeout=_HTTP_REQUEST_TIMEOUT,
+            ),
+            TaskSpec(
+                func=lambda q=base_query + " 对比 竞品 行业标杆": self._search(
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
+                ),
+                description="对比分析搜索",
+                timeout=_HTTP_REQUEST_TIMEOUT,
+            ),
+            TaskSpec(
+                func=lambda q=base_query + " 风险 问题 挑战": self._search(
+                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
+                ),
+                description="风险识别搜索",
+                timeout=_HTTP_REQUEST_TIMEOUT,
+            ),
+        ]
+
+    def _collect_dimension_results(self, parallel_result: Any) -> Dict[str, Any]:
+        """Collect dimension results from parallel execution results."""
+        dimension_results: Dict[str, Any] = {}
+        dimension_names = ["趋势分析", "对比分析", "风险识别"]
+        for i, task_result in enumerate(parallel_result.results):
+            if not (task_result.success and task_result.result):
+                continue
+            results, sources = task_result.result
+            dimension_key = (
+                dimension_names[i] if i < len(dimension_names) else f"维度{i+1}"
+            )
+            dimension_results[dimension_key] = {
+                "results": results,
+                "sources": sources,
+                "findings": (
+                    [
+                        f"**{r.get('title', '')}**: {r.get('body', '')[:150]}"
+                        for r in results[:3]
+                    ]
+                    if results
+                    else ["需要基于实际数据进行量化分析"]
+                ),
+            }
+        return dimension_results
+
+    def _format_analysis_report(
+        self, prompt: str, dimension_results: Dict[str, Any]
+    ) -> str:
+        """Format parallel analysis results into a Markdown report."""
+        lines: List[str] = []
+        lines.append(f"#  「{prompt}」深度并行分析\n")
+        lines.append(
+            f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')} | 并行维度: {len(dimension_results)}\n\n"
+        )
+
+        for dim_name, dim_data in dimension_results.items():
+            lines.append(f"## {dim_name}\n\n")
+            if dim_data.get("findings"):
+                for finding in dim_data["findings"]:
+                    lines.append(f"- {finding}\n")
+            lines.append("\n")
+
+        lines.append("## 综合洞察\n\n")
+        lines.append(
+            f"基于以上 {len(dimension_results)} 个维度的并行分析，提炼以下关键洞察：\n\n"
+        )
+
+        all_findings: List[str] = []
+        for dim_data in dimension_results.values():
+            if dim_data.get("findings"):
+                all_findings.extend(dim_data["findings"])
+
+        unique_findings = list(set(all_findings))[:5]
+        for i, finding in enumerate(unique_findings, 1):
+            lines.append(f"{i}. {finding}\n")
+
+        lines.append("\n---\n*由 OPC-Agents 并行分析引擎驱动*\n")
+        return "".join(lines)
+
     async def _parallel_data_analysis(self, prompt: str, session_id: str = "") -> str:
         """Parallelized data analysis workflow
 
@@ -430,39 +533,15 @@ class TaskEngineParallelMixin:
             return self._execute_data_analysis_serial(prompt, session_id).content
 
         base_query = self._extract_search_query(prompt)
-
-        analysis_tasks = [
-            TaskSpec(
-                func=lambda q=base_query + " 趋势 发展 历史数据": self._search(
-                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
-                ),
-                description="趋势分析搜索",
-                timeout=_HTTP_REQUEST_TIMEOUT,
-            ),
-            TaskSpec(
-                func=lambda q=base_query + " 对比 竞品 行业标杆": self._search(
-                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
-                ),
-                description="对比分析搜索",
-                timeout=_HTTP_REQUEST_TIMEOUT,
-            ),
-            TaskSpec(
-                func=lambda q=base_query + " 风险 问题 挑战": self._search(
-                    q, max_results=SEARCH_MAX_RESULTS_STEP_ANALYSIS
-                ),
-                description="风险识别搜索",
-                timeout=_HTTP_REQUEST_TIMEOUT,
-            ),
-        ]
+        analysis_tasks = self._build_analysis_tasks(base_query)
 
         try:
-            if _PROGRESS_EMITTER_AVAILABLE and session_id:
-                self._emit_progress(
-                    session_id,
-                    EventType.STEP_START,
-                    f" 开始并行多维度分析 ({len(analysis_tasks)}个分析维度)",
-                    progress_pct=20,
-                )
+            self._emit_parallel_progress(
+                session_id,
+                EventType.STEP_START,
+                f" 开始并行多维度分析 ({len(analysis_tasks)}个分析维度)",
+                progress_pct=20,
+            )
 
             parallel_result = await executor.execute_parallel(
                 analysis_tasks,
@@ -470,72 +549,21 @@ class TaskEngineParallelMixin:
                 merge_strategy=MergeStrategy.MERGE,
             )
 
-            if _PROGRESS_EMITTER_AVAILABLE and session_id:
-                self._emit_progress(
-                    session_id,
-                    EventType.STEP_PROGRESS,
-                    f" 多维度分析完成: {parallel_result.success_count}/{len(analysis_tasks)} 维度 "
-                    f"(提速 {parallel_result.speedup_factor:.1f}x)",
-                    progress_pct=60,
-                    detail={
-                        "parallel_execution": True,
-                        "speedup_factor": parallel_result.speedup_factor,
-                        "dimensions_analyzed": parallel_result.success_count,
-                    },
-                )
-
-            dimension_results = {}
-            dimension_names = ["趋势分析", "对比分析", "风险识别"]
-
-            for i, task_result in enumerate(parallel_result.results):
-                if task_result.success and task_result.result:
-                    results, sources = task_result.result
-                    dimension_key = (
-                        dimension_names[i] if i < len(dimension_names) else f"维度{i+1}"
-                    )
-                    dimension_results[dimension_key] = {
-                        "results": results,
-                        "sources": sources,
-                        "findings": (
-                            [
-                                f"**{r.get('title', '')}**: {r.get('body', '')[:150]}"
-                                for r in results[:3]
-                            ]
-                            if results
-                            else ["需要基于实际数据进行量化分析"]
-                        ),
-                    }
-
-            lines = []
-            lines.append(f"#  「{prompt}」深度并行分析\n")
-            lines.append(
-                f"> 分析时间: {time.strftime('%Y-%m-%d %H:%M')} | 并行维度: {len(dimension_results)}\n\n"
+            self._emit_parallel_progress(
+                session_id,
+                EventType.STEP_PROGRESS,
+                f" 多维度分析完成: {parallel_result.success_count}/{len(analysis_tasks)} 维度 "
+                f"(提速 {parallel_result.speedup_factor:.1f}x)",
+                progress_pct=60,
+                detail={
+                    "parallel_execution": True,
+                    "speedup_factor": parallel_result.speedup_factor,
+                    "dimensions_analyzed": parallel_result.success_count,
+                },
             )
 
-            for dim_name, dim_data in dimension_results.items():
-                lines.append(f"## {dim_name}\n\n")
-                if dim_data.get("findings"):
-                    for finding in dim_data["findings"]:
-                        lines.append(f"- {finding}\n")
-                lines.append("\n")
-
-            lines.append("## 综合洞察\n\n")
-            lines.append(
-                f"基于以上 {len(dimension_results)} 个维度的并行分析，提炼以下关键洞察：\n\n"
-            )
-
-            all_findings = []
-            for dim_data in dimension_results.values():
-                if dim_data.get("findings"):
-                    all_findings.extend(dim_data["findings"])
-
-            unique_findings = list(set(all_findings))[:5]
-            for i, finding in enumerate(unique_findings, 1):
-                lines.append(f"{i}. {finding}\n")
-
-            lines.append("\n---\n*由 OPC-Agents 并行分析引擎驱动*\n")
-
-            content = "".join(lines)
+            dimension_results = self._collect_dimension_results(parallel_result)
+            content = self._format_analysis_report(prompt, dimension_results)
 
             result_metadata = {
                 "parallel_execution": True,
@@ -544,7 +572,6 @@ class TaskEngineParallelMixin:
                 "speedup_factor": parallel_result.speedup_factor,
                 "total_analysis_time_ms": parallel_result.total_time_ms,
             }
-
             if hasattr(self, "_last_metadata"):
                 self._last_metadata.update(result_metadata)
 
@@ -558,12 +585,11 @@ class TaskEngineParallelMixin:
 
         except Exception as e:
             logger.error("[TaskEngineV3] Parallel data analysis failed: %s", e)
-            if _PROGRESS_EMITTER_AVAILABLE and session_id:
-                self._emit_progress(
-                    session_id,
-                    EventType.ERROR,
-                    f" 并行分析失败，切换到串行模式: {str(e)[:80]}",
-                )
+            self._emit_parallel_progress(
+                session_id,
+                EventType.ERROR,
+                f" 并行分析失败，切换到串行模式: {str(e)[:80]}",
+            )
             return self._execute_data_analysis_serial(prompt, session_id).content
 
     def _execute_data_analysis_serial(

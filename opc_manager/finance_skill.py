@@ -244,103 +244,103 @@ def parse_amount_from_text(text: str) -> Optional[float]:
     return None
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
-    init_db()
-    amount = parse_amount_from_text(goal)
+_AMOUNT_RE = r"[¥￥]?\s*\d+\.?\d*\s*[元块]?"
 
-    if any(kw in goal for kw in ["记账", "记一笔", "入账"]):
-        if amount and amount > 0:
-            source = re.sub(r"[¥￥]?\s*\d+\.?\d*\s*[元块]?", "", goal)
-            is_expense = any(
-                kw in goal for kw in ["支出", "花费", "开销", "成本", "费用"]
-            )
-            if is_expense:
-                for kw in [
-                    "记账",
-                    "记一笔",
-                    "入账",
-                    "支出",
-                    "花费",
-                    "开销",
-                    "成本",
-                    "费用",
-                    "帮我",
-                    "的",
-                ]:
-                    source = source.replace(kw, "")
-                source = source.strip().strip("，。、的") or "未注明用途"
-                return record_expense(amount, source)
-            else:
-                for kw in ["记账", "记一笔", "入账", "收入", "帮我", "的"]:
-                    source = source.replace(kw, "")
-                source = source.strip().strip("，。、的") or "未注明来源"
-                return record_income(amount, source)
+
+def _clean_source(text: str, keywords: list) -> str:
+    """Remove keywords and surrounding punctuation from source text."""
+    for kw in keywords:
+        text = text.replace(kw, "")
+    return text.strip().strip("，。、的")
+
+
+def _handle_accounting(goal: str, amount: Optional[float]) -> Dict[str, Any]:
+    """Handle 记账/记一笔/入账 intent."""
+    if not amount or amount <= 0:
         return {"success": False, "error": "请指定记账金额，如：记账3000元咨询费"}
+    source = re.sub(_AMOUNT_RE, "", goal)
+    if any(kw in goal for kw in ["支出", "花费", "开销", "成本", "费用"]):
+        source = _clean_source(
+            source,
+            ["记账", "记一笔", "入账", "支出", "花费", "开销", "成本", "费用", "帮我", "的"],
+        )
+        return record_expense(amount, source or "未注明用途")
+    source = _clean_source(source, ["记账", "记一笔", "入账", "收入", "帮我", "的"])
+    return record_income(amount, source or "未注明来源")
 
-    if any(kw in goal for kw in ["收入", "赚", "收到", "到账", "付款"]):
-        if amount:
-            source = re.sub(r"[¥￥]?\s*\d+\.?\d*\s*[元块]?", "", goal)
-            for kw in [
-                "收入",
-                "赚了",
-                "收到",
-                "到账",
-                "付款",
-                "帮我记一笔",
-                "元",
-                "块",
-                "¥",
-                "￥",
-            ]:
-                source = source.replace(kw, "")
-            source = source.strip().strip("，。、的") or "未注明来源"
-            return record_income(amount, source)
+
+def _handle_income(goal: str, amount: Optional[float]) -> Dict[str, Any]:
+    """Handle 收入/赚/收到/到账/付款 intent."""
+    if not amount:
         return {
             "success": False,
             "error": "未能识别金额，请明确指定（如：记一笔收入3000元）",
         }
+    source = re.sub(_AMOUNT_RE, "", goal)
+    source = _clean_source(
+        source,
+        ["收入", "赚了", "收到", "到账", "付款", "帮我记一笔", "元", "块", "¥", "￥"],
+    )
+    return record_income(amount, source or "未注明来源")
 
-    if any(kw in goal for kw in ["支出", "花了", "买了", "花费"]):
-        if amount:
-            source = re.sub(r"[¥￥]?\s*\d+\.?\d*\s*[元块]?", "", goal)
-            for kw in [
-                "支出",
-                "花了",
-                "买了",
-                "花费",
-                "帮我记一笔",
-                "元",
-                "块",
-                "¥",
-                "￥",
-            ]:
-                source = source.replace(kw, "")
-            source = source.strip().strip("，。、的") or "未注明用途"
-            return record_expense(amount, source)
+
+def _handle_expense(goal: str, amount: Optional[float]) -> Dict[str, Any]:
+    """Handle 支出/花了/买了/花费 intent."""
+    if not amount:
         return {"success": False, "error": "未能识别金额"}
+    source = re.sub(_AMOUNT_RE, "", goal)
+    source = _clean_source(
+        source,
+        ["支出", "花了", "买了", "花费", "帮我记一笔", "元", "块", "¥", "￥"],
+    )
+    return record_expense(amount, source or "未注明用途")
 
-    if any(
-        kw in goal for kw in ["报表", "月报", "赚了多少", "花了多少", "利润", "经营"]
-    ):
-        year_month = ""
-        m = re.search(r"(\d{4})年(\d{1,2})月", goal)
-        if m:
-            year_month = f"{m.group(1)}-{int(m.group(2)):02d}"
-        else:
-            m = re.search(r"(\d{1,2})月", goal)
-            if m:
-                month = int(m.group(1))
-                if 1 <= month <= 12:
-                    year_month = f"{time.strftime('%Y')}-{month:02d}"
-        return get_monthly_report(year_month)
 
-    if any(kw in goal for kw in ["趋势", "走势", "近"]):
-        return {"success": True, "trend": get_trend()}
+def _parse_year_month(goal: str) -> str:
+    """Extract YYYY-MM from goal text, return empty string if not found."""
+    m = re.search(r"(\d{4})年(\d{1,2})月", goal)
+    if m:
+        return f"{m.group(1)}-{int(m.group(2)):02d}"
+    m = re.search(r"(\d{1,2})月", goal)
+    if m:
+        month = int(m.group(1))
+        if 1 <= month <= 12:
+            return f"{time.strftime('%Y')}-{month:02d}"
+    return ""
 
-    if any(kw in goal for kw in ["分类", "类别"]):
-        cats = list_categories()
-        return {"success": True, "categories": cats}
 
+def _handle_report(goal: str, _amount: Optional[float] = None) -> Dict[str, Any]:
+    """Handle 报表/月报 intent."""
+    return get_monthly_report(_parse_year_month(goal))
+
+
+def _handle_trend(_goal: str, _amount: Optional[float] = None) -> Dict[str, Any]:
+    """Handle 趋势/走势 intent."""
+    return {"success": True, "trend": get_trend()}
+
+
+def _handle_categories(_goal: str, _amount: Optional[float] = None) -> Dict[str, Any]:
+    """Handle 分类/类别 intent."""
+    return {"success": True, "categories": list_categories()}
+
+
+# Intent dispatch table: (keywords, handler)
+_FINANCE_INTENT_DISPATCH: List[tuple] = [
+    (["记账", "记一笔", "入账"], _handle_accounting),
+    (["收入", "赚", "收到", "到账", "付款"], _handle_income),
+    (["支出", "花了", "买了", "花费"], _handle_expense),
+    (["报表", "月报", "赚了多少", "花了多少", "利润", "经营"], _handle_report),
+    (["趋势", "走势", "近"], _handle_trend),
+    (["分类", "类别"], _handle_categories),
+]
+
+
+def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+    init_db()
+    amount = parse_amount_from_text(goal)
+    for keywords, handler in _FINANCE_INTENT_DISPATCH:
+        if any(kw in goal for kw in keywords):
+            return handler(goal, amount)
     return {
         "success": False,
         "error": "未能识别财务操作，请说'记一笔收入/支出'或'看月度报表'",

@@ -26,11 +26,106 @@ import asyncio
 import json
 import logging
 import re
-from typing import Dict, Optional, Any, TYPE_CHECKING
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 
 from opc_manager.skill_models import SkillContext
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Analysis result parsing helpers (extracted from _parse_analysis_result to
+# reduce cyclomatic complexity E(36) → A/B/C level functions)
+# ---------------------------------------------------------------------------
+
+_EMPTY_SWOT: Dict[str, List[str]] = {
+    "strengths": [],
+    "weaknesses": [],
+    "opportunities": [],
+    "threats": [],
+}
+
+# section keyword (lowercased match) → swot key
+_SWOT_KEYWORD_MAP = {
+    "优势": "strengths",
+    "strengths": "strengths",
+    "劣势": "weaknesses",
+    "weaknesses": "weaknesses",
+    "机会": "opportunities",
+    "opportunities": "opportunities",
+    "威胁": "threats",
+    "threats": "threats",
+}
+
+
+def _extract_json_block(content: str) -> str:
+    """Extract JSON string from markdown code fence (```json ... ``` or ``` ... ```)."""
+    if "```json" in content:
+        return content.split("```json")[1].split("```")[0]
+    if "```" in content:
+        return content.split("```")[1].split("```")[0]
+    return content
+
+
+def _try_parse_json_content(content: str) -> Optional[Dict[str, Any]]:
+    """Try to parse content as JSON and return normalized analysis result, or None."""
+    try:
+        parsed = json.loads(_extract_json_block(content).strip())
+    except (json.JSONDecodeError, IndexError, AttributeError):
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    return {
+        "analysis_result": content,
+        "summary": parsed.get("summary", ""),
+        "key_findings": parsed.get("key_findings", []),
+        "swot": parsed.get("swot", dict(_EMPTY_SWOT)),
+        "action_items": parsed.get("action_items", []),
+    }
+
+
+def _extract_section_lines(section: str) -> List[str]:
+    """Extract non-heading lines from a ## section (for SWOT and action items)."""
+    return [
+        line.strip().lstrip("-•*0-9. ")
+        for line in section.strip().split("\n")
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+
+def _extract_key_findings(section: str) -> List[str]:
+    """Extract list items from 关键发现 section (supports - • * and 1. numbering)."""
+    return [
+        line.strip().lstrip("-•*0-9. ")
+        for line in section.strip().split("\n")
+        if line.strip().startswith(("-", "•", "*"))
+        or any(line.strip().startswith(f"{i}.") for i in range(1, 10))
+    ]
+
+
+def _parse_markdown_sections(content: str) -> Dict[str, Any]:
+    """Parse analysis result from Markdown ## sections."""
+    result: Dict[str, Any] = {
+        "analysis_result": content,
+        "summary": "",
+        "key_findings": [],
+        "swot": dict(_EMPTY_SWOT),
+        "action_items": [],
+    }
+    for section in content.split("##"):
+        section_lower = section.lower()
+        if "摘要" in section_lower:
+            result["summary"] = section.strip().split("\n", 1)[-1].strip()
+        elif "关键发现" in section_lower:
+            result["key_findings"] = _extract_key_findings(section)
+        elif "行动" in section_lower:
+            result["action_items"] = _extract_section_lines(section)
+        else:
+            for keyword, swot_key in _SWOT_KEYWORD_MAP.items():
+                if keyword in section_lower:
+                    result["swot"][swot_key] = _extract_section_lines(section)
+                    break
+    return result
 
 
 class SkillExecutorMixin:
@@ -252,88 +347,10 @@ class SkillExecutorMixin:
         return "# {topic}\n\n请根据用户需求生成详细内容。\n"
 
     def _parse_analysis_result(self, content: str, goal: str) -> Dict[str, Any]:
-        try:
-            json_str = content
-            if "```json" in json_str:
-                json_str = json_str.split("```json")[1].split("```")[0]
-            elif "```" in json_str:
-                json_str = json_str.split("```")[1].split("```")[0]
-            parsed = json.loads(json_str.strip())
-            if isinstance(parsed, dict):
-                return {
-                    "analysis_result": content,
-                    "summary": parsed.get("summary", ""),
-                    "key_findings": parsed.get("key_findings", []),
-                    "swot": parsed.get(
-                        "swot",
-                        {
-                            "strengths": [],
-                            "weaknesses": [],
-                            "opportunities": [],
-                            "threats": [],
-                        },
-                    ),
-                    "action_items": parsed.get("action_items", []),
-                }
-        except (json.JSONDecodeError, IndexError, AttributeError):
-            pass
-
-        result: Dict[str, Any] = {
-            "analysis_result": content,
-            "summary": "",
-            "key_findings": [],
-            "swot": {
-                "strengths": [],
-                "weaknesses": [],
-                "opportunities": [],
-                "threats": [],
-            },
-            "action_items": [],
-        }
-        sections = content.split("##")
-        for section in sections:
-            section_lower = section.lower()
-            if "摘要" in section_lower:
-                result["summary"] = section.strip().split("\n", 1)[-1].strip()
-            elif "关键发现" in section_lower:
-                lines = [
-                    line.strip().lstrip("-•*0-9. ")
-                    for line in section.strip().split("\n")
-                    if line.strip().startswith(("-", "•", "*"))
-                    or any(line.strip().startswith(f"{i}.") for i in range(1, 10))
-                ]
-                result["key_findings"] = lines
-            elif "优势" in section_lower or "strengths" in section_lower:
-                result["swot"]["strengths"] = [
-                    line.strip().lstrip("-•*0-9. ")
-                    for line in section.strip().split("\n")
-                    if line.strip() and not line.strip().startswith("#")
-                ]
-            elif "劣势" in section_lower or "weaknesses" in section_lower:
-                result["swot"]["weaknesses"] = [
-                    line.strip().lstrip("-•*0-9. ")
-                    for line in section.strip().split("\n")
-                    if line.strip() and not line.strip().startswith("#")
-                ]
-            elif "机会" in section_lower or "opportunities" in section_lower:
-                result["swot"]["opportunities"] = [
-                    line.strip().lstrip("-•*0-9. ")
-                    for line in section.strip().split("\n")
-                    if line.strip() and not line.strip().startswith("#")
-                ]
-            elif "威胁" in section_lower or "threats" in section_lower:
-                result["swot"]["threats"] = [
-                    line.strip().lstrip("-•*0-9. ")
-                    for line in section.strip().split("\n")
-                    if line.strip() and not line.strip().startswith("#")
-                ]
-            elif "行动" in section_lower:
-                result["action_items"] = [
-                    line.strip().lstrip("-•*0-9. ")
-                    for line in section.strip().split("\n")
-                    if line.strip() and not line.strip().startswith("#")
-                ]
-        return result
+        json_result = _try_parse_json_content(content)
+        if json_result is not None:
+            return json_result
+        return _parse_markdown_sections(content)
 
     def _rule_based_analysis(self, goal: str, data: list) -> Dict[str, Any]:
         data_summary = ""

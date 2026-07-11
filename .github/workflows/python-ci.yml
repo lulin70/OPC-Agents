@@ -107,15 +107,23 @@ jobs:
         path: coverage.xml
         retention-days: 14
 
-    - name: Cyclomatic complexity report (radon cc, non-blocking)
-      # Non-blocking: report C/D/E/F grade functions. Will become blocking
-      # once high-complexity functions are refactored (TD-066).
+    - name: Cyclomatic complexity gate (radon cc, D+ blocking)
+      # P3-2: D/E/F grade functions (complexity >= 21) are now blocking.
+      # All 6 former D/E functions have been refactored to C or below.
+      # C grade (11-20) is reported but non-blocking; D+ (21+) fails CI.
       if: matrix.python-version == '3.11'
       run: |
         pip install radon
-        echo "===== CYCLOMATIC COMPLEXITY REPORT (C+ grade) ====="
-        radon cc opc_manager/ -s -n C || true
-        echo "===== COMPLEXITY SUMMARY ====="
+        echo "===== CYCLOMATIC COMPLEXITY GATE (D+ = blocking) ====="
+        radon cc opc_manager/ -s -n D > /tmp/radon_d.txt 2>&1
+        if [ -s /tmp/radon_d.txt ]; then
+          echo "FAIL: D+ grade functions detected (complexity >= 21):"
+          cat /tmp/radon_d.txt
+          exit 1
+        fi
+        echo "PASS: No D+ grade functions"
+        echo ""
+        echo "===== COMPLEXITY SUMMARY (C+ grade, informational) ====="
         radon cc opc_manager/ -s -n C -j -O /tmp/radon_cc.json || true
         python3 -c "
         import json
@@ -180,7 +188,7 @@ jobs:
         import re, sys
         VERSION = open("VERSION").read().strip()
         EXPECTED_MODULE_COUNT = 99
-        EXPECTED_TEST_COUNT = 3717
+        EXPECTED_TEST_COUNT = 3781
         readmes = ["README.md", "README-EN.md", "README-JP.md"]
         errors = []
         for path in readmes:
