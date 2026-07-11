@@ -397,9 +397,7 @@ class SkillRegistry(SkillExecutorMixin):
             },
         }
 
-    def _find_collaboration(
-        self, goal: str
-    ) -> tuple:
+    def _find_collaboration(self, goal: str) -> tuple:
         """Find matching collaboration config by trigger keywords. Returns (cfg, collab_id) or (None, None)."""
         for collab_id, cfg in SKILL_COLLABORATIONS.items():
             if any(t in goal for t in cfg["trigger"]):

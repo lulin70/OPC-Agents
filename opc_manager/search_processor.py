@@ -229,8 +229,7 @@ def _ensure_jieba():
 _QUERY_PREFIXES = ["帮我", "请", "能否", "可以", "需要", "想要", "希望", "协助"]
 
 _REGEX_SPLIT_PATTERN = re.compile(
-    r'[\s,，。！？、；：""'
-    r"（）\[\]{}|\\/+_\-*&^%$#@!~`《》【】…—–·]"
+    r'[\s,，。！？、；：""' r"（）\[\]{}|\\/+_\-*&^%$#@!~`《》【】…—–·]"
 )
 _SUB_TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9]+|[\u4e00-\u9fff]+")
 _CN_PATTERN = re.compile(r"^[\u4e00-\u9fff]+$")
@@ -241,7 +240,7 @@ def _remove_query_prefixes(query: str) -> str:
     """Remove common prefixes (帮我/请/能否 etc.) from query."""
     for prefix in _QUERY_PREFIXES:
         if query.startswith(prefix):
-            return query[len(prefix):]
+            return query[len(prefix) :]
     return query
 
 

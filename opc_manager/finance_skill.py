@@ -262,7 +262,18 @@ def _handle_accounting(goal: str, amount: Optional[float]) -> Dict[str, Any]:
     if any(kw in goal for kw in ["支出", "花费", "开销", "成本", "费用"]):
         source = _clean_source(
             source,
-            ["记账", "记一笔", "入账", "支出", "花费", "开销", "成本", "费用", "帮我", "的"],
+            [
+                "记账",
+                "记一笔",
+                "入账",
+                "支出",
+                "花费",
+                "开销",
+                "成本",
+                "费用",
+                "帮我",
+                "的",
+            ],
         )
         return record_expense(amount, source or "未注明用途")
     source = _clean_source(source, ["记账", "记一笔", "入账", "收入", "帮我", "的"])
