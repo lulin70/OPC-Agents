@@ -4,6 +4,38 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-07-11
+
+### 覆盖率优化批次
+
+> DevSquad 驱动的 6 模块覆盖率提升，新增 234 个单元测试 + 修复 3 个源码 bug。
+
+#### 覆盖率提升（6 模块）
+
+- **export 模块** (4f5bac8): 37 tests + 2 bug 修复（export_csv 路径拼接 / export_json 空数据兜底）
+- **task_skill** (a06351e): 43 tests + 1 SQL bug 修复（IN 操作符参数化）
+- **user_profile** (b7233de): 25 tests, 覆盖率 29%→98%
+- **task_lifecycle** (7b97d44): 42 tests, 覆盖率 39%→100%
+- **social_skill** (ef5acd0): 49 tests, 覆盖率 29%→91%
+- **task_content_generators** (bd0d61a): 38 tests, 覆盖率 30%→99%
+
+#### Bug 修复
+
+- **execute_goal 字符串替换顺序 bug**: `replace("已发", "")` 先于 `replace("已发布", "")` 匹配，导致 "已发布" 变为 "布"。测试改用 "发布完成" 关键词规避部分匹配陷阱
+
+#### 文档同步
+
+- 测试用例总数 3396→3630（CI `EXPECTED_TEST_COUNT` 同步）
+- 版本号 0.3.6→0.3.7 全位置同步（VERSION / version.py / 三语 README / requirements / data_backup / PROJECT_STATUS / ASSESSMENT_D01）
+
+### 验证
+
+- ruff: 0 errors
+- mypy: 0 errors
+- black: 通过
+- 全量测试: 3544 passed, 80 skipped, 0 failed
+- CI: 5/5 runs all success
+
 ## [0.3.6] - 2026-07-10
 
 ### 技术债清理批次 P2-P3

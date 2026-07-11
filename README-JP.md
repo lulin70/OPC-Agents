@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.6 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.7 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -176,7 +176,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.6
+pip install opc-agents==0.3.7
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
@@ -371,7 +371,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # テストスイート（89テストファイル、3396テスト、100%合格）
+├── tests/                 # テストスイート（89テストファイル、3630テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
@@ -391,7 +391,7 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行（3396テストケース）
+# 全テストを実行（3630テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行
@@ -407,6 +407,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| **0.3.7** | **2026-07-11** | **カバレッジ最適化バッチ** — 6モジュールのカバレッジ向上(export/task_skill/user_profile/task_lifecycle/social_skill/task_content_generators) +234テスト + 3バグ修正(execute_goal文字列置換順序/SQLパラメータ化/空データフォールバック) |
 | **0.3.6** | **2026-07-10** | **技術債務クリーンアップ P2-P3** — install.bat削除(pip installクロスプラットフォーム) + task_skill SQLパラメータ化(IN/NOT INプレースホルダー) + web_search.pyをopc_hr/からopc_manager/へ移行(偽装階層解消) + 2つの失敗テスト修正 + CIカバレッジ閾値59%→65% |
 | **0.3.5** | **2026-07-09** | **成熟度修正+God Class分割** — DevSquad 7次元評価18項P0+P1+P2修正（ruff 43→0 / 三言README / 幽霊関数クリーンアップ / pre-commit hooks）+ tests/階層化unit/integration/e2e（87ファイル移行）+ StrategistBrain/ReflectorBrain Facade分割（884→176 / 841→222行）+ 仮想階層アーキテクチャ保護（96テスト）+ Dockerfileバージョン同期 |
 | **0.3.4** | **2026-07-07** | **凍結スキル完全削除+リリースパイプライン修正** — tax_reminder/calendar/proposal 3凍結スキル削除 + 90件i18n孤立キークリーンアップ + release.yml E2E分離修正 + 初回release.ymlパイプライントリガー |
