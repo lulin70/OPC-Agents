@@ -19,6 +19,7 @@ Operation: execute_operation, send_notification, email, finance,
 """
 
 import logging
+from typing import Any
 
 from opc_manager.skill_models import (
     Skill,
@@ -35,7 +36,7 @@ from opc_manager.intent_types import (
 logger = logging.getLogger(__name__)
 
 
-def register_builtin_skills(registry) -> None:
+def register_builtin_skills(registry: Any) -> None:
     """Register all 21 built-in skills into the given SkillRegistry instance.
 
     Args:

@@ -172,7 +172,7 @@ class IntentClassifier:
     _COMPILED_NEW_TASK: list = []
 
     @classmethod
-    def _ensure_compiled(cls):
+    def _ensure_compiled(cls) -> None:
         if not cls._COMPILED_PATTERNS:
             cls._COMPILED_PATTERNS = {
                 task_type: [re.compile(p, re.IGNORECASE) for p in patterns]
@@ -278,7 +278,7 @@ class IntentRouter:
     _COMPILED: bool = False
 
     @classmethod
-    def _ensure_compiled(cls):
+    def _ensure_compiled(cls) -> None:
         if not cls._COMPILED:
             cls._COMPILED_GREETING = [
                 re.compile(p, re.IGNORECASE) for p in cls.GREETING_PATTERNS

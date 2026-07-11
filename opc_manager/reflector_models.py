@@ -47,7 +47,7 @@ class Evaluation:
     deviation_analysis: str  # 偏差分析
     key_findings: Optional[List[str]] = None  # 关键发现
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.key_findings is None:
             self.key_findings = []
 
@@ -61,6 +61,6 @@ class NextAction:
     parameters: Optional[Dict[str, Any]] = None  # 行动参数
     confidence: float = 0.0  # 决策置信度
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.parameters is None:
             self.parameters = {}

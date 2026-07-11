@@ -55,7 +55,7 @@ class ExecutionResult:
     result_type: ExecutionResultType = ExecutionResultType.SUCCESS
     execution_time: float = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.data is None:
             self.data = {}
 
@@ -74,8 +74,12 @@ class ExecutionStatus:
 class ExecutorBrain:
 
     def __init__(
-        self, skill_registry=None, tool_system=None, task_engine=None, llm_service=None
-    ):
+        self,
+        skill_registry: Optional[Any] = None,
+        tool_system: Optional[Any] = None,
+        task_engine: Optional[Any] = None,
+        llm_service: Optional[Any] = None,
+    ) -> None:
         self.skill_registry = skill_registry
         self.tool_system = tool_system
         self.task_engine = task_engine or TaskEngineV3()

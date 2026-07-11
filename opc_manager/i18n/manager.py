@@ -5,7 +5,7 @@ Holds the :class:`I18nManager` class plus the module-level ``get_i18n`` /
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from .loader import DEFAULT_LOCALE, SUPPORTED_LOCALES, load_translations
 
@@ -34,7 +34,7 @@ class I18nManager:
         "japanese": "ja_JP",
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._locale = self.DEFAULT_LOCALE
 
     @property
@@ -42,7 +42,7 @@ class I18nManager:
         return self._locale
 
     @locale.setter
-    def locale(self, value: str):
+    def locale(self, value: str) -> None:
         resolved = self._LOCALE_ALIASES.get(value, value)
         if resolved in self.SUPPORTED_LOCALES:
             self._locale = resolved
@@ -54,7 +54,7 @@ class I18nManager:
             )
             self._locale = self.DEFAULT_LOCALE
 
-    def t(self, key: str, **kwargs) -> str:
+    def t(self, key: str, **kwargs: Any) -> str:
         strings = I18N_STRINGS.get(self._locale, I18N_STRINGS[self.DEFAULT_LOCALE])
         text = strings.get(key, key)
         if kwargs:
@@ -83,6 +83,6 @@ def get_i18n() -> I18nManager:
     return _i18n_instance
 
 
-def t(key: str, **kwargs) -> str:
+def t(key: str, **kwargs: Any) -> str:
     """Shorthand translation helper using the singleton manager."""
     return get_i18n().t(key, **kwargs)

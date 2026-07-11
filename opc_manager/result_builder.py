@@ -10,7 +10,7 @@
 """
 
 import logging
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional, cast
 
 from .agent_context import AgentContext
 from .task_engine_v3 import TaskType, TaskResult
@@ -33,7 +33,7 @@ class ResultBuilder:
     - 保持与原有行为的完全兼容
     """
 
-    def __init__(self, session_manager=None):
+    def __init__(self, session_manager: Optional[Any] = None) -> None:
         """初始化结果构建器。
 
         Args:

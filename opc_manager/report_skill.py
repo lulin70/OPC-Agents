@@ -1,11 +1,12 @@
 import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from opc_manager.data_manager import init_db, DATA_DIR
 from opc_manager.finance_skill import get_monthly_report, get_trend
 from opc_manager.crm_skill import get_customer_stats, get_silent_customers
+from opc_manager.skill_models import SkillContext
 from opc_manager.task_skill import list_tasks
 
 logger = logging.getLogger(__name__)
@@ -202,7 +203,9 @@ def generate_annual_report(year: str = "") -> Dict[str, Any]:
     return _save_report("annual", year, md)
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[SkillContext] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["年报", "年度", "年总结", "年报告"]):
         return generate_annual_report()

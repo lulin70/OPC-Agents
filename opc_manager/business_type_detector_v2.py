@@ -109,7 +109,9 @@ class BusinessTypeDetectorV2(
     - Added synonym expansion
     """
 
-    def __init__(self, enable_llm: bool = False, llm_service=None):
+    def __init__(
+        self, enable_llm: bool = False, llm_service: Optional[Any] = None
+    ) -> None:
         """
         Initialize Detector V2
 
@@ -261,7 +263,7 @@ class BusinessTypeDetectorV2(
             reasoning=reasoning or f"Method: {method}",
         )
 
-    def _record_method(self, method: str):
+    def _record_method(self, method: str) -> None:
         """Record detection method usage statistics"""
         if method not in self._stats["method_distribution"]:
             self._stats["method_distribution"][method] = 0

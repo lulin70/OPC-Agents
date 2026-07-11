@@ -290,7 +290,7 @@ class SkillExecutorMixin:
 
     async def _call_llm_generate(
         self, user_input: str, template: str, search_results: Optional[list] = None
-    ):
+    ) -> Any:
         try:
             from opc_manager.llm_content import LLMEnhancedContentGenerator
 

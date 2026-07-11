@@ -6,6 +6,7 @@ All modules should import BusinessType from here to avoid duplicate definition c
 """
 
 from enum import Enum
+from typing import Optional
 
 
 class BusinessType(Enum):
@@ -24,7 +25,7 @@ class BusinessType(Enum):
         return list(cls)
 
     @classmethod
-    def from_string(cls, type_str: str):
+    def from_string(cls, type_str: str) -> Optional["BusinessType"]:
         """Convert string to enum value"""
         for bt in cls:
             if bt.value == type_str:

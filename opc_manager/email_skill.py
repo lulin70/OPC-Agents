@@ -17,6 +17,7 @@ from opc_manager.data_manager import (
     gen_id,
     init_db,
 )
+from opc_manager.skill_models import SkillContext
 from opc_manager.tool_system import AuditLogger
 
 logger = logging.getLogger(__name__)
@@ -348,7 +349,9 @@ def _clean_body_text(body: str) -> str:
     return cleaned.strip().strip("，。、的")
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[SkillContext] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     to = kwargs.get("to", "")
     subject = kwargs.get("subject", "")
@@ -382,7 +385,7 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     }
 
 
-def undo_send_email(record_id=None, **kwargs):
+def undo_send_email(record_id: Optional[str] = None, **kwargs: Any) -> Dict[str, Any]:
     init_db()
     if record_id:
         execute_write(

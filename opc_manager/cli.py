@@ -9,7 +9,7 @@ import os
 import subprocess
 
 
-def main():
+def main() -> None:
     """Launch OPC-Agents Streamlit application"""
     from opc_manager.version import get_version_string
 

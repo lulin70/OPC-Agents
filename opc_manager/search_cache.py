@@ -32,7 +32,7 @@ class SearchCache:
 
     def __init__(
         self, max_size: int = SEARCH_CACHE_MAX_SIZE, ttl: int = SEARCH_CACHE_TTL_SECONDS
-    ):
+    ) -> None:
         self._cache: OrderedDict[str, Tuple[float, List[Dict]]] = OrderedDict()
         self._max_size = max_size
         self._ttl = ttl
@@ -59,7 +59,7 @@ class SearchCache:
             self._misses += 1
             return None
 
-    def set(self, query: str, max_results: int, results: List[Dict]):
+    def set(self, query: str, max_results: int, results: List[Dict]) -> None:
         key = self._make_key(query, max_results)
         with self._lock:
             while len(self._cache) >= self._max_size:

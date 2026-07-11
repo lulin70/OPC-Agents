@@ -8,11 +8,12 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
 import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from opc_manager.data_manager import init_db, DATA_DIR
 from opc_manager.finance_skill import get_monthly_report, get_trend
 from opc_manager.crm_skill import get_customer_stats, get_silent_customers
+from opc_manager.skill_models import SkillContext
 from opc_manager.task_skill import list_tasks
 from opc_manager.tool_system import AuditLogger
 
@@ -191,7 +192,9 @@ def generate_dashboard_report() -> Dict[str, Any]:
     }
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[SkillContext] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["财务", "收入", "支出", "利润"]):
         return get_finance_dashboard()

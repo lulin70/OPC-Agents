@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 _data_manager = None
 
 
-def _get_dm():
+def _get_dm() -> Any:
     global _data_manager
     if _data_manager is None:
         from opc_manager import data_manager
@@ -21,7 +21,7 @@ class UserProfile:
 
     _initialized = False
 
-    def __init__(self):
+    def __init__(self) -> None:
         if not UserProfile._initialized:
             _get_dm().init_db()
             UserProfile._initialized = True
@@ -181,7 +181,7 @@ class UserProfile:
             for row in rows
         ]
 
-    def update_interaction(self, interaction_id: str, **kwargs) -> bool:
+    def update_interaction(self, interaction_id: str, **kwargs: Any) -> bool:
         dm = _get_dm()
         rows = dm.execute_query(
             "SELECT id FROM interaction_log WHERE id=?", (interaction_id,)

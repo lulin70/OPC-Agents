@@ -25,7 +25,7 @@ class ConsequencePredictor:
     少数派报告模式：执行前预判，与 evaluate_result（事后评估）形成二级保障。
     """
 
-    def __init__(self, llm_service=None):
+    def __init__(self, llm_service: Optional[Any] = None) -> None:
         self.llm_service = llm_service
 
     def predict_consequence(

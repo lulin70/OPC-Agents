@@ -18,7 +18,7 @@ class WebSearchMCP:
     Falls back to empty results on any failure.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._dds = None
         try:
             # 优先使用新包名 ddgs

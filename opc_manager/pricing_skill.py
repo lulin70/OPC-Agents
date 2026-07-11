@@ -7,9 +7,10 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
 
 import logging
 import time
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional, cast
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
+from opc_manager.skill_models import SkillContext
 from opc_manager.tool_system import AuditLogger
 
 logger = logging.getLogger(__name__)
@@ -248,7 +249,9 @@ def suggest_pricing(
     }
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[SkillContext] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["参考", "行业", "费率", "时薪"]):
         return get_hourly_benchmarks()

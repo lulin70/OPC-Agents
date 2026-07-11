@@ -4,7 +4,7 @@
 负责将 Intent 转换为 ExecutionPlan，支持 LLM 规划 + 规则降级。
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 import json
 import logging
 import uuid
@@ -32,7 +32,9 @@ class PlanningService:
     支持双路径：LLM 规划（基于 SkillRegistry 实际技能）+ 规则降级（INTENT_STEP_MAP）。
     """
 
-    def __init__(self, llm_service=None, skill_registry=None):
+    def __init__(
+        self, llm_service: Optional[Any] = None, skill_registry: Optional[Any] = None
+    ) -> None:
         self.llm_service = llm_service
         self.skill_registry = skill_registry
 

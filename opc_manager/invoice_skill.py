@@ -7,9 +7,10 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
+from opc_manager.skill_models import SkillContext
 from opc_manager.tool_system import AuditLogger
 
 try:
@@ -174,7 +175,9 @@ def _render_invoice_md(invoice: dict) -> str:
     return md
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[SkillContext] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["税务", "报税", "税日历"]):
         if get_tax_calendar is None:
@@ -205,7 +208,9 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     return create_invoice(client_name, amount)
 
 
-def undo_create_invoice(invoice_id=None, **kwargs):
+def undo_create_invoice(
+    invoice_id: Optional[str] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if invoice_id:
         rows = execute_query("SELECT * FROM invoices WHERE id=?", (invoice_id,))

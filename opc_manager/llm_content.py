@@ -65,7 +65,7 @@ defined BEFORE the mixin imports so the generation mixin can safely do
 import re
 import time
 import logging
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Any
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ class LLMEnhancedContentGenerator(LLMContentPromptMixin, LLMContentGenerationMix
         max_content_length: int = 15000,
         min_fallback_length: int = 800,
         llm_caller: Optional[Callable[[str], Optional[str]]] = None,
-    ):
+    ) -> None:
         self.llm_timeout = llm_timeout
         self.max_content_length = max_content_length
         self.min_fallback_length = min_fallback_length
@@ -222,7 +222,7 @@ class LLMEnhancedContentGenerator(LLMContentPromptMixin, LLMContentGenerationMix
         search_results: Optional[List[Dict]] = None,
         business_type: Optional[str] = None,
         is_follow_up: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> GenerationResult:
         """Main entry: RAG hybrid mode content generation
 

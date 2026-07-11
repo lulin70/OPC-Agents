@@ -46,7 +46,7 @@ class AuditLogger:
             cls._shutdown_event = asyncio.Event()
         shutdown = cls._shutdown_event
 
-        async def _writer():
+        async def _writer() -> None:
             try:
                 os.makedirs(os.path.dirname(cls._log_file), exist_ok=True)
             except OSError:

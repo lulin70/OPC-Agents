@@ -525,7 +525,7 @@ class UnifiedClassificationResult:
     icon: Optional[str] = None
     suggestions: Optional[List[str]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.risk_level is None:
             self.risk_level = get_risk_level(self.category)
         if self.label is None:

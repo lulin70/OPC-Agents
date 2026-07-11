@@ -134,12 +134,12 @@ class AsyncTaskExecutor(WorkerMixin, RecoveryMixin, PersistenceMixin):
         max_concurrent: int = 5,
         default_timeout: int = 120,
         max_history: int = 50,
-        save_callback=None,
+        save_callback: Optional[Callable] = None,
         max_retries: int = 2,
         retry_backoff_base: float = 5.0,
         zombie_check_interval: int = 30,
         persist_dir: Optional[str] = None,
-    ):
+    ) -> None:
         """Initialize async executor
 
         Args:
@@ -179,7 +179,7 @@ class AsyncTaskExecutor(WorkerMixin, RecoveryMixin, PersistenceMixin):
             f"max_retries={max_retries}, persist={'on' if persist_dir else 'off'}"
         )
 
-    def shutdown(self, wait: bool = False):
+    def shutdown(self, wait: bool = False) -> None:
         """Graceful shutdown: cancel active tasks and stop background threads.
 
         Call this before process exit to enable crash recovery on restart.
@@ -223,7 +223,10 @@ class AsyncTaskExecutor(WorkerMixin, RecoveryMixin, PersistenceMixin):
         logger.info("[AsyncTaskExecutor] Shutdown complete")
 
     def submit(
-        self, prompt: str, execute_func: Optional[Callable] = None, **execute_kwargs
+        self,
+        prompt: str,
+        execute_func: Optional[Callable] = None,
+        **execute_kwargs: Any,
     ) -> Optional[str]:
         """Submit task, immediately return task_id (non-blocking)
 

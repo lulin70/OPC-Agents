@@ -209,7 +209,7 @@ class ProcessedResult:
 _jieba_initialized = False
 
 
-def _ensure_jieba():
+def _ensure_jieba() -> None:
     global _jieba_initialized
     if not _jieba_initialized:
         try:
@@ -296,7 +296,7 @@ class SearchResultProcessor:
         title_weight: float = 2.0,
         snippet_weight: float = 1.0,
         min_results: int = 3,
-    ):
+    ) -> None:
         """Initialize processor
 
         Args:

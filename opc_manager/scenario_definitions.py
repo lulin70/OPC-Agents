@@ -205,7 +205,7 @@ _LOCAL_NAMES = frozenset(
 )
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Lazy re-export from scenario_definitions_builtin to maintain backward
     compatibility. Only invoked when the attribute is not found normally.
 
@@ -225,6 +225,6 @@ def __getattr__(name: str):
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-def __dir__():
+def __dir__() -> List[str]:
     """Return a complete list of public attributes for tab-completion / dir()."""
     return sorted(set(list(globals().keys()) + list(__all__)))

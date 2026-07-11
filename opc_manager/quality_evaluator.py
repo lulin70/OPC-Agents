@@ -100,7 +100,11 @@ class QualityEvaluator:
     支持双路径：LLM 评估（结构化 JSON）+ 规则评估（加权评分）。
     """
 
-    def __init__(self, llm_service=None, evaluation_thresholds: Optional[Dict] = None):
+    def __init__(
+        self,
+        llm_service: Optional[Any] = None,
+        evaluation_thresholds: Optional[Dict] = None,
+    ) -> None:
         self.llm_service = llm_service
         if evaluation_thresholds is not None:
             self.evaluation_thresholds = evaluation_thresholds

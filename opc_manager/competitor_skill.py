@@ -7,7 +7,7 @@ Revival: See docs/spec/SKILL_FREEZE_LIST.md for revival conditions
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from opc_manager.data_manager import (
     execute_query,
@@ -15,6 +15,7 @@ from opc_manager.data_manager import (
     gen_id,
     init_db,
 )
+from opc_manager.skill_models import SkillContext
 from opc_manager.tool_system import AuditLogger
 
 logger = logging.getLogger(__name__)
@@ -177,7 +178,9 @@ def _render_competitor_md(record: dict) -> str:
     return md
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[SkillContext] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["列表", "查看", "有哪些", "所有竞品"]):
         return list_competitors()

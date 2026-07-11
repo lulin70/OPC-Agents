@@ -50,7 +50,9 @@ __all__ = [
 class StrategistBrain:
     """策略脑 — 负责意图理解和任务规划（Facade）"""
 
-    def __init__(self, llm_service=None, skill_registry=None):
+    def __init__(
+        self, llm_service: Optional[Any] = None, skill_registry: Optional[Any] = None
+    ) -> None:
         """
         初始化策略脑
 

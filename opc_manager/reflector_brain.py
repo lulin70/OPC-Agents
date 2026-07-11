@@ -80,7 +80,7 @@ __all__ = [
 class ReflectorBrain:
     """反思脑 — 负责结果评估和策略调整（Facade）"""
 
-    def __init__(self, llm_service=None):
+    def __init__(self, llm_service: Optional[Any] = None) -> None:
         self.llm_service = llm_service
         # [P2-15] Step 2: 后果预判委托给 ConsequencePredictor
         self._consequence_predictor = ConsequencePredictor(llm_service=llm_service)

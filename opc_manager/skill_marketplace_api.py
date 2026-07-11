@@ -66,7 +66,7 @@ if FASTAPI_AVAILABLE:
     )
 
     @app.middleware("http")
-    async def enforce_https_middleware(request, call_next) -> Response:
+    async def enforce_https_middleware(request: Any, call_next: Any) -> Response:
         if _enforce_https:
             proto = request.headers.get("x-forwarded-proto", request.url.scheme)
             if proto != "https":
@@ -87,7 +87,7 @@ if FASTAPI_AVAILABLE:
         return hashlib.sha256(api_key.encode()).hexdigest()[:16]
 
     @app.middleware("http")
-    async def limit_request_size(request, call_next) -> Response:
+    async def limit_request_size(request: Any, call_next: Any) -> Response:
         if request.method in ("POST", "PUT"):
             body = await request.body()
             if len(body) > MAX_REQUEST_BODY_BYTES:

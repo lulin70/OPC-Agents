@@ -41,7 +41,7 @@ class PersistenceMixin:
     the composed facade instance via Python's MRO.
     """
 
-    def _load_persisted_tasks(self):
+    def _load_persisted_tasks(self) -> None:
         """Load task states from persistence directory on startup
 
         Only loads tasks that were active (PENDING/RUNNING/RETRYING) at crash time.
@@ -102,7 +102,7 @@ class PersistenceMixin:
         except Exception as e:
             logger.warning("[AsyncTaskExecutor] Failed to load persisted tasks: %s", e)
 
-    def _persist_active_tasks(self):
+    def _persist_active_tasks(self) -> None:
         """Save active task states to disk for crash recovery
 
         Called during shutdown to preserve task states.

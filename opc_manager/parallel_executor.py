@@ -156,8 +156,8 @@ class ParallelExecutor:
         self,
         max_concurrent: int = DEFAULT_MAX_CONCURRENT,
         default_timeout: float = DEFAULT_TASK_TIMEOUT,
-        progress_callback=None,
-    ):
+        progress_callback: Optional[Callable[[str, int, int, TaskResult], None]] = None,
+    ) -> None:
         """Initialize ParallelExecutor
 
         Args:

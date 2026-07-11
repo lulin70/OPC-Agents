@@ -201,7 +201,7 @@ class SettingsManager(
     SETTINGS_FILE = "data/settings.json"
     SENSITIVE_FIELDS = {"api_key", "password", "encryption_key"}
 
-    def __new__(cls):
+    def __new__(cls) -> "SettingsManager":
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -209,7 +209,7 @@ class SettingsManager(
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if not self._initialized:
             self._settings_file = Path(self.SETTINGS_FILE)
             self._data_lock = threading.RLock()
@@ -318,7 +318,7 @@ class SettingsManager(
             "from_email": self._smtp.from_email,
         }
 
-    def update_llm(self, **kwargs) -> bool:
+    def update_llm(self, **kwargs: Any) -> bool:
         """Update LLM settings with validation and persistence.
 
         Args:
@@ -362,7 +362,7 @@ class SettingsManager(
 
         return True
 
-    def update_smtp(self, **kwargs) -> bool:
+    def update_smtp(self, **kwargs: Any) -> bool:
         """Update SMTP settings with validation and persistence.
 
         Args:
@@ -401,7 +401,7 @@ class SettingsManager(
 
         return True
 
-    def update_profile(self, **kwargs) -> bool:
+    def update_profile(self, **kwargs: Any) -> bool:
         """Update user profile settings.
 
         Args:

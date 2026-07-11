@@ -7,7 +7,7 @@
 - 做出最终决策
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Awaitable, Dict, List, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 import logging
@@ -69,7 +69,7 @@ class ConsensusEngine:
 
     MAX_LOG_SIZE = 1000
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.veto_enabled = {"strategist": True, "executor": True, "reflector": True}
         self._decision_log: List[Dict[str, Any]] = []
         self._load_decision_log_from_db()
@@ -162,9 +162,9 @@ class ConsensusEngine:
 
     async def collect_opinions_async(
         self,
-        strategist_coro,
-        executor_coro,
-        reflector_coro,
+        strategist_coro: Awaitable[Opinion],
+        executor_coro: Awaitable[Opinion],
+        reflector_coro: Awaitable[Opinion],
     ) -> Decision:
         """
         并行收集三贤者意见（asyncio.gather）[S2-T2]

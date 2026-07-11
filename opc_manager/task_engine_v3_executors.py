@@ -21,7 +21,7 @@ runtime via the composed TaskEngineV3 instance.
 
 import time
 import logging
-from typing import TYPE_CHECKING, Optional, List, Dict, Tuple
+from typing import TYPE_CHECKING, Optional, List, Dict, Tuple, Any
 
 from opc_manager.utils import SECONDS_PER_DAY
 from opc_manager.skill_registry import SkillRegistry
@@ -476,7 +476,7 @@ class TaskEngineExecutorsMixin:
             logger.error("[TaskEngineV3] Scenario execution failed: %s", e)
             return self._execute_fallback(search_query)
 
-    def _exec_step_with_data(self, step, query: str) -> str:
+    def _exec_step_with_data(self, step: Any, query: str) -> str:
         """Execute a single workflow step — Dispatch to different generation strategies based on step.type
 
         Supported step types and their output strategies:

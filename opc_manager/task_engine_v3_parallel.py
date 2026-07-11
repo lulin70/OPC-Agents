@@ -124,8 +124,8 @@ class TaskEngineParallelMixin:
         if self._parallel_executor is None:
 
             def progress_callback(
-                session_id: str, completed: int, total: int, task_result
-            ):
+                session_id: str, completed: int, total: int, task_result: Any
+            ) -> None:
                 if _PROGRESS_EMITTER_AVAILABLE and session_id:
                     try:
                         emitter = ProgressEmitter()

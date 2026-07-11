@@ -32,13 +32,13 @@ class IntentUnderstandingService:
 
     def __init__(
         self,
-        llm_service=None,
+        llm_service: Optional[Any] = None,
         intent_keywords: Optional[Dict] = None,
         constraint_keywords: Optional[Dict[ConstraintType, List[str]]] = None,
         external_fallback: Optional[
             Callable[[str, str], Optional[Dict[str, Any]]]
         ] = None,
-    ):
+    ) -> None:
         self.llm_service = llm_service
         self.intent_keywords = (
             intent_keywords if intent_keywords is not None else INTENT_KEYWORDS

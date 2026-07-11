@@ -12,6 +12,7 @@ import time
 from typing import Any, Dict, Optional
 
 from opc_manager.data_manager import execute_query, execute_write, gen_id, init_db
+from opc_manager.skill_models import SkillContext
 from opc_manager.tool_system import AuditLogger
 from opc_manager.utils import parse_date_from_text
 
@@ -166,7 +167,9 @@ def parse_priority_from_text(text: str) -> int:
     return 2
 
 
-def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
+def execute_goal(
+    goal: str, _context: Optional[SkillContext] = None, **kwargs: Any
+) -> Dict[str, Any]:
     init_db()
     if any(kw in goal for kw in ["完成", "做了", "搞定了", "交了"]):
         keyword = goal
@@ -221,7 +224,9 @@ def execute_goal(goal: str, _context=None, **kwargs) -> Dict[str, Any]:
     return create_task(title, priority=priority, due_date=due_date)
 
 
-def undo_complete_task(task_id=None, title_keyword=None, **kwargs):
+def undo_complete_task(
+    task_id: Optional[str] = None, title_keyword: Optional[str] = None, **kwargs: Any
+) -> Dict[str, Any]:
     try:
         if task_id:
             rows = execute_query(

@@ -4,6 +4,32 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-07-11
+
+### DevSquad 共识推进第四批 — P3-3 mypy 豁免移除 Batch 1
+
+> 46 个模块从 mypy per-module overrides 移除（83→37），返回类型+参数类型注解补全，mypy `disallow_untyped_defs = true` 全局生效。
+
+#### 类型注解补全（46 模块，Batch 1）
+
+Batch 1 覆盖 1-2 个未类型化函数的模块，共 46 个模块：
+
+- **`__init__` / `__post_init__` 返回类型**（15 模块）：`consequence_predictor` / `embedding_service` / `intent_understanding_service` / `llm_content` / `mcp_protocol` / `parallel_executor` / `planning_service` / `quality_evaluator` / `reflector_brain` / `result_builder` / `scenario_engine_v2` / `strategist_brain` / `web_search` / `skill_models` / `unified_types` — 全部添加 `-> None`
+- **参数类型注解**（31 模块）：`cli` / `skill_executors` / `task_engine_v3_parallel` / `tool_audit_logger` / `async_executor` / `async_executor_persistence` / `business_type_detector_v2` / `consensus_engine` / `email_skill` / `executor_brain` / `i18n.manager` / `intent_classifier` / `invoice_skill` / `reflector_models` / `scenario_definitions` / `search_cache` / `search_processor` / `session_context` / `settings` / `skill_marketplace_api` / `task_skill` / `user_profile` / `agent_utils` / `competitor_skill` / `dashboard_skill` / `knowledge_skill` / `pricing_skill` / `report_skill` / `skill_builtin` / `task_engine_v3_executors` / `business_types` — 添加参数注解（`_context: Optional[SkillContext] = None` / `**kwargs: Any` / `registry: Any` / `llm_service: Optional[Any] = None` 等）
+- **已有注解无需修改**（8 模块）：`competitor_skill` / `dashboard_skill` / `knowledge_skill` / `pricing_skill` / `report_skill` / `skill_builtin` / `task_engine_v3_executors` / `agent_utils` 的 `execute_goal` 等函数已有返回类型注解
+
+#### pyproject.toml 变更
+
+- **mypy overrides**: 83 模块 → 37 模块（Batch 1 的 46 个模块移除豁免，受 `disallow_untyped_defs = true` 约束）
+- **剩余 37 模块**: Batch 2（25 模块，3-5 untyped）+ Batch 3（12 模块，6+ untyped），后续批次推进
+
+### 验证
+
+- mypy: 0 no-untyped-def 错误（13 预先存在错误：10 attr-defined + 2 has-type + 1 assignment，均与类型注解无关）
+- Black: 12 文件格式化后全量通过（121 files unchanged）
+- 全量测试: 3701 passed + 80 skipped = 3781 tests（194.35s，exit code 0），匹配 CI EXPECTED_TEST_COUNT=3781
+- 覆盖率: 未变（仅类型注解，无逻辑变更，CI 阈值 65%，实际 66%）
+
 ## [0.3.11] - 2026-07-11
 
 ### DevSquad 共识推进第三批 — P3-2 radon cc D+ blocking 门禁

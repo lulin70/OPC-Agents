@@ -32,7 +32,7 @@ class ScenarioEngineV2:
     - Persona system integration interface
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Scenario Engine V2"""
         self.scenarios: Dict[str, ScenarioConfig] = dict(BUILT_IN_SCENARIOS)
         self.type_detector = None

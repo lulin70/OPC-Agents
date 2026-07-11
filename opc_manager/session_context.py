@@ -132,7 +132,7 @@ class SessionContextManager:
             )
     """
 
-    def __init__(self, max_turns: int = 20):
+    def __init__(self, max_turns: int = 20) -> None:
         """Initialize session manager
 
         Args:
@@ -152,7 +152,7 @@ class SessionContextManager:
         task_type: Optional[str] = None,
         filepath: Optional[str] = None,
         sources: Optional[List[Dict]] = None,
-        **metadata,
+        **metadata: Any,
     ) -> ConversationTurn:
         """Record a complete conversation turn
 
@@ -373,7 +373,7 @@ class SessionContextManager:
         with self._lock:
             return self._next_turn_id - 1
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all session history (start new session)"""
         with self._lock:
             count = len(self._turns)

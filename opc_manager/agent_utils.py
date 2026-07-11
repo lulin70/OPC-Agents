@@ -4,12 +4,12 @@ Extracted from agent_loop.py to eliminate circular dependency.
 These are stateless helper functions used by both modules.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .consensus_engine import Opinion, OpinionType
 
 
-def context_to_dict(context) -> Dict[str, Any]:
+def context_to_dict(context: Any) -> Dict[str, Any]:
     """Convert AgentContext to dict for three-sage voting [S2-T2].
 
     Args:
@@ -30,7 +30,7 @@ def context_to_dict(context) -> Dict[str, Any]:
     }
 
 
-def extract_planned_action(context, step=None) -> Dict[str, Any]:
+def extract_planned_action(context: Any, step: Optional[Any] = None) -> Dict[str, Any]:
     """Extract planned action info for ReflectorBrain prediction [S2-T2].
 
     Args:

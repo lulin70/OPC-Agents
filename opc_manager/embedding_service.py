@@ -29,7 +29,7 @@ EMBEDDING_CACHE_DB = "embedding_cache.db"
 class EmbeddingService:
     """Ollama-based embedding service with SQLite cache."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._model = os.environ.get("OPC_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
         self._base_url = os.environ.get("OPC_EMBEDDING_BASE_URL", DEFAULT_OLLAMA_URL)
         self._enabled = self._detect_availability()

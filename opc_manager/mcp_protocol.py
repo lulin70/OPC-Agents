@@ -15,7 +15,7 @@ MCPProtocol — Model Context Protocol 支持
 
 import json
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,9 @@ class MCPPrompt:
 
 class MCPServer:
 
-    def __init__(self, skill_registry=None, task_engine=None):
+    def __init__(
+        self, skill_registry: Optional[Any] = None, task_engine: Optional[Any] = None
+    ) -> None:
         self.skill_registry = skill_registry
         self.task_engine = task_engine
         self._tools: Dict[str, MCPTool] = {}
