@@ -167,7 +167,7 @@
 - `tool_system.py` 拆为 tool_registry/tool_audit/tool_handlers_fs/tool_handlers_smtp
 - ~~`opc_hr` 充实或并入 opc_manager/hr/ 子包~~ ✅ 已解决 (2026-07-10): web_search.py 迁移到 opc_manager/web_search.py，消除 opc_hr 假分层目录
 - CI coverage 阈值 62% (含 frontend 总覆盖率 ~64%, opc_manager 单独 ~74%) → 目标 65% → 80%
-- mypy 配置升级为 `disallow_untyped_defs = True`
+- ~~mypy 配置升级为 `disallow_untyped_defs = True`~~ ✅ 部分完成 (2026-07-11): 全局启用，30 模块通过严格检查，83 模块 per-module 豁免（渐进式移除）
 - 引入 `radon cc` 圈复杂度门禁
 - ~~补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR~~ ✅ 已完成 (2026-07-11): [ADR-001](architecture/ADR-001-IntentRouter-design.md) / [ADR-002](architecture/ADR-002-ToolSystem-design.md) / [ADR-003](architecture/ADR-003-TaskEngineV3-design.md)
 
