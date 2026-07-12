@@ -7,7 +7,9 @@ All LLM calls and external dependencies are mocked.
 
 import asyncio
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from dataclasses import dataclass, field
+from typing import Any, Optional
+from unittest.mock import patch
 
 from opc_manager.strategist_brain import (
     StrategistBrain,
@@ -52,6 +54,105 @@ def _run_async(coro):
             future = pool.submit(asyncio.run, coro)
             return future.result(timeout=30)
     return asyncio.run(coro)
+
+
+# ===================================================================
+# Real fake classes (replace MagicMock anti-patterns)
+# ===================================================================
+
+
+class FakeLLMService:
+    """真实 fake LLM 服务，替代 MagicMock(llm_service)。
+
+    配合 @patch("...call_llm_service") 使用时，complete() 通常不会被实际调用
+    （patch 拦截了模块级函数），但传给 brain 的是真实对象而非 MagicMock，
+    避免 MagicMock 自动生成 stub 带来的反模式。
+    """
+
+    def __init__(self, response=None):
+        self._response = response
+        self.call_count = 0
+
+    def complete(self, prompt, max_tokens=500, timeout=15):
+        self.call_count += 1
+        return self._response
+
+    def generate(self, prompt, **kwargs):
+        self.call_count += 1
+        return self._response
+
+
+class FakeSkill:
+    """真实 fake Skill，替代 MagicMock(skill)。
+
+    拥有真实的 enabled/frozen 属性和同步 execute() 方法，
+    比 MagicMock 自动 stub 更贴近真实 Skill 行为。
+    """
+
+    def __init__(self, enabled=True, frozen=False, result=None, side_effect=None):
+        self.skill_id = "fake_skill"
+        self.enabled = enabled
+        self.frozen = frozen
+        self._result = result
+        self._side_effect = side_effect
+
+    def execute(self, **kwargs):
+        if self._side_effect is not None:
+            raise self._side_effect
+        return self._result
+
+
+class FakeAsyncSkill(FakeSkill):
+    """异步版本 FakeSkill，execute 为协程函数（替代 AsyncMock）。"""
+
+    async def execute(self, **kwargs):
+        if self._side_effect is not None:
+            raise self._side_effect
+        return self._result
+
+
+class FakeSkillRegistry:
+    """真实 fake SkillRegistry，替代 MagicMock(skill_registry)。
+
+    拥有真实的 get_skill() 方法，返回预设的 Skill 或 None。
+    """
+
+    def __init__(self, skill=None):
+        self._skill = skill
+
+    def get_skill(self, skill_id):
+        return self._skill
+
+
+@dataclass
+class FakeTaskResult:
+    """真实 fake TaskResult，替代 MagicMock(task_result)。
+
+    字段对齐 opc_manager.task_types.TaskResult，供 ExecutorBrain._run_task_engine()
+    消费（访问 success/content/sources/task_type/deliverable_format/error/
+    execution_time_ms 属性）。
+    """
+
+    success: bool = True
+    content: str = ""
+    sources: list = field(default_factory=list)
+    task_type: Any = None
+    deliverable_format: Optional[str] = None
+    error: Optional[str] = None
+    execution_time_ms: float = 0.0
+
+
+class FakeTaskEngine:
+    """真实 fake TaskEngine，替代 MagicMock(task_engine)。
+
+    execute() 返回预设的 FakeTaskResult，与真实 TaskEngineV3.execute() 签名一致。
+    """
+
+    def __init__(self, result=None):
+        self._result = result if result is not None else FakeTaskResult()
+
+    def execute(self, **kwargs):
+        return self._result
 
 
 # ===================================================================
@@ -102,9 +203,8 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
         "opc_manager.intent_understanding_service.call_llm_service", return_value=None
     )
     def test_llm_failure_falls_back_to_keywords(self, mock_llm):
-        mock_svc = MagicMock()
-        mock_svc.complete.return_value = None
-        brain = StrategistBrain(llm_service=mock_svc)
+        fake_svc = FakeLLMService(response=None)
+        brain = StrategistBrain(llm_service=fake_svc)
         intent = brain.understand_intent("分析市场趋势")
         self.assertEqual(intent.type, IntentType.ANALYSIS)
 
@@ -114,8 +214,8 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
             '{"goal": "分析数据", "intent_type": "analysis", '
             '"confidence": 0.9, "sub_intents": [], "constraints": []}'
         )
-        mock_svc = MagicMock()
-        brain = StrategistBrain(llm_service=mock_svc)
+        fake_svc = FakeLLMService()
+        brain = StrategistBrain(llm_service=fake_svc)
         intent = brain.understand_intent("分析数据")
         self.assertEqual(intent.type, IntentType.ANALYSIS)
         self.assertAlmostEqual(intent.confidence, 0.9)
@@ -123,8 +223,8 @@ class TestStrategistBrainUnderstandIntent(unittest.TestCase):
     @patch("opc_manager.intent_understanding_service.call_llm_service")
     def test_llm_malformed_response_falls_back(self, mock_llm):
         mock_llm.return_value = "NOT JSON AT ALL"
-        mock_svc = MagicMock()
-        brain = StrategistBrain(llm_service=mock_svc)
+        fake_svc = FakeLLMService()
+        brain = StrategistBrain(llm_service=fake_svc)
         intent = brain.understand_intent("分析市场趋势")
         # Should fall back to keyword matching
         self.assertEqual(intent.type, IntentType.ANALYSIS)
@@ -182,8 +282,8 @@ class TestStrategistBrainPlan(unittest.TestCase):
 
     @patch("opc_manager.planning_service.call_llm_service", return_value=None)
     def test_plan_llm_failure_falls_back(self, mock_llm):
-        mock_svc = MagicMock()
-        brain = StrategistBrain(llm_service=mock_svc)
+        fake_svc = FakeLLMService(response=None)
+        brain = StrategistBrain(llm_service=fake_svc)
         intent = Intent(goal="分析数据", type=IntentType.ANALYSIS)
         plan = brain.plan(intent)
         self.assertIsInstance(plan, ExecutionPlan)
@@ -263,79 +363,72 @@ class TestExecutorBrainExecuteStep(unittest.TestCase):
     """Tests for ExecutorBrain.execute_step()"""
 
     def _make_brain(self, skill_registry=None, task_engine=None):
-        """Create ExecutorBrain with mocked task_engine to avoid real execution."""
+        """Create ExecutorBrain with fake task_engine to avoid real execution."""
         if task_engine is None:
-            task_engine = MagicMock()
+            task_engine = FakeTaskEngine()
         return ExecutorBrain(skill_registry=skill_registry, task_engine=task_engine)
 
     def test_execute_step_no_registry_with_mocked_engine(self):
         """When no skill_registry, task_engine is used."""
-        mock_engine = MagicMock()
-        mock_result = MagicMock()
-        mock_result.success = True
-        mock_result.content = "result"
-        mock_result.sources = []
-        mock_result.task_type = None
-        mock_result.deliverable_format = None
-        mock_result.error = None
-        mock_result.execution_time_ms = 100
-        mock_engine.execute.return_value = mock_result
-        brain = self._make_brain(task_engine=mock_engine)
+        fake_result = FakeTaskResult(
+            success=True,
+            content="result",
+            sources=[],
+            task_type=None,
+            deliverable_format=None,
+            error=None,
+            execution_time_ms=100,
+        )
+        fake_engine = FakeTaskEngine(result=fake_result)
+        brain = self._make_brain(task_engine=fake_engine)
 
         result = _run_async(brain.execute_step("s1", "search", {"query": "test"}))
         self.assertTrue(result.success)
 
     def test_execute_step_with_skill_registry(self):
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = MagicMock(
-            return_value={"success": True, "data": {"k": "v"}}
+        fake_registry = FakeSkillRegistry(
+            skill=FakeSkill(enabled=True, result={"success": True, "data": {"k": "v"}})
         )
-        mock_registry.get_skill.return_value = mock_skill
-        brain = self._make_brain(skill_registry=mock_registry)
+        brain = self._make_brain(skill_registry=fake_registry)
 
         result = _run_async(brain.execute_step("s1", "search", {"query": "test"}))
         self.assertTrue(result.success)
         self.assertEqual(result.result_type, ExecutionResultType.SUCCESS)
 
     def test_execute_step_skill_disabled(self):
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = False
-        mock_registry.get_skill.return_value = mock_skill
-        mock_engine = MagicMock()
-        mock_result = MagicMock()
-        mock_result.success = False
-        mock_result.content = ""
-        mock_result.sources = []
-        mock_result.task_type = None
-        mock_result.deliverable_format = None
-        mock_result.error = "disabled"
-        mock_result.execution_time_ms = 0
-        mock_engine.execute.return_value = mock_result
-        brain = self._make_brain(skill_registry=mock_registry, task_engine=mock_engine)
+        fake_registry = FakeSkillRegistry(skill=FakeSkill(enabled=False))
+        fake_engine = FakeTaskEngine(
+            result=FakeTaskResult(
+                success=False,
+                content="",
+                sources=[],
+                task_type=None,
+                deliverable_format=None,
+                error="disabled",
+                execution_time_ms=0,
+            )
+        )
+        brain = self._make_brain(skill_registry=fake_registry, task_engine=fake_engine)
 
         result = _run_async(brain.execute_step("s1", "search", {"query": "test"}))
         self.assertFalse(result.success)
 
     def test_execute_step_skill_exception(self):
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = MagicMock(side_effect=RuntimeError("boom"))
-        mock_registry.get_skill.return_value = mock_skill
-        mock_engine = MagicMock()
-        mock_result = MagicMock()
-        mock_result.success = False
-        mock_result.content = ""
-        mock_result.sources = []
-        mock_result.task_type = None
-        mock_result.deliverable_format = None
-        mock_result.error = "error"
-        mock_result.execution_time_ms = 0
-        mock_engine.execute.return_value = mock_result
-        brain = self._make_brain(skill_registry=mock_registry, task_engine=mock_engine)
+        fake_registry = FakeSkillRegistry(
+            skill=FakeSkill(enabled=True, side_effect=RuntimeError("boom"))
+        )
+        fake_engine = FakeTaskEngine(
+            result=FakeTaskResult(
+                success=False,
+                content="",
+                sources=[],
+                task_type=None,
+                deliverable_format=None,
+                error="error",
+                execution_time_ms=0,
+            )
+        )
+        brain = self._make_brain(skill_registry=fake_registry, task_engine=fake_engine)
 
         result = _run_async(brain.execute_step("s1", "search", {"query": "test"}))
         self.assertFalse(result.success)
@@ -345,22 +438,19 @@ class TestExecutorBrainExecuteStep(unittest.TestCase):
         """When skill returns None, it gets wrapped as ExecutionResult(success=True, data={"result": None}).
         This is the actual behavior of _execute_skill — non-dict results are wrapped with success=True.
         """
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = MagicMock(return_value=None)
-        mock_registry.get_skill.return_value = mock_skill
-        mock_engine = MagicMock()
-        mock_te_result = MagicMock()
-        mock_te_result.success = False
-        mock_te_result.content = ""
-        mock_te_result.sources = []
-        mock_te_result.task_type = None
-        mock_te_result.deliverable_format = None
-        mock_te_result.error = "no result"
-        mock_te_result.execution_time_ms = 0
-        mock_engine.execute.return_value = mock_te_result
-        brain = ExecutorBrain(skill_registry=mock_registry, task_engine=mock_engine)
+        fake_registry = FakeSkillRegistry(skill=FakeSkill(enabled=True, result=None))
+        fake_engine = FakeTaskEngine(
+            result=FakeTaskResult(
+                success=False,
+                content="",
+                sources=[],
+                task_type=None,
+                deliverable_format=None,
+                error="no result",
+                execution_time_ms=0,
+            )
+        )
+        brain = ExecutorBrain(skill_registry=fake_registry, task_engine=fake_engine)
 
         result = _run_async(brain.execute_step("s1", "search", {"query": "test"}))
         # Non-dict return from skill is wrapped with success=True
@@ -368,22 +458,19 @@ class TestExecutorBrainExecuteStep(unittest.TestCase):
         self.assertEqual(result.data.get("result"), None)
 
     def test_execute_step_async_skill(self):
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = AsyncMock(return_value={"success": True, "data": {}})
-        mock_registry.get_skill.return_value = mock_skill
-        brain = self._make_brain(skill_registry=mock_registry)
+        fake_registry = FakeSkillRegistry(
+            skill=FakeAsyncSkill(enabled=True, result={"success": True, "data": {}})
+        )
+        brain = self._make_brain(skill_registry=fake_registry)
 
         result = _run_async(brain.execute_step("s1", "search", {"query": "test"}))
         self.assertTrue(result.success)
 
     def test_execute_step_no_skill_no_engine_no_query(self):
         """When no skill, no engine, and no query input, should fail."""
-        mock_registry = MagicMock()
-        mock_registry.get_skill.return_value = None
-        mock_engine = MagicMock()
-        brain = self._make_brain(skill_registry=mock_registry, task_engine=mock_engine)
+        fake_registry = FakeSkillRegistry(skill=None)
+        fake_engine = FakeTaskEngine()
+        brain = self._make_brain(skill_registry=fake_registry, task_engine=fake_engine)
 
         result = _run_async(brain.execute_step("s1", "unknown_skill", {}))
         self.assertFalse(result.success)
@@ -394,16 +481,14 @@ class TestExecutorBrainExecutePlan(unittest.TestCase):
 
     def _make_brain(self, skill_registry=None, task_engine=None):
         if task_engine is None:
-            task_engine = MagicMock()
+            task_engine = FakeTaskEngine()
         return ExecutorBrain(skill_registry=skill_registry, task_engine=task_engine)
 
     def test_execute_plan_all_steps_succeed(self):
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = MagicMock(return_value={"success": True, "data": {}})
-        mock_registry.get_skill.return_value = mock_skill
-        brain = self._make_brain(skill_registry=mock_registry)
+        fake_registry = FakeSkillRegistry(
+            skill=FakeSkill(enabled=True, result={"success": True, "data": {}})
+        )
+        brain = self._make_brain(skill_registry=fake_registry)
 
         steps = [
             {"id": "s1", "skill_id": "search", "parameters": {"query": "test"}},
@@ -414,23 +499,22 @@ class TestExecutorBrainExecutePlan(unittest.TestCase):
         self.assertIn("task_id", result.data)
 
     def test_execute_plan_step_failure_stops(self):
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = MagicMock(return_value={"success": False, "error": "bad"})
-        mock_registry.get_skill.return_value = mock_skill
-        # Use a mocked task_engine that returns failure (so fallback also fails)
-        mock_engine = MagicMock()
-        mock_te_result = MagicMock()
-        mock_te_result.success = False
-        mock_te_result.content = ""
-        mock_te_result.sources = []
-        mock_te_result.task_type = None
-        mock_te_result.deliverable_format = None
-        mock_te_result.error = "bad"
-        mock_te_result.execution_time_ms = 0
-        mock_engine.execute.return_value = mock_te_result
-        brain = ExecutorBrain(skill_registry=mock_registry, task_engine=mock_engine)
+        fake_registry = FakeSkillRegistry(
+            skill=FakeSkill(enabled=True, result={"success": False, "error": "bad"})
+        )
+        # Use a fake task_engine that returns failure (so fallback also fails)
+        fake_engine = FakeTaskEngine(
+            result=FakeTaskResult(
+                success=False,
+                content="",
+                sources=[],
+                task_type=None,
+                deliverable_format=None,
+                error="bad",
+                execution_time_ms=0,
+            )
+        )
+        brain = ExecutorBrain(skill_registry=fake_registry, task_engine=fake_engine)
 
         steps = [
             {"id": "s1", "skill_id": "search", "parameters": {"query": "test"}},
@@ -449,21 +533,21 @@ class TestExecutorBrainStatus(unittest.TestCase):
     """Tests for status tracking and cancellation."""
 
     def test_get_status_nonexistent(self):
-        brain = ExecutorBrain(task_engine=MagicMock())
+        brain = ExecutorBrain(task_engine=FakeTaskEngine())
         self.assertIsNone(brain.get_execution_status("nonexistent"))
 
     def test_cancel_nonexistent_task(self):
-        brain = ExecutorBrain(task_engine=MagicMock())
+        brain = ExecutorBrain(task_engine=FakeTaskEngine())
         result = _run_async(brain.cancel_execution("nonexistent"))
         self.assertFalse(result)
 
     def test_to_dict(self):
-        brain = ExecutorBrain(task_engine=MagicMock())
+        brain = ExecutorBrain(task_engine=FakeTaskEngine())
         d = brain.to_dict()
         self.assertEqual(d["type"], "executor_brain")
 
     def test_cancel_running_task(self):
-        brain = ExecutorBrain(task_engine=MagicMock())
+        brain = ExecutorBrain(task_engine=FakeTaskEngine())
         from opc_manager.executor_brain import ExecutionStatus
 
         brain.task_statuses["task_1"] = ExecutionStatus(
@@ -537,8 +621,8 @@ class TestReflectorBrainEvaluate(unittest.TestCase):
 
     @patch("opc_manager.quality_evaluator.call_llm_service", return_value=None)
     def test_llm_failure_falls_back_to_rules(self, mock_llm):
-        mock_svc = MagicMock()
-        brain = ReflectorBrain(llm_service=mock_svc)
+        fake_svc = FakeLLMService(response=None)
+        brain = ReflectorBrain(llm_service=fake_svc)
         actual = {"success": True, "data": {"content": "ok"}}
         evaluation = brain.evaluate_result(actual, {"goal": "test"})
         self.assertIsInstance(evaluation, Evaluation)
@@ -549,8 +633,8 @@ class TestReflectorBrainEvaluate(unittest.TestCase):
             '{"quality_score": 0.85, "result_level": "GOOD", '
             '"deviation_analysis": "OK", "key_findings": ["fine"]}'
         )
-        mock_svc = MagicMock()
-        brain = ReflectorBrain(llm_service=mock_svc)
+        fake_svc = FakeLLMService()
+        brain = ReflectorBrain(llm_service=fake_svc)
         actual = {"success": True, "data": {"content": "good"}}
         evaluation = brain.evaluate_result(actual, {"goal": "test"})
         self.assertEqual(evaluation.result, EvaluationResult.GOOD)
@@ -558,8 +642,8 @@ class TestReflectorBrainEvaluate(unittest.TestCase):
     @patch("opc_manager.quality_evaluator.call_llm_service")
     def test_llm_malformed_response_falls_back(self, mock_llm):
         mock_llm.return_value = "NOT JSON"
-        mock_svc = MagicMock()
-        brain = ReflectorBrain(llm_service=mock_svc)
+        fake_svc = FakeLLMService()
+        brain = ReflectorBrain(llm_service=fake_svc)
         actual = {"success": True, "data": {"content": "ok"}}
         evaluation = brain.evaluate_result(actual, {"goal": "test"})
         self.assertIsInstance(evaluation, Evaluation)

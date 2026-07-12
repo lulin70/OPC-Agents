@@ -4,6 +4,54 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.19] - 2026-07-12
+
+### DevSquad 共识推进第十一批 — P3-5 Mock 反模式修复扩展
+
+> 2 个测试文件 MagicMock 替换为真实 fake 类。`test_brain_modules.py` 40 处 MagicMock/AsyncMock → 6 个真实 fake 类，`test_live_log_panel.py` 4 处 MagicMock → 2 个真实 fake 类。保留合理 @patch 和 psutil Mock。P3-5 Mock 反模式修复扩展任务完成。
+
+#### Mock 反模式修复（2 文件）
+
+- **`tests/unit/test_brain_modules.py`** — 40 处 MagicMock/AsyncMock 替换为 6 个真实 fake 类：
+  - `FakeLLMService(response=None)` — 真实 `complete()` / `generate()` 方法，替代 `MagicMock(llm_service)`
+  - `FakeSkill(enabled, frozen, result, side_effect)` — 真实 `enabled`/`frozen` 属性 + 同步 `execute(**kwargs)`，替代 `MagicMock(skill)`
+  - `FakeAsyncSkill`（继承 FakeSkill）— `async def execute()`，被 `asyncio.iscoroutinefunction()` 正确识别，替代 `AsyncMock`
+  - `FakeSkillRegistry(skill=None)` — 真实 `get_skill(skill_id)` 方法返回预设 Skill 或 None，替代 `MagicMock(skill_registry)`
+  - `FakeTaskResult`（@dataclass）— 7 个字段对齐 `TaskResult`：`success`/`content`/`sources`/`task_type`/`deliverable_format`/`error`/`execution_time_ms`，替代 `MagicMock(task_result)`
+  - `FakeTaskEngine(result=None)` — 真实 `execute(**kwargs)` 方法返回 `FakeTaskResult`，替代 `MagicMock(task_engine)`
+  - 7 处 LLM 服务 mock + 8 处 SkillRegistry mock + 8 处 Skill mock + 7 处 TaskEngine mock + 6 处 TaskResult mock + 4 处 `ExecutorBrain(task_engine=MagicMock())` 全部替换
+  - import 行从 `from unittest.mock import patch, MagicMock, AsyncMock` 精简为 `from unittest.mock import patch`
+  - 保留 10 处合理 @patch（3× `call_llm_service` + 1× `planning_service.call_llm_service` + 3× `quality_evaluator.call_llm_service` + 3× `ExternalSkillResolver.resolve`）
+- **`tests/integration/test_live_log_panel.py`** — 4 处 MagicMock 替换为 2 个真实 fake 类：
+  - `FakeAuditLog(records=None)` — 真实 `query(session_id, operation_type, limit, since)` 方法，支持 `since` 时间戳过滤和 `limit` 限制，返回真实 dict 条目列表，替代 `MagicMock(audit_log)`
+  - `FakeProgressEmitter(history=None)` — 真实 `get_history(session_id)` 方法 + `_history` dict 属性（支持无 session_id 时的 `keys()` 遍历），返回真实 dict 历史列表，替代 `MagicMock(progress_emitter)`
+  - `TestCollectAuditLogs`（2 测试）：`mock_audit = MagicMock()` → `FakeAuditLog(records=[...])`
+  - `TestCollectProgressLogs`（2 测试）：`mock_emitter = MagicMock()` → `FakeProgressEmitter(history={...})`
+  - 保留 psutil Mock（`psutil.cpu_percent`/`virtual_memory`/`disk_usage` 返回复杂 namedtuple，合理保留）、Path Mock（在 skipped 测试中）、`patch.dict(sys.modules, ...)` 导入失败测试
+
+#### 保留的 Mock（合理 Mock）
+
+- 10 处 @patch（test_brain_modules.py）— 拦截模块级 `call_llm_service` 函数和 `ExternalSkillResolver.resolve` 类方法，避免真实 LLM 调用
+- psutil Mock（test_live_log_panel.py）— 系统监控 Mock 返回复杂 namedtuple，合理保留
+- Path Mock（test_live_log_panel.py）— 在 skipped 测试中
+- `patch.dict(sys.modules, ...)` 导入失败测试 — 测试模块导入失败的边界场景
+
+### 验证
+
+- 2 文件测试: 149 passed, 3 skipped（test_brain_modules 78 passed + test_live_log_panel 71 passed, 3 skipped）
+- 全量测试: 3701 passed, 80 skipped = 3781 tests（CI 配置: --ignore=tests/e2e），匹配 EXPECTED_TEST_COUNT=3781
+- Ruff: All checks passed
+- Black: All checks passed
+- 覆盖率: 未变（仅测试重构，无源码变更，CI 阈值 65%，实际 66%）
+
+#### P3-5 任务总结
+
+P3-5 Mock 反模式修复扩展任务完成，共 2 文件：
+- `tests/unit/test_brain_modules.py` — 40 处 MagicMock/AsyncMock → 6 个真实 fake 类
+- `tests/integration/test_live_log_panel.py` — 4 处 MagicMock → 2 个真实 fake 类
+
+P3-5 是 P3-4 的扩展，覆盖 P3-4 第四批修复时识别的 3 个候选文件中的 2 个（第 3 个 `test_real_progress.py` 只有 1 处 `patch.dict` 测试导入失败，是合理用法，非反模式）。
+
 ## [0.3.18] - 2026-07-12
 
 ### DevSquad 共识推进第十批 — P3-4 Mock 反模式修复第四批（P3-4 完成）

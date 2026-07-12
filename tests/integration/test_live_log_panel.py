@@ -91,6 +91,45 @@ def create_sample_entry(
     )
 
 
+class FakeAuditLog:
+    """真实 fake AuditLog，提供 query() 返回真实 dict 条目列表。
+
+    替代 MagicMock 反模式。真实 AuditLog 是单例（有 DB 副作用），
+    此 fake 提供独立的 query() 返回真实 dict 条目（非 MagicMock 桩）。
+    签名匹配 opc_manager.audit_log.AuditLog.query()。
+    """
+
+    def __init__(self, records=None):
+        self._records = records or []
+
+    def query(self, session_id=None, operation_type=None, limit=50, since=None):
+        """返回真实 dict 条目列表，模拟 AuditLog.query() 的输出。
+
+        支持 since 时间戳过滤和 limit 限制，与真实 query() 语义一致。
+        """
+        result = self._records
+        if since is not None:
+            result = [r for r in result if r.get("timestamp", 0) >= since]
+        return result[:limit]
+
+
+class FakeProgressEmitter:
+    """真实 fake ProgressEmitter，提供 get_history() 返回真实 dict 条目。
+
+    替代 MagicMock 反模式。真实 ProgressEmitter 是单例（有状态泄漏风险），
+    此 fake 提供独立的 get_history() 返回真实 dict 条目
+    （与 ProgressEvent.to_dict() 输出格式一致）。
+    _history 属性用于 collect_progress_logs 无 session_id 时的遍历。
+    """
+
+    def __init__(self, history=None):
+        self._history = history or {}
+
+    def get_history(self, session_id):
+        """返回真实 dict 历史列表，模拟 ProgressEmitter.get_history() 的输出。"""
+        return list(self._history.get(session_id, []))
+
+
 class TestLogEntryDataStructure:
     """Test suite for LogEntry dataclass validation and methods."""
 
@@ -294,20 +333,21 @@ class TestCollectAuditLogs:
 
     @patch("opc_manager.audit_log.AuditLog")
     def test_successful_audit_collection(self, MockAuditLog):
-        mock_audit = MagicMock()
-        mock_audit.query.return_value = [
-            {
-                "id": "abc123",
-                "timestamp": time.time(),
-                "operation_type": "task_execute",
-                "skill_id": "content_generation",
-                "status": "success",
-                "duration_ms": 1500,
-                "input_summary": "Generate report",
-                "output_summary": "Report generated",
-            }
-        ]
-        MockAuditLog.return_value = mock_audit
+        fake_audit = FakeAuditLog(
+            records=[
+                {
+                    "id": "abc123",
+                    "timestamp": time.time(),
+                    "operation_type": "task_execute",
+                    "skill_id": "content_generation",
+                    "status": "success",
+                    "duration_ms": 1500,
+                    "input_summary": "Generate report",
+                    "output_summary": "Report generated",
+                }
+            ]
+        )
+        MockAuditLog.return_value = fake_audit
 
         logs = collect_audit_logs()
         assert len(logs) == 1
@@ -317,21 +357,22 @@ class TestCollectAuditLogs:
 
     @patch("opc_manager.audit_log.AuditLog")
     def test_failed_operation_shows_error_level(self, MockAuditLog):
-        mock_audit = MagicMock()
-        mock_audit.query.return_value = [
-            {
-                "id": "def456",
-                "timestamp": time.time(),
-                "operation_type": "api_call",
-                "skill_id": "llm_service",
-                "status": "failed",
-                "duration_ms": 5000,
-                "error_msg": "Connection timeout",
-                "input_summary": "",
-                "output_summary": "",
-            }
-        ]
-        MockAuditLog.return_value = mock_audit
+        fake_audit = FakeAuditLog(
+            records=[
+                {
+                    "id": "def456",
+                    "timestamp": time.time(),
+                    "operation_type": "api_call",
+                    "skill_id": "llm_service",
+                    "status": "failed",
+                    "duration_ms": 5000,
+                    "error_msg": "Connection timeout",
+                    "input_summary": "",
+                    "output_summary": "",
+                }
+            ]
+        )
+        MockAuditLog.return_value = fake_audit
 
         logs = collect_audit_logs()
         assert logs[0].level == "ERROR"
@@ -348,24 +389,27 @@ class TestCollectProgressLogs:
 
     @patch("opc_manager.progress_emitter.ProgressEmitter")
     def test_progress_event_conversion(self, MockEmitter):
-        mock_emitter = MagicMock()
-        mock_emitter.get_history.return_value = [
-            {
-                "event": "step_start",
-                "session_id": "test_session_12345",
-                "message": "Starting content generation",
-                "timestamp": time.time(),
-                "progress": 10,
-            },
-            {
-                "event": "complete",
-                "session_id": "test_session_12345",
-                "message": "Task completed successfully",
-                "timestamp": time.time(),
-                "progress": 100,
-            },
-        ]
-        MockEmitter.return_value = mock_emitter
+        fake_emitter = FakeProgressEmitter(
+            history={
+                "test_session_12345": [
+                    {
+                        "event": "step_start",
+                        "session_id": "test_session_12345",
+                        "message": "Starting content generation",
+                        "timestamp": time.time(),
+                        "progress": 10,
+                    },
+                    {
+                        "event": "complete",
+                        "session_id": "test_session_12345",
+                        "message": "Task completed successfully",
+                        "timestamp": time.time(),
+                        "progress": 100,
+                    },
+                ]
+            }
+        )
+        MockEmitter.return_value = fake_emitter
 
         logs = collect_progress_logs(session_id="test_session_12345")
         assert len(logs) == 2
@@ -376,16 +420,19 @@ class TestCollectProgressLogs:
 
     @patch("opc_manager.progress_emitter.ProgressEmitter")
     def test_error_event_mapped_to_error_level(self, MockEmitter):
-        mock_emitter = MagicMock()
-        mock_emitter.get_history.return_value = [
-            {
-                "event": "error",
-                "session_id": "sess",
-                "message": "LLM service unavailable",
-                "timestamp": time.time(),
+        fake_emitter = FakeProgressEmitter(
+            history={
+                "sess": [
+                    {
+                        "event": "error",
+                        "session_id": "sess",
+                        "message": "LLM service unavailable",
+                        "timestamp": time.time(),
+                    }
+                ]
             }
-        ]
-        MockEmitter.return_value = mock_emitter
+        )
+        MockEmitter.return_value = fake_emitter
 
         logs = collect_progress_logs(session_id="sess")
         assert logs[0].level == "ERROR"
