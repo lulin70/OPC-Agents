@@ -48,8 +48,8 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 3781 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration） |
-| 全量覆盖率 | 66% | `coverage.json` totals.percent_covered_display（v0.3.10 crm_skill 64 tests + 3 bug 修复后提升，CI 阈值 65%） |
+| 测试用例总数 | 3996 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.23 新增 215 覆盖测试） |
+| 全量覆盖率 | 68.25% | `pytest --cov` 实测（v0.3.23 P2-11 8 模块 401 行新覆盖，CI 阈值 65%） |
 | `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
 | `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
 | `email_skill` 专项测试覆盖率 | 99% | `pytest --cov=opc_manager.email_skill` |

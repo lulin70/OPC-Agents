@@ -373,12 +373,12 @@ CI/CD 成熟度:  █████████████████    82%  (B
 
 #### 🟢 P2 后续迭代（1-2 人日） — ✅ 全部完成 (v0.3.23)
 
-11. **覆盖率提升**: 66% → ~69%（8 模块 354 行新覆盖）✅
+11. **覆盖率提升**: 66% → 68.25%（8 模块 401 行新覆盖）✅
     - monitoring.py 38%→92%, correction_manager.py 28%→100%, config.py 59%→94%
     - async_executor_persistence.py 31%→100%, protocols.py 41%→95%
     - persona_manager.py 34%→73%, skill_registry.py 47%→71%
     - async_executor_recovery.py 63%→~100%
-    - 注：70% 目标未完全达成，但 CI minimum 65% 已满足，后续版本继续推进
+    - 注：70% 目标未完全达成（实际 68.25%），但 CI minimum 65% 已满足，后续版本继续推进
 12. **weekly-e2e-real.yml 添加失败通知** ✅（之前已完成）
 13. **80 个 skipped 测试审查** ✅ — 3 个 unjustified skip 修复（80→77），77 剩余全部为冻结技能（SKILL_FREEZE_LIST.md）
 14. **docs/ 过程文档归档** ✅（commit c94fa89, docs/internal/）

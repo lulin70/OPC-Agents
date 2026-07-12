@@ -8,9 +8,9 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ### D02 评估 P2 修复 — 覆盖率提升 + skip 清理 + 流程文档归档
 
-> DevSquad D02 评估 P2 项修复：覆盖率从 66% 提升至 ~69%（8 模块 354 行新覆盖）；3 个 unjustified skipped 测试修复（80→77 skip）；流程文档归档至 docs/internal/。
+> DevSquad D02 评估 P2 项修复：覆盖率从 66% 提升至 68.25%（8 模块 401 行新覆盖）；3 个 unjustified skipped 测试修复（80→77 skip）；流程文档归档至 docs/internal/。
 
-#### P2-11: 覆盖率提升（8 模块，354 行新覆盖）
+#### P2-11: 覆盖率提升（8 模块，401 行新覆盖）
 
 - **monitoring.py**: 38% → 92%（26 行新覆盖）— init_monitoring/track_event/track_error 含 Sentry 集成路径
 - **correction_manager.py**: 28% → 100%（43 行新覆盖）— 4 种修正策略 + apply_correction 分发 + _make_step_result
