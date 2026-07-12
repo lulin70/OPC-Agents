@@ -31,15 +31,15 @@ opc-agents                      # 2. 起動
 
 ---
 
-## 🆕 v0.3.5 ハイライト
+## 🆕 v0.3.22 ハイライト
 
-> 完全な変更履歴は [CHANGELOG.md](CHANGELOG.md)、アーキテクチャ設計は [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md) を参照。
+> 完全な変更履歴は [CHANGELOG.md](CHANGELOG.md)、アーキテクチャ設計は [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)、成熟度評価は [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md) を参照。
 
-- **⚡ 三賢者並列投票アーキテクチャ回帰**: 直列パイプライン（3×RTT）から並列投票（1×RTT）に変更、レイテンシ3分の1に低下。EVA MAGI三賢者同期投票+マイノリティレポート機構を参考に、重要意思決定点を事前コンセンサスで保護。
-- **🎯 3つのコアスキルに集中**: メール / 財務 / レポート。11個の非コアスキルを凍結（[docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md) 参照）、各コアスキルを本当に使いやすくする。
+- **⚡ 三賢者並列投票アーキテクチャ**: 直列パイプライン（3×RTT）から並列投票（1×RTT）に変更、レイテンシ3分の1に低下。EVA MAGI三賢者同期投票+マイノリティレポート機構を参考に、重要意思決定点を事前コンセンサスで保護。
+- **🎯 3つのコアスキルに集中**: メール / 財務 / レポート。非コアスキルを凍結（[docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md) 参照）、各コアスキルを本当に使いやすくする。
 - **🧠 IntentRouter 3分類スマートルーティング**: SIMPLE / COMPLEX / GREETINGの3分類。簡単なタスクは三賢者をバイパスして直接実行—速くてお得；複雑なタスクのみ並列投票に入り、品質を保証。
 - **🛡 重要意思決定点の事前コンセンサス保護**: ConsensusEngineを「事後補救」から「事前関門」に変更、ExecutorBrainは真の意見を提供（偽意見ルール削除）、ReflectorBrainは事前予測+マイノリティレポート。
-- **📊 品質大幅向上**: 総カバレッジ62.87%、コアスキル対象テストカバレッジ email_skill 99% / finance_skill 100%（対象 `pytest --cov` スコープ、フルテストスイートでは email_skill 17.0% / finance_skill 14.5%、`coverage.json` 参照、Sprint 2で16.96%/14.46%基線から対象カバレッジ向上）；実LLM E2Eテスト7件追加（CIが毎週月曜に自動実行）。
+- **📊 継続的な品質向上**: 3781テスト、カバレッジ66%+、全CIゲート通過（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/バージョン一致性/三言語README一致性）。D02成熟度評価82点 B+。
 - **🌐 i18nリファクター**: 3857行 → 133行ロジック層 + JSON化、後方互換、メンテナンスコスト激減。
 
 > 🧪 試してみたい？[docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) をお読みください（3分で設定完了）、デモスクリプトは [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)、フィードバックフォームは [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。

@@ -31,15 +31,15 @@ opc-agents                      # 2. 启动
 
 ---
 
-## 🆕 v0.3.5 亮点
+## 🆕 v0.3.22 亮点
 
-> 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)。
+> 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)，成熟度评估见 [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md)。
 
-- **⚡ 三贤者并行投票架构回归**：从串行流水线（3×RTT）改为并行投票（1×RTT），延迟降低 3 倍。借鉴 EVA MAGI 三贤者同步投票 + 少数派报告机制，关键决策点前置共识保护。
-- **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结 11 个非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
+- **⚡ 三贤者并行投票架构**：从串行流水线（3×RTT）改为并行投票（1×RTT），延迟降低 3 倍。借鉴 EVA MAGI 三贤者同步投票 + 少数派报告机制，关键决策点前置共识保护。
+- **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
 - **🧠 IntentRouter 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
 - **🛡 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
-- **📊 质量大幅提升**：总覆盖率 62.87%，核心 skill 专项测试覆盖率 email_skill 99% / finance_skill 100%（专项测试 `pytest --cov` 口径，全量测试套件口径下 email_skill 17.0% / finance_skill 14.5%，详见 `coverage.json`；Sprint 2 已从 16.96%/14.46% 基线提升专项覆盖率）；新增 7 个真实 LLM E2E 测试（CI 每周一自动运行）。
+- **📊 质量持续提升**：3781 个测试，覆盖率 66%+，CI 全门禁通过（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/版本一致性/三语 README 一致性）。D02 成熟度评估 82 分 B+。
 - **🌐 i18n 重构**：3857 行 → 133 行逻辑层 + JSON 化，向后兼容，维护成本骤降。
 
 > 🧪 准备试用？请阅读 [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md)（3 分钟完成配置），演示话术见 [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)，反馈表见 [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。
