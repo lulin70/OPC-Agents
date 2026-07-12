@@ -4,6 +4,34 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-07-12
+
+### DevSquad 共识推进第六批 — P3-3 mypy 豁免移除 Batch 3（完成）
+
+> 11 个模块从 mypy per-module overrides 移除（11→0），84 个函数注解补全，mypy `disallow_untyped_defs = true` 全局覆盖所有 83 模块，per-module overrides 彻底清零。P3-3 任务完成。
+
+#### 类型注解补全（11 模块，Batch 3）
+
+Batch 3 覆盖 6+ 个未类型化函数的 11 模块，共 84 个 no-untyped-def 错误：
+
+- **6-error 模块（4 个）**：`flywheel_tracker` / `confirmer` / `audit_log` — 返回类型注解补全（`-> None` / `-> Any`）
+- **7-error 模块（4 个）**：`validators` / `onboarding` / `correction_manager` — pydantic field_validator 参数注解 + `-> None` 返回类型
+- **8-error 模块（2 个）**：`skill_registry` / `progress_emitter` — `**kwargs: Any` / `**opts: Any` + 返回类型
+- **9-error 模块（2 个）**：`task_orchestrator` / `protocols` — `context: Any` / `step: Any = None` + `-> Any` 返回类型
+- **11-error 模块（1 个）**：`agent_loop` — `context: Any` / `step: Optional[Any] = None` + `-> Decision` / `-> Opinion` / `-> ExecutionResult` 返回类型
+
+#### pyproject.toml 变更
+
+- **mypy overrides**: 11 模块 → 0 模块（Batch 3 的 11 个模块移除豁免，per-module overrides 彻底清零）
+- **全局 `disallow_untyped_defs = true`**: 覆盖所有 83 模块（v0.3.12 Batch 1: 46 模块 + v0.3.13 Batch 2: 26 模块 + v0.3.14 Batch 3: 11 模块）
+
+### 验证
+
+- mypy: 0 errors（113 files, Success），无预先存在错误
+- Black: 5 文件格式化后全量通过（121 files unchanged）
+- 全量测试: 3695 passed, 80 skipped, 6 deselected = 3781 tests（CI 配置: --ignore=tests/e2e + 6 deselected），匹配 EXPECTED_TEST_COUNT=3781
+- 覆盖率: 未变（仅类型注解，无逻辑变更，CI 阈值 65%，实际 66%）
+
 ## [0.3.13] - 2026-07-11
 
 ### DevSquad 共识推进第五批 — P3-3 mypy 豁免移除 Batch 2

@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.13 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.14 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -180,7 +180,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.13
+pip install opc-agents==0.3.14
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography
@@ -411,6 +411,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | Version | Date | Milestone |
 |---------|------|-----------|
+| **0.3.14** | **2026-07-12** | **mypy Override Removal Batch 3 (P3-3 Complete)** — 11 modules removed from per-module overrides (11→0), 84 function annotations completed, mypy `disallow_untyped_defs = true` covers all 83 modules, per-module overrides fully eliminated |
 | **0.3.13** | **2026-07-11** | **mypy Override Removal Batch 2 (P3-3)** — 26 modules removed from per-module overrides (37→11), 88 function annotations completed, mypy `disallow_untyped_defs = true` coverage expanded. Remaining 11 modules (Batch 3, 6+ untyped) for future work |
 | **0.3.12** | **2026-07-11** | **mypy Override Removal Batch 1 (P3-3)** — 46 modules removed from per-module overrides (83→37), return type + parameter type annotations completed (`__init__`/`__post_init__`/`execute_goal`/`undo_*`/`**kwargs: Any` etc.), mypy `disallow_untyped_defs = true` globally enforced |
 | **0.3.11** | **2026-07-11** | **radon cc D+ Blocking Gate (P3-2)** — All 6 D/E grade functions downgraded (`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)), CI radon cc converted from non-blocking to D+ blocking, Dockerfile/start.sh version fix (0.3.5→0.3.11) |

@@ -71,16 +71,16 @@ class TaskOrchestrator:
 
     def __init__(
         self,
-        strategist_brain,
-        executor_brain,
-        reflector_brain,
-        consensus_consultant,
-        correction_manager,
+        strategist_brain: Any,
+        executor_brain: Any,
+        reflector_brain: Any,
+        consensus_consultant: Any,
+        correction_manager: Any,
         result_builder: ResultBuilder,
         progress_tracker: ProgressTracker,
         max_reflect_rounds: int = 3,
         max_retry_per_step: int = 3,
-    ):
+    ) -> None:
         """初始化任务编排器。
 
         Args:
@@ -536,7 +536,7 @@ class TaskOrchestrator:
     # 以下方法从AgentLoop迁移，保持原有逻辑
     # 这些是执行阶段所需的辅助方法
 
-    def _is_critical_decision_point(self, context, step=None) -> bool:
+    def _is_critical_decision_point(self, context: Any, step: Any = None) -> bool:
         """判断当前是否为关键决策点。"""
         if isinstance(context, dict):
             metadata = context.get("metadata", {}) or {}
@@ -560,7 +560,9 @@ class TaskOrchestrator:
             skill_id in CRITICAL_DECISION_SKILLS or action in CRITICAL_DECISION_ACTIONS
         )
 
-    async def _parallel_consensus(self, context, decision_point: str, step=None):
+    async def _parallel_consensus(
+        self, context: Any, decision_point: str, step: Any = None
+    ) -> Any:
         """三贤者并行投票决策。"""
         if not PARALLEL_VOTE_ENABLED:
             return await self._serial_consensus_fallback(context, decision_point, step)
@@ -585,14 +587,18 @@ class TaskOrchestrator:
             logger.warning("并行投票失败，降级到串行: %s", e)
             return await self._serial_consensus_fallback(context, decision_point, step)
 
-    async def _strategist_opinion_async(self, context_dict, decision_point):
+    async def _strategist_opinion_async(
+        self, context_dict: Any, decision_point: str
+    ) -> Any:
         """策略脑异步意见。"""
         result = await asyncio.to_thread(
             self.strategist_brain.express_opinion, context_dict, decision_point
         )
         return dict_to_opinion(result, brain_type="strategist")
 
-    async def _serial_consensus_fallback(self, context, decision_point: str, step=None):
+    async def _serial_consensus_fallback(
+        self, context: Any, decision_point: str, step: Any = None
+    ) -> Any:
         """串行降级路径。"""
         context_dict = context_to_dict(context)
         planned_action = extract_planned_action(context, step)
@@ -695,8 +701,8 @@ class TaskOrchestrator:
         return enriched
 
     async def _execute_step_with_retry(
-        self, context: AgentContext, step, enriched_params: Optional[Dict] = None
-    ):
+        self, context: AgentContext, step: Any, enriched_params: Optional[Dict] = None
+    ) -> Any:
         """带重试的步骤执行。"""
         step_retries = context.step_retry_counts.get(step.id, 0)
         exec_params = (

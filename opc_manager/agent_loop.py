@@ -24,13 +24,14 @@ import os
 import time
 
 from .strategist_brain import StrategistBrain
-from .executor_brain import ExecutorBrain
+from .executor_brain import ExecutorBrain, ExecutionResult
 from .reflector_brain import (
     ReflectorBrain,
 )
 from .consensus_engine import (
     ConsensusEngine,
     Opinion,
+    Decision,
 )
 from .skill_registry import SkillRegistry
 from .tool_system import ToolSystem
@@ -92,11 +93,11 @@ class AgentLoop:
         skill_registry: Optional[SkillRegistry] = None,
         tool_system: Optional[ToolSystem] = None,
         session_manager: Optional[SessionContextManager] = None,
-        task_engine=None,
-        llm_service=None,
+        task_engine: Optional[TaskEngineV3] = None,
+        llm_service: Optional[Any] = None,
         max_reflect_rounds: int = MAX_REFLECT_ROUNDS,
         max_retry_per_step: int = MAX_RETRY_PER_STEP,
-    ):
+    ) -> None:
         # 初始化核心依赖
         self.task_engine = task_engine or TaskEngineV3()
         self.llm_service = llm_service
@@ -332,23 +333,39 @@ class AgentLoop:
     # 这些方法委托给TaskOrchestrator，确保现有测试和调用方继续工作
     # =========================================================================
 
-    def _is_critical_decision_point(self, context, step=None) -> bool:
+    def _is_critical_decision_point(
+        self, context: Any, step: Optional[Any] = None
+    ) -> bool:
         """判断当前是否为关键决策点 [向后兼容委托]"""
         return self._orchestrator._is_critical_decision_point(context, step)
 
-    async def _parallel_consensus(self, context, decision_point: str, step=None):
+    async def _parallel_consensus(
+        self,
+        context: Any,
+        decision_point: str,
+        step: Optional[Any] = None,
+    ) -> Decision:
         """三贤者并行投票决策 [向后兼容委托]"""
         return await self._orchestrator._parallel_consensus(
             context, decision_point, step
         )
 
-    async def _serial_consensus_fallback(self, context, decision_point: str, step=None):
+    async def _serial_consensus_fallback(
+        self,
+        context: Any,
+        decision_point: str,
+        step: Optional[Any] = None,
+    ) -> Decision:
         """串行降级路径 [向后兼容委托]"""
         return await self._orchestrator._serial_consensus_fallback(
             context, decision_point, step
         )
 
-    async def _strategist_opinion_async(self, context_dict, decision_point):
+    async def _strategist_opinion_async(
+        self,
+        context_dict: Dict[str, Any],
+        decision_point: str,
+    ) -> Opinion:
         """策略脑异步意见 [向后兼容委托]"""
         return await self._orchestrator._strategist_opinion_async(
             context_dict, decision_point
@@ -361,8 +378,11 @@ class AgentLoop:
         return self._orchestrator._enrich_step_parameters(params, execution_results)
 
     async def _execute_step_with_retry(
-        self, context: AgentContext, step, enriched_params: Optional[Dict] = None
-    ):
+        self,
+        context: AgentContext,
+        step: Any,
+        enriched_params: Optional[Dict] = None,
+    ) -> ExecutionResult:
         """带重试的步骤执行 [向后兼容委托]"""
         return await self._orchestrator._execute_step_with_retry(
             context, step, enriched_params if enriched_params is not None else {}
@@ -383,12 +403,14 @@ class AgentLoop:
         return self._result_builder.build_result(context, cancelled)
 
     @staticmethod
-    def _context_to_dict(context) -> Dict[str, Any]:
+    def _context_to_dict(context: Any) -> Dict[str, Any]:
         """将 AgentContext 转换为 dict（用于三贤者投票）[S2-T2]"""
         return _context_to_dict_impl(context)
 
     @staticmethod
-    def _extract_planned_action(context, step=None) -> Dict[str, Any]:
+    def _extract_planned_action(
+        context: Any, step: Optional[Any] = None
+    ) -> Dict[str, Any]:
         """提取计划行动信息（用于 ReflectorBrain 预判）[S2-T2]"""
         return _extract_planned_action_impl(context, step)
 

@@ -21,7 +21,7 @@ class TaskRequest(BaseModel):
 
     @field_validator("user_input")
     @classmethod
-    def validate_user_input(cls, v):
+    def validate_user_input(cls: type["TaskRequest"], v: str) -> str:
         v = v.strip()
         if not v:
             raise ValueError("用户输入不能为空")
@@ -58,7 +58,7 @@ class AgentConfig(BaseModel):
 
     @field_validator("expertise_tags")
     @classmethod
-    def validate_expertise_tags(cls, v):
+    def validate_expertise_tags(cls: type["AgentConfig"], v: List[str]) -> List[str]:
         if not v:
             return v
         for tag in v:
@@ -70,7 +70,7 @@ class AgentConfig(BaseModel):
 
     @field_validator("agent_id")
     @classmethod
-    def validate_agent_id(cls, v):
+    def validate_agent_id(cls: type["AgentConfig"], v: str) -> str:
         if v.startswith("_") or v.endswith("_"):
             raise ValueError("Agent ID不能以下划线开头或结尾")
         return v
@@ -86,7 +86,7 @@ class LLMRequest(BaseModel):
 
     @field_validator("prompt", "system_prompt")
     @classmethod
-    def validate_prompts(cls, v):
+    def validate_prompts(cls: type["LLMRequest"], v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
         v = v.strip()
@@ -113,7 +113,7 @@ class SearchQuery(BaseModel):
 
     @field_validator("query")
     @classmethod
-    def validate_query(cls, v):
+    def validate_query(cls: type["SearchQuery"], v: str) -> str:
         v = v.strip()
         if not v:
             raise ValueError("搜索查询不能为空")
@@ -131,7 +131,7 @@ class FileUpload(BaseModel):
 
     @field_validator("filename")
     @classmethod
-    def validate_filename(cls, v):
+    def validate_filename(cls: type["FileUpload"], v: str) -> str:
         v = v.replace("/", "").replace("\\", "").replace("..", "")
         allowed_extensions = {
             ".txt",
@@ -154,7 +154,7 @@ class FileUpload(BaseModel):
 
     @field_validator("content_type")
     @classmethod
-    def validate_content_type(cls, v):
+    def validate_content_type(cls: type["FileUpload"], v: str) -> str:
         allowed_types = {
             "text/plain",
             "text/markdown",

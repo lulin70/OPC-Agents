@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.13 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.14 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -176,7 +176,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.13
+pip install opc-agents==0.3.14
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
@@ -407,6 +407,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
+| **0.3.14** | **2026-07-12** | **mypyオーバーライド削除 Batch 3(P3-3完了)** — 11モジュールをper-module overridesから削除（11→0）、84関数のアノテーション補完、mypy `disallow_untyped_defs = true`が全83モジュールをカバー、per-module overrides完全クリア |
 | **0.3.13** | **2026-07-11** | **mypyオーバーライド削除 Batch 2(P3-3)** — 26モジュールをper-module overridesから削除（37→11）、88関数のアノテーション補完、mypy `disallow_untyped_defs = true`カバレッジ拡大。残り11モジュール（Batch 3、6+ untyped）は今後対応 |
 | **0.3.12** | **2026-07-11** | **mypyオーバーライド削除 Batch 1(P3-3)** — 46モジュールをper-module overridesから削除（83→37）、戻り値型+パラメータ型アノテーション補完（`__init__`/`__post_init__`/`execute_goal`/`undo_*`/`**kwargs: Any`等）、mypy `disallow_untyped_defs = true`グローバル適用 |
 | **0.3.11** | **2026-07-11** | **radon cc D+ ブロッキングゲート(P3-2)** — 6つのD/E級関数を全てダウングレード（`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)）、CI radon ccを非ブロッキングからD+ブロッキングに変更、Dockerfile/start.shバージョン修正（0.3.5→0.3.11） |

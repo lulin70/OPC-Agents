@@ -71,12 +71,12 @@ class SkillRegistry(SkillExecutorMixin):
 
     def __new__(
         cls,
-        llm_service=None,
-        search_processor=None,
-        tool_system=None,
+        llm_service: Optional[LLMServiceProtocol] = None,
+        search_processor: Any = None,
+        tool_system: Any = None,
         register_builtins: bool = True,
         register_external: bool = True,
-    ):
+    ) -> "SkillRegistry":
         if cls._instance is None:
             with cls._instance_lock:
                 if cls._instance is None:
@@ -85,12 +85,12 @@ class SkillRegistry(SkillExecutorMixin):
 
     def __init__(
         self,
-        llm_service=None,
-        search_processor=None,
-        tool_system=None,
+        llm_service: Optional[LLMServiceProtocol] = None,
+        search_processor: Any = None,
+        tool_system: Any = None,
         register_builtins: bool = True,
         register_external: bool = True,
-    ):
+    ) -> None:
         with self._init_lock:
             if hasattr(self, "_initialized") and self._initialized:
                 if llm_service is not None:
@@ -119,7 +119,7 @@ class SkillRegistry(SkillExecutorMixin):
             self._web_search = None
             self._content_generator = None
 
-    def _register_external_skills(self):
+    def _register_external_skills(self) -> None:
         try:
             from opc_manager.data_manager import init_db, execute_query
 
@@ -156,7 +156,7 @@ class SkillRegistry(SkillExecutorMixin):
             logger.debug("注册外部技能失败: %s", e)
 
     def _execute_extended_skill(
-        self, goal: str = "", _context: Optional[SkillContext] = None, **kwargs
+        self, goal: str = "", _context: Optional[SkillContext] = None, **kwargs: Any
     ) -> Dict[str, Any]:
         try:
             from opc_manager.skill_marketplace import ExternalSkillMarketplace
@@ -305,7 +305,7 @@ class SkillRegistry(SkillExecutorMixin):
         return list(self.skills.values())
 
     async def execute_skill(  # type: ignore[override]  # 参数名 skill_id 为公开 API，不可改为父类的 skill_name
-        self, skill_id: str, context: Optional[SkillContext] = None, **kwargs
+        self, skill_id: str, context: Optional[SkillContext] = None, **kwargs: Any
     ) -> Dict[str, Any]:
         skill = self.get_skill(skill_id)
         if not skill:
@@ -355,7 +355,7 @@ class SkillRegistry(SkillExecutorMixin):
             return {"success": False, "error": str(e)}
 
     def export_result(
-        self, skill_id: str, result_data: Dict[str, Any], fmt: str, **opts
+        self, skill_id: str, result_data: Dict[str, Any], fmt: str, **opts: Any
     ) -> bytes:
         from opc_manager.export import ExportManager
         from opc_manager.export.models import ResultData, ExportFormat

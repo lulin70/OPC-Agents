@@ -7,7 +7,7 @@ Supports both legacy IntentType strings and new UnifiedTaskCategory for backward
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Awaitable, Callable, Dict, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import logging
 import time
@@ -80,7 +80,7 @@ RISK_LEVEL_MAP = {
 _UNIFIED_RISK_MAP = None
 
 
-def _get_unified_risk_map():
+def _get_unified_risk_map() -> Dict[Any, RiskLevel]:
     """Lazy initialization of unified risk map to avoid circular imports."""
     global _UNIFIED_RISK_MAP
     if _UNIFIED_RISK_MAP is None:
@@ -99,7 +99,7 @@ def _get_unified_risk_map():
     return _UNIFIED_RISK_MAP
 
 
-def _get_all_unified_categories():
+def _get_all_unified_categories() -> List[Any]:
     """Get list of UnifiedTaskCategory values for pattern matching."""
     try:
         from .unified_types import UnifiedTaskCategory
@@ -149,7 +149,7 @@ class Confirmer:
         _trust_scores: Trust scores for (session_id, intent_type) pairs.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Confirmer with empty history and trust scores."""
         self._confirmation_history: Dict[str, ConfirmationRequest] = {}
         self._trust_scores: Dict[Tuple[str, str], int] = {}
@@ -195,7 +195,7 @@ class Confirmer:
         # Fall back to legacy mapping
         return RISK_LEVEL_MAP.get(intent_type.upper(), RiskLevel.MEDIUM)
 
-    def assess_risk_unified(self, unified_category) -> RiskLevel:
+    def assess_risk_unified(self, unified_category: Any) -> RiskLevel:
         """Assess risk level using UnifiedTaskCategory directly.
 
         This is the recommended method for new code using the dual-engine system.
@@ -226,7 +226,7 @@ class Confirmer:
         confirm_callback: Optional[
             Callable[[ConfirmationRequest], Awaitable[ConfirmationResult]]
         ] = None,
-        unified_category=None,
+        unified_category: Any = None,
     ) -> ConfirmationResult:
         """Check if operation requires user confirmation.
 
@@ -285,7 +285,7 @@ class Confirmer:
 
         return ConfirmationResult(confirmed=False, method="no_callback")
 
-    def _record_success(self, session_id: str, intent_type: str):
+    def _record_success(self, session_id: str, intent_type: str) -> None:
         key = (session_id, intent_type)
         self._trust_scores[key] = min(
             self._trust_scores.get(key, 0) + 1, MAX_TRUST_SCORE

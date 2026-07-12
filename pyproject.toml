@@ -132,10 +132,9 @@ markers = [
 addopts = "-v --tb=short --strict-markers"
 
 [tool.mypy]
-# Mypy configuration — gradual typing adoption (TD-065)
-# v0.3.7: disallow_untyped_defs enabled globally (30 modules pass),
-# per-module overrides for 83 modules with untyped functions.
-# Gradually remove overrides as functions get type annotations.
+# Mypy configuration — gradual typing adoption (TD-065, COMPLETE)
+# v0.3.7: disallow_untyped_defs enabled globally (30 modules pass).
+# v0.3.12-v0.3.14: All 83 modules annotated in 3 batches, per-module overrides eliminated.
 # Note: do NOT pin python_version — let mypy use runtime version so that
 # PEP 695 `type` statements in numpy 2.x stubs parse correctly on 3.12.
 warn_return_any = false
@@ -152,26 +151,11 @@ exclude = [
     "tests/",
 ]
 
-# Per-module overrides: 11 modules with untyped functions (TD-065 Phase 3)
+# Per-module overrides: ALL modules annotated (TD-065 Phase 3 complete)
 # v0.3.12: Batch 1 (46 modules) annotated and removed from overrides.
 # v0.3.13: Batch 2 (26 modules) annotated and removed from overrides.
-# Remaining 11 modules are Batch 3 (6+ untyped funcs) — largest scope, future work.
-# Remove modules from this list as they become fully typed.
-[[tool.mypy.overrides]]
-module = [
-    "opc_manager.agent_loop",
-    "opc_manager.audit_log",
-    "opc_manager.confirmer",
-    "opc_manager.correction_manager",
-    "opc_manager.flywheel_tracker",
-    "opc_manager.onboarding",
-    "opc_manager.progress_emitter",
-    "opc_manager.protocols",
-    "opc_manager.skill_registry",
-    "opc_manager.task_orchestrator",
-    "opc_manager.validators",
-]
-disallow_untyped_defs = false
+# v0.3.14: Batch 3 (11 modules) annotated — all 83 modules now fully typed.
+# Global disallow_untyped_defs = true applies to all modules.
 
 [tool.ruff]
 line-length = 88

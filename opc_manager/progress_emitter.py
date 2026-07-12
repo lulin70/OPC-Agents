@@ -55,7 +55,7 @@ class ProgressEvent:
     timestamp: float = field(default_factory=lambda: time.time())
     unified_category: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.progress_pct is not None:
             if not isinstance(self.progress_pct, (int, float)):
                 raise TypeError("progress_pct must be an integer or None")
@@ -78,7 +78,7 @@ class ProgressEvent:
             return self.unified_category
         return self.detail.get("unified_category")
 
-    def with_category(self, category) -> "ProgressEvent":
+    def with_category(self, category: Any) -> "ProgressEvent":
         """Return new event with unified category set (immutable pattern).
 
         This method creates a new ProgressEvent with the unified_category field set,
@@ -148,7 +148,7 @@ class ProgressEmitter:
     _history: Dict[str, List[dict]]
     _max_history: int
 
-    def __new__(cls):
+    def __new__(cls) -> "ProgressEmitter":
         """Create or return singleton instance."""
         if cls._instance is None:
             with cls._lock:
@@ -159,7 +159,7 @@ class ProgressEmitter:
                     cls._instance._max_history = cls.MAX_HISTORY_SIZE
         return cls._instance
 
-    def _prune_old_sessions(self):
+    def _prune_old_sessions(self) -> None:
         """Remove history for oldest sessions when MAX_SESSIONS is exceeded."""
         if len(self._history) <= self.MAX_SESSIONS:
             return
@@ -173,7 +173,7 @@ class ProgressEmitter:
             self._history.pop(session_id, None)
             self._subscribers.pop(session_id, None)
 
-    def emit(self, event: ProgressEvent):
+    def emit(self, event: ProgressEvent) -> None:
         sse_data = event.to_sse()
         callbacks = self._subscribers.get(event.session_id, [])
         dead = []
@@ -194,7 +194,7 @@ class ProgressEmitter:
             history[:] = history[-self._max_history :]
         self._prune_old_sessions()
 
-    def subscribe(self, session_id: str, callback: Callable[[str], None]):
+    def subscribe(self, session_id: str, callback: Callable[[str], None]) -> None:
         if not session_id or not isinstance(session_id, str):
             raise ValueError("session_id must be a non-empty string")
         if len(session_id) < 32 or len(session_id) > 128:
@@ -210,11 +210,11 @@ class ProgressEmitter:
             except Exception as e:
                 logger.debug("[ProgressEmitter] Subscribe replay error: %s", e)
 
-    def unsubscribe(self, session_id: str):
+    def unsubscribe(self, session_id: str) -> None:
         self._subscribers.pop(session_id, None)
 
     def get_history(self, session_id: str) -> List[dict]:
         return list(self._history.get(session_id, []))
 
-    def clear_history(self, session_id: str):
+    def clear_history(self, session_id: str) -> None:
         self._history.pop(session_id, None)

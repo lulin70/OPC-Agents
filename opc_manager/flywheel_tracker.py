@@ -98,7 +98,7 @@ class FlywheelTracker:
     - Generate flywheel reports
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize tracker"""
         self.user_states: Dict[str, UserFlywheelState] = {}
         self._level_thresholds = {
@@ -149,7 +149,7 @@ class FlywheelTracker:
 
         return state
 
-    def _recalculate_level(self, state: UserFlywheelState):
+    def _recalculate_level(self, state: UserFlywheelState) -> None:
         """Recalculate flywheel level based on active types"""
         type_count = len(state.active_types)
 
@@ -160,7 +160,7 @@ class FlywheelTracker:
         else:
             state.current_level = FlywheelLevel.LEVEL_1
 
-    def _update_dimension_scores(self, state: UserFlywheelState):
+    def _update_dimension_scores(self, state: UserFlywheelState) -> None:
         """
         Update dimension scores based on user activity data
 
@@ -576,7 +576,7 @@ class FlywheelTrackerDB(FlywheelTracker):
     Backward compatible: degrades to in-memory mode when no db_session is provided.
     """
 
-    def __init__(self, db_session=None):
+    def __init__(self, db_session: Optional[Any] = None) -> None:
         super().__init__()
         self.db_session = db_session
         self._db_enabled = db_session is not None
@@ -595,7 +595,7 @@ class FlywheelTrackerDB(FlywheelTracker):
         )
         return db_state
 
-    def _db_state_to_user_flywheel(self, db_state) -> UserFlywheelState:
+    def _db_state_to_user_flywheel(self, db_state: Any) -> UserFlywheelState:
         """Convert database record to UserFlywheelState object"""
         active_types = []
         for t in db_state.active_types or []:
@@ -625,7 +625,7 @@ class FlywheelTrackerDB(FlywheelTracker):
         )
         return state
 
-    def _save_to_db(self, state: UserFlywheelState):
+    def _save_to_db(self, state: UserFlywheelState) -> None:
         """Save flywheel state to database"""
         if not self._db_enabled or not self.db_session:
             return

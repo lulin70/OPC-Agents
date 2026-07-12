@@ -33,11 +33,13 @@ SKILL_FALLBACK_MAP = {
 class CorrectionManager:
     """Manages correction strategies for failed execution steps."""
 
-    def __init__(self, skill_registry=None, executor_brain=None):
+    def __init__(self, skill_registry: Any = None, executor_brain: Any = None) -> None:
         self.skill_registry = skill_registry
         self.executor_brain = executor_brain
 
-    async def apply_correction(self, context, strategy: CorrectionStrategy) -> bool:
+    async def apply_correction(
+        self, context: Any, strategy: CorrectionStrategy
+    ) -> bool:
         """Apply correction strategy based on error type."""
         if not context.plan or not context.plan.steps:
             return False
@@ -55,7 +57,7 @@ class CorrectionManager:
 
     MAX_RETRY_ATTEMPTS = 3
 
-    async def correct_retry(self, context) -> bool:
+    async def correct_retry(self, context: Any) -> bool:
         retry_count = sum(
             1
             for r in (context.execution_results or [])
@@ -81,7 +83,7 @@ class CorrectionManager:
             )
         return result.success
 
-    async def correct_search_and_retry(self, context) -> bool:
+    async def correct_search_and_retry(self, context: Any) -> bool:
         if not context.intent:
             return False
         last_step = context.plan.steps[-1]
@@ -104,7 +106,7 @@ class CorrectionManager:
             )
         return result.success
 
-    async def correct_switch_skill(self, context) -> bool:
+    async def correct_switch_skill(self, context: Any) -> bool:
         last_step = context.plan.steps[-1]
         new_skill = SKILL_FALLBACK_MAP.get(last_step.skill_id)
         if not new_skill:
@@ -123,7 +125,7 @@ class CorrectionManager:
             context.execution_results[-1] = step_result
         return result.success
 
-    async def correct_degrade(self, context) -> bool:
+    async def correct_degrade(self, context: Any) -> bool:
         last_step = context.plan.steps[-1]
         result = await self.executor_brain.execute_step(
             step_id=last_step.id,
@@ -139,8 +141,8 @@ class CorrectionManager:
 
     @staticmethod
     def _make_step_result(
-        step,
-        result,
+        step: Any,
+        result: Any,
         description_suffix: str = "",
         correction_tag: str = "",
     ) -> Dict[str, Any]:

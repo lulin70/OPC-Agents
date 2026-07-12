@@ -102,12 +102,12 @@ class OnboardingManager:
     STATE_FILE = "data/onboarding.json"
     TOTAL_STEPS = 3
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._state_file = Path(self.STATE_FILE)
         self._state = OnboardingState()
         self._load_state()
 
-    def _load_state(self):
+    def _load_state(self) -> None:
         if self._state_file.exists():
             try:
                 data = json.loads(self._state_file.read_text(encoding="utf-8"))
@@ -120,7 +120,7 @@ class OnboardingManager:
             except Exception as e:
                 logger.warning("Failed to load onboarding state: %s", e)
 
-    def _save_state(self):
+    def _save_state(self) -> None:
         try:
             self._state_file.parent.mkdir(parents=True, exist_ok=True)
             data = {
@@ -264,7 +264,7 @@ class OnboardingManager:
         logger.info("Onboarding advanced: %s → %s", old_step.value, step.value)
         return True
 
-    def complete_onboarding(self):
+    def complete_onboarding(self) -> None:
         """Mark onboarding as completed."""
         self._state.current_step = OnboardingStep.COMPLETED
         self._state.completed_at = time.time()
@@ -281,11 +281,11 @@ class OnboardingManager:
             self._state.completed_at - self._state.started_at,
         )
 
-    def skip_onboarding(self):
+    def skip_onboarding(self) -> None:
         """Allow user to skip onboarding."""
         self.complete_onboarding()
 
-    def reset_onboarding(self):
+    def reset_onboarding(self) -> None:
         """Reset onboarding state (for testing/re-onboarding)."""
         self._state = OnboardingState()
         if self._state_file.exists():
@@ -298,7 +298,7 @@ class OnboardingManager:
             logger.warning("Failed to remove onboarding marker: %s", e)
         logger.info("Onboarding reset")
 
-    def record_sample_task_result(self, result: str):
+    def record_sample_task_result(self, result: str) -> None:
         """Record the result of the sample task."""
         if result is not None:
             self._state.sample_task_result = str(result)[

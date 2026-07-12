@@ -55,7 +55,7 @@ class BrainProtocol(Protocol):
 class SkillRegistryProtocol(Protocol):
     """技能注册表接口 [S2-T8] - 用于解耦依赖 SkillRegistry 的调用方。"""
 
-    def get_skill(self, skill_id: str): ...
+    def get_skill(self, skill_id: str) -> Any: ...
     def list_all_skills(self) -> List[Any]: ...
 
 
@@ -64,7 +64,7 @@ class LLMProvider(Protocol):
     def is_available(self) -> bool: ...
 
     def generate(
-        self, prompt: str, system_prompt: str = "", **kwargs
+        self, prompt: str, system_prompt: str = "", **kwargs: Any
     ) -> Optional[str]: ...
 
 
@@ -73,9 +73,9 @@ class LLMServiceProtocol(Protocol):
     def is_available(self) -> bool: ...
 
     def generate(
-        self, prompt: str, system_prompt: str = "", **kwargs
+        self, prompt: str, system_prompt: str = "", **kwargs: Any
     ) -> Optional[str]: ...
-    def analyze(self, text: str, **kwargs) -> Optional[Dict[str, Any]]: ...
+    def analyze(self, text: str, **kwargs: Any) -> Optional[Dict[str, Any]]: ...
 
 
 @runtime_checkable
@@ -102,7 +102,9 @@ class NullLLMProvider:
     def is_available(self) -> bool:
         return False
 
-    def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> Optional[str]:
+    def generate(
+        self, prompt: str, system_prompt: str = "", **kwargs: Any
+    ) -> Optional[str]:
         logger.warning("[NullLLMProvider] LLM unavailable — generate() returned None")
         return None
 
@@ -223,19 +225,21 @@ def get_monitor_provider() -> MonitorProvider:
 
 
 class _LLMProviderWrapper:
-    def __init__(self, generator):
+    def __init__(self, generator: Any) -> None:
         self._gen = generator
 
     def is_available(self) -> bool:
         api_key, api_base, model = self._gen._get_llm_config()
         return bool(api_base)
 
-    def generate(self, prompt: str, system_prompt: str = "", **kwargs) -> Optional[str]:
+    def generate(
+        self, prompt: str, system_prompt: str = "", **kwargs: Any
+    ) -> Optional[str]:
         return self._gen._call_llm_api(prompt)
 
 
 class _SearchProviderWrapper:
-    def __init__(self, processor):
+    def __init__(self, processor: Any) -> None:
         self._processor = processor
 
     def is_available(self) -> bool:
@@ -246,7 +250,7 @@ class _SearchProviderWrapper:
 
 
 class _SecureProviderWrapper:
-    def __init__(self, store):
+    def __init__(self, store: Any) -> None:
         self._store = store
 
     def is_available(self) -> bool:

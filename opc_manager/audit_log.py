@@ -109,7 +109,7 @@ class AuditLog:
     _writer_thread: Optional[threading.Thread]
     _last_hash: str  # 链式哈希：最后一条记录的 current_hash
 
-    def __new__(cls):
+    def __new__(cls) -> "AuditLog":
         """Create or return singleton instance."""
         if cls._instance is None:
             with cls._lock:
@@ -133,10 +133,10 @@ class AuditLog:
                 return "***REDACTED***"
         return text[:max_length]
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def _init_db_connection(self):
+    def _init_db_connection(self) -> None:
         try:
             from opc_manager.data_manager import init_db
 
@@ -360,10 +360,10 @@ class AuditLog:
             )
             return len(self._logs)
 
-    def _start_background_writer(self):
+    def _start_background_writer(self) -> None:
         self._started = True
 
-        def writer():
+        def writer() -> None:
             from opc_manager.data_manager import init_db, execute_write
 
             try:
@@ -517,7 +517,7 @@ class AuditLog:
             logger.warning("AuditLog DB row cleanup failed: %s", e)
         return 0
 
-    def stop(self, wait: bool = False):
+    def stop(self, wait: bool = False) -> None:
         """Signal the background writer to stop and optionally wait for it.
 
         Sending a sentinel wakes the writer immediately so it can release its

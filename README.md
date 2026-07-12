@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.13 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.14 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -174,7 +174,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.13
+pip install opc-agents==0.3.14
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -420,6 +420,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
+| **0.3.14** | **2026-07-12** | **mypy 豁免移除 Batch 3(P3-3 完成)** — 11 个模块从 per-module overrides 移除（11→0），84 个函数注解补全，mypy `disallow_untyped_defs = true` 全局覆盖所有 83 模块，per-module overrides 彻底清零 |
 | **0.3.13** | **2026-07-11** | **mypy 豁免移除 Batch 2(P3-3)** — 26 个模块从 per-module overrides 移除（37→11），88 个函数注解补全，mypy `disallow_untyped_defs = true` 扩大覆盖。剩余 11 模块（Batch 3，6+ untyped）待后续推进 |
 | **0.3.12** | **2026-07-11** | **mypy 豁免移除 Batch 1(P3-3)** — 46 个模块从 per-module overrides 移除（83→37），返回类型+参数类型注解补全（`__init__`/`__post_init__`/`execute_goal`/`undo_*`/`**kwargs: Any` 等），mypy `disallow_untyped_defs = true` 全局生效 |
 | **0.3.11** | **2026-07-11** | **radon cc D+ blocking 门禁(P3-2)** — 6 个 D/E 级函数全部降级（`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)），CI radon cc 从 non-blocking 转 D+ blocking，Dockerfile/start.sh 版本号修复（0.3.5→0.3.11） |
