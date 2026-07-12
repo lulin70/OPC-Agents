@@ -299,25 +299,31 @@ class SettingsEncryptionMixin:
 
         env_local.write_text("\n".join(lines), encoding="utf-8")
         os.chmod(str(env_local), 0o600)  # 仅文件所有者可读写
-        self._save_to_disk()
 
         logger.info("Auto-generated encryption key and saved to .env.local")
 
     def _read_key_from_env_local(self) -> str:
         """Read existing encryption key from .env.local file.
 
+        Reads from the same directory as SETTINGS_FILE (consistent with the
+        write path in ``_ensure_encryption_key``). Falls back to CWD for
+        backward compatibility with deployments that have .env.local in the
+        project root.
+
         Returns:
             Key string if found, empty string otherwise
         """
         try:
-            env_local = Path(".env.local")
-            if not env_local.exists():
-                return ""
-
-            for line in env_local.read_text(encoding="utf-8").splitlines():
-                if line.startswith("OPC_ENCRYPTION_KEY="):
-                    return line.split("=", 1)[1].strip()
-
+            candidates = [
+                Path(self.SETTINGS_FILE).parent / ".env.local",
+                Path(".env.local"),
+            ]
+            for env_local in candidates:
+                if not env_local.exists():
+                    continue
+                for line in env_local.read_text(encoding="utf-8").splitlines():
+                    if line.startswith("OPC_ENCRYPTION_KEY="):
+                        return line.split("=", 1)[1].strip()
             return ""
         except Exception as e:
             logger.warning("Failed to read key from .env.local: %s", e)

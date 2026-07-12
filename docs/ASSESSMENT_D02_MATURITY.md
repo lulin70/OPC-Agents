@@ -154,17 +154,17 @@ README.md 第 34 行 `## v0.3.5 亮点`，虽然版本号已更新到 v0.3.19，
 | NotImplementedError | 0 | ✅ |
 | type: ignore | 需 grep 确认 | P3-3 已清理 83→0 |
 | xfail strict=False | 需 grep 确认 | D01 已清理 |
-| CI deselect 的测试 | 6 (test_settings.py) | ⚠️ P1 未修复 |
+| CI deselect 的测试 | 0 (已全部修复) | ✅ P1-7 已修复 (v0.3.21) |
 
-### CI deselect 的测试 [P1]
+### CI deselect 的测试 [P1-7] — ✅ 已修复 (v0.3.21)
 
-python-ci.yml 中 6 个 test_settings.py 测试被 `--deselect`：
-- TestLLMCRUD::test_llm_persistence_to_disk
-- TestSMTPCRUD::test_smtp_persistence
-- TestAutoGenerateKey::test_key_persisted_across_restarts
-- TestEncryptedStorage 的 3 个测试
+python-ci.yml 中原有 6 个 test_settings.py 测试被 `--deselect`，现已全部修复并移除 deselect。
 
-**原因**: 本地通过，CI 环境失败（provider resets to default 'moka' — relative path/cwd issue）。标记为 P1，尚未修复。
+**根因**: `_read_key_from_env_local()` 使用 `Path(".env.local")`（CWD 相对路径）读取密钥，而 `_ensure_encryption_key()` 写入 `Path(self.SETTINGS_FILE).parent / ".env.local"`。路径不一致导致 CI 中无法读取之前写入的密钥，生成新密钥时调用 `_save_to_disk()` 覆盖了设置文件，provider 重置为默认值 'moka'。
+
+**修复**:
+1. `_read_key_from_env_local()` 改为优先读取 `Path(self.SETTINGS_FILE).parent / ".env.local"`，兼容回退 `Path(".env.local")`
+2. `_ensure_encryption_key()` 移除 `self._save_to_disk()` 调用，避免在 `_load_from_disk()` 之前覆盖设置文件
 
 ---
 
@@ -257,13 +257,13 @@ AssertionError: 137 not greater than 500
 
 ### 遗留问题（3 项）
 
-#### [P2] CI 用 flake8 而 pre-commit 用 ruff
+#### [P2] CI 用 flake8 而 pre-commit 用 ruff — ✅ 已修复 (v0.3.21)
 
-python-ci.yml 第 38-44 行使用 flake8，但 .pre-commit-config.yaml 使用 ruff。两者规则不完全一致，可能导致本地通过但 CI 失败（或反之）。建议统一为 ruff。
+python-ci.yml 原 flake8 已替换为 ruff v0.6.9，与 .pre-commit-config.yaml 统一。
 
-#### [P1] 6 个 test_settings.py 被 deselect
+#### [P1-7] 6 个 test_settings.py 被 deselect — ✅ 已修复 (v0.3.21)
 
-CI 中 6 个测试被 `--deselect` 跳过（本地通过，CI 失败）。根因是 CI 容器中的 relative path/cwd 问题导致 provider 重置。尚未修复。
+CI 中 6 个测试被 `--deselect` 跳过（本地通过，CI 失败）。根因是 `_read_key_from_env_local()` 路径与写入路径不一致 + `_ensure_encryption_key()` 在 `_load_from_disk()` 前调用 `_save_to_disk()` 覆盖设置文件。已在 v0.3.21 修复，6 个 `--deselect` 已从 python-ci.yml 移除。
 
 #### [P3] weekly-e2e-real.yml 无失败通知
 

@@ -4,6 +4,21 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.22] - 2026-07-12
+
+### D02 评估 P1-7 修复 — SettingsManager 加密密钥路径不一致 + CI deselect 移除
+
+> DevSquad D02 评估 P1-7 修复：根因定位 6 个 test_settings.py 测试在 CI 失败为 `_read_key_from_env_local()` 路径与写入路径不一致 + `_ensure_encryption_key()` 在 `_load_from_disk()` 前调用 `_save_to_disk()` 覆盖设置文件。
+
+#### P1-7: SettingsManager 加密密钥路径修复
+
+- **根因 1**: `_read_key_from_env_local()` 使用 `Path(".env.local")`（CWD 相对路径）读取密钥，而 `_ensure_encryption_key()` 写入 `Path(self.SETTINGS_FILE).parent / ".env.local"`。路径不一致导致 CI 中无法读取之前写入的密钥
+- **根因 2**: `_ensure_encryption_key()` 在 `__init__` 中调用 `self._save_to_disk()`，在 `_load_from_disk()` 之前覆盖设置文件，导致已保存的设置被默认值覆盖
+- **修复 1**: `_read_key_from_env_local()` 改为优先读取 `Path(self.SETTINGS_FILE).parent / ".env.local"`，兼容回退 `Path(".env.local")`
+- **修复 2**: `_ensure_encryption_key()` 移除 `self._save_to_disk()` 调用，密钥已持久化到 `.env.local`，无需在初始化时覆盖设置文件
+- **CI**: 6 个 `--deselect` 条目已从 python-ci.yml 移除（Run tests + Coverage report 两处）
+- **验证**: 模拟 CI 环境（隐藏 CWD `.env.local`）运行 6 个测试全部通过，3781 测试无回归
+
 ## [0.3.21] - 2026-07-12
 
 ### D02 评估 P1 修复 — 测试隔离 + CI lint 统一 + Singleton 文档化
