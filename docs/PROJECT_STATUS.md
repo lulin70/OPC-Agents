@@ -2,7 +2,7 @@
 
 > **最后更新**: 2026-07-12（D02 评估 P0 修复：版本号同步 + 工作区清理 + CI 校验扩展，v0.3.22 发布） | **版本**: v0.3.22 (Beta) | **许可**: MIT
 >
-> 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
+> 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) 配套使用。
 
 ---
 
@@ -99,7 +99,7 @@
 
 ## 5. Phase 1 修复进度
 
-> 完整任务清单见 [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 第四节。
+> 完整任务清单见 [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md)（D02 评估已替代 D01/v0.3.3 评估）。
 
 | 评估任务 # | 任务 | 状态 | 完成时间 |
 |------------|------|------|----------|
@@ -200,7 +200,7 @@
 | 项目 README（英） | [README-EN.md](../README-EN.md) | 英文用户入口 |
 | 项目 README（日） | [README-JP.md](../README-JP.md) | 日文用户入口 |
 | 变更日志 | [CHANGELOG.md](../CHANGELOG.md) | 版本变更记录 |
-| 成熟度评估 | [internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) | 7 维度评估 + Phase 1 任务清单 |
+| 成熟度评估 | [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) | D02 7 维度评估（82 分 B+），替代 D01/v0.3.3 评估 |
 | 架构设计 | [architecture/PARALLEL_SAGES_DESIGN.md](architecture/PARALLEL_SAGES_DESIGN.md) | 三贤者并行投票架构 |
 | API 文档 | [API.md](API.md) | REST API 接口 |
 | 用户试用指南 | [guides/USER_TRIAL_GUIDE.md](guides/USER_TRIAL_GUIDE.md) | 3 分钟配置 |
