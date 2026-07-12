@@ -24,11 +24,12 @@
 import asyncio
 import json
 import smtplib
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 import opc_manager.data_manager as dm
+import opc_manager.email_skill as email_skill
 from opc_manager.email_skill import (
     MAX_BODY_SIZE,
     MAX_DAILY_SENDS,
@@ -116,6 +117,29 @@ def smtp_config():
     }
 
 
+@pytest.fixture
+def smtp_config_path(tmp_path, monkeypatch):
+    """将 email_skill 配置文件路径重定向到 tmp_path，使用真实文件 I/O 替代 Mock。
+
+    email_skill.py 中 _get_smtp_config / save_smtp_config 通过
+    os.path.dirname(os.path.dirname(__file__)) 计算配置文件目录。由于源码未
+    抽取 SMTP_CONFIG_PATH 常量（且不允许修改源码），这里通过 monkeypatch 修改
+    email_skill.__file__，使计算出的配置路径指向 tmp_path，从而让
+    os.path.exists / open / os.makedirs 全部作用于真实临时文件系统，避免
+    mock 文件系统 API 的反模式。
+
+    返回值是重定向后的配置文件绝对路径（tmp_path/data/email_config.json），
+    测试可据此准备或校验文件内容。
+    """
+    # 需要 dirname(dirname(__file__)) == tmp_path，
+    # 故令 __file__ = tmp_path/opc_manager/email_skill.py
+    fake_module_file = tmp_path / "opc_manager" / "email_skill.py"
+    monkeypatch.setattr(email_skill, "__file__", str(fake_module_file))
+    # 显式设置加密密钥，保证 encrypt_field/decrypt_field 在测试内可复现往返
+    monkeypatch.setenv("OPC_ENCRYPTION_KEY", "test-key-for-encryption-32chars!!")
+    return tmp_path / "data" / "email_config.json"
+
+
 def _make_mock_smtp():
     """创建一个 mock SMTP server 实例。"""
     server = MagicMock()
@@ -155,13 +179,12 @@ class TestSanitizeAndValidate:
 
 
 class TestSmtpConfig:
-    @patch("opc_manager.email_skill.os.path.exists", return_value=False)
-    def test_get_smtp_config_no_file(self, _mock_exists):
+    def test_get_smtp_config_no_file(self, smtp_config_path):
+        # 真实文件系统：配置文件不存在 → 返回 None
+        assert not smtp_config_path.exists()
         assert _get_smtp_config() is None
 
-    @patch("opc_manager.email_skill.os.path.exists", return_value=True)
-    @patch("builtins.open", new_callable=mock_open)
-    def test_get_smtp_config_valid_plain(self, mock_file, _mock_exists):
+    def test_get_smtp_config_valid_plain(self, smtp_config_path):
         config = {
             "host": "smtp.test.com",
             "port": 465,
@@ -169,14 +192,13 @@ class TestSmtpConfig:
             "password": "plain",
             "ssl": True,
         }
-        mock_file.return_value.read.return_value = json.dumps(config)
+        smtp_config_path.parent.mkdir(parents=True, exist_ok=True)
+        smtp_config_path.write_text(json.dumps(config), encoding="utf-8")
         result = _get_smtp_config()
         assert result["host"] == "smtp.test.com"
         assert result["password"] == "plain"
 
-    @patch("opc_manager.email_skill.os.path.exists", return_value=True)
-    @patch("builtins.open", new_callable=mock_open)
-    def test_get_smtp_config_encrypted_password(self, mock_file, _mock_exists):
+    def test_get_smtp_config_encrypted_password(self, smtp_config_path):
         from opc_manager.data_manager import encrypt_field
 
         encrypted = encrypt_field("my-secret")
@@ -186,41 +208,45 @@ class TestSmtpConfig:
             "password": encrypted,
             "password_encrypted": True,
         }
-        mock_file.return_value.read.return_value = json.dumps(config)
+        smtp_config_path.parent.mkdir(parents=True, exist_ok=True)
+        smtp_config_path.write_text(json.dumps(config), encoding="utf-8")
         result = _get_smtp_config()
         assert result["password"] == "my-secret"
 
-    @patch("opc_manager.email_skill.os.path.exists", return_value=True)
-    @patch("builtins.open", side_effect=Exception("read error"))
-    def test_get_smtp_config_read_error(self, _mock_open, _mock_exists):
+    def test_get_smtp_config_read_error(self, smtp_config_path):
+        # 真实触发读取异常：将配置路径创建为目录，open() 抛 IsADirectoryError
+        # → 被 _get_smtp_config 的 except 捕获 → 返回 None
+        smtp_config_path.parent.mkdir(parents=True, exist_ok=True)
+        smtp_config_path.mkdir()
         assert _get_smtp_config() is None
 
-    @patch("opc_manager.email_skill.os.makedirs")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_save_smtp_config_with_password(self, mock_file, _mock_makedirs):
+    def test_save_smtp_config_with_password(self, smtp_config_path):
         result = save_smtp_config(
             {"host": "smtp.test.com", "username": "u@test.com", "password": "secret"}
         )
         assert result["success"] is True
-        # 验证写入的 JSON 中密码已加密
-        written = mock_file.return_value.write.call_args_list
-        # json.dump 会多次调用 write，拼接得到完整 JSON
-        full_json = "".join(call.args[0] for call in written)
-        saved = json.loads(full_json)
+        # 验证真实写入的 JSON 中密码已加密
+        saved = json.loads(smtp_config_path.read_text(encoding="utf-8"))
         assert saved["password"] != "secret"
         assert saved["password_encrypted"] is True
+        # 用 _get_smtp_config 读回验证可解密还原
+        reread = _get_smtp_config()
+        assert reread["password"] == "secret"
 
-    @patch("opc_manager.email_skill.os.makedirs")
-    @patch("builtins.open", new_callable=mock_open)
-    def test_save_smtp_config_no_password(self, mock_file, _mock_makedirs):
+    def test_save_smtp_config_no_password(self, smtp_config_path):
         result = save_smtp_config({"host": "smtp.test.com", "username": "u@test.com"})
         assert result["success"] is True
+        # 验证真实文件已写入
+        assert smtp_config_path.exists()
 
-    @patch("opc_manager.email_skill.os.makedirs", side_effect=OSError("disk full"))
-    def test_save_smtp_config_error(self, _mock_makedirs):
+    def test_save_smtp_config_error(self, smtp_config_path):
+        # 真实触发 OSError：在配置文件父目录路径上放一个普通文件，
+        # 使 save_smtp_config 内的 os.makedirs(parent, exist_ok=True) 抛
+        # FileExistsError（OSError 子类）→ 返回 success=False
+        smtp_config_path.parent.write_text("not a directory")
         result = save_smtp_config({"host": "smtp.test.com", "password": "x"})
         assert result["success"] is False
-        assert "disk full" in result["error"]
+        assert result["error"]  # 含错误信息
 
 
 # ---------------------------------------------------------------------------

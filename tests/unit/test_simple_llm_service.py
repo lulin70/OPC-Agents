@@ -16,137 +16,96 @@ from opc_manager.simple_llm_service import (
     LLM_MAX_RETRIES,
 )
 
+# ---------------------------------------------------------------------------
+# Environment variable helpers
+# ---------------------------------------------------------------------------
+_ALL_ENV_VARS = [
+    "MOKA_API_KEY",
+    "MOKA_API_BASE",
+    "MOKA_MODEL",
+    "GLM_API_KEY",
+    "OPENAI_API_KEY",
+    "OPENAI_API_BASE",
+    "OLLAMA_BASE_URL",
+    "OLLAMA_ENABLED",
+    "OLLAMA_MODEL",
+]
+
+
+def _clear_llm_env(monkeypatch):
+    """Delete all LLM-related env vars to ensure a clean state."""
+    for var in _ALL_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
 
 # ---------------------------------------------------------------------------
 # discover_llm_config
 # ---------------------------------------------------------------------------
-class TestDiscoverLLMConfig(unittest.TestCase):
+class TestDiscoverLLMConfig:
     """Tests for the discover_llm_config() free function."""
 
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings")
-    def test_returns_moka_config_from_settings(self, mock_get_settings, mock_env_get):
+    def test_returns_moka_config_from_settings(self, monkeypatch):
         """When SettingsManager provides an api_key, it should be used."""
-        mock_settings_obj = MagicMock()
-        mock_settings_obj.get_llm_config.return_value = {
-            "api_key": "sk-moka-test",
-            "base_url": "https://api.moka-ai.com/v1",
-            "model": "moka/claude-sonnet-4-6",
-        }
-        mock_get_settings.return_value = mock_settings_obj
-        config = discover_llm_config()
-        self.assertEqual(config["api_key"], "sk-moka-test")
-        self.assertEqual(config["base_url"], "https://api.moka-ai.com/v1")
+        _clear_llm_env(monkeypatch)
+        with patch("opc_manager.settings.get_settings") as mock_get_settings:
+            mock_settings_obj = MagicMock()
+            mock_settings_obj.get_llm_config.return_value = {
+                "api_key": "sk-moka-test",
+                "base_url": "https://api.moka-ai.com/v1",
+                "model": "moka/claude-sonnet-4-6",
+            }
+            mock_get_settings.return_value = mock_settings_obj
+            config = discover_llm_config()
+        assert config["api_key"] == "sk-moka-test"
+        assert config["base_url"] == "https://api.moka-ai.com/v1"
 
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings", side_effect=ImportError)
-    def test_falls_back_to_moka_env_var(self, mock_get_settings, mock_env_get):
+    def test_falls_back_to_moka_env_var(self, monkeypatch):
         """When SettingsManager fails, MOKA_API_KEY env var is used."""
+        _clear_llm_env(monkeypatch)
+        monkeypatch.setenv("MOKA_API_KEY", "sk-moka-env")
+        monkeypatch.setenv("MOKA_API_BASE", "https://moka.test/v1")
+        monkeypatch.setenv("MOKA_MODEL", "moka/claude-sonnet-4-6")
+        with patch("opc_manager.settings.get_settings", side_effect=ImportError):
+            config = discover_llm_config()
+        assert config["api_key"] == "sk-moka-env"
+        assert config["base_url"] == "https://moka.test/v1"
 
-        def env_side_effect(key, default=""):
-            mapping = {
-                "MOKA_API_KEY": "sk-moka-env",
-                "MOKA_API_BASE": "https://moka.test/v1",
-                "MOKA_MODEL": "moka/claude-sonnet-4-6",
-                "GLM_API_KEY": "",
-                "OPENAI_API_KEY": "",
-                "OPENAI_API_BASE": "https://api.openai.com/v1",
-                "OLLAMA_BASE_URL": "",
-                "OLLAMA_ENABLED": "",
-                "OLLAMA_MODEL": "llama3",
-            }
-            return mapping.get(key, default)
-
-        mock_env_get.side_effect = env_side_effect
-        config = discover_llm_config()
-        self.assertEqual(config["api_key"], "sk-moka-env")
-        self.assertEqual(config["base_url"], "https://moka.test/v1")
-
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings", side_effect=ImportError)
-    def test_falls_back_to_glm_env_var(self, mock_get_settings, mock_env_get):
+    def test_falls_back_to_glm_env_var(self, monkeypatch):
         """When no MOKA key, GLM_API_KEY is used."""
+        _clear_llm_env(monkeypatch)
+        monkeypatch.setenv("GLM_API_KEY", "glm-test-key")
+        with patch("opc_manager.settings.get_settings", side_effect=ImportError):
+            config = discover_llm_config()
+        assert config["api_key"] == "glm-test-key"
+        assert config["base_url"] == "https://open.bigmodel.cn/api/paas/v4"
+        assert config["model"] == "glm-4"
 
-        def env_side_effect(key, default=""):
-            mapping = {
-                "MOKA_API_KEY": "",
-                "MOKA_API_BASE": "https://api.moka-ai.com/v1",
-                "MOKA_MODEL": "moka/claude-sonnet-4-6",
-                "GLM_API_KEY": "glm-test-key",
-                "OPENAI_API_KEY": "",
-                "OPENAI_API_BASE": "https://api.openai.com/v1",
-                "OLLAMA_BASE_URL": "",
-                "OLLAMA_ENABLED": "",
-                "OLLAMA_MODEL": "llama3",
-            }
-            return mapping.get(key, default)
-
-        mock_env_get.side_effect = env_side_effect
-        config = discover_llm_config()
-        self.assertEqual(config["api_key"], "glm-test-key")
-        self.assertEqual(config["base_url"], "https://open.bigmodel.cn/api/paas/v4")
-        self.assertEqual(config["model"], "glm-4")
-
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings", side_effect=ImportError)
-    def test_falls_back_to_openai_env_var(self, mock_get_settings, mock_env_get):
+    def test_falls_back_to_openai_env_var(self, monkeypatch):
         """When no MOKA/GLM key, OPENAI_API_KEY is used."""
+        _clear_llm_env(monkeypatch)
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-test")
+        with patch("opc_manager.settings.get_settings", side_effect=ImportError):
+            config = discover_llm_config()
+        assert config["api_key"] == "sk-openai-test"
+        assert config["model"] == "gpt-4"
 
-        def env_side_effect(key, default=""):
-            mapping = {
-                "MOKA_API_KEY": "",
-                "MOKA_API_BASE": "https://api.moka-ai.com/v1",
-                "MOKA_MODEL": "moka/claude-sonnet-4-6",
-                "GLM_API_KEY": "",
-                "OPENAI_API_KEY": "sk-openai-test",
-                "OPENAI_API_BASE": "https://api.openai.com/v1",
-                "OLLAMA_BASE_URL": "",
-                "OLLAMA_ENABLED": "",
-                "OLLAMA_MODEL": "llama3",
-            }
-            return mapping.get(key, default)
-
-        mock_env_get.side_effect = env_side_effect
-        config = discover_llm_config()
-        self.assertEqual(config["api_key"], "sk-openai-test")
-        self.assertEqual(config["model"], "gpt-4")
-
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings", side_effect=ImportError)
-    def test_ollama_config_when_enabled(self, mock_get_settings, mock_env_get):
+    def test_ollama_config_when_enabled(self, monkeypatch):
         """Ollama config is returned when OLLAMA_ENABLED=true."""
+        _clear_llm_env(monkeypatch)
+        monkeypatch.setenv("OLLAMA_ENABLED", "true")
+        monkeypatch.setenv("OLLAMA_BASE_URL", "http://ollama:11434")
+        with patch("opc_manager.settings.get_settings", side_effect=ImportError):
+            config = discover_llm_config()
+        assert config["is_ollama"] is True
+        assert config["base_url"] == "http://ollama:11434"
 
-        def env_side_effect(key, default=""):
-            mapping = {
-                "MOKA_API_KEY": "",
-                "MOKA_API_BASE": "https://api.moka-ai.com/v1",
-                "MOKA_MODEL": "moka/claude-sonnet-4-6",
-                "GLM_API_KEY": "",
-                "OPENAI_API_KEY": "",
-                "OPENAI_API_BASE": "https://api.openai.com/v1",
-                "OLLAMA_BASE_URL": "http://ollama:11434",
-                "OLLAMA_ENABLED": "true",
-                "OLLAMA_MODEL": "llama3",
-            }
-            return mapping.get(key, default)
-
-        mock_env_get.side_effect = env_side_effect
-        config = discover_llm_config()
-        self.assertTrue(config["is_ollama"])
-        self.assertEqual(config["base_url"], "http://ollama:11434")
-
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings", side_effect=ImportError)
-    def test_empty_config_when_no_keys(self, mock_get_settings, mock_env_get):
+    def test_empty_config_when_no_keys(self, monkeypatch):
         """Returns empty config when no keys are available."""
-
-        def env_side_effect(key, default=""):
-            return default
-
-        mock_env_get.side_effect = env_side_effect
-        config = discover_llm_config()
-        self.assertEqual(config["api_key"], "")
-        self.assertFalse(config["is_ollama"])
+        _clear_llm_env(monkeypatch)
+        with patch("opc_manager.settings.get_settings", side_effect=ImportError):
+            config = discover_llm_config()
+        assert config["api_key"] == ""
+        assert config["is_ollama"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -407,53 +366,27 @@ class TestComplete(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # _discover_all_providers
 # ---------------------------------------------------------------------------
-class TestDiscoverAllProviders(unittest.TestCase):
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings", side_effect=ImportError)
-    def test_discovers_glm_and_openai(self, mock_get_settings, mock_env_get):
-        def env_side_effect(key, default=""):
-            mapping = {
-                "MOKA_API_KEY": "",
-                "MOKA_API_BASE": "https://api.moka-ai.com/v1",
-                "MOKA_MODEL": "moka/claude-sonnet-4-6",
-                "GLM_API_KEY": "glm-key",
-                "OPENAI_API_KEY": "openai-key",
-                "OPENAI_API_BASE": "https://api.openai.com/v1",
-                "OLLAMA_BASE_URL": "",
-                "OLLAMA_ENABLED": "",
-                "OLLAMA_MODEL": "llama3",
-            }
-            return mapping.get(key, default)
-
-        mock_env_get.side_effect = env_side_effect
-        providers = _discover_all_providers()
+class TestDiscoverAllProviders:
+    def test_discovers_glm_and_openai(self, monkeypatch):
+        _clear_llm_env(monkeypatch)
+        monkeypatch.setenv("GLM_API_KEY", "glm-key")
+        monkeypatch.setenv("OPENAI_API_KEY", "openai-key")
+        with patch("opc_manager.settings.get_settings", side_effect=ImportError):
+            providers = _discover_all_providers()
         names = [p["name"] for p in providers]
-        self.assertIn("glm", names)
-        self.assertIn("openai", names)
+        assert "glm" in names
+        assert "openai" in names
 
-    @patch("opc_manager.simple_llm_service.os.environ.get")
-    @patch("opc_manager.settings.get_settings", side_effect=ImportError)
-    def test_discovers_ollama(self, mock_get_settings, mock_env_get):
-        def env_side_effect(key, default=""):
-            mapping = {
-                "MOKA_API_KEY": "",
-                "MOKA_API_BASE": "https://api.moka-ai.com/v1",
-                "MOKA_MODEL": "moka/claude-sonnet-4-6",
-                "GLM_API_KEY": "",
-                "OPENAI_API_KEY": "",
-                "OPENAI_API_BASE": "https://api.openai.com/v1",
-                "OLLAMA_BASE_URL": "http://localhost:11434",
-                "OLLAMA_ENABLED": "true",
-                "OLLAMA_MODEL": "llama3",
-            }
-            return mapping.get(key, default)
-
-        mock_env_get.side_effect = env_side_effect
-        providers = _discover_all_providers()
+    def test_discovers_ollama(self, monkeypatch):
+        _clear_llm_env(monkeypatch)
+        monkeypatch.setenv("OLLAMA_ENABLED", "true")
+        monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        with patch("opc_manager.settings.get_settings", side_effect=ImportError):
+            providers = _discover_all_providers()
         names = [p["name"] for p in providers]
-        self.assertIn("ollama", names)
+        assert "ollama" in names
         ollama = next(p for p in providers if p["name"] == "ollama")
-        self.assertTrue(ollama["is_ollama"])
+        assert ollama["is_ollama"] is True
 
 
 if __name__ == "__main__":

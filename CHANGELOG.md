@@ -4,6 +4,26 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.15] - 2026-07-12
+
+### DevSquad 共识推进第七批 — P3-4 Mock 反模式修复第一批
+
+> 3 个测试文件 Mock 反模式修复，用真实文件 I/O 和 `monkeypatch` 替代 Mock 文件系统 API 和 `os.environ.get`，用真实 fake 类替代 `MagicMock`。P3-4 第一批完成。
+
+#### Mock 反模式修复（3 文件，第一批）
+
+- **`tests/integration/test_email_skill_coverage.py`** — `TestSmtpConfig` 类的 7 个用例从 Mock 文件系统 API（`@patch("os.path.exists")` / `@patch("builtins.open", new_callable=mock_open)` / `@patch("os.makedirs")`）改为真实文件 I/O。新增 `smtp_config_path` fixture，通过 `monkeypatch.setattr(email_skill, "__file__", ...)` 将配置路径重定向到 `tmp_path`，让 `os.path.exists`/`open`/`os.makedirs` 全部作用于真实临时文件系统。加密用例走真实 `encrypt_field`/`decrypt_field` 往返。
+- **`tests/unit/test_simple_llm_service.py`** — `TestDiscoverLLMConfig`（6 用例）和 `TestDiscoverAllProviders`（2 用例）从 `@patch("opc_manager.simple_llm_service.os.environ.get")` 改为 `monkeypatch.setenv()`/`monkeypatch.delenv()`。两个类从 `unittest.TestCase` 转为原生 pytest 类（pytest 9.1.1 不支持 unittest.TestCase 方法中通过参数注入 fixture）。新增 `_clear_llm_env(monkeypatch)` 辅助函数清除 9 个 LLM 相关环境变量确保隔离。
+- **`tests/unit/test_executor_opinion.py`** — `test_llm_raises_exception_falls_back` 从 `MagicMock`（`llm.complete.side_effect = RuntimeError(...)`）改为真实 fake 类 `RaisingLLMService`，模拟 `complete` 调用抛异常的 LLM 服务。
+
+### 验证
+
+- 3 文件测试: 109 passed（test_email_skill_coverage 61 + test_executor_opinion 20 + test_simple_llm_service 28）
+- 全量测试: 3701 passed, 80 skipped = 3781 tests（CI 配置: --ignore=tests/e2e + 6 deselected），匹配 EXPECTED_TEST_COUNT=3781
+- Ruff: All checks passed
+- Black: 1 文件格式化后全量通过
+- 覆盖率: 未变（仅测试重构，无源码变更，CI 阈值 65%，实际 66%）
+
 ## [0.3.14] - 2026-07-12
 
 ### DevSquad 共识推进第六批 — P3-3 mypy 豁免移除 Batch 3（完成）

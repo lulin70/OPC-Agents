@@ -5,8 +5,8 @@ This is the Single Source of Truth (SSOT) for version numbers.
 All other version references should import from here.
 """
 
-__version__ = "0.3.14"
-__version_info__ = (0, 3, 14)
+__version__ = "0.3.15"
+__version_info__ = (0, 3, 15)
 
 
 def get_version() -> str:

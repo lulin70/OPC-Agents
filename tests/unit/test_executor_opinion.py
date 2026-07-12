@@ -13,7 +13,6 @@ ExecutorBrain.express_opinion() 单元测试 [S2-T3]
 import asyncio
 import json
 import unittest
-from unittest.mock import MagicMock
 
 from opc_manager.executor_brain import ExecutorBrain
 from opc_manager.consensus_engine import Opinion, OpinionType
@@ -35,6 +34,21 @@ class MockLLMService:
         self.call_count += 1
         self.last_prompt = prompt
         return self._response
+
+
+class RaisingLLMService:
+    """Mock LLM 服务，complete 调用总是抛出指定异常。
+
+    用于验证 LLM 调用失败时执行脑降级到规则判断的容错路径。
+    """
+
+    def __init__(self, exc: Exception):
+        self._exc = exc
+        self.call_count = 0
+
+    def complete(self, prompt, max_tokens=500, timeout=15):
+        self.call_count += 1
+        raise self._exc
 
 
 def _llm_json(opinion_type: str, reasoning: str, confidence: float) -> str:
@@ -201,8 +215,7 @@ class TestExpressOpinionLLMFailure(unittest.TestCase):
 
     def test_llm_raises_exception_falls_back(self):
         """LLM 调用抛异常时降级到规则判断，不抛出"""
-        llm = MagicMock()
-        llm.complete.side_effect = RuntimeError("network error")
+        llm = RaisingLLMService(RuntimeError("network error"))
         executor = ExecutorBrain(llm_service=llm)
 
         opinion = executor.express_opinion({"retry_count": 0}, "send_email")
