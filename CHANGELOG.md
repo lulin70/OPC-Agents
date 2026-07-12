@@ -4,6 +4,43 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.23] - 2026-07-12
+
+### D02 评估 P2 修复 — 覆盖率提升 + skip 清理 + 流程文档归档
+
+> DevSquad D02 评估 P2 项修复：覆盖率从 66% 提升至 ~69%（8 模块 354 行新覆盖）；3 个 unjustified skipped 测试修复（80→77 skip）；流程文档归档至 docs/internal/。
+
+#### P2-11: 覆盖率提升（8 模块，354 行新覆盖）
+
+- **monitoring.py**: 38% → 92%（26 行新覆盖）— init_monitoring/track_event/track_error 含 Sentry 集成路径
+- **correction_manager.py**: 28% → 100%（43 行新覆盖）— 4 种修正策略 + apply_correction 分发 + _make_step_result
+- **config.py**: 59% → 94%（34 行新覆盖）— ConfigManager 环境变量加载 + 回调机制 + get/set
+- **async_executor_persistence.py**: 31% → 100%（50 行新覆盖）— SHA-256 校验 + 崩溃恢复 + 持久化往返
+- **protocols.py**: 41% → 95%（73 行新覆盖）— Null Provider 模式 + 工厂函数 + Wrapper 委托
+- **persona_manager.py**: 34% → 73%（68 行新覆盖）— YAML 加载 + 人格切换 + 缓存 + 响应格式化
+- **skill_registry.py**: 47% → 71%（51 行新覆盖）— 技能注册/发现/执行 + 协作流程 + Singleton
+- **async_executor_recovery.py**: 63% → ~100%（23 行新覆盖）— 僵尸任务扫描 + 重试处理 + 异常恢复
+
+#### P2-13: Unjustified Skipped 测试修复（80 → 77 skip）
+
+- **test_live_log_panel.py**: 3 个永久 `@pytest.mark.skip` 测试修复
+  - `test_valid_log_file_parsed_correctly`: mock Path → 真实 tmp_path + `_WORKSPACE_DIR` patch
+  - `test_engine_logs_with_opc_manager_content`: 同上 + 修复 log content 缺少 "opc_manager" 关键词
+  - `test_timestamp_filtering_works`: 同上 + 修复 regex 回溯问题（log content 含 dot）
+- **77 skip 剩余**: 全部为 SKILL_FREEZE_LIST.md 冻结技能（social/proposal/invoice/calendar/competitor/pricing/dashboard/knowledge），已验证合理
+
+#### P2-12: weekly-e2e-real.yml 失败通知（已完成）
+
+- 之前已实现 failure notification 配置
+
+#### P2-14: 流程文档归档（已完成，commit c94fa89）
+
+- docs/internal/ 目录创建，流程文档归档
+
+#### 版本一致性
+
+- VERSION / version.py / Dockerfile / README × 3 / requirements / scripts / source comments — 全部同步至 0.3.23
+
 ## [0.3.22] - 2026-07-12
 
 ### D02 评估 P1-7 修复 — SettingsManager 加密密钥路径不一致 + CI deselect 移除

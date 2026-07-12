@@ -21,9 +21,7 @@ import json
 import os
 import sys
 import time
-import tempfile
 from datetime import datetime
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -255,40 +253,26 @@ class TestCollectAppLogs:
             logs = collect_app_logs()
             assert logs == []
 
-    @pytest.mark.skip(reason="File system mocking complexity - tested in integration")
-    def test_valid_log_file_parsed_correctly(self):
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".log", delete=False, encoding="utf-8"
-        ) as f:
-            f.write(
-                "2024-01-15 10:30:00 - opc_manager.app - INFO - Application started\n"
-            )
-            f.write(
-                "2024-01-15 10:30:01 - opc_manager.engine - DEBUG - Processing request\n"
-            )
-            f.write(
-                "2024-01-15 10:30:02 - opc_manager.audit - WARNING - Slow response detected\n"
-            )
-            temp_file = f.name
+    def test_valid_log_file_parsed_correctly(self, tmp_path):
+        """Valid log file should be parsed into LogEntry objects."""
+        logs_dir = tmp_path / "logs"
+        logs_dir.mkdir()
+        (logs_dir / "app.log").write_text(
+            "2024-01-15 10:30:00 - app - INFO - Application started\n"
+            "2024-01-15 10:30:01 - engine - DEBUG - Processing request\n"
+            "2024-01-15 10:30:02 - audit - WARNING - Slow response detected\n",
+            encoding="utf-8",
+        )
 
-        try:
-            with patch("frontend.components.live_log_panel.Path") as mock_path:
-                mock_instance = MagicMock()
-                mock_instance.exists.return_value = True
-                mock_instance.__truediv__ = lambda self, other: Path(temp_file)
-                mock_instance.stat.return_value.st_mtime = time.time()
-                mock_path.return_value = mock_instance
-                mock_path.return_value.__truediv__ = lambda self, other: Path(temp_file)
+        with patch("frontend.components.live_log_panel._WORKSPACE_DIR", str(tmp_path)):
+            logs = collect_app_logs()
 
-                logs = collect_app_logs()
-                assert len(logs) == 3
-                assert logs[0].level == "INFO"
-                assert logs[0].source == "app"
-                assert "Application started" in logs[0].message
-                assert logs[1].level == "DEBUG"
-                assert logs[2].level == "WARNING"
-        finally:
-            os.unlink(temp_file)
+        assert len(logs) == 3
+        assert logs[0].level == "INFO"
+        assert logs[0].source == "app"
+        assert "Application started" in logs[0].message
+        assert logs[1].level == "DEBUG"
+        assert logs[2].level == "WARNING"
 
     def test_timestamp_filtering(self):
         future_ts = time.time() + 3600
@@ -299,27 +283,21 @@ class TestCollectAppLogs:
 class TestCollectEngineLogs:
     """Test suite for engine log collection."""
 
-    @pytest.mark.skip(reason="File system mocking complexity - tested in integration")
-    def test_engine_logs_with_opc_manager_content(self):
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".log", delete=False, encoding="utf-8"
-        ) as f:
-            f.write("2024-01-15 11:00:00 | INFO | TaskEngineV3 executing task\n")
-            f.write("2024-01-15 11:00:01 | DEBUG | AgentLoop processing step\n")
-            temp_file = f.name
+    def test_engine_logs_with_opc_manager_content(self, tmp_path):
+        """Engine log file with opc_manager content should be parsed correctly."""
+        logs_dir = tmp_path / "logs"
+        logs_dir.mkdir()
+        (logs_dir / "engine.log").write_text(
+            "2024-01-15 11:00:00 | INFO | opc_manager TaskEngineV3 executing task\n"
+            "2024-01-15 11:00:01 | DEBUG | opc_manager AgentLoop processing step\n",
+            encoding="utf-8",
+        )
 
-        try:
-            with patch("frontend.components.live_log_panel.Path") as mock_path:
-                mock_instance = MagicMock()
-                mock_instance.exists.return_value = True
-                mock_path.return_value = mock_instance
-                mock_path.return_value.__truediv__ = lambda self, other: Path(temp_file)
+        with patch("frontend.components.live_log_panel._WORKSPACE_DIR", str(tmp_path)):
+            logs = collect_engine_logs()
 
-                logs = collect_engine_logs()
-                assert any(line.source == "engine" for line in logs)
-                assert any("TaskEngineV3" in line.message for line in logs)
-        finally:
-            os.unlink(temp_file)
+        assert any(line.source == "engine" for line in logs)
+        assert any("TaskEngineV3" in line.message for line in logs)
 
     def test_nonexistent_engine_logs(self):
         with patch("frontend.components.live_log_panel.Path") as mock_path:
@@ -522,35 +500,51 @@ class TestCollectAllLogs:
                             logs = collect_all_logs()
                             assert len(logs) <= DEFAULT_DISPLAY_LIMIT
 
-    @pytest.mark.skip(reason="Timestamp precision in mocking - tested in integration")
-    def test_timestamp_filtering_works(self):
-        old_ts = time.time() - 3600
-        recent_entry = create_sample_entry(timestamp=time.time())
-        old_entry = create_sample_entry(timestamp=old_ts)
+    def test_timestamp_filtering_works(self, tmp_path):
+        """collect_all_logs should respect since_timestamp: recent entries pass, old entries filtered."""
+        logs_dir = tmp_path / "logs"
+        logs_dir.mkdir()
 
-        with patch(
-            "frontend.components.live_log_panel.collect_app_logs",
-            return_value=[recent_entry],
-        ):
+        # Recent log entry (app.log) — timestamp 10s ago, passes since_timestamp filter
+        recent_ts = time.time() - 10
+        recent_ts_str = datetime.fromtimestamp(recent_ts).strftime("%Y-%m-%d %H:%M:%S")
+        (logs_dir / "app.log").write_text(
+            f"{recent_ts_str} - app - INFO - Recent entry\n",
+            encoding="utf-8",
+        )
+
+        # Old log entry (engine.log) — timestamp 2h ago, filtered out by since_timestamp
+        old_ts = time.time() - 7200
+        old_ts_str = datetime.fromtimestamp(old_ts).strftime("%Y-%m-%d %H:%M:%S")
+        (logs_dir / "engine.log").write_text(
+            f"{old_ts_str} | INFO | opc_manager TaskEngineV3 old task\n",
+            encoding="utf-8",
+        )
+
+        with patch("frontend.components.live_log_panel._WORKSPACE_DIR", str(tmp_path)):
             with patch(
-                "frontend.components.live_log_panel.collect_engine_logs",
-                return_value=[old_entry],
+                "frontend.components.live_log_panel.collect_audit_logs",
+                return_value=[],
             ):
                 with patch(
-                    "frontend.components.live_log_panel.collect_audit_logs",
+                    "frontend.components.live_log_panel.collect_progress_logs",
                     return_value=[],
                 ):
                     with patch(
-                        "frontend.components.live_log_panel.collect_progress_logs",
+                        "frontend.components.live_log_panel.collect_system_logs",
                         return_value=[],
                     ):
-                        with patch(
-                            "frontend.components.live_log_panel.collect_system_logs",
-                            return_value=[],
-                        ):
-                            logs = collect_all_logs(since_timestamp=time.time() - 60)
-                            assert any(line.timestamp == time.time() for line in logs)
-                            assert not any(line.timestamp == old_ts for line in logs)
+                        # No filter — both entries should be present
+                        all_logs = collect_all_logs()
+                        assert any("Recent entry" in log.message for log in all_logs)
+                        assert any("TaskEngineV3" in log.message for log in all_logs)
+
+                        # With filter — old entry should be excluded
+                        filtered = collect_all_logs(since_timestamp=time.time() - 60)
+                        assert any("Recent entry" in log.message for log in filtered)
+                        assert not any(
+                            "TaskEngineV3" in log.message for log in filtered
+                        )
 
     def test_results_sorted_by_timestamp(self):
         entries = [

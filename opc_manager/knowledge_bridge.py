@@ -298,7 +298,7 @@ class YuqueAdapter(KnowledgeAdapter):
                 url,
                 headers={
                     "X-Auth-Token": self._token,
-                    "User-Agent": "OPC-Agents/0.3.22",
+                    "User-Agent": "OPC-Agents/0.3.23",
                 },
             )
             with self._urlopen_with_timeout(
