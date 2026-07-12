@@ -26,9 +26,12 @@ import time
 import csv
 import io
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from opc_manager.undo_manager import OperationType, UndoManager
 
 from frontend.components.timeline_view import (
     TimelineEvent,
@@ -53,6 +56,51 @@ from frontend.components.timeline_view import (
     _export_to_png,
     _escape_html,
 )
+
+
+class FakeUndoManager(UndoManager):
+    """真实 UndoManager 子类，添加 list_records() 别名。
+
+    timeline_data._build_from_undo_manager 调用 list_records()，而真实
+    UndoManager 提供 get_session_records()（语义相同）。此子类添加别名，
+    使测试能用真实 push() 创建真实 UndoRecord 对象，而非 MagicMock 桩。
+    """
+
+    def list_records(self, session_id: str):
+        """list_records 别名，委托给真实的 get_session_records。"""
+        return self.get_session_records(session_id)
+
+
+class FakeAuditLog:
+    """真实 fake AuditLog，提供 get_recent_entries() 返回真实 dict 条目。
+
+    替代 MagicMock 模块反模式。真实 AuditLog 提供 query() 返回 dict 列表，
+    但 timeline_data._build_from_audit_log 期望 get_recent_entries()。
+    此 fake 提供该方法，返回真实 dict 条目（非 MagicMock 桩）。
+    """
+
+    def __init__(self, entries=None):
+        self._entries = entries or []
+
+    def get_recent_entries(self, limit: int = 30):
+        """返回真实 dict 条目列表，模拟 AuditLog.query() 的输出。"""
+        return self._entries[:limit]
+
+
+class FakeProgressEmitter:
+    """真实 fake ProgressEmitter，提供 get_history() 返回真实 dict 条目。
+
+    替代 MagicMock 模块反模式。真实 ProgressEmitter 是单例（有状态泄漏风险），
+    此 fake 提供独立的 get_history() 返回真实 dict 条目
+    （与 ProgressEvent.to_dict() 输出格式一致）。
+    """
+
+    def __init__(self, history=None):
+        self._history = history or []
+
+    def get_history(self, session_id: str):
+        """返回真实 dict 历史列表，模拟 ProgressEmitter.get_history() 的输出。"""
+        return list(self._history)
 
 
 class TestTimelineEventDataStructure(unittest.TestCase):
@@ -382,30 +430,29 @@ class TestBuildFromDeliverables(unittest.TestCase):
 class TestBuildFromUndoManager(unittest.TestCase):
     """_build_from_undo_manager()单元测试"""
 
-    def test_no_undo_manager_returns_empty(self):
+    @patch("opc_manager.undo_manager.get_undo_manager", create=True, return_value=None)
+    def test_no_undo_manager_returns_empty(self, _mock_get):
         """TC-TL-021: UndoManager不可用时返回空列表"""
-        mock_module = MagicMock()
-        mock_module.get_undo_manager.return_value = None
-        with patch.dict("sys.modules", {"opc_manager.undo_manager": mock_module}):
-            events = _build_from_undo_manager("test_session")
+        events = _build_from_undo_manager("test_session")
         self.assertEqual(events, [])
 
-    def test_undone_event_created(self):
+    @patch("opc_manager.undo_manager.get_undo_manager", create=True)
+    def test_undone_event_created(self, mock_get):
         """TC-TL-022: 已撤销操作生成undo_action事件"""
-        mock_record = MagicMock()
-        mock_record.operation_id = "op_001"
-        mock_record.created_at = time.time()
-        mock_record.status = "undone"
-        mock_record.operation_type = MagicMock(value="email_send")
-        mock_record.inverse_func_name = "undo_email_send"
+        um = FakeUndoManager()
+        um.push(
+            session_id="test_session",
+            op_type=OperationType.EMAIL_SEND,
+            inverse_func="undo_send_email",
+            inverse_args={"to": "test@example.com"},
+            original_result={"status": "sent"},
+        )
+        # 将真实记录标记为 undone（模拟 um.undo() 后的状态，无副作用）
+        records = um.get_session_records("test_session")
+        records[0].status = "undone"
+        mock_get.return_value = um
 
-        mock_manager = MagicMock()
-        mock_manager.list_records.return_value = [mock_record]
-
-        mock_module = MagicMock()
-        mock_module.get_undo_manager.return_value = mock_manager
-        with patch.dict("sys.modules", {"opc_manager.undo_manager": mock_module}):
-            events = _build_from_undo_manager("test_session")
+        events = _build_from_undo_manager("test_session")
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "undo_action")
@@ -418,31 +465,34 @@ class TestGetUndoDescription(unittest.TestCase):
 
     def test_known_operation_type(self):
         """TC-TL-023: 已知操作类型返回中文描述"""
-        mock_record = MagicMock()
-        mock_record.operation_type = MagicMock(value="email_send")
-        mock_record.status = "active"
+        record = SimpleNamespace(
+            operation_type=OperationType.EMAIL_SEND,
+            status="active",
+        )
 
-        desc = _get_undo_description(mock_record)
+        desc = _get_undo_description(record)
 
         self.assertIn("邮件", desc)
 
     def test_undone_status_prefix(self):
         """TC-TL-024: 已撤销状态添加'撤销了'前缀"""
-        mock_record = MagicMock()
-        mock_record.operation_type = MagicMock(value="record_income")
-        mock_record.status = "undone"
+        record = SimpleNamespace(
+            operation_type=OperationType.RECORD_INCOME,
+            status="undone",
+        )
 
-        desc = _get_undo_description(mock_record)
+        desc = _get_undo_description(record)
 
         self.assertTrue(desc.startswith("撤销了"))
 
     def test_unknown_operation_fallback(self):
         """TC-TL-025: 未知操作类型回退到原始字符串"""
-        mock_record = MagicMock()
-        mock_record.operation_type = MagicMock(value="unknown_op")
-        mock_record.status = "active"
+        record = SimpleNamespace(
+            operation_type=SimpleNamespace(value="unknown_op"),
+            status="active",
+        )
 
-        desc = _get_undo_description(mock_record)
+        desc = _get_undo_description(record)
 
         self.assertIn("unknown_op", desc)
 
@@ -450,7 +500,8 @@ class TestGetUndoDescription(unittest.TestCase):
 class TestBuildFromAuditLog(unittest.TestCase):
     """_build_from_audit_log()单元测试"""
 
-    def test_email_send_mapping(self):
+    @patch("opc_manager.audit_log.AuditLog")
+    def test_email_send_mapping(self, mock_audit_class):
         """TC-TL-026: email_send操作映射到email_sent事件"""
         entry = {
             "operation_type": "email_send",
@@ -463,14 +514,8 @@ class TestBuildFromAuditLog(unittest.TestCase):
             "skill_id": "email_skill",
         }
 
-        mock_audit_instance = MagicMock()
-        mock_audit_instance.get_recent_entries.return_value = [entry]
-        mock_audit_instance.hasattr = lambda name: True
-
-        mock_module = MagicMock()
-        mock_module.AuditLog.return_value = mock_audit_instance
-        with patch.dict("sys.modules", {"opc_manager.audit_log": mock_module}):
-            events = _build_from_audit_log()
+        mock_audit_class.return_value = FakeAuditLog(entries=[entry])
+        events = _build_from_audit_log()
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "email_sent")
@@ -487,7 +532,8 @@ class TestBuildFromAuditLog(unittest.TestCase):
 class TestBuildFromProgressEmitter(unittest.TestCase):
     """_build_from_progress_emitter()测试"""
 
-    def test_confirm_requested_event(self):
+    @patch("opc_manager.progress_emitter.get_progress_emitter", create=True)
+    def test_confirm_requested_event(self, mock_get_emitter):
         """TC-TL-028: confirm_requested生成confirmation_required事件"""
         history = [
             {
@@ -498,20 +544,16 @@ class TestBuildFromProgressEmitter(unittest.TestCase):
             }
         ]
 
-        mock_emitter = MagicMock()
-        mock_emitter.get_history.return_value = history
-
-        mock_module = MagicMock()
-        mock_module.get_progress_emitter.return_value = mock_emitter
-        with patch.dict("sys.modules", {"opc_manager.progress_emitter": mock_module}):
-            events = _build_from_progress_emitter("test_session")
+        mock_get_emitter.return_value = FakeProgressEmitter(history=history)
+        events = _build_from_progress_emitter("test_session")
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "confirmation_required")
         self.assertEqual(events[0].status, "pending")
         self.assertEqual(events[0].icon, "")
 
-    def test_error_event(self):
+    @patch("opc_manager.progress_emitter.get_progress_emitter", create=True)
+    def test_error_event(self, mock_get_emitter):
         """TC-TL-029: error事件生成error_occurred"""
         history = [
             {
@@ -522,13 +564,8 @@ class TestBuildFromProgressEmitter(unittest.TestCase):
             }
         ]
 
-        mock_emitter = MagicMock()
-        mock_emitter.get_history.return_value = history
-
-        mock_module = MagicMock()
-        mock_module.get_progress_emitter.return_value = mock_emitter
-        with patch.dict("sys.modules", {"opc_manager.progress_emitter": mock_module}):
-            events = _build_from_progress_emitter("test_session")
+        mock_get_emitter.return_value = FakeProgressEmitter(history=history)
+        events = _build_from_progress_emitter("test_session")
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "error_occurred")

@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.17 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.18 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -180,7 +180,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.17
+pip install opc-agents==0.3.18
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography
@@ -412,6 +412,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 | Version | Date | Milestone |
 |---------|------|-----------|
 | **0.3.14** | **2026-07-12** | **mypy Override Removal Batch 3 (P3-3 Complete)** — 11 modules removed from per-module overrides (11→0), 84 function annotations completed, mypy `disallow_untyped_defs = true` covers all 83 modules, per-module overrides fully eliminated |
+| **0.3.18** | **2026-07-12** | **P3-4 Mock Anti-pattern Fix Batch 4 (P3-4 Complete)** — test_timeline_view 8 test methods ~17 MagicMock replaced with real components and fake classes (UndoManager/UndoRecord→real UndoManager+push() creating real records / AuditLog→FakeAuditLog / ProgressEmitter→FakeProgressEmitter / SimpleNamespace replacing MagicMock record), ~18 streamlit Mocks preserved |
 | **0.3.17** | **2026-07-12** | **P3-4 Mock Anti-pattern Fix Batch 3** — 2 test files MagicMock replaced with real fake classes and real components (test_undo_panel 17 @patch+22 MagicMock→real UndoManager instance+tmp_path / test_skill_executors 30+ MagicMock→8 real fake classes: FakeLLMService/FakeContentGenerator/FakeSearchProcessor/FakeToolSystem/FakeWebSearch etc.) |
 | **0.3.16** | **2026-07-12** | **P3-4 Mock Anti-pattern Fix Batch 2** — 2 test files MagicMock replaced with real fake classes (test_delta_integration 5 MagicMock LLM→MockLLMService/RaisingLLMService / test_integration_modules 12 MagicMock SkillRegistry/Skill→FakeSkillRegistry/FakeSkill + real SkillRegistry instance) |
 | **0.3.15** | **2026-07-12** | **P3-4 Mock Anti-pattern Fix Batch 1** — 3 test files Mock anti-pattern fixes (test_email_skill_coverage Mock filesystem→tmp_path+monkeypatch / test_simple_llm_service Mock os.environ.get→monkeypatch.setenv/delenv / test_executor_opinion MagicMock→RaisingLLMService real fake class) |

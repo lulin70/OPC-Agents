@@ -4,6 +4,41 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.18] - 2026-07-12
+
+### DevSquad 共识推进第十批 — P3-4 Mock 反模式修复第四批（P3-4 完成）
+
+> test_timeline_view.py 的 8 个测试方法 ~17 处 MagicMock 替换为真实组件和真实 fake 类。UndoManager/UndoRecord 用真实 `UndoManager` + `push()` 创建真实记录，AuditLog 和 ProgressEmitter 分别用 `FakeAuditLog` 和 `FakeProgressEmitter` 真实 fake 类替代，`_get_undo_description` 测试用 `SimpleNamespace` 替代 MagicMock record。保留 ~18 处 streamlit Mock（ScriptRunContext 运行时上下文所必需）。**P3-4 Mock 反模式修复任务完成。**
+
+#### Mock 反模式修复（1 文件，第四批）
+
+- **`tests/integration/test_timeline_view.py`** — 8 个测试方法 ~17 处 MagicMock 替换：
+  - `TestBuildFromUndoManager`（2 测试）：`patch.dict("sys.modules", ...)` + MagicMock 模块/manager/record → `@patch("opc_manager.undo_manager.get_undo_manager", create=True)` + 真实 `FakeUndoManager`（继承 `UndoManager`，添加 `list_records()` 别名委托给真实 `get_session_records()`）+ 真实 `push()` 创建真实 `UndoRecord`（含真实 `OperationType` 枚举）+ 手动设置 `status="undone"` 模拟撤销状态
+  - `TestGetUndoDescription`（3 测试）：`mock_record = MagicMock()` + `MagicMock(value="email_send")` → `SimpleNamespace(operation_type=OperationType.EMAIL_SEND, status="active")`（真实枚举，`op_type.value` 返回真实字符串）
+  - `TestBuildFromAuditLog`（1 测试）：`patch.dict("sys.modules", ...)` + MagicMock 模块/instance → `@patch("opc_manager.audit_log.AuditLog")` + 真实 `FakeAuditLog` 类（提供真实 `get_recent_entries(limit=30)` 方法返回真实 dict 列表；真实 `AuditLog` 为单例有 DB 副作用且只有 `query()` 方法）
+  - `TestBuildFromProgressEmitter`（2 测试）：`patch.dict("sys.modules", ...)` + MagicMock 模块/emitter → `@patch("opc_manager.progress_emitter.get_progress_emitter", create=True)` + 真实 `FakeProgressEmitter` 类（提供真实 `get_history(session_id)` 方法返回真实 dict 列表；真实 `ProgressEmitter` 为单例有状态泄漏风险）
+  - 关键发现：`get_undo_manager` 和 `get_progress_emitter` 函数在源模块中不存在（`timeline_data.py` 通过 `except ImportError` 兜底），因此 `@patch` 必须使用 `create=True` 标志。`UndoManager` 没有 `list_records()` 方法（真实方法为 `get_session_records()`），需要 `FakeUndoManager` 子类添加别名
+
+#### 保留的 Mock（合理 Mock）
+
+- ~18 处 streamlit Mock（`@patch("frontend.components.timeline_data.st")` / `@patch("frontend.components.timeline_view.st")` / `mock_st.expander.return_value.__enter__` 等）— streamlit 需要 ScriptRunContext 运行时上下文，`@patch("...st")` 是合理的测试模式
+
+### 验证
+
+- 1 文件测试: 59 passed
+- 全量测试: 3701 passed, 80 skipped = 3781 tests（CI 配置: --ignore=tests/e2e），匹配 EXPECTED_TEST_COUNT=3781
+- Ruff: All checks passed
+- Black: All checks passed
+- 覆盖率: 未变（仅测试重构，无源码变更，CI 阈值 65%，实际 66%）
+
+#### P3-4 任务总结
+
+P3-4 Mock 反模式修复任务全部完成，共 4 批 8 文件：
+- 第一批（v0.3.15）：3 文件 — test_email_skill_coverage / test_simple_llm_service / test_executor_opinion
+- 第二批（v0.3.16）：2 文件 — test_delta_integration / test_integration_modules
+- 第三批（v0.3.17）：2 文件 — test_undo_panel / test_skill_executors
+- 第四批（v0.3.18）：1 文件 — test_timeline_view
+
 ## [0.3.17] - 2026-07-12
 
 ### DevSquad 共识推进第九批 — P3-4 Mock 反模式修复第三批
