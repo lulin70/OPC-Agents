@@ -13,10 +13,185 @@
 import asyncio
 import json
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
+from opc_manager.llm_content import GenerationResult
 from opc_manager.skill_executors import SkillExecutorMixin
 from opc_manager.skill_models import SkillContext
+
+# ---------------------------------------------------------------------------
+# Real Fake Classes (replace MagicMock anti-patterns)
+#
+# These fakes have real method implementations instead of MagicMock auto-stubs,
+# making tests exercise more real code paths. Call tracking uses plain
+# attributes (call_count, last_*) instead of Mock assertion methods.
+# ---------------------------------------------------------------------------
+
+
+class FakeLLMService:
+    """Real fake LLM service — acts as 'LLM enabled' flag.
+
+    SkillExecutorMixin._execute_analysis / _execute_content_generation only
+    check ``llm_service is not None`` to decide whether to take the LLM path;
+    they never call llm_service methods directly. A plain real object suffices.
+    """
+
+
+class FakeContentGenerator:
+    """Real fake content generator replacing LLMEnhancedContentGenerator instance.
+
+    generate() returns a pre-configured GenerationResult (or None), or raises
+    a pre-configured exception. Records call info for assertions.
+    """
+
+    def __init__(self, result=None, exc=None):
+        self._result = result
+        self._exc = exc
+        self.generate_count = 0
+        self.last_user_input = ""
+        self.last_template = ""
+        self.last_search_results = None
+
+    def generate(self, user_input, template, search_results=None, **kwargs):
+        self.generate_count += 1
+        self.last_user_input = user_input
+        self.last_template = template
+        self.last_search_results = search_results
+        if self._exc is not None:
+            raise self._exc
+        return self._result
+
+
+def _make_fake_content_generator_class(result=None, exc=None):
+    """Create a real fake LLMEnhancedContentGenerator class for patch replacement.
+
+    When instantiated (as ``LLMEnhancedContentGenerator()`` inside
+    _call_llm_generate), returns an object whose generate() behaves per config.
+    Used to test lazy-init path without MagicMock.
+    """
+
+    class _FakeContentGeneratorClass:
+        def __init__(self, *args, **kwargs):
+            self.generate_count = 0
+
+        def generate(self, user_input, template, search_results=None, **kwargs):
+            self.generate_count += 1
+            if exc is not None:
+                raise exc
+            return result
+
+    return _FakeContentGeneratorClass
+
+
+class FakeSearchResult:
+    """Real fake search processor result (has .results and .fallback_used)."""
+
+    def __init__(self, results, fallback_used=False):
+        self.results = results
+        self.fallback_used = fallback_used
+
+
+class FakeSearchProcessor:
+    """Real fake search processor replacing _make_mock_search_processor()."""
+
+    DEFAULT_RESULTS = [
+        {"title": "测试结果1", "href": "https://example.com/1", "body": "内容1"},
+        {"title": "测试结果2", "href": "https://example.com/2", "body": "内容2"},
+    ]
+
+    def __init__(self, results=None, fallback_used=False, exc=None):
+        self._results = results if results is not None else list(self.DEFAULT_RESULTS)
+        self._fallback_used = fallback_used
+        self._exc = exc
+        self.process_count = 0
+        self.last_query = ""
+        self.last_raw_results = None
+
+    def process(self, query, raw_results):
+        self.process_count += 1
+        self.last_query = query
+        self.last_raw_results = raw_results
+        if self._exc is not None:
+            raise self._exc
+        return FakeSearchResult(
+            results=self._results, fallback_used=self._fallback_used
+        )
+
+
+class FakeToolSystem:
+    """Real fake tool system replacing _make_mock_tool_system().
+
+    Records every call_tool invocation in .calls for assertions.
+    """
+
+    def __init__(self, result=None, exc=None):
+        self._result = result if result is not None else {"success": True, "data": "ok"}
+        self._exc = exc
+        self.call_count = 0
+        self.last_tool_id = None
+        self.last_params = None
+        self.calls = []
+
+    async def call_tool(self, tool_id, params):
+        self.call_count += 1
+        self.last_tool_id = tool_id
+        self.last_params = params
+        self.calls.append((tool_id, params))
+        if self._exc is not None:
+            raise self._exc
+        return self._result
+
+
+class FakeWebSearch:
+    """Real fake WebSearch replacing MagicMock for _web_search attribute."""
+
+    def __init__(self, available=True, results=None, exc=None):
+        self._available = available
+        self._results = (
+            results
+            if results is not None
+            else [{"title": "原始结果", "href": "https://example.com", "body": "内容"}]
+        )
+        self._exc = exc
+        self.search_count = 0
+        self.last_query = None
+        self.last_max_results = None
+
+    def is_available(self):
+        return self._available
+
+    def search(self, query, max_results):
+        self.search_count += 1
+        self.last_query = query
+        self.last_max_results = max_results
+        if self._exc is not None:
+            raise self._exc
+        return self._results
+
+
+class FakeExecuteSkill:
+    """Real fake execute_skill (async, SkillRegistry parent method stub)."""
+
+    def __init__(self, return_value=None):
+        self._return_value = return_value or {"success": True, "data": {"results": []}}
+        self.call_count = 0
+
+    async def __call__(self, skill_name, context=None, **kwargs):
+        self.call_count += 1
+        return self._return_value
+
+
+class FakeExecuteCollaborative:
+    """Real fake _execute_collaborative (sync, SkillRegistry parent method stub)."""
+
+    def __init__(self, return_value=None):
+        self._return_value = return_value
+        self.call_count = 0
+
+    def __call__(self, goal, context=None):
+        self.call_count += 1
+        return self._return_value
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -30,7 +205,7 @@ def _make_mixin(
 ) -> SkillExecutorMixin:
     """创建一个独立的 SkillExecutorMixin 实例用于测试
 
-    Adds stub methods for methods that live on SkillRegistry (not the mixin),
+    Adds real fake stubs for methods that live on SkillRegistry (not the mixin),
     so the mixin can call self.execute_skill / self._execute_collaborative.
     """
     mixin = SkillExecutorMixin()
@@ -40,11 +215,9 @@ def _make_mixin(
     mixin._web_search = None
     mixin._content_generator = None
     mixin._collab_in_progress = False
-    # Stub methods from SkillRegistry that mixin methods call via self
-    mixin.execute_skill = AsyncMock(
-        return_value={"success": True, "data": {"results": []}}
-    )
-    mixin._execute_collaborative = MagicMock(return_value=None)
+    # Real fake stubs for SkillRegistry parent methods
+    mixin.execute_skill = FakeExecuteSkill()
+    mixin._execute_collaborative = FakeExecuteCollaborative()
     return mixin
 
 
@@ -55,31 +228,6 @@ def _run(coro):
         return loop.run_until_complete(coro)
     finally:
         loop.close()
-
-
-def _make_mock_llm_service():
-    """创建模拟 LLM 服务"""
-    return MagicMock()
-
-
-def _make_mock_search_processor():
-    """创建模拟搜索处理器"""
-    processor = MagicMock()
-    processed = MagicMock()
-    processed.results = [
-        {"title": "测试结果1", "href": "https://example.com/1", "body": "内容1"},
-        {"title": "测试结果2", "href": "https://example.com/2", "body": "内容2"},
-    ]
-    processed.fallback_used = False
-    processor.process.return_value = processed
-    return processor
-
-
-def _make_mock_tool_system():
-    """创建模拟工具系统"""
-    ts = MagicMock()
-    ts.call_tool = AsyncMock(return_value={"success": True, "data": "ok"})
-    return ts
 
 
 # ---------------------------------------------------------------------------
@@ -122,14 +270,15 @@ class TestExecuteSearch(unittest.TestCase):
     """测试搜索执行器"""
 
     def setUp(self):
-        self.processor = _make_mock_search_processor()
+        self.processor = FakeSearchProcessor()
         self.mixin = _make_mixin(search_processor=self.processor)
-        # Mock web search
-        self.mixin._web_search = MagicMock()
-        self.mixin._web_search.is_available.return_value = True
-        self.mixin._web_search.search.return_value = [
-            {"title": "原始结果", "href": "https://example.com", "body": "内容"}
-        ]
+        # Real fake web search
+        self.mixin._web_search = FakeWebSearch(
+            available=True,
+            results=[
+                {"title": "原始结果", "href": "https://example.com", "body": "内容"}
+            ],
+        )
 
     def test_happy_path_with_processor(self):
         """有 search_processor 时的正常路径"""
@@ -152,18 +301,17 @@ class TestExecuteSearch(unittest.TestCase):
 
     def test_fallback_when_processor_fails(self):
         """search_processor 异常时降级"""
-        self.processor.process.side_effect = Exception("processor error")
+        self.processor._exc = Exception("processor error")
         result = _run(self.mixin._execute_search("测试"))
         self.assertIn("results", result)
 
     def test_no_search_processor(self):
         """无 search_processor 时直接返回原始结果"""
         mixin = _make_mixin(search_processor=None)
-        mixin._web_search = MagicMock()
-        mixin._web_search.is_available.return_value = True
-        mixin._web_search.search.return_value = [
-            {"title": "结果", "href": "https://example.com", "body": "内容"}
-        ]
+        mixin._web_search = FakeWebSearch(
+            available=True,
+            results=[{"title": "结果", "href": "https://example.com", "body": "内容"}],
+        )
         result = _run(mixin._execute_search("测试"))
         self.assertEqual(result["count"], 1)
         self.assertFalse(result["fallback_used"])
@@ -201,27 +349,23 @@ class TestDoWebSearch(unittest.TestCase):
 
     def test_returns_empty_when_not_available(self):
         """WebSearch 不可用时返回空列表"""
-        mock_ws = MagicMock()
-        mock_ws.is_available.return_value = False
-        self.mixin._web_search = mock_ws
+        self.mixin._web_search = FakeWebSearch(available=False)
         result = _run(self.mixin._do_web_search("测试", 10))
         self.assertEqual(result, [])
 
     def test_returns_results_when_available(self):
         """WebSearch 可用时返回搜索结果"""
-        mock_ws = MagicMock()
-        mock_ws.is_available.return_value = True
-        mock_ws.search.return_value = [{"title": "结果"}]
-        self.mixin._web_search = mock_ws
+        self.mixin._web_search = FakeWebSearch(
+            available=True, results=[{"title": "结果"}]
+        )
         result = _run(self.mixin._do_web_search("测试", 5))
         self.assertEqual(len(result), 1)
 
     def test_returns_empty_on_exception(self):
         """搜索异常时返回空列表"""
-        mock_ws = MagicMock()
-        mock_ws.is_available.return_value = True
-        mock_ws.search.side_effect = Exception("network error")
-        self.mixin._web_search = mock_ws
+        self.mixin._web_search = FakeWebSearch(
+            available=True, exc=Exception("network error")
+        )
         result = _run(self.mixin._do_web_search("测试", 5))
         self.assertEqual(result, [])
 
@@ -235,7 +379,7 @@ class TestExecuteAnalysis(unittest.TestCase):
     """测试分析执行器"""
 
     def setUp(self):
-        self.mixin = _make_mixin(llm_service=_make_mock_llm_service())
+        self.mixin = _make_mixin(llm_service=FakeLLMService())
 
     def test_rule_based_fallback_when_no_llm(self):
         """无 LLM 服务时使用规则引擎降级"""
@@ -256,51 +400,47 @@ class TestExecuteAnalysis(unittest.TestCase):
         self.assertIn("opportunities", result["swot"])
         self.assertIn("threats", result["swot"])
 
-    @patch.object(SkillExecutorMixin, "_call_llm_generate")
-    def test_llm_analysis_happy_path(self, mock_llm):
+    def test_llm_analysis_happy_path(self):
         """LLM 分析正常路径"""
-        gen_result = MagicMock()
-        gen_result.success = True
-        gen_result.content = json.dumps(
-            {
-                "summary": "市场分析摘要",
-                "key_findings": ["发现1"],
-                "swot": {
-                    "strengths": ["S1"],
-                    "weaknesses": [],
-                    "opportunities": [],
-                    "threats": [],
-                },
-                "action_items": ["行动1"],
-            }
+        gen_result = GenerationResult(
+            content=json.dumps(
+                {
+                    "summary": "市场分析摘要",
+                    "key_findings": ["发现1"],
+                    "swot": {
+                        "strengths": ["S1"],
+                        "weaknesses": [],
+                        "opportunities": [],
+                        "threats": [],
+                    },
+                    "action_items": ["行动1"],
+                }
+            ),
+            success=True,
         )
-        mock_llm.return_value = gen_result
+        self.mixin._content_generator = FakeContentGenerator(result=gen_result)
 
         result = _run(self.mixin._execute_analysis(goal="市场分析"))
         self.assertIn("analysis_result", result)
         self.assertEqual(result["summary"], "市场分析摘要")
 
-    @patch.object(SkillExecutorMixin, "_call_llm_generate")
-    def test_llm_failure_falls_back_to_rules(self, mock_llm):
+    def test_llm_failure_falls_back_to_rules(self):
         """LLM 调用失败时降级到规则引擎"""
-        mock_llm.side_effect = Exception("LLM error")
+        self.mixin._content_generator = FakeContentGenerator(exc=Exception("LLM error"))
         result = _run(self.mixin._execute_analysis(goal="市场分析"))
         self.assertIn("analysis_result", result)
         self.assertIn("需要更多数据", result["analysis_result"])
 
-    @patch.object(SkillExecutorMixin, "_call_llm_generate")
-    def test_llm_returns_none_falls_back(self, mock_llm):
+    def test_llm_returns_none_falls_back(self):
         """LLM 返回 None 时降级到规则引擎"""
-        mock_llm.return_value = None
+        self.mixin._content_generator = FakeContentGenerator(result=None)
         result = _run(self.mixin._execute_analysis(goal="市场分析"))
         self.assertIn("analysis_result", result)
 
-    @patch.object(SkillExecutorMixin, "_call_llm_generate")
-    def test_llm_returns_unsuccessful_falls_back(self, mock_llm):
+    def test_llm_returns_unsuccessful_falls_back(self):
         """LLM 返回 success=False 时降级到规则引擎"""
-        gen_result = MagicMock()
-        gen_result.success = False
-        mock_llm.return_value = gen_result
+        gen_result = GenerationResult(content="", success=False)
+        self.mixin._content_generator = FakeContentGenerator(result=gen_result)
         result = _run(self.mixin._execute_analysis(goal="市场分析"))
         self.assertIn("analysis_result", result)
 
@@ -314,7 +454,7 @@ class TestExecuteContentGeneration(unittest.TestCase):
     """测试内容生成执行器"""
 
     def setUp(self):
-        self.mixin = _make_mixin(llm_service=_make_mock_llm_service())
+        self.mixin = _make_mixin(llm_service=FakeLLMService())
 
     def test_rule_based_fallback_when_no_llm(self):
         """无 LLM 服务时使用规则引擎降级"""
@@ -324,25 +464,24 @@ class TestExecuteContentGeneration(unittest.TestCase):
         self.assertTrue(result["fallback_used"])
         self.assertAlmostEqual(result["quality_score"], 0.3)
 
-    @patch.object(SkillExecutorMixin, "_call_llm_generate")
-    def test_llm_content_generation_happy_path(self, mock_llm):
+    def test_llm_content_generation_happy_path(self):
         """LLM 内容生成正常路径"""
-        gen_result = MagicMock()
-        gen_result.success = True
-        gen_result.content = "# 营销方案\n\n详细内容..."
-        gen_result.fallback_used = False
-        gen_result.quality_score = 0.9
-        mock_llm.return_value = gen_result
+        gen_result = GenerationResult(
+            content="# 营销方案\n\n详细内容...",
+            success=True,
+            fallback_used=False,
+            quality_score=0.9,
+        )
+        self.mixin._content_generator = FakeContentGenerator(result=gen_result)
 
         result = _run(self.mixin._execute_content_generation(goal="营销方案"))
         self.assertEqual(result["content"], "# 营销方案\n\n详细内容...")
         self.assertFalse(result["fallback_used"])
         self.assertAlmostEqual(result["quality_score"], 0.9)
 
-    @patch.object(SkillExecutorMixin, "_call_llm_generate")
-    def test_llm_failure_falls_back(self, mock_llm):
+    def test_llm_failure_falls_back(self):
         """LLM 失败时降级到规则引擎"""
-        mock_llm.side_effect = Exception("LLM error")
+        self.mixin._content_generator = FakeContentGenerator(exc=Exception("LLM error"))
         result = _run(self.mixin._execute_content_generation(goal="营销方案"))
         self.assertTrue(result["fallback_used"])
 
@@ -362,15 +501,15 @@ class TestExecuteOperation(unittest.TestCase):
     """测试操作执行器"""
 
     def setUp(self):
-        self.tool_system = _make_mock_tool_system()
+        self.tool_system = FakeToolSystem()
         self.mixin = _make_mixin(tool_system=self.tool_system)
 
     def test_happy_path_read_file(self):
         """read_file 操作正常路径"""
         _run(self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"}))
-        self.tool_system.call_tool.assert_called_once_with(
-            "file_read", {"path": "/tmp/test.txt"}
-        )
+        self.assertEqual(self.tool_system.call_count, 1)
+        self.assertEqual(self.tool_system.last_tool_id, "file_read")
+        self.assertEqual(self.tool_system.last_params, {"path": "/tmp/test.txt"})
 
     def test_happy_path_write_file(self):
         """write_file 操作正常路径"""
@@ -379,8 +518,10 @@ class TestExecuteOperation(unittest.TestCase):
                 "write_file", {"path": "/tmp/out.txt", "content": "hi"}
             )
         )
-        self.tool_system.call_tool.assert_called_once_with(
-            "file_write", {"path": "/tmp/out.txt", "content": "hi"}
+        self.assertEqual(self.tool_system.call_count, 1)
+        self.assertEqual(self.tool_system.last_tool_id, "file_write")
+        self.assertEqual(
+            self.tool_system.last_params, {"path": "/tmp/out.txt", "content": "hi"}
         )
 
     def test_unsupported_operation(self):
@@ -391,7 +532,7 @@ class TestExecuteOperation(unittest.TestCase):
 
     def test_tool_system_exception(self):
         """工具系统异常时返回错误"""
-        self.tool_system.call_tool.side_effect = Exception("tool error")
+        self.tool_system._exc = Exception("tool error")
         result = _run(
             self.mixin._execute_operation("read_file", {"path": "/tmp/test.txt"})
         )
@@ -408,7 +549,7 @@ class TestExecuteOperation(unittest.TestCase):
     def test_default_parameters_empty_dict(self):
         """parameters 默认为空字典"""
         _run(self.mixin._execute_operation("read_file"))
-        self.tool_system.call_tool.assert_called_once()
+        self.assertEqual(self.tool_system.call_count, 1)
 
 
 # ---------------------------------------------------------------------------
@@ -420,17 +561,17 @@ class TestExecuteNotification(unittest.TestCase):
     """测试通知执行器"""
 
     def setUp(self):
-        self.tool_system = _make_mock_tool_system()
+        self.tool_system = FakeToolSystem()
         self.mixin = _make_mixin(tool_system=self.tool_system)
 
     def test_happy_path(self):
         """正常发送通知"""
         _run(self.mixin._execute_notification("测试消息", recipient="user@example.com"))
-        self.tool_system.call_tool.assert_called_once()
-        call_args = self.tool_system.call_tool.call_args
-        self.assertEqual(call_args[0][0], "send_email")
-        self.assertEqual(call_args[0][1]["to"], "user@example.com")
-        self.assertEqual(call_args[0][1]["body"], "测试消息")
+        self.assertEqual(self.tool_system.call_count, 1)
+        tool_id, params = self.tool_system.calls[0]
+        self.assertEqual(tool_id, "send_email")
+        self.assertEqual(params["to"], "user@example.com")
+        self.assertEqual(params["body"], "测试消息")
 
     def test_cleans_recipient_newlines(self):
         """清理收件人中的换行符（防止头部注入）"""
@@ -439,8 +580,8 @@ class TestExecuteNotification(unittest.TestCase):
                 "消息", recipient="user@test.com\r\nBCC:evil@bad.com"
             )
         )
-        call_args = self.tool_system.call_tool.call_args
-        cleaned_to = call_args[0][1]["to"]
+        _, params = self.tool_system.calls[0]
+        cleaned_to = params["to"]
         self.assertNotIn("\r", cleaned_to)
         self.assertNotIn("\n", cleaned_to)
 
@@ -453,7 +594,7 @@ class TestExecuteNotification(unittest.TestCase):
 
     def test_tool_system_exception(self):
         """工具系统异常时返回错误"""
-        self.tool_system.call_tool.side_effect = Exception("email error")
+        self.tool_system._exc = Exception("email error")
         result = _run(
             self.mixin._execute_notification("消息", recipient="user@test.com")
         )
@@ -462,8 +603,8 @@ class TestExecuteNotification(unittest.TestCase):
     def test_default_subject(self):
         """默认邮件主题"""
         _run(self.mixin._execute_notification("消息", recipient="user@test.com"))
-        call_args = self.tool_system.call_tool.call_args
-        self.assertEqual(call_args[0][1]["subject"], "OPC-Agents 通知")
+        _, params = self.tool_system.calls[0]
+        self.assertEqual(params["subject"], "OPC-Agents 通知")
 
 
 # ---------------------------------------------------------------------------
@@ -505,28 +646,29 @@ class TestCallLLMGenerate(unittest.TestCase):
     """测试 LLM 生成调用"""
 
     def setUp(self):
-        self.mixin = _make_mixin(llm_service=_make_mock_llm_service())
+        self.mixin = _make_mixin(llm_service=FakeLLMService())
 
-    @patch("opc_manager.llm_content.LLMEnhancedContentGenerator")
-    def test_happy_path(self, mock_gen_cls):
+    @patch(
+        "opc_manager.llm_content.LLMEnhancedContentGenerator",
+        new=_make_fake_content_generator_class(
+            result=GenerationResult(content="生成的内容", success=True)
+        ),
+    )
+    def test_happy_path(self):
         """正常 LLM 生成"""
-        mock_gen = MagicMock()
-        mock_result = MagicMock()
-        mock_result.success = True
-        mock_result.content = "生成的内容"
-        mock_gen.generate.return_value = mock_result
-        mock_gen_cls.return_value = mock_gen
         self.mixin._content_generator = None
 
         result = _run(self.mixin._call_llm_generate("用户输入", "模板", []))
         self.assertTrue(result.success)
 
-    @patch("opc_manager.llm_content.LLMEnhancedContentGenerator")
-    def test_lazy_init_content_generator(self, mock_gen_cls):
+    @patch(
+        "opc_manager.llm_content.LLMEnhancedContentGenerator",
+        new=_make_fake_content_generator_class(
+            result=GenerationResult(content="内容", success=True)
+        ),
+    )
+    def test_lazy_init_content_generator(self):
         """懒初始化 _content_generator"""
-        mock_gen = MagicMock()
-        mock_gen.generate.return_value = MagicMock(success=True, content="内容")
-        mock_gen_cls.return_value = mock_gen
         self.mixin._content_generator = None
 
         _run(self.mixin._call_llm_generate("输入", "模板"))
@@ -539,12 +681,12 @@ class TestCallLLMGenerate(unittest.TestCase):
             result = _run(self.mixin._call_llm_generate("输入", "模板"))
             self.assertIsNone(result)
 
-    @patch("opc_manager.llm_content.LLMEnhancedContentGenerator")
-    def test_exception_returns_none(self, mock_gen_cls):
+    @patch(
+        "opc_manager.llm_content.LLMEnhancedContentGenerator",
+        new=_make_fake_content_generator_class(exc=Exception("LLM error")),
+    )
+    def test_exception_returns_none(self):
         """LLM 生成异常时返回 None"""
-        mock_gen = MagicMock()
-        mock_gen.generate.side_effect = Exception("LLM error")
-        mock_gen_cls.return_value = mock_gen
         self.mixin._content_generator = None
 
         result = _run(self.mixin._call_llm_generate("输入", "模板"))
@@ -767,6 +909,13 @@ class TestRuleBasedContentGeneration(unittest.TestCase):
 
 # ---------------------------------------------------------------------------
 # Test: Domain skill delegation
+#
+# These tests patch module-level execute_goal functions in domain skill modules
+# (email_skill, finance_skill, etc.). This is a legitimate boundary test pattern:
+# the domain modules have external side effects (DB, email, network) that should
+# not run in unit tests. We verify the delegation contract (correct function
+# called, arguments passed, return value propagated, exceptions propagated)
+# without invoking the real skill implementations.
 # ---------------------------------------------------------------------------
 
 
@@ -882,8 +1031,7 @@ class TestErrorPropagation(unittest.TestCase):
 
     def test_operation_error_returns_dict(self):
         """操作执行器异常时返回错误字典而非抛出"""
-        tool_system = MagicMock()
-        tool_system.call_tool = AsyncMock(side_effect=Exception("tool crash"))
+        tool_system = FakeToolSystem(exc=Exception("tool crash"))
         mixin = _make_mixin(tool_system=tool_system)
         result = _run(mixin._execute_operation("read_file", {"path": "/tmp/test"}))
         self.assertFalse(result["success"])
@@ -891,8 +1039,7 @@ class TestErrorPropagation(unittest.TestCase):
 
     def test_notification_error_returns_dict(self):
         """通知执行器异常时返回错误字典而非抛出"""
-        tool_system = MagicMock()
-        tool_system.call_tool = AsyncMock(side_effect=Exception("email crash"))
+        tool_system = FakeToolSystem(exc=Exception("email crash"))
         mixin = _make_mixin(tool_system=tool_system)
         result = _run(mixin._execute_notification("消息", recipient="test@test.com"))
         self.assertFalse(result["success"])
@@ -932,13 +1079,13 @@ class TestInputValidation(unittest.TestCase):
 
     def test_operation_none_parameters(self):
         """操作 parameters=None 默认为空字典"""
-        tool_system = _make_mock_tool_system()
+        tool_system = FakeToolSystem()
         mixin = _make_mixin(tool_system=tool_system)
         _run(mixin._execute_operation("read_file", parameters=None))
 
     def test_notification_none_recipient(self):
         """通知 recipient=None 不抛异常"""
-        tool_system = _make_mock_tool_system()
+        tool_system = FakeToolSystem()
         mixin = _make_mixin(tool_system=tool_system)
         _run(mixin._execute_notification("消息", recipient=None))
 
@@ -1019,17 +1166,17 @@ class TestExecuteCRM(unittest.TestCase):
         self, mock_crm_exec, mock_get_customer
     ):
         """包含"发邮件"关键词时触发协作"""
-        self.mixin._execute_collaborative = MagicMock(
+        self.mixin._execute_collaborative = FakeExecuteCollaborative(
             return_value={"success": True, "collaborative": True}
         )
         mock_get_customer.return_value = {"name": "张三", "email": "zhang@test.com"}
         self.mixin._execute_crm(goal="给张三发邮件")
-        self.mixin._execute_collaborative.assert_called_once()
+        self.assertEqual(self.mixin._execute_collaborative.call_count, 1)
 
     @patch("opc_manager.crm_skill.execute_goal")
     def test_crm_collaborative_returns_none_falls_back(self, mock_crm_exec):
         """协作返回 None 时回退到 CRM 执行"""
-        self.mixin._execute_collaborative = MagicMock(return_value=None)
+        self.mixin._execute_collaborative = FakeExecuteCollaborative(return_value=None)
         mock_crm_exec.return_value = {"success": True}
         self.mixin._execute_crm(goal="给张三发邮件")
         mock_crm_exec.assert_called_once()
@@ -1056,16 +1203,16 @@ class TestExecuteFinance(unittest.TestCase):
     @patch("opc_manager.finance_skill.execute_goal")
     def test_tax_reminder_triggers_collaborative(self, mock_finance_exec):
         """报税/提醒关键词触发协作"""
-        self.mixin._execute_collaborative = MagicMock(
+        self.mixin._execute_collaborative = FakeExecuteCollaborative(
             return_value={"success": True, "collaborative": True}
         )
         self.mixin._execute_finance(goal="报税提醒")
-        self.mixin._execute_collaborative.assert_called_once()
+        self.assertEqual(self.mixin._execute_collaborative.call_count, 1)
 
     @patch("opc_manager.finance_skill.execute_goal")
     def test_collaborative_returns_none_falls_back(self, mock_finance_exec):
         """协作返回 None 时回退到财务执行"""
-        self.mixin._execute_collaborative = MagicMock(return_value=None)
+        self.mixin._execute_collaborative = FakeExecuteCollaborative(return_value=None)
         mock_finance_exec.return_value = {"success": True}
         self.mixin._execute_finance(goal="报税提醒")
         mock_finance_exec.assert_called_once()

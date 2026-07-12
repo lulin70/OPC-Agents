@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OPC-Agents One-Click Launcher v0.3.16
+# OPC-Agents One-Click Launcher v0.3.17
 # Usage: ./scripts/start.sh
 
 set -e
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     🚀 OPC-Agents v0.3.16 Launcher       ║${NC}"
+echo -e "${BLUE}║     🚀 OPC-Agents v0.3.17 Launcher       ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 

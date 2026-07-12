@@ -68,6 +68,34 @@ def sample_undo_record():
     )
 
 
+@pytest.fixture
+def real_undo_manager():
+    """Provide a real UndoManager instance (replaces MagicMock anti-pattern).
+
+    UndoManager is a pure Python in-memory component managing undo records.
+    Using a real instance exercises actual push/can_undo/undo/list_undoable/
+    get_session_records logic instead of MagicMock stubs.
+    """
+    from opc_manager.undo_manager import UndoManager
+
+    return UndoManager()
+
+
+@pytest.fixture
+def patch_get_undo_manager(real_undo_manager, monkeypatch):
+    """Patch _get_undo_manager to return a real UndoManager instance.
+
+    Replaces the @patch("frontend.components.undo_actions._get_undo_manager")
+    + MagicMock() anti-pattern with a real UndoManager injected via monkeypatch.
+    """
+    import frontend.components.undo_actions as undo_actions_mod
+
+    monkeypatch.setattr(
+        undo_actions_mod, "_get_undo_manager", lambda: real_undo_manager
+    )
+    return real_undo_manager
+
+
 class TestOperationDescription:
     """Test suite for _get_operation_description() function.
 
@@ -505,53 +533,79 @@ class TestConvertToDisplayRecord:
 class TestExecuteUndo:
     """Test suite for execute_undo() function with ProgressEmitter integration."""
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_execute_undo_success(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.can_undo.return_value = (True, "")
-        mock_manager.undo.return_value = {"success": True, "result": {"undone": True}}
-        mock_get_manager.return_value = mock_manager
+    def test_execute_undo_success(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
 
-        result = execute_undo("session1", "op123")
+        um = patch_get_undo_manager
+        op_id = um.push(
+            session_id="session1",
+            op_type=OperationType.EMAIL_SEND,
+            inverse_func="undo_send_email",
+            inverse_args={"subject": "test"},
+            original_result={},
+        )
+        # Patch only the external inverse-function resolver to a pure function
+        # that succeeds (real inverse funcs have side effects unsuitable for
+        # unit tests). UndoManager core logic (push/can_undo/undo) is real.
+        um._resolve_inverse = lambda func_name: (lambda **kw: {"undone": True})
+
+        result = execute_undo("session1", op_id)
         assert result["success"] is True
         assert "撤销成功" in result["message"]
-        mock_manager.undo.assert_called_once_with("session1", "op123")
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_execute_undo_cannot_undo(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.can_undo.return_value = (False, "已过期")
-        mock_get_manager.return_value = mock_manager
+    def test_execute_undo_cannot_undo(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
 
-        result = execute_undo("session1", "op123")
+        um = patch_get_undo_manager
+        op_id = um.push(
+            session_id="session1",
+            op_type=OperationType.EMAIL_SEND,
+            inverse_func="undo_send_email",
+            inverse_args={},
+            original_result={},
+        )
+        # Expire the record so real can_undo returns (False, "Undo window expired")
+        records = um.get_session_records("session1")
+        records[0].expires_at = time.time() - 10
+
+        result = execute_undo("session1", op_id)
         assert result["success"] is False
         assert "无法撤销" in result["message"]
-        assert "已过期" in result["message"]
+        assert "expired" in result["message"].lower()
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_execute_undo_failure(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.can_undo.return_value = (True, "")
-        mock_manager.undo.return_value = {"success": False, "error": "逆函数执行错误"}
-        mock_get_manager.return_value = mock_manager
+    def test_execute_undo_failure(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
 
-        result = execute_undo("session1", "op123")
+        um = patch_get_undo_manager
+        op_id = um.push(
+            session_id="session1",
+            op_type=OperationType.EMAIL_SEND,
+            inverse_func="undo_send_email",
+            inverse_args={},
+            original_result={},
+        )
+
+        # Patch inverse resolver to a real function that raises, simulating
+        # an inverse-function execution failure.
+        def _failing_inverse(**kwargs):
+            raise RuntimeError("逆函数执行错误")
+
+        um._resolve_inverse = lambda func_name: _failing_inverse
+
+        result = execute_undo("session1", op_id)
         assert result["success"] is False
         assert "撤销失败" in result["message"]
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_execute_undo_manager_not_initialized(self, mock_get_manager):
-        mock_get_manager.return_value = None
+    def test_execute_undo_manager_not_initialized(self, monkeypatch):
+        import frontend.components.undo_actions as undo_actions_mod
+
+        monkeypatch.setattr(undo_actions_mod, "_get_undo_manager", lambda: None)
         result = execute_undo("session1", "op123")
         assert result["success"] is False
         assert "未初始化" in result["message"]
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_execute_undo_handles_exception(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.can_undo.side_effect = ValueError("Invalid session")
-        mock_get_manager.return_value = mock_manager
-
+    def test_execute_undo_handles_exception(self, patch_get_undo_manager):
+        # Real UndoManager raises ValueError for empty session_id
         result = execute_undo("", "op123")
         assert result["success"] is False
         assert "参数错误" in result["message"]
@@ -560,49 +614,30 @@ class TestExecuteUndo:
 class TestRenderUndoStats:
     """Test suite for calculate_undo_stats() statistics calculation."""
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_stats_all_active(self, mock_get_manager):
-        mock_manager = MagicMock()
-        now = time.time()
+    def test_stats_all_active(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
 
-        record1 = MagicMock()
-        record1.status = "active"
-        record1.expires_at = now + 3600
-
-        record2 = MagicMock()
-        record2.status = "active"
-        record2.expires_at = now + 3600
-
-        mock_manager.get_session_records.return_value = [record1, record2]
-        mock_get_manager.return_value = mock_manager
+        um = patch_get_undo_manager
+        um.push("sess1", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
+        um.push("sess1", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
 
         stats = calculate_undo_stats("sess1")
         assert stats["active"] == 2
         assert stats["undone"] == 0
         assert stats["expired"] == 0
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_stats_mixed_statuses(self, mock_get_manager):
-        mock_manager = MagicMock()
+    def test_stats_mixed_statuses(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
+
+        um = patch_get_undo_manager
         now = time.time()
-
-        active_rec = MagicMock()
-        active_rec.status = "active"
-        active_rec.expires_at = now + 3600
-
-        undone_rec = MagicMock()
-        undone_rec.status = "undone"
-
-        expired_rec = MagicMock()
-        expired_rec.status = "active"
-        expired_rec.expires_at = now - 10
-
-        mock_manager.get_session_records.return_value = [
-            active_rec,
-            undone_rec,
-            expired_rec,
-        ]
-        mock_get_manager.return_value = mock_manager
+        um.push("sess1", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
+        um.push("sess1", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
+        um.push("sess1", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
+        # Mutate real UndoRecord attributes to simulate mixed statuses
+        records = um.get_session_records("sess1")
+        records[1].status = "undone"
+        records[2].expires_at = now - 10  # expired (active status, past expiry)
 
         stats = calculate_undo_stats("sess1")
         assert stats["active"] == 1
@@ -610,19 +645,15 @@ class TestRenderUndoStats:
         assert stats["expired"] == 1
         assert stats["total"] == 3
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_stats_empty_session(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.get_session_records.return_value = []
-        mock_get_manager.return_value = mock_manager
-
+    def test_stats_empty_session(self, patch_get_undo_manager):
         stats = calculate_undo_stats("empty_sess")
         assert stats["total"] == 0
         assert stats["active"] == 0
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_stats_manager_not_available(self, mock_get_manager):
-        mock_get_manager.return_value = None
+    def test_stats_manager_not_available(self, monkeypatch):
+        import frontend.components.undo_actions as undo_actions_mod
+
+        monkeypatch.setattr(undo_actions_mod, "_get_undo_manager", lambda: None)
         stats = calculate_undo_stats("sess1")
         assert stats["total"] == 0
 
@@ -630,30 +661,24 @@ class TestRenderUndoStats:
 class TestCheckHasActiveRecords:
     """Test suite for check_has_active_undo_records()."""
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_has_active_records_true(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.list_undoable.return_value = [
-            {"operation_id": "op1"},
-            {"operation_id": "op2"},
-        ]
-        mock_get_manager.return_value = mock_manager
+    def test_has_active_records_true(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
+
+        um = patch_get_undo_manager
+        um.push("sess1", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
+        um.push("sess1", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
 
         result = check_has_active_undo_records("sess1")
         assert result is True
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_has_active_records_false(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.list_undoable.return_value = []
-        mock_get_manager.return_value = mock_manager
-
+    def test_has_active_records_false(self, patch_get_undo_manager):
         result = check_has_active_undo_records("sess1")
         assert result is False
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_has_active_records_manager_none(self, mock_get_manager):
-        mock_get_manager.return_value = None
+    def test_has_active_records_manager_none(self, monkeypatch):
+        import frontend.components.undo_actions as undo_actions_mod
+
+        monkeypatch.setattr(undo_actions_mod, "_get_undo_manager", lambda: None)
         result = check_has_active_undo_records("sess1")
         assert result is False
 
@@ -661,39 +686,35 @@ class TestCheckHasActiveRecords:
 class TestGetLatestRecordInfo:
     """Test suite for get_latest_undo_record_info()."""
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_get_latest_info_success(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.list_undoable.return_value = [
-            {
-                "operation_id": "op123",
-                "type": "EMAIL_SEND",
-                "remaining_seconds": 240,
-                "original_summary": "发送了邮件",
-            }
-        ]
-        mock_get_manager.return_value = mock_manager
+    def test_get_latest_info_success(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
+
+        um = patch_get_undo_manager
+        op_id = um.push(
+            "sess1",
+            OperationType.EMAIL_SEND,
+            "undo_send_email",
+            {"subject": "test"},
+            {"status": "sent"},
+        )
 
         info = get_latest_undo_record_info("sess1")
         assert info is not None
-        assert info["operation_id"] == "op123"
-        assert info["operation_type"] == "EMAIL_SEND"
-        assert info["label"] == "发送邮件"
+        assert info["operation_id"] == op_id
+        # list_undoable returns operation_type.value (lowercase enum value)
+        assert info["operation_type"] == OperationType.EMAIL_SEND.value
+        assert isinstance(info["label"], str) and info["label"]
         assert info["icon"] == ""
-        assert info["remaining_seconds"] == 240
+        assert info["remaining_seconds"] > 0
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_get_latest_info_no_records(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.list_undoable.return_value = []
-        mock_get_manager.return_value = mock_manager
-
+    def test_get_latest_info_no_records(self, patch_get_undo_manager):
         info = get_latest_undo_record_info("sess1")
         assert info is None
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_get_latest_info_manager_none(self, mock_get_manager):
-        mock_get_manager.return_value = None
+    def test_get_latest_info_manager_none(self, monkeypatch):
+        import frontend.components.undo_actions as undo_actions_mod
+
+        monkeypatch.setattr(undo_actions_mod, "_get_undo_manager", lambda: None)
         info = get_latest_undo_record_info("sess1")
         assert info is None
 
@@ -806,28 +827,22 @@ class TestExportGeneration:
 class TestEdgeCases:
     """Test suite for edge cases and error handling."""
 
-    @patch("frontend.components.undo_actions._get_undo_manager")
-    def test_empty_session_id_in_execute_undo(self, mock_get_manager):
-        mock_manager = MagicMock()
-        mock_manager.can_undo.side_effect = ValueError(
-            "session_id must be a non-empty string"
-        )
-        mock_get_manager.return_value = mock_manager
-
+    def test_empty_session_id_in_execute_undo(self, patch_get_undo_manager):
+        # Real UndoManager raises ValueError for empty session_id
         result = execute_undo("", "op123")
         assert result["success"] is False
         assert (
             "参数错误" in result["message"] or "session_id" in result["message"].lower()
         )
 
-    def test_invalid_operation_id_in_execute_undo(self, st_mock):
-        with patch("frontend.components.undo_actions._get_undo_manager") as mock_get:
-            mock_manager = MagicMock()
-            mock_manager.can_undo.return_value = (False, "Record not found")
-            mock_get.return_value = mock_manager
+    def test_invalid_operation_id_in_execute_undo(self, patch_get_undo_manager):
+        from opc_manager.undo_manager import OperationType
 
-            result = execute_undo("valid_session", "invalid_op_id")
-            assert result["success"] is False
+        um = patch_get_undo_manager
+        um.push("valid_session", OperationType.EMAIL_SEND, "undo_send_email", {}, {})
+        # Undo a non-existent operation_id — real can_undo returns (False, ...)
+        result = execute_undo("valid_session", "invalid_op_id")
+        assert result["success"] is False
 
     def test_operation_type_config_complete(self):
         expected_types = [

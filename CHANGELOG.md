@@ -4,6 +4,25 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.17] - 2026-07-12
+
+### DevSquad 共识推进第九批 — P3-4 Mock 反模式修复第三批
+
+> 2 个测试文件 MagicMock 替换为真实组件和真实 fake 类，`test_undo_panel.py` 用真实 `UndoManager` 实例（通过 `monkeypatch.setattr` 注入）替代 `@patch + MagicMock`，`test_skill_executors.py` 用 8 个真实 fake 类替代 30+ 处 MagicMock。P3-4 第三批完成。
+
+#### Mock 反模式修复（2 文件，第三批）
+
+- **`tests/integration/test_undo_panel.py`** — 17 处 `@patch("frontend.components.undo_actions._get_undo_manager")` + 22 处 `MagicMock()` 替换为真实 `UndoManager` 实例。新增 2 个 fixtures：`real_undo_manager`（构造真实 `UndoManager()`）和 `patch_get_undo_manager`（通过 `monkeypatch.setattr(undo_actions_mod, "_get_undo_manager", lambda: real_undo_manager)` 注入）。5 个测试类全部修复：`TestExecuteUndo`（5 测试，用 `um.push()` 创建真实记录，通过修改 `expires_at` 模拟过期，对需要逆函数执行的测试在实例上设置 `um._resolve_inverse = lambda func_name: (lambda **kw: {...})` 避免调用有副作用的真实技能函数）、`TestRenderUndoStats`（4 测试）、`TestCheckHasActiveRecords`（3 测试）、`TestGetLatestRecordInfo`（3 测试，4 个断言适配：`operation_id` 用真实 ID、`operation_type` 改为小写枚举值、`remaining_seconds` 改为 > 0、`label` 改为非空验证）、`TestEdgeCases`（2 测试，1 个断言适配：`"已过期"` → `"expired" in result["message"].lower()`）。保留 streamlit Mock（第 893 行 `patch.dict("sys.modules", {"streamlit": MagicMock()})`）— streamlit 需要 ScriptRunContext 运行时上下文，`@patch("...st")` 是合理的测试模式。
+- **`tests/integration/test_skill_executors.py`** — 30+ 处 MagicMock 替换为 8 个真实 fake 类：`FakeLLMService`（真实 `complete()` 返回 `GenerationResult`）、`FakeContentGenerator`（真实 `generate()` 返回 `GenerationResult`）、`_make_fake_content_generator_class()`（工厂函数生成 `LLMEnhancedContentGenerator` 的 fake 子类）、`FakeSearchResult`/`FakeSearchProcessor`（真实搜索处理）、`FakeToolSystem`（真实工具调用追踪）、`FakeWebSearch`（真实 `search()` 返回 `FakeSearchResult` 列表）、`FakeExecuteSkill`/`FakeExecuteCollaborative`（父类方法桩）。6× `@patch.object(SkillExecutorMixin, "_call_llm_generate")` → 注入 `FakeContentGenerator`。3× `@patch("opc_manager.llm_content.LLMEnhancedContentGenerator")` with MagicMock → `@patch(..., new=_make_fake_content_generator_class(...))`。3 个工厂函数删除，7× MagicMock web_search → `FakeWebSearch`，4× MagicMock tool_system → `FakeToolSystem`。所有 MagicMock gen_result → 真实 `GenerationResult` dataclass。保留 22 处 @patch（18 处领域技能委托 + 3 处 `LLMEnhancedContentGenerator` fake class + 1 处 `patch.dict`）。Mock 专有方法（`assert_called_once_with()` / `call_args`）替换为语义等价的真实 fake 属性检查（`call_count == 1`、`last_tool_id`、`last_params`、`calls[0]`）。
+
+### 验证
+
+- 2 文件测试: 148 passed（test_undo_panel 52 + test_skill_executors 96）
+- 全量测试: 3701 passed, 80 skipped = 3781 tests（CI 配置: --ignore=tests/e2e），匹配 EXPECTED_TEST_COUNT=3781
+- Ruff: All checks passed
+- Black: All checks passed
+- 覆盖率: 未变（仅测试重构，无源码变更，CI 阈值 65%，实际 66%）
+
 ## [0.3.16] - 2026-07-12
 
 ### DevSquad 共识推进第八批 — P3-4 Mock 反模式修复第二批
