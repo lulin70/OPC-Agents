@@ -181,6 +181,13 @@ jobs:
           echo "Version mismatch: VERSION=$VERSION_FILE, version.py=$VERSION_PY"
           exit 1
         fi
+        # D02 P0-4: 扩展校验范围 — mcp_protocol.py MCP_SERVER_VERSION
+        MCP_VERSION=$(python -c "from opc_manager.mcp_protocol import MCP_SERVER_VERSION; print(MCP_SERVER_VERSION)")
+        if [ "$VERSION_FILE" != "$MCP_VERSION" ]; then
+          echo "Version mismatch: VERSION=$VERSION_FILE, mcp_protocol.py MCP_SERVER_VERSION=$MCP_VERSION"
+          exit 1
+        fi
+        echo "✓ 版本一致性校验通过（VERSION / version.py / mcp_protocol.py = $VERSION_FILE）"
 
     - name: Verify README consistency (三语版本号/模块数/测试数对齐)
       run: |

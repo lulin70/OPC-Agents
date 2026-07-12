@@ -4,6 +4,40 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.20] - 2026-07-12
+
+### D02 评估 P0 修复 — 版本号同步 + 工作区清理 + CI 校验扩展
+
+> DevSquad D02 评估（详见 `docs/ASSESSMENT_D02_MATURITY.md`）发现版本号局部不同步问题。本次修复 7 处版本号不一致 + 清理工作区残留文件 + 扩展 CI 版本一致性校验范围。
+
+#### 版本号同步（7 处）
+
+- **`opc_manager/mcp_protocol.py:25`** — `MCP_SERVER_VERSION` `"0.3.3"` → `"0.3.20"`（D01 已发现，D02 确认仍未修复）
+- **`opc_manager/knowledge_bridge.py:301`** — User-Agent `"OPC-Agents/0.3.2"` → `"OPC-Agents/0.3.20"`
+- **`opc_manager/settings.py:2,162`** — docstring `v0.3.2` → `v0.3.20`（2 处）
+- **`opc_manager/onboarding.py:2`** — docstring `v0.3.2` → `v0.3.20`
+- **`opc_manager/error_handler.py:2`** — docstring `v0.3.2` → `v0.3.20`
+- **`opc_manager/shortcuts_handler.py:2`** — docstring `v0.3.2` → `v0.3.20`
+
+#### CI 版本一致性校验扩展
+
+- **`.github/workflows/python-ci.yml`** — "Verify version consistency" 步骤新增 `mcp_protocol.py MCP_SERVER_VERSION` 校验（原仅检查 VERSION vs version.py）
+
+#### 工作区清理（8 项）
+
+- 删除 `coverage.json`（1.0M）、`.coverage`（88K）、`logs/`（2.3M）、`output/`、`.dbg/`、`.benchmarks/`、`deliverables/`、`opc_agents.egg-info/`
+- 所有文件均已被 `.gitignore` 排除（`git ls-files` 确认未 tracked），仅工作区清理
+
+#### 版本号全量递增 0.3.19 → 0.3.20
+
+- VERSION / version.py / mcp_protocol.py / knowledge_bridge.py / 5 个 docstring / Dockerfile / scripts/start.sh / requirements.txt / requirements-dev.txt / data_backup.py / 三语 README / PROJECT_STATUS.md / test_data_backup.py — 共 19 个文件同步更新
+
+### 验证
+
+- Ruff: All checks passed
+- mypy: Success, no issues found in 113 source files
+- 版本一致性: VERSION / version.py / mcp_protocol.py = 0.3.20 ✓
+
 ## [0.3.19] - 2026-07-12
 
 ### DevSquad 共识推进第十一批 — P3-5 Mock 反模式修复扩展

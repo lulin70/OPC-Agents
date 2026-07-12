@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-12（DevSquad 共识推进 P3-5 Mock 反模式修复扩展完成，v0.3.19 发布） | **版本**: v0.3.19 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-12（D02 评估 P0 修复：版本号同步 + 工作区清理 + CI 校验扩展，v0.3.20 发布） | **版本**: v0.3.20 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.19`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.20`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -172,7 +172,7 @@
 - ~~高复杂度函数降级（TD-066 核心）~~ ✅ 已完成 (2026-07-11, v0.3.9+v0.3.11): v0.3.9 降级 4 个 D/E 级函数 + v0.3.11 降级 6 个 D/E 级函数（`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)），radon cc D+ blocking 门禁已生效
 - ~~补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR~~ ✅ 已完成 (2026-07-11): [ADR-001](architecture/ADR-001-IntentRouter-design.md) / [ADR-002](architecture/ADR-002-ToolSystem-design.md) / [ADR-003](architecture/ADR-003-TaskEngineV3-design.md)
 - ~~Mock 反模式修复（P3-4）~~ ✅ 完成 (2026-07-12, v0.3.18 第四批): 共 4 批 8 文件全部完成（第一批 3 文件: test_email_skill_coverage/test_simple_llm_service/test_executor_opinion；第二批 2 文件: test_delta_integration/test_integration_modules；第三批 2 文件: test_undo_panel/test_skill_executors；第四批 1 文件: test_timeline_view）。所有非 streamlit MagicMock 替换为真实组件或真实 fake 类，保留 streamlit Mock（ScriptRunContext 运行时上下文所必需）
-- ~~Mock 反模式修复扩展（P3-5）~~ ✅ 完成 (2026-07-12, v0.3.19): 2 文件扩展修复（test_brain_modules.py 40 处 MagicMock/AsyncMock → 6 个真实 fake 类: FakeLLMService/FakeSkill/FakeAsyncSkill/FakeSkillRegistry/FakeTaskResult/FakeTaskEngine；test_live_log_panel.py 4 处 MagicMock → 2 个真实 fake 类: FakeAuditLog/FakeProgressEmitter）。第 3 个候选 test_real_progress.py 只有 1 处 `patch.dict` 测试导入失败，是合理用法，非反模式。保留 10 处合理 @patch 和 psutil Mock
+- ~~Mock 反模式修复扩展（P3-5）~~ ✅ 完成 (2026-07-12, v0.3.20): 2 文件扩展修复（test_brain_modules.py 40 处 MagicMock/AsyncMock → 6 个真实 fake 类: FakeLLMService/FakeSkill/FakeAsyncSkill/FakeSkillRegistry/FakeTaskResult/FakeTaskEngine；test_live_log_panel.py 4 处 MagicMock → 2 个真实 fake 类: FakeAuditLog/FakeProgressEmitter）。第 3 个候选 test_real_progress.py 只有 1 处 `patch.dict` 测试导入失败，是合理用法，非反模式。保留 10 处合理 @patch 和 psutil Mock
 
 ---
 
