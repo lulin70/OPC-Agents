@@ -27,6 +27,8 @@ class ExportManager:
         return cls._instance
 
     def __init__(self):
+        # Singleton: initialization happens in __new__ via _register_builtin_exporters().
+        # __init__ is intentionally empty to avoid re-initialization on repeated ExportManager() calls.
         pass
 
     def register_exporter(self, format: ExportFormat, exporter):

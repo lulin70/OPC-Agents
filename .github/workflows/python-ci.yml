@@ -35,13 +35,15 @@ jobs:
       run: |
         playwright install chromium --with-deps
 
-    - name: Lint with flake8 (blocking — critical errors only)
+    - name: Lint with ruff (blocking — unified with pre-commit)
+      # D02 P1-9: Unified CI lint tool with .pre-commit-config.yaml (ruff v0.6.9)
       run: |
-        flake8 opc_manager/ frontend/ tests/ --count --select=E9,F63,F7,F82,W605 --show-source --statistics
+        pip install ruff==0.6.9
+        ruff check opc_manager/ frontend/ tests/ --exit-non-zero-on-fix
 
-    - name: Extended lint report (non-blocking — dead code & style)
+    - name: Extended lint report (non-blocking — style info)
       run: |
-        flake8 opc_manager/ frontend/ tests/ --count --select=F401,F841,E501,E722 --show-source --statistics --exit-zero || true
+        ruff check opc_manager/ frontend/ tests/ --select=E501 --statistics --exit-zero || true
 
     - name: Type check with mypy (blocking — TD-065 resolved)
       # TD-065: 516 errors → 0 errors in v0.3.3 (2026-06-28)

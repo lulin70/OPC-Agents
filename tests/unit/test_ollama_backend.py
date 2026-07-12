@@ -125,6 +125,13 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
             "OLLAMA_ENABLED",
         ]:
             os.environ.pop(key, None)
+        # Reset SettingsManager singleton to avoid .env file polluting test env vars
+        try:
+            from opc_manager.settings import SettingsManager
+
+            SettingsManager._instance = None
+        except Exception:
+            pass
 
     def test_ollama_with_base_url(self):
         from opc_manager.llm_content import LLMEnhancedContentGenerator
@@ -262,6 +269,13 @@ class TestOllamaCallLLMAPI(unittest.TestCase):
             "OLLAMA_ENABLED",
         ]:
             os.environ.pop(key, None)
+        # Reset SettingsManager singleton to avoid .env file polluting test env vars
+        try:
+            from opc_manager.settings import SettingsManager
+
+            SettingsManager._instance = None
+        except Exception:
+            pass
 
     @patch("requests.post")
     def test_ollama_call_without_api_key(self, mock_post):
@@ -390,6 +404,13 @@ class TestOllamaConfigDefaultSelection(unittest.TestCase):
             "OLLAMA_ENABLED",
         ]:
             os.environ.pop(key, None)
+        # Reset SettingsManager singleton to avoid .env file polluting test env vars
+        try:
+            from opc_manager.settings import SettingsManager
+
+            SettingsManager._instance = None
+        except Exception:
+            pass
 
     def test_ollama_selected_when_only_ollama_configured(self):
         from opc_manager.config import ConfigManager

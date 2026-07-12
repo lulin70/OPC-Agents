@@ -4,6 +4,34 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.21] - 2026-07-12
+
+### D02 评估 P1 修复 — 测试隔离 + CI lint 统一 + Singleton 文档化
+
+> DevSquad D02 评估 P1 项修复：根因定位 `test_moka_takes_priority_over_ollama` 失败为 SettingsManager 单例 `.env` 文件污染；CI lint 工具与 pre-commit 统一为 ruff；ExportManager Singleton 设计意图文档化。
+
+#### P1-6: test_ollama_backend.py 测试隔离修复
+
+- **根因**: `discover_llm_config()` 优先级链为 SettingsManager → os.environ(MOKA) → os.environ(GLM/OPENAI) → os.environ(OLLAMA)。SettingsManager 读取 `.env` 文件返回 ollama 配置，先于 os.environ 中的 MOKA_API_KEY 被检查，导致测试设置 `MOKA_API_KEY` 环境变量后仍返回 ollama 配置
+- **修复**: 3 处 `_clear_llm_env()` 方法（TestOllamaGetLLMConfig / TestOllamaCallLLMAPI / TestOllamaConfigDefaultSelection）新增 `SettingsManager._instance = None` 重置单例，确保每个测试在干净状态下运行
+- **验证**: `test_moka_takes_priority_over_ollama` PASSED，30 个测试全部通过
+
+#### P1-9: CI lint 工具统一为 ruff
+
+- **`.github/workflows/python-ci.yml`** — flake8 替换为 ruff v0.6.9，与 `.pre-commit-config.yaml` 保持一致
+- 阻塞步骤: `ruff check opc_manager/ frontend/ tests/ --exit-non-zero-on-fix`（原 flake8 仅检查 E9/F63/F7/F82/W605）
+- 非阻塞报告: `ruff check --select=E501 --statistics --exit-zero`（原 flake8 检查 F401/F841/E501/E722）
+
+#### P1-10: ExportManager Singleton 设计意图文档化
+
+- **`opc_manager/export/manager.py:29-32`** — `__init__` 方法添加注释说明 Singleton 初始化发生在 `__new__` 中，`__init__` 故意为空以避免重复 `ExportManager()` 调用时重新初始化
+
+### 验证
+
+- Ruff: All checks passed
+- mypy: Success, no issues found in 113 source files
+- pytest: 131 passed (test_ollama_backend 30 + test_export 37 + test_settings 64)，无回归
+
 ## [0.3.20] - 2026-07-12
 
 ### D02 评估 P0 修复 — 版本号同步 + 工作区清理 + CI 校验扩展

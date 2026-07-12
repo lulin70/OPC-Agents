@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.20 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.21 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -174,7 +174,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.20
+pip install opc-agents==0.3.21
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -421,7 +421,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
 | **0.3.14** | **2026-07-12** | **mypy 豁免移除 Batch 3(P3-3 完成)** — 11 个模块从 per-module overrides 移除（11→0），84 个函数注解补全，mypy `disallow_untyped_defs = true` 全局覆盖所有 83 模块，per-module overrides 彻底清零 |
-| **0.3.20** | **2026-07-12** | **P3-5 Mock 反模式修复** — 2 个测试文件 MagicMock 替换为真实 fake 类（test_brain_modules 40处→6个fake类: FakeLLMService/FakeSkill/FakeAsyncSkill/FakeSkillRegistry/FakeTaskResult/FakeTaskEngine / test_live_log_panel 4处→2个fake类: FakeAuditLog/FakeProgressEmitter），保留合理 @patch 和 psutil Mock |
+| **0.3.21** | **2026-07-12** | **P3-5 Mock 反模式修复** — 2 个测试文件 MagicMock 替换为真实 fake 类（test_brain_modules 40处→6个fake类: FakeLLMService/FakeSkill/FakeAsyncSkill/FakeSkillRegistry/FakeTaskResult/FakeTaskEngine / test_live_log_panel 4处→2个fake类: FakeAuditLog/FakeProgressEmitter），保留合理 @patch 和 psutil Mock |
 | **0.3.18** | **2026-07-12** | **P3-4 Mock 反模式修复第四批（P3-4 完成）** — test_timeline_view 8个测试方法~17处MagicMock替换为真实组件和fake类（UndoManager/UndoRecord→真实UndoManager+push()创建真实记录 / AuditLog→FakeAuditLog / ProgressEmitter→FakeProgressEmitter / SimpleNamespace替代MagicMock record），保留~18处streamlit Mock |
 | **0.3.17** | **2026-07-12** | **P3-4 Mock 反模式修复第三批** — 2 个测试文件 MagicMock 替换为真实 fake 类和真实组件（test_undo_panel 17处@patch+22处MagicMock→真实UndoManager实例+tmp_path / test_skill_executors 30+处MagicMock→8个真实fake类: FakeLLMService/FakeContentGenerator/FakeSearchProcessor/FakeToolSystem/FakeWebSearch等） |
 | **0.3.16** | **2026-07-12** | **P3-4 Mock 反模式修复第二批** — 2 个测试文件 MagicMock 替换为真实 fake 类（test_delta_integration 5 处 MagicMock LLM→MockLLMService/RaisingLLMService / test_integration_modules 12 处 MagicMock SkillRegistry/Skill→FakeSkillRegistry/FakeSkill + 真实 SkillRegistry 实例） |
