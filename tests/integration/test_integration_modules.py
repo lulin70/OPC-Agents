@@ -12,9 +12,67 @@ Streamlit) are mocked. Tests are independent and idempotent.
 import asyncio
 import threading
 import time
-from unittest.mock import MagicMock, patch, AsyncMock
+from typing import Any, Dict, Optional
 
 import pytest
+
+# ---------------------------------------------------------------------------
+# Real Fake Classes (replace MagicMock anti-patterns)
+# ---------------------------------------------------------------------------
+
+
+class FakeSkill:
+    """Real fake Skill with actual method implementations (replaces MagicMock).
+
+    MagicMock auto-generates stubs that don't test real behavior. This class has
+    real ``enabled``/``frozen`` attributes and a real ``execute()`` method,
+    making tests more representative of actual Skill behavior.
+    """
+
+    def __init__(
+        self,
+        enabled: bool = True,
+        result: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.skill_id = "fake_skill"
+        self.enabled = enabled
+        self.frozen = False
+        self._result = result or {"success": True, "data": {"content": "执行结果"}}
+
+    def execute(self, **kwargs: Any) -> Dict[str, Any]:
+        """Real execute method returning a configurable result dict."""
+        return self._result
+
+
+class FakeSkillRegistry:
+    """Real fake SkillRegistry with actual method implementations (replaces MagicMock).
+
+    MagicMock auto-generates stubs that don't test real behavior. This class has
+    real ``get_skill()`` and async ``execute_skill()`` methods, making tests more
+    representative of actual SkillRegistry behavior.
+    """
+
+    def __init__(
+        self,
+        skill: Optional[FakeSkill] = None,
+        execute_skill_result: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self._skill = skill or FakeSkill()
+        self._execute_skill_result = execute_skill_result or {
+            "success": True,
+            "data": {"content": "搜索结果"},
+        }
+
+    def get_skill(self, skill_id: str) -> FakeSkill:
+        """Real get_skill method returning the fake skill."""
+        return self._skill
+
+    async def execute_skill(
+        self, skill_id: str, context: Any = None, **kwargs: Any
+    ) -> Dict[str, Any]:
+        """Real async execute_skill method returning a configurable result."""
+        return self._execute_skill_result
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -139,15 +197,12 @@ class TestThreeBrainPipeline:
         assert all(s.id for s in plan.steps)
         assert all(s.skill_id for s in plan.steps)
 
-        # ExecutorBrain with mocked skill_registry
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = MagicMock(
-            return_value={"success": True, "data": {"content": "分析结果"}}
+        # ExecutorBrain with fake skill_registry (real fake, not MagicMock)
+        fake_skill = FakeSkill(
+            result={"success": True, "data": {"content": "分析结果"}}
         )
-        mock_registry.get_skill = MagicMock(return_value=mock_skill)
-        executor = ExecutorBrain(skill_registry=mock_registry)
+        fake_registry = FakeSkillRegistry(skill=fake_skill)
+        executor = ExecutorBrain(skill_registry=fake_registry)
 
         # Execute each step
         for step in plan.steps:
@@ -251,20 +306,18 @@ class TestTaskEngineSkillRegistry:
             assert "success" in result
 
     def test_task_engine_uses_skill_registry(self):
-        """TaskEngineV3 execute() triggers SkillRegistry for BUSINESS_OPERATION."""
+        """TaskEngineV3 execute() works with real SkillRegistry for BUSINESS_OPERATION.
+
+        Uses the real SkillRegistry singleton (reset by _isolate_db fixture with
+        tmp_path DB isolation) instead of patching it with MagicMock. The real
+        registry has built-in skills registered, providing more realistic coverage
+        than auto-generated MagicMock stubs.
+        """
         from opc_manager.task_engine_v3 import TaskEngineV3
 
         engine = TaskEngineV3()
-        # Patch SkillRegistry to track calls
-        with patch("opc_manager.skill_registry.SkillRegistry") as MockRegistry:
-            mock_instance = MagicMock()
-            mock_skill = MagicMock()
-            mock_skill.enabled = True
-            mock_instance.get_skill.return_value = mock_skill
-            MockRegistry.return_value = mock_instance
-
-            result = engine.execute("帮我执行操作")
-            assert isinstance(result.success, bool)
+        result = engine.execute("帮我执行操作")
+        assert isinstance(result.success, bool)
 
 
 # ---------------------------------------------------------------------------
@@ -918,19 +971,13 @@ class TestEndToEndModuleChain:
         strategist = StrategistBrain(llm_service=None)
         task_engine = TaskEngineV3()
 
-        # Mock SkillRegistry for ExecutorBrain
-        mock_registry = MagicMock()
-        mock_skill = MagicMock()
-        mock_skill.enabled = True
-        mock_skill.execute = MagicMock(
-            return_value={"success": True, "data": {"content": "执行结果"}}
-        )
-        mock_registry.get_skill = MagicMock(return_value=mock_skill)
-        mock_registry.execute_skill = AsyncMock(
-            return_value={"success": True, "data": {"content": "搜索结果"}}
+        # Fake SkillRegistry for ExecutorBrain (real fake, not MagicMock)
+        fake_registry = FakeSkillRegistry(
+            skill=FakeSkill(result={"success": True, "data": {"content": "执行结果"}}),
+            execute_skill_result={"success": True, "data": {"content": "搜索结果"}},
         )
 
-        executor = ExecutorBrain(skill_registry=mock_registry, task_engine=task_engine)
+        executor = ExecutorBrain(skill_registry=fake_registry, task_engine=task_engine)
         reflector = ReflectorBrain(llm_service=None)
         consensus = ConsensusEngine()
 
@@ -942,7 +989,7 @@ class TestEndToEndModuleChain:
             executor_brain=executor,
             reflector_brain=reflector,
             consensus_engine=consensus,
-            skill_registry=mock_registry,
+            skill_registry=fake_registry,
             task_engine=task_engine,
             llm_service=None,
         )

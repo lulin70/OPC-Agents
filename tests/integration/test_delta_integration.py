@@ -13,9 +13,44 @@ import json
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+
+class MockLLMService:
+    """真实 fake LLM 服务，complete 返回预设响应字符串。
+
+    用真实 fake 类替代 MagicMock，提供与 opc_manager.utils.call_llm_service()
+    真实交互的行为：返回预设响应，并记录调用次数与最后 prompt。
+    call_llm_service() 优先调用 llm_service.complete(prompt, ...)，
+    因此只需实现 complete 方法即可。
+    """
+
+    def __init__(self, response: str):
+        self._response = response
+        self.call_count = 0
+        self.last_prompt = ""
+
+    def complete(self, prompt, max_tokens=500, timeout=15):
+        self.call_count += 1
+        self.last_prompt = prompt
+        return self._response
+
+
+class RaisingLLMService:
+    """真实 fake LLM 服务，complete 总是抛出指定异常。
+
+    用于验证 LLM 调用失败时三贤者降级到规则判断的容错路径
+    （call_llm_service 捕获异常并返回 None）。
+    """
+
+    def __init__(self, exc: Exception):
+        self._exc = exc
+        self.call_count = 0
+
+    def complete(self, prompt, max_tokens=500, timeout=15):
+        self.call_count += 1
+        raise self._exc
 
 
 class TestStrategistBrainLLM(unittest.TestCase):
@@ -24,7 +59,6 @@ class TestStrategistBrainLLM(unittest.TestCase):
     def test_llm_intent_understanding_success(self):
         from opc_manager.strategist_brain import StrategistBrain, IntentType
 
-        mock_llm = MagicMock()
         llm_response = json.dumps(
             {
                 "goal": "分析竞品市场",
@@ -34,9 +68,8 @@ class TestStrategistBrainLLM(unittest.TestCase):
                 "constraints": ["需要真实数据"],
             }
         )
-        mock_llm.complete.return_value = llm_response
-        mock_llm.generate.return_value = llm_response
-        brain = StrategistBrain(llm_service=mock_llm)
+        llm = MockLLMService(llm_response)
+        brain = StrategistBrain(llm_service=llm)
         intent = brain.understand_intent("帮我分析一下竞品市场情况")
         self.assertEqual(intent.type, IntentType.ANALYSIS)
         self.assertGreater(intent.confidence, 0.5)
@@ -44,17 +77,14 @@ class TestStrategistBrainLLM(unittest.TestCase):
     def test_llm_intent_understanding_fallback(self):
         from opc_manager.strategist_brain import StrategistBrain, IntentType
 
-        mock_llm = MagicMock()
-        mock_llm.complete.side_effect = Exception("LLM error")
-        mock_llm.generate.side_effect = Exception("LLM error")
-        brain = StrategistBrain(llm_service=mock_llm)
+        llm = RaisingLLMService(Exception("LLM error"))
+        brain = StrategistBrain(llm_service=llm)
         intent = brain.understand_intent("帮我搜索AI趋势")
         self.assertEqual(intent.type, IntentType.SEARCH)
 
     def test_llm_plan_generation(self):
         from opc_manager.strategist_brain import StrategistBrain, Intent
 
-        mock_llm = MagicMock()
         llm_response = json.dumps(
             {
                 "steps": [
@@ -76,9 +106,8 @@ class TestStrategistBrainLLM(unittest.TestCase):
                 ]
             }
         )
-        mock_llm.complete.return_value = llm_response
-        mock_llm.generate.return_value = llm_response
-        brain = StrategistBrain(llm_service=mock_llm)
+        llm = MockLLMService(llm_response)
+        brain = StrategistBrain(llm_service=llm)
         intent = Intent(
             goal="分析AI趋势",
             type=brain._intent_service._detect_intent_type("分析AI趋势"),
@@ -100,7 +129,6 @@ class TestReflectorBrainLLM(unittest.TestCase):
     def test_llm_evaluation_success(self):
         from opc_manager.reflector_brain import ReflectorBrain
 
-        mock_llm = MagicMock()
         llm_response = json.dumps(
             {
                 "quality_score": 0.85,
@@ -110,9 +138,8 @@ class TestReflectorBrainLLM(unittest.TestCase):
                 "improvement_suggestion": "可补充竞品对比",
             }
         )
-        mock_llm.complete.return_value = llm_response
-        mock_llm.generate.return_value = llm_response
-        brain = ReflectorBrain(llm_service=mock_llm)
+        llm = MockLLMService(llm_response)
+        brain = ReflectorBrain(llm_service=llm)
         evaluation = brain.evaluate_result(
             {"success": True, "data": {"content": "这是一份详细的分析报告..."}},
             {"goal": "分析市场趋势"},
@@ -122,10 +149,8 @@ class TestReflectorBrainLLM(unittest.TestCase):
     def test_llm_evaluation_fallback(self):
         from opc_manager.reflector_brain import ReflectorBrain
 
-        mock_llm = MagicMock()
-        mock_llm.complete.side_effect = Exception("LLM error")
-        mock_llm.generate.side_effect = Exception("LLM error")
-        brain = ReflectorBrain(llm_service=mock_llm)
+        llm = RaisingLLMService(Exception("LLM error"))
+        brain = ReflectorBrain(llm_service=llm)
         evaluation = brain.evaluate_result(
             {"success": True, "data": {"content": "内容"}}, {"goal": "分析"}
         )

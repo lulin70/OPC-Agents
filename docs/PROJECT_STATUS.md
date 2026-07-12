@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-12（DevSquad 共识推进 P3-4 Mock 反模式修复第一批完成，v0.3.15 发布） | **版本**: v0.3.15 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-12（DevSquad 共识推进 P3-4 Mock 反模式修复第二批完成，v0.3.16 发布） | **版本**: v0.3.16 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md](internal/PROJECT_MATURITY_ASSESSMENT_v0.3.3_20260629.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.15`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.16`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -171,7 +171,7 @@
 - ~~引入 `radon cc` 圈复杂度门禁~~ ✅ 已完成 (2026-07-11, v0.3.8): CI non-blocking 报告 → ✅ v0.3.11 转 D+ blocking
 - ~~高复杂度函数降级（TD-066 核心）~~ ✅ 已完成 (2026-07-11, v0.3.9+v0.3.11): v0.3.9 降级 4 个 D/E 级函数 + v0.3.11 降级 6 个 D/E 级函数（`_parse_analysis_result` E(36)→A(2) / `finance_skill.execute_goal` D(30)→A(4) / `_extract_keywords` D(29)→A(2) / `_calculate_quality_score` D(28)→B(6) / `_parallel_data_analysis` D(22)→A(4) / `_execute_collaborative` D(21)→A(4)），radon cc D+ blocking 门禁已生效
 - ~~补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR~~ ✅ 已完成 (2026-07-11): [ADR-001](architecture/ADR-001-IntentRouter-design.md) / [ADR-002](architecture/ADR-002-ToolSystem-design.md) / [ADR-003](architecture/ADR-003-TaskEngineV3-design.md)
-- ~~Mock 反模式修复（P3-4）~~ ⏳ 进行中 (2026-07-12, v0.3.15 第一批): 3 文件修复完成（test_email_skill_coverage Mock文件系统→tmp_path+monkeypatch / test_simple_llm_service Mock os.environ.get→monkeypatch.setenv/delenv / test_executor_opinion MagicMock→RaisingLLMService真实fake类），剩余 7 文件待推进
+- ~~Mock 反模式修复（P3-4）~~ ⏳ 进行中 (2026-07-12, v0.3.16 第二批): 5 文件修复完成（第一批 3 文件: test_email_skill_coverage Mock文件系统→tmp_path+monkeypatch / test_simple_llm_service Mock os.environ.get→monkeypatch.setenv/delenv / test_executor_opinion MagicMock→RaisingLLMService真实fake类；第二批 2 文件: test_delta_integration 5处 MagicMock LLM→MockLLMService/RaisingLLMService / test_integration_modules 12处 MagicMock SkillRegistry/Skill→FakeSkillRegistry/FakeSkill + 真实 SkillRegistry 实例），剩余 5 文件待推进（test_undo_panel 35 patterns / test_timeline_view 42 patterns / test_skill_executors 45 patterns）
 
 ---
 

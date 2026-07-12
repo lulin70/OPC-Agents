@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.15 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.16 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -176,7 +176,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.15
+pip install opc-agents==0.3.16
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
@@ -408,6 +408,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 | バージョン | 日付 | マイルストーン |
 |-----------|------|---------------|
 | **0.3.14** | **2026-07-12** | **mypyオーバーライド削除 Batch 3(P3-3完了)** — 11モジュールをper-module overridesから削除（11→0）、84関数のアノテーション補完、mypy `disallow_untyped_defs = true`が全83モジュールをカバー、per-module overrides完全クリア |
+| **0.3.16** | **2026-07-12** | **P3-4 Mockアンチパターン修正 Batch 2** — 2テストファイルのMagicMockを本物fakeクラスに置換（test_delta_integration 5箇所 MagicMock LLM→MockLLMService/RaisingLLMService / test_integration_modules 12箇所 MagicMock SkillRegistry/Skill→FakeSkillRegistry/FakeSkill + 本物SkillRegistryインスタンス） |
 | **0.3.15** | **2026-07-12** | **P3-4 Mockアンチパターン修正 Batch 1** — 3テストファイルのMockアンチパターン修正（test_email_skill_coverage Mockファイルシステム→tmp_path+monkeypatch / test_simple_llm_service Mock os.environ.get→monkeypatch.setenv/delenv / test_executor_opinion MagicMock→RaisingLLMService本物fakeクラス） |
 | **0.3.13** | **2026-07-11** | **mypyオーバーライド削除 Batch 2(P3-3)** — 26モジュールをper-module overridesから削除（37→11）、88関数のアノテーション補完、mypy `disallow_untyped_defs = true`カバレッジ拡大。残り11モジュール（Batch 3、6+ untyped）は今後対応 |
 | **0.3.12** | **2026-07-11** | **mypyオーバーライド削除 Batch 1(P3-3)** — 46モジュールをper-module overridesから削除（83→37）、戻り値型+パラメータ型アノテーション補完（`__init__`/`__post_init__`/`execute_goal`/`undo_*`/`**kwargs: Any`等）、mypy `disallow_untyped_defs = true`グローバル適用 |

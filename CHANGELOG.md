@@ -4,6 +4,25 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.16] - 2026-07-12
+
+### DevSquad 共识推进第八批 — P3-4 Mock 反模式修复第二批
+
+> 2 个测试文件 MagicMock 替换为真实 fake 类，用 `MockLLMService`/`RaisingLLMService`/`FakeSkillRegistry`/`FakeSkill` 替代 `MagicMock` LLM 服务和 SkillRegistry/Skill。P3-4 第二批完成。
+
+#### Mock 反模式修复（2 文件，第二批）
+
+- **`tests/integration/test_delta_integration.py`** — 5 处 `mock_llm = MagicMock()` 用法（`complete.return_value`/`complete.side_effect`/`generate.return_value`/`generate.side_effect`）替换为真实 fake 类 `MockLLMService(response)` 和 `RaisingLLMService(exc)`。新增两个 fake 类（仿照 `test_executor_opinion.py` 中已有的模式），符合 `opc_manager/utils.py` 中 `call_llm_service()` 的接口（通过 `hasattr` 优先调用 `complete(prompt, max_tokens=..., timeout=...)`）。移除 `from unittest.mock import MagicMock` import。
+- **`tests/integration/test_integration_modules.py`** — 12 处 MagicMock/AsyncMock/patch 用法替换为真实 fake 类和真实实例。新增 `FakeSkill`（真实 `enabled`/`frozen` 属性 + `execute(**kwargs)` 方法）和 `FakeSkillRegistry`（真实 `get_skill(skill_id)` + 异步 `execute_skill(skill_id, context, **kwargs)` 方法）。3 个测试方法修复：`test_strategist_produces_plan_executor_executes_reflector_evaluates`（4 处 MagicMock→`FakeSkillRegistry`）、`test_task_engine_uses_skill_registry`（完全移除 patch，使用真实 `SkillRegistry` 实例，由 `_isolate_db` fixture 通过 `tmp_path` 数据库隔离）、`test_full_chain_with_mocks`（4 处 MagicMock + 1 处 AsyncMock→`FakeSkillRegistry`）。移除 `from unittest.mock import MagicMock, patch, AsyncMock` import。
+
+### 验证
+
+- 2 文件测试: 49 passed（test_delta_integration 17 + test_integration_modules 32）
+- 全量测试: 3701 passed, 80 skipped = 3781 tests（CI 配置: --ignore=tests/e2e），匹配 EXPECTED_TEST_COUNT=3781
+- Ruff: All checks passed
+- Black: All checks passed
+- 覆盖率: 未变（仅测试重构，无源码变更，CI 阈值 65%，实际 66%）
+
 ## [0.3.15] - 2026-07-12
 
 ### DevSquad 共识推进第七批 — P3-4 Mock 反模式修复第一批

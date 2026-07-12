@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.15 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.16 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -174,7 +174,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.15
+pip install opc-agents==0.3.16
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -421,6 +421,7 @@ PYTHONPATH=. pytest tests/integration/test_settings.py tests/integration/test_on
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
 | **0.3.14** | **2026-07-12** | **mypy 豁免移除 Batch 3(P3-3 完成)** — 11 个模块从 per-module overrides 移除（11→0），84 个函数注解补全，mypy `disallow_untyped_defs = true` 全局覆盖所有 83 模块，per-module overrides 彻底清零 |
+| **0.3.16** | **2026-07-12** | **P3-4 Mock 反模式修复第二批** — 2 个测试文件 MagicMock 替换为真实 fake 类（test_delta_integration 5 处 MagicMock LLM→MockLLMService/RaisingLLMService / test_integration_modules 12 处 MagicMock SkillRegistry/Skill→FakeSkillRegistry/FakeSkill + 真实 SkillRegistry 实例） |
 | **0.3.15** | **2026-07-12** | **P3-4 Mock 反模式修复第一批** — 3 个测试文件 Mock 反模式修复（test_email_skill_coverage Mock文件系统→tmp_path+monkeypatch / test_simple_llm_service Mock os.environ.get→monkeypatch.setenv/delenv / test_executor_opinion MagicMock→RaisingLLMService真实fake类） |
 | **0.3.13** | **2026-07-11** | **mypy 豁免移除 Batch 2(P3-3)** — 26 个模块从 per-module overrides 移除（37→11），88 个函数注解补全，mypy `disallow_untyped_defs = true` 扩大覆盖。剩余 11 模块（Batch 3，6+ untyped）待后续推进 |
 | **0.3.12** | **2026-07-11** | **mypy 豁免移除 Batch 1(P3-3)** — 46 个模块从 per-module overrides 移除（83→37），返回类型+参数类型注解补全（`__init__`/`__post_init__`/`execute_goal`/`undo_*`/`**kwargs: Any` 等），mypy `disallow_untyped_defs = true` 全局生效 |
