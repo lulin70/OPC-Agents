@@ -4,6 +4,39 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.25] - 2026-07-13
+
+### Wave 2 — F4 tool_system.py 拆分 + F3 覆盖率提升 68%→74%
+
+> DevSquad 多角色共识方案 Wave 2：将 754 行 tool_system.py 拆分为 4 个子模块 + Facade 模式（Mixin 多继承），覆盖率从 68.25% 提升至 74%（+5.75pp），新增 99 个覆盖测试，4278 个测试全部通过。
+
+#### F4: tool_system.py God Class 拆分
+
+- **拆分方案**: 754 行 → 4 个子模块 + 225 行 Facade
+  - `tool_registry.py` (236 行): 数据模型 (Tool/ToolParameter/ToolCategory/PermissionLevel) + ToolRegistry 注册中心
+  - `tool_handlers_fs.py` (192 行): 文件系统工具处理器 + 路径验证 (_validate_path/_ALLOWED_BASE_DIRS)
+  - `tool_handlers_smtp.py` (164 行): 邮件工具处理器 + CRLF 注入防护
+  - `tool_handlers_cmd.py` (108 行): 命令执行处理器 + shlex 安全 + allowlist
+  - `tool_system.py` (225 行): ToolSystem Facade，通过 Mixin 多继承组合所有功能
+- **设计模式**: Template Method (_register_builtin_tools 在基类为 no-op，Facade 覆写) + Facade (ToolSystem 组合 4 个 Mixin) + Re-export (向后兼容所有现有 import)
+- **质量验证**: 复杂度从 D (21+) 降至 C (11-15)，radon cc 全绿；3950 测试通过（含 8 个新架构守卫测试）；ruff/black/mypy 全绿
+- **架构守卫**: test_architecture_layers.py INFRA_FILES 集合新增 4 个模块，自动生成 8 个参数化测试用例验证 F 层隔离
+
+#### F3: 覆盖率提升 68.25% → 74% (+5.75pp)
+
+- **新增 6 个覆盖测试文件，99 个测试用例**:
+  - `test_scenario_engine_v2_coverage.py` (18 tests): ScenarioEngineV2 process/get_scenario/list_scenarios/get_statistics + _calculate_match_confidence
+  - `test_tool_audit_logger_coverage.py` (12 tests): AuditLogger 异步写入/查询/配置/关闭
+  - `test_knowledge_bridge_coverage.py` (38 tests): LocalFolderAdapter/ObsidianAdapter/YuqueAdapter/FeishuAdapter/NotionAdapter/SiYuanAdapter + KnowledgeBridge
+  - `test_web_search_coverage.py` (12 tests): WebSearchMCP 初始化/搜索/可用性
+  - `test_utils_coverage.py` (54 tests): extract_json_from_llm 3 策略/call_llm_service/parse_date_from_text/sanitize_for_llm/BoundedDict FIFO/EventEmitter
+  - `test_llm_service_coverage.py` (30 tests): OpenAIBackend/OllamaBackend/UsageTracker/LLMService detect_business_type/generate_persona
+- **关键模块覆盖率**: web_search.py 74%→100%, utils.py 71%→95%, llm_service.py ~50%→97%, tool_system.py 100% (Facade), tool_registry.py 99%, tool_audit_logger.py 84%
+
+#### 版本号同步
+
+- VERSION / version.py / Dockerfile / README × 3 / requirements / scripts / data_backup.py / mcp_protocol.py — 全部同步至 0.3.25
+
 ## [0.3.24] - 2026-07-13
 
 ### Wave 1 修复 — 6 个 timeout 测试修复 + CI 同步 + D02 评估更新

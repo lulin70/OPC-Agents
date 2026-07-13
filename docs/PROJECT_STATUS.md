@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-13（Wave 1 修复：conftest.py search mock + CI 测试数同步 + D02 评估更新，v0.3.24 发布） | **版本**: v0.3.24 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-13（Wave 2: tool_system.py 拆分 + 覆盖率 68%→74%，v0.3.25 发布） | **版本**: v0.3.25 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.24`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.25`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -48,10 +48,10 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 4019 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.23 新增 215 覆盖测试） |
-| 测试通过 | 3942 passed, 77 skipped, 0 timeout | `pytest --ignore=tests/e2e --timeout=30`（v0.3.24 修复 6 个 timeout） |
-| 完整套件耗时 | 65s | v0.3.24 修复 conftest.py search mock 后（之前 ~480s） |
-| 全量覆盖率 | 68.25% | `pytest --cov` 实测（v0.3.23 P2-11 8 模块 401 行新覆盖，CI 阈值 65%） |
+| 测试用例总数 | 4278 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.23 新增 215 覆盖测试） |
+| 测试通过 | 4278 passed, 111 skipped, 0 timeout | `pytest --ignore=tests/e2e --timeout=30`（v0.3.24 修复 6 个 timeout，v0.3.25 新增 99 个覆盖测试） |
+| 完整套件耗时 | 365s（含 e2e）/ 65s（不含 e2e） | v0.3.24 修复 conftest.py search mock 后（之前 ~480s） |
+| 全量覆盖率 | 74% | `pytest --cov` 实测（v0.3.25 新增 99 个覆盖测试，CI 阈值 65%） |
 | `email_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.23 验证：237 stmts 0 miss） |
 | `finance_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.23 验证：166 stmts 0 miss） |
 | mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |

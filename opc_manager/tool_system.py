@@ -1,178 +1,84 @@
 """
-工具调用框架 (ToolSystem) - 负责工具的注册、调用和权限管理
+工具调用框架 (ToolSystem) — Facade
 
-这是三贤者架构的工具基础设施：
+三贤者架构的工具基础设施：
 - 注册工具
 - 调用工具
 - 权限检查
 
-AuditLogger 已提取到 tool_audit_logger.py（关注点分离：async 审计 vs sync 工具），
-此处通过 import re-export 保持向后兼容。
+Phase 3 架构演进：将实现拆分为 4 个子模块，tool_system.py 保留为 Facade：
+- tool_registry.py — 数据模型 + 注册/发现/调用分发 + 输入长度校验
+- tool_handlers_fs.py — 文件系统工具处理器 + 路径校验
+- tool_handlers_smtp.py — 邮件工具处理器 + CRLF 注入防护
+- tool_handlers_cmd.py — 命令执行处理器 + shlex 白名单防护
+- tool_audit_logger.py — 审计日志（独立模块，不变）
+
+ToolSystem 通过多重继承组合 Registry + 各 Handler，_register_builtin_tools
+将 handler 方法注册为 Tool.execute 回调。
+
+向后兼容：所有公共符号（Tool/ToolCategory/PermissionLevel/ToolParameter/
+ToolSystem/AuditLogger/ALLOWED_COMMANDS/INPUT_LENGTH_LIMITS/COMMAND_TIMEOUT_SECONDS/
+_validate_path/_validate_input_length/_configure_allowed_dirs）从此模块 re-export，
+现有 `from opc_manager.tool_system import X` 无需修改。
 """
 
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass
-from enum import Enum
-import asyncio
-import fnmatch
-import json
-import logging
-import os
-import re
-import shlex
-import time
+# asyncio 必须在模块顶层导入：测试通过 patch("opc_manager.tool_system.asyncio.create_subprocess_exec")
+# 拦截子进程创建，移除会导致测试失败。
+import asyncio  # noqa: F401
 
 from opc_manager.tool_audit_logger import AuditLogger
+from opc_manager.tool_handlers_cmd import (
+    ALLOWED_COMMANDS,
+    COMMAND_TIMEOUT_SECONDS,
+    CommandHandlers,
+)
+from opc_manager.tool_handlers_fs import (
+    FileSystemHandlers,
+    _ALLOWED_BASE_DIRS,
+    _configure_allowed_dirs,
+    _ensure_allowed_dirs,
+    _validate_path,
+)
+from opc_manager.tool_handlers_smtp import SmtpHandlers
+from opc_manager.tool_registry import (
+    INPUT_LENGTH_LIMITS,
+    PermissionLevel,
+    Tool,
+    ToolCategory,
+    ToolParameter,
+    ToolRegistry,
+    _validate_input_length,
+)
 
-logger = logging.getLogger(__name__)
-
-ALLOWED_COMMANDS = {
-    "ls",
-    "cat",
-    "head",
-    "tail",
-    "wc",
-    "echo",
-    "pwd",
-    "whoami",
-    "date",
-    "df",
-    "du",
-    "find",
-    "grep",
-    "sort",
-    "uniq",
-}
-
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_ALLOWED_BASE_DIRS: List[str] = []
-_ALLOWED_BASE_DIRS_INITIALIZED = False
-
-
-def _ensure_allowed_dirs() -> None:
-    global _ALLOWED_BASE_DIRS, _ALLOWED_BASE_DIRS_INITIALIZED
-    if _ALLOWED_BASE_DIRS_INITIALIZED:
-        return
-    _ALLOWED_BASE_DIRS_INITIALIZED = True
-    _ALLOWED_BASE_DIRS = [
-        os.path.join(_PROJECT_ROOT, "data"),
-        os.path.join(_PROJECT_ROOT, "output"),
-        os.path.join(_PROJECT_ROOT, "logs"),
-    ]
-
-
-INPUT_LENGTH_LIMITS = {
-    "user_input": 10000,
-    "command_arg": 1000,
-    "file_path": 500,
-    "skill_param": 5000,
-}
-
-COMMAND_TIMEOUT_SECONDS = 30
+# Facade re-exports：保持 `from opc_manager.tool_system import X` 向后兼容
+__all__ = [
+    "ToolSystem",
+    "Tool",
+    "ToolCategory",
+    "ToolParameter",
+    "PermissionLevel",
+    "ToolRegistry",
+    "AuditLogger",
+    "ALLOWED_COMMANDS",
+    "INPUT_LENGTH_LIMITS",
+    "COMMAND_TIMEOUT_SECONDS",
+    "_validate_path",
+    "_validate_input_length",
+    "_configure_allowed_dirs",
+    "_ensure_allowed_dirs",
+    "_ALLOWED_BASE_DIRS",
+]
 
 
-def _configure_allowed_dirs(dirs: List[str]) -> None:
-    global _ALLOWED_BASE_DIRS
-    _ALLOWED_BASE_DIRS = [os.path.realpath(d) for d in dirs]
+class ToolSystem(ToolRegistry, FileSystemHandlers, SmtpHandlers, CommandHandlers):
+    """工具系统 Facade — 组合注册中心 + 文件/邮件/命令处理器。
 
-
-def _validate_path(file_path: str) -> str:
-    _ensure_allowed_dirs()
-    abs_path = os.path.realpath(file_path)
-    if ".." in os.path.normpath(file_path).split(os.sep):
-        raise ValueError(f"路径不允许包含 '..': {file_path}")
-    if _ALLOWED_BASE_DIRS:
-        if not any(abs_path.startswith(base) for base in _ALLOWED_BASE_DIRS):
-            raise ValueError(f"路径超出允许范围: {file_path}")
-    return abs_path
-
-
-def _validate_input_length(input_type: str, value: str) -> None:
-    limit = INPUT_LENGTH_LIMITS.get(input_type, 10000)
-    if len(value) > limit:
-        raise ValueError(f"输入超出长度限制: {len(value)} > {limit} ({input_type})")
-
-
-class ToolCategory(Enum):
-    SEARCH = "search"
-    FILE = "file"
-    API = "api"
-    DATABASE = "database"
-    SYSTEM = "system"
-    NOTIFICATION = "notification"
-
-
-class PermissionLevel(Enum):
-    PUBLIC = "public"
-    USER = "user"
-    ADMIN = "admin"
-
-
-@dataclass
-class ToolParameter:
-    name: str
-    type: str
-    required: bool = True
-    description: str = ""
-    default: Any = None
-    allowed_values: Optional[List[Any]] = None
-
-    def __post_init__(self) -> None:
-        if self.allowed_values is None:
-            self.allowed_values = []
-
-
-@dataclass
-class Tool:
-    tool_id: str
-    name: str
-    description: str
-    category: ToolCategory
-    parameters: List[ToolParameter]
-    execute: Callable
-    permission: PermissionLevel = PermissionLevel.PUBLIC
-    enabled: bool = True
-    version: str = "1.0"
-
-    def validate_parameters(self, kwargs: Dict[str, Any]) -> List[str]:
-        errors = []
-
-        for param in self.parameters:
-            if param.required and param.name not in kwargs:
-                errors.append(f"缺少必填参数: {param.name}")
-                continue
-
-            if param.name in kwargs:
-                value = kwargs[param.name]
-                if param.type == "str" and not isinstance(value, str):
-                    errors.append(f"参数 {param.name} 应为字符串类型")
-                elif param.type == "int" and not isinstance(value, int):
-                    errors.append(f"参数 {param.name} 应为整数类型")
-                elif param.type == "float" and not isinstance(value, float):
-                    errors.append(f"参数 {param.name} 应为浮点数类型")
-                elif param.type == "bool" and not isinstance(value, bool):
-                    errors.append(f"参数 {param.name} 应为布尔类型")
-                elif param.type == "list" and not isinstance(value, list):
-                    errors.append(f"参数 {param.name} 应为列表类型")
-                elif param.type == "dict" and not isinstance(value, dict):
-                    errors.append(f"参数 {param.name} 应为字典类型")
-
-                if param.allowed_values and value not in param.allowed_values:
-                    errors.append(
-                        f"参数 {param.name} 的值 {value} 不在允许范围内: {param.allowed_values}"
-                    )
-
-        return errors
-
-
-class ToolSystem:
-
-    def __init__(self, register_builtins: bool = True):
-        self.tools: Dict[str, Tool] = {}
-        self.category_index: Dict[str, List[str]] = {}
-        self.permission_index: Dict[str, List[str]] = {}
-        if register_builtins:
-            self._register_builtin_tools()
+    通过多重继承获得：
+    - ToolRegistry: 工具注册/发现/调用分发/权限检查
+    - FileSystemHandlers: file_read/file_write/file_list 执行逻辑
+    - SmtpHandlers: send_email 执行逻辑
+    - CommandHandlers: run_command 执行逻辑（含 shlex 白名单防护）
+    """
 
     def _register_builtin_tools(self) -> None:
         file_read_tool = Tool(
@@ -299,252 +205,7 @@ class ToolSystem:
         )
         self.register_tool(command_tool)
 
-    def register_tool(self, tool: Tool) -> bool:
-        if tool.tool_id in self.tools:
-            logger.warning("工具已存在: %s", tool.tool_id)
-            return False
-
-        self.tools[tool.tool_id] = tool
-
-        category_name = tool.category.value
-        if category_name not in self.category_index:
-            self.category_index[category_name] = []
-        self.category_index[category_name].append(tool.tool_id)
-
-        permission_name = tool.permission.value
-        if permission_name not in self.permission_index:
-            self.permission_index[permission_name] = []
-        self.permission_index[permission_name].append(tool.tool_id)
-
-        logger.info("工具注册成功: %s", tool.tool_id)
-        return True
-
-    def get_tool(self, tool_id: str) -> Optional[Tool]:
-        return self.tools.get(tool_id)
-
-    def find_by_category(self, category: ToolCategory) -> List[Tool]:
-        category_name = category.value
-        tool_ids = self.category_index.get(category_name, [])
-        return [self.tools[tid] for tid in tool_ids if tid in self.tools]
-
-    def find_by_permission(self, permission: PermissionLevel) -> List[Tool]:
-        permission_name = permission.value
-        tool_ids = self.permission_index.get(permission_name, [])
-        return [self.tools[tid] for tid in tool_ids if tid in self.tools]
-
-    def list_all_tools(self) -> List[Tool]:
-        return list(self.tools.values())
-
-    async def call_tool(
-        self,
-        tool_id: str,
-        user_permission: PermissionLevel = PermissionLevel.PUBLIC,
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        """调用工具
-
-        注意：当前权限模型中 user_permission 由调用方传入，适用于受信任的内部调用场景。
-        生产环境应替换为基于 session/token 的认证上下文获取权限等级。
-        """
-        tool = self.get_tool(tool_id)
-        if not tool:
-            return {"success": False, "error": f"工具不存在: {tool_id}"}
-
-        if not tool.enabled:
-            return {"success": False, "error": f"工具已禁用: {tool_id}"}
-
-        if not self._check_permission(user_permission, tool.permission):
-            return {
-                "success": False,
-                "error": f"权限不足: 需要 {tool.permission.value} 权限",
-            }
-
-        validation_errors = tool.validate_parameters(kwargs)
-        if validation_errors:
-            return {"success": False, "error": "; ".join(validation_errors)}
-
-        try:
-            if asyncio.iscoroutinefunction(tool.execute):
-                result = await tool.execute(**kwargs)
-            else:
-                loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(
-                    None, lambda: tool.execute(**kwargs)
-                )
-
-            return {"success": True, "data": result}
-
-        except Exception as e:
-            logger.error("工具调用异常: %s, 错误: %s", tool_id, str(e))
-            return {"success": False, "error": str(e)}
-
-    def _check_permission(
-        self, user_permission: PermissionLevel, required_permission: PermissionLevel
-    ) -> bool:
-        permission_order = [
-            PermissionLevel.PUBLIC.value,
-            PermissionLevel.USER.value,
-            PermissionLevel.ADMIN.value,
-        ]
-
-        user_level = permission_order.index(user_permission.value)
-        required_level = permission_order.index(required_permission.value)
-
-        return user_level >= required_level
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "type": "tool_system",
-            "tool_count": len(self.tools),
-            "categories": self.category_index,
-            "permissions": self.permission_index,
-            "tools": {
-                tid: {
-                    "name": t.name,
-                    "category": t.category.value,
-                    "permission": t.permission.value,
-                    "description": t.description,
-                }
-                for tid, t in self.tools.items()
-            },
-        }
-
-    async def _execute_file_read(
-        self, file_path: str, encoding: str = "utf-8"
-    ) -> Dict[str, Any]:
-        try:
-            _validate_input_length("file_path", file_path)
-            safe_path = _validate_path(file_path)
-            loop = asyncio.get_running_loop()
-            content = await loop.run_in_executor(
-                None, self._read_file_sync, safe_path, encoding
-            )
-            AuditLogger.log(
-                "PATH_ACCESS_GRANTED",
-                {
-                    "operation": "read",
-                    "file_path": safe_path,
-                },
-            )
-            return {"content": content, "file_path": safe_path}
-        except ValueError as e:
-            AuditLogger.log(
-                "PATH_REJECTED",
-                {
-                    "operation": "read",
-                    "file_path": file_path,
-                    "reason": str(e),
-                },
-            )
-            raise Exception(f"路径校验失败: {str(e)}")
-        except Exception as e:
-            raise Exception(f"文件读取失败: {str(e)}")
-
-    @staticmethod
-    def _read_file_sync(safe_path: str, encoding: str) -> str:
-        with open(safe_path, "r", encoding=encoding) as f:
-            return f.read()
-
-    async def _execute_file_write(
-        self,
-        file_path: str,
-        content: str,
-        encoding: str = "utf-8",
-        overwrite: bool = False,
-    ) -> Dict[str, Any]:
-        try:
-            _validate_input_length("file_path", file_path)
-            safe_path = _validate_path(file_path)
-        except ValueError as e:
-            AuditLogger.log(
-                "PATH_REJECTED",
-                {
-                    "operation": "write",
-                    "file_path": file_path,
-                    "reason": str(e),
-                },
-            )
-            raise Exception(f"路径校验失败: {str(e)}")
-
-        if os.path.exists(safe_path) and not overwrite:
-            raise Exception(f"文件已存在: {safe_path}")
-
-        dir_path = os.path.dirname(safe_path)
-        if dir_path and not os.path.exists(dir_path):
-            os.makedirs(dir_path, exist_ok=True)
-
-        try:
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(
-                None, self._write_file_sync, safe_path, content, encoding
-            )
-            AuditLogger.log(
-                "PATH_ACCESS_GRANTED",
-                {
-                    "operation": "write",
-                    "file_path": safe_path,
-                },
-            )
-            return {"success": True, "file_path": safe_path}
-        except Exception as e:
-            raise Exception(f"文件写入失败: {str(e)}")
-
-    @staticmethod
-    def _write_file_sync(safe_path: str, content: str, encoding: str) -> None:
-        with open(safe_path, "w", encoding=encoding) as f:
-            f.write(content)
-
-    async def _execute_file_list(
-        self, dir_path: str, pattern: Optional[str] = None
-    ) -> Dict[str, Any]:
-        try:
-            _validate_input_length("file_path", dir_path)
-            safe_path = _validate_path(dir_path)
-        except ValueError as e:
-            AuditLogger.log(
-                "PATH_REJECTED",
-                {
-                    "operation": "list",
-                    "file_path": dir_path,
-                    "reason": str(e),
-                },
-            )
-            raise Exception(f"路径校验失败: {str(e)}")
-
-        try:
-            loop = asyncio.get_running_loop()
-            file_info = await loop.run_in_executor(
-                None, self._list_files_sync, safe_path, pattern
-            )
-            return {"files": file_info, "directory": safe_path}
-        except Exception as e:
-            raise Exception(f"文件列表获取失败: {str(e)}")
-
-    @staticmethod
-    def _list_files_sync(
-        safe_path: str, pattern: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        files = os.listdir(safe_path)
-        if pattern:
-            files = fnmatch.filter(files, pattern)
-        file_info = []
-        for filename in files:
-            full_path = os.path.join(safe_path, filename)
-            file_info.append(
-                {
-                    "name": filename,
-                    "path": full_path,
-                    "is_dir": os.path.isdir(full_path),
-                    "size": (
-                        os.path.getsize(full_path) if os.path.isfile(full_path) else 0
-                    ),
-                }
-            )
-        return file_info
-
-    async def _execute_web_search(
-        self, query: str, max_results: int = 10
-    ) -> Dict[str, Any]:
+    async def _execute_web_search(self, query: str, max_results: int = 10) -> dict:
         # NOTE: Placeholder results returned when no search API is configured.
         # Real search requires DuckDuckGo or other search provider.
         return {
@@ -559,195 +220,3 @@ class ToolSystem:
             ],
             "total": min(max_results, 5),
         }
-
-    async def _execute_send_email(
-        self,
-        to: str,
-        subject: str,
-        body: str,
-        attachments: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-        to = to.replace("\r", "").replace("\n", "")
-        subject = subject.replace("\r", "").replace("\n", "")
-        if not to or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", to):
-            return {"sent": False, "error": f"Invalid email address: {to}"}
-
-        smtp_host = os.environ.get("OPC_SMTP_HOST", "")
-        smtp_port = int(os.environ.get("OPC_SMTP_PORT", "587"))
-        smtp_user = os.environ.get("OPC_SMTP_USER", "")
-        smtp_pass = os.environ.get("OPC_SMTP_PASS", "")
-        smtp_from = os.environ.get("OPC_SMTP_FROM", smtp_user)
-        smtp_tls = os.environ.get("OPC_SMTP_TLS", "true").lower() == "true"
-
-        if smtp_host and smtp_user and smtp_pass:
-            try:
-                loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(
-                    None,
-                    self._send_smtp_sync,
-                    smtp_host,
-                    smtp_port,
-                    smtp_user,
-                    smtp_pass,
-                    smtp_from,
-                    to,
-                    subject,
-                    body,
-                    smtp_tls,
-                    attachments,
-                )
-                if result.get("sent"):
-                    logger.info("Email sent via SMTP to %s", to)
-                    return result
-                logger.warning(
-                    "SMTP send failed: %s, falling back to log", result.get("error")
-                )
-            except Exception as e:
-                logger.warning("SMTP send exception: %s, falling back to log", e)
-
-        notification_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "data", "notifications"
-        )
-        timestamp = int(time.time() * 1000)
-        filename = f"notification_{timestamp}.json"
-        filepath = os.path.join(notification_dir, filename)
-
-        notification = {
-            "type": "email",
-            "to": to,
-            "subject": subject,
-            "body": body[:5000],
-            "attachments": attachments or [],
-            "timestamp": timestamp,
-            "status": "logged",
-            "note": (
-                "SMTP not configured. Notification logged to file. "
-                "Configure OPC_SMTP_HOST/USER/PASS for actual email delivery."
-            ),
-        }
-
-        try:
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(
-                None, self._write_notification_sync, filepath, notification
-            )
-            logger.info("Notification logged: %s", filepath)
-        except Exception as e:
-            logger.warning("Failed to log notification: %s", e)
-
-        return {
-            "sent": True,
-            "to": to,
-            "subject": subject,
-            "attachments": attachments or [],
-            "delivery_mode": "logged",
-            "log_file": filename,
-        }
-
-    @staticmethod
-    def _send_smtp_sync(
-        host: str,
-        port: int,
-        user: str,
-        password: str,
-        from_addr: str,
-        to_addr: str,
-        subject: str,
-        body: str,
-        use_tls: bool,
-        attachments: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-
-        msg = MIMEMultipart()
-        msg["From"] = from_addr
-        msg["To"] = to_addr
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-
-        try:
-            if use_tls:
-                server = smtplib.SMTP(host, port)
-                server.ehlo()
-                server.starttls()
-                server.ehlo()
-            else:
-                server = smtplib.SMTP(host, port)
-
-            server.login(user, password)
-            server.sendmail(from_addr, [to_addr], msg.as_string())
-            server.quit()
-
-            return {
-                "sent": True,
-                "to": to_addr,
-                "subject": subject,
-                "delivery_mode": "smtp",
-            }
-        except Exception as e:
-            return {"sent": False, "error": str(e)}
-
-    @staticmethod
-    def _write_notification_sync(filepath: str, notification: dict) -> None:
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(notification, f, ensure_ascii=False, indent=2)
-
-    async def _execute_run_command(
-        self, command: str, cwd: Optional[str] = None
-    ) -> Dict[str, Any]:
-        try:
-            _validate_input_length("command_arg", command)
-            parts = shlex.split(command)
-            if not parts:
-                raise ValueError("空命令")
-
-            base_cmd = os.path.basename(parts[0])
-            if base_cmd not in ALLOWED_COMMANDS:
-                AuditLogger.log(
-                    "COMMAND_REJECTED",
-                    {
-                        "command": command,
-                        "reason": f"命令不被允许: {base_cmd}",
-                    },
-                )
-                raise ValueError(
-                    f"命令不被允许: {base_cmd}，允许的命令: {', '.join(sorted(ALLOWED_COMMANDS))}"
-                )
-
-            proc = await asyncio.create_subprocess_exec(
-                *parts,
-                cwd=cwd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    proc.communicate(), timeout=COMMAND_TIMEOUT_SECONDS
-                )
-            except asyncio.TimeoutError:
-                proc.kill()
-                raise Exception("命令执行超时")
-
-            AuditLogger.log(
-                "COMMAND_EXECUTED",
-                {
-                    "command": command,
-                    "cwd": cwd,
-                    "return_code": proc.returncode,
-                },
-            )
-
-            return {
-                "command": command,
-                "cwd": cwd or os.getcwd(),
-                "stdout": stdout.decode("utf-8", errors="replace"),
-                "stderr": stderr.decode("utf-8", errors="replace"),
-                "return_code": proc.returncode,
-            }
-        except ValueError as e:
-            raise Exception(f"命令验证失败: {str(e)}")
-        except Exception as e:
-            raise Exception(f"命令执行失败: {str(e)}")

@@ -46,6 +46,10 @@ INFRA_FILES = {
     "version.py",
     "unified_types.py",
     "tool_system.py",
+    "tool_registry.py",
+    "tool_handlers_fs.py",
+    "tool_handlers_smtp.py",
+    "tool_handlers_cmd.py",
     "async_executor.py",
     "parallel_executor.py",
 }
