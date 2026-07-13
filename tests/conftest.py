@@ -25,7 +25,7 @@ import sys
 import tempfile
 import threading
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -85,6 +85,35 @@ def _reset_global_singletons(monkeypatch):
             marker_path.unlink()
         except Exception:
             pass
+
+
+@pytest.fixture(autouse=True)
+def _mock_web_search(request):
+    """Mock WebSearchMCP.search for non-e2e tests to prevent real network calls.
+
+    conftest docstring states "mocked search & LLM" but the search mock was
+    missing, causing 4 tests to timeout (21-28s each) under full-suite load.
+    E2E tests (@pytest.mark.e2e) bypass this mock to use real services.
+    """
+    if request.node.get_closest_marker("e2e"):
+        yield
+        return
+
+    from opc_manager.web_search import WebSearchMCP
+
+    fake_results = [
+        {
+            "title": "测试搜索结果",
+            "href": "https://example.com/test",
+            "body": "测试内容",
+        },
+    ]
+    patcher = patch.object(WebSearchMCP, "search", return_value=fake_results)
+    patcher.start()
+    try:
+        yield
+    finally:
+        patcher.stop()
 
 
 def pytest_configure(config):

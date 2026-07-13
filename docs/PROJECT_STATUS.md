@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-12（D02 评估 P2 修复：覆盖率提升 + skip 清理 + 流程文档归档，v0.3.23 发布） | **版本**: v0.3.23 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-13（Wave 1 修复：conftest.py search mock + CI 测试数同步 + D02 评估更新，v0.3.24 发布） | **版本**: v0.3.24 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.23`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.24`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -48,12 +48,12 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 3996 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.23 新增 215 覆盖测试） |
+| 测试用例总数 | 4019 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.23 新增 215 覆盖测试） |
+| 测试通过 | 3942 passed, 77 skipped, 0 timeout | `pytest --ignore=tests/e2e --timeout=30`（v0.3.24 修复 6 个 timeout） |
+| 完整套件耗时 | 65s | v0.3.24 修复 conftest.py search mock 后（之前 ~480s） |
 | 全量覆盖率 | 68.25% | `pytest --cov` 实测（v0.3.23 P2-11 8 模块 401 行新覆盖，CI 阈值 65%） |
-| `email_skill.py` 覆盖率（全量口径） | 16.96% | `coverage.json` |
-| `finance_skill.py` 覆盖率（全量口径） | 14.46% | `coverage.json` |
-| `email_skill` 专项测试覆盖率 | 99% | `pytest --cov=opc_manager.email_skill` |
-| `finance_skill` 专项测试覆盖率 | 100% | `pytest --cov=opc_manager.finance_skill` |
+| `email_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.23 验证：237 stmts 0 miss） |
+| `finance_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.23 验证：166 stmts 0 miss） |
 | mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |
 | flake8 违规 | 0 | `flake8 opc_manager/ tests/` = 0（Phase 2 P0 清零：opc_manager 143→0 + tests 119→0） |
 

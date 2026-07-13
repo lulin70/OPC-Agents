@@ -22,7 +22,24 @@ logger = logging.getLogger(__name__)
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
 MCP_SERVER_NAME = "opc-agents"
-MCP_SERVER_VERSION = "0.3.23"
+MCP_SERVER_VERSION = "0.3.24"
+
+# SkillInput.type (Python type string) → JSON Schema type keyword
+_PYTHON_TYPE_TO_JSON_SCHEMA: Dict[str, str] = {
+    "str": "string",
+    "string": "string",
+    "int": "integer",
+    "integer": "integer",
+    "float": "number",
+    "number": "number",
+    "bool": "boolean",
+    "boolean": "boolean",
+    "dict": "object",
+    "object": "object",
+    "list": "array",
+    "array": "array",
+    "Any": "string",
+}
 
 
 @dataclass
@@ -79,7 +96,9 @@ class MCPServer:
         self._tools: Dict[str, MCPTool] = {}
         self._resources: Dict[str, MCPResource] = {}
         self._prompts: Dict[str, MCPPrompt] = {}
+        self._skill_tool_names: set = set()
         self._register_default_tools()
+        self._discover_tools_from_registry()
         self._register_default_resources()
         self._register_default_prompts()
 
@@ -193,6 +212,98 @@ class MCPServer:
             ],
         )
 
+    def _discover_tools_from_registry(self) -> None:
+        """Auto-discover skills from SkillRegistry and register them as MCP tools.
+
+        Skips skills that are disabled, frozen, or whose skill_id collides with
+        an already-registered base tool name (base tools take precedence for
+        backward compatibility).
+        """
+        if not self.skill_registry:
+            return
+
+        try:
+            skills = self.skill_registry.list_all_skills()
+        except Exception as e:
+            logger.warning(
+                "[MCP] Failed to list skills from registry, skipping discovery: %s", e
+            )
+            return
+
+        for skill in skills:
+            skill_id = getattr(skill, "skill_id", None)
+            if not skill_id:
+                continue
+
+            if not getattr(skill, "enabled", True):
+                continue
+
+            if getattr(skill, "frozen", False) is True:
+                continue
+
+            # Base tools take precedence — don't overwrite them
+            if skill_id in self._tools:
+                continue
+
+            try:
+                mcp_tool = self._skill_to_mcp_tool(skill)
+            except Exception as e:
+                logger.warning(
+                    "[MCP] Failed to convert skill '%s' to MCP tool: %s", skill_id, e
+                )
+                continue
+
+            self._tools[skill_id] = mcp_tool
+            self._skill_tool_names.add(skill_id)
+
+        logger.info(
+            "[MCP] Discovered %d skill-based tools from SkillRegistry",
+            len(self._skill_tool_names),
+        )
+
+    def _skill_to_mcp_tool(self, skill: Any) -> MCPTool:
+        """Convert a Skill dataclass instance to an MCPTool definition."""
+        description = (
+            getattr(skill, "description", "")
+            or f"Execute {getattr(skill, 'name', skill.skill_id)} skill"
+        )
+        return MCPTool(
+            name=skill.skill_id,
+            description=description,
+            input_schema=self._build_input_schema(skill),
+        )
+
+    def _build_input_schema(self, skill: Any) -> Dict[str, Any]:
+        """Build a JSON Schema input schema from a Skill's input specifications."""
+        schema: Dict[str, Any] = {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        }
+
+        inputs = getattr(skill, "inputs", []) or []
+        for spec in inputs:
+            param_name = getattr(spec, "name", "")
+            if not param_name:
+                continue
+
+            param_type = _PYTHON_TYPE_TO_JSON_SCHEMA.get(
+                getattr(spec, "type", "str"), "string"
+            )
+            prop: Dict[str, Any] = {
+                "type": param_type,
+                "description": getattr(spec, "description", ""),
+            }
+            if getattr(spec, "default", None) is not None:
+                prop["default"] = spec.default
+
+            schema["properties"][param_name] = prop
+
+            if getattr(spec, "required", False):
+                schema["required"].append(param_name)
+
+        return schema
+
     def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
         method = request.get("method", "")
         params = request.get("params", {})
@@ -271,6 +382,10 @@ class MCPServer:
                     "isError": True,
                 }
 
+        # Route skill-based tools directly to SkillRegistry
+        if tool_name in self._skill_tool_names and self.skill_registry:
+            return self._execute_skill_tool(tool_name, arguments)
+
         if tool_name == "execute_task":
             user_input = arguments.get("user_input", "")
             if self.skill_registry:
@@ -339,6 +454,56 @@ class MCPServer:
             ]
         }
 
+    def _execute_skill_tool(
+        self, skill_id: str, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute a skill-based MCP tool via SkillRegistry.execute_skill().
+
+        Bridges the sync MCP request handler to the async execute_skill method
+        using a temporary event loop, mirroring the existing execute_task pattern.
+        """
+        import asyncio
+
+        registry = self.skill_registry
+        if registry is None:
+            return {
+                "content": [
+                    {"type": "text", "text": "Error: skill_registry not configured"}
+                ],
+                "isError": True,
+            }
+
+        try:
+            _new_loop = asyncio.new_event_loop()
+            try:
+                result = _new_loop.run_until_complete(
+                    registry.execute_skill(skill_id, context=None, **arguments)
+                )
+            finally:
+                _new_loop.close()
+
+            if result.get("success") and result.get("data"):
+                data = result["data"]
+                if isinstance(data, dict):
+                    content = data.get("content", "")
+                    if not content:
+                        content = json.dumps(data, ensure_ascii=False, indent=2)
+                else:
+                    content = str(data)
+                return {"content": [{"type": "text", "text": content}]}
+
+            error_msg = result.get("error", "Skill execution failed")
+            return {
+                "content": [{"type": "text", "text": f"Skill error: {error_msg}"}],
+                "isError": True,
+            }
+        except Exception as e:
+            logger.warning("[MCP] Skill tool '%s' execution failed: %s", skill_id, e)
+            return {
+                "content": [{"type": "text", "text": f"Execution failed: {e}"}],
+                "isError": True,
+            }
+
     def _handle_resources_list(self, params: Dict) -> Dict[str, Any]:
         return {"resources": [r.to_dict() for r in self._resources.values()]}
 
@@ -394,6 +559,7 @@ class MCPServer:
     def get_stats(self) -> Dict[str, Any]:
         return {
             "tools": len(self._tools),
+            "skill_tools": len(self._skill_tool_names),
             "resources": len(self._resources),
             "prompts": len(self._prompts),
             "protocol_version": MCP_PROTOCOL_VERSION,

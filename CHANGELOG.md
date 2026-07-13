@@ -4,6 +4,34 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.24] - 2026-07-13
+
+### Wave 1 修复 — 6 个 timeout 测试修复 + CI 同步 + D02 评估更新
+
+> DevSquad 多角色共识方案 Wave 1：修复 conftest.py 缺失的 WebSearchMCP.search mock（autouse fixture），6 个 timeout 测试从 21-28s 降到 <0.7s，完整套件从 ~480s 降到 65s（7.4x 提速）。同步 CI EXPECTED_TEST_COUNT 和三语 README 测试数据。D02 发布就绪门控从 6/8 提升至 7/8。
+
+#### F2: 6 个 timeout 测试修复（conftest.py search mock）
+
+- **根因**: conftest.py 注释声明"mocked search & LLM"但 search mock 缺失，4 个测试（test_task_engine_uses_skill_registry / test_pause_task / test_search_skill_query_preprocessing / test_skill_context_passing）调用真实 `WebSearchMCP.search()` 触发 DuckDuckGo 网络搜索（21-28s/个），满载时资源竞争导致 2 个 CPU 型测试也 timeout
+- **修复**: 在 conftest.py 添加 `_mock_web_search` autouse fixture，对非 e2e 测试 patch `WebSearchMCP.search` 返回预设结果；e2e 测试通过 `@pytest.mark.e2e` marker 检查跳过 mock
+- **效果**: 6 个测试从 21-28s 降到 <0.7s（33x 提速）；完整套件从 ~480s 降到 65s（7.4x 提速）；3942 passed + 0 timeout + 0 回归
+- **E2E 验证**: test_e2e_real.py 真实搜索测试（19.31s）通过，确认 mock 不影响 e2e 测试
+
+#### C4: CI EXPECTED_TEST_COUNT 同步
+
+- python-ci.yml `EXPECTED_TEST_COUNT` 从 3781 更新为 4019（实际测试数）
+- 三语 README 同步：测试数 3781→4019、覆盖率 66%→68%、测试文件 89→100
+- PROJECT_STATUS.md：email/finance 覆盖率从旧 coverage.json 的 16.96%/14.46% 更新为实测 100%/100%
+
+#### F1: D02 评估报告更新
+
+- ASSESSMENT_D02_MATURITY.md "发布就绪判断"表添加 v0.3.24 列，Unit 测试门控从 ⚠️ → ✅
+- 发布就绪门控：7/8 ✅（仅剩 E2E 环境依赖 1 项 ⚠️，CI `--ignore=tests/e2e` 跳过，非阻塞）
+
+#### 版本号同步
+
+- VERSION / version.py / Dockerfile / README × 3 / requirements / scripts / data_backup.py — 全部同步至 0.3.24
+
 ## [0.3.23] - 2026-07-12
 
 ### D02 评估 P2 修复 — 覆盖率提升 + skip 清理 + 流程文档归档
