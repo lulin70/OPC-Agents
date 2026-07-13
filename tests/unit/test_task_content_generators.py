@@ -51,7 +51,7 @@ class TestTryLlmGenerate:
         assert result is None
 
     def test_llm_success_returns_content(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(return_value=_make_llm_result(content="A" * 300))
         gen = _TestGenerator(llm_content_gen=llm)
         result = gen._try_llm_generate("查询", [], "report")
@@ -59,14 +59,14 @@ class TestTryLlmGenerate:
         assert len(result) == 300
 
     def test_llm_short_content_returns_none(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(return_value=_make_llm_result(content="短内容"))
         gen = _TestGenerator(llm_content_gen=llm)
         result = gen._try_llm_generate("查询", [], "report")
         assert result is None
 
     def test_llm_fallback_used_returns_none(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(
             return_value=_make_llm_result(content="A" * 300, fallback_used=True)
         )
@@ -75,7 +75,7 @@ class TestTryLlmGenerate:
         assert result is None
 
     def test_llm_not_success_returns_none(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(
             return_value=_make_llm_result(content="A" * 300, success=False)
         )
@@ -84,7 +84,7 @@ class TestTryLlmGenerate:
         assert result is None
 
     def test_llm_exception_returns_none(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(side_effect=RuntimeError("LLM down"))
         gen = _TestGenerator(llm_content_gen=llm)
         result = gen._try_llm_generate("查询", [], "report")
@@ -92,7 +92,7 @@ class TestTryLlmGenerate:
 
     def test_template_map_doc_types(self):
         """All doc_type values should be accepted without error."""
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(return_value=_make_llm_result(content="A" * 300))
         gen = _TestGenerator(llm_content_gen=llm)
         for doc_type in ["report", "plan", "content", "analysis", "unknown"]:
@@ -101,7 +101,7 @@ class TestTryLlmGenerate:
             assert llm.generate.called
 
     def test_title_replaces_topic_in_template(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(return_value=_make_llm_result(content="A" * 300))
         gen = _TestGenerator(llm_content_gen=llm)
         gen._try_llm_generate("查询", [], "report", title="自定义标题")
@@ -118,7 +118,7 @@ class TestGenRealReport:
     """_gen_real_report 测试"""
 
     def test_uses_llm_when_available(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(return_value=_make_llm_result(content="LLM报告" * 100))
         gen = _TestGenerator(llm_content_gen=llm)
         result = gen._gen_real_report("帮我写报告", [], [])
@@ -181,7 +181,7 @@ class TestGenRealPlan:
     """_gen_real_plan 测试"""
 
     def test_uses_llm_when_available(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(return_value=_make_llm_result(content="LLM方案" * 100))
         gen = _TestGenerator(llm_content_gen=llm)
         result = gen._gen_real_plan("帮我写方案", [], [])
@@ -236,7 +236,7 @@ class TestGenRealContent:
     """_gen_real_content 测试"""
 
     def test_uses_llm_when_available(self):
-        llm = MagicMock()
+        llm = SimpleNamespace()
         llm.generate = MagicMock(return_value=_make_llm_result(content="LLM内容" * 100))
         gen = _TestGenerator(llm_content_gen=llm)
         result = gen._gen_real_content("帮我写文章", [], [])

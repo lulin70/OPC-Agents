@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.25 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.26 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,7 +31,7 @@ opc-agents                      # 2. 启动
 
 ---
 
-## 🆕 v0.3.25 亮点
+## 🆕 v0.3.26 亮点
 
 > 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)，成熟度评估见 [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md)。
 
@@ -41,6 +41,7 @@ opc-agents                      # 2. 启动
 - **🛡 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
 - **📊 质量持续提升**：4278 个测试，覆盖率 74%+，CI 全门禁通过（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/版本一致性/三语 README 一致性）。D02 成熟度评估 82 分 B+。
 - **🔧 tool_system.py 拆分**：754 行 God Class 拆分为 4 个子模块（tool_registry + tool_handlers_fs/smtp/cmd）+ Facade 模式，向后兼容，复杂度从 D 降至 C。
+- **🧹 Mock 反模式修复**：56 处反模式 Mock 修复（unused 依赖改 None、内部组件改 SimpleNamespace），测试更诚实、失败更明显。
 - **🌐 i18n 重构**：3857 行 → 133 行逻辑层 + JSON 化，向后兼容，维护成本骤降。
 
 > 🧪 准备试用？请阅读 [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md)（3 分钟完成配置），演示话术见 [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)，反馈表见 [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。
@@ -175,7 +176,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.25
+pip install opc-agents==0.3.26
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

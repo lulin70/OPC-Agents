@@ -4,6 +4,27 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.26] - 2026-07-13
+
+### Wave 3 — F6 Mock 反模式甄别 + 修复
+
+> DevSquad 多角色共识方案 Wave 3：F5 已取消（email/finance 覆盖率已达 100%），核心任务 F6 Mock 反模式甄别 + 修复完成。56 处反模式 Mock 修复，0 测试回归。
+
+#### F6: Mock 反模式甄别 + 修复
+
+- **甄别范围**: 扫描 35 个测试文件中 265 处 `MagicMock()`，分类为合理/反模式/可简化
+- **修复 56 处反模式 Mock**（3 个文件）:
+  - `test_task_lifecycle.py` (40 处): 未使用的 executor/strategist/reflector/consensus 依赖从 `MagicMock()` 改为 `None` — 测试不涉及这些依赖时，`None` 更诚实且失败更明显
+  - `test_business_type_detector.py` (6 处): 内部 LLM 服务从 `MagicMock()` 改为 `SimpleNamespace(detect_business_type_by_llm=AsyncMock(...))` — SimpleNamespace 更准确地表达"简单存根"语义，且意外属性访问会 raise AttributeError
+  - `test_task_content_generators.py` (10 处): 内部 LLM 生成器从 `MagicMock()` 改为 `SimpleNamespace()` + `llm.generate = MagicMock(...)` — 保留 generate 方法的 MagicMock（需 assert_called/call_args），但容器对象用 SimpleNamespace
+- **保留的合理 Mock**: streamlit I/O mock、HTTP response mock、DB session mock、需 assert_called 的方法 mock、side_effect 异常测试
+- **质量验证**: 4116 passed + 77 skipped + 0 failed + 0 timeout（macOS 本地）；ruff/black/mypy 全绿
+
+#### 版本号同步
+
+- VERSION / version.py / Dockerfile / README × 3 / requirements / scripts / data_backup.py / mcp_protocol.py — 全部同步至 0.3.26
+- 版本号选择 PATCH（0.3.25→0.3.26）而非 MINOR（0.4.0）：F6 为修复/优化工作，无新功能，遵循 SemVer 硬约束"修复、重构、优化等没有新功能的工作只递增PATCH版本"
+
 ## [0.3.25] - 2026-07-13
 
 ### Wave 2 — F4 tool_system.py 拆分 + F3 覆盖率提升 68%→74%

@@ -13,7 +13,8 @@ Covers:
 """
 
 import unittest
-from unittest.mock import MagicMock, AsyncMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 from opc_manager.business_types import BusinessType
 from opc_manager.business_type_detector_v2 import (
@@ -64,7 +65,7 @@ class TestDetectorInit(unittest.TestCase):
         self.assertEqual(detector.confidence_threshold, 0.12)
 
     def test_init_with_llm_enabled(self):
-        mock_service = MagicMock()
+        mock_service = SimpleNamespace()
         detector = BusinessTypeDetectorV2(enable_llm=True, llm_service=mock_service)
         self.assertTrue(detector.enable_llm)
         self.assertIs(detector.llm_service, mock_service)
@@ -341,13 +342,14 @@ class TestLLMFallback(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_llm_detection_with_mock_service(self):
-        mock_service = MagicMock()
-        mock_service.detect_business_type_by_llm = AsyncMock(
-            return_value={
-                "business_type": "ecommerce",
-                "confidence": 0.85,
-                "reasoning": "User mentions shop operations",
-            }
+        mock_service = SimpleNamespace(
+            detect_business_type_by_llm=AsyncMock(
+                return_value={
+                    "business_type": "ecommerce",
+                    "confidence": 0.85,
+                    "reasoning": "User mentions shop operations",
+                }
+            )
         )
         detector = BusinessTypeDetectorV2(enable_llm=True, llm_service=mock_service)
         result = detector._detect_by_llm("我的店铺运营")
@@ -356,31 +358,32 @@ class TestLLMFallback(unittest.TestCase):
         self.assertEqual(result.method, "llm_assisted")
 
     def test_llm_detection_unknown_type_returns_none(self):
-        mock_service = MagicMock()
-        mock_service.detect_business_type_by_llm = AsyncMock(
-            return_value={"business_type": "unknown", "confidence": 0.5}
+        mock_service = SimpleNamespace(
+            detect_business_type_by_llm=AsyncMock(
+                return_value={"business_type": "unknown", "confidence": 0.5}
+            )
         )
         detector = BusinessTypeDetectorV2(enable_llm=True, llm_service=mock_service)
         result = detector._detect_by_llm("ambiguous input")
         self.assertIsNone(result)
 
     def test_llm_detection_exception_returns_none(self):
-        mock_service = MagicMock()
-        mock_service.detect_business_type_by_llm = AsyncMock(
-            side_effect=Exception("API error")
+        mock_service = SimpleNamespace(
+            detect_business_type_by_llm=AsyncMock(side_effect=Exception("API error"))
         )
         detector = BusinessTypeDetectorV2(enable_llm=True, llm_service=mock_service)
         result = detector._detect_by_llm("ambiguous input")
         self.assertIsNone(result)
 
     def test_llm_confidence_capped_at_099(self):
-        mock_service = MagicMock()
-        mock_service.detect_business_type_by_llm = AsyncMock(
-            return_value={
-                "business_type": "ecommerce",
-                "confidence": 1.5,  # Over 1.0
-                "reasoning": "test",
-            }
+        mock_service = SimpleNamespace(
+            detect_business_type_by_llm=AsyncMock(
+                return_value={
+                    "business_type": "ecommerce",
+                    "confidence": 1.5,  # Over 1.0
+                    "reasoning": "test",
+                }
+            )
         )
         detector = BusinessTypeDetectorV2(enable_llm=True, llm_service=mock_service)
         result = detector._detect_by_llm("我的店铺运营")
@@ -389,13 +392,14 @@ class TestLLMFallback(unittest.TestCase):
 
     def test_llm_used_in_detect_when_confidence_low(self):
         """When keyword confidence < 0.5 and LLM is enabled, LLM should be called."""
-        mock_service = MagicMock()
-        mock_service.detect_business_type_by_llm = AsyncMock(
-            return_value={
-                "business_type": "consultant",
-                "confidence": 0.8,
-                "reasoning": "Consulting context",
-            }
+        mock_service = SimpleNamespace(
+            detect_business_type_by_llm=AsyncMock(
+                return_value={
+                    "business_type": "consultant",
+                    "confidence": 0.8,
+                    "reasoning": "Consulting context",
+                }
+            )
         )
         detector = BusinessTypeDetectorV2(enable_llm=True, llm_service=mock_service)
         result = detector.detect("今天天气怎么样")

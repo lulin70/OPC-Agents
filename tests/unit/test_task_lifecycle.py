@@ -105,12 +105,12 @@ class TestGetTaskStatus:
     """get_task_status 测试"""
 
     def test_nonexistent_returns_none(self):
-        mgr = TaskLifecycleManager({}, MagicMock())
+        mgr = TaskLifecycleManager({}, None)
         assert mgr.get_task_status("no-such") is None
 
     def test_returns_status_dict(self):
         ctx = _make_context(current_step=3, retry_count=1)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         status = mgr.get_task_status("t1")
         assert status["task_id"] == "t1"
         assert status["state"] == "executing"
@@ -122,14 +122,14 @@ class TestGetTaskStatus:
     def test_with_plan_counts_steps(self):
         plan = _make_plan([_make_step(), _make_step(), _make_step()])
         ctx = _make_context(plan=plan)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         status = mgr.get_task_status("t1")
         assert status["total_steps"] == 3
 
     def test_results_truncated_to_last_5(self):
         results = [{"success": True} for _ in range(10)]
         ctx = _make_context(results=results)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         status = mgr.get_task_status("t1")
         assert len(status["results"]) == 5
 
@@ -139,7 +139,7 @@ class TestCancelTask:
 
     @pytest.mark.asyncio
     async def test_nonexistent_returns_false(self):
-        mgr = TaskLifecycleManager({}, MagicMock())
+        mgr = TaskLifecycleManager({}, None)
         assert await mgr.cancel_task("no-such") is False
 
     @pytest.mark.asyncio
@@ -160,13 +160,13 @@ class TestPauseTask:
 
     @pytest.mark.asyncio
     async def test_nonexistent_returns_false(self):
-        mgr = TaskLifecycleManager({}, MagicMock())
+        mgr = TaskLifecycleManager({}, None)
         assert await mgr.pause_task("no-such") is False
 
     @pytest.mark.asyncio
     async def test_pause_executing_state(self):
         ctx = _make_context(state=AgentState.EXECUTING)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         result = await mgr.pause_task("t1")
         assert result is True
         assert ctx.state == AgentState.PAUSED
@@ -175,21 +175,21 @@ class TestPauseTask:
     @pytest.mark.asyncio
     async def test_pause_planning_state(self):
         ctx = _make_context(state=AgentState.PLANNING)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         assert await mgr.pause_task("t1") is True
         assert ctx.state == AgentState.PAUSED
 
     @pytest.mark.asyncio
     async def test_pause_idle_state_fails(self):
         ctx = _make_context(state=AgentState.IDLE)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         assert await mgr.pause_task("t1") is False
         assert ctx.state == AgentState.IDLE
 
     @pytest.mark.asyncio
     async def test_pause_completed_state_fails(self):
         ctx = _make_context(state=AgentState.COMPLETED)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         assert await mgr.pause_task("t1") is False
 
 
@@ -198,7 +198,7 @@ class TestResumeTask:
 
     @pytest.mark.asyncio
     async def test_nonexistent_returns_error(self):
-        mgr = TaskLifecycleManager({}, MagicMock())
+        mgr = TaskLifecycleManager({}, None)
         result = await mgr.resume_task("no-such")
         assert result["success"] is False
         assert "不存在" in result["error"]
@@ -206,7 +206,7 @@ class TestResumeTask:
     @pytest.mark.asyncio
     async def test_resume_non_paused_state_fails(self):
         ctx = _make_context(state=AgentState.EXECUTING)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         result = await mgr.resume_task("t1")
         assert result["success"] is False
         assert "不可恢复" in result["error"]
@@ -214,7 +214,7 @@ class TestResumeTask:
     @pytest.mark.asyncio
     async def test_resume_normal(self):
         ctx = _make_context(state=AgentState.PAUSED, paused_at=99999999999.0)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         result = await mgr.resume_task("t1")
         assert result["success"] is True
         assert result["task_id"] == "t1"
@@ -224,7 +224,7 @@ class TestResumeTask:
     @pytest.mark.asyncio
     async def test_resume_timeout_cancels(self):
         ctx = _make_context(state=AgentState.PAUSED, paused_at=1.0)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         result = await mgr.resume_task("t1")
         assert result["success"] is False
         assert "超时" in result["error"]
@@ -236,13 +236,13 @@ class TestListTasks:
     """list_tasks 测试"""
 
     def test_empty_returns_empty_list(self):
-        mgr = TaskLifecycleManager({}, MagicMock())
+        mgr = TaskLifecycleManager({}, None)
         assert mgr.list_tasks() == []
 
     def test_lists_multiple_tasks(self):
         ctx1 = _make_context(task_id="t1", user_input="任务一")
         ctx2 = _make_context(task_id="t2", user_input="任务二")
-        mgr = TaskLifecycleManager({"t1": ctx1, "t2": ctx2}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx1, "t2": ctx2}, None)
         tasks = mgr.list_tasks()
         assert len(tasks) == 2
         ids = {t["task_id"] for t in tasks}
@@ -251,7 +251,7 @@ class TestListTasks:
     def test_long_input_truncated(self):
         long_input = "A" * 100
         ctx = _make_context(task_id="t1", user_input=long_input)
-        mgr = TaskLifecycleManager({"t1": ctx}, MagicMock())
+        mgr = TaskLifecycleManager({"t1": ctx}, None)
         tasks = mgr.list_tasks()
         assert tasks[0]["user_input"].endswith("...")
         assert len(tasks[0]["user_input"]) == 53  # 50 + "..."
@@ -261,7 +261,7 @@ class TestToDict:
     """to_dict 测试"""
 
     def test_empty(self):
-        mgr = TaskLifecycleManager({}, MagicMock())
+        mgr = TaskLifecycleManager({}, None)
         d = mgr.to_dict()
         assert d["type"] == "task_lifecycle_manager"
         assert d["task_count"] == 0
@@ -272,7 +272,7 @@ class TestToDict:
         ctx_idle = _make_context(task_id="t2", state=AgentState.IDLE)
         ctx_done = _make_context(task_id="t3", state=AgentState.COMPLETED)
         mgr = TaskLifecycleManager(
-            {"t1": ctx_active, "t2": ctx_idle, "t3": ctx_done}, MagicMock()
+            {"t1": ctx_active, "t2": ctx_idle, "t3": ctx_done}, None
         )
         d = mgr.to_dict()
         assert d["task_count"] == 3
@@ -411,23 +411,21 @@ class TestBuildExecutorOpinion:
         )
         executor_brain = MagicMock()
         executor_brain.express_opinion = MagicMock(return_value=expected)
-        consultant = ConsensusConsultant(
-            MagicMock(), MagicMock(), MagicMock(), executor_brain
-        )
+        consultant = ConsensusConsultant(None, None, None, executor_brain)
         ctx = _make_context()
         opinion = consultant._build_executor_opinion(ctx)
         assert opinion is expected
         executor_brain.express_opinion.assert_called_once()
 
     def test_without_executor_brain_degrades_to_rules(self):
-        consultant = ConsensusConsultant(MagicMock(), MagicMock(), MagicMock(), None)
+        consultant = ConsensusConsultant(None, None, None, None)
         ctx = _make_context(retry_count=0)
         opinion = consultant._build_executor_opinion(ctx)
         assert opinion.brain_type == "executor"
         assert opinion.opinion_type == OpinionType.AGREE
 
     def test_without_executor_brain_high_retry_disagrees(self):
-        consultant = ConsensusConsultant(MagicMock(), MagicMock(), MagicMock(), None)
+        consultant = ConsensusConsultant(None, None, None, None)
         ctx = _make_context(retry_count=5)
         opinion = consultant._build_executor_opinion(ctx)
         assert opinion.opinion_type == OpinionType.DISAGREE
@@ -435,9 +433,7 @@ class TestBuildExecutorOpinion:
     def test_executor_brain_exception_degrades(self):
         executor_brain = MagicMock()
         executor_brain.express_opinion = MagicMock(side_effect=RuntimeError("LLM down"))
-        consultant = ConsensusConsultant(
-            MagicMock(), MagicMock(), MagicMock(), executor_brain
-        )
+        consultant = ConsensusConsultant(None, None, None, executor_brain)
         ctx = _make_context(retry_count=0)
         opinion = consultant._build_executor_opinion(ctx)
         assert opinion.brain_type == "executor"
@@ -539,7 +535,7 @@ class TestLogDecision:
     async def test_writes_to_db(self, _isolate_db):
         from opc_manager.data_manager import execute_query
 
-        consultant = ConsensusConsultant(MagicMock(), MagicMock(), MagicMock(), None)
+        consultant = ConsensusConsultant(None, None, None, None)
         ctx = _make_context(task_id="log-test-001")
         evaluation = _make_evaluation(score=0.4)
         decision = _make_decision(
@@ -560,7 +556,7 @@ class TestLogDecision:
     async def test_approved_when_high_confidence(self, _isolate_db):
         from opc_manager.data_manager import execute_query
 
-        consultant = ConsensusConsultant(MagicMock(), MagicMock(), MagicMock(), None)
+        consultant = ConsensusConsultant(None, None, None, None)
         ctx = _make_context(task_id="log-test-002")
         evaluation = _make_evaluation(score=0.5)
         decision = _make_decision(
@@ -580,7 +576,7 @@ class TestLogDecision:
             "opc_manager.data_manager.init_db",
             MagicMock(side_effect=RuntimeError("DB down")),
         )
-        consultant = ConsensusConsultant(MagicMock(), MagicMock(), MagicMock(), None)
+        consultant = ConsensusConsultant(None, None, None, None)
         ctx = _make_context(task_id="log-test-003")
         evaluation = _make_evaluation(score=0.4)
         decision = _make_decision()
