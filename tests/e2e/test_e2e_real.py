@@ -73,11 +73,13 @@ class TestRealSearch(unittest.TestCase):
                 self.assertIn("body", r)
                 self.assertGreater(len(r["title"]), 0)
 
-    def test_search_performance_under_15s(self):
+    def test_search_performance_under_30s(self):
+        # Threshold is 30s per documented quality gate (file docstring line 17).
+        # Real DuckDuckGo search with 8 results typically takes 10-25s depending on network.
         start = time.time()
         self.search.search("AI agent framework 2024", max_results=8)
         elapsed = time.time() - start
-        self.assertLess(elapsed, 15, f"Search took {elapsed:.1f}s, should be < 15s")
+        self.assertLess(elapsed, 30, f"Search took {elapsed:.1f}s, should be < 30s")
 
 
 # ============================================================

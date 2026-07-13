@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.26 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.27 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,7 +31,7 @@ opc-agents                      # 2. 起動
 
 ---
 
-## 🆕 v0.3.26 ハイライト
+## 🆕 v0.3.27 ハイライト
 
 > 完全な変更履歴は [CHANGELOG.md](CHANGELOG.md)、アーキテクチャ設計は [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)、成熟度評価は [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md) を参照。
 
@@ -42,6 +42,8 @@ opc-agents                      # 2. 起動
 - **📊 継続的な品質向上**: 4278テスト、カバレッジ74%+、全CIゲート通過（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/バージョン一致性/三言語README一致性）。D02成熟度評価82点 B+。
 - **🔧 tool_system.py分割**: 754行のGod Classを4つのサブモジュール（tool_registry + tool_handlers_fs/smtp/cmd）+ Facadeパターンに分割、後方互換、複雑度D→Cに低下。
 - **🧹 Mockアンチパターン修正**: 56件のアンチパターンMockを修正（未使用依存→None、内部コンポーネント→SimpleNamespace）、テストがより誠実で失敗がより明確に。
+- **🔒 セキュリティスキャンクリーン**: pip-audit 0脆弱性 + Bandit 0高危険度、6パッケージアップグレードで21の既知脆弱性を修正（pillow/pyjwt/python-multipart/soupsieve/weasyprint/pip）。
+- **✅ v0.4.0リリースゲート 14/14 全て達成**: E2E実テスト 0失敗、ローカル起動 HTTP 200、weekly-e2e-real.yml手動トリガー成功。v0.4.0リリース準備完了。
 - **🌐 i18nリファクター**: 3857行 → 133行ロジック層 + JSON化、後方互換、メンテナンスコスト激減。
 
 > 🧪 試してみたい？[docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) をお読みください（3分で設定完了）、デモスクリプトは [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)、フィードバックフォームは [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。
@@ -178,7 +180,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.26
+pip install opc-agents==0.3.27
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography

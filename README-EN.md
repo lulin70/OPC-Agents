@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.26 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.27 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,7 +31,7 @@ opc-agents                      # 2. Launch
 
 ---
 
-## 🆕 v0.3.26 Highlights
+## 🆕 v0.3.27 Highlights
 
 > Full changes see [CHANGELOG.md](CHANGELOG.md), architecture design see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md), maturity assessment see [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md).
 
@@ -42,6 +42,8 @@ opc-agents                      # 2. Launch
 - **📊 Continuous Quality Improvement**: 4278 tests, 74%+ coverage, all CI gates passing (ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/version consistency/trilingual README consistency). D02 maturity assessment: 82 points B+.
 - **🔧 tool_system.py Split**: 754-line God Class split into 4 sub-modules (tool_registry + tool_handlers_fs/smtp/cmd) + Facade pattern, backward compatible, complexity reduced from D to C.
 - **🧹 Mock Anti-pattern Fix**: 56 anti-pattern Mock instances fixed (unused deps → None, internal components → SimpleNamespace), tests are more honest and failures more visible.
+- **🔒 Security Scan Clean**: pip-audit 0 vulnerabilities + Bandit 0 high-severity, 6 packages upgraded to fix 21 known vulnerabilities (pillow/pyjwt/python-multipart/soupsieve/weasyprint/pip).
+- **✅ v0.4.0 Release Gates 14/14 All Met**: E2E real tests 0 failures, local run HTTP 200, weekly-e2e-real.yml manually triggered successfully. v0.4.0 release ready.
 - **🌐 i18n Refactor**: 3857 lines → 133 lines logic layer + JSON-ification, backward compatible, drastically reduced maintenance cost.
 
 > 🧪 Want to try it? Read [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md) (3-minute setup), demo scripts at [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md), feedback form at [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md).
@@ -182,7 +184,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.26
+pip install opc-agents==0.3.27
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography

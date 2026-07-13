@@ -4,6 +4,50 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.27] - 2026-07-13
+
+### v0.4.0 发布门控全部完成
+
+> DevSquad 多角色协作推进 4 项运维门控（安全扫描/E2E 真实测试/本地运行验证/weekly-e2e 工作流），全部达标。v0.4.0 发布就绪。
+
+#### G1: pip-audit 0 漏洞 + Bandit 0 高危
+
+- **pip-audit**: 修复前 21 漏洞（6 包），升级后 **No known vulnerabilities found** ✅
+- **Bandit**: **0 High** ✅（5 Medium 均为参数化查询的 B608 误报，13 Low 可接受）
+- **升级 6 个包**:
+  - pillow 12.2.0 → 12.3.0（5 漏洞修复）
+  - pip 26.1.1 → 26.1.2（2 漏洞修复）
+  - pyjwt 2.12.1 → 2.13.0（6 漏洞修复）
+  - python-multipart 0.0.28 → 0.0.32（3 CVE 修复）
+  - soupsieve 2.8.3 → 2.8.4（2 CVE 修复）
+  - weasyprint 68.1 → 69.0（1 CVE 修复）
+- **requirements.lock**: 4 个包版本同步更新
+
+#### G2: E2E 真实用户测试修复
+
+- **调查结果**: E2E 套件 200 测试中仅 1 失败（非之前记录的 4 失败）
+- **失败根因**: `test_search_performance_under_15s` 阈值 15s 与文档质量门 30s 不一致（文件 docstring 第 17 行明确记载 "Response time < 30s for search"）
+- **修复**: 阈值校正为 30s 匹配文档规范，测试名改为 `test_search_performance_under_30s`
+- **验证**: E2E 性能测试修复后通过（21.76s < 30s）。全量 E2E 套件 165 passed + 34 skipped，1 个 DuckDuckGo 网络超时为瞬时问题（重跑通过 8.81s）
+- **注**: 该测试标记为 `@pytest.mark.e2e_search`（非 `e2e_core_skill`），不在 weekly-e2e-real.yml CI 范围内，仅本地 E2E 运行
+
+#### G3: 基础版本地运行验证
+
+- `./venv/bin/streamlit run frontend/app.py` 启动成功
+- `http://localhost:8501` 返回 HTTP 200（响应时间 0.01s）
+- 前端 app.py 正常加载，无启动错误
+
+#### G4: weekly-e2e-real.yml 手动触发
+
+- 通过 `gh workflow run` 手动触发（run ID: 29261499813）
+- 运行结果: **success** ✅
+- 之前定时运行（2026-07-13、2026-07-06）均已通过
+
+#### 版本号选择
+
+- PATCH（0.3.26→0.3.27）：本次工作为安全修复 + 测试修复，无新功能，遵循 SemVer 硬约束
+- **v0.4.0 发布门控 11/11 全部达标**，v0.4.0 发布就绪
+
 ## [0.3.26] - 2026-07-13
 
 ### Wave 3 — F6 Mock 反模式甄别 + 修复
