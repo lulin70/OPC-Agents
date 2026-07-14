@@ -326,7 +326,9 @@ class TestUJ04DeliverablesAndDownload:
         exceptions = page.locator("[data-testid='stException']")
         assert exceptions.count() == 0, "成果物页面有异常"
 
-    def test_TC_H09_download_button_triggers_real_download(self, context_with_download):
+    def test_TC_H09_download_button_triggers_real_download(
+        self, context_with_download, test_deliverable_file
+    ):
         """TC-H09: 下载按钮可见，点击触发浏览器下载事件。
 
         FD-004 关闭验证：真实浏览器中下载按钮可触发下载。
@@ -339,18 +341,16 @@ class TestUJ04DeliverablesAndDownload:
         _click_nav(page, "成果物")
         page.wait_for_timeout(2000)
 
-        # 查找下载按钮
+        # 查找下载按钮（test_deliverable_file fixture 已创建测试文件）
         download_btns = page.locator("button:has-text('下载')")
-        if download_btns.count() == 0:
-            # 没有成果物时显示空提示，这是正常行为
-            pytest.skip("无成果物可下载（Demo 模式未生成）")
-        else:
-            # 点击第一个下载按钮，验证下载事件触发
-            with page.expect_download(timeout=10000) as download_info:
-                download_btns.first.click()
-            download = download_info.value
-            assert download is not None, "下载事件未触发"
-            # FD-004 关闭：真实浏览器中下载按钮工作正常
+        assert download_btns.count() > 0, "下载按钮应可见（测试文件已创建）"
+
+        # 点击第一个下载按钮，验证下载事件触发
+        with page.expect_download(timeout=10000) as download_info:
+            download_btns.first.click()
+        download = download_info.value
+        assert download is not None, "下载事件未触发"
+        # FD-004 关闭：真实浏览器中下载按钮工作正常
 
 
 # ============================================================

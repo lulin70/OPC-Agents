@@ -117,11 +117,21 @@ class TestOllamaGetLLMConfig(unittest.TestCase):
                 os.environ[key] = val
 
     def _clear_llm_env(self):
+        # Clear ALL LLM-related env vars to prevent cross-test pollution.
+        # MOKA_API_BASE / MOKA_MODEL / OPENAI_API_BASE / OLLAMA_MODEL must be
+        # cleared too — discover_llm_config() reads them via os.environ.get()
+        # with defaults, but if they are set to "" (empty string) by a prior
+        # test or .env file, os.environ.get returns "" instead of the default,
+        # causing assertion failures (e.g. test_moka_takes_priority_over_ollama).
         for key in [
             "MOKA_API_KEY",
+            "MOKA_API_BASE",
+            "MOKA_MODEL",
             "GLM_API_KEY",
             "OPENAI_API_KEY",
+            "OPENAI_API_BASE",
             "OLLAMA_BASE_URL",
+            "OLLAMA_MODEL",
             "OLLAMA_ENABLED",
         ]:
             os.environ.pop(key, None)
@@ -261,11 +271,21 @@ class TestOllamaCallLLMAPI(unittest.TestCase):
                 os.environ[key] = val
 
     def _clear_llm_env(self):
+        # Clear ALL LLM-related env vars to prevent cross-test pollution.
+        # MOKA_API_BASE / MOKA_MODEL / OPENAI_API_BASE / OLLAMA_MODEL must be
+        # cleared too — discover_llm_config() reads them via os.environ.get()
+        # with defaults, but if they are set to "" (empty string) by a prior
+        # test or .env file, os.environ.get returns "" instead of the default,
+        # causing assertion failures (e.g. test_moka_takes_priority_over_ollama).
         for key in [
             "MOKA_API_KEY",
+            "MOKA_API_BASE",
+            "MOKA_MODEL",
             "GLM_API_KEY",
             "OPENAI_API_KEY",
+            "OPENAI_API_BASE",
             "OLLAMA_BASE_URL",
+            "OLLAMA_MODEL",
             "OLLAMA_ENABLED",
         ]:
             os.environ.pop(key, None)
@@ -396,11 +416,21 @@ class TestOllamaConfigDefaultSelection(unittest.TestCase):
                 os.environ[key] = val
 
     def _clear_llm_env(self):
+        # Clear ALL LLM-related env vars to prevent cross-test pollution.
+        # MOKA_API_BASE / MOKA_MODEL / OPENAI_API_BASE / OLLAMA_MODEL must be
+        # cleared too — discover_llm_config() reads them via os.environ.get()
+        # with defaults, but if they are set to "" (empty string) by a prior
+        # test or .env file, os.environ.get returns "" instead of the default,
+        # causing assertion failures (e.g. test_moka_takes_priority_over_ollama).
         for key in [
             "MOKA_API_KEY",
+            "MOKA_API_BASE",
+            "MOKA_MODEL",
             "GLM_API_KEY",
             "OPENAI_API_KEY",
+            "OPENAI_API_BASE",
             "OLLAMA_BASE_URL",
+            "OLLAMA_MODEL",
             "OLLAMA_ENABLED",
         ]:
             os.environ.pop(key, None)

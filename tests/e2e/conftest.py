@@ -244,6 +244,35 @@ def context_with_download(
         context.close()
 
 
+@pytest.fixture
+def test_deliverable_file():
+    """Create a test deliverable .md file for download button testing.
+
+    The file follows the naming convention expected by app.py's
+    _load_deliverables_from_disk: YYYYMMDD_HHMMSS_task_type_prompt.md
+
+    Cleans up after the test.
+    """
+    deliverables_dir = PROJECT_ROOT / "deliverables"
+    deliverables_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = "20260714_120000_content_generation_E2E_test_deliverable.md"
+    filepath = deliverables_dir / filename
+    content = (
+        "# E2E 测试成果物\n\n"
+        "这是 Playwright E2E 测试自动创建的成果物文件。\n\n"
+        "## 内容\n\n"
+        "用于验证下载按钮功能。\n"
+    )
+    filepath.write_text(content, encoding="utf-8")
+
+    try:
+        yield str(filepath)
+    finally:
+        if filepath.exists():
+            filepath.unlink()
+
+
 def navigate_to_page(page: Any, page_name: str) -> None:
     """辅助函数：通过侧边栏导航到指定页面。
 
