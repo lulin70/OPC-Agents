@@ -414,9 +414,7 @@ class MCPServer:
             ]
         }
 
-    def _handle_execute_task(
-        self, user_input: str
-    ) -> Optional[Dict[str, Any]]:
+    def _handle_execute_task(self, user_input: str) -> Optional[Dict[str, Any]]:
         """Handle execute_task tool via skill_registry (preferred) or task_engine (fallback).
 
         Returns None if neither handler is available, so the caller can fall
@@ -460,9 +458,7 @@ class MCPServer:
             )
             content = result.content or ""
             return {
-                "content": [
-                    {"type": "text", "text": content or "No content generated"}
-                ]
+                "content": [{"type": "text", "text": content or "No content generated"}]
             }
         return None
 
