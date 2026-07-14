@@ -4,6 +4,48 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.31] - 2026-07-14
+
+### P2-P3 问题系统性修复 — SK-2 skip根因 + EXPECTED_TEST_COUNT自动化 + except Exception收窄
+
+> v0.3.30 遗留的 4 个 P2/P3 问题系统性解决，遵循"有问题为什么不解决"原则。
+
+#### P2-1: SK-2 sidebar搜索框skip根因修复
+
+- **问题**: `test_ui_playwright.py` TC_E01 和 TC_B01 使用 `[data-testid='stSidebar'] [data-testid='stTextInput'] input` 选择器，但源码中 sidebar 搜索框根本不存在（未实现），导致每次运行都 skip
+- **修复**: 改用 Deliverables 页面搜索框（TC_E03 已验证可用），删除两处 `pytest.skip("sidebar 搜索框不可见")`
+- **验证**: E2E 测试选择器与 TC_E03 一致
+
+#### P2-2: EXPECTED_TEST_COUNT自动化
+
+- **问题**: `python-ci.yml` 中 `EXPECTED_TEST_COUNT = 4193` 硬编码，每次新增/删除测试需手动同步，容易遗忘
+- **修复**: 用 `pytest --co -q` 动态收集测试数量替代硬编码，README 检查从"硬编码匹配"改为"动态值匹配"
+- **验证**: `pytest --co -q` 输出 4393 tests collected，CI 脚本正确解析
+
+#### P2-3: E类except Exception修复（4处静默吞异常）
+
+- **问题**: `except Exception: pass` 吞掉所有异常（包括 NameError/AttributeError 等编程错误），隐藏 bug
+- **修复**:
+  - `data_manager.py:100` — `except (ImportError, OSError): pass`（getpass.getuser）
+  - `data_manager.py:769` — `except sqlite3.Error: pass`（conn.close 清理）
+  - `audit_log.py:531` — `except Full: pass`（queue.put_nowait 关闭信号）
+  - `embedding_service.py:114` — `except (sqlite3.Error, struct.error): pass`（缓存读取）
+- **验证**: 158 个相关单元测试全部通过
+
+#### P2-4: A/B类except Exception收窄（5处）
+
+- **问题**: A类（log+continue）和B类（return None/False）的 `except Exception` 仍然过宽
+- **修复**:
+  - `consequence_predictor.py:85,101` — `except (TypeError, ValueError, OverflowError):`（json.dumps 序列化）
+  - `task_engine_v3.py:432` — `except (ValueError, TypeError):`（Pydantic 校验，ValidationError 是 ValueError 子类）
+  - `embedding_service.py:135` — `except (sqlite3.Error, struct.error, TypeError) as e:`（缓存写入）
+  - `embedding_service.py:161` — `except sqlite3.Error as e:`（缓存清理）
+- **验证**: 相关单元测试全部通过
+
+#### P2-5: Mock违规评估
+
+- **结论**: 实际仅 18 处 Mock 使用（非之前误报的 398 处），多数为合理的外部服务 Mock（requests.post/smtplib.SMTP/AsyncMock），仅 2-3 处真正不必要但风险极低，跳过
+
 ## [0.3.30] - 2026-07-14
 
 ### 预存在问题通盘修复 — release.yml一致性 + SQLite + coroutine leak + stale skip

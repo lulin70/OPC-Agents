@@ -82,7 +82,7 @@ class ConsequencePredictor:
                     )[:300]
                 else:
                     intent = json.dumps(intent, ensure_ascii=False, default=str)[:300]
-            except Exception:
+            except (TypeError, ValueError, OverflowError):
                 intent = str(intent)[:200]
         else:
             intent = str(intent)[:200]
@@ -98,7 +98,7 @@ class ConsequencePredictor:
                     ]
                 else:
                     plan = json.dumps(plan, ensure_ascii=False, default=str)[:300]
-            except Exception:
+            except (TypeError, ValueError, OverflowError):
                 plan = str(plan)[:200]
         else:
             plan = str(plan)[:200]
@@ -212,8 +212,7 @@ class ConsequencePredictor:
         ]
 
         combined = (
-            f"{skill_id} {action} "
-            f"{json.dumps(parameters, ensure_ascii=False).lower()}"
+            f"{skill_id} {action} {json.dumps(parameters, ensure_ascii=False).lower()}"
         )
 
         is_high_risk = any(kw in combined for kw in high_risk_keywords)

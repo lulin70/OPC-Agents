@@ -429,7 +429,7 @@ class TaskEngineV3(  # type: ignore[misc]
             from opc_manager.validators import TaskRequest
 
             TaskRequest(user_input=sanitized, business_type=None)
-        except Exception:
+        except (ValueError, TypeError):
             return TaskResult(
                 success=False,
                 content=" 输入包含不安全内容，请修改后重试",

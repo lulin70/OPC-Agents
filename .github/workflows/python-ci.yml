@@ -179,10 +179,23 @@ jobs:
     - name: Verify README consistency (三语版本号/模块数/测试数对齐)
       run: |
         python - <<'PYEOF'
-        import re, sys
+        import re, sys, subprocess
         VERSION = open("VERSION").read().strip()
         EXPECTED_MODULE_COUNT = 99
-        EXPECTED_TEST_COUNT = 4193
+        # P2-2: 动态计算测试数量，替代硬编码4193
+        result = subprocess.run(
+            ["python", "-m", "pytest", "--co", "-q", "--no-header"],
+            capture_output=True, text=True, cwd="."
+        )
+        # pytest --co -q 最后一行格式："4193 tests collected in 1.23s"
+        last_line = result.stdout.strip().split("\n")[-1] if result.stdout.strip() else ""
+        match = re.search(r"(\d+) tests collected", last_line)
+        if not match:
+            print(f"无法从 pytest --co 输出中解析测试数量: {last_line}")
+            print(f"pytest stdout (last 500): {result.stdout[-500:]}")
+            print(f"pytest stderr (last 500): {result.stderr[-500:]}")
+            sys.exit(1)
+        ACTUAL_TEST_COUNT = int(match.group(1))
         readmes = ["README.md", "README-EN.md", "README-JP.md"]
         errors = []
         for path in readmes:
@@ -197,13 +210,13 @@ jobs:
             # 模块数对齐
             if f"{EXPECTED_MODULE_COUNT}" not in text:
                 errors.append(f"{path}: 模块数 {EXPECTED_MODULE_COUNT} 未找到")
-            # 测试数对齐
-            if f"{EXPECTED_TEST_COUNT}" not in text:
-                errors.append(f"{path}: 测试数 {EXPECTED_TEST_COUNT} 未找到")
+            # 测试数对齐（动态值，替代原硬编码4193）
+            if f"{ACTUAL_TEST_COUNT}" not in text:
+                errors.append(f"{path}: 测试数 {ACTUAL_TEST_COUNT} 未找到（请同步更新README）")
         if errors:
             print("README 一致性校验失败：")
             for e in errors:
                 print(f"  - {e}")
             sys.exit(1)
-        print(f"✓ 三语 README 一致性校验通过（版本 {VERSION}, 模块 {EXPECTED_MODULE_COUNT}, 测试 {EXPECTED_TEST_COUNT}）")
+        print(f"✓ 三语 README 一致性校验通过（版本 {VERSION}, 模块 {EXPECTED_MODULE_COUNT}, 测试 {ACTUAL_TEST_COUNT}）")
         PYEOF

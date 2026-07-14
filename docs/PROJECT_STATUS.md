@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-14（v0.4.0 发布门控 11/11 全部达标：安全扫描+E2E+本地运行+weekly-e2e 工作流，v0.3.30 发布） | **版本**: v0.3.30 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-14（v0.3.31 P2-P3问题系统性修复：SK-2 skip根因+EXPECTED_TEST_COUNT自动化+except Exception收窄） | **版本**: v0.3.31 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.30`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.31`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |

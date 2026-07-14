@@ -12,6 +12,7 @@ Configuration:
 import logging
 import os
 import sqlite3
+import struct
 import hashlib
 from typing import List, Optional
 
@@ -111,7 +112,7 @@ class EmbeddingService:
                 import struct
 
                 data = row[0]
-                return list(struct.unpack(f"<{len(data)//4}f", data))
+                return list(struct.unpack(f"<{len(data) // 4}f", data))
         except Exception:
             pass
         return None
@@ -121,7 +122,6 @@ class EmbeddingService:
         if not self._cache_db:
             return
         try:
-            import struct
             import time
 
             blob = struct.pack(f"<{len(embedding)}f", *embedding)
@@ -158,7 +158,7 @@ class EmbeddingService:
                     "[EmbeddingService] Cleaned up %d old cache entries", removed
                 )
             return removed
-        except Exception as e:
+        except sqlite3.Error as e:
             logger.warning("[EmbeddingService] Cache cleanup failed: %s", e)
             return 0
 

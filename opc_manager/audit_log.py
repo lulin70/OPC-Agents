@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Deque, Dict, List, Optional
 from collections import deque
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 from opc_manager.utils import SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
@@ -528,7 +528,7 @@ class AuditLog:
         self._stop_event.set()
         try:
             self._write_queue.put_nowait(None)
-        except Exception:
+        except Full:
             pass
         if wait and self._writer_thread is not None and self._writer_thread.is_alive():
             self._writer_thread.join(timeout=10)

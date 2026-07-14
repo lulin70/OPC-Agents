@@ -92,9 +92,9 @@ def _click_nav(page, label: str, timeout: int = 25000) -> None:
         time.sleep(0.5)
 
     raise RuntimeError(
-        "无法点击导航项 '{}' (timeout {}ms): {}\n"
-        "--- 页面诊断 ---\n"
-        "{}".format(label, timeout, last_error, _diagnose_page(page))
+        "无法点击导航项 '{}' (timeout {}ms): {}\n--- 页面诊断 ---\n{}".format(
+            label, timeout, last_error, _diagnose_page(page)
+        )
     )
 
 
@@ -172,9 +172,9 @@ class TestUJ01AppLaunchAndNavigation:
         _wait_for_streamlit_content(page)
 
         title = page.title()
-        assert (
-            "一人公司" in title or "OPC" in title or "Streamlit" in title
-        ), f"标题不匹配: {title}"
+        assert "一人公司" in title or "OPC" in title or "Streamlit" in title, (
+            f"标题不匹配: {title}"
+        )
 
         # 主容器渲染完成
         app_container = page.locator("[data-testid='stAppViewContainer']")
@@ -197,9 +197,9 @@ class TestUJ01AppLaunchAndNavigation:
 
         expected_zh = ["对话", "成果物", "Dashboard", "成长", "技能市场", "设置"]
         for label in expected_zh:
-            assert any(
-                label in nav for nav in labels
-            ), f"导航选项 '{label}' 未找到，实际: {labels}"
+            assert any(label in nav for nav in labels), (
+                f"导航选项 '{label}' 未找到，实际: {labels}"
+            )
 
     def test_TC_H03_all_pages_navigable(self, page):
         """TC-H03: 依次点击 6 个导航项，每个页面渲染无异常。
@@ -239,9 +239,9 @@ class TestUJ02DemoMode:
         assert banner.is_visible(), "Demo 横幅不可见"
 
         banner_text = banner.inner_text()
-        assert (
-            "演示模式" in banner_text or "Demo" in banner_text
-        ), f"横幅文本不匹配: {banner_text}"
+        assert "演示模式" in banner_text or "Demo" in banner_text, (
+            f"横幅文本不匹配: {banner_text}"
+        )
 
     def test_TC_H05_demo_info_panel_visible(self, page):
         """TC-H05: Demo 信息面板可见，显示功能状态表。
@@ -293,9 +293,9 @@ class TestUJ03ChatInput:
 
         # Demo 模式下 Chat 页面渲染 3 个 st.metric（chat_demo_monthly_income 等）
         metrics = page.locator("[data-testid='stMetric']")
-        assert (
-            metrics.count() >= 3
-        ), f"Demo 模式下 Chat 页面应渲染 ≥3 个 metric，实际: {metrics.count()}"
+        assert metrics.count() >= 3, (
+            f"Demo 模式下 Chat 页面应渲染 ≥3 个 metric，实际: {metrics.count()}"
+        )
 
         # 无异常
         exceptions = page.locator("[data-testid='stException']")
@@ -429,16 +429,16 @@ class TestUJ07LanguageSwitching:
 
         # 全页查找 selectbox（侧边栏内有 2 个：主题和语言）
         selectboxes = page.locator("[data-testid='stSelectbox']")
-        assert (
-            selectboxes.count() >= 2
-        ), f"selectbox 不足 2 个，实际: {selectboxes.count()}"
+        assert selectboxes.count() >= 2, (
+            f"selectbox 不足 2 个，实际: {selectboxes.count()}"
+        )
 
         # 第二个 selectbox 是语言选择器（Language 标签）
         lang_selector = selectboxes.nth(1)
         lang_label = lang_selector.locator("label").inner_text()
-        assert (
-            "Language" in lang_label or "语言" in lang_label
-        ), f"第二个 selectbox 不是语言选择器: {lang_label}"
+        assert "Language" in lang_label or "语言" in lang_label, (
+            f"第二个 selectbox 不是语言选择器: {lang_label}"
+        )
 
         # 记录切换前的导航文本（中文）
         labels_before = _get_nav_labels(page)
@@ -456,9 +456,9 @@ class TestUJ07LanguageSwitching:
 
             # 验证导航文本变为英文
             labels_after = _get_nav_labels(page)
-            assert any(
-                "Chat" in nav for nav in labels_after
-            ), f"切换到英文后导航文本未变化: {labels_after}"
+            assert any("Chat" in nav for nav in labels_after), (
+                f"切换到英文后导航文本未变化: {labels_after}"
+            )
 
             # 切回中文，避免影响后续测试
             try:
@@ -503,37 +503,33 @@ class TestErrorCases:
     """错误场景测试。"""
 
     def test_TC_E01_empty_chat_input_no_task(self, page):
-        """TC-E01: 空文本提交不触发任务（sidebar 搜索框）。
+        """TC-E01: 空文本提交不触发搜索（Deliverables 搜索框）。
 
-        Scenario: 用户在 sidebar 搜索框输入空文本
+        Scenario: 用户在 Deliverables 搜索框输入空文本
         Expected: 不触发搜索结果展开
 
-        注：Demo 模式下 Chat 页面无 textarea（st.stop()），
-        改用 sidebar 全局搜索框验证空输入不触发动作。
+        注：sidebar 全局搜索框在源码中不存在（未实现），
+        改用 Deliverables 页面搜索框验证空输入不触发动作。
         """
         _wait_for_streamlit_content(page)
+        _click_nav(page, "成果物")
+        page.wait_for_timeout(2000)
 
-        # sidebar 全局搜索框（第一个 stTextInput 内的 input）
+        # Deliverables 搜索框（TC_E03 已验证可用）
         search_input = page.locator(
-            "[data-testid='stSidebar'] [data-testid='stTextInput'] input"
+            "input[placeholder*='搜索'], input[placeholder*='search']"
         ).first
-
-        if search_input.count() == 0:
-            pytest.skip("sidebar 搜索框不可见")
+        assert search_input.is_visible(), "Deliverables 搜索框不可见"
 
         # 记录搜索结果展开器数量
-        expanders_before = page.locator(
-            "[data-testid='stSidebar'] [data-testid='stExpander']"
-        ).count()
+        expanders_before = page.locator("[data-testid='stExpander']").count()
 
-        # 空文本不触发搜索（输入最小长度 2 才触发）
+        # 空文本不触发搜索
         search_input.fill("")
         search_input.press("Enter")
         page.wait_for_timeout(1000)
 
-        expanders_after = page.locator(
-            "[data-testid='stSidebar'] [data-testid='stExpander']"
-        ).count()
+        expanders_after = page.locator("[data-testid='stExpander']").count()
         assert expanders_after == expanders_before, "空文本不应触发搜索结果展开"
 
     def test_TC_E03_deliverables_search_no_match(self, page):
@@ -578,22 +574,23 @@ class TestBoundaryCases:
     """边界场景测试。"""
 
     def test_TC_B01_long_text_input(self, page):
-        """TC-B01: sidebar 搜索框输入超长文本（10000 字符）不崩溃。
+        """TC-B01: Deliverables 搜索框输入超长文本（10000 字符）不崩溃。
 
-        Scenario: 用户在 sidebar 搜索框输入超长文本
+        Scenario: 用户在 Deliverables 搜索框输入超长文本
         Expected: 不崩溃，输入框接受文本
 
-        注：Demo 模式下 Chat 页面无 textarea，改用 sidebar 搜索框验证。
+        注：sidebar 全局搜索框在源码中不存在（未实现），
+        改用 Deliverables 页面搜索框验证超长文本输入。
         """
         _wait_for_streamlit_content(page)
+        _click_nav(page, "成果物")
+        page.wait_for_timeout(2000)
 
-        # sidebar 全局搜索框（第一个 stTextInput 内的 input）
+        # Deliverables 搜索框（TC_E03 已验证可用）
         search_input = page.locator(
-            "[data-testid='stSidebar'] [data-testid='stTextInput'] input"
+            "input[placeholder*='搜索'], input[placeholder*='search']"
         ).first
-
-        if search_input.count() == 0:
-            pytest.skip("sidebar 搜索框不可见")
+        assert search_input.is_visible(), "Deliverables 搜索框不可见"
 
         long_text = "测试" * 5000  # 10000 字符
         search_input.fill(long_text)
@@ -604,12 +601,9 @@ class TestBoundaryCases:
         exceptions = page.locator("[data-testid='stException']")
         assert exceptions.count() == 0, "超长文本导致异常"
 
-        # 清空搜索框，避免影响后续测试（搜索结果展开会挤压 sidebar）
-        try:
-            search_input.fill("")
-            page.wait_for_timeout(500)
-        except Exception:
-            pass
+        # 清空搜索框，避免影响后续测试
+        search_input.fill("")
+        page.wait_for_timeout(500)
 
     def test_TC_B02_rapid_page_switching(self, page):
         """TC-B02: 快速连续切换页面不卡死。

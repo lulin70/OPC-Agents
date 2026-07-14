@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.30 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.31 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,6 +31,10 @@ opc-agents                      # 2. 起動
 
 ---
 
+## 🆕 v0.3.31 ハイライト
+
+- **🔧 v0.3.31 P2-P3問題の体系的解決**: SK-2 sidebar skip根本原因修正（sidebar検索ボックスはソースに存在せず、Deliverables検索ボックスに変更）; EXPECTED_TEST_COUNT固定値4193をpytest --co動的計算に置き換え; except Exception暗黙の例外飲み込みを絞り込み（9箇所：E類4箇所+A/B類5箇所、具体例外型に絞り込み、プログラミングエラーを露出）。
+
 ## 🆕 v0.3.30 ハイライト
 
 - **🔧 v0.3.30 既存問題の修正**: release.yml の6つのstale deselectを削除 + 閾値59%→70%; SQLite busy_timeout追加（llm_cache/skill_reviews）; coroutine leak修正（parallel_executor + task_orchestrator防御的クローズ）; stale skipクリーンアップ（cleanup_old_entriesは既に実装済み）。
@@ -43,7 +47,7 @@ opc-agents                      # 2. 起動
 - **🎯 3つのコアスキルに集中**: メール / 財務 / レポート。非コアスキルを凍結（[docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md) 参照）、各コアスキルを本当に使いやすくする。
 - **🧠 IntentRouter 3分類スマートルーティング**: SIMPLE / COMPLEX / GREETINGの3分類。簡単なタスクは三賢者をバイパスして直接実行—速くてお得；複雑なタスクのみ並列投票に入り、品質を保証。
 - **🛡 重要意思決定点の事前コンセンサス保護**: ConsensusEngineを「事後補救」から「事前関門」に変更、ExecutorBrainは真の意見を提供（偽意見ルール削除）、ReflectorBrainは事前予測+マイノリティレポート。
-- **📊 継続的な品質向上**: 4193テスト、カバレッジ74%+、全CIゲート通過（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/バージョン一致性/三言語README一致性）。D02成熟度評価82点 B+。
+- **📊 継続的な品質向上**: 4393テスト、カバレッジ74%+、全CIゲート通過（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/バージョン一致性/三言語README一致性）。D02成熟度評価82点 B+。
 - **🔧 tool_system.py分割**: 754行のGod Classを4つのサブモジュール（tool_registry + tool_handlers_fs/smtp/cmd）+ Facadeパターンに分割、後方互換、複雑度D→Cに低下。
 - **🧹 Mockアンチパターン修正**: 56件のアンチパターンMockを修正（未使用依存→None、内部コンポーネント→SimpleNamespace）、テストがより誠実で失敗がより明確に。
 - **🔒 セキュリティスキャンクリーン**: pip-audit 0脆弱性 + Bandit 0高危険度、6パッケージアップグレードで21の既知脆弱性を修正（pillow/pyjwt/python-multipart/soupsieve/weasyprint/pip）。
@@ -184,7 +188,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.30
+pip install opc-agents==0.3.31
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
@@ -379,7 +383,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # テストスイート（100テストファイル、4193テスト、100%合格）
+├── tests/                 # テストスイート（100テストファイル、4393テスト、100%合格）
 ├── docs/                  # プロジェクトドキュメント
 │   ├── API.md             # APIドキュメント
 │   └── guides/            # クイックスタートガイド（中/英/日）
@@ -399,7 +403,7 @@ OPC-Agents/
 # 開発依存パッケージをインストール
 pip install -r requirements-dev.txt
 
-# 全テストを実行（4193テストケース）
+# 全テストを実行（4393テストケース）
 PYTHONPATH=. pytest tests/ -v
 
 # カバレッジレポート付きで実行

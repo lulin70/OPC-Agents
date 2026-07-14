@@ -97,7 +97,7 @@ def _derive_machine_key() -> str:
         import getpass
 
         components.append(getpass.getuser())
-    except Exception:
+    except (ImportError, OSError):
         pass
     # Add home directory path as machine-specific entropy
     home = os.path.expanduser("~")
