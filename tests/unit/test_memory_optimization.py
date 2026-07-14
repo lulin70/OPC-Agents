@@ -18,8 +18,6 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
-
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -378,13 +376,9 @@ class TestCacheCleanup:
         svc.embed("test text 2")
         svc.embed("test text 3")
 
-        # If cleanup method exists, test it
-        if hasattr(svc, "cleanup_old_entries"):
-            removed = svc.cleanup_old_entries(max_age_days=0)
-            assert removed >= 0, "cleanup_old_entries should return count"
-        else:
-            # Method doesn't exist yet — this test documents the gap
-            pytest.skip("EmbeddingService.cleanup_old_entries not yet implemented")
+        # cleanup_old_entries is implemented (embedding_service.py:138-159)
+        removed = svc.cleanup_old_entries(max_age_days=0)
+        assert removed >= 0, "cleanup_old_entries should return count"
 
     def test_lru_cache_ttl_expiry(self):
         """LRUCache should expire entries after TTL."""

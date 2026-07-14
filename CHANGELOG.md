@@ -4,6 +4,42 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.30] - 2026-07-14
+
+### 预存在问题通盘修复 — release.yml一致性 + SQLite + coroutine leak + stale skip
+
+> DevSquad 通盘扫描发现的 P0/P1 预存在问题修复，遵循"技术债不遗留，发现问题立即修复"原则。
+
+#### P0: release.yml 与 python-ci.yml 不一致
+
+- **问题**: release.yml 有 6 个 `--deselect` 的 stale 测试（provider 单例重置问题已修复，本地验证 6/6 PASS）+ `--cov-fail-under=59`（CI 为 70%），发布门控比 CI 门控更宽松
+- **修复**: 移除 6 个 stale deselect + 阈值 59%→70%，与 python-ci.yml 完全一致
+- **验证**: 6 个测试本地全部 PASS
+
+#### P1: SQLite busy_timeout 补全
+
+- **问题**: `llm_cache.py` 和 `skill_reviews.py` 有 WAL 模式但无 `busy_timeout`，并发写入时可能 "database is locked"
+- **修复**: 两处添加 `PRAGMA busy_timeout=5000`（与 `data_manager.py` 一致）
+
+#### P1: coroutine leak 修复
+
+- **问题**: `test_parallel_executor.py` 的 `lambda i=i: make_task(i)` 隐藏了协程性质，走 `run_in_executor` 分支导致协程未 await；`task_orchestrator.py` 的 `_parallel_consensus` 在 `collect_opinions_async` 异常时不关闭已创建的协程
+- **修复**: 测试改用 `args=(i,)` 传参；源码添加防御性 `coro.close()` 清理未 await 协程
+- **验证**: `-W error::RuntimeWarning` 全部通过
+
+#### P1: stale skip 清理
+
+- **问题**: `test_memory_optimization.py` 的 `cleanup_old_entries` 测试有 `pytest.skip("not yet implemented")` 但方法已在 `embedding_service.py:138-159` 实现
+- **修复**: 移除 dead else 分支，直接调用已实现的方法
+
+#### P1: TD-066 验证
+
+- **状态**: `settings_encryption.py` 的 fail-open/fail-closed 分层处理已于 2026-06-28 完成（SE-1~SE-6），本次仅验证确认，无需额外修改
+
+#### 版本一致性
+
+- 全量更新 30 处版本引用：VERSION / version.py / requirements / Dockerfile / 三语 README / PROJECT_STATUS / 源码内嵌版本 / 测试断言
+
 ## [0.3.29] - 2026-07-14
 
 ### E2E 测试方案完善 — 消除 skip + mock LLM + 隔离修复

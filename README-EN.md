@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.29 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.30 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -30,6 +30,10 @@ opc-agents                      # 2. Launch
 ```
 
 ---
+
+## 🆕 v0.3.30 Highlights
+
+- **🔧 v0.3.30 Pre-existing issue fixes**: release.yml remove 6 stale deselect + threshold 59%→70%; SQLite busy_timeout added (llm_cache/skill_reviews); coroutine leak fix (parallel_executor + task_orchestrator defensive close); stale skip cleanup (cleanup_old_entries was already implemented).
 
 ## 🆕 v0.3.29 Highlights
 
@@ -184,7 +188,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.29
+pip install opc-agents==0.3.30
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography

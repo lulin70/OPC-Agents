@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.29 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.30 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -30,6 +30,10 @@ opc-agents                      # 2. 启动
 ```
 
 ---
+
+## 🆕 v0.3.30 亮点
+
+- **🔧 v0.3.30 预存在问题修复**：release.yml 移除6个stale deselect + 阈值59%→70%；SQLite busy_timeout 补全（llm_cache/skill_reviews）；coroutine leak 修复（parallel_executor + task_orchestrator 防御性关闭）；stale skip 清理（cleanup_old_entries已实现）。
 
 ## 🆕 v0.3.29 亮点
 
@@ -178,7 +182,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.29
+pip install opc-agents==0.3.30
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

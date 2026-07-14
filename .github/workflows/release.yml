@@ -31,15 +31,9 @@ jobs:
       run: |
         # P0-1 修复：与 python-ci.yml 保持一致——隔离 tests/e2e/ 避免 Playwright
         # sync_playwright 创建的独立事件循环线程污染后续单元测试的 asyncio.run()。
-        # 同时 deselect 6 个 test_settings.py CI-only 失败（provider 单例重置问题）。
+        # v0.3.30: 移除 6 个 stale deselect（provider 单例重置问题已修复，本地验证 6/6 PASS）
         PYTHONPATH=. pytest tests/ -q --tb=short --no-cov \
-          --ignore=tests/e2e \
-          --deselect tests/integration/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
-          --deselect tests/integration/test_settings.py::TestSMTPCRUD::test_smtp_persistence \
-          --deselect tests/integration/test_settings.py::TestAutoGenerateKey::test_key_persisted_across_restarts \
-          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_api_key_decrypted_on_load \
-          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_smtp_password_decrypted_on_load \
-          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_auto_migration_plaintext_to_encrypted
+          --ignore=tests/e2e
 
     - name: Security scan with Bandit
       run: |
@@ -53,16 +47,11 @@ jobs:
 
     - name: Coverage gate
       run: |
+        # v0.3.30: 阈值 59%→70%（与 python-ci.yml 一致），移除 6 个 stale deselect
         PYTHONPATH=. pytest tests/ -q --tb=short \
           --cov=opc_manager --cov=frontend \
-          --cov-fail-under=59 \
-          --ignore=tests/e2e \
-          --deselect tests/integration/test_settings.py::TestLLMCRUD::test_llm_persistence_to_disk \
-          --deselect tests/integration/test_settings.py::TestSMTPCRUD::test_smtp_persistence \
-          --deselect tests/integration/test_settings.py::TestAutoGenerateKey::test_key_persisted_across_restarts \
-          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_api_key_decrypted_on_load \
-          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_smtp_password_decrypted_on_load \
-          --deselect tests/integration/test_settings.py::TestEncryptedStorage::test_auto_migration_plaintext_to_encrypted
+          --cov-fail-under=70 \
+          --ignore=tests/e2e
 
   build-and-push-ghcr:
     needs: test

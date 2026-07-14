@@ -26,6 +26,7 @@ class LLMCache:
         self._lock = threading.RLock()
         self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA busy_timeout=5000")
         self._ensure_table()
         # Auto-cleanup expired entries on startup
         try:

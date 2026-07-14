@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.29 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.30 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -30,6 +30,10 @@ opc-agents                      # 2. 起動
 ```
 
 ---
+
+## 🆕 v0.3.30 ハイライト
+
+- **🔧 v0.3.30 既存問題の修正**: release.yml の6つのstale deselectを削除 + 閾値59%→70%; SQLite busy_timeout追加（llm_cache/skill_reviews）; coroutine leak修正（parallel_executor + task_orchestrator防御的クローズ）; stale skipクリーンアップ（cleanup_old_entriesは既に実装済み）。
 
 ## 🆕 v0.3.29 ハイライト
 
@@ -180,7 +184,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.29
+pip install opc-agents==0.3.30
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography

@@ -73,8 +73,11 @@ class TestParallelExecutorBasic:
             results_expected.append(f"result_{idx}")
             return f"result_{idx}"
 
+        # Use args=(i,) so asyncio.iscoroutinefunction(func) returns True
+        # (lambda wrapping hides the coroutine nature, causing run_in_executor
+        # to create un-awaited coroutines → RuntimeWarning)
         tasks = [
-            TaskSpec(func=lambda i=i: make_task(i), description=f"Task {i}")
+            TaskSpec(func=make_task, args=(i,), description=f"Task {i}")
             for i in range(5)
         ]
 

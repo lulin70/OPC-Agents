@@ -566,24 +566,40 @@ class TaskOrchestrator:
         """三贤者并行投票决策。"""
         if not PARALLEL_VOTE_ENABLED:
             return await self._serial_consensus_fallback(context, decision_point, step)
+        # Extract coroutines to locals so they can be closed on error
+        # (prevents RuntimeWarning: coroutine was never awaited when
+        # collect_opinions_async raises before awaiting all arguments)
+        strategist_coro = None
+        executor_coro = None
+        reflector_coro = None
         try:
             context_dict = context_to_dict(context)
             planned_action = extract_planned_action(context, step)
 
+            strategist_coro = self._strategist_opinion_async(
+                context_dict, decision_point
+            )
+            executor_coro = self.executor_brain.express_opinion_async(
+                context_dict, decision_point
+            )
+            reflector_coro = self.reflector_brain.predict_consequence_async(
+                context_dict, planned_action
+            )
+
             decision = await asyncio.wait_for(
                 self._consensus_consultant._consensus.collect_opinions_async(
-                    self._strategist_opinion_async(context_dict, decision_point),
-                    self.executor_brain.express_opinion_async(
-                        context_dict, decision_point
-                    ),
-                    self.reflector_brain.predict_consequence_async(
-                        context_dict, planned_action
-                    ),
+                    strategist_coro,
+                    executor_coro,
+                    reflector_coro,
                 ),
                 timeout=PARALLEL_VOTE_TIMEOUT,
             )
             return decision
         except Exception as e:
+            # Close un-awaited coroutines to prevent RuntimeWarning
+            for coro in (strategist_coro, executor_coro, reflector_coro):
+                if coro is not None and asyncio.iscoroutine(coro):
+                    coro.close()
             logger.warning("并行投票失败，降级到串行: %s", e)
             return await self._serial_consensus_fallback(context, decision_point, step)
 
