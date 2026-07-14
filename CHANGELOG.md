@@ -40,9 +40,16 @@ v0.3.27 CHANGELOG 中以下声明**不准确**，特此修正：
   - `python-ci.yml`: `pip install ruff==0.6.9` → `pip install ruff==0.15.21`
   - `requirements-dev.txt`: 新增 `ruff>=0.15.0`
 
+#### P0-3: radon cc D+ 阻塞修复（ruff 修复后暴露的隐藏问题）
+
+- **根因**: `MCPServer._handle_tools_call`（mcp_protocol.py:358）圈复杂度 D (21)，超出 CI radon cc 门控 D+ 阻塞阈值。此问题在 v0.3.24-v0.3.27 期间被 ruff 失败掩盖（CI 在 ruff 步骤即失败，从未执行到 radon cc 步骤），ruff 修复后才暴露
+- **修复**: 将 `execute_task` 分支（含嵌套 if/try/except/asyncio 事件循环）提取为独立方法 `_handle_execute_task(user_input) -> Optional[Dict]`
+- **效果**: `_handle_tools_call` 复杂度从 D (21) 降至 C (12)，新方法 `_handle_execute_task` 复杂度 C (11)，均通过 CI 门控
+- **验证**: `radon cc opc_manager/ -s -n D` 输出为空（0 个 D+ 函数）；4116 测试全通过，0 回归
+
 #### 版本号选择
 
-- PATCH（0.3.27→0.3.28）：本次工作为 CI 修复 + 文档修正，无新功能，遵循 SemVer 硬约束
+- PATCH（0.3.27→0.3.28）：本次工作为 CI 修复 + 文档修正 + 复杂度重构，无新功能，遵循 SemVer 硬约束
 - v0.4.0 发布决策待 D04 重新评估后确定
 
 ## [0.3.27] - 2026-07-13

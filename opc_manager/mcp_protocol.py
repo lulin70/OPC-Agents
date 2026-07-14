@@ -387,49 +387,9 @@ class MCPServer:
             return self._execute_skill_tool(tool_name, arguments)
 
         if tool_name == "execute_task":
-            user_input = arguments.get("user_input", "")
-            if self.skill_registry:
-                matched_skills = self.skill_registry.find_by_intent(user_input)
-                if matched_skills:
-                    import asyncio
-
-                    try:
-                        _new_loop = asyncio.new_event_loop()
-                        try:
-                            result = _new_loop.run_until_complete(
-                                self.skill_registry.execute_skill(
-                                    matched_skills[0].skill_id,
-                                    context=None,
-                                    goal=user_input,
-                                )
-                            )
-                        finally:
-                            _new_loop.close()
-                        if result.get("success") and result.get("data"):
-                            data = result["data"]
-                            content = (
-                                data.get("content", "")
-                                if isinstance(data, dict)
-                                else str(data)
-                            )
-                            if content:
-                                return {"content": [{"type": "text", "text": content}]}
-                    except Exception as e:
-                        logger.warning(
-                            "SkillRegistry execute failed, falling back to task_engine: %s",
-                            e,
-                        )
-            if self.task_engine:
-                result = self.task_engine.execute(
-                    user_input=user_input,
-                    task_type_hint=None,
-                )
-                content = result.content or ""
-                return {
-                    "content": [
-                        {"type": "text", "text": content or "No content generated"}
-                    ]
-                }
+            result = self._handle_execute_task(arguments.get("user_input", ""))
+            if result is not None:
+                return result
 
         if tool_name == "search_web" and self.task_engine:
             result = self.task_engine.execute(
@@ -453,6 +413,58 @@ class MCPServer:
                 }
             ]
         }
+
+    def _handle_execute_task(
+        self, user_input: str
+    ) -> Optional[Dict[str, Any]]:
+        """Handle execute_task tool via skill_registry (preferred) or task_engine (fallback).
+
+        Returns None if neither handler is available, so the caller can fall
+        through to the default tool response.
+        """
+        if self.skill_registry:
+            matched_skills = self.skill_registry.find_by_intent(user_input)
+            if matched_skills:
+                import asyncio
+
+                try:
+                    _new_loop = asyncio.new_event_loop()
+                    try:
+                        result = _new_loop.run_until_complete(
+                            self.skill_registry.execute_skill(
+                                matched_skills[0].skill_id,
+                                context=None,
+                                goal=user_input,
+                            )
+                        )
+                    finally:
+                        _new_loop.close()
+                    if result.get("success") and result.get("data"):
+                        data = result["data"]
+                        content = (
+                            data.get("content", "")
+                            if isinstance(data, dict)
+                            else str(data)
+                        )
+                        if content:
+                            return {"content": [{"type": "text", "text": content}]}
+                except Exception as e:
+                    logger.warning(
+                        "SkillRegistry execute failed, falling back to task_engine: %s",
+                        e,
+                    )
+        if self.task_engine:
+            result = self.task_engine.execute(
+                user_input=user_input,
+                task_type_hint=None,
+            )
+            content = result.content or ""
+            return {
+                "content": [
+                    {"type": "text", "text": content or "No content generated"}
+                ]
+            }
+        return None
 
     def _execute_skill_tool(
         self, skill_id: str, arguments: Dict[str, Any]
