@@ -1,5 +1,5 @@
 """
-Error Handler — v0.3.27 User-friendly error translation system.
+Error Handler — v0.3.28 User-friendly error translation system.
 
 Translates technical exceptions into user-understandable Chinese messages.
 Provides centralized error mapping and context-aware message formatting.

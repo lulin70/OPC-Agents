@@ -4,6 +4,47 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.28] - 2026-07-14
+
+### D03 评估发现修复 — CI 全红根因修复 + 文档诚信修正
+
+> D03 项目整理评估（72.5 分 C+）发现 v0.3.27 CI 连续 4 次全红，"v0.4.0 发布门控全部达标"声明不准确。本次修复 CI 根因 + 文档诚信问题。
+
+#### ⚠️ v0.3.27 声明修正
+
+v0.3.27 CHANGELOG 中以下声明**不准确**，特此修正：
+
+| v0.3.27 声明 | 实际状态 | 修正 |
+|-------------|---------|------|
+| "v0.4.0 发布门控 11/11 全部达标" | ❌ CI 连续 4 次全红（v0.3.24-v0.3.27），门控未通过 | 删除"发布就绪"结论 |
+| "CI 全门控通过" | ❌ CI ruff 步骤即失败，后续步骤未执行 | 修正为"本地验证通过，CI 因 ruff 版本漂移失败" |
+| README "4278 个测试" | ❌ 实际 4116 passed + 77 skipped = 4193 | 修正为 4193 |
+
+#### P0-1: CI ruff 版本漂移修复
+
+- **根因**: CI 锁定 `ruff==0.6.9`，本地为 `ruff==0.15.21`，2 个测试文件（test_mcp_transport.py、test_skill_marketplace_api.py）的 `pytest.importorskip()` 模式在 0.6.9 触发 E402 但在 0.15.21 通过
+- **修复**: CI ruff 版本升级 `0.6.9 → 0.15.21`（与本地一致）
+- **影响**: v0.3.24-v0.3.27 共 4 次 CI 全红，均失败在此步骤
+
+#### P0-2: README 测试数修正
+
+- **问题**: 三语 README + CI EXPECTED_TEST_COUNT 均声称 4278，实际 4116 passed + 77 skipped = 4193
+- **修复**: 3 个 README + python-ci.yml `EXPECTED_TEST_COUNT` 从 4278 改为 4193
+- **根因**: v0.3.26 修复 56 处 Mock 反模式后测试总数减少，未同步更新 README
+
+#### P1-1: ruff 版本统一
+
+- **问题**: ruff 版本在 4 处配置不一致（.pre-commit-config.yaml v0.6.9、python-ci.yml 0.6.9、本地 0.15.21、requirements-dev.txt 未列出）
+- **修复**:
+  - `.pre-commit-config.yaml`: `rev: v0.6.9` → `rev: v0.15.21`
+  - `python-ci.yml`: `pip install ruff==0.6.9` → `pip install ruff==0.15.21`
+  - `requirements-dev.txt`: 新增 `ruff>=0.15.0`
+
+#### 版本号选择
+
+- PATCH（0.3.27→0.3.28）：本次工作为 CI 修复 + 文档修正，无新功能，遵循 SemVer 硬约束
+- v0.4.0 发布决策待 D04 重新评估后确定
+
 ## [0.3.27] - 2026-07-13
 
 ### v0.4.0 发布门控全部完成

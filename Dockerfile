@@ -1,4 +1,4 @@
-ARG VERSION=0.3.27
+ARG VERSION=0.3.28
 
 # Stage 1: Builder — install build dependencies and compile
 FROM python:3.11-slim AS builder

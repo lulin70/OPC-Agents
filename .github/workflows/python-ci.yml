@@ -36,9 +36,9 @@ jobs:
         playwright install chromium --with-deps
 
     - name: Lint with ruff (blocking — unified with pre-commit)
-      # D02 P1-9: Unified CI lint tool with .pre-commit-config.yaml (ruff v0.6.9)
+      # D03 P0-1: Unified ruff version to 0.15.21 (was 0.6.9, caused CI failures due to E402 drift)
       run: |
-        pip install ruff==0.6.9
+        pip install ruff==0.15.21
         ruff check opc_manager/ frontend/ tests/ --exit-non-zero-on-fix
 
     - name: Extended lint report (non-blocking — style info)
@@ -182,7 +182,7 @@ jobs:
         import re, sys
         VERSION = open("VERSION").read().strip()
         EXPECTED_MODULE_COUNT = 99
-        EXPECTED_TEST_COUNT = 4278
+        EXPECTED_TEST_COUNT = 4193
         readmes = ["README.md", "README-EN.md", "README-JP.md"]
         errors = []
         for path in readmes:

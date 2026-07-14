@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.27 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.28 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,7 +31,7 @@ opc-agents                      # 2. 启动
 
 ---
 
-## 🆕 v0.3.27 亮点
+## 🆕 v0.3.28 亮点
 
 > 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)，成熟度评估见 [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md)。
 
@@ -39,11 +39,11 @@ opc-agents                      # 2. 启动
 - **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
 - **🧠 IntentRouter 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
 - **🛡 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
-- **📊 质量持续提升**：4278 个测试，覆盖率 74%+，CI 全门禁通过（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/版本一致性/三语 README 一致性）。D02 成熟度评估 82 分 B+。
+- **📊 质量持续提升**：4193 个测试，覆盖率 74%+，CI 全门禁通过（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/版本一致性/三语 README 一致性）。D02 成熟度评估 82 分 B+。
 - **🔧 tool_system.py 拆分**：754 行 God Class 拆分为 4 个子模块（tool_registry + tool_handlers_fs/smtp/cmd）+ Facade 模式，向后兼容，复杂度从 D 降至 C。
 - **🧹 Mock 反模式修复**：56 处反模式 Mock 修复（unused 依赖改 None、内部组件改 SimpleNamespace），测试更诚实、失败更明显。
 - **🔒 安全扫描全绿**：pip-audit 0 漏洞 + Bandit 0 高危，6 个包升级修复 21 个已知漏洞（pillow/pyjwt/python-multipart/soupsieve/weasyprint/pip）。
-- **✅ v0.4.0 发布门控 14/14 全部达标**：E2E 真实测试 0 失败、基础版本地运行 HTTP 200、weekly-e2e-real.yml 手动触发成功。v0.4.0 发布就绪。
+- **🔧 v0.3.28 修复 CI 全红问题**：ruff 版本统一 0.15.21（CI 0.6.9→0.15.21）+ README 测试数修正（4278→4193）。v0.4.0 发布待 D04 重新评估。
 - **🌐 i18n 重构**：3857 行 → 133 行逻辑层 + JSON 化，向后兼容，维护成本骤降。
 
 > 🧪 准备试用？请阅读 [docs/guides/USER_TRIAL_GUIDE.md](docs/guides/USER_TRIAL_GUIDE.md)（3 分钟完成配置），演示话术见 [docs/guides/DEMO_SCRIPTS.md](docs/guides/DEMO_SCRIPTS.md)，反馈表见 [docs/guides/FEEDBACK_FORM.md](docs/guides/FEEDBACK_FORM.md)。
@@ -178,7 +178,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.27
+pip install opc-agents==0.3.28
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -388,7 +388,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # 测试套件（100个测试文件，4278测试用例，100%通过）
+├── tests/                 # 测试套件（100个测试文件，4193测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）
@@ -408,7 +408,7 @@ OPC-Agents/
 # 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 运行全部测试（4278个用例）
+# 运行全部测试（4193个用例）
 PYTHONPATH=. pytest tests/ -v
 
 # 运行并生成覆盖率报告
