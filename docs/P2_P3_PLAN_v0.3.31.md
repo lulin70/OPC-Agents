@@ -209,22 +209,70 @@ grep -r "0.3.31" opc_manager/ README*.md CHANGELOG.md  # 应全部更新
 
 ---
 
+## E2E 测试结果（2026-07-15，模拟终端用户操作）
+
+### 执行环境
+- Python 3.12.13 / Streamlit 1.58.0 / Playwright Chromium (headless)
+- Demo 模式（无 API Key），预创建测试成果物文件确保 Deliverables 页面搜索框/下载按钮渲染
+
+### 测试结果
+
+**21 个 Playwright E2E 测试全部通过，0 失败 0 跳过，耗时 184.80s**
+
+| 测试类别 | 测试用例 | 数量 | 结果 |
+|----------|----------|------|------|
+| UJ-01 应用启动和导航 | TC_H01/H02/H03 | 3 | ✅ PASS |
+| UJ-02 Demo 模式 | TC_H04/H05 | 2 | ✅ PASS |
+| UJ-03 Chat 输入 | TC_H07 | 1 | ✅ PASS |
+| UJ-04 Deliverables 和下载 | TC_H08/H09 | 2 | ✅ PASS |
+| UJ-05 Dashboard | TC_H10 | 1 | ✅ PASS |
+| UJ-06 Settings | TC_H11 | 1 | ✅ PASS |
+| UJ-07 多语言切换 | TC_H12 | 1 | ✅ PASS |
+| UJ-08 健康检查 | TC_H13 | 1 | ✅ PASS |
+| 错误场景 | TC_E01/E03/E04 | 3 | ✅ PASS |
+| 边界场景 | TC_B01/B02/B03 | 3 | ✅ PASS |
+| 性能场景 | TC_P01/P02/P03 | 3 | ✅ PASS |
+| **合计** | | **21** | **✅ 21 PASS** |
+
+### P2-1 SK-2 修复验证
+
+- **TC_E01_empty_chat_input_no_task**: 之前 skip → 现在 PASS ✅
+- **TC_B01_long_text_input**: 之前 skip → 现在 PASS ✅
+- 根因修复: sidebar 搜索框不存在 → 改用 Deliverables 搜索框 + conftest 预创建文件确保渲染
+
+### conftest.py 修复（E2E 执行中发现）
+
+**问题**: Deliverables 页面搜索框和下载按钮只在 `session_state.deliverables` 非空时渲染（[deliverables_renderer.py:25-26](file:///Users/lin/trae_projects/OPC-Agents/frontend/renderers/deliverables_renderer.py#L25-L26)）。Demo 模式下无成果物，导致 TC_H09/TC_E01/TC_B01 失败。
+
+**修复**: 在 `streamlit_server` fixture 启动 server 前预创建测试成果物文件，确保 Streamlit 初始化时加载到 `session_state.deliverables`。`test_deliverable_file` fixture 改为 no-op 保证（文件已由 session fixture 创建），不再在 function scope 清理（避免影响后续测试）。
+
+### 性能指标验证
+
+| 指标 | 阈值 | 实测 | 结果 |
+|------|------|------|------|
+| 冷启动 | <30s | TC_P01 PASS | ✅ |
+| 页面切换 | <5s | TC_P02 PASS | ✅ |
+| 应用渲染 | <15s | TC_P03 PASS | ✅ |
+
+---
+
 ## 发布清单
 
-- [ ] P2-1: SK-2 sidebar skip 修复
-- [ ] P2-2: EXPECTED_TEST_COUNT 自动化
-- [ ] P2-3: E类 except Exception 收窄（4处）
-- [ ] P2-4: A/B类 except Exception 收窄（3处）
-- [ ] P2-5: Mock 替换（如时间允许）
-- [ ] ruff check + format
-- [ ] radon cc 复杂度
-- [ ] pytest 全量回归
-- [ ] RuntimeWarning 检查
-- [ ] E2E 测试（SK-2 验证）
-- [ ] VERSION → 0.3.31
-- [ ] CHANGELOG 更新
-- [ ] 三语 README 更新
-- [ ] Git commit + push
+- [x] P2-1: SK-2 sidebar skip 修复
+- [x] P2-2: EXPECTED_TEST_COUNT 自动化
+- [x] P2-3: E类 except Exception 收窄（4处）
+- [x] P2-4: A/B类 except Exception 收窄（3处）
+- [x] P2-5: Mock 替换（评估后取消，仅 18 处且多数合理）
+- [x] ruff check + format
+- [x] radon cc 复杂度
+- [x] pytest 全量回归（4116 passed, 77 skipped）
+- [x] RuntimeWarning 检查（134 passed, 0 warnings）
+- [x] E2E 测试（21/21 PASS，SK-2 验证通过）
+- [x] VERSION → 0.3.31
+- [x] CHANGELOG 更新
+- [x] 三语 README 更新
+- [x] Git commit + push（commit 99777b1）
+- [x] conftest.py E2E 修复（预创建文件确保搜索框/下载按钮渲染）
 
 ---
 

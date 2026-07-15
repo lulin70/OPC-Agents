@@ -97,9 +97,23 @@ def streamlit_server() -> Generator[str, None, None]:
     - headless 模式（无浏览器自动打开）
     - 不设置 API key 环境变量 → 自动激活 Demo 模式
     - 会话级复用（避免每个测试都重启 server）
+    - 预创建测试成果物文件，确保 Deliverables 页面搜索框和下载按钮能渲染
+      （deliverables_renderer.py 中搜索框只在 session_state.deliverables 非空时渲染）
     """
     port = _find_free_port()
     base_url = f"http://127.0.0.1:{port}"
+
+    # 预创建测试成果物文件（在 server 启动前，确保初始化时加载到 session_state）
+    deliverables_dir = PROJECT_ROOT / "deliverables"
+    deliverables_dir.mkdir(parents=True, exist_ok=True)
+    session_deliverable = (
+        deliverables_dir / "20260714_120000_content_generation_E2E_test_deliverable.md"
+    )
+    session_deliverable.write_text(
+        "# E2E 测试成果物\n\n这是 Playwright E2E 测试自动创建的成果物文件。\n\n"
+        "## 内容\n\n用于验证搜索框和下载按钮功能。\n",
+        encoding="utf-8",
+    )
 
     # 清理环境变量，确保 Demo 模式激活
     env = os.environ.copy()
@@ -168,6 +182,9 @@ def streamlit_server() -> Generator[str, None, None]:
             proc.kill()
             proc.wait(timeout=5)
         log_file.close()
+        # 清理 session 级测试文件
+        if session_deliverable.exists():
+            session_deliverable.unlink()
 
 
 @pytest.fixture(scope="session")
@@ -246,31 +263,32 @@ def context_with_download(
 
 @pytest.fixture
 def test_deliverable_file():
-    """Create a test deliverable .md file for download button testing.
+    """Ensure test deliverable .md file exists for download button testing.
 
-    The file follows the naming convention expected by app.py's
-    _load_deliverables_from_disk: YYYYMMDD_HHMMSS_task_type_prompt.md
-
-    Cleans up after the test.
+    The file is pre-created by the session-scoped streamlit_server fixture
+    (so that Streamlit initializes with deliverables loaded into session_state).
+    This function-scope fixture is a no-op guarantee: if the file was removed
+    by an earlier test, it re-creates it. Cleanup is handled by streamlit_server's
+    session teardown, NOT here (removing the file here would break subsequent tests
+    that rely on deliverables being present, e.g. TC_E01/TC_B01 search box tests).
     """
     deliverables_dir = PROJECT_ROOT / "deliverables"
     deliverables_dir.mkdir(parents=True, exist_ok=True)
 
     filename = "20260714_120000_content_generation_E2E_test_deliverable.md"
     filepath = deliverables_dir / filename
-    content = (
-        "# E2E 测试成果物\n\n"
-        "这是 Playwright E2E 测试自动创建的成果物文件。\n\n"
-        "## 内容\n\n"
-        "用于验证下载按钮功能。\n"
-    )
-    filepath.write_text(content, encoding="utf-8")
+    if not filepath.exists():
+        content = (
+            "# E2E 测试成果物\n\n"
+            "这是 Playwright E2E 测试自动创建的成果物文件。\n\n"
+            "## 内容\n\n"
+            "用于验证下载按钮功能。\n"
+        )
+        filepath.write_text(content, encoding="utf-8")
 
-    try:
-        yield str(filepath)
-    finally:
-        if filepath.exists():
-            filepath.unlink()
+    yield str(filepath)
+    # NOTE: 不在此处删除文件 — session 级 streamlit_server fixture 负责清理。
+    # 在此处删除会导致后续依赖搜索框可见的测试（TC_E01/TC_B01）失败。
 
 
 def navigate_to_page(page: Any, page_name: str) -> None:
