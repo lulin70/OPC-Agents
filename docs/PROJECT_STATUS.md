@@ -1,8 +1,8 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-14（v0.3.31 P2-P3问题系统性修复：SK-2 skip根因+EXPECTED_TEST_COUNT自动化+except Exception收窄） | **版本**: v0.3.31 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-17（v0.3.32 项目整理优化：D06评估T1/T4误判修正+llm_cache注释完善+CI版本锁定+docs归档） | **版本**: v0.3.32 (Beta) | **许可**: MIT
 >
-> 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) 配套使用。
+> 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) 配套使用。
 
 ---
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.31`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.32`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -99,7 +99,7 @@
 
 ## 5. Phase 1 修复进度
 
-> 完整任务清单见 [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md)（D02 评估已替代 D01/v0.3.3 评估）。
+> 完整任务清单见 [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md)（D02 评估已替代 D01/v0.3.3 评估）。
 
 | 评估任务 # | 任务 | 状态 | 完成时间 |
 |------------|------|------|----------|
@@ -200,11 +200,11 @@
 | 项目 README（英） | [README-EN.md](../README-EN.md) | 英文用户入口 |
 | 项目 README（日） | [README-JP.md](../README-JP.md) | 日文用户入口 |
 | 变更日志 | [CHANGELOG.md](../CHANGELOG.md) | 版本变更记录 |
-| 成熟度评估 D02 | [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) | D02 7 维度评估（82 分 B+） |
-| 成熟度评估 D04 | [ASSESSMENT_D04_MATURITY.md](ASSESSMENT_D04_MATURITY.md) | D04 7 维度评估（87.3 分 B+） |
-| 项目整理评估 D06 | [ASSESSMENT_D06_TIDY_v0.3.31.md](ASSESSMENT_D06_TIDY_v0.3.31.md) | D06 v0.3.31 项目整理评估（88 分 B+，接近 A-） |
-| E2E 评估 D05 | [ASSESSMENT_E2E_D05.md](ASSESSMENT_E2E_D05.md) | D05 E2E 真实用户模拟测试（37/37 用户旅程） |
-| P2-P3 修复方案 | [P2_P3_PLAN_v0.3.31.md](P2_P3_PLAN_v0.3.31.md) | v0.3.31 P2-P3 问题系统性修复方案 + E2E 验证 |
+| 成熟度评估 D02 | [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) | D02 7 维度评估（82 分 B+） |
+| 成熟度评估 D04 | [ASSESSMENT_D04_MATURITY.md](assessments/ASSESSMENT_D04_MATURITY.md) | D04 7 维度评估（87.3 分 B+） |
+| 项目整理评估 D06 | [ASSESSMENT_D06_TIDY_v0.3.31.md](assessments/ASSESSMENT_D06_TIDY_v0.3.31.md) | D06 v0.3.31 项目整理评估（88 分 B+，接近 A-） |
+| E2E 评估 D05 | [ASSESSMENT_E2E_D05.md](assessments/ASSESSMENT_E2E_D05.md) | D05 E2E 真实用户模拟测试（37/37 用户旅程） |
+| P2-P3 修复方案 | [P2_P3_PLAN_v0.3.31.md](assessments/P2_P3_PLAN_v0.3.31.md) | v0.3.31 P2-P3 问题系统性修复方案 + E2E 验证 |
 | 架构设计 | [architecture/PARALLEL_SAGES_DESIGN.md](architecture/PARALLEL_SAGES_DESIGN.md) | 三贤者并行投票架构 |
 | API 文档 | [API.md](API.md) | REST API 接口 |
 | 用户试用指南 | [guides/USER_TRIAL_GUIDE.md](guides/USER_TRIAL_GUIDE.md) | 3 分钟配置 |

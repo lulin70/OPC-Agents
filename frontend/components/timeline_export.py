@@ -214,7 +214,8 @@ def _export_to_markdown(events: List[TimelineEvent]) -> str:
 
 def _export_to_png(events: List[TimelineEvent]) -> bytes:
     """导出为PNG图片（使用HTML+CSS渲染）"""
-    html_parts = ["""
+    html_parts = [
+        """
     <html>
     <head><meta charset="utf-8">
     <style>
@@ -230,7 +231,8 @@ def _export_to_png(events: List[TimelineEvent]) -> bytes:
         .card-title { font-weight: 600; color: #1f2937; margin-bottom: 4px; }
         .card-desc { font-size: 13px; color: #6b7280; }
     </style></head><body>
-    """]
+    """
+    ]
 
     html_parts.append(f'<div class="header"><h1>{_t("timeline_png_title")}</h1>')
     html_parts.append(
@@ -255,7 +257,8 @@ def _export_to_png(events: List[TimelineEvent]) -> bytes:
             .replace(">", "&gt;")
         )
 
-        html_parts.append(f"""
+        html_parts.append(
+            f"""
         <div class="event">
             <div class="dot" style="background: {color};"></div>
             <div class="time">{time_str}</div>
@@ -264,7 +267,8 @@ def _export_to_png(events: List[TimelineEvent]) -> bytes:
                 <div class="card-desc">{escaped_desc}</div>
             </div>
         </div>
-        """)
+        """
+        )
 
     html_parts.append("</body></html>")
 

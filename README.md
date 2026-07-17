@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.31 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.32 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,6 +31,10 @@ opc-agents                      # 2. 启动
 
 ---
 
+## 🆕 v0.3.32 Highlights
+
+- **🔧 v0.3.32 项目整理优化**: D06 评估 T1/T4 误判修正（async_executor shutdown 已有 join 逻辑、live_log_panel 无 data_manager 导入）；llm_cache.py 温度边界缓存策略注释完善；CI mypy/black 版本锁定与 pre-commit 一致（mypy==1.11.2, black==24.8.0）；docs/ 10 个散落评估文档归档到 docs/assessments/ 子目录。
+
 ## 🆕 v0.3.31 亮点
 
 - **🔧 v0.3.31 P2-P3 问题系统性修复**：SK-2 sidebar skip 根因修复（源码中 sidebar 搜索框不存在，改用 Deliverables 搜索框）；EXPECTED_TEST_COUNT 硬编码4193改为 pytest --co 动态计算；except Exception 静默吞异常收窄（9处：E类4处+A/B类5处，收窄为具体异常类型，暴露编程错误）。
@@ -41,7 +45,7 @@ opc-agents                      # 2. 启动
 
 ## 🆕 v0.3.29 亮点
 
-> 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)，成熟度评估见 [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md)。
+> 完整变更见 [CHANGELOG.md](CHANGELOG.md)，架构设计见 [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)，成熟度评估见 [docs/assessments/ASSESSMENT_D02_MATURITY.md](docs/assessments/ASSESSMENT_D02_MATURITY.md)。
 
 - **⚡ 三贤者并行投票架构**：从串行流水线（3×RTT）改为并行投票（1×RTT），延迟降低 3 倍。借鉴 EVA MAGI 三贤者同步投票 + 少数派报告机制，关键决策点前置共识保护。
 - **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
@@ -186,7 +190,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.31
+pip install opc-agents==0.3.32
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

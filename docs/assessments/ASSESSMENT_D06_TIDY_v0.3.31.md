@@ -48,8 +48,8 @@
 |--------|------|----------|------|
 | coroutine leak | ✅ 已修复 | — | v0.3.30 修复 parallel_executor + task_orchestrator 防御性 close |
 | LLM 缓存 | ✅ 有效 | — | [llm_cache.py](file:///Users/lin/trae_projects/OPC-Agents/opc_manager/llm_cache.py) — TTL LRU + 磁盘持久化 |
-| async_executor shutdown | ⚠️ P1 | P1 | [async_executor.py:202-209](file:///Users/lin/trae_projects/OPC-Agents/opc_manager/async_executor.py#L202-L209) — shutdown() 中 cancel() 后未 join，可能线程泄漏 |
-| LLM 缓存温度边界 | ⚠️ P2 | P2 | [llm_cache.py:133-140](file:///Users/lin/trae_projects/OPC-Agents/opc_manager/llm_cache.py#L133-L140) — 高温度跳过缓存但推理模式未统一处理 |
+| async_executor shutdown | ✅ 已有 join | — | [async_executor.py:182-221](file:///Users/lin/trae_projects/OPC-Agents/opc_manager/async_executor.py#L182-L221) — **D06 初版误判已修正**：L220-221 已有 `for t in worker_threads: t.join(timeout=2)`；仅在 `wait=True` 时执行（默认 False）。可讨论的仅是 `wait` 默认值策略，非阻塞 P1 问题 |
+| LLM 缓存温度边界 | ⚠️ P2 | P2 | [llm_cache.py:122-139](file:///Users/lin/trae_projects/OPC-Agents/opc_manager/llm_cache.py#L122-L139) — `put()` 在 `temperature >= CACHE_MAX_TEMPERATURE` 时跳过缓存，逻辑合理；可讨论是否补充"推理模式"边界说明 |
 
 ### 1.4 可维护性维度 ✅
 
@@ -84,7 +84,7 @@
 | # | 问题 | 严重级别 | 修复 |
 |---|------|----------|------|
 | 1 | 三语 README + CHANGELOG 中测试数量 "4393" 与实际 "4193" 不一致（10处） | P1 | ✅ 已修复（README.md L50/399/419, README-EN.md L50/390/410, README-JP.md L50/386/406, CHANGELOG.md L23） |
-| 2 | docs/P2_P3_PLAN_v0.3.31.md 未在 PROJECT_STATUS.md 文档索引中 | P2 | ⏳ 建议补充 |
+| 2 | docs/assessments/P2_P3_PLAN_v0.3.31.md 未在 PROJECT_STATUS.md 文档索引中 | P2 | ⏳ 建议补充 |
 
 ### 验证通过项
 
@@ -218,11 +218,15 @@
 |---|------|----------|------|
 | 1 | P0-6: email/finance 全量覆盖率提升（专项 99%/100%，全量 17%/14.5%） | P0 | ⏳ 大型任务 |
 | 2 | P1-8: 715 处 Mock → 真实组件重构 | P1 | ⏳ 大型任务 |
-| 3 | async_executor shutdown() 线程 join | P1 | ⏳ 新发现 |
+
+> **误判修正记录（2026-07-17）**：
+> - T1 `async_executor shutdown()` 误判：实际 [L220-221](file:///Users/lin/trae_projects/OPC-Agents/opc_manager/async_executor.py#L220-L221) 已有 `for t in worker_threads: t.join(timeout=2)`，仅在 `wait=True` 时执行。降级为 P3 讨论"wait 默认值策略"，非阻塞问题。
+> - T4 `live_log_panel SRP` 误判：实际 [live_log_panel.py](file:///Users/lin/trae_projects/OPC-Agents/frontend/components/live_log_panel.py) 无任何 `data_manager` 导入，仅通过 `opc_manager.audit_log.AuditLog`（L390 延迟导入）和 `opc_manager.progress_emitter.ProgressEmitter`（L437 延迟导入）访问后端接口，符合 SRP。任务移除。
+> - 教训：D06 的 search agent 仅扫描 L202-209 未读取 L210-221 完整 wait 块；T4 未实际 grep `data_manager` 导入即下结论。验证了 project_memory 中"基于不完整代码片段的架构改进任务需先校验前提"教训。
 
 ### 下一步建议
 
-1. **短期（v0.3.32）**: 修复 async_executor shutdown() P1 问题 + mypy/black CI 版本锁定
+1. **短期（v0.3.32）**: mypy/black CI 版本锁定 + llm_cache 温度边界注释完善 + docs/ 散落文档归档
 2. **中期（v0.4.0）**: 完成 P0-6 email/finance 全量覆盖率提升 + P1-8 Mock 重构（大型任务）
 3. **长期（v0.5.0）**: tool_system.py 进一步拆分 + 架构演进
 

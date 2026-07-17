@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.31 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.32 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,6 +31,10 @@ opc-agents                      # 2. 起動
 
 ---
 
+## 🆕 v0.3.32 ハイライト
+
+- **🔧 v0.3.32 プロジェクト整理最適化**: D06評価 T1/T4誤判定修正（async_executor shutdown は既に join ロジックあり、live_log_panel は data_manager インポートなし）; llm_cache.py 温度境界キャッシュポリシーコメント完善; CI mypy/black バージョン固定を pre-commit と一致（mypy==1.11.2, black==24.8.0）; docs/ の散在10件の評価ドキュメントを docs/assessments/ にアーカイブ。
+
 ## 🆕 v0.3.31 ハイライト
 
 - **🔧 v0.3.31 P2-P3問題の体系的解決**: SK-2 sidebar skip根本原因修正（sidebar検索ボックスはソースに存在せず、Deliverables検索ボックスに変更）; EXPECTED_TEST_COUNT固定値4193をpytest --co動的計算に置き換え; except Exception暗黙の例外飲み込みを絞り込み（9箇所：E類4箇所+A/B類5箇所、具体例外型に絞り込み、プログラミングエラーを露出）。
@@ -41,7 +45,7 @@ opc-agents                      # 2. 起動
 
 ## 🆕 v0.3.29 ハイライト
 
-> 完全な変更履歴は [CHANGELOG.md](CHANGELOG.md)、アーキテクチャ設計は [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)、成熟度評価は [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md) を参照。
+> 完全な変更履歴は [CHANGELOG.md](CHANGELOG.md)、アーキテクチャ設計は [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md)、成熟度評価は [docs/assessments/ASSESSMENT_D02_MATURITY.md](docs/assessments/ASSESSMENT_D02_MATURITY.md) を参照。
 
 - **⚡ 三賢者並列投票アーキテクチャ**: 直列パイプライン（3×RTT）から並列投票（1×RTT）に変更、レイテンシ3分の1に低下。EVA MAGI三賢者同期投票+マイノリティレポート機構を参考に、重要意思決定点を事前コンセンサスで保護。
 - **🎯 3つのコアスキルに集中**: メール / 財務 / レポート。非コアスキルを凍結（[docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md) 参照）、各コアスキルを本当に使いやすくする。
@@ -188,7 +192,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.31
+pip install opc-agents==0.3.32
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography

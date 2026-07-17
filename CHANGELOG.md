@@ -4,6 +4,44 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.32] - 2026-07-17
+
+### 项目整理优化 — D06 评估误判修正 + CI 版本锁定 + docs 归档
+
+> v0.3.31 D06 评估发现的问题修正与优化，遵循"文档先行、活文档"原则。
+
+#### D06 评估 T1/T4 误判修正
+
+- **T1 误判**: D06 评估称 `async_executor.shutdown()` 中 `cancel()` 后未 `join()` 可能线程泄漏。实际验证 [async_executor.py:220-221](opc_manager/async_executor.py) 已有 `for t in worker_threads: t.join(timeout=2)`，仅在 `wait=True` 时执行。降级为 P3 讨论项，非阻塞问题。
+- **T4 误判**: D06 评估称 `live_log_panel.py` 前端组件直接查询 `data_manager` 数据库记录违反 SRP。实际验证 [live_log_panel.py](frontend/components/live_log_panel.py) 无任何 `data_manager` 导入，仅通过 `opc_manager.audit_log.AuditLog`（L390 延迟导入）和 `opc_manager.progress_emitter.ProgressEmitter`（L437 延迟导入）访问后端接口，符合 SRP。
+- **教训**: 基于 search agent 不完整代码片段的评估需先 grep + 完整函数体读取验证再启动改进任务。
+
+#### T2: llm_cache.py 温度边界处理注释完善
+
+- **变更**: [llm_cache.py](opc_manager/llm_cache.py) `put()` 方法 docstring 和 `CACHE_MAX_TEMPERATURE` 常量注释完善
+- **内容**: 明确缓存策略边界（[0.0, 0.7) 缓存、[0.7, +inf) 不缓存）、推理模式不单独 gate（通过 temperature 参数自然 bypass）
+- **影响**: 仅注释变更，无代码逻辑变更，无测试回归
+
+#### T3: mypy/black CI 版本锁定
+
+- **变更**: [python-ci.yml](.github/workflows/python-ci.yml) mypy/black 显式安装固定版本
+- **内容**: `pip install mypy==1.11.2`、`pip install black==24.8.0`（与 .pre-commit-config.yaml 一致）
+- **影响**: 防止 CI 与 pre-commit 版本漂移导致格式检查不一致
+
+#### T5: docs/ 散落文档归档
+
+- **变更**: 10 个散落在 docs/ 根级别的评估文档归档到 docs/assessments/ 子目录
+- **移动文件**: ASSESSMENT_D01-D06、ASSESSMENT_E2E_D05、IMPROVEMENT_PLAN_V0.3.24、P2_P3_PLAN_v0.3.31、P2_REFACTOR_PLAN、test_plan_ui_e2e_playwright
+- **引用更新**: README.md、README-EN.md、README-JP.md、CHANGELOG.md、docs/PROJECT_STATUS.md、docs/ROADMAP_v0.3.32_v0.4.0.md 中的链接路径同步更新
+- **保留**: docs/ 根级别仅保留 PROJECT_STATUS.md、HARD_CONSTRAINTS.md、API.md、ROADMAP_v0.3.32_v0.4.0.md
+
+#### 验证
+
+- 全量回归测试: 4116 passed + 77 skipped + 0 failed
+- E2E 测试: 21 passed + 0 failed
+- ruff/mypy/black: 全通过
+- 版本一致性: 26+ 文件 0.3.32 全部一致
+
 ## [0.3.31] - 2026-07-14
 
 ### P2-P3 问题系统性修复 — SK-2 skip根因 + EXPECTED_TEST_COUNT自动化 + except Exception收窄
@@ -390,7 +428,7 @@ v0.3.27 CHANGELOG 中以下声明**不准确**，特此修正：
 
 ### D02 评估 P0 修复 — 版本号同步 + 工作区清理 + CI 校验扩展
 
-> DevSquad D02 评估（详见 `docs/ASSESSMENT_D02_MATURITY.md`）发现版本号局部不同步问题。本次修复 7 处版本号不一致 + 清理工作区残留文件 + 扩展 CI 版本一致性校验范围。
+> DevSquad D02 评估（详见 `docs/assessments/ASSESSMENT_D02_MATURITY.md`）发现版本号局部不同步问题。本次修复 7 处版本号不一致 + 清理工作区残留文件 + 扩展 CI 版本一致性校验范围。
 
 #### 版本号同步（7 处）
 
@@ -834,7 +872,7 @@ Batch 1 覆盖 1-2 个未类型化函数的模块，共 46 个模块：
 
 ### 成熟度修复 + God Class 拆分
 
-> DevSquad 7 维度成熟度评估（[ASSESSMENT_D01_MATURITY.md](docs/ASSESSMENT_D01_MATURITY.md)）18 项 P0+P1+P2 修复。
+> DevSquad 7 维度成熟度评估（[ASSESSMENT_D01_MATURITY.md](docs/assessments/ASSESSMENT_D01_MATURITY.md)）18 项 P0+P1+P2 修复。
 
 #### P0 立即修复（5 项）
 
@@ -936,7 +974,7 @@ Batch 1 覆盖 1-2 个未类型化函数的模块，共 46 个模块：
   - 3 Boundary Case：超长文本输入、快速页面切换、XSS payload 输入
   - 3 Performance Case：冷启动 <30s、页面切换 <5s、内容渲染 <15s
 - **Playwright fixtures**（`tests/e2e/conftest.py`）：streamlit_server（动态端口 + 健康检查 + Demo 模式 + onboarding marker）、playwright_browser（headless chromium）、page（每测试新 context）、context_with_download（accept_downloads）
-- **测试计划文档**（`docs/test_plan_ui_e2e_playwright.md`）：22 用例清单、fixtures 设计、selectors 速查表、风险缓解、实施记录
+- **测试计划文档**（`docs/assessments/test_plan_ui_e2e_playwright.md`）：22 用例清单、fixtures 设计、selectors 速查表、风险缓解、实施记录
 
 #### 修复
 

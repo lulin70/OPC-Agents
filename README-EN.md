@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.31 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.32 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,6 +31,10 @@ opc-agents                      # 2. Launch
 
 ---
 
+## 🆕 v0.3.32 Highlights
+
+- **🔧 v0.3.32 Project Tidy Optimization**: D06 assessment T1/T4 false-positive correction (async_executor shutdown already has join logic, live_log_panel has no data_manager import); llm_cache.py temperature boundary caching policy documentation; CI mypy/black version pinning aligned with pre-commit (mypy==1.11.2, black==24.8.0); 10 scattered assessment docs archived to docs/assessments/.
+
 ## 🆕 v0.3.31 Highlights
 
 - **🔧 v0.3.31 P2-P3 Systematic Issue Resolution**: SK-2 sidebar skip root cause fix (sidebar search box doesn't exist in source, switched to Deliverables search box); EXPECTED_TEST_COUNT hardcoded 4193 replaced with pytest --co dynamic calculation; except Exception silent swallow narrowed (9 cases: 4 E-type + 5 A/B-type, narrowed to specific exception types to expose programming errors).
@@ -41,7 +45,7 @@ opc-agents                      # 2. Launch
 
 ## 🆕 v0.3.29 Highlights
 
-> Full changes see [CHANGELOG.md](CHANGELOG.md), architecture design see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md), maturity assessment see [docs/ASSESSMENT_D02_MATURITY.md](docs/ASSESSMENT_D02_MATURITY.md).
+> Full changes see [CHANGELOG.md](CHANGELOG.md), architecture design see [docs/architecture/PARALLEL_SAGES_DESIGN.md](docs/architecture/PARALLEL_SAGES_DESIGN.md), maturity assessment see [docs/assessments/ASSESSMENT_D02_MATURITY.md](docs/assessments/ASSESSMENT_D02_MATURITY.md).
 
 - **⚡ Three Sages Parallel Voting Architecture**: Switched from serial pipeline (3×RTT) to parallel voting (1×RTT), 3x latency reduction. Inspired by EVA MAGI three-sage synchronous voting + minority report mechanism, key decision points protected by upfront consensus.
 - **🎯 Focus on 3 Core Skills**: Email / Finance / Report. Non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
@@ -192,7 +196,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.31
+pip install opc-agents==0.3.32
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography

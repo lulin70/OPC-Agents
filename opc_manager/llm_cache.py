@@ -13,7 +13,16 @@ logger = logging.getLogger(__name__)
 # Default TTL: 7 days (LLM models update infrequently)
 DEFAULT_CACHE_TTL = 7 * 24 * 3600
 
-# Maximum temperature for caching; higher variance responses are not cached
+# Maximum temperature for caching; higher variance responses are not cached.
+# Rationale: temperature >= 0.7 introduces significant output variance,
+# making cached responses likely stale or inappropriate for creative tasks.
+# Cached temperature range: [0.0, 0.7) — covers deterministic and low-variance
+# use cases (e.g., intent classification, structured extraction, JSON output).
+# Non-cached range: [0.7, +inf) — covers creative/reasoning tasks where
+# response diversity is desired (e.g., brainstorming, long-form writing).
+# Note: "reasoning mode" is not separately gated here; it is expected to be
+# reflected in the `temperature` parameter chosen by the caller. Callers
+# passing high temperature for reasoning tasks will naturally bypass cache.
 CACHE_MAX_TEMPERATURE = 0.7
 
 
@@ -44,7 +53,8 @@ class LLMCache:
         """Create cache table if not exists."""
         with self._lock:
             conn = self._conn
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS llm_cache (
                     cache_key TEXT PRIMARY KEY,
                     model TEXT NOT NULL,
@@ -59,7 +69,8 @@ class LLMCache:
                     last_hit_at REAL,
                     expires_at REAL NOT NULL
                 )
-            """)
+            """
+            )
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_llm_cache_expires ON llm_cache(expires_at)"
             )
@@ -129,7 +140,20 @@ class LLMCache:
         response: str,
         provider: str = "",
     ) -> None:
-        """Store LLM response in cache. Skip if temperature >= CACHE_MAX_TEMPERATURE (high variance)."""
+        """Store LLM response in cache.
+
+        Caching policy:
+        - Skip if ``temperature >= CACHE_MAX_TEMPERATURE`` (0.7). High-temperature
+          responses have significant variance; caching them would serve stale or
+          inappropriate content. This covers creative/reasoning tasks where
+          diversity is desired.
+        - Cache if ``temperature < CACHE_MAX_TEMPERATURE``. Low-temperature
+          responses are deterministic or low-variance (e.g., intent
+          classification, structured extraction, JSON output) and safe to reuse.
+
+        Note: "reasoning mode" is not separately gated; callers passing high
+        temperature for reasoning naturally bypass the cache via the rule above.
+        """
         if temperature >= CACHE_MAX_TEMPERATURE:
             logger.debug(
                 "[LLMCache] Skip caching: temperature=%.1f >= %.1f",

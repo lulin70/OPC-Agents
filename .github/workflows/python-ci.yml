@@ -48,12 +48,15 @@ jobs:
     - name: Type check with mypy (blocking — TD-065 resolved)
       # TD-065: 516 errors → 0 errors in v0.3.3 (2026-06-28)
       # Hard constraint: "CI mypy检查必须为阻塞状态"
+      # v0.3.32: Pin mypy==1.11.2 to align with .pre-commit-config.yaml (D06 T3)
       run: |
-        pip install mypy
+        pip install mypy==1.11.2
         mypy opc_manager/ --ignore-missing-imports --follow-imports=silent
 
     - name: Check formatting with Black
+      # v0.3.32: Pin black==24.8.0 to align with .pre-commit-config.yaml (D06 T3)
       run: |
+        pip install black==24.8.0
         black --check --target-version py310 opc_manager/ frontend/ tests/
 
     - name: Security scan with Bandit

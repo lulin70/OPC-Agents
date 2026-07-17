@@ -171,6 +171,7 @@ def _create_mock_llm_service():
     svc.call.side_effect = _mock_call
     return svc
 
+
 # ============================================================
 # Real Search Tests (DuckDuckGo)
 # ============================================================

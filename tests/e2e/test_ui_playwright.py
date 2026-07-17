@@ -172,9 +172,9 @@ class TestUJ01AppLaunchAndNavigation:
         _wait_for_streamlit_content(page)
 
         title = page.title()
-        assert "一人公司" in title or "OPC" in title or "Streamlit" in title, (
-            f"标题不匹配: {title}"
-        )
+        assert (
+            "一人公司" in title or "OPC" in title or "Streamlit" in title
+        ), f"标题不匹配: {title}"
 
         # 主容器渲染完成
         app_container = page.locator("[data-testid='stAppViewContainer']")
@@ -197,9 +197,9 @@ class TestUJ01AppLaunchAndNavigation:
 
         expected_zh = ["对话", "成果物", "Dashboard", "成长", "技能市场", "设置"]
         for label in expected_zh:
-            assert any(label in nav for nav in labels), (
-                f"导航选项 '{label}' 未找到，实际: {labels}"
-            )
+            assert any(
+                label in nav for nav in labels
+            ), f"导航选项 '{label}' 未找到，实际: {labels}"
 
     def test_TC_H03_all_pages_navigable(self, page):
         """TC-H03: 依次点击 6 个导航项，每个页面渲染无异常。
@@ -239,9 +239,9 @@ class TestUJ02DemoMode:
         assert banner.is_visible(), "Demo 横幅不可见"
 
         banner_text = banner.inner_text()
-        assert "演示模式" in banner_text or "Demo" in banner_text, (
-            f"横幅文本不匹配: {banner_text}"
-        )
+        assert (
+            "演示模式" in banner_text or "Demo" in banner_text
+        ), f"横幅文本不匹配: {banner_text}"
 
     def test_TC_H05_demo_info_panel_visible(self, page):
         """TC-H05: Demo 信息面板可见，显示功能状态表。
@@ -293,9 +293,9 @@ class TestUJ03ChatInput:
 
         # Demo 模式下 Chat 页面渲染 3 个 st.metric（chat_demo_monthly_income 等）
         metrics = page.locator("[data-testid='stMetric']")
-        assert metrics.count() >= 3, (
-            f"Demo 模式下 Chat 页面应渲染 ≥3 个 metric，实际: {metrics.count()}"
-        )
+        assert (
+            metrics.count() >= 3
+        ), f"Demo 模式下 Chat 页面应渲染 ≥3 个 metric，实际: {metrics.count()}"
 
         # 无异常
         exceptions = page.locator("[data-testid='stException']")
@@ -429,16 +429,16 @@ class TestUJ07LanguageSwitching:
 
         # 全页查找 selectbox（侧边栏内有 2 个：主题和语言）
         selectboxes = page.locator("[data-testid='stSelectbox']")
-        assert selectboxes.count() >= 2, (
-            f"selectbox 不足 2 个，实际: {selectboxes.count()}"
-        )
+        assert (
+            selectboxes.count() >= 2
+        ), f"selectbox 不足 2 个，实际: {selectboxes.count()}"
 
         # 第二个 selectbox 是语言选择器（Language 标签）
         lang_selector = selectboxes.nth(1)
         lang_label = lang_selector.locator("label").inner_text()
-        assert "Language" in lang_label or "语言" in lang_label, (
-            f"第二个 selectbox 不是语言选择器: {lang_label}"
-        )
+        assert (
+            "Language" in lang_label or "语言" in lang_label
+        ), f"第二个 selectbox 不是语言选择器: {lang_label}"
 
         # 记录切换前的导航文本（中文）
         labels_before = _get_nav_labels(page)
@@ -456,9 +456,9 @@ class TestUJ07LanguageSwitching:
 
             # 验证导航文本变为英文
             labels_after = _get_nav_labels(page)
-            assert any("Chat" in nav for nav in labels_after), (
-                f"切换到英文后导航文本未变化: {labels_after}"
-            )
+            assert any(
+                "Chat" in nav for nav in labels_after
+            ), f"切换到英文后导航文本未变化: {labels_after}"
 
             # 切回中文，避免影响后续测试
             try:
