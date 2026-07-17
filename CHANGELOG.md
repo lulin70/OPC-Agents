@@ -20,7 +20,7 @@ All notable changes to OPC-Agents will be documented in this file.
 
 - **问题**: `python-ci.yml` 中 `EXPECTED_TEST_COUNT = 4193` 硬编码，每次新增/删除测试需手动同步，容易遗忘
 - **修复**: 用 `pytest --co -q` 动态收集测试数量替代硬编码，README 检查从"硬编码匹配"改为"动态值匹配"
-- **验证**: `pytest --co -q` 输出 4393 tests collected，CI 脚本正确解析
+- **验证**: `pytest --co -q` 输出 4193 tests collected，CI 脚本正确解析
 
 #### P2-3: E类except Exception修复（4处静默吞异常）
 

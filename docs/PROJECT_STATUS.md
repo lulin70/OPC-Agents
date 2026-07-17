@@ -200,7 +200,11 @@
 | 项目 README（英） | [README-EN.md](../README-EN.md) | 英文用户入口 |
 | 项目 README（日） | [README-JP.md](../README-JP.md) | 日文用户入口 |
 | 变更日志 | [CHANGELOG.md](../CHANGELOG.md) | 版本变更记录 |
-| 成熟度评估 | [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) | D02 7 维度评估（82 分 B+），替代 D01/v0.3.3 评估 |
+| 成熟度评估 D02 | [ASSESSMENT_D02_MATURITY.md](ASSESSMENT_D02_MATURITY.md) | D02 7 维度评估（82 分 B+） |
+| 成熟度评估 D04 | [ASSESSMENT_D04_MATURITY.md](ASSESSMENT_D04_MATURITY.md) | D04 7 维度评估（87.3 分 B+） |
+| 项目整理评估 D06 | [ASSESSMENT_D06_TIDY_v0.3.31.md](ASSESSMENT_D06_TIDY_v0.3.31.md) | D06 v0.3.31 项目整理评估（88 分 B+，接近 A-） |
+| E2E 评估 D05 | [ASSESSMENT_E2E_D05.md](ASSESSMENT_E2E_D05.md) | D05 E2E 真实用户模拟测试（37/37 用户旅程） |
+| P2-P3 修复方案 | [P2_P3_PLAN_v0.3.31.md](P2_P3_PLAN_v0.3.31.md) | v0.3.31 P2-P3 问题系统性修复方案 + E2E 验证 |
 | 架构设计 | [architecture/PARALLEL_SAGES_DESIGN.md](architecture/PARALLEL_SAGES_DESIGN.md) | 三贤者并行投票架构 |
 | API 文档 | [API.md](API.md) | REST API 接口 |
 | 用户试用指南 | [guides/USER_TRIAL_GUIDE.md](guides/USER_TRIAL_GUIDE.md) | 3 分钟配置 |
