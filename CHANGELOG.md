@@ -4,6 +4,57 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.33] - 2026-07-17
+
+### 测试质量提升 — 覆盖率提升 + Mock 替换计划
+
+> T6 覆盖率提升 + T7 Mock 替换推进计划制定。T6/T7 均为测试相关工作，PATCH 升级。
+
+#### T6.1: 覆盖率现状分析
+
+- **整体覆盖率**: 82%（14431 语句，2575 未覆盖）
+- **email/finance 模块**: 已达 100%（原 ROADMAP 中 17%/14.5% 为过期数据，已修正）
+- **低覆盖模块识别**: tool_handlers_fs.py (40%)、tool_handlers_smtp.py (54%)
+
+#### T6.2: 低覆盖模块测试补充
+
+- **新增测试文件**:
+  - `tests/unit/test_tool_handlers_fs_coverage.py` — 26 个测试
+  - `tests/unit/test_tool_handlers_smtp_coverage.py` — 18 个测试
+- **覆盖率提升**:
+  - tool_handlers_fs.py: 40% → 100%
+  - tool_handlers_smtp.py: 54% → 100%
+- **测试原则**: 使用真实文件系统操作（tmp_path fixture），仅 Mock 外部 SMTP 服务器
+
+#### T7: Mock 替换推进计划
+
+- **现状评估**: 893 处非 streamlit Mock（原 ROADMAP 中 715 为过期数据，已修正）
+- **分批策略**:
+  - v0.3.33: T6 覆盖率提升完成（48 个新测试）；T7 第 1 批推迟到 v0.3.34（266 处 Mock 替换工作量大，保证发布质量）
+  - v0.3.34: T7 第 1 批 Top 5 文件 Mock 替换（~266 处）+ 第 2 批 Top 6-10 文件（~181 处）
+  - v0.3.35: T7 第 3 批 剩余 49 文件 Mock 替换（~458 处）
+- **ROADMAP**: [ROADMAP_v0.3.33_v0.3.35.md](docs/ROADMAP_v0.3.33_v0.3.35.md)
+
+#### 过期数据修正
+
+- 原 ROADMAP v0.3.32_v0.4.0 中 T6/T7 数据已过期：
+  - email 覆盖率: 17% → 实际 100%
+  - finance 覆盖率: 14.5% → 实际 100%
+  - Mock 数量: 715 → 实际 893
+- **教训**: 再次验证"基于过期数据的任务需先校验前提"
+
+#### 验证
+
+- 全量回归测试: 4164 passed + 77 skipped + 0 failed（新增 48 测试）
+- E2E 测试: 197 passed + 3 failed
+  - `test_start_sh_contains_version`: 已修复（scripts/start.sh 版本号遗漏 v0.3.29→v0.3.33）
+  - `test_finance_expense_recording` / `test_finance_income_recording`: SQLite "database is locked"（pre-existing 测试隔离问题，v0.3.32 配置相同；单独运行通过，test_e2e_real.py 内部顺序运行时锁冲突）
+- ruff: 0 error ✅
+- black: 290 files unchanged ✅
+- radon cc: 无 D+ 函数 ✅
+- mypy: 15 个 pre-existing 错误（v0.3.32 commit a312b4c 就存在，非本次引入；涉及 requests stubs / Never 类型 / undo_manager 返回类型，列为后续技术债）
+- 版本一致性: 9/9 passed
+
 ## [0.3.32] - 2026-07-17
 
 ### 项目整理优化 — D06 评估误判修正 + CI 版本锁定 + docs 归档

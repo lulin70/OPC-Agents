@@ -1,5 +1,5 @@
 """
-Settings Manager — v0.3.32 统一设置中心
+Settings Manager — v0.3.33 统一设置中心
 
 提供运行时可修改的用户设置，支持持久化到JSON文件。
 所有敏感信息通过SecureKeyStore加密存储。
@@ -159,7 +159,7 @@ class SettingsManager(
     SettingsPersistenceMixin,
     SettingsOperationsMixin,
 ):
-    """Unified settings manager for OPC-Agents v0.3.32
+    """Unified settings manager for OPC-Agents v0.3.33
 
     Thread-safe singleton that manages all user-configurable settings.
     Supports runtime modification with JSON persistence and SecureKeyStore

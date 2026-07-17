@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     🚀 OPC-Agents v0.3.29 Launcher       ║${NC}"
+echo -e "${BLUE}║     🚀 OPC-Agents v0.3.33 Launcher       ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 

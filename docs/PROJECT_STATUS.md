@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-17（v0.3.32 项目整理优化：D06评估T1/T4误判修正+llm_cache注释完善+CI版本锁定+docs归档） | **版本**: v0.3.32 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-17（v0.3.33 测试质量提升：覆盖率分析+tool_handlers测试补充+T7 Mock替换计划） | **版本**: v0.3.33 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.32`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.33`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
