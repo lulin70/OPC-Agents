@@ -4,6 +4,75 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.35] - 2026-07-18
+
+### 测试质量提升 — T7 第 1 批 Mock 替换（诚实校准 + 精准替换）
+
+> v0.3.34 推迟的 T7 第 1 批 Mock 替换。原 ROADMAP 描述"5 文件 266 处 Mock 替换"，实施前深度调查发现 2 文件已有 Fake 类重构，实际可替换仅 36 处（-86%）。遵循 project_memory 教训"基于过期描述的任务需先校验前提"，创建 ROADMAP_v0.3.35.md 第 0 节"前提校准"诚实记录差异。无新功能，PATCH 升级。
+
+#### 前提校准（原 ROADMAP vs 实际）
+
+| 维度 | 原 ROADMAP | 校准后预期 | 实际执行 |
+|------|-----------|-----------|---------|
+| 可替换 Mock 数量 | 266 处 | ~27-52 处 | **36 处** |
+| 测试通过 | — | — | 222 passed + 0 failed |
+
+#### T7.2: test_simple_llm_service.py — 8 处替换 ✅
+
+- **替换内容**: 7 处 `@patch("opc_manager.simple_llm_service.requests.post")` → `@responses.activate` + `responses.add()`；1 处 MagicMock settings → FakeSettings 类
+- **新增依赖**: `responses>=0.25.0` 加入 requirements-dev.txt
+- **新增工具类**: `FakeSettings` 轻量级 settings 替身，实现 `get_llm_config()` 和 `get_api_key()` 返回真实 dict
+- **断言适配**: `mock_post.call_args.kwargs["headers"]` → `responses.calls[0].request.headers.get("Authorization", "")`（断言内容不变）
+- **保留**: 7 处 `side_effect=ImportError` 分支测试（任务是测试 ImportError 行为，Mock 是必要的）
+- **验证**: 28 passed + 0 failed
+
+#### T7.3: test_email_skill_coverage.py — 18 处替换 ✅
+
+- **替换内容**: 18 处 `@patch("opc_manager.email_skill._get_smtp_config")` → 真实 `save_smtp_config(smtp_config)` + `smtp_config_path` fixture
+- **替换模式**: 删除装饰器 → 删除 mock_config 参数 → 删除 return_value 赋值 → 添加 fixture → 调用 save_smtp_config
+- **fixture 设计**: `smtp_config_path` monkeypatch `email_skill.__file__` 路径，让真实 `_get_smtp_config`/`save_smtp_config` 操作 `tmp_path/data/email_config.json`
+- **验证**: 61 passed + 0 failed
+
+#### T7.4: test_timeline_view.py — 4 处替换 ✅
+
+- **替换内容**: 1 处 AuditLog + 2 处 get_progress_emitter + 1 处 get_undo_manager（return_value=None 保留）
+- **关键技术**: unittest.TestCase 无 monkeypatch fixture，采用"直接模块属性赋值 + try/finally 清理"模式
+- **发现**: `get_undo_manager` 和 `get_progress_emitter` 函数在源码中不存在，原测试用 `@patch(..., create=True)` 创建
+- **替代方案**: 直接 `opc_manager.xxx.attribute = lambda: fake_instance` 创建模块属性，try/finally 中用 `hasattr` 检查后 `del` 清理
+- **验证**: 59 passed + 0 failed
+
+#### T7.5: test_live_log_panel.py — 6 处替换 ✅
+
+- **替换内容**: 2 处 AuditLog patch + 2 处 ProgressEmitter patch + 2 处 Path patch
+- **复用已有 Fake 类**: FakeAuditLog 和 FakeProgressEmitter 已存在于测试文件中
+- **替换模式**:
+  - AuditLog/ProgressEmitter: `monkeypatch.setattr("opc_manager.audit_log.AuditLog", lambda *a, **kw: fake_audit)`
+  - Path: `tmp_path` fixture + `with patch("frontend.components.live_log_panel._WORKSPACE_DIR", str(tmp_path))`
+- **验证**: 74 passed + 0 failed
+
+#### T7.1: test_mcp_transport.py — 评估后跳过 ⏸
+
+- **跳过理由**: stdin/stdout patch 替换为 io.StringIO 价值低（Mock 数量不减 + 需修改断言模式 + 已有 MagicMock 是合理 mock）
+- **保留必要 Mock**: 16 `@patch.dict(os.environ)` + 3 uvicorn + 2 StdioTransport + 1 SSE_AVAILABLE + 3 start_sse_server + 7 sys.stdin/stdout
+- **遵循原则**: "不强行替换必要 Mock" — streamlit/外部服务/分支控制/环境变量/测试隔离 Mock 应保留，避免为凑数破坏测试隔离
+
+#### 验证
+
+- **mypy**: Success, no issues found in 117 source files ✅
+- **全量回归测试**: 4164 passed + 77 skipped + 0 failed ✅
+- **E2E 测试**: test_e2e_real.py 26 passed + 2 failed（失败为 Ollama LLM 服务未启动，环境依赖非回归）✅
+- **ruff**: All checks passed ✅
+- **black**: 290 files unchanged（2 scripts/ 文件 pre-existing，与 v0.3.35 无关）✅
+- **radon cc**: 无 D+ 函数，全部 C 级（≤19）✅
+- **版本一致性**: 17 个文件同步到 0.3.35，test_version.py 9 passed ✅
+- **7-role 共识**: 7/7 通过 ✅
+- **ROADMAP**: [ROADMAP_v0.3.35.md](docs/ROADMAP_v0.3.35.md)
+
+#### 推迟到 v0.3.36+
+
+- T7 第 2 批（Top 6-10 文件，~181 处）
+- T7 第 3 批（剩余 49 文件，~458 处）
+
 ## [0.3.34] - 2026-07-17
 
 ### 已知限制修复 — mypy 类型修复 + SQLite 锁根治

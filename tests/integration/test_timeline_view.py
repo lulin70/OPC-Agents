@@ -31,6 +31,9 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import opc_manager.undo_manager
+import opc_manager.audit_log
+import opc_manager.progress_emitter
 from opc_manager.undo_manager import OperationType, UndoManager
 
 from frontend.components.timeline_view import (
@@ -436,8 +439,7 @@ class TestBuildFromUndoManager(unittest.TestCase):
         events = _build_from_undo_manager("test_session")
         self.assertEqual(events, [])
 
-    @patch("opc_manager.undo_manager.get_undo_manager", create=True)
-    def test_undone_event_created(self, mock_get):
+    def test_undone_event_created(self):
         """TC-TL-022: 已撤销操作生成undo_action事件"""
         um = FakeUndoManager()
         um.push(
@@ -450,9 +452,14 @@ class TestBuildFromUndoManager(unittest.TestCase):
         # 将真实记录标记为 undone（模拟 um.undo() 后的状态，无副作用）
         records = um.get_session_records("test_session")
         records[0].status = "undone"
-        mock_get.return_value = um
 
-        events = _build_from_undo_manager("test_session")
+        # Inject FakeUndoManager via module attribute (replaces @patch with MagicMock)
+        opc_manager.undo_manager.get_undo_manager = lambda: um
+        try:
+            events = _build_from_undo_manager("test_session")
+        finally:
+            if hasattr(opc_manager.undo_manager, "get_undo_manager"):
+                del opc_manager.undo_manager.get_undo_manager
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "undo_action")
@@ -500,8 +507,7 @@ class TestGetUndoDescription(unittest.TestCase):
 class TestBuildFromAuditLog(unittest.TestCase):
     """_build_from_audit_log()单元测试"""
 
-    @patch("opc_manager.audit_log.AuditLog")
-    def test_email_send_mapping(self, mock_audit_class):
+    def test_email_send_mapping(self):
         """TC-TL-026: email_send操作映射到email_sent事件"""
         entry = {
             "operation_type": "email_send",
@@ -514,8 +520,16 @@ class TestBuildFromAuditLog(unittest.TestCase):
             "skill_id": "email_skill",
         }
 
-        mock_audit_class.return_value = FakeAuditLog(entries=[entry])
-        events = _build_from_audit_log()
+        # Inject FakeAuditLog via module attribute (replaces @patch with MagicMock).
+        # timeline_data._build_from_audit_log does `from opc_manager.audit_log
+        # import AuditLog; audit = AuditLog()`, so replacing the class with a
+        # lambda returning a FakeAuditLog instance preserves test intent.
+        _orig_audit_log = opc_manager.audit_log.AuditLog
+        opc_manager.audit_log.AuditLog = lambda *a, **kw: FakeAuditLog(entries=[entry])
+        try:
+            events = _build_from_audit_log()
+        finally:
+            opc_manager.audit_log.AuditLog = _orig_audit_log
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "email_sent")
@@ -532,8 +546,7 @@ class TestBuildFromAuditLog(unittest.TestCase):
 class TestBuildFromProgressEmitter(unittest.TestCase):
     """_build_from_progress_emitter()测试"""
 
-    @patch("opc_manager.progress_emitter.get_progress_emitter", create=True)
-    def test_confirm_requested_event(self, mock_get_emitter):
+    def test_confirm_requested_event(self):
         """TC-TL-028: confirm_requested生成confirmation_required事件"""
         history = [
             {
@@ -544,16 +557,24 @@ class TestBuildFromProgressEmitter(unittest.TestCase):
             }
         ]
 
-        mock_get_emitter.return_value = FakeProgressEmitter(history=history)
-        events = _build_from_progress_emitter("test_session")
+        # Inject FakeProgressEmitter via module attribute (replaces @patch with
+        # MagicMock). get_progress_emitter does not exist in the source module,
+        # so we create it on demand and clean up in finally.
+        opc_manager.progress_emitter.get_progress_emitter = lambda: FakeProgressEmitter(
+            history=history
+        )
+        try:
+            events = _build_from_progress_emitter("test_session")
+        finally:
+            if hasattr(opc_manager.progress_emitter, "get_progress_emitter"):
+                del opc_manager.progress_emitter.get_progress_emitter
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "confirmation_required")
         self.assertEqual(events[0].status, "pending")
         self.assertEqual(events[0].icon, "")
 
-    @patch("opc_manager.progress_emitter.get_progress_emitter", create=True)
-    def test_error_event(self, mock_get_emitter):
+    def test_error_event(self):
         """TC-TL-029: error事件生成error_occurred"""
         history = [
             {
@@ -564,8 +585,16 @@ class TestBuildFromProgressEmitter(unittest.TestCase):
             }
         ]
 
-        mock_get_emitter.return_value = FakeProgressEmitter(history=history)
-        events = _build_from_progress_emitter("test_session")
+        # Inject FakeProgressEmitter via module attribute (replaces @patch with
+        # MagicMock). Same pattern as test_confirm_requested_event.
+        opc_manager.progress_emitter.get_progress_emitter = lambda: FakeProgressEmitter(
+            history=history
+        )
+        try:
+            events = _build_from_progress_emitter("test_session")
+        finally:
+            if hasattr(opc_manager.progress_emitter, "get_progress_emitter"):
+                del opc_manager.progress_emitter.get_progress_emitter
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].event_type, "error_occurred")

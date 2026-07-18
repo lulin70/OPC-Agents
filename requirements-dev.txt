@@ -1,5 +1,5 @@
 # OPC-Agents 开发依赖
-# 版本: 0.3.34
+# 版本: 0.3.35
 
 -r requirements.txt
 
@@ -12,6 +12,7 @@ psutil>=7.2.2  # test_memory_optimization.py memory profiling (P1 fix: was missi
 httpx>=0.27.0  # TestClient for skill_marketplace_api.py FastAPI endpoint testing
 fastapi>=0.100.0  # Required for skill_marketplace_api.py tests (CI installs requirements-dev.txt, not marketplace extras)
 sse-starlette>=1.6.0  # Required for mcp_transport.py SSE endpoint tests
+responses>=0.25.0  # v0.3.35 T7.2: HTTP mock library for test_simple_llm_service.py (replaces @patch("requests.post"))
 
 # UI E2E (真实浏览器自动化，满足 HARD_CONSTRAINTS Q1/Q2)
 playwright>=1.61.0

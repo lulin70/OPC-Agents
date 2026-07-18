@@ -5,8 +5,11 @@ Covers: discover_llm_config, circuit breaker, retry logic, timeout,
 All external calls (requests, settings, semaphore) are mocked.
 """
 
+import json
 import unittest
 from unittest.mock import patch, MagicMock
+
+import responses
 
 from opc_manager.simple_llm_service import (
     SimpleLLMService,
@@ -38,6 +41,25 @@ def _clear_llm_env(monkeypatch):
         monkeypatch.delenv(var, raising=False)
 
 
+class FakeSettings:
+    """Lightweight stand-in for SettingsManager in unit tests.
+
+    Returns deterministic config dicts without touching the database
+    or environment.  Replaces MagicMock-based settings stubs so that
+    attribute access behaves like a real object.
+    """
+
+    def __init__(self, llm_config=None, api_keys=None):
+        self._llm_config = llm_config or {}
+        self._api_keys = api_keys or {}
+
+    def get_llm_config(self):
+        return dict(self._llm_config)
+
+    def get_api_key(self, name):
+        return self._api_keys.get(name)
+
+
 # ---------------------------------------------------------------------------
 # discover_llm_config
 # ---------------------------------------------------------------------------
@@ -47,14 +69,16 @@ class TestDiscoverLLMConfig:
     def test_returns_moka_config_from_settings(self, monkeypatch):
         """When SettingsManager provides an api_key, it should be used."""
         _clear_llm_env(monkeypatch)
-        with patch("opc_manager.settings.get_settings") as mock_get_settings:
-            mock_settings_obj = MagicMock()
-            mock_settings_obj.get_llm_config.return_value = {
-                "api_key": "sk-moka-test",
-                "base_url": "https://api.moka-ai.com/v1",
-                "model": "moka/claude-sonnet-4-6",
-            }
-            mock_get_settings.return_value = mock_settings_obj
+        with patch(
+            "opc_manager.settings.get_settings",
+            return_value=FakeSettings(
+                llm_config={
+                    "api_key": "sk-moka-test",
+                    "base_url": "https://api.moka-ai.com/v1",
+                    "model": "moka/claude-sonnet-4-6",
+                }
+            ),
+        ):
             config = discover_llm_config()
         assert config["api_key"] == "sk-moka-test"
         assert config["base_url"] == "https://api.moka-ai.com/v1"
@@ -177,45 +201,51 @@ class TestCallOpenAICompat(unittest.TestCase):
         self.svc._model = "test-model"
         self.svc._is_ollama = False
 
-    @patch("opc_manager.simple_llm_service.requests.post")
-    def test_successful_call(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            "choices": [{"message": {"content": "Hello world"}}]
-        }
-        mock_resp.raise_for_status = MagicMock()
-        mock_post.return_value = mock_resp
-
+    @responses.activate
+    def test_successful_call(self):
+        responses.add(
+            responses.POST,
+            "https://api.test/v1/chat/completions",
+            json={"choices": [{"message": {"content": "Hello world"}}]},
+            status=200,
+        )
         result = self.svc._call_openai_compat("hi", "sys", 100, 30)
         self.assertEqual(result, "Hello world")
 
-    @patch("opc_manager.simple_llm_service.requests.post")
-    def test_returns_none_on_empty_content(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"choices": [{"message": {"content": ""}}]}
-        mock_resp.raise_for_status = MagicMock()
-        mock_post.return_value = mock_resp
-
+    @responses.activate
+    def test_returns_none_on_empty_content(self):
+        responses.add(
+            responses.POST,
+            "https://api.test/v1/chat/completions",
+            json={"choices": [{"message": {"content": ""}}]},
+            status=200,
+        )
         result = self.svc._call_openai_compat("hi", None, 100, 30)
         self.assertIsNone(result)
 
-    @patch("opc_manager.simple_llm_service.requests.post")
-    def test_raises_on_http_error(self, mock_post):
-        mock_post.side_effect = Exception("Connection refused")
+    @responses.activate
+    def test_raises_on_http_error(self):
+        responses.add(
+            responses.POST,
+            "https://api.test/v1/chat/completions",
+            body=Exception("Connection refused"),
+        )
         with self.assertRaises(Exception):
             self.svc._call_openai_compat("hi", None, 100, 30)
 
-    @patch("opc_manager.simple_llm_service.requests.post")
-    def test_sends_correct_headers(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"choices": [{"message": {"content": "ok"}}]}
-        mock_resp.raise_for_status = MagicMock()
-        mock_post.return_value = mock_resp
-
+    @responses.activate
+    def test_sends_correct_headers(self):
+        responses.add(
+            responses.POST,
+            "https://api.test/v1/chat/completions",
+            json={"choices": [{"message": {"content": "ok"}}]},
+            status=200,
+        )
         self.svc._call_openai_compat("hi", "sys", 100, 30)
-        call_kwargs = mock_post.call_args
-        headers = call_kwargs.kwargs.get("headers") or call_kwargs[1].get("headers", {})
-        self.assertIn("Bearer", headers.get("Authorization", ""))
+        self.assertIn(
+            "Bearer",
+            responses.calls[0].request.headers.get("Authorization", ""),
+        )
 
 
 class TestCallOllama(unittest.TestCase):
@@ -226,36 +256,38 @@ class TestCallOllama(unittest.TestCase):
         self.svc._model = "llama3"
         self.svc._is_ollama = True
 
-    @patch("opc_manager.simple_llm_service.requests.post")
-    def test_successful_ollama_call(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"response": "Ollama reply"}
-        mock_resp.raise_for_status = MagicMock()
-        mock_post.return_value = mock_resp
-
+    @responses.activate
+    def test_successful_ollama_call(self):
+        responses.add(
+            responses.POST,
+            "http://localhost:11434/api/generate",
+            json={"response": "Ollama reply"},
+            status=200,
+        )
         result = self.svc._call_ollama("hi", "sys", 100, 30)
         self.assertEqual(result, "Ollama reply")
 
-    @patch("opc_manager.simple_llm_service.requests.post")
-    def test_ollama_returns_none_on_empty(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"response": ""}
-        mock_resp.raise_for_status = MagicMock()
-        mock_post.return_value = mock_resp
-
+    @responses.activate
+    def test_ollama_returns_none_on_empty(self):
+        responses.add(
+            responses.POST,
+            "http://localhost:11434/api/generate",
+            json={"response": ""},
+            status=200,
+        )
         result = self.svc._call_ollama("hi", None, 100, 30)
         self.assertIsNone(result)
 
-    @patch("opc_manager.simple_llm_service.requests.post")
-    def test_ollama_includes_system_prompt_in_payload(self, mock_post):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"response": "ok"}
-        mock_resp.raise_for_status = MagicMock()
-        mock_post.return_value = mock_resp
-
+    @responses.activate
+    def test_ollama_includes_system_prompt_in_payload(self):
+        responses.add(
+            responses.POST,
+            "http://localhost:11434/api/generate",
+            json={"response": "ok"},
+            status=200,
+        )
         self.svc._call_ollama("hi", "system instruction", 100, 30)
-        call_kwargs = mock_post.call_args
-        payload = call_kwargs.kwargs.get("json") or call_kwargs[1].get("json", {})
+        payload = json.loads(responses.calls[0].request.body)
         self.assertEqual(payload["system"], "system instruction")
 
 

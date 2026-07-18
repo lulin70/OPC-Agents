@@ -247,9 +247,10 @@ class TestSanitization:
 class TestCollectAppLogs:
     """Test suite for application log collection."""
 
-    def test_nonexistent_log_file_returns_empty(self):
-        with patch("frontend.components.live_log_panel.Path") as mock_path:
-            mock_path.return_value.exists.return_value = False
+    def test_nonexistent_log_file_returns_empty(self, tmp_path):
+        # Use real empty tmp_path as _WORKSPACE_DIR so Path(...).exists() returns
+        # False naturally without mocking the Path class itself.
+        with patch("frontend.components.live_log_panel._WORKSPACE_DIR", str(tmp_path)):
             logs = collect_app_logs()
             assert logs == []
 
@@ -299,9 +300,10 @@ class TestCollectEngineLogs:
         assert any(line.source == "engine" for line in logs)
         assert any("TaskEngineV3" in line.message for line in logs)
 
-    def test_nonexistent_engine_logs(self):
-        with patch("frontend.components.live_log_panel.Path") as mock_path:
-            mock_path.return_value.exists.return_value = False
+    def test_nonexistent_engine_logs(self, tmp_path):
+        # Use real empty tmp_path as _WORKSPACE_DIR so Path(...).exists() returns
+        # False naturally without mocking the Path class itself.
+        with patch("frontend.components.live_log_panel._WORKSPACE_DIR", str(tmp_path)):
             logs = collect_engine_logs()
             assert logs == []
 
@@ -309,8 +311,9 @@ class TestCollectEngineLogs:
 class TestCollectAuditLogs:
     """Test suite for audit log collection."""
 
-    @patch("opc_manager.audit_log.AuditLog")
-    def test_successful_audit_collection(self, MockAuditLog):
+    def test_successful_audit_collection(self, monkeypatch):
+        # Replace AuditLog singleton with FakeAuditLog carrying real dict records,
+        # avoiding MagicMock as return_value anti-pattern.
         fake_audit = FakeAuditLog(
             records=[
                 {
@@ -325,7 +328,9 @@ class TestCollectAuditLogs:
                 }
             ]
         )
-        MockAuditLog.return_value = fake_audit
+        monkeypatch.setattr(
+            "opc_manager.audit_log.AuditLog", lambda *a, **kw: fake_audit
+        )
 
         logs = collect_audit_logs()
         assert len(logs) == 1
@@ -333,8 +338,9 @@ class TestCollectAuditLogs:
         assert logs[0].level == "INFO"
         assert "task_execute" in logs[0].message
 
-    @patch("opc_manager.audit_log.AuditLog")
-    def test_failed_operation_shows_error_level(self, MockAuditLog):
+    def test_failed_operation_shows_error_level(self, monkeypatch):
+        # Replace AuditLog singleton with FakeAuditLog carrying a failed record,
+        # avoiding MagicMock as return_value anti-pattern.
         fake_audit = FakeAuditLog(
             records=[
                 {
@@ -350,7 +356,9 @@ class TestCollectAuditLogs:
                 }
             ]
         )
-        MockAuditLog.return_value = fake_audit
+        monkeypatch.setattr(
+            "opc_manager.audit_log.AuditLog", lambda *a, **kw: fake_audit
+        )
 
         logs = collect_audit_logs()
         assert logs[0].level == "ERROR"
@@ -365,8 +373,9 @@ class TestCollectAuditLogs:
 class TestCollectProgressLogs:
     """Test suite for progress event collection."""
 
-    @patch("opc_manager.progress_emitter.ProgressEmitter")
-    def test_progress_event_conversion(self, MockEmitter):
+    def test_progress_event_conversion(self, monkeypatch):
+        # Replace ProgressEmitter singleton with FakeProgressEmitter carrying
+        # real dict history, avoiding MagicMock as return_value anti-pattern.
         fake_emitter = FakeProgressEmitter(
             history={
                 "test_session_12345": [
@@ -387,7 +396,10 @@ class TestCollectProgressLogs:
                 ]
             }
         )
-        MockEmitter.return_value = fake_emitter
+        monkeypatch.setattr(
+            "opc_manager.progress_emitter.ProgressEmitter",
+            lambda *a, **kw: fake_emitter,
+        )
 
         logs = collect_progress_logs(session_id="test_session_12345")
         assert len(logs) == 2
@@ -396,8 +408,9 @@ class TestCollectProgressLogs:
         assert logs[0].extra["progress_pct"] == 10
         assert "[STEP_START] (10%)" in logs[0].message
 
-    @patch("opc_manager.progress_emitter.ProgressEmitter")
-    def test_error_event_mapped_to_error_level(self, MockEmitter):
+    def test_error_event_mapped_to_error_level(self, monkeypatch):
+        # Replace ProgressEmitter singleton with FakeProgressEmitter carrying
+        # an error event, avoiding MagicMock as return_value anti-pattern.
         fake_emitter = FakeProgressEmitter(
             history={
                 "sess": [
@@ -410,7 +423,10 @@ class TestCollectProgressLogs:
                 ]
             }
         )
-        MockEmitter.return_value = fake_emitter
+        monkeypatch.setattr(
+            "opc_manager.progress_emitter.ProgressEmitter",
+            lambda *a, **kw: fake_emitter,
+        )
 
         logs = collect_progress_logs(session_id="sess")
         assert logs[0].level == "ERROR"

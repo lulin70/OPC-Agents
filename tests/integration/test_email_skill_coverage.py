@@ -14,11 +14,17 @@
 - 自然语言入口 (execute_goal) 各分支
 - 撤销发送 (undo_send_email)
 
-外部依赖全部 mock：
-- smtplib.SMTP_SSL / smtplib.SMTP → mock server
-- time.sleep → 跳过重试等待
-- CRM get_customer → mock 返回
-- 数据库 → 临时目录 (OPC_DATA_DIR=tmp_path)
+外部依赖策略（T7.3 重构后）：
+- SMTP 配置：使用 smtp_config_path fixture 重定向 email_skill.__file__ 到 tmp_path，
+  通过 save_smtp_config 写真实文件 + _get_smtp_config 真实读取，不再 mock _get_smtp_config。
+- 数据库 → 临时目录 (OPC_DATA_DIR=tmp_path)。
+
+保留 Mock 清单（必要保留，不可替换为真实调用）：
+- smtplib.SMTP_SSL / smtplib.SMTP — 无真实 SMTP 服务器，必须 mock 网络层
+- crm_skill.get_customer — 避免 DB 副作用与跨模块耦合
+- _count_today_sends / _check_rate_limit — 测试隔离（构造特定频控状态）
+- time.sleep — 跳过重试等待，加速测试
+- MAX_RETRIES — 配置覆盖（测试零重试兜底分支）
 """
 
 import asyncio
@@ -106,7 +112,7 @@ def temp_db(tmp_path, monkeypatch):
 
 @pytest.fixture
 def smtp_config():
-    """标准 SMTP 配置（用于 mock _get_smtp_config 返回值）。"""
+    """标准 SMTP 配置字典，作为 save_smtp_config() 的入参写入真实文件。"""
     return {
         "host": "smtp.test.com",
         "port": 465,
@@ -323,18 +329,19 @@ class TestSendEmail:
         assert result["success"] is False
         assert "大小限制" in result["error"]
 
-    @patch("opc_manager.email_skill._get_smtp_config", return_value=None)
-    def test_send_no_smtp_config(self, _mock, temp_db):
+    def test_send_no_smtp_config(self, temp_db, smtp_config_path):
         dm.init_db()
+        # No config file written → _get_smtp_config() returns None naturally
         result = send_email("user@test.com", "subject", "body")
         assert result["success"] is False
         assert "未配置" in result["error"]
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_success_ssl(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_send_success_ssl(
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
+    ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
 
@@ -351,12 +358,11 @@ class TestSendEmail:
         assert rows[0]["to_addr"] == "user@test.com"
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_send_success_with_cc(
-        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
 
@@ -371,14 +377,13 @@ class TestSendEmail:
         assert "cc2@test.com" in recipients
 
     @patch("opc_manager.email_skill.smtplib.SMTP")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_send_success_non_ssl_starttls(
-        self, mock_config, mock_smtp, temp_db, smtp_config
+        self, mock_smtp, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
         config = dict(smtp_config)
         config["ssl"] = False
-        mock_config.return_value = config
+        save_smtp_config(config)
         server = _make_mock_smtp()
         server.starttls.return_value = None
         mock_smtp.return_value = server
@@ -388,14 +393,13 @@ class TestSendEmail:
         server.starttls.assert_called_once()
 
     @patch("opc_manager.email_skill.smtplib.SMTP")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_send_starttls_not_supported(
-        self, mock_config, mock_smtp, temp_db, smtp_config
+        self, mock_smtp, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
         config = dict(smtp_config)
         config["ssl"] = False
-        mock_config.return_value = config
+        save_smtp_config(config)
         server = _make_mock_smtp()
         server.starttls.side_effect = smtplib.SMTPNotSupportedError("no starttls")
         mock_smtp.return_value = server
@@ -407,12 +411,11 @@ class TestSendEmail:
 
     @patch("opc_manager.email_skill.time.sleep")
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_send_smtp_failure_retries(
-        self, mock_config, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config
+        self, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.side_effect = smtplib.SMTPException("connection refused")
 
         result = send_email("user@test.com", "主题", "正文")
@@ -426,12 +429,11 @@ class TestSendEmail:
 
     @patch("opc_manager.email_skill.time.sleep")
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_send_success_after_retry(
-        self, mock_config, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config
+        self, mock_smtp_ssl, _mock_sleep, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         server = _make_mock_smtp()
         # 第一次失败，第二次成功
         mock_smtp_ssl.side_effect = [smtplib.SMTPException("timeout"), server]
@@ -441,10 +443,11 @@ class TestSendEmail:
         assert mock_smtp_ssl.call_count == 2
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_with_template(self, mock_config, mock_smtp_ssl, temp_db, smtp_config):
+    def test_send_with_template(
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
+    ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
 
@@ -459,8 +462,9 @@ class TestSendEmail:
         assert rows[0]["body"] == "模板正文"
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
-    def test_send_no_username_skips_login(self, mock_config, mock_smtp_ssl, temp_db):
+    def test_send_no_username_skips_login(
+        self, mock_smtp_ssl, temp_db, smtp_config_path
+    ):
         dm.init_db()
         config = {
             "host": "smtp.test.com",
@@ -470,7 +474,7 @@ class TestSendEmail:
             "ssl": True,
             "from_addr": "noreply@test.com",
         }
-        mock_config.return_value = config
+        save_smtp_config(config)
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
 
@@ -486,12 +490,11 @@ class TestSendEmail:
 
 class TestSendEmailAsync:
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_send_email_async_success(
-        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         server = _make_mock_smtp()
         mock_smtp_ssl.return_value = server
 
@@ -638,24 +641,22 @@ class TestLookupEmailByName:
 
 class TestExecuteGoal:
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_goal_with_email_prefix(
-        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
         result = execute_goal("邮箱：user@test.com 主题", subject="测试", body="内容")
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_goal_with_recipient_prefix_valid_email(
-        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
         result = execute_goal(
@@ -664,54 +665,50 @@ class TestExecuteGoal:
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     @patch(
         "opc_manager.email_skill._lookup_email_by_name", return_value="looked@test.com"
     )
     def test_goal_with_recipient_prefix_name_lookup(
-        self, mock_lookup, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_lookup, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
         result = execute_goal("收件人：张三 请发送", subject="测试", body="内容")
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_goal_with_gei_pattern_valid_email(
-        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
         result = execute_goal("给 valid@test.com 发邮件", subject="测试", body="内容")
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     @patch(
         "opc_manager.email_skill._lookup_email_by_name", return_value="found@test.com"
     )
     def test_goal_with_gei_pattern_name_lookup(
-        self, mock_lookup, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_lookup, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
         result = execute_goal("给李四发邮件", subject="", body="")
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_goal_all_params_provided(
-        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
         result = execute_goal(
@@ -731,12 +728,11 @@ class TestExecuteGoal:
         assert result["success"] is True
 
     @patch("opc_manager.email_skill.smtplib.SMTP_SSL")
-    @patch("opc_manager.email_skill._get_smtp_config")
     def test_goal_to_only_derives_subject_body(
-        self, mock_config, mock_smtp_ssl, temp_db, smtp_config
+        self, mock_smtp_ssl, temp_db, smtp_config, smtp_config_path
     ):
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         mock_smtp_ssl.return_value = _make_mock_smtp()
 
         result = execute_goal(
@@ -800,10 +796,9 @@ class TestCoverageBoundary:
     """
 
     @patch("opc_manager.email_skill.MAX_RETRIES", 0)
-    @patch("opc_manager.email_skill._get_smtp_config")
     @patch("opc_manager.email_skill._check_rate_limit", return_value=True)
     def test_send_email_zero_retries_fallback(
-        self, _mock_rate, mock_config, temp_db, smtp_config
+        self, _mock_rate, temp_db, smtp_config, smtp_config_path
     ):
         """覆盖 email_skill.py:207 防御性兜底 return。
 
@@ -811,7 +806,7 @@ class TestCoverageBoundary:
         Expected: 直接返回 {"success": False, "error": "邮件发送失败"}
         """
         dm.init_db()
-        mock_config.return_value = smtp_config
+        save_smtp_config(smtp_config)
         result = send_email("user@test.com", "subject", "body")
         assert result["success"] is False
         assert result["error"] == "邮件发送失败"

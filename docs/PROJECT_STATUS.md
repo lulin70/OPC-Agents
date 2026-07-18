@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-17（v0.3.34 已知限制修复：L1 mypy类型标注修复+L2 SQLite锁修复） | **版本**: v0.3.34 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-18（v0.3.35 T7 第 1 批 Mock 替换：校准后 36 处，responses 库 + FakeSettings + tmp_path fixture） | **版本**: v0.3.35 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.34`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.3.35`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
