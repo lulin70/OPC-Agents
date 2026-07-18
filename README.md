@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.35 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.36 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,9 +31,9 @@ opc-agents                      # 2. 启动
 
 ---
 
-## 🆕 v0.3.35 Highlights
+## 🆕 v0.3.36 Highlights
 
-- **🔧 v0.3.35 T7 第 1 批 Mock 替换（校准后范围）**: 5 文件实际替换 36 处（原 ROADMAP 描述 266 处严重过期，深度调查后校准 -86%）；关键改进：`requests.post` → `responses` 库（真实 HTTP mock，7 处）、`MagicMock` → `FakeSettings` 类（提升测试透明度）、`_get_smtp_config` → `tmp_path` fixture（真实文件系统，18 处）、Fake 类替换（10 处）；保留必要 Mock（streamlit ScriptRunContext / 外部服务 / 分支控制 / 环境变量 / 测试隔离）；222 测试通过 + 0 失败。详见 [ROADMAP_v0.3.35.md](docs/ROADMAP_v0.3.35.md)。
+- **🔧 v0.3.36 T7 第 2 批 Mock 精准替换 + T7 系列关闭**: 深度扫描 Top 5 候选文件，实际替换 6 处（原估计 ~45 处，-87%）；T7.6 test_consensus_engine 替换 0 处（77 处 @patch.object 全部是测试隔离必要 Mock，避免 SQLite DB 副作用）；T7.7 test_memory_bridge 替换 6 处（局部 MagicMock → FakeRuleMatch/FakeSuggestion 类，消除重复配置代码）；T7.8 评估后跳过 3 文件（subprocess/streamlit/已有 Fake 类均为必要 Mock）；T7 第 3 批正式关闭（剩余 56 文件 532 处为必要 Mock）。T7 系列总替换 42 处（v0.3.35: 36 + v0.3.36: 6）。4164 测试通过 + 0 失败。详见 [ROADMAP_v0.3.36.md](docs/ROADMAP_v0.3.36.md)。
 
 ## 🆕 v0.3.34 Highlights
 
@@ -198,7 +198,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.35
+pip install opc-agents==0.3.36
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

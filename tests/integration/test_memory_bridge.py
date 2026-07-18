@@ -24,6 +24,65 @@ from opc_manager.memory_bridge import (
 )
 
 # ---------------------------------------------------------------------------
+# Fakes — 替代局部 MagicMock 反模式（v0.3.36 T7.7）
+# ---------------------------------------------------------------------------
+
+
+class _EnumLike:
+    """模拟 enum 的 .value 属性，用于 rule_type 正常路径测试。"""
+
+    def __init__(self, value):
+        self.value = value
+
+
+class FakeRule:
+    """Fake Rule 对象，替代局部 MagicMock 配置。
+
+    use_enum=True 时 rule_type 为 _EnumLike（模拟 enum.value 访问路径）；
+    use_enum=False 时 rule_type 为字符串（模拟回退路径）。
+    """
+
+    def __init__(
+        self, trigger="", action="", rule_type="prefer", override=False, use_enum=True
+    ):
+        self.trigger = trigger
+        self.action = action
+        self.rule_type = _EnumLike(rule_type) if use_enum else rule_type
+        self.override = override
+
+
+class FakeRuleMatch:
+    """Fake RuleMatch 对象，替代重复的 MagicMock 配置。
+
+    用于 TestMatchRules / TestGetRulesForContext / TestSuggestSkills 等
+    测试中的局部 match 对象构造。不涉及 assert_called 断言。
+    """
+
+    def __init__(
+        self,
+        trigger="",
+        action="",
+        rule_type="prefer",
+        override=False,
+        score=0.9,
+        match_type="keyword",
+        use_enum=True,
+    ):
+        self.rule = FakeRule(trigger, action, rule_type, override, use_enum)
+        self.score = score
+        self.match_type = match_type
+
+
+class FakeSuggestion:
+    """Fake suggestion 对象，替代局部 MagicMock 配置。"""
+
+    def __init__(self, trigger="", action="", rule_type="prefer"):
+        self.trigger = trigger
+        self.action = action
+        self.rule_type = rule_type
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -362,13 +421,14 @@ class TestMatchRules(unittest.TestCase):
 
     def test_rule_type_string_fallback(self):
         """rule_type 为字符串时的回退处理"""
-        match_obj = MagicMock()
-        match_obj.rule.trigger = "test"
-        match_obj.rule.action = "action"
-        match_obj.rule.rule_type = "custom_type"  # 没有 .value 属性
-        match_obj.rule.override = False
-        match_obj.score = 0.7
-        match_obj.match_type = "semantic"
+        match_obj = FakeRuleMatch(
+            trigger="test",
+            action="action",
+            rule_type="custom_type",
+            use_enum=False,
+            score=0.7,
+            match_type="semantic",
+        )
         self.mock_engine.match.return_value = [match_obj]
 
         rules = self.bridge.match_rules("测试")
@@ -660,13 +720,11 @@ class TestGetRulesForContext(unittest.TestCase):
     def test_no_hard_rules(self):
         """无硬规则时 has_hard_rules 为 False"""
         # 只返回软规则
-        match_soft = MagicMock()
-        match_soft.rule.trigger = "测试"
-        match_soft.rule.action = "建议"
-        match_soft.rule.rule_type = MagicMock(value="prefer")
-        match_soft.rule.override = False
-        match_soft.score = 0.8
-        match_soft.match_type = "keyword"
+        match_soft = FakeRuleMatch(
+            trigger="测试",
+            action="建议",
+            score=0.8,
+        )
         self.mock_engine.match.return_value = [match_soft]
 
         result = self.bridge.get_rules_for_context("测试")
@@ -866,13 +924,11 @@ class TestSuggestSkills(unittest.TestCase):
 
     def test_suggests_marketing_skill(self):
         """推荐营销技能"""
-        match = MagicMock()
-        match.rule.trigger = "营销"
-        match.rule.action = "营销推广"
-        match.rule.rule_type = MagicMock(value="prefer")
-        match.rule.override = False
-        match.score = 0.9
-        match.match_type = "keyword"
+        match = FakeRuleMatch(
+            trigger="营销",
+            action="营销推广",
+            score=0.9,
+        )
         self.mock_engine.match.return_value = [match]
 
         result = self.bridge.suggest_skills("营销方案")
@@ -880,13 +936,11 @@ class TestSuggestSkills(unittest.TestCase):
 
     def test_suggests_creative_skill(self):
         """推荐创意技能"""
-        match = MagicMock()
-        match.rule.trigger = "创意"
-        match.rule.action = "创意策划"
-        match.rule.rule_type = MagicMock(value="prefer")
-        match.rule.override = False
-        match.score = 0.8
-        match.match_type = "keyword"
+        match = FakeRuleMatch(
+            trigger="创意",
+            action="创意策划",
+            score=0.8,
+        )
         self.mock_engine.match.return_value = [match]
 
         result = self.bridge.suggest_skills("创意方案")
@@ -894,13 +948,11 @@ class TestSuggestSkills(unittest.TestCase):
 
     def test_suggests_legal_skill(self):
         """推荐法律技能"""
-        match = MagicMock()
-        match.rule.trigger = "法律"
-        match.rule.action = "法律咨询"
-        match.rule.rule_type = MagicMock(value="prefer")
-        match.rule.override = False
-        match.score = 0.8
-        match.match_type = "keyword"
+        match = FakeRuleMatch(
+            trigger="法律",
+            action="法律咨询",
+            score=0.8,
+        )
         self.mock_engine.match.return_value = [match]
 
         result = self.bridge.suggest_skills("法律咨询")
@@ -1116,10 +1168,11 @@ class TestTryAutoAddRule(unittest.TestCase):
 
     def test_adds_object_suggestion(self):
         """添加对象类型的规则建议"""
-        suggestion = MagicMock()
-        suggestion.trigger = "营销"
-        suggestion.action = "数据驱动"
-        suggestion.rule_type = "prefer"
+        suggestion = FakeSuggestion(
+            trigger="营销",
+            action="数据驱动",
+            rule_type="prefer",
+        )
         self.bridge._try_auto_add_rule(suggestion)
         self.mock_engine.add_rule.assert_called_once()
 

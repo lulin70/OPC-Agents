@@ -1,5 +1,5 @@
 """
-Apple Shortcuts Integration Handler for OPC-Agents v0.3.35
+Apple Shortcuts Integration Handler for OPC-Agents v0.3.36
 
 Provides 5 shortcut actions callable from macOS Shortcuts app:
 1. quick_task      - Execute a quick task via LLM

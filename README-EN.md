@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.35 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.36 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,9 +31,9 @@ opc-agents                      # 2. Launch
 
 ---
 
-## 🆕 v0.3.35 Highlights
+## 🆕 v0.3.36 Highlights
 
-- **🔧 v0.3.35 T7 Batch 1 Mock Replacement (Calibrated Scope)**: 5 files with 36 actual replacements (original ROADMAP's 266 was severely outdated, deep investigation calibrated -86%); key improvements: `requests.post` → `responses` library (real HTTP mock, 7 places), `MagicMock` → `FakeSettings` class (improved test transparency), `_get_smtp_config` → `tmp_path` fixture (real filesystem, 18 places), Fake class replacement (10 places); necessary Mocks retained (streamlit ScriptRunContext / external services / branch control / env vars / test isolation); 222 tests passing + 0 failures. See [ROADMAP_v0.3.35.md](docs/ROADMAP_v0.3.35.md).
+- **🔧 v0.3.36 T7 Batch 2 Mock Precision Replacement + T7 Series Closure**: Deep scan of Top 5 candidate files, actual 6 replacements (original estimate ~45, -87%); T7.6 test_consensus_engine 0 replacements (77 @patch.object all necessary test isolation Mocks, avoiding SQLite DB side effects); T7.7 test_memory_bridge 6 replacements (local MagicMock → FakeRuleMatch/FakeSuggestion classes, eliminating duplicate config code); T7.8 skipped 3 files after evaluation (subprocess/streamlit/existing Fake classes all necessary Mocks); T7 Batch 3 officially closed (remaining 56 files 532 Mocks are necessary). T7 series total 42 replacements (v0.3.35: 36 + v0.3.36: 6). 4164 tests passing + 0 failures. See [ROADMAP_v0.3.36.md](docs/ROADMAP_v0.3.36.md).
 
 ## 🆕 v0.3.34 Highlights
 
@@ -204,7 +204,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.35
+pip install opc-agents==0.3.36
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography

@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.35 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.36 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,9 +31,9 @@ opc-agents                      # 2. 起動
 
 ---
 
-## 🆕 v0.3.35 ハイライト
+## 🆕 v0.3.36 ハイライト
 
-- **🔧 v0.3.35 T7 第 1 批 Mock 置換（校正後範囲）**: 5 ファイル実際 36 箇所置換（元 ROADMAP の 266 箇所は重大に過期、深度調査で -86% 校正）; 主要改善: `requests.post` → `responses` ライブラリ（真実 HTTP mock、7 箇所）、`MagicMock` → `FakeSettings` クラス（テスト透明性向上）、`_get_smtp_config` → `tmp_path` fixture（真実ファイルシステム、18 箇所）、Fake クラス置換（10 箇所）; 必要 Mock 保留（streamlit ScriptRunContext / 外部サービス / 分岐制御 / 環境変数 / テスト分離）; 222 テスト成功 + 0 失敗。詳細は [ROADMAP_v0.3.35.md](docs/ROADMAP_v0.3.35.md) 参照。
+- **🔧 v0.3.36 T7 第 2 批 Mock 精密置換 + T7 シリーズ終了**: Top 5 候補ファイル深度スキャン、実際 6 箇所置換（元推定 ~45 箇所、-87%）; T7.6 test_consensus_engine 0 箇所置換（77 @patch.object 全て必要なテスト分離 Mock、SQLite DB 副作用回避）; T7.7 test_memory_bridge 6 箇所置換（局所 MagicMock → FakeRuleMatch/FakeSuggestion クラス、重複設定コード削除）; T7.8 評価後 3 ファイルスキップ（subprocess/streamlit/既存 Fake クラス全て必要 Mock）; T7 第 3 批正式終了（残り 56 ファイル 532 箇所は必要 Mock）。T7 シリーズ合計 42 箇所置換（v0.3.35: 36 + v0.3.36: 6）。4164 テスト成功 + 0 失敗。詳細は [ROADMAP_v0.3.36.md](docs/ROADMAP_v0.3.36.md) 参照。
 
 ## 🆕 v0.3.34 ハイライト
 
@@ -200,7 +200,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.35
+pip install opc-agents==0.3.36
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography
