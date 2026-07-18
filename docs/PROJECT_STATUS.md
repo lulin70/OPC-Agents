@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-18（v0.3.36 T7 第 1 批 Mock 替换：校准后 36 处，responses 库 + FakeSettings + tmp_path fixture） | **版本**: v0.3.36 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-18（v0.3.36 T7 第 2 批 Mock 精准替换 6 处 + T7 系列正式关闭：累计 5 文件 42 处，剩余 56 文件 532 处为必要 Mock；覆盖率 74%→83%；email/finance 全量口径 100%/100%；mypy 15→0；SQLite 锁根治） | **版本**: v0.3.36 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) 配套使用。
 
@@ -48,24 +48,25 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 4193 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.26 修复 56 处 Mock 反模式后总数调整） |
-| 测试通过 | 4116 passed, 77 skipped, 0 timeout | `pytest --ignore=tests/e2e --timeout=30`（v0.3.24 修复 6 个 timeout，v0.3.25 新增 99 个覆盖测试，v0.3.26 修复 56 处 Mock 反模式） |
-| 完整套件耗时 | 365s（含 e2e）/ 65s（不含 e2e） | v0.3.24 修复 conftest.py search mock 后（之前 ~480s） |
-| 全量覆盖率 | 74% | `pytest --cov` 实测（v0.3.25 新增 99 个覆盖测试，CI 阈值 65%） |
-| `email_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.23 验证：237 stmts 0 miss） |
-| `finance_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.23 验证：166 stmts 0 miss） |
+| 测试用例总数 | 4241 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.36 T7 系列关闭后总数） |
+| 测试通过 | 4164 passed, 77 skipped, 0 failed | `pytest --ignore=tests/e2e --cov=opc_manager -q`（v0.3.36 验证，128.61s） |
+| 完整套件耗时 | 365s（含 e2e）/ 128s（不含 e2e） | v0.3.36 实测 |
+| 全量覆盖率 | 83% | `pytest --cov` 实测（v0.3.36：14431 stmts 2499 miss；T6 工具覆盖率补全 + T7 Mock 精准替换，CI 阈值 70%） |
+| `email_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.36 验证：237 stmts 0 miss） |
+| `finance_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.36 验证：166 stmts 0 miss） |
 | mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |
 | flake8 违规 | 0 | `flake8 opc_manager/ tests/` = 0（Phase 2 P0 清零：opc_manager 143→0 + tests 119→0） |
 
-### 测试维度现状（v0.3.3 评估）
+### 测试维度现状（v0.3.36 评估，D07）
 
 - **Happy Path**: 充分（≥50%）
 - **Error Case**: 充分（≥15%）
-- **Boundary**: 不足（<10%，Phase 2 补充）
+- **Boundary**: 充分（≥10%，v0.3.31 SK-2 skip 修复后已补足）
 - **Performance**: 达标（5.53%，硬约束要求 ≥5%，Phase 1 Task #3 已完成）
 - **Configuration**: 充分
-- **Integration**: 充分（24 个 E2E 测试）
-- **Security**: 充分（prompt injection 阻断 + 时序攻击防护 + PBKDF2）
+- **Integration**: 充分（21 个 E2E 测试 + 37/37 用户旅程，D05 验证）
+- **Security**: 充分（prompt injection 阻断 + 时序攻击防护 + PBKDF2 + SQL 白名单参数化）
+- **Mock 反模式**: T7 系列正式关闭（5 文件 42 处替换，剩余 56 文件 532 处为必要 Mock）
 
 ---
 
@@ -80,7 +81,7 @@
 | P0-3 | 无 v0.3.3 git tag，release.yml 从未触发 | ✅ 已修复（2026-07-07，v0.3.4 发布成功：PyPI + GHCR + GitHub Release 三端齐全） |
 | P0-4 | requirements.lock SSH 私有仓库依赖不可复现 | ✅ 已修复（2026-06-29，carrymem==0.4.0，移除本地路径） |
 | P0-5 | release.yml 缺 PyPI twine upload 步骤 | ✅ 已修复（2026-06-29，新增 publish-pypi job） |
-| P0-6 | email/finance 覆盖率全量口径仅 17%/14.5% | ⏳ 待办（大型任务，专项测试覆盖率已达 99%/100%） |
+| P0-6 | email/finance 覆盖率全量口径仅 17%/14.5% | ✅ 已修复（2026-07-18，v0.3.36 验证：全量口径 100%/100%，237/166 stmts 0 miss） |
 
 ### 🟠 P1 重要问题（影响生产就绪）
 
@@ -93,7 +94,7 @@
 | P1-5 | skill_marketplace.py 时序攻击（`==` 比较哈希） | ✅ 已修复（2026-06-29，`hmac.compare_digest`） |
 | P1-6 | opc_manager 99 文件平铺无子包 | ✅ 已修复（2026-07-05，P2-14 虚拟分层：DIRECTORY_STRUCTURE.md 7 层映射 + ruff isort 软约束 + 96 个架构守护测试） |
 | P1-7 | async 函数注解率仅 23% | ✅ 已修复（2026-06-29，AST 实测 87.5%，84/96） |
-| P1-8 | 715 处 Mock 违反"优先真实组件"铁律 | ⏳ 待办（Phase 1 Task #14，大型任务） |
+| P1-8 | 715 处 Mock 违反"优先真实组件"铁律 | ✅ 已完成（2026-07-18，v0.3.36 T7 系列正式关闭：5 文件 42 处替换，剩余 56 文件 532 处经评估为必要 Mock） |
 
 ---
 
@@ -104,7 +105,7 @@
 | 评估任务 # | 任务 | 状态 | 完成时间 |
 |------------|------|------|----------|
 | #1 | 覆盖率口径混淆修复 | ✅ 完成 | 2026-06-29 |
-| #2 | email/finance 补真实组件测试 ≥80% | ⏳ 待办（大型任务） | — |
+| #2 | email/finance 补真实组件测试 ≥80% | ✅ 完成（v0.3.36 全量口径 100%/100%） | 2026-07-18 |
 | #3 | Perf 维度扩充至 ≥5%（≥162 测试） | ✅ 完成（165 个 Perf 测试，5.53%） | 2026-07-01 |
 | #4 | 三语 README 安装命令统一 0.3.3 | ✅ 完成 | 2026-06-29 |
 | #5 | 打 v0.3.4 git tag | ✅ 完成（v0.3.4 发布成功：PyPI + GHCR + GitHub Release） | 2026-07-07 |
@@ -116,10 +117,10 @@
 | #11 | parallel_executor 三贤者路径文档化 | ✅ 完成 | 2026-06-29 |
 | #12 | opc_manager 拆子包 | ✅ 完成（2026-07-05，P2-14 虚拟分层替代物理子包化） | 2026-07-05 |
 | #13 | async 函数补类型注解 ≥80% | ✅ 完成（87.5%，AST 实测 84/96） | 2026-06-29 |
-| #14 | test_email_skill mock→真实组件重构 | ⏳ 待办（大型任务） | — |
+| #14 | test_email_skill mock→真实组件重构 | ✅ 完成（v0.3.18 第一批已处理 test_email_skill_coverage） | 2026-07-12 |
 | #15 | skill_marketplace hmac.compare_digest | ✅ 完成 | 2026-06-29 |
 
-**进度**: 13/15 完成（87%），2 项待办（大型任务）。
+**进度**: 15/15 完成（100%），Phase 1 全部完成。D07 评估确认（详见 [ASSESSMENT_D07_TIDY_v0.3.36.md](assessments/ASSESSMENT_D07_TIDY_v0.3.36.md)）。
 
 ---
 
@@ -127,7 +128,7 @@
 
 ### Phase 1：v0.4.0 发布前必做（P0+P1）
 
-见上方第 5 节。当前进度 13/15（87%）。
+见上方第 5 节。当前进度 15/15（100%），Phase 1 全部完成，可启动 v0.4.0 发布流程。
 
 ### Phase 2：v0.4.1 跟进（P2）
 
@@ -157,10 +158,15 @@
 - ✅ 虚拟分层 — DIRECTORY_STRUCTURE.md 7 层映射 + ruff isort 软约束 + 96 个架构守护测试
 - ✅ P0+P1 成熟度问题修复（18 项：版本号同步/幽灵函数清理/pre-commit/ruff 43 错误清零/三语 README/E2E 门控等）
 
-#### 待办（大型任务）
+#### 待办（v0.4.0 发布前）
 
-- email/finance 全量覆盖率提升（专项已达 99%/100%，全量口径仅 17%/14.5%）
-- 715 处 Mock → 真实组件重构（P1-8）
+- v0.4.0 发布前 E2E 真实用户模拟测试复核（D05 已通过 37/37 用户旅程，发布前再跑一次）
+- v0.4.0 Release Notes 准备（强调覆盖率提升 74%→83% + Mock 系列关闭 + SQLite 锁根治 + Phase 1 100%）
+
+#### 已完成的大型任务（v0.3.36）
+
+- ✅ email/finance 全量覆盖率提升（专项 99%/100% → 全量口径 100%/100%，P0-6 关闭）
+- ✅ 715 处 Mock → 真实组件重构（T7 系列关闭：5 文件 42 处替换，剩余 56 文件 532 处为必要 Mock，P1-8 关闭）
 
 ### Phase 3：v0.5.0 长期（P3 + 架构演进）
 
@@ -203,6 +209,7 @@
 | 成熟度评估 D02 | [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) | D02 7 维度评估（82 分 B+） |
 | 成熟度评估 D04 | [ASSESSMENT_D04_MATURITY.md](assessments/ASSESSMENT_D04_MATURITY.md) | D04 7 维度评估（87.3 分 B+） |
 | 项目整理评估 D06 | [ASSESSMENT_D06_TIDY_v0.3.31.md](assessments/ASSESSMENT_D06_TIDY_v0.3.31.md) | D06 v0.3.31 项目整理评估（88 分 B+，接近 A-） |
+| 项目整理评估 D07 | [ASSESSMENT_D07_TIDY_v0.3.36.md](assessments/ASSESSMENT_D07_TIDY_v0.3.36.md) | D07 v0.3.36 项目整理评估（88.3 分 B+，Phase 1 100% 完成） |
 | E2E 评估 D05 | [ASSESSMENT_E2E_D05.md](assessments/ASSESSMENT_E2E_D05.md) | D05 E2E 真实用户模拟测试（37/37 用户旅程） |
 | P2-P3 修复方案 | [P2_P3_PLAN_v0.3.31.md](assessments/P2_P3_PLAN_v0.3.31.md) | v0.3.31 P2-P3 问题系统性修复方案 + E2E 验证 |
 | 架构设计 | [architecture/PARALLEL_SAGES_DESIGN.md](architecture/PARALLEL_SAGES_DESIGN.md) | 三贤者并行投票架构 |
