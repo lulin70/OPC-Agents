@@ -1,5 +1,5 @@
 # OPC-Agents 开发依赖
-# 版本: 0.3.33
+# 版本: 0.3.34
 
 -r requirements.txt
 
@@ -24,3 +24,5 @@ bandit>=1.7.0
 pip-audit>=2.7.0
 mypy>=1.8.0
 radon>=6.0.0  # Cyclomatic complexity analysis (CI non-blocking report)
+types-requests>=2.31.0  # v0.3.34 L1.1: mypy stubs for requests
+types-PyYAML>=6.0.0  # v0.3.34 L1.1: mypy stubs for PyYAML

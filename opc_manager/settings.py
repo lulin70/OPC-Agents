@@ -1,5 +1,5 @@
 """
-Settings Manager — v0.3.33 统一设置中心
+Settings Manager — v0.3.34 统一设置中心
 
 提供运行时可修改的用户设置，支持持久化到JSON文件。
 所有敏感信息通过SecureKeyStore加密存储。
@@ -159,7 +159,7 @@ class SettingsManager(
     SettingsPersistenceMixin,
     SettingsOperationsMixin,
 ):
-    """Unified settings manager for OPC-Agents v0.3.33
+    """Unified settings manager for OPC-Agents v0.3.34
 
     Thread-safe singleton that manages all user-configurable settings.
     Supports runtime modification with JSON persistence and SecureKeyStore
@@ -291,10 +291,12 @@ class SettingsManager(
             "api_key": self._llm.api_key or self.get_api_key(self._llm.provider) or "",
             "base_url": self._llm.base_url
             or self._retrieve_sensitive_key("MOKA_API_BASE")
-            or os.environ.get("MOKA_API_BASE", LLM_PROVIDERS["moka"]),
+            or os.environ.get("MOKA_API_BASE", LLM_PROVIDERS["moka"])
+            or "",
             "model": self._llm.model
             or self._retrieve_sensitive_key("MOKA_MODEL")
-            or os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6"),
+            or os.environ.get("MOKA_MODEL", "moka/claude-sonnet-4-6")
+            or "",
         }
         return config
 

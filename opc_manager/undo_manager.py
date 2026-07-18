@@ -346,7 +346,7 @@ class UndoManager:
             task_skill,
         )
 
-        mapping = {
+        mapping: Dict[str, Callable[..., Any]] = {
             "undo_record_income": finance_skill.undo_record_income,
             "undo_record_expense": finance_skill.undo_record_expense,
             "undo_add_customer": crm_skill.undo_add_customer,

@@ -6,7 +6,7 @@ All modules should import BusinessType from here to avoid duplicate definition c
 """
 
 from enum import Enum
-from typing import Optional
+from typing import Dict, Optional
 
 
 class BusinessType(Enum):
@@ -35,25 +35,25 @@ class BusinessType(Enum):
     @property
     def display_name(self) -> str:
         """Get display name"""
-        names = {
-            self.CONTENT_CREATOR: "内容创作者",
-            self.DIGITAL_PRODUCT: "数字产品开发者",
-            self.AI_TOOL_BUILDER: "AI工具开发者",
-            self.CONSULTANT: "专业咨询师",
-            self.ECOMMERCE: "电商运营者",
-            self.CREATIVE_WORK: "创意工作者",
+        names: Dict[BusinessType, str] = {
+            BusinessType.CONTENT_CREATOR: "内容创作者",
+            BusinessType.DIGITAL_PRODUCT: "数字产品开发者",
+            BusinessType.AI_TOOL_BUILDER: "AI工具开发者",
+            BusinessType.CONSULTANT: "专业咨询师",
+            BusinessType.ECOMMERCE: "电商运营者",
+            BusinessType.CREATIVE_WORK: "创意工作者",
         }
         return names.get(self, self.value)
 
     @property
     def emoji(self) -> str:
         """Get corresponding emoji icon"""
-        emojis = {
-            self.CONTENT_CREATOR: "",
-            self.DIGITAL_PRODUCT: "",
-            self.AI_TOOL_BUILDER: "",
-            self.CONSULTANT: "",
-            self.ECOMMERCE: "",
-            self.CREATIVE_WORK: "",
+        emojis: Dict[BusinessType, str] = {
+            BusinessType.CONTENT_CREATOR: "",
+            BusinessType.DIGITAL_PRODUCT: "",
+            BusinessType.AI_TOOL_BUILDER: "",
+            BusinessType.CONSULTANT: "",
+            BusinessType.ECOMMERCE: "",
+            BusinessType.CREATIVE_WORK: "",
         }
         return emojis.get(self, "")

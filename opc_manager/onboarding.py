@@ -1,5 +1,5 @@
 """
-Onboarding Manager — v0.3.33 新手引导系统
+Onboarding Manager — v0.3.34 新手引导系统
 
 Provides step-by-step first-run experience for new users.
 Guides through: Welcome → LLM Config → Sample Task → Complete.

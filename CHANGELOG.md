@@ -4,6 +4,59 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.34] - 2026-07-17
+
+### 已知限制修复 — mypy 类型修复 + SQLite 锁根治
+
+> v0.3.33 发布时识别的 3 个已知限制推进：L1 mypy 15 错误 + L2 SQLite 锁 + T7 Mock 替换。L1/L2 为 P0 bug 修复（已完成），T7 第 1 批为 P1 测试质量提升（推迟到 v0.3.35）。无新功能，PATCH 升级。
+
+#### L1: mypy 15 个 pre-existing 错误全部修复（15→0）
+
+- **L1.1**: 安装 `types-requests` + `types-PyYAML`，加入 `requirements-dev.txt`（解决 4 个 import-untyped）
+- **L1.2**: [validators.py](opc_manager/validators.py) 3 处 `Optional[Dict[str, Any]]` + `Field(default_factory=dict)` 组合修复（去掉 Optional 包装，解决 3 个 arg-type）
+- **L1.3**: [business_types.py](opc_manager/business_types.py) 2 处 `Dict[BusinessType, str]` 类型注解（解决 2 个 call-overload）
+- **L1.4**: [mcp_protocol.py](opc_manager/mcp_protocol.py) 变量改名 `result` → `task_result` 避免类型继承污染（解决 2 个 union-attr）
+- **L1.5**: [settings.py](opc_manager/settings.py) `get_llm_config()` 末尾 `or ""` 兜底（解决 1 个 return-value）
+- **L1.6**: [executor_brain.py](opc_manager/executor_brain.py) `result: Any = await self._run_task_engine(...)` 注解（解决 2 个 attr-defined）
+- **L1.7**: [undo_manager.py](opc_manager/undo_manager.py) `mapping: Dict[str, Callable[..., Any]]` 注解（解决 1 个 return-value）
+- **修复原则**:
+  - 类型标注修复优先于 `type: ignore`（遵循 project_memory 教训：name-defined 和 F821 的 type: ignore 绝不能保留）
+  - 变量改名优于 cast（mcp_protocol.py 案例更健康，避免类型继承污染）
+- **验证**: `mypy opc_manager/ --ignore-missing-imports --follow-imports=silent` → Success: no issues found in 117 source files
+
+#### L2: finance E2E SQLite "database is locked" 根治
+
+- **根因**: [llm_cache.py:cleanup_expired()](opc_manager/llm_cache.py) 在 `count==0` 时不 `commit()`，sqlite3 已开启的隐式 DELETE 事务持续持有写锁，阻塞 `data_manager.execute_write` 等其他连接
+- **加剧因素**: `put()` 因温度门槛（0.7>=0.7）跳过缓存时永不 commit，未提交事务无法被后续操作清理
+- **连接冲突**: LLMCache 和 data_manager 都使用 `data/opc_data.db`，两个独立连接操作同一文件
+- **修复**: `cleanup_expired()` 改为无条件 `conn.commit()`（即使 `count==0` 也提交），释放写锁
+- **代码注释**: 完整记录根因与修复理由，引用本文档作为后续追溯依据
+- **验证**: `pytest tests/e2e/test_e2e_real.py` finance 测试不再锁冲突（27 passed + 1 failed，失败为网络搜索连接拒绝非代码 bug）
+
+#### T7 第 1 批: Top 5 文件 Mock 替换 ⏸ 推迟到 v0.3.35
+
+> **变更说明**: 原计划 v0.3.34 完成 T7 第 1 批。实施时 L1+L2（P0 bug 修复）已完成且验证通过，T7 第 1 批 266 处 Mock 替换工作量较大（每文件需仔细替换并验证测试意图）。为保证 v0.3.34 发布质量，T7 第 1 批整体推迟到 v0.3.35。
+
+| # | 文件 | 当前 Mock | 推迟目标 |
+|---|------|-----------|----------|
+| T7.1 | test_mcp_transport.py | 61 | v0.3.35 |
+| T7.2 | test_simple_llm_service.py | 60 | v0.3.35 |
+| T7.3 | test_email_skill_coverage.py | 51 | v0.3.35 |
+| T7.4 | test_timeline_view.py | 52 | v0.3.35 |
+| T7.5 | test_live_log_panel.py | 42 | v0.3.35 |
+
+#### 验证
+
+- **mypy**: Success, no issues found in 117 source files ✅（v0.3.33: 15 errors → v0.3.34: 0 errors）
+- **全量回归测试**: 4164 passed + 77 skipped + 0 failed ✅
+- **E2E 测试**: test_e2e_real.py 27 passed + 1 failed（失败为网络搜索连接拒绝，非代码 bug）✅
+- **ruff**: All checks passed ✅
+- **black**: 290 files unchanged ✅
+- **radon cc**: 无 D+ 函数 ✅
+- **版本一致性**: 18 个文件同步到 0.3.34 ✅
+- **7-role 共识**: 7/7 通过 ✅
+- **ROADMAP**: [ROADMAP_v0.3.34.md](docs/ROADMAP_v0.3.34.md)
+
 ## [0.3.33] - 2026-07-17
 
 ### 测试质量提升 — 覆盖率提升 + Mock 替换计划
@@ -19,8 +72,8 @@ All notable changes to OPC-Agents will be documented in this file.
 #### T6.2: 低覆盖模块测试补充
 
 - **新增测试文件**:
-  - `tests/unit/test_tool_handlers_fs_coverage.py` — 26 个测试
-  - `tests/unit/test_tool_handlers_smtp_coverage.py` — 18 个测试
+  - `tests/unit/test_tool_handlers_fs_coverage.py` — 29 个测试
+  - `tests/unit/test_tool_handlers_smtp_coverage.py` — 19 个测试
 - **覆盖率提升**:
   - tool_handlers_fs.py: 40% → 100%
   - tool_handlers_smtp.py: 54% → 100%

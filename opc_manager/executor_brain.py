@@ -215,7 +215,7 @@ class ExecutorBrain:
         self, skill_id: str, parameters: Dict[str, Any], context: Optional[Dict]
     ) -> ExecutionResult:
         # Try TaskEngine first
-        result = await self._run_task_engine(skill_id, parameters)
+        result: Any = await self._run_task_engine(skill_id, parameters)
         if result is not None:
             return result
 

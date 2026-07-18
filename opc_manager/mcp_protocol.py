@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
 MCP_SERVER_NAME = "opc-agents"
-MCP_SERVER_VERSION = "0.3.33"
+MCP_SERVER_VERSION = "0.3.34"
 
 # SkillInput.type (Python type string) → JSON Schema type keyword
 _PYTHON_TYPE_TO_JSON_SCHEMA: Dict[str, str] = {
@@ -392,7 +392,7 @@ class MCPServer:
                 return result
 
         if tool_name == "search_web" and self.task_engine:
-            result = self.task_engine.execute(
+            task_result = self.task_engine.execute(
                 user_input=arguments.get("query", ""),
                 task_type_hint=None,
             )
@@ -400,7 +400,7 @@ class MCPServer:
                 "content": [
                     {
                         "type": "text",
-                        "text": result.content or "",
+                        "text": task_result.content or "",
                     }
                 ]
             }

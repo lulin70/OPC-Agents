@@ -70,8 +70,8 @@
 - 低覆盖模块识别: `tool_handlers_fs.py` 40%、`tool_handlers_smtp.py` 54%
 
 **T6.2 结果**（2026-07-17）:
-- 新增 `tests/unit/test_tool_handlers_fs_coverage.py`（26 个测试），`tool_handlers_fs.py` 40%→100%
-- 新增 `tests/unit/test_tool_handlers_smtp_coverage.py`（18 个测试），`tool_handlers_smtp.py` 54%→100%
+- 新增 `tests/unit/test_tool_handlers_fs_coverage.py`（29 个测试），`tool_handlers_fs.py` 40%→100%
+- 新增 `tests/unit/test_tool_handlers_smtp_coverage.py`（19 个测试），`tool_handlers_smtp.py` 54%→100%
 - 合计 48 个新测试，两个低覆盖模块均达 100%
 
 ### T7-v0.3.33 第 1 批: Top 5 文件 Mock 替换 ⏸ 推迟到 v0.3.34

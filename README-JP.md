@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.33 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.3.34 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,9 +31,9 @@ opc-agents                      # 2. 起動
 
 ---
 
-## 🆕 v0.3.33 ハイライト
+## 🆕 v0.3.34 ハイライト
 
-- **🔧 v0.3.33 テスト品質向上**: T6 カバレッジ分析（全体 82%、email/finance は既に 100%）; tool_handlers_fs.py と tool_handlers_smtp.py のテスト追加（カバレッジ 40%→100%、54%→100%、48個の新規テスト）; T7 Mock置換計画策定（893件の非streamlit Mockを3批次で置換、v0.3.34/v0.3.35で推進）。
+- **🔧 v0.3.34 既知制限修正**: L1 mypy 型注釈修正（15 error→0、types-requests/types-PyYAML インストール + 6 ファイル型修正）; L2 SQLite ロック問題修正（llm_cache.cleanup_expired 無条件 commit、finance E2E "database is locked" 解決）; T7 Mock 置換は v0.3.35 に延期。
 
 ## 🆕 v0.3.32 ハイライト
 
@@ -196,7 +196,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.33
+pip install opc-agents==0.3.34
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography

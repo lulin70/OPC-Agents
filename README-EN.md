@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.33 | **Status**: Beta | **License**: MIT
+> **Version**: v0.3.34 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,9 +31,9 @@ opc-agents                      # 2. Launch
 
 ---
 
-## 🆕 v0.3.33 Highlights
+## 🆕 v0.3.34 Highlights
 
-- **🔧 v0.3.33 Test Quality Improvement**: T6 coverage analysis (overall 82%, email/finance already 100%); added tests for tool_handlers_fs.py and tool_handlers_smtp.py (coverage 40%→100%, 54%→100%, 48 new tests); T7 Mock replacement plan (893 non-streamlit Mocks to be replaced in 3 batches, v0.3.34/v0.3.35).
+- **🔧 v0.3.34 Known Limitations Fix**: L1 mypy type annotation fix (15 errors→0, installed types-requests/types-PyYAML + 6 files type fixes); L2 SQLite lock fix (llm_cache.cleanup_expired unconditional commit, resolves finance E2E "database is locked"); T7 Mock replacement deferred to v0.3.35.
 
 ## 🆕 v0.3.32 Highlights
 
@@ -200,7 +200,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.33
+pip install opc-agents==0.3.34
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography

@@ -202,8 +202,15 @@ class LLMCache:
             conn = self._conn
             cursor = conn.execute("DELETE FROM llm_cache WHERE expires_at < ?", (now,))
             count = cursor.rowcount
+            # Always commit, even when count == 0.
+            # Rationale: sqlite3 begins an implicit transaction before DELETE.
+            # Skipping commit when no rows match leaves an uncommitted write
+            # transaction holding the write lock, which blocks other connections
+            # to the same DB file (e.g. data_manager.execute_write). This was
+            # the root cause of the finance E2E "database is locked" failures
+            # (v0.3.34 L2 fix, see docs/ROADMAP_v0.3.34.md).
+            conn.commit()
             if count > 0:
-                conn.commit()
                 logger.info("[LLMCache] Cleaned up %d expired entries", count)
             return count
 

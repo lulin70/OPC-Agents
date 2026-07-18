@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.3.33 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.3.34 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -31,9 +31,9 @@ opc-agents                      # 2. 启动
 
 ---
 
-## 🆕 v0.3.33 Highlights
+## 🆕 v0.3.34 Highlights
 
-- **🔧 v0.3.33 测试质量提升**: T6 覆盖率分析（整体 82%，email/finance 已达 100%）；补充 tool_handlers_fs.py 和 tool_handlers_smtp.py 测试（覆盖率 40%→100%、54%→100%，新增 48 个测试）；T7 Mock 替换推进计划制定（893 处非 streamlit Mock 分 3 批替换，v0.3.34/v0.3.35 推进）。
+- **🔧 v0.3.34 已知限制修复**: L1 mypy 类型标注修复（15 error→0，安装 types-requests/types-PyYAML + 6 文件类型标注修复）；L2 SQLite 锁问题修复（llm_cache.cleanup_expired 无条件 commit，解决 finance E2E "database is locked"）；T7 Mock 替换推迟到 v0.3.35。
 
 ## 🆕 v0.3.32 Highlights
 
@@ -194,7 +194,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.3.33
+pip install opc-agents==0.3.34
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

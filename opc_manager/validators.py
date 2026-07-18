@@ -15,7 +15,7 @@ class TaskRequest(BaseModel):
         ..., min_length=1, max_length=10000, description="User input"
     )
     business_type: Optional[BusinessType] = Field(None, description="Business type")
-    context: Optional[Dict[str, Any]] = Field(
+    context: Dict[str, Any] = Field(
         default_factory=dict, description="Context information"
     )
 
@@ -54,7 +54,7 @@ class AgentConfig(BaseModel):
     )
     display_name: str = Field(..., min_length=1, max_length=200)
     expertise_tags: List[str] = Field(default_factory=list, max_length=20)
-    style_overrides: Optional[Dict[str, str]] = Field(default_factory=dict)
+    style_overrides: Dict[str, str] = Field(default_factory=dict)
 
     @field_validator("expertise_tags")
     @classmethod
@@ -107,7 +107,7 @@ class SearchQuery(BaseModel):
     """Search query validation model"""
 
     query: str = Field(..., min_length=1, max_length=500)
-    filters: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    filters: Dict[str, Any] = Field(default_factory=dict)
     limit: int = Field(default=10, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
 
