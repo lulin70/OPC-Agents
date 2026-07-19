@@ -199,7 +199,7 @@ class UserProfile:
             return False
         params.append(interaction_id)
         dm.execute_write(
-            f"UPDATE interaction_log SET {', '.join(updates)} WHERE id=?",
+            f"UPDATE interaction_log SET {', '.join(updates)} WHERE id=?",  # nosec B608 — column names from `allowed` whitelist, values parameterized
             tuple(params),
         )
         return True

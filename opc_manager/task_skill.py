@@ -138,7 +138,7 @@ def list_tasks(
     where = " AND ".join(where_parts)
     params.append(limit)
     if where:
-        sql = f"SELECT * FROM tasks WHERE {where} ORDER BY priority ASC, due_date ASC LIMIT ?"
+        sql = f"SELECT * FROM tasks WHERE {where} ORDER BY priority ASC, due_date ASC LIMIT ?"  # nosec B608 — column names from _TASK_WHERE_COLUMNS whitelist, values parameterized
     else:
         sql = "SELECT * FROM tasks ORDER BY priority ASC, due_date ASC LIMIT ?"
     rows = execute_query(sql, tuple(params))

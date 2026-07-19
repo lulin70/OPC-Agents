@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人会社向けインテリジェントタスク実行システム
 
-> **バージョン**: v0.3.36 | **ステータス**: Beta | **ライセンス**: MIT
+> **バージョン**: v0.4.0 | **ステータス**: Beta | **ライセンス**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -30,6 +30,10 @@ opc-agents                      # 2. 起動
 ```
 
 ---
+
+## 🆕 v0.4.0 ハイライト
+
+- **🔧 v0.4.0 リリース前品質強化**: bandit B608 セキュリティ警告ゼロ化（5 件の nosec コメント、列名ホワイトリスト + パラメータ化値の安全パターン）; T7 Mock アンチパターンシリーズ正式終了（累計 5 ファイル 42 件置換、残り 56 ファイル 532 件は必要 Mock と評価）; tool_system.py Facade 分割確認（222 行 Facade + 5 サブモジュール、カバレッジ 84-100%）; 3 大ファイル SRP 評価完了（data_manager/task_engine_v3_executors/task_orchestrator はすべて非 God Class）; Mock 分類ガイド文書化（7 Mock カテゴリ + セルフチェックリスト）; D05 E2E 199/200 合格（99.5%、1 件環境失敗：Ollama 未起動）。詳細は [RELEASE_NOTES_v0.4.0.md](docs/releases/RELEASE_NOTES_v0.4.0.md)。
 
 ## 🆕 v0.3.36 ハイライト
 
@@ -200,7 +204,7 @@ OPC-Agents（One-Person Company Agents）は、**一人会社/独立起業家/�
 
 ```bash
 # 1. インストール
-pip install opc-agents==0.3.36
+pip install opc-agents==0.4.0
 
 # 2. 暗号化依存パッケージをインストール（推奨、メールパスワード等の機密フィールド暗号化に使用）
 pip install cryptography

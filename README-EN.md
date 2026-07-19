@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — Intelligent Task Execution System for One-Person Companies
 
-> **Version**: v0.3.36 | **Status**: Beta | **License**: MIT
+> **Version**: v0.4.0 | **Status**: Beta | **License**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -30,6 +30,10 @@ opc-agents                      # 2. Launch
 ```
 
 ---
+
+## 🆕 v0.4.0 Highlights
+
+- **🔧 v0.4.0 Pre-release Quality Consolidation**: bandit B608 security alerts cleared (5 nosec comments, column-name whitelist + parameterized values safety pattern); T7 Mock anti-pattern series officially closed (5 files, 42 replacements total, remaining 56 files with 532 Mocks evaluated as necessary); tool_system.py Facade split confirmed (222-line Facade + 5 submodules, 84-100% coverage); SRP assessment of 3 large files completed (data_manager/task_engine_v3_executors/task_orchestrator — none are God Classes); Mock classification guide documented (7 Mock categories + self-check checklist); D05 E2E 199/200 passed (99.5%, 1 environment failure: Ollama not running). See [RELEASE_NOTES_v0.4.0.md](docs/releases/RELEASE_NOTES_v0.4.0.md).
 
 ## 🆕 v0.3.36 Highlights
 
@@ -204,7 +208,7 @@ Encounter specific scenarios? Use these together for better results:
 
 ```bash
 # 1. Install
-pip install opc-agents==0.3.36
+pip install opc-agents==0.4.0
 
 # 2. Install encryption dependency (recommended, for email passwords and other sensitive field encryption)
 pip install cryptography

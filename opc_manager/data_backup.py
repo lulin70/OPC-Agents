@@ -1,5 +1,5 @@
 """
-Data Backup Manager — v0.3.36 Data import/export system.
+Data Backup Manager — v0.4.0 Data import/export system.
 
 Provides:
 - Full data export (ZIP archive containing JSON + attachments)
@@ -49,7 +49,7 @@ REDACTED_VALUE = "***REDACTED***"
 class BackupManifest:
     version: str = BACKUP_VERSION
     created_at: str = ""
-    created_by: str = "OPC-Agents v0.3.36"
+    created_by: str = "OPC-Agents v0.4.0"
     total_files: int = 0
     total_size_bytes: int = 0
     checksum_sha256: str = ""
@@ -364,7 +364,7 @@ class DataBackupManager:
 
             result = {
                 "exported_at": datetime.now().isoformat(),
-                "exporter": "OPC-Agents v0.3.36",
+                "exporter": "OPC-Agents v0.4.0",
                 "tables": list(data.keys()),
                 "data": data,
                 "_meta": {"sanitized": True},

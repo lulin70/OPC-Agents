@@ -126,7 +126,7 @@ def update_article(
         set_params.append(val)
 
     set_params.append(article_id)
-    sql = f"UPDATE knowledge_articles SET {','.join(set_clauses)} WHERE id=?"
+    sql = f"UPDATE knowledge_articles SET {','.join(set_clauses)} WHERE id=?"  # nosec B608 — column names from _KNOWLEDGE_UPDATEABLE_COLUMNS whitelist, values parameterized
 
     try:
         execute_write(sql, tuple(set_params))
@@ -180,7 +180,7 @@ def search_articles(
     where_clause = " AND ".join(conditions) if conditions else "1=1"
     sql = (
         f"SELECT id,title,tags,category,word_count,updated_at "
-        f"FROM knowledge_articles WHERE {where_clause} ORDER BY updated_at DESC"
+        f"FROM knowledge_articles WHERE {where_clause} ORDER BY updated_at DESC"  # nosec B608 — where_clause uses fixed templates with "?" placeholders, values parameterized
     )
 
     try:

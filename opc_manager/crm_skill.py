@@ -155,7 +155,7 @@ def search_customers(
         params.append(val)
     where = " AND ".join(where_parts) if where_parts else "1=1"
     rows = execute_query(
-        f"SELECT * FROM customers WHERE {where} ORDER BY last_contact DESC",
+        f"SELECT * FROM customers WHERE {where} ORDER BY last_contact DESC",  # nosec B608 — column names from _CRM_WHERE_COLUMNS whitelist, values parameterized
         tuple(params),
     )
     decrypted_rows = [_decrypt_customer_fields(r) for r in rows]

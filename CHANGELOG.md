@@ -4,6 +4,83 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-18
+
+### 发布前质量巩固 — bandit B608 清零 + T7 关闭 + tool_system.py 拆分确认 + SRP 评估
+
+> v0.4.0 是 Beta 阶段首个 MINOR 版本，标志项目从"功能扩展期"进入"质量巩固期"。本版本完成 4 项关键里程碑：T7 Mock 反模式系列正式关闭、bandit B608 安全告警清零、tool_system.py Facade 拆分完成、大文件 SRP 评估完成。无新功能，MINOR 升级（测试质量里程碑 + 架构改进 + 安全告警清零）。
+
+#### bandit B608 安全告警清零 ✅
+
+- 5 处 bandit B608（SQL 注入）误报添加 `# nosec B608` 注释：
+  - `crm_skill.py:158` — 列名来自 `_CRM_WHERE_COLUMNS` 白名单，值参数化
+  - `knowledge_skill.py:129` — 列名来自 `_KNOWLEDGE_UPDATEABLE_COLUMNS` 白名单，值参数化
+  - `knowledge_skill.py:183` — `where_clause` 使用固定模板 + `?` 占位符
+  - `task_skill.py:141` — 列名来自 `_TASK_WHERE_COLUMNS` 白名单，值参数化
+  - `user_profile.py:202` — 列名来自 `allowed` 白名单，值参数化
+- 验证: `bandit -ll -ii opc_manager/` → No issues identified + EXIT_CODE=0 ✅
+
+#### Mock 分类判定标准文档化 ✅
+
+- 新增 `docs/spec/MOCK_CLASSIFICATION_GUIDE.md`:
+  - 7 类 Mock 分类（streamlit/@patch.object/@patch.dict/外部服务/assert_called/局部MagicMock/PropertyMock）
+  - 反模式 vs 必要 Mock 对照表
+  - 新增测试 Mock 自检清单（7 项）
+  - T7 系列关闭总结 + 监控机制
+
+#### tool_system.py Facade 拆分确认 ✅
+
+- `tool_system.py` 已完成 Facade 模式拆分（222 行 Facade + 5 子模块）:
+  - `tool_registry.py` (130行, 99% cov) — 工具注册中心
+  - `tool_handlers_fs.py` (91行, 100%) — 文件系统处理器
+  - `tool_handlers_smtp.py` (70行, 100%) — SMTP 邮件处理器
+  - `tool_handlers_cmd.py` (33行, 85%) — 命令执行处理器
+  - `tool_audit_logger.py` (119行, 84%) — 审计日志器
+- PROJECT_STATUS.md Phase 3 标记为 ✅ 已完成
+
+#### 大文件 SRP 评估 ✅
+
+基于 project_memory 教训"God Class 判定基于 SRP（单一类多职责）而非行数/方法数阈值（52 候选 1.9% 命中率）"，对 3 个大文件进行 SRP 评估：
+
+- `data_manager.py` (790 行) — **非 God Class**，单一职责"数据管理层"，子功能均有清晰边界
+- `task_engine_v3_executors.py` (788 行) — **非 God Class**，已是 Mixin 拆分产物，单一职责"任务类型执行器"
+- `task_orchestrator.py` (774 行) — **非 God Class**，任务编排职责内聚（路由+4阶段执行+反思+共识+重试）
+
+结论：3 个大文件均不是 God Class，v0.4.0 不需要拆分。可选优化项记入 v0.5.0+ ROADMAP。
+
+#### D05 E2E 验证（v0.4.0 重跑） ✅
+
+- **用户旅程**: 24/24 通过（1.95s）
+- **Playwright 真实浏览器**: 21/21 通过（186s）
+- **Docker 部署**: 37/37 通过
+- **真实搜索**: 24/25 通过（1 失败：环境问题，Ollama 未启动）
+- **其他 E2E**: 93/93 通过
+- **总计**: 199/200 通过（99.5%）
+
+已知失败（环境问题，非代码回归）：`test_e2e_real.py::TestRealFullPipeline::test_chinese_content_generation_real` — Ollama 未启动 + 搜索超时导致内容生成质量不达标。
+
+#### 版本同步
+
+- 18 处版本号从 `0.3.36` 同步到 `0.4.0`（VERSION/version.py/__version_info__/mcp_protocol.py/Dockerfile/requirements.txt/requirements-dev.txt/scripts/start.sh/onboarding.py/data_backup.py/error_handler.py/settings.py/knowledge_bridge.py/三语 README/CHANGELOG/PROJECT_STATUS.md/test_data_backup.py 断言）
+- 验证: `pytest tests/unit/test_version.py` → 9 passed ✅
+
+#### 验证
+
+- **全量回归测试**: 4164 passed + 77 skipped + 0 failed ✅
+- **E2E 全量**: 199/200 通过（1 环境失败） ✅
+- **mypy**: Success, no issues found ✅
+- **ruff**: All checks passed ✅
+- **radon cc**: 无 D+ 函数 ✅
+- **bandit**: No issues identified ✅
+- **版本一致性**: test_version.py 9 passed ✅
+
+#### 文档
+
+- **Release Notes**: [RELEASE_NOTES_v0.4.0.md](docs/releases/RELEASE_NOTES_v0.4.0.md)
+- **Mock 分类指南**: [MOCK_CLASSIFICATION_GUIDE.md](docs/spec/MOCK_CLASSIFICATION_GUIDE.md)
+- **SRP 评估结论**: [PROJECT_STATUS.md § 6 Phase 3](docs/PROJECT_STATUS.md)
+- **发布计划**: [PLAN_v0.4.0_release.md](docs/planning/PLAN_v0.4.0_release.md)
+
 ## [0.3.36] - 2026-07-18
 
 ### 测试质量提升 — T7 第 2 批 Mock 精准替换 + T7 系列正式关闭

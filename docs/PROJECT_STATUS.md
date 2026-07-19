@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-18（v0.3.36 T7 第 2 批 Mock 精准替换 6 处 + T7 系列正式关闭：累计 5 文件 42 处，剩余 56 文件 532 处为必要 Mock；覆盖率 74%→83%；email/finance 全量口径 100%/100%；mypy 15→0；SQLite 锁根治） | **版本**: v0.3.36 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-18（v0.4.0 发布前质量巩固：bandit B608 清零 + T7 系列关闭 + tool_system.py 拆分确认 + 3 大文件 SRP 评估 + D05 E2E 199/200 通过） | **版本**: v0.4.0 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.3.36`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.4.0`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -170,7 +170,7 @@
 
 ### Phase 3：v0.5.0 长期（P3 + 架构演进）
 
-- `tool_system.py` 拆为 tool_registry/tool_audit/tool_handlers_fs/tool_handlers_smtp
+- ~~`tool_system.py` 拆为 tool_registry/tool_audit/tool_handlers_fs/tool_handlers_smtp~~ ✅ 已完成 (2026-07-18, v0.4.0): tool_system.py 已是 222 行 Facade（`class ToolSystem(ToolRegistry, FileSystemHandlers, SmtpHandlers, CommandHandlers)`），子模块：tool_registry.py (130行, 99% cov) / tool_handlers_fs.py (91行, 100%) / tool_handlers_smtp.py (70行, 100%) / tool_handlers_cmd.py (33行, 85%) / tool_audit_logger.py (119行, 84%)
 - ~~`opc_hr` 充实或并入 opc_manager/hr/ 子包~~ ✅ 已解决 (2026-07-10): web_search.py 迁移到 opc_manager/web_search.py，消除 opc_hr 假分层目录
 - ~~CI coverage 阈值 62% (含 frontend 总覆盖率 ~64%, opc_manager 单独 ~74%) → 目标 65%~~ ✅ 已完成 (2026-07-11, v0.3.10): `--cov-fail-under=65`（实际 66%），crm_skill 64 tests + 3 bug 修复
 - ~~mypy 配置升级为 `disallow_untyped_defs = True`~~ ✅ 完成 (2026-07-12, v0.3.14 Batch 3): Batch 1+2+3 已移除全部 83 模块从 per-module overrides（83→0），218 个函数注解补全。全局 `disallow_untyped_defs = true` 覆盖所有模块
@@ -179,6 +179,18 @@
 - ~~补 IntentRouter/ToolSystem/TaskEngineV3 的 ADR~~ ✅ 已完成 (2026-07-11): [ADR-001](architecture/ADR-001-IntentRouter-design.md) / [ADR-002](architecture/ADR-002-ToolSystem-design.md) / [ADR-003](architecture/ADR-003-TaskEngineV3-design.md)
 - ~~Mock 反模式修复（P3-4）~~ ✅ 完成 (2026-07-12, v0.3.18 第四批): 共 4 批 8 文件全部完成（第一批 3 文件: test_email_skill_coverage/test_simple_llm_service/test_executor_opinion；第二批 2 文件: test_delta_integration/test_integration_modules；第三批 2 文件: test_undo_panel/test_skill_executors；第四批 1 文件: test_timeline_view）。所有非 streamlit MagicMock 替换为真实组件或真实 fake 类，保留 streamlit Mock（ScriptRunContext 运行时上下文所必需）
 - ~~Mock 反模式修复扩展（P3-5）~~ ✅ 完成 (2026-07-12, v0.3.22): 2 文件扩展修复（test_brain_modules.py 40 处 MagicMock/AsyncMock → 6 个真实 fake 类: FakeLLMService/FakeSkill/FakeAsyncSkill/FakeSkillRegistry/FakeTaskResult/FakeTaskEngine；test_live_log_panel.py 4 处 MagicMock → 2 个真实 fake 类: FakeAuditLog/FakeProgressEmitter）。第 3 个候选 test_real_progress.py 只有 1 处 `patch.dict` 测试导入失败，是合理用法，非反模式。保留 10 处合理 @patch 和 psutil Mock
+
+#### v0.4.0 SRP 评估结论（2026-07-18）
+
+基于 project_memory 教训"God Class 判定基于 SRP（单一类多职责）而非行数/方法数阈值（52 候选 1.9% 命中率）"，对 3 个大文件进行 SRP 评估：
+
+| 文件 | 行数 | 类/方法结构 | 评估结论 |
+|------|------|------------|---------|
+| `data_manager.py` | 790 | 模块级函数 + DataManager 类（5 方法）；分 7 子功能组（加密层/DB基础设施/初始化+迁移/SQL验证/种子数据/操作接口/DataManager类） | **非 God Class** — 单一职责"数据管理层"，子功能均有清晰边界；可选优化（v0.5.0+）：拆分为 `encryption.py` + `migrations.py` + `data_manager.py` 3 个子模块 |
+| `task_engine_v3_executors.py` | 788 | `TaskEngineExecutorsMixin` 类，9 个 `_execute_*` 方法对应 9 种 TaskType | **非 God Class** — 已是 Mixin 拆分产物，单一职责"任务类型执行器"；不建议进一步拆分 |
+| `task_orchestrator.py` | 774 | `TaskOrchestrator` 类，16 方法（路由+4阶段执行+反思循环+共识检查+重试） | **非 God Class** — 任务编排职责内聚，方法多但同属一个职责；可选优化（v0.5.0+）：将"共识检查"部分提取为 `ConsensusChecker` 类 |
+
+**结论**：3 个大文件均不是 God Class，v0.4.0 不需要拆分。可选优化项记入 v0.5.0+ ROADMAP。
 
 ---
 
