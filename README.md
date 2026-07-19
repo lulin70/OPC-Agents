@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.4.0 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.5.0 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -202,7 +202,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.4.0
+pip install opc-agents==0.5.0
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography

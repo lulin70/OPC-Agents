@@ -4,6 +4,77 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-19
+
+### 用户验证纪元 — 种子用户验证基础设施 + 定位矛盾解决 + 运营基础设施
+
+> v0.5.0 是项目从"质量巩固"转向"用户验证"的关键 MINOR 版本。v0.4.0 完成了产品功能闭环（199/200 E2E 通过、83% 覆盖率、0 mypy 错误），但 0 真实用户、5 大商业指标 0 数据、产品定位内在矛盾未解决。v0.5.0 聚焦三大支柱：种子用户验证基础设施 + 产品定位矛盾解决 + 运营基础设施，为 v0.6.0+ 的 PMF 验证做好数据采集、反馈渠道、官网部署的完整准备。
+
+#### 4 个 OKR 全部完成 ✅
+
+- **OKR-1 种子用户验证基础设施**: MetricsCollector（906 行，6 个 record_xxx 方法，87% 覆盖率）+ LLMBackendManager（862 行，三路 fallback，84% 覆盖率）+ 反馈 API（7 端点，9 Pydantic 模型，83% 覆盖率）+ 反馈评分 UI（211 行，100% 覆盖率）+ 数据采集同意弹窗（192 行，95% 覆盖率）
+- **OKR-2 商业指标数据采集**: DB 迁移 v8（429 行，5 张表 + 20 索引 + 6 视图 + 5 脱敏视图）+ ADR-004 埋点架构（476 行）+ MetricsCollector 技术设计（708 行）+ 反馈 API 设计（993 行）
+- **OKR-3 产品定位矛盾解决**: POSITIONING_RESOLUTION.md（518 行，5-Why 根因 + 三层解决方案）+ PRD_V4.1.md（821 行，5 P0 技能 + 解冻路径）+ SKILL_FREEZE_LIST 更新指引
+- **OKR-4 运营基础设施**: 官网部署（12 个文件，2853 行：nginx 配置 + 静态文件 + 部署脚本 + GitHub workflow）+ 非技术用户图文版安装指南（1193 行）+ DEPLOYMENT_ARCHITECTURE.md（600 行，H1-H8 硬约束）
+
+#### 新增核心代码模块（4 个，~8000 行）✅
+
+- `opc_manager/metrics_collector.py`（906 行 + 扩展）: MetricsCollector 单例类（threading.Lock）+ 6 个 record_xxx 方法 + export_anonymized（SHA256 脱敏）+ WAL 模式 + 文件权限 0600。50 测试通过，91% 覆盖率。
+- `opc_manager/llm_backend_manager.py`（862 行）: LLMBackendManager 类 + call()/acall() 同步异步双路径 + 三路 fallback（Ollama→Moka→OpenAI）+ 健康检查（60s 心跳 + 3 次失败标记 unhealthy + 5min 恢复探测）+ httpx.MockTransport 可测试性。54 测试通过，84% 覆盖率。
+- `opc_manager/api_server.py` + `api/`（770 行）: FastAPI 应用入口（新建）+ 7 个 API 端点（feedback/batch/feedback GET/metrics/experience/nps/summary/export）+ JWT 认证 + 60 req/min 限流 + 26 模式 prompt injection 防护。19 测试通过，83% 覆盖率。
+- `frontend/components/{feedback,consent,install}*.py`（526 行）: 反馈评分 UI（5 星 + Morandi 暖金 #C9A96E）+ 数据采集同意弹窗（4 个复选框 + 0600 权限）+ 安装引导优化（5 步图文版）。51 测试通过，97% 覆盖率。
+
+#### DB 迁移 v7→v8 ✅
+
+- `opc_manager/migrations/v8_metrics.py`（429 行）: 5 张新表（metrics_activation/upgrade/flywheel/payment/experience）+ 20 个索引 + 1 个触发器 + 6 个汇总视图 + 5 个脱敏视图 + 事务性迁移（BEGIN + 失败 ROLLBACK + 备份恢复）。NPS 合并到 metrics_experience（通过 metric_type='nps' 区分）。
+
+#### 官网部署（12 个文件，2853 行）✅
+
+- `deploy/nginx/`: nginx.conf + 3 个 sites-available 配置（promiselink.cn / gateway.promiselink.cn / default）。严格遵循 H7 硬约束（默认 server 仅服务静态文件，无 proxy_pass）。WSS 升级支持（map $http_upgrade $connection_upgrade）。
+- `website/`: index.html（331 行，Morandi 配色，响应式，无 emoji）+ styles.css（1181 行，5 主色 + 4 语义色 + 3 星级色）+ 404.html。
+- `deploy/scripts/`: deploy-website.sh（277 行，rsync + nginx reload + 健康检查）+ healthcheck.sh（220 行，5 端点检查 + 连续 3 次失败企业微信告警）。
+- `.github/workflows/website-deploy.yml`（188 行）: push 触发自动部署 + 失败创建 issue。
+
+#### 文档（11 个，~7000 行）✅
+
+- `docs/product-manager/PRD_V4.1.md`（821 行）: PRD_V4 升级版。§1.2 定位更新为"愿景 vs 当前阶段" / §1.3 5 P0 技能（含 report）/ §1.5 当前阶段说明 / §1.6 技能状态表（11 个技能）/ §七 v0.5.0 验收标准（12 项功能验收）。
+- `docs/spec/POSITIONING_RESOLUTION.md`（518 行）: 5-Why 根因分析 + 三层解决方案（矛盾调和 + 解冻路径 + 长期机制）+ PRD_V4.1 更新清单 + 解冻决策矩阵。
+- `docs/architecture/ADR-004-metrics-collection-design.md`（476 行）: 埋点架构决策记录。新增 `opc_manager/metrics_collector.py` 模块 + 6 个 record_xxx 方法 + 5 张 SQLite 表 + 数据流 ASCII 图 + 替代方案对比。
+- `docs/architecture/ADR-005-llm-backend-fallback-design.md`（558 行）: LLM 后端多路径 fallback 架构决策记录。三路径优先级（Ollama→Moka AI→OpenAI）+ fallback 触发条件 + LLMBackendManager 类设计伪代码 + 健康检查机制。
+- `docs/architecture/DEPLOYMENT_ARCHITECTURE.md`（600 行）: 部署架构设计。三层架构 ASCII 图 + nginx 三 server 块 + 8 条硬约束 H1-H8 + CI/CD 流程 + 18 项验证标准。
+- `docs/architecture/TECH_DESIGN_metrics_implementation.md`（708 行）: MetricsCollector 实现技术设计。完整类签名 + 与 5 个现有组件集成方案 + 数据流时序图 + DB 迁移 v7→v8 + 数据脱敏规则。
+- `docs/architecture/API_DESIGN_feedback_and_metrics.md`（993 行）: 反馈与指标 API 设计。7 个 API 端点详细设计 + 9 个 Pydantic 模型完整代码 + 认证与权限矩阵 + 10 个 HTTP 状态码 + 13 个 prompt injection 危险模式。
+- `docs/architecture/DDL_metrics_v8.md`（700 行）: 完整的可执行 DDL 和迁移脚本。5 张表完整 CREATE TABLE + 索引 + 触发器 + 6 个汇总视图 + 5 个脱敏视图 + 迁移脚本 Python 伪代码。
+- `docs/architecture/UI_DESIGN_v0.5.0.md`（700 行）: 3 个 UI 原型设计。Morandi 配色方案 + 反馈评分 UI + 安装引导 5 步图文版 + 数据采集同意弹窗 + Streamlit 代码骨架 + WCAG 2.1 AA 可访问性。
+- `docs/architecture/SECURITY_REVIEW_v0.5.0.md`（551 行）: v0.5.0 安全审查报告。7 项法律法规合规检查 + STRIDE 6 项威胁建模 + 26 模式 prompt injection 检测清单 + 8 项风险评级表。
+- `tests/uat/UAT_TEST_PLAN_v0.5.0.md`（595 行）: UAT 用户接受测试计划。6 大用户类型 30 个测试用例 + Day 0-Day 14 测试流程时间线 + 每日问卷模板 + Week 1/2 访谈 + P0/P1/P2 缺陷分类。
+- `tests/test_cases/TEST_CASES_v0.5.0.md`（614 行）: 144 个测试用例集。5 大类测试用例（单元/API 集成/E2E/埋点/性能）+ 禁用 skip + 真实组件优先。
+- `docs/guides/INSTALL_GUIDE_NON_TECHNICAL.md`（1193 行）: 非技术用户图文版安装指南。§1-§7 全部章节 + 15 个 FAQ + 20 个截图占位符 + 口语化写作 + 无 emoji + Morandi 配色。
+
+#### 测试结果 ✅
+
+- **单元 + 集成测试**: 4338 passed, 77 skipped, 0 failed in 75.27s
+- **E2E 测试**: 169/171 通过（2 个环境问题失败：网络超时 + Ollama 未启动）
+- **Playwright UI 测试**: 21/21 通过 in 186.45s
+- **核心模块覆盖率**: 86%（MetricsCollector 87% / LLMBackendManager 84% / 反馈 API 83% / UI 组件 97%）
+- **i18n 完整性**: 3 locale 文件键集一致（1276 keys each），44 个新键已添加
+
+#### 安全与合规 ✅
+
+- 法律法规合规：PIPL 6 法条 + GDPR 6 条款 + 数据安全法 2 法条 + 网络安全法 2 法条
+- STRIDE 威胁建模：6 项全覆盖
+- Prompt Injection 防护：26 模式检测（21 现有 + 5 新增反馈专用）
+- 数据安全：用户业务数据本地存储 + 网关日志仅元数据 + API Key 环境变量注入 + 数据采集明确同意
+- H1-H8 硬约束全部遵循
+
+#### 版本同步 ✅
+
+- VERSION / version.py / Dockerfile / start.sh / requirements.txt / requirements-dev.txt
+- README.md / README-EN.md / README-JP.md（5 处版本号）
+- PROJECT_STATUS.md / CHANGELOG.md / ROADMAP_v0.5.0.md
+
+详见 [RELEASE_NOTES_v0.5.0.md](docs/releases/RELEASE_NOTES_v0.5.0.md)。
+
 ## [0.4.0] - 2026-07-18
 
 ### 发布前质量巩固 — bandit B608 清零 + T7 关闭 + tool_system.py 拆分确认 + SRP 评估

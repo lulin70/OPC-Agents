@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="OPC-Agents 是一人公司全栈运营系统，集成邮件、财务、报告、任务管理、CRM 五大核心技能，让独立创业者拥有自己的 AI 执行团队。">
+    <meta name="author" content="OPC-Agents Team">
+    <meta name="theme-color" content="#6B7B8C">
+    <title>OPC-Agents — 一人公司的 AI 执行团队</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%236B7B8C'/%3E%3Ctext x='16' y='22' font-family='system-ui' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+    <a class="skip-link" href="#main">跳到主内容</a>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="/" aria-label="OPC-Agents 首页">
+                <span class="brand-mark" aria-hidden="true">O</span>
+                <span class="brand-text">
+                    <span class="brand-name">OPC-Agents</span>
+                    <span class="brand-tagline">一人公司的 AI 执行团队</span>
+                </span>
+            </a>
+
+            <nav class="site-nav" aria-label="主导航">
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-menu">
+                    <span class="sr-only">展开菜单</span>
+                    <span class="nav-toggle-bar"></span>
+                    <span class="nav-toggle-bar"></span>
+                    <span class="nav-toggle-bar"></span>
+                </button>
+                <ul id="primary-menu" class="nav-list">
+                    <li><a href="#features">核心技能</a></li>
+                    <li><a href="#install">安装方式</a></li>
+                    <li><a href="#quickstart">快速入门</a></li>
+                    <li><a href="#feedback">反馈</a></li>
+                    <li><a class="nav-cta" href="#install">立即下载</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="container hero-inner">
+                <div class="hero-copy">
+                    <p class="hero-eyebrow">一人公司全栈运营系统</p>
+                    <h1 id="hero-title" class="hero-title">你说需求，<br>它出成果。</h1>
+                    <p class="hero-desc">
+                        OPC-Agents 是为独立创业者、自由职业者和独立创作者设计的智能任务执行系统。
+                        集成邮件、财务、报告、任务管理、CRM 五大核心技能，从输入需求到产出成果物全流程自动化。
+                    </p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="#install">立即安装</a>
+                        <a class="btn btn-ghost" href="#quickstart">查看快速入门</a>
+                    </div>
+                    <p class="hero-meta">
+                        <span class="meta-item">基础版本地运行</span>
+                        <span class="meta-sep" aria-hidden="true">·</span>
+                        <span class="meta-item">数据完全自持</span>
+                        <span class="meta-sep" aria-hidden="true">·</span>
+                        <span class="meta-item">MIT 协议</span>
+                    </p>
+                </div>
+                <div class="hero-flow" aria-hidden="true">
+                    <ol class="flow-list">
+                        <li><span class="flow-step">01</span><span class="flow-text">你描述需求</span></li>
+                        <li><span class="flow-step">02</span><span class="flow-text">AI 分析与检索</span></li>
+                        <li><span class="flow-step">03</span><span class="flow-text">生成与共识校验</span></li>
+                        <li><span class="flow-step">04</span><span class="flow-text">交付成果物</span></li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="section features" aria-labelledby="features-title">
+            <div class="container">
+                <header class="section-header">
+                    <p class="section-eyebrow">五大核心技能</p>
+                    <h2 id="features-title" class="section-title">把每一个运营环节做到真正好用</h2>
+                    <p class="section-subtitle">围绕一人公司高频场景，每个技能都从输入到输出闭环，拒绝半成品。</p>
+                </header>
+
+                <div class="card-grid">
+                    <article class="card">
+                        <div class="card-icon" aria-hidden="true">邮件</div>
+                        <h3 class="card-title">Email 技能</h3>
+                        <p class="card-desc">收发邮件、智能分类、自动回复草稿、附件归档。把邮箱从信息噪音变成结构化任务流。</p>
+                        <ul class="card-list">
+                            <li>IMAP / SMTP 主流服务商接入</li>
+                            <li>关键邮件自动归类与提醒</li>
+                            <li>草稿生成与一键发送</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="card-icon" aria-hidden="true">财务</div>
+                        <h3 class="card-title">Finance 技能</h3>
+                        <p class="card-desc">记账、收支流水、发票与报表生成。让一人公司也能拥有专业财务视角。</p>
+                        <ul class="card-list">
+                            <li>本地 SQLite 存储财务数据</li>
+                            <li>发票录入与 Excel 导出</li>
+                            <li>月度 / 季度现金流报表</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="card-icon" aria-hidden="true">报告</div>
+                        <h3 class="card-title">Report 技能</h3>
+                        <p class="card-desc">周报、月报、客户简报自动生成。支持 Word / Excel / PDF 多格式导出。</p>
+                        <ul class="card-list">
+                            <li>结构化模板驱动生成</li>
+                            <li>多语言切换（中 / 英 / 日）</li>
+                            <li>三贤者共识保证内容质量</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="card-icon" aria-hidden="true">任务</div>
+                        <h3 class="card-title">Task Manager 技能</h3>
+                        <p class="card-desc">任务拆解、依赖管理、并行执行、进度追踪。让模糊的需求变成清晰的待办清单。</p>
+                        <ul class="card-list">
+                            <li>并行执行降低 3 倍延迟</li>
+                            <li>关键决策前置共识保护</li>
+                            <li>异步任务可恢复与撤销</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="card-icon" aria-hidden="true">CRM</div>
+                        <h3 class="card-title">CRM 技能</h3>
+                        <p class="card-desc">客户档案、跟进记录、机会管理。把零散的沟通聚合成可复盘的客户资产。</p>
+                        <ul class="card-list">
+                            <li>本地化客户档案库</li>
+                            <li>跟进时间线一目了然</li>
+                            <li>与邮件 / 报告技能联动</li>
+                        </ul>
+                    </article>
+
+                    <article class="card card-cta">
+                        <h3 class="card-title">不止于此</h3>
+                        <p class="card-desc">技能市场支持扩展第三方技能，沉淀你自己的工作流。</p>
+                        <a class="btn btn-ghost" href="#quickstart">开始体验</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="install" class="section install" aria-labelledby="install-title">
+            <div class="container">
+                <header class="section-header">
+                    <p class="section-eyebrow">三种安装方式</p>
+                    <h2 id="install-title" class="section-title">选一种适合你的方式开始</h2>
+                    <p class="section-subtitle">基础版在用户本地运行，所有业务数据存储在本机，不上云。</p>
+                </header>
+
+                <div class="install-grid">
+                    <article class="install-card">
+                        <header class="install-card-header">
+                            <p class="install-card-tag">推荐</p>
+                            <h3 class="install-card-title">PyPI 安装</h3>
+                            <p class="install-card-sub">适合已具备 Python 3.10+ 环境的用户</p>
+                        </header>
+                        <pre class="code-block"><code>pip install opc-agents
+opc-agents</code></pre>
+                        <p class="install-card-note">安装后命令 <code>opc-agents</code> 即可启动。</p>
+                    </article>
+
+                    <article class="install-card">
+                        <header class="install-card-header">
+                            <p class="install-card-tag install-card-tag-alt">一键脚本</p>
+                            <h3 class="install-card-title">脚本安装</h3>
+                            <p class="install-card-sub">适合非技术用户，自动检测环境并配置</p>
+                        </header>
+                        <pre class="code-block"><code>curl -fsSL https://promiselink.cn/install.sh | bash</code></pre>
+                        <p class="install-card-note">脚本来源 <code>/var/www/scripts/install.sh</code>，自动创建虚拟环境与默认配置。</p>
+                    </article>
+
+                    <article class="install-card">
+                        <header class="install-card-header">
+                            <p class="install-card-tag install-card-tag-alt">容器化</p>
+                            <h3 class="install-card-title">Docker 安装</h3>
+                            <p class="install-card-sub">适合偏好容器隔离的用户</p>
+                        </header>
+                        <pre class="code-block"><code>docker run -d \
+  --name opc-agents \
+  -p 8000:8000 \
+  -v ~/.opc-agents:/root/.opc-agents \
+  ghcr.io/opc-agents/opc-agents:latest</code></pre>
+                        <p class="install-card-note">容器运行在用户本机，监听 <code>localhost:8000</code>。</p>
+                    </article>
+                </div>
+
+                <p class="install-warn">
+                    基础版仅在用户本地运行，禁止部署到云端服务器。
+                    专业版网关由官方统一部署在云端，用户通过 License Key 激活。
+                </p>
+            </div>
+        </section>
+
+        <section id="quickstart" class="section quickstart" aria-labelledby="quickstart-title">
+            <div class="container quickstart-inner">
+                <div class="quickstart-copy">
+                    <p class="section-eyebrow">快速入门</p>
+                    <h2 id="quickstart-title" class="section-title">3 分钟完成首次配置</h2>
+                    <p class="quickstart-desc">
+                        我们为非技术用户准备了图文版安装引导，从环境检查、首次启动到激活专业版全覆盖。
+                        如果你更习惯命令行，也可以参考快速上手文档。
+                    </p>
+                    <ul class="quickstart-links">
+                        <li>
+                            <a href="https://promiselink.cn/docs/guides/INSTALL_GUIDE_NON_TECHNICAL.md">
+                                非技术用户安装指引
+                            </a>
+                            <span>图文步骤，零基础友好</span>
+                        </li>
+                        <li>
+                            <a href="https://promiselink.cn/docs/guides/QUICK_START_BETA.md">
+                                快速上手 Beta
+                            </a>
+                            <span>面向技术用户的命令行指南</span>
+                        </li>
+                        <li>
+                            <a href="https://promiselink.cn/docs/guides/USER_TRIAL_GUIDE.md">
+                                用户试用指南
+                            </a>
+                            <span>3 分钟完成试用配置</span>
+                        </li>
+                    </ul>
+                </div>
+                <aside class="quickstart-side" aria-label="版本信息">
+                    <p class="side-label">当前版本</p>
+                    <p class="side-version">v0.5.0</p>
+                    <p class="side-status">Beta · 稳定迭代中</p>
+                    <hr class="side-divider">
+                    <p class="side-label">支持平台</p>
+                    <ul class="side-list">
+                        <li>macOS 12+</li>
+                        <li>Ubuntu 22.04+ / Debian 12+</li>
+                        <li>Windows WSL2</li>
+                        <li>Python 3.10+</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+
+        <section id="feedback" class="section feedback" aria-labelledby="feedback-title">
+            <div class="container feedback-inner">
+                <h2 id="feedback-title" class="section-title">你的反馈决定下一个版本</h2>
+                <p class="section-subtitle">
+                    OPC-Agents 处于 Beta 阶段，每一条反馈都会进入下一轮迭代规划。我们承诺 7 天内回复。
+                </p>
+                <div class="feedback-actions">
+                    <a class="btn btn-primary" href="https://promiselink.cn/docs/guides/FEEDBACK_FORM.md">
+                        提交反馈
+                    </a>
+                    <a class="btn btn-ghost" href="https://github.com/lulin70/OPC-Agents/issues">
+                        在 GitHub 反馈
+                    </a>
+                </div>
+                <p class="feedback-contact">
+                    商务合作 / License 咨询：
+                    <a href="mailto:hello@promiselink.cn">hello@promiselink.cn</a>
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <p class="footer-name">OPC-Agents</p>
+                <p class="footer-tagline">一人公司的 AI 执行团队</p>
+                <p class="footer-license">MIT License · v0.5.0 Beta</p>
+            </div>
+            <nav class="footer-nav" aria-label="页脚导航">
+                <div class="footer-col">
+                    <h3 class="footer-col-title">产品</h3>
+                    <ul>
+                        <li><a href="#features">核心技能</a></li>
+                        <li><a href="#install">安装方式</a></li>
+                        <li><a href="#quickstart">快速入门</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3 class="footer-col-title">文档</h3>
+                    <ul>
+                        <li><a href="https://promiselink.cn/docs/guides/INSTALL_GUIDE_NON_TECHNICAL.md">安装指引</a></li>
+                        <li><a href="https://promiselink.cn/docs/guides/QUICK_START_BETA.md">快速上手</a></li>
+                        <li><a href="https://promiselink.cn/docs/architecture/DEPLOYMENT_ARCHITECTURE.md">部署架构</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3 class="footer-col-title">支持</h3>
+                    <ul>
+                        <li><a href="https://promiselink.cn/docs/guides/FEEDBACK_FORM.md">提交反馈</a></li>
+                        <li><a href="https://github.com/lulin70/OPC-Agents/issues">问题反馈</a></li>
+                        <li><a href="mailto:hello@promiselink.cn">联系邮箱</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        <div class="container footer-bottom">
+            <p>&copy; 2026 OPC-Agents. All rights reserved.</p>
+            <p class="footer-icp">本站点仅发布产品信息与下载入口，业务数据始终存储在用户本地。</p>
+        </div>
+    </footer>
+
+    <script>
+        // 极简响应式导航切换（无外部依赖，遵循渐进增强）
+        (function () {
+            var toggle = document.querySelector('.nav-toggle');
+            var menu = document.getElementById('primary-menu');
+            if (!toggle || !menu) return;
+            toggle.addEventListener('click', function () {
+                var expanded = toggle.getAttribute('aria-expanded') === 'true';
+                toggle.setAttribute('aria-expanded', String(!expanded));
+                menu.classList.toggle('is-open');
+            });
+            // 点击导航项后自动收起菜单（移动端体验）
+            menu.addEventListener('click', function (e) {
+                if (e.target.tagName === 'A' && menu.classList.contains('is-open')) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                    menu.classList.remove('is-open');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

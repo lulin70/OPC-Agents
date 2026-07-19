@@ -1,8 +1,8 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-18（v0.4.0 发布前质量巩固：bandit B608 清零 + T7 系列关闭 + tool_system.py 拆分确认 + 3 大文件 SRP 评估 + D05 E2E 199/200 通过） | **版本**: v0.4.0 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-19（v0.5.0 用户验证纪元：种子用户验证基础设施 + 定位矛盾解决 + 运营基础设施。4 个 OKR 全部完成，174 个新测试通过，核心模块覆盖率 86%） | **版本**: v0.5.0 (Beta) | **许可**: MIT
 >
-> 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_D02_MATURITY.md](assessments/ASSESSMENT_D02_MATURITY.md) 配套使用。
+> 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_INITIAL_VISION_v0.4.0.md](assessments/ASSESSMENT_INITIAL_VISION_v0.4.0.md) 配套使用。
 
 ---
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.4.0`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.5.0`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |

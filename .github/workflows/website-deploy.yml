@@ -1,0 +1,188 @@
+name: Website Deploy
+
+# 官网自动部署工作流
+# 关联文档：docs/architecture/DEPLOYMENT_ARCHITECTURE.md §5.2
+# 触发条件：push 到 main 分支且涉及 website/ 或 deploy/nginx/ 路径
+# 部署目标：47.116.219.15（仅官网静态文件 + nginx 配置）
+# 硬约束 H6：禁止部署基础版容器/源码/前端到云端
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'website/**'
+      - 'deploy/nginx/**'
+      - 'deploy/scripts/deploy-website.sh'
+      - '.github/workflows/website-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '部署目标'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+# 防止并发部署冲突
+concurrency:
+  group: website-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy-website:
+    name: Deploy Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install rsync
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq rsync
+
+      - name: Configure SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
+        run: |
+          if [ -z "${DEPLOY_SSH_KEY}" ]; then
+            echo "::error::DEPLOY_SSH_KEY secret 未配置，无法部署"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # 写入私钥
+          printf '%s\n' "${DEPLOY_SSH_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # 已知主机指纹（首次部署时由脚本首次 ssh 接受）
+          touch ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+          # SSH 配置：禁用密码登录、指定私钥与端口
+          cat > ~/.ssh/config <<SSHCFG
+          Host promiselink-server
+            HostName ${DEPLOY_SSH_HOST:-47.116.219.15}
+            User root
+            Port ${DEPLOY_SSH_PORT:-22}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ServerAliveInterval 30
+            ServerAliveCountMax 3
+          SSHCFG
+          chmod 600 ~/.ssh/config
+
+          # 将 host alias 替换 deploy-website.sh 中的硬编码
+          # 通过 ssh config 让 root@47.116.219.15 走 promiselink-server 配置
+          # 实际部署脚本里仍写 root@47.116.219.15，由 ssh config 匹配 HostName
+
+      - name: Pre-flight syntax check
+        run: |
+          # 验证 bash 脚本语法
+          bash -n deploy/scripts/deploy-website.sh
+          bash -n deploy/scripts/healthcheck.sh
+
+          # 验证 nginx 配置文件存在
+          for f in deploy/nginx/nginx.conf \
+                   deploy/nginx/sites-available/default.conf \
+                   deploy/nginx/sites-available/promiselink.cn.conf \
+                   deploy/nginx/sites-available/gateway.promiselink.cn.conf; do
+            if [ ! -f "${f}" ]; then
+              echo "::error::缺失文件: ${f}"
+              exit 1
+            fi
+          done
+
+          # 验证官网静态文件存在
+          for f in website/index.html website/styles.css website/404.html; do
+            if [ ! -f "${f}" ]; then
+              echo "::error::缺失文件: ${f}"
+              exit 1
+            fi
+          done
+
+      - name: Determine deploy target
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ github.event.inputs.target }}" >> $GITHUB_OUTPUT
+          else
+            echo "target=production" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run deploy script
+        env:
+          DEPLOY_TARGET: ${{ steps.target.outputs.target }}
+        run: |
+          ./deploy/scripts/deploy-website.sh --${DEPLOY_TARGET}
+
+      - name: Health check
+        env:
+          HEALTH_URL: https://promiselink.cn/
+        run: |
+          max_attempts=10
+          attempt=0
+          while [ $attempt -lt $max_attempts ]; do
+            attempt=$((attempt + 1))
+            http_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -L "${HEALTH_URL}" || echo "000")
+            echo "Attempt ${attempt}/${max_attempts}: HTTP ${http_code}"
+            if [ "${http_code}" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Health check failed after ${max_attempts} attempts"
+          exit 1
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const commit = context.sha.substring(0, 7);
+            const title = `[部署告警] 官网部署失败 - ${commit}`;
+            const body = [
+              `## 官网部署失败`,
+              ``,
+              `- **Commit**: ${commit}`,
+              `- **Run**: ${runUrl}`,
+              `- **Trigger**: ${context.eventName}`,
+              `- **时间**: ${new Date().toISOString()}`,
+              ``,
+              `### 排查步骤`,
+              `1. 查看 workflow 完整日志确认失败步骤`,
+              `2. SSH 登录 47.116.219.15 执行 \`nginx -t\` 验证配置`,
+              `3. 执行 \`/opt/healthcheck/healthcheck.sh\` 检查端点状态`,
+              `4. 必要时回滚：\`cd /etc/nginx/sites-enabled && ln -sf ...\``,
+              ``,
+              `### 关联文档`,
+              `- [DEPLOYMENT_ARCHITECTURE.md](docs/architecture/DEPLOYMENT_ARCHITECTURE.md)`,
+              `- [deploy/nginx/README.md](deploy/nginx/README.md)`
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['deployment', 'website', 'priority-high']
+            });
