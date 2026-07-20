@@ -25,5 +25,5 @@ bandit>=1.7.0
 pip-audit>=2.7.0
 mypy>=1.8.0
 radon>=6.0.0  # Cyclomatic complexity analysis (CI non-blocking report)
-types-requests>=2.31.0  # v0.3.34 L1.1: mypy stubs for requests
+types-requests>=2.33.0.20260712  # v0.3.34 L1.1: mypy stubs for requests
 types-PyYAML>=6.0.0  # v0.3.34 L1.1: mypy stubs for PyYAML
