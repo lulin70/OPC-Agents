@@ -87,9 +87,7 @@ def _click_nav(page, label: str, timeout: int = 25000) -> None:
         except Exception as exc:
             last_error = exc
         time.sleep(0.5)
-    raise RuntimeError(
-        "无法点击导航项 '{}': {}".format(label, last_error)
-    )
+    raise RuntimeError("无法点击导航项 '{}': {}".format(label, last_error))
 
 
 # JavaScript: collect interactive elements lacking an accessible name
@@ -289,10 +287,10 @@ class TestA11yInteractiveLabels:
             for m in missing
             if not (m["tag"] == "input" and m["type"] in ("hidden", "file"))
         ]
-        assert not actionable_missing, (
-            "Found interactive elements without accessible names: {}".format(
-                actionable_missing[:10]
-            )
+        assert (
+            not actionable_missing
+        ), "Found interactive elements without accessible names: {}".format(
+            actionable_missing[:10]
         )
 
 
@@ -358,8 +356,7 @@ class TestA11yKeyboardNavigation:
         for _ in range(min(10, len(focusable_before))):
             page.keyboard.press("Tab")
             page.wait_for_timeout(100)
-            active = page.evaluate(
-                """() => {
+            active = page.evaluate("""() => {
                     const el = document.activeElement;
                     if (!el || el === document.body) return null;
                     return {
@@ -368,8 +365,7 @@ class TestA11yKeyboardNavigation:
                         role: el.getAttribute('role') || '',
                         testid: el.closest('[data-testid]') ? el.closest('[data-testid]').getAttribute('data-testid') : '',
                     };
-                }"""
-            )
+                }""")
             if active:
                 active_tags.add(
                     (active["tag"], active["type"], active["role"], active["testid"])
@@ -380,8 +376,7 @@ class TestA11yKeyboardNavigation:
         ), "Tab key did not move focus to any focusable element"
 
         # 3) Verify focus indicator is visible on the currently focused element
-        focus_visible = page.evaluate(
-            """() => {
+        focus_visible = page.evaluate("""() => {
                 const el = document.activeElement;
                 if (!el || el === document.body) return false;
                 const style = window.getComputedStyle(el);
@@ -395,8 +390,7 @@ class TestA11yKeyboardNavigation:
                 // :focus-visible support
                 const supportsFocusVisible = CSS.supports('selector(:focus-visible)');
                 return hasOutline || hasBoxShadow || supportsFocusVisible;
-            }"""
-        )
-        assert focus_visible, (
-            "Focused element does not show a visible focus indicator (outline/box-shadow)"
-        )
+            }""")
+        assert (
+            focus_visible
+        ), "Focused element does not show a visible focus indicator (outline/box-shadow)"

@@ -30,7 +30,6 @@ from opc_manager.task_engine_v3 import TaskEngineV3, TaskType
 from opc_manager.llm_content import LLMEnhancedContentGenerator, GenerationResult
 from opc_manager.web_search import WebSearchMCP
 
-
 # ============================================================
 # Mock LLM helpers — allow tests to run without real API key
 # ============================================================

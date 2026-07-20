@@ -128,12 +128,10 @@ def _select_theme_via_sidebar(page, theme_value: str) -> None:
 
 def _get_main_background_color(page) -> str:
     """Return the computed background color of the .stApp element."""
-    return page.evaluate(
-        """() => {
+    return page.evaluate("""() => {
             const el = document.querySelector('.stApp') || document.body;
             return window.getComputedStyle(el).backgroundColor;
-        }"""
-    )
+        }""")
 
 
 def _get_primary_color(page) -> str:
@@ -142,8 +140,7 @@ def _get_primary_color(page) -> str:
     Falls back to the Streamlit ``--primary-color`` CSS var if no primary
     button is rendered on the page.
     """
-    return page.evaluate(
-        """() => {
+    return page.evaluate("""() => {
             // Prefer Streamlit primary buttons (type="primary")
             const primaryBtn = document.querySelector(
                 '.stButton button[kind="primary"], ' +
@@ -160,23 +157,21 @@ def _get_primary_color(page) -> str:
             const anyBtn = document.querySelector('.stButton button');
             if (anyBtn) return window.getComputedStyle(anyBtn).backgroundColor;
             return '';
-        }"""
-    )
+        }""")
 
 
 def _get_text_color(page) -> str:
     """Return the computed text color of the first visible markdown paragraph."""
-    return page.evaluate(
-        """() => {
+    return page.evaluate("""() => {
             const md = document.querySelector('.stMarkdown, [data-testid="stMarkdown"]');
             if (md) return window.getComputedStyle(md).color;
             return window.getComputedStyle(document.body).color;
-        }"""
-    )
+        }""")
 
 
 def _contrast_ratio(fg_hex: str, bg_hex: str) -> float:
     """Compute the WCAG contrast ratio between two ``#RRGGBB`` colors."""
+
     def _relative_luminance(rgb: tuple[int, int, int]) -> float:
         def _linearize(c: float) -> float:
             c = c / 255.0
@@ -213,11 +208,9 @@ class TestMorandiDarkTheme:
         _select_theme_via_sidebar(page, "morandi_dark")
 
         bg = _get_main_background_color(page)
-        assert _color_matches(bg, MORANDI_DARK_BG, tolerance=10), (
-            "morandi_dark background should be {} but got {}".format(
-                MORANDI_DARK_BG, bg
-            )
-        )
+        assert _color_matches(
+            bg, MORANDI_DARK_BG, tolerance=10
+        ), "morandi_dark background should be {} but got {}".format(MORANDI_DARK_BG, bg)
 
 
 # ============================================================
@@ -247,15 +240,15 @@ class TestThemeSwitchingNoJump:
         # 3) Both should match MORANDI_PRIMARY (#6B7B8C) per UI_DESIGN §3.2.
         # Streamlit may render the primary button as a slightly different
         # shade when hovered/active; allow a generous tolerance.
-        assert _color_matches(primary_light, MORANDI_PRIMARY, tolerance=30), (
-            "morandi_light primary color should be {} but got {}".format(
-                MORANDI_PRIMARY, primary_light
-            )
+        assert _color_matches(
+            primary_light, MORANDI_PRIMARY, tolerance=30
+        ), "morandi_light primary color should be {} but got {}".format(
+            MORANDI_PRIMARY, primary_light
         )
-        assert _color_matches(primary_dark, MORANDI_PRIMARY, tolerance=30), (
-            "morandi_dark primary color should be {} but got {}".format(
-                MORANDI_PRIMARY, primary_dark
-            )
+        assert _color_matches(
+            primary_dark, MORANDI_PRIMARY, tolerance=30
+        ), "morandi_dark primary color should be {} but got {}".format(
+            MORANDI_PRIMARY, primary_dark
         )
 
 
@@ -278,28 +271,24 @@ class TestDarkThemeTextContrast:
         """
         # 1) Theoretical check (deterministic, no Playwright needed)
         theoretical_ratio = _contrast_ratio(MORANDI_DARK_TEXT, MORANDI_DARK_BG)
-        assert theoretical_ratio >= 7.0, (
-            "Theoretical contrast {} should be >= 7:1 (AAA)".format(
-                theoretical_ratio
-            )
-        )
+        assert (
+            theoretical_ratio >= 7.0
+        ), "Theoretical contrast {} should be >= 7:1 (AAA)".format(theoretical_ratio)
 
         # 2) Verify rendered colors match the design tokens in morandi_dark
         _wait_for_streamlit_content(page)
         _select_theme_via_sidebar(page, "morandi_dark")
 
         bg = _get_main_background_color(page)
-        assert _color_matches(bg, MORANDI_DARK_BG, tolerance=10), (
-            "Rendered background {} does not match {}".format(
-                bg, MORANDI_DARK_BG
-            )
-        )
+        assert _color_matches(
+            bg, MORANDI_DARK_BG, tolerance=10
+        ), "Rendered background {} does not match {}".format(bg, MORANDI_DARK_BG)
 
         text_color = _get_text_color(page)
-        assert _color_matches(text_color, MORANDI_DARK_TEXT, tolerance=30), (
-            "Rendered text color {} does not match {}".format(
-                text_color, MORANDI_DARK_TEXT
-            )
+        assert _color_matches(
+            text_color, MORANDI_DARK_TEXT, tolerance=30
+        ), "Rendered text color {} does not match {}".format(
+            text_color, MORANDI_DARK_TEXT
         )
 
         # 3) Compute the actual rendered ratio and assert >= 7:1
@@ -307,9 +296,10 @@ class TestDarkThemeTextContrast:
             _normalize_to_hex(text_color),
             _normalize_to_hex(bg),
         )
-        assert rendered_ratio >= 7.0, (
-            "Rendered contrast {} should be >= 7:1 (AAA); "
-            "text={} bg={}".format(rendered_ratio, text_color, bg)
+        assert (
+            rendered_ratio >= 7.0
+        ), "Rendered contrast {} should be >= 7:1 (AAA); " "text={} bg={}".format(
+            rendered_ratio, text_color, bg
         )
 
 

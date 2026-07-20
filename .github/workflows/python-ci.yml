@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+# Concurrency: 同 ref 多次 push 取消旧运行，节省 CI 资源
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -36,10 +41,9 @@ jobs:
         playwright install chromium --with-deps
 
     - name: Lint with ruff (blocking — unified with pre-commit)
-      # D03 P0-1: Unified ruff version to 0.15.21 (was 0.6.9, caused CI failures due to E402 drift)
-      run: |
-        pip install ruff==0.15.21
-        ruff check opc_manager/ frontend/ tests/ --exit-non-zero-on-fix
+      # 使用 requirements-dev.txt 已安装的版本（ruff>=0.15.22），避免双重事实来源
+      # D03 P0-1: 原 pin 0.15.21 与 requirements-dev.txt 不一致，已统一
+      run: ruff check opc_manager/ frontend/ tests/ --exit-non-zero-on-fix
 
     - name: Extended lint report (non-blocking — style info)
       run: |
@@ -48,16 +52,13 @@ jobs:
     - name: Type check with mypy (blocking — TD-065 resolved)
       # TD-065: 516 errors → 0 errors in v0.3.3 (2026-06-28)
       # Hard constraint: "CI mypy检查必须为阻塞状态"
-      # v0.3.32: Pin mypy==1.11.2 to align with .pre-commit-config.yaml (D06 T3)
-      run: |
-        pip install mypy==1.11.2
-        mypy opc_manager/ --ignore-missing-imports --follow-imports=silent
+      # 使用 requirements-dev.txt 已安装的版本（mypy>=1.11.2,<1.12），避免双重事实来源
+      run: mypy opc_manager/ --ignore-missing-imports --follow-imports=silent
 
     - name: Check formatting with Black
-      # v0.3.32: Pin black==24.8.0 to align with .pre-commit-config.yaml (D06 T3)
-      run: |
-        pip install black==24.8.0
-        black --check --target-version py310 opc_manager/ frontend/ tests/
+      # 使用 requirements-dev.txt 已安装的版本（black>=26.3.1），避免双重事实来源
+      # 原 pin black==24.8.0 与 requirements-dev.txt >=26.3.1 严重不一致（major 跨版本），已统一
+      run: black --check --target-version py310 opc_manager/ frontend/ tests/
 
     - name: Security scan with Bandit
       run: |

@@ -41,9 +41,7 @@ def _get_collector(request: Request) -> MetricsCollector:
     return get_metrics_collector()
 
 
-def _ensure_user_scope(
-    user: dict, target_user_id: Optional[str]
-) -> Optional[str]:
+def _ensure_user_scope(user: dict, target_user_id: Optional[str]) -> Optional[str]:
     """普通用户只能操作自己；admin 可指定任意 user_id 或全部。"""
     if user.get("role") == "admin":
         return target_user_id
@@ -55,7 +53,9 @@ def _ensure_user_scope(
     return user["user_id"]
 
 
-@router.post("/experience", response_model=MetricResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/experience", response_model=MetricResponse, status_code=status.HTTP_201_CREATED
+)
 async def submit_experience_metric(
     payload: ExperienceMetricRequest,
     request: Request,
@@ -114,7 +114,9 @@ async def submit_nps(
 @router.get("/summary", response_model=MetricsSummary)
 async def get_metrics_summary(
     request: Request,
-    metric_type: str = Query(..., description="experience/nps/activation/upgrade/flywheel/payment"),
+    metric_type: str = Query(
+        ..., description="experience/nps/activation/upgrade/flywheel/payment"
+    ),
     start_date: str = Query(..., description="ISO 8601 起始日期"),
     end_date: str = Query(..., description="ISO 8601 结束日期"),
     user_id: Optional[str] = Query(None, description="用户 ID（admin 可查全局）"),
@@ -236,8 +238,14 @@ async def export_metrics(
         cat = row.get("metric_category", "unknown")
         exported.setdefault(cat, []).append(row)
     # 如果请求方只请求 nps，从 experience 分组中过滤出 metric_type=nps 的行
-    if payload.metric_types is not None and "nps" in payload.metric_types and "experience" not in payload.metric_types:
-        nps_rows = [r for r in exported.get("experience", []) if r.get("metric_type") == "nps"]
+    if (
+        payload.metric_types is not None
+        and "nps" in payload.metric_types
+        and "experience" not in payload.metric_types
+    ):
+        nps_rows = [
+            r for r in exported.get("experience", []) if r.get("metric_type") == "nps"
+        ]
         if nps_rows:
             exported["nps"] = nps_rows
         exported.pop("experience", None)

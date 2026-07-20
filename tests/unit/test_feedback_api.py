@@ -28,7 +28,6 @@ from opc_manager.metrics_collector import (  # noqa: E402
     MetricsCollectionError,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -272,9 +271,7 @@ class _FlakyCollector(MetricsCollector):
     def record_feedback(self, *args, **kwargs):  # type: ignore[override]
         user_id = kwargs.get("user_id") or (args[0] if args else "")
         if user_id == self._fail_on_user_id:
-            raise MetricsCollectionError(
-                f"simulated failure for user_id={user_id}"
-            )
+            raise MetricsCollectionError(f"simulated failure for user_id={user_id}")
         return super().record_feedback(*args, **kwargs)
 
 
@@ -658,4 +655,6 @@ class TestRateLimit:
 
         # Assert — 60 次成功，10 次被限流
         assert success_count == 60, f"expected 60 success, got {success_count}"
-        assert rate_limited_count == 10, f"expected 10 rate-limited, got {rate_limited_count}"
+        assert (
+            rate_limited_count == 10
+        ), f"expected 10 rate-limited, got {rate_limited_count}"

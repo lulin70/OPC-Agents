@@ -111,12 +111,12 @@ class TestRenderFeedbackDialogHappy:
 
         # Verify selectbox was called with the correct options
         selectbox_kwargs = mock_streamlit.selectbox.call_args
-        assert selectbox_kwargs.kwargs.get("options") == FEEDBACK_CATEGORIES or \
-            selectbox_kwargs.args[1] == FEEDBACK_CATEGORIES
+        assert (
+            selectbox_kwargs.kwargs.get("options") == FEEDBACK_CATEGORIES
+            or selectbox_kwargs.args[1] == FEEDBACK_CATEGORIES
+        )
 
-    def test_render_feedback_dialog_keys_are_unique_per_session(
-        self, mock_streamlit
-    ):
+    def test_render_feedback_dialog_keys_are_unique_per_session(self, mock_streamlit):
         """Widget keys include skill_id and session_id for state isolation."""
         mock_streamlit.slider.return_value = 5
         mock_streamlit.selectbox.return_value = "praise"
@@ -202,9 +202,7 @@ class TestRenderFeedbackDialogBoundary:
         assert result is not None
         assert result["rating"] == MAX_RATING
 
-    def test_render_feedback_dialog_default_rating_is_max(
-        self, mock_streamlit
-    ):
+    def test_render_feedback_dialog_default_rating_is_max(self, mock_streamlit):
         """Slider default value is MAX_RATING (5 stars)."""
         mock_streamlit.slider.return_value = 5
         mock_streamlit.selectbox.return_value = "praise"
@@ -217,9 +215,7 @@ class TestRenderFeedbackDialogBoundary:
         slider_call = mock_streamlit.slider.call_args
         # value may be passed as positional or keyword arg
         value = (
-            slider_call.kwargs.get("value")
-            if "value" in slider_call.kwargs
-            else None
+            slider_call.kwargs.get("value") if "value" in slider_call.kwargs else None
         )
         if value is None and len(slider_call.args) >= 4:
             value = slider_call.args[3]
@@ -314,8 +310,10 @@ class TestSubmitFeedbackToApi:
         mock_post.assert_called_once()
         # Verify the call passed the feedback_data as JSON
         call_kwargs = mock_post.call_args
-        assert call_kwargs.kwargs.get("json") == feedback_data or \
-            call_kwargs.args[1] == feedback_data
+        assert (
+            call_kwargs.kwargs.get("json") == feedback_data
+            or call_kwargs.args[1] == feedback_data
+        )
 
     def test_submit_feedback_to_api_success_201(self):
         """HTTP 201 Created is also considered success."""
@@ -398,9 +396,7 @@ class TestSubmitFeedbackToApi:
 
     def test_submit_feedback_to_api_empty_data(self):
         """Empty feedback_data returns False without making HTTP call."""
-        with patch(
-            "frontend.components.feedback_dialog.requests.post"
-        ) as mock_post:
+        with patch("frontend.components.feedback_dialog.requests.post") as mock_post:
             result = submit_feedback_to_api({})
 
         assert result is False
@@ -408,9 +404,7 @@ class TestSubmitFeedbackToApi:
 
     def test_submit_feedback_to_api_none_data(self):
         """None feedback_data returns False without making HTTP call."""
-        with patch(
-            "frontend.components.feedback_dialog.requests.post"
-        ) as mock_post:
+        with patch("frontend.components.feedback_dialog.requests.post") as mock_post:
             # None is falsy, should be rejected by the empty check
             result = submit_feedback_to_api(None)  # type: ignore[arg-type]
 

@@ -30,13 +30,15 @@ __all__ = [
 FEEDBACK_CATEGORIES = ["unspecified", "bug", "suggestion", "praise", "question"]
 
 # Path to Morandi design tokens CSS (single source of truth for component colors)
-_MORANDI_TOKENS_PATH = Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+_MORANDI_TOKENS_PATH = (
+    Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+)
 
 # Morandi 配色（与 UI_DESIGN_v0.5.0.md §3.2 语义色板对齐，不使用刺眼 emoji）
 TOAST_COLORS = {
     "success": "#7A9B76",  # Morandi 成功绿（柔化）
-    "error": "#B07C7C",    # Morandi 危险红（柔化）
-    "info": "#7B8FA1",     # Morandi 信息蓝（柔化）
+    "error": "#B07C7C",  # Morandi 危险红（柔化）
+    "info": "#7B8FA1",  # Morandi 信息蓝（柔化）
 }
 
 # 默认 API 端点（与 API_DESIGN_feedback_and_metrics.md §3.1 对齐）

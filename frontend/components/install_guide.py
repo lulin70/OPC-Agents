@@ -40,7 +40,9 @@ INSTALL_COMMANDS = {
 AI_BACKENDS = ["ollama", "moka", "openai"]
 
 # Path to Morandi design tokens CSS (single source of truth for component colors)
-_MORANDI_TOKENS_PATH = Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+_MORANDI_TOKENS_PATH = (
+    Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+)
 
 
 def _inject_morandi_tokens() -> None:
@@ -146,9 +148,7 @@ def render_install_guide() -> None:
     with st.expander(_t("install.step2_title")):
         st.markdown(_t("install.step2_desc"))
         _render_copyable_command(INSTALL_COMMANDS["start_cmd"])
-        st.markdown(
-            f"{_t('install.step2_visit')}: {INSTALL_COMMANDS['start_url']}"
-        )
+        st.markdown(f"{_t('install.step2_visit')}: {INSTALL_COMMANDS['start_url']}")
 
     # Step 3: 配置 AI 后端（3 选 1，可跳过；默认 Moka 网关零成本）
     with st.expander(_t("install.step3_title")):
@@ -171,7 +171,9 @@ def render_install_guide() -> None:
             with st.expander(_t("install.step3_what_is_apikey"), expanded=False):
                 st.info(_t("install.step3_apikey_explain"))
             if api_key:
-                logger.info("[InstallGuide] OpenAI API key entered (length=%d)", len(api_key))
+                logger.info(
+                    "[InstallGuide] OpenAI API key entered (length=%d)", len(api_key)
+                )
         elif option == "ollama":
             st.info(_t("install.step3_ollama_help"))
 
@@ -200,10 +202,8 @@ def render_install_guide() -> None:
     # Step 5: 完成
     with st.expander(_t("install.step5_title")):
         st.markdown(_t("install.step5_desc"))
-        st.markdown(
-            f"""
+        st.markdown(f"""
             - {_t('install.step5_example_email')}
             - {_t('install.step5_example_finance')}
             - {_t('install.step5_example_report')}
-            """
-        )
+            """)

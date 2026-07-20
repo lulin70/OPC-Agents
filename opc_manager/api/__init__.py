@@ -83,7 +83,11 @@ async def rate_limit_middleware(request: Request, call_next: Any) -> Any:
     捕获，必须在这里直接返回 JSONResponse。
     """
     path = request.url.path
-    if path == "/health" or request.method == "OPTIONS" or not path.startswith("/api/v1"):
+    if (
+        path == "/health"
+        or request.method == "OPTIONS"
+        or not path.startswith("/api/v1")
+    ):
         return await call_next(request)
     # /api/v1/feedback/batch 由路由内单独更严格限流，此处放过避免双重计数
     if path == "/api/v1/feedback/batch":

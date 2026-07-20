@@ -281,9 +281,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 def _read_db_version(conn: sqlite3.Connection) -> int:
     """Return current db_version from ``_meta`` table, or 0 if not initialized."""
     try:
-        row = conn.execute(
-            "SELECT value FROM _meta WHERE key='db_version'"
-        ).fetchone()
+        row = conn.execute("SELECT value FROM _meta WHERE key='db_version'").fetchone()
         if row is None:
             return 0
         return int(row[0]) if row[0] is not None else 0
@@ -294,9 +292,7 @@ def _read_db_version(conn: sqlite3.Connection) -> int:
 
 def _ensure_meta_table(conn: sqlite3.Connection) -> None:
     """Create ``_meta`` table if missing (standalone metrics.db use case)."""
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT)"
-    )
+    conn.execute("CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT)")
 
 
 def _get_db_path(conn: sqlite3.Connection) -> str:
@@ -360,9 +356,7 @@ def migrate_v8(conn: sqlite3.Connection) -> None:
             f"Run prior migrations first."
         )
 
-    logger.info(
-        "[migrate_v8] Current version: v%d, target: v%d", current, V8_VERSION
-    )
+    logger.info("[migrate_v8] Current version: v%d, target: v%d", current, V8_VERSION)
 
     # Step 2: backup DB file before touching schema.
     db_path = _get_db_path(conn)
@@ -399,9 +393,7 @@ def migrate_v8(conn: sqlite3.Connection) -> None:
             (V8_VERSION, V8_DESCRIPTION, V8_APPLIED_AT),
         )
         conn.commit()
-        logger.info(
-            "[migrate_v8] Migration v%d → v%d completed", current, V8_VERSION
-        )
+        logger.info("[migrate_v8] Migration v%d → v%d completed", current, V8_VERSION)
     except Exception as exc:
         # Step 8: failure path — rollback transaction + restore backup.
         logger.error("[migrate_v8] Migration failed: %s. Rolling back...", exc)
@@ -411,9 +403,7 @@ def migrate_v8(conn: sqlite3.Connection) -> None:
             logger.error("[migrate_v8] Rollback failed: %s", rollback_err)
         if backup_path:
             _restore_backup(backup_path, db_path)
-        raise RuntimeError(
-            f"migrate_v8 failed and rolled back: {exc}"
-        ) from exc
+        raise RuntimeError(f"migrate_v8 failed and rolled back: {exc}") from exc
 
 
 __all__ = [

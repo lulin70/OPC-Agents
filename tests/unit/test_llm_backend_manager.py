@@ -35,7 +35,6 @@ from opc_manager.llm_backend_manager import (
 from opc_manager.llm_cache import LLMCache
 from opc_manager.llm_service import LLMProvider, LLMResponse
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -105,9 +104,7 @@ def _openai_response(content: str = "hello from openai") -> httpx.Response:
     return httpx.Response(
         200,
         json={
-            "choices": [
-                {"message": {"role": "assistant", "content": content}}
-            ],
+            "choices": [{"message": {"role": "assistant", "content": content}}],
             "usage": {
                 "prompt_tokens": 5,
                 "completion_tokens": 10,
@@ -149,6 +146,7 @@ class TestLLMBackendManagerHappyPath(unittest.TestCase):
         with valid Ollama JSON.
         Expected: Response content matches, provider == OLLAMA.
         """
+
         # Arrange
         def handler(request: httpx.Request) -> httpx.Response:
             return _ollama_response("local-ollama-reply")
@@ -170,6 +168,7 @@ class TestLLMBackendManagerHappyPath(unittest.TestCase):
 
     def test_call_moka_success_happy_path(self):
         """Verify: Moka backend returns parsed OpenAI-compatible response."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             return _openai_response("moka-reply")
 
@@ -183,6 +182,7 @@ class TestLLMBackendManagerHappyPath(unittest.TestCase):
 
     def test_call_openai_success_happy_path(self):
         """Verify: OpenAI backend returns parsed response."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             return _openai_response("openai-reply")
 
@@ -262,18 +262,24 @@ class TestLLMBackendManagerHappyPath(unittest.TestCase):
         # Second call: cache hit, backend NOT called
         second = manager.call("prompt-to-cache")
         self.assertEqual(second.content, "persisted-reply")
-        self.assertEqual(call_count["n"], 1, "Backend should not be called on second call")
+        self.assertEqual(
+            call_count["n"], 1, "Backend should not be called on second call"
+        )
 
         # Verify cache contains the entry
         cached = cache.get(
-            model="llama3", temperature=0.3, max_tokens=500,
-            system_prompt="", user_prompt="prompt-to-cache",
+            model="llama3",
+            temperature=0.3,
+            max_tokens=500,
+            system_prompt="",
+            user_prompt="prompt-to-cache",
         )
         self.assertEqual(cached, "persisted-reply")
         cache.close()
 
     def test_async_acall_happy_path(self):
         """Verify: Async acall() returns the same response as sync call()."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             return _ollama_response("async-reply")
 
@@ -288,6 +294,7 @@ class TestLLMBackendManagerHappyPath(unittest.TestCase):
 
     def test_health_check_all_healthy(self):
         """Verify: health_check() returns healthy=True for all reachable backends."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             # Probes use GET for ollama (/api/tags) and HEAD for others.
             return httpx.Response(200)
@@ -346,6 +353,7 @@ class TestLLMBackendManagerFallback(unittest.TestCase):
         Scenario: Ollama URL triggers httpx.ConnectError; Moka returns 200.
         Expected: Response provider == MOKA; ollama health consecutive_failures == 1.
         """
+
         # Arrange
         def handler(request: httpx.Request) -> httpx.Response:
             if "localhost:11434" in str(request.url):
@@ -370,6 +378,7 @@ class TestLLMBackendManagerFallback(unittest.TestCase):
 
     def test_call_moka_5xx_fallback_to_openai(self):
         """Verify: When Moka returns 5xx, fallback to OpenAI."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             url = str(request.url)
             if "gateway.promiselink" in url:
@@ -391,6 +400,7 @@ class TestLLMBackendManagerFallback(unittest.TestCase):
     def test_call_all_backends_fail_raises_LLMAllBackendsFailedError(self):
         """Verify: When all backends fail with fallback-eligible errors,
         LLMAllBackendsFailedError is raised."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             raise httpx.ConnectError("all down")
 
@@ -433,6 +443,7 @@ class TestLLMBackendManagerFallback(unittest.TestCase):
 
     def test_call_429_fallback_to_next_backend(self):
         """Verify: HTTP 429 (rate limit) triggers fallback to next backend."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             url = str(request.url)
             if "localhost:11434" in url:
@@ -531,9 +542,7 @@ class TestLLMBackendManagerHealth(unittest.TestCase):
 
         # Mark unhealthy
         for _ in range(3):
-            manager._record_health(
-                "ollama", success=False, latency_ms=0, error="down"
-            )
+            manager._record_health("ollama", success=False, latency_ms=0, error="down")
         self.assertFalse(manager._health["ollama"].healthy)
 
         # Simulate 5 min passing — move next_probe_ts into past
@@ -569,6 +578,7 @@ class TestLLMBackendManagerHealth(unittest.TestCase):
 
     def test_health_check_marks_unhealthy_on_5xx_probe(self):
         """Verify: Probe returning 5xx marks backend unhealthy (after threshold)."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(503, text="gateway down")
 
@@ -716,8 +726,11 @@ class TestLLMBackendManagerCache(unittest.TestCase):
         manager._cache_put(
             "p",
             LLMResponse(
-                content="x", provider=LLMProvider.OLLAMA, model="llama3",
-                usage={}, latency_ms=1.0,
+                content="x",
+                provider=LLMProvider.OLLAMA,
+                model="llama3",
+                usage={},
+                latency_ms=1.0,
             ),
         )
 
@@ -880,6 +893,7 @@ class TestLLMBackendManagerPerformance(unittest.TestCase):
         Scenario: 10 threads each call manager.call() with the same prompt.
         Expected: All calls succeed; no exceptions; completes in < 5s.
         """
+
         def handler(request: httpx.Request) -> httpx.Response:
             return _ollama_response("concurrent-reply")
 
@@ -921,6 +935,7 @@ class TestLLMBackendManagerPerformance(unittest.TestCase):
 
         Uses asyncio.gather to issue 5 parallel calls.
         """
+
         def handler(request: httpx.Request) -> httpx.Response:
             return _ollama_response("async-concurrent-reply")
 
@@ -944,6 +959,7 @@ class TestLLMBackendManagerPerformance(unittest.TestCase):
 
     def test_call_latency_recorded(self):
         """Verify: Latency is measured and recorded in health stats."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             time.sleep(0.05)  # 50ms
             return _ollama_response("slow-reply")
@@ -1046,6 +1062,7 @@ class TestLLMBackendManagerIntegration(unittest.TestCase):
 
     def test_manager_works_with_real_llm_response_dataclass(self):
         """Verify: Returned objects are real LLMResponse instances (not mocks)."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             return _ollama_response("real-instance")
 
@@ -1062,6 +1079,7 @@ class TestLLMBackendManagerIntegration(unittest.TestCase):
 
     def test_health_check_updates_status_after_call_failure(self):
         """Verify: A failed call() updates the health status, visible via status API."""
+
         def handler(request: httpx.Request) -> httpx.Response:
             if "localhost:11434" in str(request.url):
                 raise httpx.ConnectError("down")
@@ -1116,7 +1134,9 @@ class TestLLMBackendManagerIntegration(unittest.TestCase):
         ollama_attempts["n"] = 0
         r = manager.call("p")
         self.assertEqual(r.content, "moka-ok")
-        self.assertEqual(ollama_attempts["n"], 0, "Ollama should be skipped on 4th call")
+        self.assertEqual(
+            ollama_attempts["n"], 0, "Ollama should be skipped on 4th call"
+        )
 
 
 if __name__ == "__main__":

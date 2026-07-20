@@ -35,7 +35,9 @@ PRIVACY_POLICY_URL = "https://promiselink.cn/privacy"
 DPA_URL = "https://promiselink.cn/dpa"
 
 # Path to Morandi design tokens CSS (single source of truth for component colors)
-_MORANDI_TOKENS_PATH = Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+_MORANDI_TOKENS_PATH = (
+    Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+)
 
 # 默认同意配置：前 3 项默认勾选（仅本地存储），最后一项（反馈内容）默认不勾选，
 # 上报开关默认关闭（脱敏上报需用户主动同意）。与 ADR-004 §3.4 + HARD_CONSTRAINTS S4 对齐。
@@ -149,7 +151,12 @@ def render_consent_dialog(config_path: Path) -> Optional[dict]:
             type="secondary",
         ):
             consent_data = DEFAULT_CONSENT.copy()
-            for key in ["usage_stats", "perf_metrics", "satisfaction", "feedback_content"]:
+            for key in [
+                "usage_stats",
+                "perf_metrics",
+                "satisfaction",
+                "feedback_content",
+            ]:
                 consent_data[key] = False
             consent_data["consented_at"] = datetime.now(timezone.utc).isoformat()
             consent_data["consent_version"] = CONSENT_VERSION
@@ -192,7 +199,9 @@ def save_consent(config_path: Path, consent_data: dict) -> None:
         config_path.chmod(0o600)
     except OSError as exc:
         # Windows 等系统可能不支持 chmod，仅记录日志不抛出
-        logger.warning("[ConsentDialog] chmod 0o600 failed for %s: %s", config_path, exc)
+        logger.warning(
+            "[ConsentDialog] chmod 0o600 failed for %s: %s", config_path, exc
+        )
 
 
 def load_consent(config_path: Path) -> Optional[dict]:
@@ -210,7 +219,9 @@ def load_consent(config_path: Path) -> Optional[dict]:
         with open(config_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("[ConsentDialog] Failed to load consent from %s: %s", config_path, exc)
+        logger.warning(
+            "[ConsentDialog] Failed to load consent from %s: %s", config_path, exc
+        )
         return None
 
 

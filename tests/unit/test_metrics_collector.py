@@ -66,9 +66,7 @@ def migration_conn(tmp_path):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute("CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT)")
-    conn.execute(
-        "INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', '7')"
-    )
+    conn.execute("INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', '7')")
     conn.commit()
     yield conn
     conn.close()
@@ -407,8 +405,7 @@ class TestRecordNPS:
         with pytest.raises(MetricsValidationError, match="0-10"):
             collector.record_nps(user_id="user-x", score=11)
         count = collector._conn.execute(
-            "SELECT COUNT(*) AS c FROM metrics_experience "
-            "WHERE metric_type='nps'"
+            "SELECT COUNT(*) AS c FROM metrics_experience " "WHERE metric_type='nps'"
         ).fetchone()["c"]
         assert count == 0
 
@@ -520,7 +517,11 @@ class TestExportAnonymized:
             assert "anonymized_user_hash" in row
             assert len(row["anonymized_user_hash"]) == 16
         # Same user_id → same hash.
-        user_a_rows = [r for r in exported if r.get("metric_category") in ("activation", "experience")]
+        user_a_rows = [
+            r
+            for r in exported
+            if r.get("metric_category") in ("activation", "experience")
+        ]
         hashes = {r["anonymized_user_hash"] for r in user_a_rows}
         # user-A appears in activation + nps; user-B in experience.
         # At least 2 distinct hashes for 2 distinct users.
@@ -645,8 +646,7 @@ class TestConcurrencyAndPerformance:
         # Act
         start = time.time()
         threads = [
-            threading.Thread(target=writer, args=(t,))
-            for t in range(num_threads)
+            threading.Thread(target=writer, args=(t,)) for t in range(num_threads)
         ]
         for t in threads:
             t.start()
@@ -706,9 +706,7 @@ class TestSingletonAndDBProperties:
         Expected: PRAGMA journal_mode returns 'wal'.
         """
         # Act
-        mode = collector._conn.execute(
-            "PRAGMA journal_mode"
-        ).fetchone()[0]
+        mode = collector._conn.execute("PRAGMA journal_mode").fetchone()[0]
 
         # Assert
         assert mode.lower() == "wal"
@@ -791,9 +789,7 @@ class TestMigrationV8:
         db_path = str(tmp_path / "bad_version.db")
         conn = sqlite3.connect(db_path)
         conn.execute("CREATE TABLE _meta (key TEXT PRIMARY KEY, value TEXT)")
-        conn.execute(
-            "INSERT INTO _meta (key, value) VALUES ('db_version', '5')"
-        )
+        conn.execute("INSERT INTO _meta (key, value) VALUES ('db_version', '5')")
         conn.commit()
 
         # Act + Assert
@@ -826,9 +822,7 @@ class TestValidationEdgeCases:
     def test_record_upgrade_missing_to_version_raises(self, collector):
         """Verify: empty to_version raises MetricsValidationError."""
         with pytest.raises(MetricsValidationError, match="to_version"):
-            collector.record_upgrade(
-                user_id="u1", from_version="basic", to_version=""
-            )
+            collector.record_upgrade(user_id="u1", from_version="basic", to_version="")
 
     def test_record_flywheel_invalid_level_raises(self, collector):
         """Verify: flywheel_level outside 0-4 raises."""
@@ -837,25 +831,17 @@ class TestValidationEdgeCases:
         with pytest.raises(MetricsValidationError, match="flywheel_level"):
             collector.record_flywheel(user_id="u1", flywheel_level=-1)
         with pytest.raises(MetricsValidationError, match="previous_level"):
-            collector.record_flywheel(
-                user_id="u1", flywheel_level=2, previous_level=9
-            )
+            collector.record_flywheel(user_id="u1", flywheel_level=2, previous_level=9)
 
     def test_record_payment_invalid_amount_raises(self, collector):
         """Verify: negative or non-numeric amount raises."""
         with pytest.raises(MetricsValidationError, match="amount must be >= 0"):
-            collector.record_payment(
-                user_id="u1", payment_status="paid", amount=-10.0
-            )
+            collector.record_payment(user_id="u1", payment_status="paid", amount=-10.0)
         with pytest.raises(MetricsValidationError, match="amount must be a number"):
-            collector.record_payment(
-                user_id="u1", payment_status="paid", amount="100"
-            )
+            collector.record_payment(user_id="u1", payment_status="paid", amount="100")
         # bool is rejected even though bool is subclass of int.
         with pytest.raises(MetricsValidationError, match="amount must be a number"):
-            collector.record_payment(
-                user_id="u1", payment_status="paid", amount=True
-            )
+            collector.record_payment(user_id="u1", payment_status="paid", amount=True)
 
     def test_record_nps_non_int_score_raises(self, collector):
         """Verify: float or bool NPS score raises (record_nps requires int)."""
@@ -866,7 +852,9 @@ class TestValidationEdgeCases:
 
     def test_record_experience_non_number_score_raises(self, collector):
         """Verify: non-numeric experience score raises."""
-        with pytest.raises(MetricsValidationError, match="experience score must be a number"):
+        with pytest.raises(
+            MetricsValidationError, match="experience score must be a number"
+        ):
             collector.record_experience(
                 user_id="u1",
                 metric_type="dialogue_naturalness",
@@ -874,9 +862,7 @@ class TestValidationEdgeCases:
             )
         # NPS path with non-number
         with pytest.raises(MetricsValidationError, match="NPS score must be a number"):
-            collector.record_experience(
-                user_id="u1", metric_type="nps", score="9"
-            )
+            collector.record_experience(user_id="u1", metric_type="nps", score="9")
 
     def test_record_experience_score_too_low_raises(self, collector):
         """Verify: experience score < 1.0 raises."""
@@ -901,9 +887,7 @@ class TestValidationEdgeCases:
 
     def test_record_experience_nps_score_boundary_0_ok(self, collector):
         """Verify: NPS via record_experience score=0 is accepted."""
-        rid = collector.record_experience(
-            user_id="u1", metric_type="nps", score=0
-        )
+        rid = collector.record_experience(user_id="u1", metric_type="nps", score=0)
         row = collector._conn.execute(
             "SELECT score FROM metrics_experience WHERE id=?", (rid,)
         ).fetchone()
@@ -975,12 +959,8 @@ class TestValidationEdgeCases:
 
     def test_get_summary_flywheel_with_data(self, collector):
         """Verify: flywheel summary computes flywheel_rate_pct."""
-        collector.record_flywheel(
-            user_id="u1", flywheel_level=2, previous_level=1
-        )
-        collector.record_flywheel(
-            user_id="u2", flywheel_level=1, previous_level=0
-        )
+        collector.record_flywheel(user_id="u1", flywheel_level=2, previous_level=1)
+        collector.record_flywheel(user_id="u2", flywheel_level=1, previous_level=0)
         summary = collector.get_summary(metric_type="flywheel")
         assert summary["total_users"] == 2
         assert summary["flywheel_users"] == 1  # only u1 reached >=2
@@ -988,9 +968,7 @@ class TestValidationEdgeCases:
 
     def test_get_summary_payment_with_data(self, collector):
         """Verify: payment summary computes paid_users + total_paid_amount."""
-        collector.record_payment(
-            user_id="u1", payment_status="paid", amount=199.0
-        )
+        collector.record_payment(user_id="u1", payment_status="paid", amount=199.0)
         collector.record_payment(user_id="u2", payment_status="trial")
         summary = collector.get_summary(metric_type="payment")
         assert summary["paid_users"] == 1
@@ -1003,9 +981,7 @@ class TestValidationEdgeCases:
         collector.record_nps(user_id="u1", score=9)
         # Query with future start_date → no results.
         future = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
-        summary = collector.get_summary(
-            metric_type="nps", start_date=future
-        )
+        summary = collector.get_summary(metric_type="nps", start_date=future)
         assert summary["total_responses"] == 0
         assert summary["nps_score"] == 0.0
 
@@ -1086,9 +1062,7 @@ class TestValidationEdgeCases:
         rid = collector.record_nps(user_id="env-user", score=10)
         assert len(rid) == 32
 
-    def test_resolve_salt_from_file_when_env_unset(
-        self, monkeypatch, tmp_path
-    ):
+    def test_resolve_salt_from_file_when_env_unset(self, monkeypatch, tmp_path):
         """Verify: salt is read from file when env var is unset.
 
         Scenario: METRICS_ANONYMIZATION_SALT not set; salt file at
@@ -1164,9 +1138,7 @@ class TestMigrationV8Rollback:
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("CREATE TABLE _meta (key TEXT PRIMARY KEY, value TEXT)")
-        conn.execute(
-            "INSERT INTO _meta (key, value) VALUES ('db_version', '7')"
-        )
+        conn.execute("INSERT INTO _meta (key, value) VALUES ('db_version', '7')")
         # Pre-existing business data that must survive the failed migration.
         conn.execute(
             "CREATE TABLE test_business_data (id TEXT PRIMARY KEY, payload TEXT)"

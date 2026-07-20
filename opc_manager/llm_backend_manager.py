@@ -131,7 +131,9 @@ class LLMBackendManager:
             raise ValueError("LLMBackendManager requires at least one enabled backend")
 
         # Sort by priority (lower number = higher priority = tried first).
-        self._backends: List[LLMBackendConfig] = sorted(enabled, key=lambda b: b.priority)
+        self._backends: List[LLMBackendConfig] = sorted(
+            enabled, key=lambda b: b.priority
+        )
         self._all_backends: List[LLMBackendConfig] = list(backends)
 
         self._cache: Optional[LLMCache] = cache
@@ -581,7 +583,9 @@ class LLMBackendManager:
         headers = dict(backend.extra_headers)
         start = time.time()
         try:
-            with self._make_sync_client(timeout=self.HEALTH_CHECK_PROBE_TIMEOUT) as client:
+            with self._make_sync_client(
+                timeout=self.HEALTH_CHECK_PROBE_TIMEOUT
+            ) as client:
                 if backend.name == "ollama":
                     resp = client.get(url, headers=headers)
                 else:
@@ -615,7 +619,10 @@ class LLMBackendManager:
 
     def start_background_health_check(self) -> None:
         """Start the background health check thread (idempotent)."""
-        if self._health_check_thread is not None and self._health_check_thread.is_alive():
+        if (
+            self._health_check_thread is not None
+            and self._health_check_thread.is_alive()
+        ):
             return
         self._health_check_stop.clear()
         self._health_check_thread = threading.Thread(
@@ -693,16 +700,18 @@ class LLMBackendManager:
             raw_response={"cached": True},
         )
 
-    def _cache_put(
-        self, prompt: str, response: LLMResponse, **kwargs: Any
-    ) -> None:
+    def _cache_put(self, prompt: str, response: LLMResponse, **kwargs: Any) -> None:
         if self._cache is None:
             return
         model = response.model or self._primary_model()
         temperature = float(kwargs.get("temperature", self.DEFAULT_TEMPERATURE))
         max_tokens = int(kwargs.get("max_tokens", self.DEFAULT_MAX_TOKENS))
         system_prompt = kwargs.get("system_prompt") or ""
-        provider = response.provider.value if hasattr(response.provider, "value") else str(response.provider)
+        provider = (
+            response.provider.value
+            if hasattr(response.provider, "value")
+            else str(response.provider)
+        )
         try:
             self._cache.put(
                 model=model,

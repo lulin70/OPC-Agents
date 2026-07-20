@@ -182,7 +182,9 @@ class MetricResponse(BaseModel):
     """指标写入通用响应体"""
 
     id: str = Field(..., description="指标记录 ID，UUID v4")
-    status: str = Field(..., pattern=r"^(success|pending|failed)$", description="写入状态")
+    status: str = Field(
+        ..., pattern=r"^(success|pending|failed)$", description="写入状态"
+    )
     message: str = Field("", description="附加信息（如失败原因）")
 
 

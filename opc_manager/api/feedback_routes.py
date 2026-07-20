@@ -99,17 +99,21 @@ async def submit_feedback(
             detail=f"反馈写入失败: {e}",
         )
     rows = collector.get_feedback_list(user_id=payload.user_id, limit=1, offset=0)
-    row = rows[0] if rows else {
-        "record_id": record_id,
-        "user_id": payload.user_id,
-        "rating": payload.rating,
-        "comment": payload.comment or "",
-        "category": payload.category.value,
-        "skill_id": payload.skill_id,
-        "session_id": payload.session_id,
-        "timestamp": payload.timestamp.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    row = (
+        rows[0]
+        if rows
+        else {
+            "record_id": record_id,
+            "user_id": payload.user_id,
+            "rating": payload.rating,
+            "comment": payload.comment or "",
+            "category": payload.category.value,
+            "skill_id": payload.skill_id,
+            "session_id": payload.session_id,
+            "timestamp": payload.timestamp.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     return _to_response(row)
 
 
@@ -164,9 +168,7 @@ async def list_feedback(
     user_id: Optional[str] = Query(None, description="用户 ID（admin 可查任意）"),
     start_date: Optional[str] = Query(None, description="ISO 8601 起始日期"),
     end_date: Optional[str] = Query(None, description="ISO 8601 结束日期"),
-    category: Optional[str] = Query(
-        None, description="bug/suggestion/praise/question"
-    ),
+    category: Optional[str] = Query(None, description="bug/suggestion/praise/question"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     user: dict = Depends(get_current_user),

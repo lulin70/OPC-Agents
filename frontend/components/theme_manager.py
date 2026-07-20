@@ -52,18 +52,18 @@ THEME_CONFIGS = {
     },
     # Morandi themes — aligned with UI_DESIGN_v0.5.1.md §2.1
     "morandi_light": {
-        "backgroundColor": "#F5F2EE",           # Morandi warm off-white
+        "backgroundColor": "#F5F2EE",  # Morandi warm off-white
         "secondaryBackgroundColor": "#EBE5DD",  # Morandi beige deepened
-        "textColor": "#3A3A3A",                  # Morandi dark gray
+        "textColor": "#3A3A3A",  # Morandi dark gray
         "font": "sans-serif",
-        "primaryColor": "#6B7B8C",               # Morandi gray-blue
+        "primaryColor": "#6B7B8C",  # Morandi gray-blue
     },
     "morandi_dark": {
-        "backgroundColor": "#1F1B16",            # Warm dark brown
-        "secondaryBackgroundColor": "#2A2520",   # Warm dark brown deepened
-        "textColor": "#E8E0D5",                  # Warm white
+        "backgroundColor": "#1F1B16",  # Warm dark brown
+        "secondaryBackgroundColor": "#2A2520",  # Warm dark brown deepened
+        "textColor": "#E8E0D5",  # Warm white
         "font": "sans-serif",
-        "primaryColor": "#6B7B8C",               # Morandi gray-blue (brand consistency)
+        "primaryColor": "#6B7B8C",  # Morandi gray-blue (brand consistency)
     },
 }
 

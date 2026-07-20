@@ -353,9 +353,7 @@ class MetricsCollector:
                     f"amount must be a number or None, got {amount!r}"
                 )
             if amount < 0:
-                raise MetricsValidationError(
-                    f"amount must be >= 0, got {amount}"
-                )
+                raise MetricsValidationError(f"amount must be >= 0, got {amount}")
         record_id = uuid.uuid4().hex
         now = self._now_iso()
         self._write(
@@ -412,9 +410,7 @@ class MetricsCollector:
                     f"NPS score must be a number, got {score!r}"
                 )
             if not 0 <= score <= 10:
-                raise MetricsValidationError(
-                    f"NPS score must be 0-10, got {score}"
-                )
+                raise MetricsValidationError(f"NPS score must be 0-10, got {score}")
             # NPS score is conventionally an integer; coerce for storage.
             score_value: float = float(int(score))
         else:
@@ -465,13 +461,9 @@ class MetricsCollector:
             record_id (UUID v4 hex).
         """
         if not isinstance(score, int) or isinstance(score, bool):
-            raise MetricsValidationError(
-                f"NPS score must be int 0-10, got {score!r}"
-            )
+            raise MetricsValidationError(f"NPS score must be int 0-10, got {score!r}")
         if not 0 <= score <= 10:
-            raise MetricsValidationError(
-                f"NPS score must be 0-10, got {score}"
-            )
+            raise MetricsValidationError(f"NPS score must be 0-10, got {score}")
         return self.record_experience(
             user_id=user_id,
             metric_type=_NPS_METRIC_TYPE,
@@ -523,26 +515,24 @@ class MetricsCollector:
         ]
         if metric_types:
             requested = set(metric_types)
-            categories = [
-                (tbl, lbl)
-                for tbl, lbl in all_categories
-                if lbl in requested
-            ]
+            categories = [(tbl, lbl) for tbl, lbl in all_categories if lbl in requested]
         else:
             categories = all_categories
 
         results: List[Dict[str, Any]] = []
         for table, label in categories:
-            rows = self._get_conn().execute(
-                f"SELECT * FROM {table} "
-                "WHERE created_at >= ? AND created_at <= ? "
-                "ORDER BY created_at ASC",
-                (start_date, end_date),
-            ).fetchall()
-            for row in rows:
-                results.append(
-                    self._sanitize_for_export(dict(row), label)
+            rows = (
+                self._get_conn()
+                .execute(
+                    f"SELECT * FROM {table} "
+                    "WHERE created_at >= ? AND created_at <= ? "
+                    "ORDER BY created_at ASC",
+                    (start_date, end_date),
                 )
+                .fetchall()
+            )
+            for row in rows:
+                results.append(self._sanitize_for_export(dict(row), label))
         return results
 
     def get_summary(
@@ -615,9 +605,7 @@ class MetricsCollector:
         if not user_id or not user_id.strip():
             raise MetricsValidationError("user_id is required")
         if not isinstance(rating, int) or isinstance(rating, bool):
-            raise MetricsValidationError(
-                f"rating must be int 1-5, got {rating!r}"
-            )
+            raise MetricsValidationError(f"rating must be int 1-5, got {rating!r}")
         if not 1 <= rating <= 5:
             raise MetricsValidationError(f"rating must be 1-5, got {rating}")
         if category not in _FEEDBACK_CATEGORIES:
@@ -758,17 +746,19 @@ class MetricsCollector:
             table = _TABLE_FOR_METRIC[metric_type]
             score_col = None  # no score column for these tables
         else:
-            raise MetricsValidationError(
-                f"unknown metric_type: {metric_type!r}"
-            )
+            raise MetricsValidationError(f"unknown metric_type: {metric_type!r}")
         where = " AND ".join(conditions)
         with self._lock:
             if score_col:
-                rows = self._get_conn().execute(
-                    f"SELECT {score_col} AS score FROM {table} "
-                    f"WHERE {where} ORDER BY {score_col}",
-                    tuple(params),
-                ).fetchall()
+                rows = (
+                    self._get_conn()
+                    .execute(
+                        f"SELECT {score_col} AS score FROM {table} "
+                        f"WHERE {where} ORDER BY {score_col}",
+                        tuple(params),
+                    )
+                    .fetchall()
+                )
                 scores: List[float] = [
                     float(r["score"]) for r in rows if r["score"] is not None
                 ]
@@ -777,10 +767,14 @@ class MetricsCollector:
                 p50 = self._percentile(scores, 50)
                 p90 = self._percentile(scores, 90)
             else:
-                row = self._get_conn().execute(
-                    f"SELECT COUNT(*) AS cnt FROM {table} WHERE {where}",
-                    tuple(params),
-                ).fetchone()
+                row = (
+                    self._get_conn()
+                    .execute(
+                        f"SELECT COUNT(*) AS cnt FROM {table} WHERE {where}",
+                        tuple(params),
+                    )
+                    .fetchone()
+                )
                 total = int(row["cnt"]) if row else 0
                 avg = 0.0
                 p50 = 0.0
@@ -797,10 +791,14 @@ class MetricsCollector:
     def get_last_export_at(self) -> Optional[str]:
         """Return ISO8601 timestamp of the most recent export, or None."""
         with self._lock:
-            row = self._get_conn().execute(
-                "SELECT exported_at FROM metrics_export_log "
-                "ORDER BY exported_at DESC LIMIT 1"
-            ).fetchone()
+            row = (
+                self._get_conn()
+                .execute(
+                    "SELECT exported_at FROM metrics_export_log "
+                    "ORDER BY exported_at DESC LIMIT 1"
+                )
+                .fetchone()
+            )
         return row["exported_at"] if row else None
 
     def set_last_export_at(
@@ -849,10 +847,7 @@ class MetricsCollector:
         k = (p / 100.0) * (n - 1)
         f = int(k)
         c = min(f + 1, n - 1)
-        return float(
-            sorted_scores[f]
-            + (sorted_scores[c] - sorted_scores[f]) * (k - f)
-        )
+        return float(sorted_scores[f] + (sorted_scores[c] - sorted_scores[f]) * (k - f))
 
     def close(self) -> None:
         """Close the SQLite connection. Safe to call multiple times."""
@@ -948,12 +943,8 @@ class MetricsCollector:
                 self._conn.execute(sql, tuple(row.values()))
                 self._conn.commit()
             except sqlite3.Error as e:
-                logger.error(
-                    "[MetricsCollector] write to %s failed: %s", table, e
-                )
-                raise MetricsDBError(
-                    f"write to {table} failed: {e}"
-                ) from e
+                logger.error("[MetricsCollector] write to %s failed: %s", table, e)
+                raise MetricsDBError(f"write to {table} failed: {e}") from e
 
     # ------------------------------------------------------------------
     # Private: helpers
@@ -965,9 +956,7 @@ class MetricsCollector:
         try:
             text = json.dumps(metadata, ensure_ascii=False, default=str)
         except (TypeError, ValueError) as e:
-            logger.warning(
-                "[MetricsCollector] metadata serialization failed: %s", e
-            )
+            logger.warning("[MetricsCollector] metadata serialization failed: %s", e)
             return "{}"
         encoded = text.encode("utf-8")
         if len(encoded) > _METADATA_MAX_BYTES:
@@ -976,9 +965,7 @@ class MetricsCollector:
                 len(encoded),
             )
             # Truncate by bytes, then cut back to last valid UTF-8 boundary.
-            text = encoded[:_METADATA_MAX_BYTES].decode(
-                "utf-8", errors="ignore"
-            )
+            text = encoded[:_METADATA_MAX_BYTES].decode("utf-8", errors="ignore")
         return text
 
     def _sanitize_for_export(
@@ -1010,9 +997,7 @@ class MetricsCollector:
 
     def _hash_user_id(self, user_id: str) -> str:
         """anonymized_user_hash = SHA256(user_id + salt)[:16]."""
-        digest = hashlib.sha256(
-            f"{user_id}{self._salt}".encode("utf-8")
-        ).hexdigest()
+        digest = hashlib.sha256(f"{user_id}{self._salt}".encode("utf-8")).hexdigest()
         return digest[:16]
 
     @staticmethod
@@ -1047,9 +1032,7 @@ class MetricsCollector:
                 if salt:
                     return salt
             except OSError as e:
-                logger.warning(
-                    "[MetricsCollector] salt read failed: %s", e
-                )
+                logger.warning("[MetricsCollector] salt read failed: %s", e)
         # Generate + persist.
         salt_dir = os.path.dirname(salt_path)
         if salt_dir:
@@ -1096,13 +1079,17 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        row = self._get_conn().execute(
-            f"SELECT COUNT(DISTINCT user_id) AS total_onboarded, "
-            f"COUNT(DISTINCT CASE WHEN activation_criteria_met = 1 "
-            f"THEN user_id END) AS activated_users "
-            f"FROM metrics_activation {where}",
-            params,
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute(
+                f"SELECT COUNT(DISTINCT user_id) AS total_onboarded, "
+                f"COUNT(DISTINCT CASE WHEN activation_criteria_met = 1 "
+                f"THEN user_id END) AS activated_users "
+                f"FROM metrics_activation {where}",
+                params,
+            )
+            .fetchone()
+        )
         total = row["total_onboarded"] if row else 0
         activated = row["activated_users"] if row else 0
         rate = round(activated / total * 100, 2) if total else 0.0
@@ -1117,13 +1104,17 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        row = self._get_conn().execute(
-            f"SELECT COUNT(DISTINCT user_id) AS upgraded_users, "
-            f"COUNT(DISTINCT CASE WHEN from_version='basic' "
-            f"THEN user_id END) AS from_basic_count "
-            f"FROM metrics_upgrade {where}",
-            params,
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute(
+                f"SELECT COUNT(DISTINCT user_id) AS upgraded_users, "
+                f"COUNT(DISTINCT CASE WHEN from_version='basic' "
+                f"THEN user_id END) AS from_basic_count "
+                f"FROM metrics_upgrade {where}",
+                params,
+            )
+            .fetchone()
+        )
         return {
             "upgraded_users": row["upgraded_users"] if row else 0,
             "from_basic_count": row["from_basic_count"] if row else 0,
@@ -1134,12 +1125,16 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        rows = self._get_conn().execute(
-            f"SELECT user_id, MAX(flywheel_level) AS max_level "
-            f"FROM metrics_flywheel {where} "
-            f"GROUP BY user_id",
-            params,
-        ).fetchall()
+        rows = (
+            self._get_conn()
+            .execute(
+                f"SELECT user_id, MAX(flywheel_level) AS max_level "
+                f"FROM metrics_flywheel {where} "
+                f"GROUP BY user_id",
+                params,
+            )
+            .fetchall()
+        )
         total = len(rows)
         flywheel_users = sum(1 for r in rows if r["max_level"] >= 2)
         rate = round(flywheel_users / total * 100, 2) if total else 0.0
@@ -1154,16 +1149,20 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        row = self._get_conn().execute(
-            f"SELECT COUNT(DISTINCT CASE WHEN payment_status='paid' "
-            f"THEN user_id END) AS paid_users, "
-            f"COUNT(DISTINCT CASE WHEN payment_status='trial' "
-            f"THEN user_id END) AS trial_count, "
-            f"COALESCE(SUM(CASE WHEN payment_status='paid' "
-            f"THEN amount ELSE 0 END), 0) AS total_paid_amount "
-            f"FROM metrics_payment {where}",
-            params,
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute(
+                f"SELECT COUNT(DISTINCT CASE WHEN payment_status='paid' "
+                f"THEN user_id END) AS paid_users, "
+                f"COUNT(DISTINCT CASE WHEN payment_status='trial' "
+                f"THEN user_id END) AS trial_count, "
+                f"COALESCE(SUM(CASE WHEN payment_status='paid' "
+                f"THEN amount ELSE 0 END), 0) AS total_paid_amount "
+                f"FROM metrics_payment {where}",
+                params,
+            )
+            .fetchone()
+        )
         return {
             "paid_users": row["paid_users"] if row else 0,
             "trial_count": row["trial_count"] if row else 0,
@@ -1174,17 +1173,19 @@ class MetricsCollector:
         self, start_date: Optional[str], end_date: Optional[str]
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
-        where = "WHERE metric_type='nps'" + (
-            f" AND {clause}" if clause else ""
+        where = "WHERE metric_type='nps'" + (f" AND {clause}" if clause else "")
+        row = (
+            self._get_conn()
+            .execute(
+                f"SELECT COUNT(*) AS total, "
+                f"SUM(CASE WHEN score >= 9 THEN 1 ELSE 0 END) AS promoters, "
+                f"SUM(CASE WHEN score BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS passives, "
+                f"SUM(CASE WHEN score <= 6 THEN 1 ELSE 0 END) AS detractors "
+                f"FROM metrics_experience {where}",
+                params,
+            )
+            .fetchone()
         )
-        row = self._get_conn().execute(
-            f"SELECT COUNT(*) AS total, "
-            f"SUM(CASE WHEN score >= 9 THEN 1 ELSE 0 END) AS promoters, "
-            f"SUM(CASE WHEN score BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS passives, "
-            f"SUM(CASE WHEN score <= 6 THEN 1 ELSE 0 END) AS detractors "
-            f"FROM metrics_experience {where}",
-            params,
-        ).fetchone()
         total = row["total"] if row and row["total"] else 0
         promoters = row["promoters"] if row else 0
         passives = row["passives"] if row else 0
@@ -1208,18 +1209,20 @@ class MetricsCollector:
         end_date: Optional[str],
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
-        where = "WHERE metric_type=?" + (
-            f" AND {clause}" if clause else ""
-        )
+        where = "WHERE metric_type=?" + (f" AND {clause}" if clause else "")
         all_params = (metric_type,) + params
-        row = self._get_conn().execute(
-            f"SELECT COUNT(*) AS cnt, "
-            f"COALESCE(ROUND(AVG(score), 2), 0) AS avg_score, "
-            f"COALESCE(ROUND(MIN(score), 2), 0) AS min_score, "
-            f"COALESCE(ROUND(MAX(score), 2), 0) AS max_score "
-            f"FROM metrics_experience {where}",
-            all_params,
-        ).fetchone()
+        row = (
+            self._get_conn()
+            .execute(
+                f"SELECT COUNT(*) AS cnt, "
+                f"COALESCE(ROUND(AVG(score), 2), 0) AS avg_score, "
+                f"COALESCE(ROUND(MIN(score), 2), 0) AS min_score, "
+                f"COALESCE(ROUND(MAX(score), 2), 0) AS max_score "
+                f"FROM metrics_experience {where}",
+                all_params,
+            )
+            .fetchone()
+        )
         return {
             "metric_type": metric_type,
             "response_count": row["cnt"] if row else 0,
