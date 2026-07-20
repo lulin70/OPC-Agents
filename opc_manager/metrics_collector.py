@@ -533,7 +533,7 @@ class MetricsCollector:
 
         results: List[Dict[str, Any]] = []
         for table, label in categories:
-            rows = self._conn.execute(
+            rows = self._get_conn().execute(
                 f"SELECT * FROM {table} "
                 "WHERE created_at >= ? AND created_at <= ? "
                 "ORDER BY created_at ASC",
@@ -695,7 +695,7 @@ class MetricsCollector:
         )
         params.extend([limit, offset])
         with self._lock:
-            rows = self._conn.execute(sql, tuple(params)).fetchall()
+            rows = self._get_conn().execute(sql, tuple(params)).fetchall()
         # Convert Row → dict and alias 'id' → 'record_id' for API layer.
         result: List[Dict[str, Any]] = []
         for row in rows:
@@ -764,7 +764,7 @@ class MetricsCollector:
         where = " AND ".join(conditions)
         with self._lock:
             if score_col:
-                rows = self._conn.execute(
+                rows = self._get_conn().execute(
                     f"SELECT {score_col} AS score FROM {table} "
                     f"WHERE {where} ORDER BY {score_col}",
                     tuple(params),
@@ -777,7 +777,7 @@ class MetricsCollector:
                 p50 = self._percentile(scores, 50)
                 p90 = self._percentile(scores, 90)
             else:
-                row = self._conn.execute(
+                row = self._get_conn().execute(
                     f"SELECT COUNT(*) AS cnt FROM {table} WHERE {where}",
                     tuple(params),
                 ).fetchone()
@@ -797,7 +797,7 @@ class MetricsCollector:
     def get_last_export_at(self) -> Optional[str]:
         """Return ISO8601 timestamp of the most recent export, or None."""
         with self._lock:
-            row = self._conn.execute(
+            row = self._get_conn().execute(
                 "SELECT exported_at FROM metrics_export_log "
                 "ORDER BY exported_at DESC LIMIT 1"
             ).fetchone()
@@ -897,6 +897,16 @@ class MetricsCollector:
         except OSError as e:
             logger.debug("[MetricsCollector] chmod DB failed: %s", e)
 
+    def _get_conn(self) -> sqlite3.Connection:
+        """Return the SQLite connection, raising if not initialized.
+
+        Use this instead of accessing ``self._conn`` directly so mypy
+        can infer a non-Optional type.
+        """
+        if self._conn is None:
+            raise RuntimeError("MetricsCollector connection not initialized")
+        return self._conn
+
     def _ensure_tables(self) -> None:
         """Idempotently create metrics schema (tables/indexes/triggers/views).
 
@@ -912,12 +922,12 @@ class MetricsCollector:
 
         with self._lock:
             for stmt in ALL_DDL:
-                self._conn.execute(stmt)
+                self._get_conn().execute(stmt)
             for stmt in _FEEDBACK_DDL:
-                self._conn.execute(stmt)
+                self._get_conn().execute(stmt)
             for stmt in _EXPORT_LOG_DDL:
-                self._conn.execute(stmt)
-            self._conn.commit()
+                self._get_conn().execute(stmt)
+            self._get_conn().commit()
 
     # ------------------------------------------------------------------
     # Private: write path
@@ -1086,7 +1096,7 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        row = self._conn.execute(
+        row = self._get_conn().execute(
             f"SELECT COUNT(DISTINCT user_id) AS total_onboarded, "
             f"COUNT(DISTINCT CASE WHEN activation_criteria_met = 1 "
             f"THEN user_id END) AS activated_users "
@@ -1107,7 +1117,7 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        row = self._conn.execute(
+        row = self._get_conn().execute(
             f"SELECT COUNT(DISTINCT user_id) AS upgraded_users, "
             f"COUNT(DISTINCT CASE WHEN from_version='basic' "
             f"THEN user_id END) AS from_basic_count "
@@ -1124,7 +1134,7 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        rows = self._conn.execute(
+        rows = self._get_conn().execute(
             f"SELECT user_id, MAX(flywheel_level) AS max_level "
             f"FROM metrics_flywheel {where} "
             f"GROUP BY user_id",
@@ -1144,7 +1154,7 @@ class MetricsCollector:
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
         where = f"WHERE {clause}" if clause else ""
-        row = self._conn.execute(
+        row = self._get_conn().execute(
             f"SELECT COUNT(DISTINCT CASE WHEN payment_status='paid' "
             f"THEN user_id END) AS paid_users, "
             f"COUNT(DISTINCT CASE WHEN payment_status='trial' "
@@ -1164,10 +1174,10 @@ class MetricsCollector:
         self, start_date: Optional[str], end_date: Optional[str]
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
-        where = f"WHERE metric_type='nps'" + (
+        where = "WHERE metric_type='nps'" + (
             f" AND {clause}" if clause else ""
         )
-        row = self._conn.execute(
+        row = self._get_conn().execute(
             f"SELECT COUNT(*) AS total, "
             f"SUM(CASE WHEN score >= 9 THEN 1 ELSE 0 END) AS promoters, "
             f"SUM(CASE WHEN score BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS passives, "
@@ -1198,11 +1208,11 @@ class MetricsCollector:
         end_date: Optional[str],
     ) -> Dict[str, Any]:
         clause, params = self._date_clause("created_at", start_date, end_date)
-        where = f"WHERE metric_type=?" + (
+        where = "WHERE metric_type=?" + (
             f" AND {clause}" if clause else ""
         )
         all_params = (metric_type,) + params
-        row = self._conn.execute(
+        row = self._get_conn().execute(
             f"SELECT COUNT(*) AS cnt, "
             f"COALESCE(ROUND(AVG(score), 2), 0) AS avg_score, "
             f"COALESCE(ROUND(MIN(score), 2), 0) AS min_score, "

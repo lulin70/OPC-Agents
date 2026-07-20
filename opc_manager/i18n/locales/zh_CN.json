@@ -545,6 +545,10 @@
   "theme_sunset": "日落橙",
   "theme_forest": "森林绿",
   "theme_ocean": "海洋蓝",
+  "theme_morandi_light": "Morandi 浅色",
+  "theme_morandi_dark": "Morandi 深色",
+  "theme_advanced": "高级主题",
+  "theme_advanced_label": "选择高级主题（旧版配色）",
   "export_fmt_context": "导出{fmt}格式时",
   "export_failed_log": "导出失败 (%s)",
   "export_batch_title": "批量导出",
@@ -1255,10 +1259,16 @@
   "feedback.rating_label": "评分",
   "feedback.rating_help": "1=非常不满意，5=非常满意",
   "feedback.category_label": "反馈类型",
+  "feedback.category.unspecified": "不指定",
   "feedback.comment_label": "补充说明（可选）",
   "feedback.comment_help": "请描述具体问题或建议，最多 500 字",
   "feedback.cancel": "取消",
   "feedback.submit": "提交反馈",
+  "feedback": {
+    "category": {
+      "unspecified": "不指定"
+    }
+  },
   "install.title": "5 步快速安装指南",
   "install.step1_title": "第 1 步：下载安装",
   "install.step1_desc": "选择以下任一方式安装 OPC-Agents，无需技术背景。",

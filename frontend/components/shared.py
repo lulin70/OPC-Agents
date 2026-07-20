@@ -30,7 +30,7 @@ from frontend.components.export_helpers import (
 from frontend.components.progress_indicator import (
     _event_type_label,
     _get_phase_from_event,
-    _event_emoji,
+    _event_icon,
     _render_progress_indicator,
     _get_phase_icon,
     _render_timeline,
@@ -65,7 +65,7 @@ __all__ = [
     # progress_indicator
     "_event_type_label",
     "_get_phase_from_event",
-    "_event_emoji",
+    "_event_icon",
     "_render_progress_indicator",
     "_get_phase_icon",
     "_render_timeline",
@@ -207,25 +207,65 @@ def _render_undo_panel():
 
 
 def _render_theme_selector():
-    """Render theme selector in sidebar."""
+    """Render theme selector in sidebar.
+
+    v0.5.1 simplified UX (UI_DESIGN_v0.5.1.md §2.3):
+    - Primary selector: 2 Morandi options (morandi_light / morandi_dark)
+    - Advanced expander (collapsed by default): 5 legacy themes for power users
+    - If user selects a theme in the advanced expander, it overrides the primary
+    - Otherwise the primary selection is applied
+    """
     from opc_manager.i18n import t as _t
 
-    themes = {
-        "light": _t("theme_light"),
-        "dark": _t("theme_dark"),
-        "sunset": _t("theme_sunset"),
-        "forest": _t("theme_forest"),
-        "ocean": _t("theme_ocean"),
+    def _label(key: str, fallback: str) -> str:
+        """Return i18n label, falling back to literal if key is missing."""
+        text = _t(key)
+        # i18n returns the key itself when missing; fall back to a usable literal
+        return text if text and text != key else fallback
+
+    primary_themes = ["morandi_light", "morandi_dark"]
+    advanced_themes = ["light", "dark", "sunset", "forest", "ocean"]
+
+    primary_labels = {
+        "morandi_light": _label("theme_morandi_light", "Morandi Light"),
+        "morandi_dark": _label("theme_morandi_dark", "Morandi Dark"),
+    }
+    advanced_labels = {
+        "light": _label("theme_light", "Light"),
+        "dark": _label("theme_dark", "Dark"),
+        "sunset": _label("theme_sunset", "Sunset"),
+        "forest": _label("theme_forest", "Forest"),
+        "ocean": _label("theme_ocean", "Ocean"),
     }
 
-    current = st.session_state.get("theme", "light")
-    selected = st.selectbox(
-        _t("theme_label"),
-        options=list(themes.keys()),
-        format_func=lambda x: themes[x],
-        index=list(themes.keys()).index(current) if current in themes else 0,
-        key="theme_selector",
+    current = st.session_state.get("theme", "morandi_light")
+
+    # Default primary index based on current theme; legacy themes default to morandi_light
+    if current in primary_themes:
+        primary_index = primary_themes.index(current)
+    else:
+        primary_index = 0
+
+    primary_selected = st.selectbox(
+        _label("theme_label", "Theme"),
+        options=primary_themes,
+        format_func=lambda x: primary_labels[x],
+        index=primary_index,
+        key="theme_primary",
     )
+
+    # Advanced expander: 5 legacy themes (collapsed by default)
+    with st.expander(_label("theme_advanced", "Advanced themes"), expanded=False):
+        adv_selected = st.selectbox(
+            _label("theme_advanced_label", "Legacy theme (overrides primary)"),
+            options=advanced_themes,
+            format_func=lambda x: advanced_labels[x],
+            key="theme_advanced_select",
+            index=None,
+        )
+
+    # Advanced selection overrides primary when set
+    selected = adv_selected if adv_selected else primary_selected
 
     if selected != current:
         st.session_state.theme = selected

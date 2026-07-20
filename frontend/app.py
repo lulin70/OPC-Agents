@@ -104,7 +104,7 @@ if is_demo_mode():
     st.markdown(
         f"""
     <div style="
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(90deg, #6B7B8C 0%, #A89F91 100%);
         color: white;
         padding: 12px 20px;
         border-radius: 8px;

@@ -1,5 +1,5 @@
 # ============================================
-# OPC-Agents v0.5.0 — Layered Dependencies
+# OPC-Agents v0.5.1 — Layered Dependencies
 # ============================================
 #
 # Installation:

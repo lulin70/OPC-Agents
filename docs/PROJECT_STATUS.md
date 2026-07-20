@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-19（v0.5.0 用户验证纪元：种子用户验证基础设施 + 定位矛盾解决 + 运营基础设施。4 个 OKR 全部完成，174 个新测试通过，核心模块覆盖率 86%） | **版本**: v0.5.0 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-20（v0.5.1 UI/UX 提升：Morandi 主题真正落地 + Morandi Dark 暗黑模式 + WCAG 2.1 AA 合规 + CSS 变量统一 + 官网暗黑模式。P0-P2 全部完成，4338 单元/集成测试通过，mypy 0 errors） | **版本**: v0.5.1 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_INITIAL_VISION_v0.4.0.md](assessments/ASSESSMENT_INITIAL_VISION_v0.4.0.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.5.0`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.5.1`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |

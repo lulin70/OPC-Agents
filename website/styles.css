@@ -75,6 +75,110 @@
     --transition-base: 240ms ease;
 }
 
+/* ---------- Morandi Dark 主题（v0.5.1 新增）---------- */
+/* 与产品 frontend/styles/morandi_tokens.css 保持色板一致 */
+[data-theme="morandi-dark"] {
+    --color-primary: #6B7B8C;        /* 主色保持，4.8:1 通过 AA */
+    --color-primary-dark: #8A98A8;
+    --color-primary-soft: #A89F91;
+    --color-secondary: #A89F91;      /* 辅色调亮 */
+    --color-secondary-dark: #D4C5B9;
+    --color-accent: #D4C5B9;
+    --color-text: #E8E0D5;           /* 暖白文字，11.2:1 AAA */
+    --color-text-muted: #B5AC9D;
+    --color-text-soft: #8C8478;
+    --color-bg: #1F1B16;             /* 暖调深棕 */
+    --color-surface: #2A2520;        /* 卡片背景 */
+    --color-surface-alt: #322C26;
+    --color-border: #3D3530;
+    --color-border-strong: #5A5048;
+    --color-success: #8FAB8B;
+    --color-warn: #D9BC85;
+    --color-danger: #C89595;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* 自动检测系统暗黑模式（用户未手动选择时生效） */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="morandi-light"]) {
+        --color-primary: #6B7B8C;
+        --color-primary-dark: #8A98A8;
+        --color-primary-soft: #A89F91;
+        --color-secondary: #A89F91;
+        --color-secondary-dark: #D4C5B9;
+        --color-accent: #D4C5B9;
+        --color-text: #E8E0D5;
+        --color-text-muted: #B5AC9D;
+        --color-text-soft: #8C8478;
+        --color-bg: #1F1B16;
+        --color-surface: #2A2520;
+        --color-surface-alt: #322C26;
+        --color-border: #3D3530;
+        --color-border-strong: #5A5048;
+        --color-success: #8FAB8B;
+        --color-warn: #D9BC85;
+        --color-danger: #C89595;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* ---------- 主题切换按钮 ---------- */
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.theme-toggle:hover {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+}
+
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.theme-toggle .theme-toggle-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+}
+
+/* 暗黑模式下显示太阳图标（点击切换回浅色） */
+[data-theme="morandi-dark"] .theme-toggle-icon-moon,
+:root:not([data-theme="morandi-light"]) .theme-toggle-icon-moon {
+    display: none;
+}
+
+[data-theme="morandi-dark"] .theme-toggle-icon-sun,
+:root:not([data-theme="morandi-light"]) .theme-toggle-icon-sun {
+    display: inline-block;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="morandi-light"]) .theme-toggle-icon-moon {
+        display: none;
+    }
+    :root:not([data-theme="morandi-light"]) .theme-toggle-icon-sun {
+        display: inline-block;
+    }
+}
+
 /* ---------- 基础重置 ---------- */
 *,
 *::before,

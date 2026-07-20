@@ -37,6 +37,22 @@
                     <li><a href="#feedback">反馈</a></li>
                     <li><a class="nav-cta" href="#install">立即下载</a></li>
                 </ul>
+                <button class="theme-toggle" type="button" aria-label="切换暗黑模式" onclick="toggleTheme()">
+                    <svg class="theme-toggle-icon theme-toggle-icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="theme-toggle-icon theme-toggle-icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
             </nav>
         </div>
     </header>
@@ -231,7 +247,7 @@ opc-agents</code></pre>
                 </div>
                 <aside class="quickstart-side" aria-label="版本信息">
                     <p class="side-label">当前版本</p>
-                    <p class="side-version">v0.5.0</p>
+                    <p class="side-version">v0.5.1</p>
                     <p class="side-status">Beta · 稳定迭代中</p>
                     <hr class="side-divider">
                     <p class="side-label">支持平台</p>
@@ -272,7 +288,7 @@ opc-agents</code></pre>
             <div class="footer-brand">
                 <p class="footer-name">OPC-Agents</p>
                 <p class="footer-tagline">一人公司的 AI 执行团队</p>
-                <p class="footer-license">MIT License · v0.5.0 Beta</p>
+                <p class="footer-license">MIT License · v0.5.1 Beta</p>
             </div>
             <nav class="footer-nav" aria-label="页脚导航">
                 <div class="footer-col">
@@ -325,6 +341,23 @@ opc-agents</code></pre>
                     menu.classList.remove('is-open');
                 }
             });
+        })();
+    </script>
+    <script>
+        // 主题切换：localStorage > prefers-color-scheme > 默认浅色
+        function toggleTheme() {
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme');
+            var next = current === 'morandi-dark' ? 'morandi-light' : 'morandi-dark';
+            html.setAttribute('data-theme', next);
+            try { localStorage.setItem('theme', next); } catch (e) {}
+        }
+        (function () {
+            var saved = null;
+            try { saved = localStorage.getItem('theme'); } catch (e) {}
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var theme = saved || (prefersDark ? 'morandi-dark' : 'morandi-light');
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
 </body>

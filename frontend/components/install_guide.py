@@ -9,6 +9,7 @@ require no API Key, lowering the install barrier.
 """
 
 import logging
+from pathlib import Path
 
 import streamlit as st
 
@@ -38,6 +39,82 @@ INSTALL_COMMANDS = {
 # 3 个 AI 后端选项（其中 Ollama 与 Moka 均无需 API Key）
 AI_BACKENDS = ["ollama", "moka", "openai"]
 
+# Path to Morandi design tokens CSS (single source of truth for component colors)
+_MORANDI_TOKENS_PATH = Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+
+
+def _inject_morandi_tokens() -> None:
+    """Inject morandi_tokens.css once per session so var() works in HTML.
+
+    Reads the shared Morandi design tokens stylesheet and embeds it via a
+    ``<style>`` tag. Uses ``session_state["morandi_tokens_injected"]`` to
+    avoid duplicate injection across reruns (per ROADMAP_v0.5.1.md §1.3).
+    Silently warns on missing file — components fall back to inline styles.
+    """
+    if st.session_state.get("morandi_tokens_injected"):
+        return
+    try:
+        css_content = _MORANDI_TOKENS_PATH.read_text(encoding="utf-8")
+        st.markdown(f"<style>\n{css_content}\n</style>", unsafe_allow_html=True)
+        st.session_state["morandi_tokens_injected"] = True
+    except OSError as exc:
+        logger.warning(
+            "[InstallGuide] Failed to inject morandi_tokens.css from %s: %s",
+            _MORANDI_TOKENS_PATH,
+            exc,
+        )
+
+
+def _render_progress_dots(current_idx: int) -> None:
+    """Render Morandi-colored progress dots for the 5-step install flow.
+
+    Uses CSS variables from morandi_tokens.css so the dot palette adapts to
+    the active theme (light/dark). Adds an ARIA label per UI_DESIGN_v0.5.1.md
+    §5.1 so screen readers announce current step / total.
+
+    Args:
+        current_idx: Zero-based index of the current step (0..len(INSTALL_STEPS)-1)
+    """
+    total = len(INSTALL_STEPS)
+    dots_html_parts = []
+    for i in range(total):
+        if i == current_idx:
+            color = "var(--morandi-progress-current)"
+            symbol = "●"
+        elif i < current_idx:
+            color = "var(--morandi-progress-done)"
+            symbol = "●"
+        else:
+            color = "var(--morandi-progress-todo)"
+            symbol = "○"
+        dots_html_parts.append(
+            f'<span style="color: {color}; font-size: 18px; margin-right: 8px;">'
+            f"{symbol}</span>"
+        )
+    dots_html = "".join(dots_html_parts)
+    st.markdown(
+        f'<div style="margin: 8px 0 16px 0;" '
+        f'aria-label="步骤 {current_idx + 1} / {total}">'
+        f"{dots_html}</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_copyable_command(command: str) -> None:
+    """Render a copyable shell command using st.code's native copy button.
+
+    Replaces the previous unsafe_allow_html ``<div>`` + ``<script>`` injection
+    pattern with Streamlit ≥ 1.35 native copy support (per ROADMAP_v0.5.1.md
+    §1.4 / OKR-4 KR4.1 — XSS hardening). The CSS variables --morandi-bg and
+    --morandi-blue are not needed here because st.code provides its own
+    accessible theming; kept referenced in the docstring for traceability
+    with UI_DESIGN_v0.5.1.md §4.3.
+
+    Args:
+        command: Shell command string to render with copy button
+    """
+    st.code(command, language="bash")
+
 
 def render_install_guide() -> None:
     """Render the 5-step installation guide.
@@ -46,21 +123,29 @@ def render_install_guide() -> None:
     Step 1 is expanded by default; the rest are collapsed.
     Uses i18n keys with the ``install.`` namespace per UI_DESIGN_v0.5.0.md §7.2.
     """
+    # Inject Morandi tokens once so var(--morandi-progress-*) resolves in CSS
+    _inject_morandi_tokens()
+
     st.markdown(f"### {_t('install.title')}")
+
+    # Progress dots: anchor visual indicator at the top of the guide.
+    # current_idx=0 because the all-expanders layout lets the user browse
+    # every step freely; the dots still convey the 5-step structure.
+    _render_progress_dots(0)
 
     # Step 1: 下载安装
     with st.expander(_t("install.step1_title"), expanded=True):
         st.markdown(_t("install.step1_desc"))
-        st.code(INSTALL_COMMANDS["download_curl"], language="bash")
+        _render_copyable_command(INSTALL_COMMANDS["download_curl"])
         st.markdown(f"**{_t('install.or')}**")
-        st.code(INSTALL_COMMANDS["download_pip"], language="bash")
+        _render_copyable_command(INSTALL_COMMANDS["download_pip"])
         st.markdown(f"**{_t('install.or')}**")
-        st.code(INSTALL_COMMANDS["download_docker"], language="bash")
+        _render_copyable_command(INSTALL_COMMANDS["download_docker"])
 
     # Step 2: 启动应用
     with st.expander(_t("install.step2_title")):
         st.markdown(_t("install.step2_desc"))
-        st.code(INSTALL_COMMANDS["start_cmd"], language="bash")
+        _render_copyable_command(INSTALL_COMMANDS["start_cmd"])
         st.markdown(
             f"{_t('install.step2_visit')}: {INSTALL_COMMANDS['start_url']}"
         )
@@ -74,6 +159,7 @@ def render_install_guide() -> None:
             format_func=lambda x: _t(f"install.step3_option_{x}"),
             index=1,  # 默认 Moka 网关（零成本、无需 API Key）
             key="install_ai_backend",
+            help=_t("install.step3_option_label"),
         )
         if option == "openai":
             api_key = st.text_input(

@@ -443,13 +443,18 @@ class TestSubmitFeedbackToApi:
 class TestModuleConstants:
     """Tests for module-level constants (boundary/contract checks)."""
 
-    def test_feedback_categories_has_four_options(self):
-        """FEEDBACK_CATEGORIES must contain exactly 4 categories."""
-        assert len(FEEDBACK_CATEGORIES) == 4
+    def test_feedback_categories_has_five_options(self):
+        """FEEDBACK_CATEGORIES must contain 5 categories (v0.5.1: +unspecified)."""
+        assert len(FEEDBACK_CATEGORIES) == 5
 
     def test_feedback_categories_contains_expected_values(self):
-        """Categories match API contract: bug/suggestion/praise/question."""
+        """Categories match API contract: unspecified/bug/suggestion/praise/question.
+
+        v0.5.1 (P2-A): "unspecified" added as default option to allow users to
+        skip category selection without blocking feedback submission.
+        """
         assert set(FEEDBACK_CATEGORIES) == {
+            "unspecified",
             "bug",
             "suggestion",
             "praise",

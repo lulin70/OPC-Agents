@@ -20,10 +20,9 @@ from fastapi.responses import JSONResponse
 from opc_manager.api import rate_limit_middleware
 from opc_manager.api.feedback_routes import router as feedback_router
 from opc_manager.api.metrics_routes import router as metrics_router
+from opc_manager.version import __version__ as API_VERSION
 
 logger = logging.getLogger(__name__)
-
-API_VERSION = "0.5.0"
 
 app = FastAPI(
     title="OPC-Agents API",

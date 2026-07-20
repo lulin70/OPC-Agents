@@ -15,26 +15,19 @@ import json
 import os
 import sqlite3
 import stat
-import tempfile
 import threading
 import time
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import pytest
 
 from opc_manager.metrics_collector import (
-    MetricsCollectionError,
     MetricsCollector,
     MetricsDBError,
     MetricsValidationError,
     get_metrics_collector,
 )
 from opc_manager.migrations.v8_metrics import (
-    ALL_DDL,
-    DDL_INDEXES,
-    DDL_TABLES,
-    DDL_VIEWS,
     V8_VERSION,
     migrate_v8,
 )
@@ -729,7 +722,7 @@ class TestSingletonAndDBProperties:
         # Arrange
         MetricsCollector._reset_singleton()
         db_path = str(tmp_path / "perm_metrics.db")
-        collector = MetricsCollector(db_path=db_path)
+        MetricsCollector(db_path=db_path)  # trigger DB file creation
 
         # Act
         mode = os.stat(db_path).st_mode
@@ -770,7 +763,7 @@ class TestMigrationV8:
             "metrics_experience",
         ):
             cnt = migration_conn.execute(
-                f"SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?",
+                "SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?",
                 (table,),
             ).fetchone()[0]
             assert cnt == 1, f"table {table} missing after idempotent re-run"

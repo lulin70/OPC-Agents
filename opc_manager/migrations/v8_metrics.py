@@ -24,7 +24,7 @@ import os
 import shutil
 import sqlite3
 from datetime import datetime, timezone
-from typing import List, Tuple
+from typing import List
 
 logger = logging.getLogger(__name__)
 

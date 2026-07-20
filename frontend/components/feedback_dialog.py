@@ -6,6 +6,7 @@ Uses Morandi color palette (no harsh emojis) per user preference.
 
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import requests
@@ -24,8 +25,12 @@ __all__ = [
     "DEFAULT_API_ENDPOINT",
 ]
 
-# 4 个反馈分类（与 API 字段 FeedbackRequest.category 对齐）
-FEEDBACK_CATEGORIES = ["bug", "suggestion", "praise", "question"]
+# 5 个反馈分类（v0.5.1: "unspecified" placed first as the optional default per
+# ROADMAP_v0.5.1.md §1.2 / OKR-4 KR4.4 — boosts feedback completion rate）
+FEEDBACK_CATEGORIES = ["unspecified", "bug", "suggestion", "praise", "question"]
+
+# Path to Morandi design tokens CSS (single source of truth for component colors)
+_MORANDI_TOKENS_PATH = Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
 
 # Morandi 配色（与 UI_DESIGN_v0.5.0.md §3.2 语义色板对齐，不使用刺眼 emoji）
 TOAST_COLORS = {
@@ -44,6 +49,28 @@ DEFAULT_RATING = 5
 MAX_COMMENT_LENGTH = 500
 
 
+def _inject_morandi_tokens() -> None:
+    """Inject morandi_tokens.css once per session so var() works in HTML.
+
+    Reads the shared Morandi design tokens stylesheet and embeds it via a
+    ``<style>`` tag. Uses ``session_state["morandi_tokens_injected"]`` to
+    avoid duplicate injection across reruns (per ROADMAP_v0.5.1.md §1.3).
+    Silently warns on missing file — components fall back to inline styles.
+    """
+    if st.session_state.get("morandi_tokens_injected"):
+        return
+    try:
+        css_content = _MORANDI_TOKENS_PATH.read_text(encoding="utf-8")
+        st.markdown(f"<style>\n{css_content}\n</style>", unsafe_allow_html=True)
+        st.session_state["morandi_tokens_injected"] = True
+    except OSError as exc:
+        logger.warning(
+            "[FeedbackDialog] Failed to inject morandi_tokens.css from %s: %s",
+            _MORANDI_TOKENS_PATH,
+            exc,
+        )
+
+
 def render_feedback_dialog(skill_id: str, session_id: str) -> Optional[dict]:
     """Render feedback dialog after task completion.
 
@@ -57,13 +84,17 @@ def render_feedback_dialog(skill_id: str, session_id: str) -> Optional[dict]:
 
             {
                 "rating": int (1-5),
-                "category": str ("bug"|"suggestion"|"praise"|"question"),
+                "category": Optional[str] ("bug"|"suggestion"|"praise"|"question"
+                                           |None when "unspecified"),
                 "comment": Optional[str],
                 "skill_id": str,
                 "session_id": str,
                 "timestamp": str  # ISO 8601 UTC
             }
     """
+    # Inject Morandi tokens once so var(--morandi-star-*) resolves in CSS
+    _inject_morandi_tokens()
+
     # 1. 标题（i18n，缺失键时回退到 key 本身）
     st.markdown(f"### {_t('feedback.title')}")
 
@@ -78,10 +109,11 @@ def render_feedback_dialog(skill_id: str, session_id: str) -> Optional[dict]:
     )
     _render_star_visual(rating)
 
-    # 3. 分类单选（4 chip）
+    # 3. 分类单选（v0.5.1: "unspecified" 默认可选，不阻断提交）
     category = st.selectbox(
         _t("feedback.category_label"),
         options=FEEDBACK_CATEGORIES,
+        index=0,  # default to "unspecified" (optional category)
         format_func=lambda x: _t(f"feedback.category.{x}"),
         key=f"category_{skill_id}_{session_id}",
     )
@@ -110,9 +142,12 @@ def render_feedback_dialog(skill_id: str, session_id: str) -> Optional[dict]:
             key=f"submit_{skill_id}_{session_id}",
             type="primary",
         ):
+            # v0.5.1: "unspecified" is optional — pass None to API so the
+            # category field is not required (per ROADMAP_v0.5.1.md KR4.4)
+            resolved_category = None if category == "unspecified" else category
             return {
                 "rating": rating,
-                "category": category,
+                "category": resolved_category,
                 "comment": comment if comment else None,
                 "skill_id": skill_id,
                 "session_id": session_id,
@@ -124,15 +159,22 @@ def render_feedback_dialog(skill_id: str, session_id: str) -> Optional[dict]:
 def _render_star_visual(rating: int) -> None:
     """Render star visual using Morandi warm-gold CSS (no emoji).
 
+    Uses CSS variables from morandi_tokens.css so the star palette adapts
+    to the active theme (light/dark). Adds ARIA slider semantics per
+    UI_DESIGN_v0.5.1.md §5.1 for screen reader accessibility.
+
     Args:
         rating: Star rating from 1 to 5
     """
-    star_full = '<span style="color:#C9A96E;">★</span>'
-    star_empty = '<span style="color:#D4C5B9;">☆</span>'
+    star_full = '<span style="color:var(--morandi-star-full);">★</span>'
+    star_empty = '<span style="color:var(--morandi-star-empty);">☆</span>'
     stars = star_full * rating + star_empty * (MAX_RATING - rating)
     st.markdown(
         f'<div style="font-size:24px; letter-spacing:4px;" '
-        f'aria-label="评分 {rating} 星">{stars}</div>',
+        f'role="slider" '
+        f'aria-label="评分，1 到 5 星，当前 {rating} 星" '
+        f'aria-valuemin="1" aria-valuemax="5" aria-valuenow="{rating}">'
+        f"{stars}</div>",
         unsafe_allow_html=True,
     )
 

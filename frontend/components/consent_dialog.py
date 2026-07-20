@@ -34,6 +34,9 @@ CONSENT_VERSION = "1.0"
 PRIVACY_POLICY_URL = "https://promiselink.cn/privacy"
 DPA_URL = "https://promiselink.cn/dpa"
 
+# Path to Morandi design tokens CSS (single source of truth for component colors)
+_MORANDI_TOKENS_PATH = Path(__file__).resolve().parent.parent / "styles" / "morandi_tokens.css"
+
 # 默认同意配置：前 3 项默认勾选（仅本地存储），最后一项（反馈内容）默认不勾选，
 # 上报开关默认关闭（脱敏上报需用户主动同意）。与 ADR-004 §3.4 + HARD_CONSTRAINTS S4 对齐。
 DEFAULT_CONSENT = {
@@ -54,6 +57,28 @@ _CONSENT_CHECKBOXES = [
 ]
 
 
+def _inject_morandi_tokens() -> None:
+    """Inject morandi_tokens.css once per session so var() works in HTML.
+
+    Reads the shared Morandi design tokens stylesheet and embeds it via a
+    ``<style>`` tag. Uses ``session_state["morandi_tokens_injected"]`` to
+    avoid duplicate injection across reruns (per ROADMAP_v0.5.1.md §1.3).
+    Silently warns on missing file — components fall back to inline styles.
+    """
+    if st.session_state.get("morandi_tokens_injected"):
+        return
+    try:
+        css_content = _MORANDI_TOKENS_PATH.read_text(encoding="utf-8")
+        st.markdown(f"<style>\n{css_content}\n</style>", unsafe_allow_html=True)
+        st.session_state["morandi_tokens_injected"] = True
+    except OSError as exc:
+        logger.warning(
+            "[ConsentDialog] Failed to inject morandi_tokens.css from %s: %s",
+            _MORANDI_TOKENS_PATH,
+            exc,
+        )
+
+
 def render_consent_dialog(config_path: Path) -> Optional[dict]:
     """Render consent dialog on first launch.
 
@@ -65,6 +90,9 @@ def render_consent_dialog(config_path: Path) -> Optional[dict]:
         Consent data dict if user made a choice (clicked agree or disagree),
         None if dialog dismissed without choice.
     """
+    # Inject Morandi tokens once so var(--morandi-blue) resolves in link styles
+    _inject_morandi_tokens()
+
     # 1. 标题
     st.markdown(f"### {_t('consent.title')}")
 
@@ -72,8 +100,20 @@ def render_consent_dialog(config_path: Path) -> Optional[dict]:
     st.markdown(_t("consent.description"))
 
     # 3. 4 个复选框（前 3 个默认勾选，最后一个默认不勾选）
+    # Accessibility: Streamlit st.checkbox does not natively support aria-label,
+    # so we inject a hidden ARIA annotation before each control (per
+    # UI_DESIGN_v0.5.1.md §5.1) and keep the help param for aria-describedby.
     choices = {}
     for key, default in _CONSENT_CHECKBOXES:
+        label_text = _t(f"consent.{key}")
+        state_text = "checked" if default else "unchecked"
+        st.markdown(
+            f'<div role="checkbox" aria-label="{label_text}, {state_text}" '
+            f'aria-checked="{"true" if default else "false"}" '
+            f'style="position:absolute;width:1px;height:1px;overflow:hidden;'
+            f'clip:rect(0 0 0 0);white-space:nowrap;"></div>',
+            unsafe_allow_html=True,
+        )
         choices[key] = st.checkbox(
             _t(f"consent.{key}"),
             value=default,
@@ -89,9 +129,15 @@ def render_consent_dialog(config_path: Path) -> Optional[dict]:
             st.markdown(f"- {promise_text}")
 
     # 5. 隐私政策与数据处理协议链接
+    # Use var(--morandi-blue) so links adapt to active theme (light/dark).
     st.markdown(
-        f"[{_t('consent.privacy_policy')}]({PRIVACY_POLICY_URL}) | "
-        f"[{_t('consent.dpa')}]({DPA_URL})"
+        f'<span style="color: var(--morandi-blue);">'
+        f'<a href="{PRIVACY_POLICY_URL}" style="color: var(--morandi-blue);">'
+        f"{_t('consent.privacy_policy')}</a> | "
+        f'<a href="{DPA_URL}" style="color: var(--morandi-blue);">'
+        f"{_t('consent.dpa')}</a>"
+        f"</span>",
+        unsafe_allow_html=True,
     )
 
     # 6. 按钮区：[不同意] [同意并继续]

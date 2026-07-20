@@ -545,6 +545,10 @@
   "theme_sunset": "Sunset",
   "theme_forest": "Forest",
   "theme_ocean": "Ocean",
+  "theme_morandi_light": "Morandi Light",
+  "theme_morandi_dark": "Morandi Dark",
+  "theme_advanced": "Advanced themes",
+  "theme_advanced_label": "Select advanced theme (legacy palette)",
   "export_fmt_context": "Exporting {fmt} format",
   "export_failed_log": "Export failed (%s)",
   "export_batch_title": "Batch Export",
@@ -1255,10 +1259,16 @@
   "feedback.rating_label": "Rating",
   "feedback.rating_help": "1=Very dissatisfied, 5=Very satisfied",
   "feedback.category_label": "Feedback Type",
+  "feedback.category.unspecified": "Unspecified",
   "feedback.comment_label": "Additional Comments (optional)",
   "feedback.comment_help": "Describe the issue or suggestion in detail (max 500 chars)",
   "feedback.cancel": "Cancel",
   "feedback.submit": "Submit Feedback",
+  "feedback": {
+    "category": {
+      "unspecified": "Unspecified"
+    }
+  },
   "install.title": "5-Step Quick Installation Guide",
   "install.step1_title": "Step 1: Download & Install",
   "install.step1_desc": "Install OPC-Agents using any of the methods below. No technical background required.",

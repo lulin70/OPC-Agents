@@ -11,9 +11,7 @@ Design references:
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import http.client
-import json
 import logging
 import os
 import threading

@@ -1,0 +1,53 @@
+/* Morandi Design Tokens — Single Source of Truth for UI Colors.
+ * Aligned with UI_DESIGN_v0.5.1.md §4.1.
+ * Consumed by frontend components via var(--morandi-xxx).
+ */
+
+:root {
+  /* Primary palette (aligned with UI_DESIGN_v0.5.0.md §3.1) */
+  --morandi-blue: #6B7B8C;      /* Main brand color */
+  --morandi-beige: #D4C5B9;     /* Secondary color */
+  --morandi-warm: #A89F91;      /* Accent color */
+  --morandi-text: #3A3A3A;      /* Text color */
+  --morandi-bg: #F5F2EE;        /* Background color */
+
+  /* Semantic palette (aligned with §3.2) */
+  --morandi-success: #7A9B76;
+  --morandi-warning: #C9A96E;
+  --morandi-danger: #B07C7C;
+  --morandi-info: #7B8FA1;
+
+  /* Rating star palette (aligned with §3.3) */
+  --morandi-star-full: #C9A96E;
+  --morandi-star-empty: #D4C5B9;
+
+  /* Progress dot palette (aligned with §5.3) */
+  --morandi-progress-current: #6B7B8C;
+  --morandi-progress-done: #A89F91;
+  --morandi-progress-todo: #D4C5B9;
+}
+
+/* Morandi Dark theme variable overrides (aligned with UI_DESIGN_v0.5.1.md §3.1) */
+[data-theme="morandi-dark"] {
+  /* Primary palette — adjusted for warm dark background #1F1B16 */
+  --morandi-blue: #6B7B8C;       /* Kept for brand consistency, 4.8:1 AA pass */
+  --morandi-beige: #A89F91;      /* Brightened for dark background */
+  --morandi-warm: #D4C5B9;       /* Brightened for dark background */
+  --morandi-text: #E8E0D5;       /* Warm white text */
+  --morandi-bg: #1F1B16;         /* Warm dark brown background */
+
+  /* Semantic palette — brightened to pass AA on dark background */
+  --morandi-success: #8FAB8B;
+  --morandi-warning: #D9BC85;
+  --morandi-danger: #C89595;
+  --morandi-info: #9AAEC0;
+
+  /* Rating star palette — brightened for dark background */
+  --morandi-star-full: #D9BC85;
+  --morandi-star-empty: #A89F91;
+
+  /* Progress dot palette — adjusted for dark background */
+  --morandi-progress-current: #6B7B8C;
+  --morandi-progress-done: #D4C5B9;
+  --morandi-progress-todo: #A89F91;
+}

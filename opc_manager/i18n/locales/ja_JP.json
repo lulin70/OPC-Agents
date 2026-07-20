@@ -545,6 +545,10 @@
   "theme_sunset": "サンセット",
   "theme_forest": "フォレスト",
   "theme_ocean": "オーシャン",
+  "theme_morandi_light": "Morandi ライト",
+  "theme_morandi_dark": "Morandi ダーク",
+  "theme_advanced": "高度なテーマ",
+  "theme_advanced_label": "高度なテーマを選択（レガシーパレット）",
   "export_fmt_context": "{fmt}形式でエクスポート中",
   "export_failed_log": "エクスポート失敗 (%s)",
   "export_batch_title": "一括エクスポート",
@@ -1255,10 +1259,16 @@
   "feedback.rating_label": "評価",
   "feedback.rating_help": "1=非常に不満、5=非常に満足",
   "feedback.category_label": "フィードバックの種類",
+  "feedback.category.unspecified": "指定しない",
   "feedback.comment_label": "追加コメント（任意）",
   "feedback.comment_help": "具体的な問題や提案を記述してください（最大500文字）",
   "feedback.cancel": "キャンセル",
   "feedback.submit": "フィードバックを送信",
+  "feedback": {
+    "category": {
+      "unspecified": "指定しない"
+    }
+  },
   "install.title": "5ステップクイックインストールガイド",
   "install.step1_title": "ステップ1：ダウンロード＆インストール",
   "install.step1_desc": "以下のいずれかの方法でOPC-Agentsをインストールできます。技術的知識は不要です。",

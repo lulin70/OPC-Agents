@@ -11,7 +11,7 @@
 """
 
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
@@ -54,11 +54,11 @@ def _to_response(row: dict) -> FeedbackResponse:
         user_id=row["user_id"],
         rating=int(row["rating"]),
         comment=row.get("comment") or "",
-        category=row.get("category") or FeedbackCategory.PRAISE.value,
+        category=FeedbackCategory(row.get("category") or FeedbackCategory.PRAISE.value),
         skill_id=row.get("skill_id"),
         session_id=row.get("session_id"),
-        timestamp=row.get("timestamp") or row.get("created_at"),
-        created_at=row.get("created_at"),
+        timestamp=cast(datetime, row.get("timestamp") or row.get("created_at")),
+        created_at=cast(datetime, row.get("created_at")),
     )
 
 
@@ -67,7 +67,7 @@ async def submit_feedback(
     payload: FeedbackRequest,
     request: Request,
     user: dict = Depends(get_current_user),
-):
+) -> FeedbackResponse:
     """提交单条用户反馈。
 
     业务规则:
@@ -118,7 +118,7 @@ async def submit_batch_feedback(
     payload: List[FeedbackRequest],
     request: Request,
     user: dict = Depends(require_admin),
-):
+) -> BatchFeedbackResponse:
     """批量提交反馈（admin 专属，单次最多 500 条）。
 
     单条验证失败不影响其他条目；失败项记入 errors 数组。
@@ -170,7 +170,7 @@ async def list_feedback(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     user: dict = Depends(get_current_user),
-):
+) -> List[FeedbackResponse]:
     """查询反馈历史。
 
     权限:

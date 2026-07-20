@@ -3,7 +3,7 @@
 Provides progress visualization utilities extracted from shared.py:
 - _event_type_label: Map event types to localized labels
 - _get_phase_from_event: Map event types to phase icons/labels
-- _event_emoji: Map event types to emoji icons
+- _event_icon: Map event types to short text icon tags
 - _render_progress_indicator: SSE-based real-time progress display
 - _get_phase_icon: Enhanced phase icon mapping
 - _render_timeline: Phase timeline visualization
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "_event_type_label",
     "_get_phase_from_event",
-    "_event_emoji",
+    "_event_icon",
     "_render_progress_indicator",
     "_get_phase_icon",
     "_render_timeline",
@@ -32,62 +32,62 @@ EVENT_TYPE_CONFIG = {
     "PLAN_START": {
         "label": _t("event_plan_start"),
         "phase": "planning",
-        "emoji": "",
+        "icon": "[plan]",
     },
     "INTENT_DETECTED": {
         "label": _t("event_intent_detected"),
         "phase": "intent",
-        "emoji": "",
+        "icon": "[intent]",
     },
     "CONFIRM_REQUESTED": {
         "label": _t("event_confirm_requested"),
         "phase": "confirm",
-        "emoji": "",
+        "icon": "[confirm?]",
     },
     "CONFIRMED": {
         "label": _t("event_confirmed"),
         "phase": "confirm",
-        "emoji": "",
+        "icon": "[ok]",
     },
     "STEP_START": {
         "label": _t("event_step_start"),
         "phase": "executing",
-        "emoji": "",
+        "icon": "[step>]",
     },
     "STEP_PROGRESS": {
         "label": _t("event_step_progress"),
         "phase": "executing",
-        "emoji": "",
+        "icon": "[step...]",
     },
     "STEP_COMPLETE": {
         "label": _t("event_step_complete"),
         "phase": "executing",
-        "emoji": "",
+        "icon": "[step=]",
     },
     "COLLAB_START": {
         "label": _t("event_collab_start"),
         "phase": "collab",
-        "emoji": "",
+        "icon": "[collab]",
     },
     "REFLECT_START": {
         "label": _t("event_reflect_start"),
         "phase": "reflect",
-        "emoji": "",
+        "icon": "[reflect]",
     },
     "COMPLETE": {
         "label": _t("event_complete"),
         "phase": "complete",
-        "emoji": "",
+        "icon": "[done]",
     },
     "ERROR": {
         "label": _t("event_error"),
         "phase": "error",
-        "emoji": "",
+        "icon": "[err]",
     },
     "CANCELLED": {
         "label": _t("event_cancelled"),
         "phase": "cancelled",
-        "emoji": "",
+        "icon": "[cancel]",
     },
 }
 
@@ -115,11 +115,16 @@ def _get_phase_from_event(event_type: str) -> tuple:
     return phase_labels.get(phase, ("", _t("phase_executing")))
 
 
-def _event_emoji(event_type: str) -> str:
+def _event_icon(event_type: str) -> str:
+    """Return a short text icon tag for an event type.
+
+    v0.5.1: renamed from ``_event_emoji`` and switched from emoji characters
+    to ASCII text tags (e.g. ``[plan]``, ``[err]``) per UI_DESIGN_v0.5.1 §1.6.
+    """
     cfg = EVENT_TYPE_CONFIG.get(
         event_type, EVENT_TYPE_CONFIG.get(event_type.upper(), {})
     )
-    return cfg.get("emoji", "")
+    return cfg.get("icon", "")
 
 
 def _render_progress_indicator(session_id: str):
@@ -194,7 +199,7 @@ def _render_progress_indicator(session_id: str):
                 epct = evt.get("progress", evt.get("progress_pct", 0))
                 emsg = evt.get("message", "")
                 etime = evt.get("timestamp", "")
-                emoji = _event_emoji(etype)
+                icon = _event_icon(etype)
                 evt_is_error = etype in ("error", "ERROR")
 
                 if etime:
@@ -207,10 +212,10 @@ def _render_progress_indicator(session_id: str):
 
                 if evt_is_error:
                     st.markdown(
-                        f"{emoji} `{time_str}` :red[**{etype}**] ({epct}%) - :red[{emsg}]"
+                        f"{icon} `{time_str}` :red[**{etype}**] ({epct}%) - :red[{emsg}]"
                     )
                 else:
-                    st.markdown(f"{emoji} `{time_str}` **{etype}** ({epct}%) - {emsg}")
+                    st.markdown(f"{icon} `{time_str}` **{etype}** ({epct}%) - {emsg}")
 
 
 def _get_phase_icon(event_type: str) -> str:

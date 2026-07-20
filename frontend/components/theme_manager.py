@@ -50,6 +50,21 @@ THEME_CONFIGS = {
         "font": "sans-serif",
         "primaryColor": "#38BDF8",
     },
+    # Morandi themes — aligned with UI_DESIGN_v0.5.1.md §2.1
+    "morandi_light": {
+        "backgroundColor": "#F5F2EE",           # Morandi warm off-white
+        "secondaryBackgroundColor": "#EBE5DD",  # Morandi beige deepened
+        "textColor": "#3A3A3A",                  # Morandi dark gray
+        "font": "sans-serif",
+        "primaryColor": "#6B7B8C",               # Morandi gray-blue
+    },
+    "morandi_dark": {
+        "backgroundColor": "#1F1B16",            # Warm dark brown
+        "secondaryBackgroundColor": "#2A2520",   # Warm dark brown deepened
+        "textColor": "#E8E0D5",                  # Warm white
+        "font": "sans-serif",
+        "primaryColor": "#6B7B8C",               # Morandi gray-blue (brand consistency)
+    },
 }
 
 
@@ -74,7 +89,12 @@ def apply_theme(theme_name: str):
 
     css = _get_theme_css(theme_name)
     if css:
-        st.markdown(css, unsafe_allow_html=True)
+        # Anti-duplicate injection: skip CSS re-injection for the same theme
+        # on Streamlit reruns. Flag is per-theme so theme switches still inject.
+        injection_flag = f"theme_css_injected_{theme_name}"
+        if not st.session_state.get(injection_flag):
+            st.markdown(css, unsafe_allow_html=True)
+            st.session_state[injection_flag] = True
 
 
 def _get_theme_css(theme_name: str) -> str:
@@ -103,6 +123,39 @@ def _get_theme_css(theme_name: str) -> str:
             .stApp { background-color: #0c1929 !important; }
             .stMarkdown { color: #E0F2FE !important; }
             [data-testid="stMetric"] { background-color: #162d4a !important; }
+            """,
+        # Morandi Dark theme — aligned with UI_DESIGN_v0.5.1.md §3.3
+        "morandi_dark": """
+            /* morandi_dark theme — warm dark brown palette (#1F1B16 bg + #E8E0D5 text) */
+            .stApp { background-color: #1F1B16 !important; }
+            .stMarkdown { color: #E8E0D5 !important; }
+            .stDataFrame { background-color: #2A2520 !important; }
+            [data-testid="stMetric"] { background-color: #2A2520 !important; }
+            [data-testid="stCheckbox"] label { color: #E8E0D5 !important; }
+            .stSelectbox > div > div { background-color: #2A2520 !important; color: #E8E0D5 !important; }
+            .stTextInput > div > div { background-color: #2A2520 !important; color: #E8E0D5 !important; }
+            .stTextArea > div > div { background-color: #2A2520 !important; color: #E8E0D5 !important; }
+            /* Morandi semantic colors preserved for brand recognition */
+            .stSuccess { border-left: 3px solid #8FAB8B !important; }
+            .stWarning { border-left: 3px solid #D9BC85 !important; }
+            .stError { border-left: 3px solid #C89595 !important; }
+            .stInfo { border-left: 3px solid #9AAEC0 !important; }
+            """,
+        # Morandi Light theme — warm Morandi palette
+        "morandi_light": """
+            .stApp { background-color: #F5F2EE !important; }
+            .stMarkdown { color: #3A3A3A !important; }
+            .stDataFrame { background-color: #EBE5DD !important; }
+            [data-testid="stMetric"] { background-color: #EBE5DD !important; }
+            [data-testid="stCheckbox"] label { color: #3A3A3A !important; }
+            .stSelectbox > div > div { background-color: #EBE5DD !important; color: #3A3A3A !important; }
+            .stTextInput > div > div { background-color: #EBE5DD !important; color: #3A3A3A !important; }
+            .stTextArea > div > div { background-color: #EBE5DD !important; color: #3A3A3A !important; }
+            /* Morandi semantic colors preserved for brand recognition */
+            .stSuccess { border-left: 3px solid #7A9B76 !important; }
+            .stWarning { border-left: 3px solid #C9A96E !important; }
+            .stError { border-left: 3px solid #B07C7C !important; }
+            .stInfo { border-left: 3px solid #7B8FA1 !important; }
             """,
     }
     base_css = themes.get(theme_name, "")

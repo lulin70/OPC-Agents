@@ -60,7 +60,7 @@ async def submit_experience_metric(
     payload: ExperienceMetricRequest,
     request: Request,
     user: dict = Depends(get_current_user),
-):
+) -> MetricResponse:
     """提交体验指标评分（dialogue_naturalness / result_satisfaction / proactive_service）。"""
     _ensure_user_scope(user, payload.user_id)
     collector = _get_collector(request)
@@ -89,7 +89,7 @@ async def submit_nps(
     payload: NPSRequest,
     request: Request,
     user: dict = Depends(get_current_user),
-):
+) -> MetricResponse:
     """提交 NPS 评分（0-10 整数）。"""
     _ensure_user_scope(user, payload.user_id)
     collector = _get_collector(request)
@@ -119,7 +119,7 @@ async def get_metrics_summary(
     end_date: str = Query(..., description="ISO 8601 结束日期"),
     user_id: Optional[str] = Query(None, description="用户 ID（admin 可查全局）"),
     user: dict = Depends(get_current_user),
-):
+) -> MetricsSummary:
     """查询指标汇总（总数/均值/中位数/P90）。"""
     if start_date > end_date:
         raise HTTPException(
@@ -176,7 +176,7 @@ async def export_metrics(
     request: Request,
     user: dict = Depends(get_current_user),
     x_confirm_export: Optional[str] = Header(None, alias="X-Confirm-Export"),
-):
+) -> ExportResponse:
     """上报脱敏指标到专业版网关。
 
     前置条件:

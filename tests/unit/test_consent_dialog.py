@@ -14,7 +14,6 @@ Run command:
 import json
 import os
 import stat
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
