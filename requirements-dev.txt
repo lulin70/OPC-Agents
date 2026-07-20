@@ -19,7 +19,7 @@ playwright>=1.61.0
 
 # 代码质量
 black>=26.3.1
-ruff>=0.15.0  # D03 P1-1: Unified with CI (0.15.21) and pre-commit (v0.15.21)
+ruff>=0.15.22  # D03 P1-1: Unified with CI (0.15.21) and pre-commit (v0.15.21)
 flake8>=7.0.0
 bandit>=1.7.0
 pip-audit>=2.7.0
