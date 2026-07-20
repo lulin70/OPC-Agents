@@ -1,5 +1,5 @@
 # OPC-Agents 开发依赖
-# 版本: 0.5.0
+# 版本: 0.5.1
 
 -r requirements.txt
 
@@ -12,18 +12,18 @@ psutil>=7.2.2  # test_memory_optimization.py memory profiling (P1 fix: was missi
 httpx>=0.27.0  # TestClient for skill_marketplace_api.py FastAPI endpoint testing
 fastapi>=0.100.0  # Required for skill_marketplace_api.py tests (CI installs requirements-dev.txt, not marketplace extras)
 sse-starlette>=1.6.0  # Required for mcp_transport.py SSE endpoint tests
-responses>=0.25.0  # v0.3.35 T7.2: HTTP mock library for test_simple_llm_service.py (replaces @patch("requests.post"))
+responses>=0.26.2  # v0.3.35 T7.2: HTTP mock library for test_simple_llm_service.py (replaces @patch("requests.post"))
 
 # UI E2E (真实浏览器自动化，满足 HARD_CONSTRAINTS Q1/Q2)
 playwright>=1.61.0
 
 # 代码质量
 black>=26.3.1
-ruff>=0.15.0  # D03 P1-1: Unified with CI (0.15.21) and pre-commit (v0.15.21)
+ruff>=0.15.22  # D03 P1-1: Unified with CI (0.15.21) and pre-commit (v0.15.21)
 flake8>=7.0.0
 bandit>=1.7.0
 pip-audit>=2.7.0
 mypy>=1.8.0
-radon>=6.0.0  # Cyclomatic complexity analysis (CI non-blocking report)
-types-requests>=2.31.0  # v0.3.34 L1.1: mypy stubs for requests
-types-PyYAML>=6.0.0  # v0.3.34 L1.1: mypy stubs for PyYAML
+radon>=6.0.1  # Cyclomatic complexity analysis (CI non-blocking report)
+types-requests>=2.33.0.20260712  # v0.3.34 L1.1: mypy stubs for requests
+types-PyYAML>=6.0.12.20260518  # v0.3.34 L1.1: mypy stubs for PyYAML
