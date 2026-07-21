@@ -197,7 +197,35 @@ black --check --target-version py310 opc_manager/ frontend/ tests/
 2. 恢复 CI 硬 pin
 3. 调整 requirements-dev.txt 版本约束
 
-## 7. 参考文档
+## 7. Bandit 安全扫描修复（c91b292 后续修复）
+
+### 7.1 问题
+c91b292 push 后 CI 失败在 "Security scan with Bandit" 步骤。9 个 B608 (hardcoded_sql_expressions) 误报：
+- 全部位于 `opc_manager/metrics_collector.py`
+- 行号：527, 756, 773, 1085, 1110, 1131, 1155, 1180, 1217
+
+### 7.2 根因分析
+- B608 检测 f-string SQL 拼接，但这些位置的 `{table}` / `{score_col}` / `{where}` 都是内部常量（非用户输入）
+- 参数值（start_date, end_date 等）全部使用 `?` 参数化查询
+- 这是 B608 的典型误报（SQL 不支持表名作为参数，只能拼接）
+
+### 7.3 修复
+为 9 个位置添加 `# nosec B608 — <reason>` 标注，与 crm_skill.py:158 / knowledge_skill.py:129 等已有标注风格一致。
+
+### 7.4 验证
+```
+bandit -r opc_manager/ -ii -ll
+Test results:
+    No issues identified.
+exit code: 0
+```
+
+### 7.5 历史背景
+v0.5.1 (cede546) 的 CI 失败在 "Check formatting with Black"（版本不一致），Bandit 步骤未执行。
+c91b292 修复了 Black 版本统一问题，但暴露了之前被掩盖的 Bandit 遗留问题。
+本次修复彻底解决了 Bandit 失败。
+
+## 8. 参考文档
 - [GitHub Dependabot 官方文档](https://docs.github.com/en/code-security/dependabot)
 - [GitHub Actions concurrency 文档](https://docs.github.com/en/actions/using-jobs/using-concurrency)
 - OPC-Agents project_memory: "pre-commit hooks版本陈旧是CI漂移的根本原因"

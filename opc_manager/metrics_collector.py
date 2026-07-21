@@ -524,7 +524,7 @@ class MetricsCollector:
             rows = (
                 self._get_conn()
                 .execute(
-                    f"SELECT * FROM {table} "
+                    f"SELECT * FROM {table} "  # nosec B608 — table name from internal categories list, values parameterized
                     "WHERE created_at >= ? AND created_at <= ? "
                     "ORDER BY created_at ASC",
                     (start_date, end_date),
@@ -753,7 +753,7 @@ class MetricsCollector:
                 rows = (
                     self._get_conn()
                     .execute(
-                        f"SELECT {score_col} AS score FROM {table} "
+                        f"SELECT {score_col} AS score FROM {table} "  # nosec B608 — column/table names from internal config, values parameterized
                         f"WHERE {where} ORDER BY {score_col}",
                         tuple(params),
                     )
@@ -770,7 +770,7 @@ class MetricsCollector:
                 row = (
                     self._get_conn()
                     .execute(
-                        f"SELECT COUNT(*) AS cnt FROM {table} WHERE {where}",
+                        f"SELECT COUNT(*) AS cnt FROM {table} WHERE {where}",  # nosec B608 — table/where from internal config, values parameterized
                         tuple(params),
                     )
                     .fetchone()
@@ -1082,7 +1082,7 @@ class MetricsCollector:
         row = (
             self._get_conn()
             .execute(
-                f"SELECT COUNT(DISTINCT user_id) AS total_onboarded, "
+                f"SELECT COUNT(DISTINCT user_id) AS total_onboarded, "  # nosec B608 — static SQL with parameterized values
                 f"COUNT(DISTINCT CASE WHEN activation_criteria_met = 1 "
                 f"THEN user_id END) AS activated_users "
                 f"FROM metrics_activation {where}",
@@ -1107,7 +1107,7 @@ class MetricsCollector:
         row = (
             self._get_conn()
             .execute(
-                f"SELECT COUNT(DISTINCT user_id) AS upgraded_users, "
+                f"SELECT COUNT(DISTINCT user_id) AS upgraded_users, "  # nosec B608 — static SQL with parameterized values
                 f"COUNT(DISTINCT CASE WHEN from_version='basic' "
                 f"THEN user_id END) AS from_basic_count "
                 f"FROM metrics_upgrade {where}",
@@ -1128,7 +1128,7 @@ class MetricsCollector:
         rows = (
             self._get_conn()
             .execute(
-                f"SELECT user_id, MAX(flywheel_level) AS max_level "
+                f"SELECT user_id, MAX(flywheel_level) AS max_level "  # nosec B608 — static SQL with parameterized values
                 f"FROM metrics_flywheel {where} "
                 f"GROUP BY user_id",
                 params,
@@ -1152,7 +1152,7 @@ class MetricsCollector:
         row = (
             self._get_conn()
             .execute(
-                f"SELECT COUNT(DISTINCT CASE WHEN payment_status='paid' "
+                f"SELECT COUNT(DISTINCT CASE WHEN payment_status='paid' "  # nosec B608 — static SQL with parameterized values
                 f"THEN user_id END) AS paid_users, "
                 f"COUNT(DISTINCT CASE WHEN payment_status='trial' "
                 f"THEN user_id END) AS trial_count, "
@@ -1177,7 +1177,7 @@ class MetricsCollector:
         row = (
             self._get_conn()
             .execute(
-                f"SELECT COUNT(*) AS total, "
+                f"SELECT COUNT(*) AS total, "  # nosec B608 — static SQL with parameterized values
                 f"SUM(CASE WHEN score >= 9 THEN 1 ELSE 0 END) AS promoters, "
                 f"SUM(CASE WHEN score BETWEEN 7 AND 8 THEN 1 ELSE 0 END) AS passives, "
                 f"SUM(CASE WHEN score <= 6 THEN 1 ELSE 0 END) AS detractors "
@@ -1214,7 +1214,7 @@ class MetricsCollector:
         row = (
             self._get_conn()
             .execute(
-                f"SELECT COUNT(*) AS cnt, "
+                f"SELECT COUNT(*) AS cnt, "  # nosec B608 — static SQL with parameterized values
                 f"COALESCE(ROUND(AVG(score), 2), 0) AS avg_score, "
                 f"COALESCE(ROUND(MIN(score), 2), 0) AS min_score, "
                 f"COALESCE(ROUND(MAX(score), 2), 0) AS max_score "
