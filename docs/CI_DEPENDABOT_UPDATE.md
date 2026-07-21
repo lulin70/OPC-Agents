@@ -357,11 +357,12 @@ GitHub 官方时间线：
 `auto-label.yml` L15 原注释 `# v9 requires Node 20, keep v7 for compat` 是错误的（v9 实际支持 Node 24，v7 才是旧版）。
 更新为 `# v9 supports Node 24 (Node 20 deprecated 2026-06-16, removed fall 2026)`。
 
-### 10.4 验证汇总（本地预 commit）
+### 10.4 验证汇总（CI run 29832091794 全绿确认）
 - ✅ YAML 语法: 5 个 workflow 文件全部 `yaml.safe_load` PASS
 - ✅ uses 引用: 13 处全部升级到最新 major 版本
-- ⏳ Node 20 deprecation warning 消失: 待 CI 验证
-- ⏳ v5→v7 / v4→v7 跨 2 major 版本兼容性: 待 CI 验证
+- ✅ Node 20 deprecation warning 消失: CI 日志 grep `(node 20|deprecat.*node|node\.js 20)` 输出为空
+- ✅ v5→v7 / v4→v7 跨 2 major 版本兼容性: 3 个 matrix（3.10/3.11/3.12）全部 success
+- ✅ CI 全部门禁通过: ruff/mypy/black/bandit/tests/e2e/coverage/radon/docker/pip-audit/version/README consistency
 
 ### 10.5 参考来源
 - [GitHub Changelog: Node 20 deprecation](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
