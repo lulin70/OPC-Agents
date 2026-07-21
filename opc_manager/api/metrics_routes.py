@@ -172,6 +172,58 @@ async def get_metrics_summary(
     )
 
 
+def _check_export_cooldown(collector: MetricsCollector, force: bool) -> None:
+    """检查导出冷却；冷却中时 raise 429，时间戳解析失败时放行。"""
+    last_export = collector.get_last_export_at()
+    if force or not last_export:
+        return
+    try:
+        last_dt = datetime.fromisoformat(last_export)
+        if last_dt.tzinfo is None:
+            last_dt = last_dt.replace(tzinfo=timezone.utc)
+        elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
+        if elapsed < EXPORT_COOLDOWN_SECONDS:
+            retry_after = int(EXPORT_COOLDOWN_SECONDS - elapsed)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"上报冷却中，剩余 {retry_after} 秒",
+                headers={"Retry-After": str(retry_after)},
+            )
+    except HTTPException:
+        raise
+    except (ValueError, TypeError):
+        pass  # 解析失败时放行
+
+
+def _normalize_metric_types(
+    metric_types: Optional[List[str]],
+) -> Optional[List[str]]:
+    """将 "nps" 映射为 "experience"（NPS 存于 metrics_experience 表），并去重。"""
+    if metric_types is None:
+        return None
+    export_types: List[str] = []
+    for mt in metric_types:
+        target = "experience" if mt == "nps" else mt
+        if target not in export_types:
+            export_types.append(target)
+    return export_types
+
+
+def _filter_nps_only(exported: dict, metric_types: Optional[List[str]]) -> None:
+    """若请求方只请求 nps（未同时请求 experience），从 experience 分组中过滤出 nps 行。"""
+    if (
+        metric_types is not None
+        and "nps" in metric_types
+        and "experience" not in metric_types
+    ):
+        nps_rows = [
+            r for r in exported.get("experience", []) if r.get("metric_type") == "nps"
+        ]
+        if nps_rows:
+            exported["nps"] = nps_rows
+        exported.pop("experience", None)
+
+
 @router.post("/export", response_model=ExportResponse)
 async def export_metrics(
     payload: ExportRequest,
@@ -191,37 +243,9 @@ async def export_metrics(
             detail="需要 UI 二次确认，请通过设置页弹窗触发并携带 X-Confirm-Export: true 头",
         )
     collector = _get_collector(request)
-    # 1 小时冷却检查
-    last_export = collector.get_last_export_at()
-    if not payload.force and last_export:
-        try:
-            last_dt = datetime.fromisoformat(last_export)
-            if last_dt.tzinfo is None:
-                last_dt = last_dt.replace(tzinfo=timezone.utc)
-            elapsed = (datetime.now(timezone.utc) - last_dt).total_seconds()
-            if elapsed < EXPORT_COOLDOWN_SECONDS:
-                retry_after = int(EXPORT_COOLDOWN_SECONDS - elapsed)
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail=f"上报冷却中，剩余 {retry_after} 秒",
-                    headers={"Retry-After": str(retry_after)},
-                )
-        except HTTPException:
-            raise
-        except (ValueError, TypeError):
-            pass  # 解析失败时放行
+    _check_export_cooldown(collector, payload.force)
+    export_types = _normalize_metric_types(payload.metric_types)
     try:
-        # 将 metric_types 中的 "nps" 映射为 "experience"（NPS 存于 metrics_experience 表）
-        export_types: Optional[List[str]] = None
-        if payload.metric_types is not None:
-            export_types = []
-            for mt in payload.metric_types:
-                if mt == "nps":
-                    if "experience" not in export_types:
-                        export_types.append("experience")
-                else:
-                    if mt not in export_types:
-                        export_types.append(mt)
         exported_list = collector.export_anonymized(
             start_date=payload.start_date.isoformat(),
             end_date=payload.end_date.isoformat(),
@@ -237,18 +261,7 @@ async def export_metrics(
     for row in exported_list:
         cat = row.get("metric_category", "unknown")
         exported.setdefault(cat, []).append(row)
-    # 如果请求方只请求 nps，从 experience 分组中过滤出 metric_type=nps 的行
-    if (
-        payload.metric_types is not None
-        and "nps" in payload.metric_types
-        and "experience" not in payload.metric_types
-    ):
-        nps_rows = [
-            r for r in exported.get("experience", []) if r.get("metric_type") == "nps"
-        ]
-        if nps_rows:
-            exported["nps"] = nps_rows
-        exported.pop("experience", None)
+    _filter_nps_only(exported, payload.metric_types)
     total_count = sum(len(v) for v in exported.values())
     # 记录导出事件（用于下次冷却检查）
     try:

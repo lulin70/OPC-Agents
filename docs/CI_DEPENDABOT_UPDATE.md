@@ -225,7 +225,64 @@ v0.5.1 (cede546) 的 CI 失败在 "Check formatting with Black"（版本不一�
 c91b292 修复了 Black 版本统一问题，但暴露了之前被掩盖的 Bandit 遗留问题。
 本次修复彻底解决了 Bandit 失败。
 
-## 8. 参考文档
+## 8. Version Consistency + Radon 复杂度修复（0ee77eb 后续修复）
+
+### 8.1 触发事件
+0ee77eb（Bandit B608 修复）push 后 CI run 29803263883 仍然失败，暴露了 2 个被 Black 失败掩蔽的遗留问题：
+
+| 失败项 | 失败 matrix | 根因 |
+|--------|------------|------|
+| Verify version consistency | 3.10 + 3.12 | `opc_manager/mcp_protocol.py:25` 的 `MCP_SERVER_VERSION = "0.4.0"`，应为 0.5.1（v0.5.0→v0.5.1 版本升级时遗漏） |
+| Cyclomatic complexity gate (radon cc, D+ blocking) | 3.11 | `opc_manager/api/metrics_routes.py:176` 的 `export_metrics` 函数复杂度 D (23)，超过 CI 阈值 21 |
+
+### 8.2 改动清单
+
+#### 8.2.1 `opc_manager/mcp_protocol.py`（version consistency 修复）
+```diff
+- MCP_SERVER_VERSION = "0.4.0"
++ MCP_SERVER_VERSION = "0.5.1"
+```
+**验证**：`VERSION=0.5.1 / version.py=0.5.1 / mcp=0.5.1` 三处一致，CI 的 "Verify version consistency" 步骤通过。
+
+#### 8.2.2 `opc_manager/api/metrics_routes.py`（radon 复杂度修复）
+将 `export_metrics` 函数（复杂度 D=23）拆分为 3 个辅助函数，复杂度降至 C 级以下：
+
+| 新函数 | 职责 | 复杂度来源 |
+|--------|------|-----------|
+| `_check_export_cooldown(collector, force)` | 1 小时冷却检查 + 429 raise + 时间戳解析放行 | if + try + if + if + raise + except + raise + except |
+| `_normalize_metric_types(metric_types)` | "nps"→"experience" 映射 + 去重 | if + for + if |
+| `_filter_nps_only(exported, metric_types)` | 若只请求 nps，从 experience 分组中过滤 nps 行 | if + and + and + if |
+
+**重构原则**：Surgical Changes — 只提取不改逻辑。原 `export_metrics` 的所有 if/try/for 分支被完整迁移到对应辅助函数，行为零变化。
+
+**验证**：
+```bash
+$ radon cc opc_manager/api/metrics_routes.py -s -n D
+（输出为空 — 无 D+ 函数）
+
+$ radon cc opc_manager/ -s -n D
+（输出为空 — 全 opc_manager/ 无 D+ 函数）
+
+$ python -m pytest tests/unit/test_feedback_api.py::TestExportMetrics -x
+2 passed in 0.57s
+```
+
+### 8.3 验证汇总（本地预 commit）
+- ✅ ruff check: All checks passed
+- ✅ black --check: All done (reformatted 后)
+- ✅ mypy: Success, no issues
+- ✅ radon cc -n D: 全 opc_manager/ 无 D+ 函数
+- ✅ version consistency: VERSION=0.5.1 / version.py=0.5.1 / mcp=0.5.1
+- ✅ pytest test_feedback_api.py: 19 passed（含 TestExportMetrics 2 个）
+
+### 8.4 历史背景
+v0.5.1 (cede546) 的 CI 失败在 "Check formatting with Black"（版本不一致），radon 和 version consistency 步骤未执行。
+c91b292（CI 配置更新）+ 0ee77eb（Bandit B608 nosec 标注）逐步修复了 Black 和 Bandit，但暴露了之前被掩盖的 radon 复杂度 + MCP_SERVER_VERSION 遗留问题。
+本次修复彻底解决了 CI 全红链路，CI 应进入全绿状态。
+
+## 9. 参考文档
 - [GitHub Dependabot 官方文档](https://docs.github.com/en/code-security/dependabot)
 - [GitHub Actions concurrency 文档](https://docs.github.com/en/actions/using-jobs/using-concurrency)
 - OPC-Agents project_memory: "pre-commit hooks版本陈旧是CI漂移的根本原因"
+- OPC-Agents project_memory: "CI radon cc check is blocking for complexity ≥21 (D+ level)"
+- OPC-Agents project_memory: "版本一致性检查不能遗漏 — mcp_protocol.py MCP_SERVER_VERSION 三处必须一致"
