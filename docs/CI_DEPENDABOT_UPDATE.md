@@ -326,7 +326,55 @@ CI 的 "Verify README consistency" 步骤使用 `pytest --co` 动态计算测试
 本次 v0.5.0→v0.5.1 新增了 428 个测试（4621-4193=428），但未同步 README，导致 CI 失败。
 教训：版本发布 checklist 应包含 "README 测试数同步" 项。
 
-## 10. 参考文档
+## 10. GitHub Actions Node 24 升级（解决 Node 20 deprecation warning）
+
+### 10.1 触发事件
+CI run 29824516227 虽然全绿，但日志中存在 deprecation warning：
+> `Node 20 is being deprecated. This workflow is running with Node 24 by default.`
+> `For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/`
+
+GitHub 官方时间线：
+- **2026-06-16**: Node.js 24 成为默认运行时（Node 20 仍可运行但不保证兼容）
+- **2026 秋季**: Node.js 20 完全从 runner 移除，无 fallback
+
+### 10.2 升级清单（5 个 workflow 文件，13 处改动）
+
+| Action | 升级前 | 升级后 | 处数 | 出现文件 |
+|--------|--------|--------|------|---------|
+| `actions/checkout` | v4 | v7 | 1 | website-deploy.yml |
+| `actions/setup-python` | v5 | v7 | 5 | python-ci.yml / weekly-e2e-real.yml / release.yml × 2 |
+| `actions/upload-artifact` | v4 | v7 | 2 | python-ci.yml / weekly-e2e-real.yml |
+| `actions/github-script` | v7 | v9 | 3 | weekly-e2e-real.yml / website-deploy.yml / auto-label.yml |
+| `docker/login-action` | v3 | v4 | 1 | release.yml |
+| `docker/build-push-action` | v5 | v7 | 1 | release.yml |
+
+**保持不变**（已是最新 major 版本）：
+- `actions/checkout@v7` × 6 处（最新 v7.0.1）
+- `docker/setup-buildx-action@v4` × 1 处（最新 v4.2.0）
+- `softprops/action-gh-release@v3` × 1 处（最新 v3.0.2）
+
+### 10.3 注释更新
+`auto-label.yml` L15 原注释 `# v9 requires Node 20, keep v7 for compat` 是错误的（v9 实际支持 Node 24，v7 才是旧版）。
+更新为 `# v9 supports Node 24 (Node 20 deprecated 2026-06-16, removed fall 2026)`。
+
+### 10.4 验证汇总（本地预 commit）
+- ✅ YAML 语法: 5 个 workflow 文件全部 `yaml.safe_load` PASS
+- ✅ uses 引用: 13 处全部升级到最新 major 版本
+- ⏳ Node 20 deprecation warning 消失: 待 CI 验证
+- ⏳ v5→v7 / v4→v7 跨 2 major 版本兼容性: 待 CI 验证
+
+### 10.5 参考来源
+- [GitHub Changelog: Node 20 deprecation](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
+- [Migrate GitHub Actions to Node.js 24 Before the Deadline](https://www.tenki.cloud/blog/migrate-github-actions-node-24) — tenki.cloud, 2026-05
+- 各 action 最新 release tag（通过 `gh api repos/{owner}/{repo}/releases/latest` 查询）：
+  - actions/checkout: v7.0.1
+  - actions/setup-python: v7.0.0
+  - actions/upload-artifact: v7.0.1
+  - actions/github-script: v9.0.0
+  - docker/login-action: v4.4.0
+  - docker/build-push-action: v7.3.0
+
+## 11. 参考文档
 - [GitHub Dependabot 官方文档](https://docs.github.com/en/code-security/dependabot)
 - [GitHub Actions concurrency 文档](https://docs.github.com/en/actions/using-jobs/using-concurrency)
 - OPC-Agents project_memory: "pre-commit hooks版本陈旧是CI漂移的根本原因"

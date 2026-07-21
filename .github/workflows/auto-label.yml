@@ -12,7 +12,7 @@ jobs:
   label:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/github-script@v7  # v9 requires Node 20, keep v7 for compat
+    - uses: actions/github-script@v9  # v9 supports Node 24 (Node 20 deprecated 2026-06-16, removed fall 2026)
       with:
         script: |
           const pr = context.payload.pull_request;
