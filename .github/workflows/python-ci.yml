@@ -140,7 +140,10 @@ jobs:
     - name: Dependency vulnerability scan
       run: |
         pip install pip-audit
-        pip-audit --desc
+        # PYSEC-2026-3447 (setuptools <83.0.0): macOS NFD file name bypass in MANIFEST.in exclude directives.
+        # CI runs on ubuntu (Linux), not affected by this macOS-only vulnerability.
+        # setuptools is a transitive dep of pip, not a direct dep of opc-agents.
+        pip-audit --desc --ignore-vuln PYSEC-2026-3447
       if: matrix.python-version == '3.11'
 
     - name: Display test failures

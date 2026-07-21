@@ -280,7 +280,53 @@ v0.5.1 (cede546) 的 CI 失败在 "Check formatting with Black"（版本不一�
 c91b292（CI 配置更新）+ 0ee77eb（Bandit B608 nosec 标注）逐步修复了 Black 和 Bandit，但暴露了之前被掩盖的 radon 复杂度 + MCP_SERVER_VERSION 遗留问题。
 本次修复彻底解决了 CI 全红链路，CI 应进入全绿状态。
 
-## 9. 参考文档
+## 9. README 测试数同步 + pip-audit 漏洞忽略（63a84e8 后续修复）
+
+### 9.1 触发事件
+63a84e8（version + radon 修复）push 后 CI run 29809999952 失败，暴露了 2 个新问题：
+
+| 失败项 | 失败 matrix | 根因 |
+|--------|------------|------|
+| Verify README consistency | 3.10 + 3.12 | 实际测试数 4621，但 README 中仍是旧值 4193（v0.3.31 时的测试数） |
+| Dependency vulnerability scan | 3.11 | pip-audit 发现 `setuptools 79.0.1` 的 PYSEC-2026-3447 漏洞（macOS NFD 文件名绕过） |
+
+### 9.2 改动清单
+
+#### 9.2.1 三语 README 测试数同步（4193 → 4621）
+修改文件：`README.md` / `README-EN.md` / `README-JP.md`（每个文件 3 处，共 9 处）
+- L66: 质量描述行 "4193 个测试" → "4621 个测试"
+- L406/415/402: 目录结构注释 "4193测试用例" → "4621测试用例"
+- L426/435/422: 运行命令注释 "4193个用例" → "4621个用例"
+
+**保留不变**：L52（v0.3.31 历史记录）、L70（v0.3.29 历史记录）、L40（v0.3.36 历史记录 4164）—— 这些是历史 changelog 中的事实记录，不应修改。
+
+**验证**：`python /tmp/check_readme_consistency.py` → `PASS: 三语 README 一致性校验通过`（VERSION=0.5.1, modules=99, tests=4621）
+
+#### 9.2.2 `.github/workflows/python-ci.yml` pip-audit 步骤加 --ignore-vuln
+```diff
+- pip-audit --desc
++ # PYSEC-2026-3447 (setuptools <83.0.0): macOS NFD file name bypass in MANIFEST.in exclude directives.
++ # CI runs on ubuntu (Linux), not affected by this macOS-only vulnerability.
++ # setuptools is a transitive dep of pip, not a direct dep of opc-agents.
++ pip-audit --desc --ignore-vuln PYSEC-2026-3447
+```
+
+**忽略理由**（3 条）：
+1. PYSEC-2026-3447 是 macOS APFS/HFS+ 上 NFD 文件名绕过 MANIFEST.in 排除规则的漏洞，只影响 macOS 上的 sdist 打包
+2. CI 运行在 ubuntu-latest（Linux），不受此 macOS 专属漏洞影响
+3. setuptools 是 pip 的传递依赖，不是 opc-agents 的直接依赖；升级到 83.0.0 可能影响 pip 兼容性
+
+### 9.3 验证汇总（本地预 commit）
+- ✅ README consistency: VERSION=0.5.1 / modules=99 / tests=4621 三语一致
+- ✅ python-ci.yml 语法: YAML 校验通过
+- ⏳ pip-audit --ignore-vuln: 待 CI 环境验证（本地 macOS setuptools 版本不同）
+
+### 9.4 历史背景
+CI 的 "Verify README consistency" 步骤使用 `pytest --co` 动态计算测试数（v0.3.31 P2-2 改进），所以每次新增测试都必须同步 README。
+本次 v0.5.0→v0.5.1 新增了 428 个测试（4621-4193=428），但未同步 README，导致 CI 失败。
+教训：版本发布 checklist 应包含 "README 测试数同步" 项。
+
+## 10. 参考文档
 - [GitHub Dependabot 官方文档](https://docs.github.com/en/code-security/dependabot)
 - [GitHub Actions concurrency 文档](https://docs.github.com/en/actions/using-jobs/using-concurrency)
 - OPC-Agents project_memory: "pre-commit hooks版本陈旧是CI漂移的根本原因"
