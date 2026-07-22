@@ -62,6 +62,91 @@ GitHub Actions 工作流文件：[`.github/workflows/website-deploy.yml`](../.gi
 | `DEPLOY_SSH_PORT`   | SSH 端口（默认 `22`，如改端口须配置）    |
 | `WECOM_WEBHOOK_URL` | 企业微信告警 webhook（健康检查使用）     |
 
+#### 1.1 首次配置 GitHub Secrets（一次性，约 5 分钟）
+
+> **硬约束 H8**：私钥只通过 GitHub Secrets 注入，禁止写入仓库；建议使用专用部署密钥，不复用个人 SSH key。
+
+**Step 1 — 本地生成专用部署密钥对（ed25519，无 passphrase）**
+
+```bash
+ssh-keygen -t ed25519 \
+  -C "opc-agents-website-deploy@github-actions" \
+  -f ~/.ssh/opc-agents-deploy \
+  -N ""
+```
+
+生成两个文件：
+- `~/.ssh/opc-agents-deploy`（**私钥** → Step 3 配置到 GitHub Secrets）
+- `~/.ssh/opc-agents-deploy.pub`（**公钥** → Step 2 添加到服务器）
+
+**Step 2 — 公钥添加到服务器 authorized_keys**
+
+```bash
+# 方式 A：ssh-copy-id（推荐）
+ssh-copy-id -i ~/.ssh/opc-agents-deploy.pub root@47.116.219.15
+
+# 方式 B：手动追加（ssh-copyid 不可用时）
+cat ~/.ssh/opc-agents-deploy.pub | \
+  ssh root@47.116.219.15 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'
+```
+
+验证免密登录：
+```bash
+ssh -i ~/.ssh/opc-agents-deploy root@47.116.219.15 'echo "SSH key OK: $(hostname)"'
+```
+
+**Step 3 — 私钥配置到 GitHub Secrets**
+
+1. 访问 `https://github.com/lulin70/OPC-Agents/settings/secrets/actions`
+2. 点击 **"New repository secret"**，依次添加：
+
+| Name | Value |
+|------|-------|
+| `DEPLOY_SSH_KEY` | `cat ~/.ssh/opc-agents-deploy` 的完整输出（含 `-----BEGIN OPENSSH PRIVATE KEY-----` 和 `-----END OPENSSH PRIVATE KEY-----` 两行） |
+| `DEPLOY_SSH_HOST` | `47.116.219.15`（可选，有默认值） |
+| `DEPLOY_SSH_PORT` | `22`（可选，有默认值；如服务器改了 SSH 端口必须配置） |
+| `WECOM_WEBHOOK_URL` | 企业微信群机器人 webhook URL（健康检查告警用，可选） |
+
+获取私钥完整内容的命令（复制输出到 `DEPLOY_SSH_KEY` Value）：
+```bash
+cat ~/.ssh/opc-agents-deploy
+```
+
+**Step 4 — 验证配置生效**
+
+两种方式任选其一：
+
+```bash
+# 方式 A：手动触发（推荐首次验证）
+# 访问 https://github.com/lulin70/OPC-Agents/actions/workflows/website-deploy.yml
+# 点击 "Run workflow" → 选择 production → Run
+
+# 方式 B：push 改动到 website/ 或 deploy/nginx/ 路径
+echo "<!-- trigger deploy -->" >> website/index.html
+git add website/index.html
+git commit -m "deploy: verify website-deploy workflow after secrets config"
+git push origin main
+```
+
+预期结果：
+- `Website Deploy` workflow 从 `Configure SSH key` 步骤开始通过
+- `Run deploy script` 步骤执行 rsync + scp + nginx reload
+- `Health check` 步骤访问 `https://promiselink.cn/` 返回 200
+
+**故障排查**：
+
+| 症状 | 排查 |
+|------|------|
+| `Configure SSH key` 失败 | 确认 `DEPLOY_SSH_KEY` Value 包含完整 BEGIN/END 行，无多余空格 |
+| `Run deploy script` SSH 连接超时 | 检查 `DEPLOY_SSH_HOST` / `DEPLOY_SSH_PORT`；服务器防火墙是否放行 SSH 端口 |
+| `Run deploy script` Permission denied | Step 2 公钥未添加或被覆盖；服务器 `sshd_config` 确认 `PubkeyAuthentication yes` |
+| `Health check` 失败 | DNS 未解析 / SSL 证书未签发 / nginx 未 reload；参见下方「常见问题排查」§1-§3 |
+
+**安全注意事项**：
+- 私钥文件 `~/.ssh/opc-agents-deploy` 本地保留，用于排查；不要删除（删除后需重新生成并更新 Secrets + 服务器公钥）
+- 如怀疑私钥泄露，立即在 GitHub Secrets 删除并重新生成：`rm ~/.ssh/opc-agents-deploy*` → 重复 Step 1-3
+- 服务器侧如启用 `ForceCommand` 或 `command=` 限制，可进一步限定该 key 只能执行 rsync/nginx 命令（高级安全加固，非必需）
+
 ### 2. 官网部署（手动：本地执行脚本）
 
 ```bash
