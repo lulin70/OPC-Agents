@@ -412,7 +412,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # 测试套件（100个测试文件，4193测试用例，100%通过）
+├── tests/                 # 测试套件（4621测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）

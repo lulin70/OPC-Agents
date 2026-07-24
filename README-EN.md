@@ -403,7 +403,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # Test suite (100 test files, 4193 tests, 100% pass)
+├── tests/                 # Test suite (4621 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
