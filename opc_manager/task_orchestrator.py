@@ -27,19 +27,10 @@ if TYPE_CHECKING:
     from .strategist_brain import ExecutionPlan, Intent
 
 from .constants import (
-    CRITICAL_DECISION_SKILLS,
-    CRITICAL_DECISION_ACTIONS,
-    PARALLEL_VOTE_ENABLED,
-    PARALLEL_VOTE_TIMEOUT,
     RETRY_BACKOFF_BASE,
     RETRY_BACKOFF_CAP,
-    SERIAL_OP_TIMEOUT,
 )
-from .agent_utils import (
-    context_to_dict,
-    extract_planned_action,
-    dict_to_opinion,
-)
+from .consensus_checker import ConsensusChecker
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +94,15 @@ class TaskOrchestrator:
         self._progress = progress_tracker
         self.max_reflect_rounds = max_reflect_rounds
         self.max_retry_per_step = max_retry_per_step
+        # Consensus checking is delegated to ConsensusChecker (extracted in
+        # v0.5.3). Thin delegate methods below preserve backward compatibility
+        # for tests and call sites that invoke loop._parallel_consensus, etc.
+        self._consensus_checker = ConsensusChecker(
+            strategist_brain=strategist_brain,
+            executor_brain=executor_brain,
+            reflector_brain=reflector_brain,
+            consensus_consultant=consensus_consultant,
+        )
 
     def determine_route(self, user_input: str) -> RouteDecision:
         """确定任务路由。
@@ -535,133 +535,39 @@ class TaskOrchestrator:
 
     # 以下方法从AgentLoop迁移，保持原有逻辑
     # 这些是执行阶段所需的辅助方法
+    #
+    # v0.5.3: Consensus logic moved to ConsensusChecker. These delegate
+    # methods preserve backward compatibility for tests and call sites
+    # that invoke loop._parallel_consensus / loop._is_critical_decision_point
+    # directly. New code should use self._consensus_checker.* instead.
 
     def _is_critical_decision_point(self, context: Any, step: Any = None) -> bool:
-        """判断当前是否为关键决策点。"""
-        if isinstance(context, dict):
-            metadata = context.get("metadata", {}) or {}
-        else:
-            metadata = getattr(context, "metadata", None) or {}
-        if isinstance(metadata, dict) and metadata.get("route_category") == "simple":
-            return False
-
-        if step is None:
-            if not isinstance(context, dict):
-                current_step_idx = getattr(context, "current_step", 0)
-                plan = getattr(context, "plan", None)
-                steps = getattr(plan, "steps", None) if plan else None
-                if steps and 0 < current_step_idx <= len(steps):
-                    step = steps[current_step_idx - 1]
-        if not step:
-            return False
-        skill_id = (getattr(step, "skill_id", "") or "").lower()
-        action = (getattr(step, "action", "") or "").lower()
-        return (
-            skill_id in CRITICAL_DECISION_SKILLS or action in CRITICAL_DECISION_ACTIONS
-        )
+        """判断当前是否为关键决策点。Delegate to ConsensusChecker."""
+        return self._consensus_checker.is_critical_decision_point(context, step)
 
     async def _parallel_consensus(
         self, context: Any, decision_point: str, step: Any = None
     ) -> Any:
-        """三贤者并行投票决策。"""
-        if not PARALLEL_VOTE_ENABLED:
-            return await self._serial_consensus_fallback(context, decision_point, step)
-        # Extract coroutines to locals so they can be closed on error
-        # (prevents RuntimeWarning: coroutine was never awaited when
-        # collect_opinions_async raises before awaiting all arguments)
-        strategist_coro = None
-        executor_coro = None
-        reflector_coro = None
-        try:
-            context_dict = context_to_dict(context)
-            planned_action = extract_planned_action(context, step)
-
-            strategist_coro = self._strategist_opinion_async(
-                context_dict, decision_point
-            )
-            executor_coro = self.executor_brain.express_opinion_async(
-                context_dict, decision_point
-            )
-            reflector_coro = self.reflector_brain.predict_consequence_async(
-                context_dict, planned_action
-            )
-
-            decision = await asyncio.wait_for(
-                self._consensus_consultant._consensus.collect_opinions_async(
-                    strategist_coro,
-                    executor_coro,
-                    reflector_coro,
-                ),
-                timeout=PARALLEL_VOTE_TIMEOUT,
-            )
-            return decision
-        except Exception as e:
-            # Close un-awaited coroutines to prevent RuntimeWarning
-            for coro in (strategist_coro, executor_coro, reflector_coro):
-                if coro is not None and asyncio.iscoroutine(coro):
-                    coro.close()
-            logger.warning("并行投票失败，降级到串行: %s", e)
-            return await self._serial_consensus_fallback(context, decision_point, step)
+        """三贤者并行投票决策。Delegate to ConsensusChecker."""
+        return await self._consensus_checker.parallel_consensus(
+            context, decision_point, step
+        )
 
     async def _strategist_opinion_async(
         self, context_dict: Any, decision_point: str
     ) -> Any:
-        """策略脑异步意见。"""
-        result = await asyncio.to_thread(
-            self.strategist_brain.express_opinion, context_dict, decision_point
+        """策略脑异步意见。Delegate to ConsensusChecker."""
+        return await self._consensus_checker._strategist_opinion_async(
+            context_dict, decision_point
         )
-        return dict_to_opinion(result, brain_type="strategist")
 
     async def _serial_consensus_fallback(
         self, context: Any, decision_point: str, step: Any = None
     ) -> Any:
-        """串行降级路径。"""
-        context_dict = context_to_dict(context)
-        planned_action = extract_planned_action(context, step)
-
-        try:
-            from .consensus_engine import Decision
-
-            s_op = dict_to_opinion(
-                await asyncio.wait_for(
-                    asyncio.to_thread(
-                        self.strategist_brain.express_opinion, context_dict
-                    ),
-                    timeout=SERIAL_OP_TIMEOUT,
-                ),
-                "strategist",
-            )
-            e_op = await asyncio.wait_for(
-                asyncio.to_thread(
-                    self.executor_brain.express_opinion, context_dict, decision_point
-                ),
-                timeout=SERIAL_OP_TIMEOUT,
-            )
-            r_op = await asyncio.wait_for(
-                asyncio.to_thread(
-                    self.reflector_brain.predict_consequence,
-                    context_dict,
-                    planned_action,
-                ),
-                timeout=SERIAL_OP_TIMEOUT,
-            )
-            return self._consensus_consultant._consensus.collect_opinions(
-                [s_op, e_op, r_op]
-            )
-        except asyncio.TimeoutError as e:
-            logger.error(
-                "串行降级共识超时（>%ds），fail-close 拒绝执行: %s",
-                SERIAL_OP_TIMEOUT * 3,
-                e,
-            )
-            from .consensus_engine import Decision, DecisionType
-
-            return Decision(
-                decision_type=DecisionType.ESCALATED,
-                approved=False,
-                reasoning=f"serial_consensus_timeout: 串行降级共识超时（>{SERIAL_OP_TIMEOUT * 3}s）",
-                confidence=0.0,
-            )
+        """串行降级路径。Delegate to ConsensusChecker."""
+        return await self._consensus_checker.serial_consensus_fallback(
+            context, decision_point, step
+        )
 
     def _enrich_step_parameters(
         self, params: Optional[Dict], execution_results: List[Dict]

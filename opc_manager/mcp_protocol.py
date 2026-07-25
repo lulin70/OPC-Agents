@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 MCP_PROTOCOL_VERSION = "2024-11-05"
 MCP_SERVER_NAME = "opc-agents"
-MCP_SERVER_VERSION = "0.5.2"
+MCP_SERVER_VERSION = "0.5.3"
 
 # SkillInput.type (Python type string) → JSON Schema type keyword
 _PYTHON_TYPE_TO_JSON_SCHEMA: Dict[str, str] = {

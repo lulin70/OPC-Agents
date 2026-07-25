@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-25（v0.5.2 PATCH：文档同步与可优化项评估收口。7-Role 共识评估决定不拆分 data_manager.py（152 处 import 风险）和 task_orchestrator.py（D07 评估非 God Class + 23 处测试调用私有方法）。ROADMAP_v0.5.1.md 状态同步 + PROJECT_STATUS.md §6 过期待办清理 + ROADMAP_v0.5.2.md 决策记录） | **版本**: v0.5.2 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-25（v0.5.3 PATCH：可优化项代码重构。data_manager.py 拆分出 data_manager_migrations.py（迁移+SQL验证+种子数据，12 函数+3 常量），data_manager.py re-export 保持 152 处 import 和 patch 路径兼容。task_orchestrator.py 提取 ConsensusChecker 类（4 方法），TaskOrchestrator 保留转发方法向后兼容，2 处 patch 路径更新。无破坏性 API 变更） | **版本**: v0.5.3 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_INITIAL_VISION_v0.4.0.md](assessments/ASSESSMENT_INITIAL_VISION_v0.4.0.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.5.2`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.5.3`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |

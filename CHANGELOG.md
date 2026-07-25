@@ -4,6 +4,74 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-07-25
+
+### PATCH — 可优化项代码重构（SRP 边界清晰化）
+
+> v0.5.3 是可优化项代码重构的 PATCH 版本。基于 v0.5.2 的 7-Role 共识评估决策（推迟到 v0.6.0+），用户明确要求"在 0.5.x 系列内实现"。本版本通过模块拆分提升 SRP 边界清晰度，**保持 100% 向后兼容**（外部 import 路径不变、API 不变、patch 路径仅 2 处更新）。
+
+#### Changed — data_manager.py 拆分（迁移层提取）
+
+- **新增 `opc_manager/data_manager_migrations.py`**：迁移层独立模块，包含 12 个函数 + 3 个常量
+  - 迁移函数：`_run_migrations`, `_migrate_v2_to_v3`, `_migrate_v3_to_v4`, `_migrate_v4_to_v5`, `_migrate_v5_to_v6`, `_migrate_v6_to_v7`（6 个）
+  - SQL 验证：`_validate_sql`, `_validate_identifier`, `_add_column_if_not_exists`（3 个）
+  - 种子数据：`_seed_categories`, `_seed_templates`（2 个）
+  - 通用工具：`gen_id`（1 个，无依赖纯函数，co-located 因 `_seed_categories` 依赖它）
+  - 常量：`_db_version`, `_IDENTIFIER_RE`, `_UNSAFE_SQL_RE`
+- **`opc_manager/data_manager.py` 改为 re-export**：从 `data_manager_migrations` re-import 所有迁移层 API，保持 152 处 import 和 `patch("opc_manager.data_manager._validate_sql")` 等 patch 路径完全兼容
+- **`_seed_categories` 签名变更**：接收 `gen_id_fn` 参数避免循环依赖（私有函数，无外部调用）
+- 文件行数：data_manager.py 从 790 行降至 ~540 行（-250 行，-32%）
+
+#### Changed — task_orchestrator.py 提取 ConsensusChecker
+
+- **新增 `opc_manager/consensus_checker.py`**：共识检查组件独立模块，包含 `ConsensusChecker` 类（4 个方法）
+  - `is_critical_decision_point(context, step)`：判断关键决策点
+  - `parallel_consensus(context, decision_point, step)`：三贤者并行投票
+  - `serial_consensus_fallback(context, decision_point, step)`：串行降级路径
+  - `_strategist_opinion_async(context_dict, decision_point)`：策略脑异步意见
+- **`TaskOrchestrator` 保留 4 个转发方法**：`_is_critical_decision_point`, `_parallel_consensus`, `_strategist_opinion_async`, `_serial_consensus_fallback`，向后兼容 23 处测试调用
+- **测试 patch 路径更新**（2 处）：
+  - `patch("opc_manager.task_orchestrator.PARALLEL_VOTE_TIMEOUT", ...)` → `patch("opc_manager.consensus_checker.PARALLEL_VOTE_TIMEOUT", ...)`
+  - `patch("opc_manager.task_orchestrator.PARALLEL_VOTE_ENABLED", ...)` → `patch("opc_manager.consensus_checker.PARALLEL_VOTE_ENABLED", ...)`
+- 文件行数：task_orchestrator.py 从 774 行降至 ~580 行（-194 行，-25%）
+
+#### Added
+
+- `opc_manager/data_manager_migrations.py` — 迁移层独立模块
+- `opc_manager/consensus_checker.py` — 共识检查组件独立模块
+
+#### 决策追溯
+
+v0.5.2 的 7-Role 共识评估决定推迟到 v0.6.0+，理由是"152 处 import 风险过高"和"23 处测试调用私有方法"。本次实施通过 **re-export + 转发方法** 的方式解决了这两个问题：
+
+| 风险点 | v0.5.2 评估 | v0.5.3 实际解决方案 |
+|--------|------------|-------------------|
+| 152 处 import | 推迟 v0.6.0+ | data_manager.py re-export 所有 API，152 处 import 零变更 |
+| 23 处测试调用私有方法 | 不拆分 | TaskOrchestrator 保留转发方法，23 处测试调用零变更 |
+| patch 路径失效 | — | data_manager re-export 保持 patch 兼容；consensus_checker 仅 2 处 patch 路径更新 |
+
+#### 测试验证
+
+- **data_manager 相关测试**: 382 passed ✅（test_data_manager + test_security_deep + test_integration_modules + test_performance_ext）
+- **task_orchestrator 相关测试**: 26 passed ✅（test_parallel_sages）
+- **版本一致性**: test_version.py 9/9 passed ✅
+- **mypy**: 0 errors ✅
+- **ruff**: All checks passed ✅
+- **radon cc**: 无 D+ 函数 ✅
+- **全量回归**: 单元+集成 4390+ passed ✅
+
+#### 已知限制
+
+- data_manager.py 仍保留加密层（`encrypt_field`, `decrypt_field`, `_get_encryption_key` 等），因加密层函数过少（3 个底层函数）不值得独立拆分
+- TaskOrchestrator 保留 4 个转发方法增加少量代码，但保持了向后兼容
+
+#### 升级指南
+
+- pip: `pip install --upgrade opc-agents==0.5.3`
+- Docker: `docker pull ghcr.io/lulin70/opc-agents:0.5.3`
+- **无破坏性 API 变更**，所有现有 import 路径和调用方式保持不变
+- 如果测试中 patch 了 `opc_manager.task_orchestrator.PARALLEL_VOTE_*`，需更新为 `opc_manager.consensus_checker.PARALLEL_VOTE_*`（仅影响 2 处 patch 路径）
+
 ## [0.5.2] - 2026-07-25
 
 ### PATCH — 文档同步与可优化项评估收口

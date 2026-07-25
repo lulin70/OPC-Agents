@@ -170,7 +170,7 @@ class TestParallelConsensus(unittest.TestCase):
         context = {"user_input": "test", "retry_count": 0}
         step = Step(id="s1", skill_id="search", description="search")
 
-        with patch("opc_manager.task_orchestrator.PARALLEL_VOTE_TIMEOUT", 0.1):
+        with patch("opc_manager.consensus_checker.PARALLEL_VOTE_TIMEOUT", 0.1):
             decision = _run_async(
                 loop._parallel_consensus(context, "execute_step", step)
             )
@@ -283,7 +283,7 @@ class TestParallelConsensus(unittest.TestCase):
         context = {"user_input": "test", "retry_count": 0}
         step = Step(id="s1", skill_id="search", description="search")
 
-        with patch("opc_manager.task_orchestrator.PARALLEL_VOTE_ENABLED", False):
+        with patch("opc_manager.consensus_checker.PARALLEL_VOTE_ENABLED", False):
             decision = _run_async(
                 loop._parallel_consensus(context, "execute_step", step)
             )
