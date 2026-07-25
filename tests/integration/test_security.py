@@ -166,30 +166,24 @@ class TestSecureStorage(unittest.TestCase):
             pass
 
     def test_encrypted_file_not_plaintext(self):
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
+        from opc_manager.secure_storage import SecureKeyStore
 
-            with tempfile.NamedTemporaryFile(suffix=".enc", delete=False) as f:
-                store = SecureKeyStore(storage_path=f.name)
-                if store.is_available:
-                    store.set_key("TEST_KEY", "secret-value-12345")
-                    with open(f.name, "r") as rf:
-                        content = rf.read()
-                    self.assertNotIn("secret-value-12345", content)
-                os.unlink(f.name)
-        except ImportError:
-            self.skipTest("cryptography not installed")
+        with tempfile.NamedTemporaryFile(suffix=".enc", delete=False) as f:
+            store = SecureKeyStore(storage_path=f.name)
+            if store.is_available:
+                store.set_key("TEST_KEY", "secret-value-12345")
+                with open(f.name, "r") as rf:
+                    content = rf.read()
+                self.assertNotIn("secret-value-12345", content)
+            os.unlink(f.name)
 
     def test_machine_fingerprint_deterministic(self):
-        try:
-            from opc_manager.secure_storage import _get_machine_fingerprint
+        from opc_manager.secure_storage import _get_machine_fingerprint
 
-            fp1 = _get_machine_fingerprint()
-            fp2 = _get_machine_fingerprint()
-            self.assertEqual(fp1, fp2)
-            self.assertEqual(len(fp1), 64)
-        except ImportError:
-            self.skipTest("cryptography not installed")
+        fp1 = _get_machine_fingerprint()
+        fp2 = _get_machine_fingerprint()
+        self.assertEqual(fp1, fp2)
+        self.assertEqual(len(fp1), 64)
 
 
 if __name__ == "__main__":

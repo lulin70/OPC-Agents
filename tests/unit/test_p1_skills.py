@@ -1,10 +1,23 @@
 import os
 import sys
-import time
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+
+# v0.3.4 移除的技能模块（proposal/calendar）— 仅当模块存在时才运行相关测试
+try:
+    import opc_manager.proposal_skill  # noqa: F401
+    _PROPOSAL_SKILL_AVAILABLE = True
+except ImportError:
+    _PROPOSAL_SKILL_AVAILABLE = False
+
+try:
+    import opc_manager.calendar_skill  # noqa: F401
+    _CALENDAR_SKILL_AVAILABLE = True
+except ImportError:
+    _CALENDAR_SKILL_AVAILABLE = False
 
 
 class TestSocialSkill(unittest.TestCase):
@@ -36,7 +49,6 @@ class TestSocialSkill(unittest.TestCase):
             dm._local.conn = None
         dm._db_initialized = False
 
-    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_xiaohongshu(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -50,7 +62,6 @@ class TestSocialSkill(unittest.TestCase):
         self.assertIn("publish_guide", result)
         self.assertLessEqual(len(result["body"]), PLATFORMS["小红书"]["max_body"])
 
-    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_gongzhonghao(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -62,7 +73,6 @@ class TestSocialSkill(unittest.TestCase):
         self.assertIn("深度解析", result["title"])
         self.assertLessEqual(len(result["body"]), PLATFORMS["公众号"]["max_body"])
 
-    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_twitter(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -72,7 +82,6 @@ class TestSocialSkill(unittest.TestCase):
         self.assertEqual(result["title"], "")
         self.assertLessEqual(len(result["body"]), PLATFORMS["推特"]["max_body"])
 
-    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_weibo(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -81,7 +90,6 @@ class TestSocialSkill(unittest.TestCase):
         self.assertIn("#", result["body"])
         self.assertLessEqual(len(result["body"]), PLATFORMS["微博"]["max_body"])
 
-    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_generate_content_zhihu(self):
         from opc_manager.social_skill import generate_content, PLATFORMS
 
@@ -103,7 +111,6 @@ class TestSocialSkill(unittest.TestCase):
         result = list_drafts()
         self.assertTrue(result["success"])
 
-    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_mark_published(self):
         from opc_manager.social_skill import generate_content, mark_published
 
@@ -127,120 +134,6 @@ class TestSocialSkill(unittest.TestCase):
             self.assertTrue(required_keys.issubset(cfg.keys()), f"{name} missing keys")
 
 
-@unittest.skip("proposal_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
-class TestProposalSkill(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from opc_manager.data_manager import init_db
-        import opc_manager.data_manager as dm
-
-        if hasattr(dm._local, "conn") and dm._local.conn:
-            try:
-                dm._local.conn.close()
-            except Exception:
-                pass
-            dm._local.conn = None
-        dm._db_initialized = False
-        init_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        import opc_manager.data_manager as dm
-
-        if hasattr(dm._local, "conn") and dm._local.conn:
-            try:
-                dm._local.conn.close()
-            except Exception:
-                pass
-            dm._local.conn = None
-        dm._db_initialized = False
-
-    def test_create_proposal_default(self):
-        from opc_manager.proposal_skill import create_proposal
-
-        result = create_proposal("张总")
-        self.assertTrue(result["success"])
-        self.assertIn("id", result)
-        self.assertIn("markdown", result)
-        self.assertIn("张总", result["markdown"])
-        self.assertIn("报价单", result["message"])
-
-    def test_create_proposal_with_service_type(self):
-        from opc_manager.proposal_skill import create_proposal
-
-        result = create_proposal("李总", service_type="开发")
-        self.assertTrue(result["success"])
-        self.assertIn("开发", result["markdown"])
-
-    def test_create_proposal_with_items(self):
-        from opc_manager.proposal_skill import create_proposal
-
-        items = [
-            {"name": "需求分析", "quantity": 1, "unit": "次", "price": 5000},
-            {"name": "开发实施", "quantity": 10, "unit": "人天", "price": 2000},
-        ]
-        result = create_proposal("王总", items=items)
-        self.assertTrue(result["success"])
-        self.assertEqual(result["total"], 25000)
-
-    def test_create_proposal_empty_client(self):
-        from opc_manager.proposal_skill import create_proposal
-
-        result = create_proposal("")
-        self.assertFalse(result["success"])
-        self.assertIn("不能为空", result["error"])
-
-    def test_create_proposal_valid_days(self):
-        from opc_manager.proposal_skill import create_proposal
-
-        result = create_proposal("赵总", valid_days=15)
-        self.assertTrue(result["success"])
-        self.assertIn("valid_until", result)
-
-    def test_list_proposals_empty(self):
-        from opc_manager.proposal_skill import list_proposals
-
-        result = list_proposals()
-        self.assertTrue(result["success"])
-
-    def test_update_proposal_status(self):
-        from opc_manager.proposal_skill import create_proposal, update_proposal_status
-
-        created = create_proposal("测试客户")
-        pid = created["id"]
-        result = update_proposal_status(pid, "sent")
-        self.assertTrue(result["success"])
-
-    def test_update_proposal_invalid_status(self):
-        from opc_manager.proposal_skill import update_proposal_status
-
-        result = update_proposal_status("any_id", "invalid_status")
-        self.assertFalse(result["success"])
-        self.assertIn("无效状态", result["error"])
-
-    def test_service_templates_completeness(self):
-        from opc_manager.proposal_skill import SERVICE_TEMPLATES
-
-        required = {"咨询", "培训", "设计", "开发", "通用"}
-        self.assertTrue(required.issubset(set(SERVICE_TEMPLATES.keys())))
-        for name, tpl in SERVICE_TEMPLATES.items():
-            self.assertIn("items", tpl)
-            for item in tpl["items"]:
-                self.assertIn("name", item)
-                self.assertIn("unit", item)
-
-    def test_markdown_rendering(self):
-        from opc_manager.proposal_skill import create_proposal
-
-        items = [{"name": "测试服务", "quantity": 2, "unit": "次", "price": 1000}]
-        result = create_proposal("MD客户", items=items)
-        md = result["markdown"]
-        self.assertIn("| 序号 |", md)
-        self.assertIn("¥2000.00", md)
-        self.assertIn("合计", md)
-
-
-@unittest.skip("invoice_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
 class TestInvoiceSkill(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -319,31 +212,6 @@ class TestInvoiceSkill(unittest.TestCase):
 
         result = list_invoices()
         self.assertTrue(result["success"])
-
-    def test_tax_calendar_current_month(self):
-        from opc_manager.invoice_skill import get_tax_calendar
-
-        result = get_tax_calendar()
-        self.assertTrue(result["success"])
-        self.assertIn("this_month", result)
-        self.assertIn("next_month", result)
-        self.assertGreater(len(result["this_month"]), 0)
-
-    def test_tax_calendar_specific_month(self):
-        from opc_manager.invoice_skill import get_tax_calendar
-
-        result = get_tax_calendar(4)
-        self.assertTrue(result["success"])
-        self.assertEqual(result["current_month"], 4)
-        self.assertTrue(
-            any("企业所得税" in e.get("type", "") for e in result["this_month"])
-        )
-
-    def test_tax_calendar_12_months(self):
-        from opc_manager.invoice_skill import TAX_CALENDAR
-
-        months = {e["month"] for e in TAX_CALENDAR}
-        self.assertEqual(months, set(range(1, 13)))
 
     def test_markdown_rendering(self):
         from opc_manager.invoice_skill import create_invoice
@@ -484,125 +352,6 @@ class TestReportSkill(unittest.TestCase):
         self.assertTrue(result["success"])
 
 
-@unittest.skip("calendar_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
-class TestCalendarSkill(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from opc_manager.data_manager import init_db
-        import opc_manager.data_manager as dm
-
-        if hasattr(dm._local, "conn") and dm._local.conn:
-            try:
-                dm._local.conn.close()
-            except Exception:
-                pass
-            dm._local.conn = None
-        dm._db_initialized = False
-        init_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        import opc_manager.data_manager as dm
-
-        if hasattr(dm._local, "conn") and dm._local.conn:
-            try:
-                dm._local.conn.close()
-            except Exception:
-                pass
-            dm._local.conn = None
-        dm._db_initialized = False
-
-    def test_add_event(self):
-        from opc_manager.calendar_skill import add_event
-
-        result = add_event("项目评审", "2025-05-20", "14:00")
-        self.assertTrue(result["success"])
-        self.assertIn("id", result)
-        self.assertIn("项目评审", result["message"])
-
-    def test_add_event_with_reminder(self):
-        from opc_manager.calendar_skill import add_event
-
-        result = add_event("客户会议", "2025-05-21", "10:00", reminder_min=30)
-        self.assertTrue(result["success"])
-        self.assertIn("30分钟提醒", result["reminder"])
-
-    def test_add_event_empty_title(self):
-        from opc_manager.calendar_skill import add_event
-
-        result = add_event("", "2025-05-20")
-        self.assertFalse(result["success"])
-        self.assertIn("不能为空", result["error"])
-
-    def test_add_event_invalid_date(self):
-        from opc_manager.calendar_skill import add_event
-
-        result = add_event("测试", "2025/05/20")
-        self.assertFalse(result["success"])
-        self.assertIn("日期格式无效", result["error"])
-
-    def test_get_day_schedule(self):
-        from opc_manager.calendar_skill import add_event, get_day_schedule
-
-        add_event("上午会议", "2099-01-22", "09:00")
-        add_event("下午评审", "2099-01-22", "15:00")
-        result = get_day_schedule("2099-01-22")
-        self.assertTrue(result["success"])
-        self.assertGreaterEqual(result["count"], 2)
-        self.assertEqual(result["events"][0]["time"], "09:00")
-
-    def test_get_day_schedule_empty(self):
-        from opc_manager.calendar_skill import get_day_schedule
-
-        result = get_day_schedule("2099-12-31")
-        self.assertTrue(result["success"])
-        self.assertEqual(result["count"], 0)
-
-    def test_get_week_schedule(self):
-        from opc_manager.calendar_skill import add_event, get_week_schedule
-
-        add_event("周会", "2025-05-19", "10:00")
-        result = get_week_schedule("2025-05-19")
-        self.assertTrue(result["success"])
-        self.assertEqual(len(result["days"]), 7)
-
-    def test_cancel_event(self):
-        from opc_manager.calendar_skill import add_event, cancel_event
-
-        created = add_event("取消测试", "2025-05-23", "11:00")
-        event_id = created["id"]
-        result = cancel_event(event_id)
-        self.assertTrue(result["success"])
-
-    def test_cancel_nonexistent_event(self):
-        from opc_manager.calendar_skill import cancel_event
-
-        result = cancel_event("nonexistent_id")
-        self.assertFalse(result["success"])
-
-    def test_parse_date_from_text(self):
-        from opc_manager.utils import parse_date_from_text
-        from datetime import datetime, timedelta
-
-        today = time.strftime("%Y-%m-%d")
-        self.assertEqual(parse_date_from_text("今天开会"), today)
-
-        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-        self.assertEqual(parse_date_from_text("明天"), tomorrow)
-
-        result = parse_date_from_text("2025年6月15日")
-        self.assertEqual(result, "2025-06-15")
-
-        result = parse_date_from_text("2025-12-25")
-        self.assertEqual(result, "2025-12-25")
-
-    def test_get_upcoming_reminders_no_events(self):
-        from opc_manager.calendar_skill import get_upcoming_reminders
-
-        result = get_upcoming_reminders()
-        self.assertTrue(result["success"])
-
-
 class TestSkillRegistryP1(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -716,7 +465,6 @@ class TestSkillRegistryP1(unittest.TestCase):
         # calendar skill removed in v0.3.4; intent no longer maps to a skill
         self.assertNotIn("calendar", skill_ids)
 
-    @unittest.skip("social_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
     def test_execute_social(self):
         from opc_manager.skill_registry import SkillRegistry
 
@@ -757,14 +505,6 @@ class TestSkillRegistryP1(unittest.TestCase):
             ),
         ):
             result = registry._execute_report("生成本周周报")
-        self.assertTrue(result["success"])
-
-    @unittest.skip("calendar_skill 已冻结 v0.3.0, 见 SKILL_FREEZE_LIST.md")
-    def test_execute_calendar_add(self):
-        from opc_manager.skill_registry import SkillRegistry
-
-        registry = SkillRegistry(register_builtins=True)
-        result = registry._execute_calendar("帮我安排明天项目评审")
         self.assertTrue(result["success"])
 
 

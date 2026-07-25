@@ -19,7 +19,7 @@ playwright>=1.61.0
 
 # 代码质量
 black>=26.3.1
-ruff>=0.15.22  # D03 P1-1: Unified with CI (0.15.21) and pre-commit (v0.15.21)
+ruff>=0.15.22,<0.16.0  # Pin upper bound: ruff 0.16.0 引入 SIM117 等新默认规则导致 3464 错误（Phase 2 适配后移除上界）
 flake8>=7.0.0
 bandit>=1.7.0
 pip-audit>=2.7.0

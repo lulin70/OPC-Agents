@@ -1,7 +1,6 @@
 """Regression Guard: Structural safety checks for frontend architecture."""
 
 import os
-import pytest
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
 PAGES_DIR = os.path.join(FRONTEND_DIR, "pages")
@@ -48,8 +47,6 @@ def test_required_page_module_files_exist():
 def test_app_py_line_count_reasonable():
     """C5: app.py should be under 2000 lines (giant file detection)."""
     app_py = os.path.join(FRONTEND_DIR, "app.py")
-    if not os.path.exists(app_py):
-        pytest.skip("app.py not found")
     with open(app_py) as f:
         lines = sum(1 for _ in f)
     assert (
@@ -64,8 +61,6 @@ def test_no_circular_import_risk():
     Removed xfail(strict=False) marker: was hiding XPASS (ASSESSMENT_D01 P0-5).
     """
     dp = os.path.join(FRONTEND_DIR, "page_modules", "_dashboard_page.py")
-    if not os.path.exists(dp):
-        pytest.skip("_dashboard_page.py not found")
     with open(dp) as f:
         content = f.read()
     assert (

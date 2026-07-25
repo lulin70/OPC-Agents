@@ -55,7 +55,6 @@ class TestCreateMcpServer:
         assert server.skill_registry is not None
 
 
-@pytest.mark.skipif(not SSE_AVAILABLE, reason="SSE not available")
 class TestSseAppHealth:
     """Test SSE FastAPI application — health endpoint."""
 
@@ -88,7 +87,6 @@ class TestSseAppHealth:
         assert resp.status_code == 200
 
 
-@pytest.mark.skipif(not SSE_AVAILABLE, reason="SSE not available")
 class TestSseAppAuth:
     """Test SSE FastAPI application — authentication."""
 
@@ -166,7 +164,6 @@ class TestSseAppAuth:
         assert "error" in data
 
 
-@pytest.mark.skipif(not SSE_AVAILABLE, reason="SSE not available")
 class TestSseAppHttps:
     """Test SSE FastAPI application — HTTPS enforcement."""
 

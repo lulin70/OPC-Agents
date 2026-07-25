@@ -161,6 +161,12 @@ exclude = [
 line-length = 88
 target-version = "py310"
 
+[tool.ruff.lint]
+# 显式锁定规则集，根治 ruff 版本升级引入新默认规则导致的 CI 漂移。
+# 选用 ruff 默认规则集（E4/E7/E9/F），保持与历史行为一致。
+# Phase 2 适配 0.16.0 时如需引入 SIM 等新规则，在此显式追加。
+select = ["E4", "E7", "E9", "F"]
+
 # P2-14 虚拟分层: isort 配置作为"软约束"
 # 不在 select 中强制启用 I 规则（避免一次性改动 434 个文件违反 Surgical Changes），
 # 但配置 sections/known-first-party，让开发者在 IDE 或手动 `ruff check --select I --fix`

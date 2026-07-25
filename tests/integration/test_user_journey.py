@@ -722,8 +722,6 @@ class TestJourney7SettingsSecurity:
 
     def test_store_and_retrieve_api_key(self, secure_store):
         """Step 1-2: User stores and retrieves an API key securely."""
-        if not secure_store.is_available:
-            pytest.skip("cryptography package not installed")
 
         assert secure_store.set_key("MOKA_API_KEY", "sk-test-12345")
         retrieved = secure_store.get_key("MOKA_API_KEY")
@@ -776,8 +774,6 @@ class TestJourney7SettingsSecurity:
 
     def test_list_keys(self, secure_store):
         """User can list stored key names."""
-        if not secure_store.is_available:
-            pytest.skip("cryptography package not installed")
 
         secure_store.set_key("KEY_A", "val_a")
         secure_store.set_key("KEY_B", "val_b")
@@ -787,8 +783,6 @@ class TestJourney7SettingsSecurity:
 
     def test_remove_key(self, secure_store):
         """User can remove a stored key."""
-        if not secure_store.is_available:
-            pytest.skip("cryptography package not installed")
 
         secure_store.set_key("KEY_TO_REMOVE", "val")
         assert secure_store.remove_key("KEY_TO_REMOVE")

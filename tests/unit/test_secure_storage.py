@@ -127,32 +127,24 @@ class TestSecureKeyStoreEncryptDecrypt(unittest.TestCase):
 
     def test_set_and_get_round_trip(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("TEST_KEY", "secret-value-123")
         result = store.get_key("TEST_KEY")
         self.assertEqual(result, "secret-value-123")
 
     def test_empty_string_value(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("EMPTY_KEY", "")
         result = store.get_key("EMPTY_KEY")
         self.assertEqual(result, "")
 
     def test_unicode_value(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("UNI_KEY", "中文密钥🔑")
         result = store.get_key("UNI_KEY")
         self.assertEqual(result, "中文密钥🔑")
 
     def test_overwrite_key(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("OVER_KEY", "value1")
         store.set_key("OVER_KEY", "value2")
         result = store.get_key("OVER_KEY")
@@ -160,15 +152,11 @@ class TestSecureKeyStoreEncryptDecrypt(unittest.TestCase):
 
     def test_get_nonexistent_key(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         result = store.get_key("NO_SUCH_KEY")
         self.assertIsNone(result)
 
     def test_multiple_keys(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("KEY_A", "val_a")
         store.set_key("KEY_B", "val_b")
         self.assertEqual(store.get_key("KEY_A"), "val_a")
@@ -197,8 +185,6 @@ class TestSecureKeyStoreListRemove(unittest.TestCase):
 
     def test_list_keys_after_set(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("K1", "v1")
         store.set_key("K2", "v2")
         keys = store.list_keys()
@@ -207,8 +193,6 @@ class TestSecureKeyStoreListRemove(unittest.TestCase):
 
     def test_remove_key(self):
         store = self._make_store()
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("DEL_KEY", "v")
         self.assertTrue(store.remove_key("DEL_KEY"))
         self.assertIsNone(store.get_key("DEL_KEY"))
@@ -243,8 +227,6 @@ class TestSecureKeyStoreLoadToEnv(unittest.TestCase):
 
     def test_load_to_env_sets_env_vars(self):
         store = SecureKeyStore(storage_path=self.storage_path)
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("TEST_ENV_VAR_12345", "loaded_value")
         self._save_env("TEST_ENV_VAR_12345")
         count = store.load_to_env()
@@ -271,8 +253,6 @@ class TestSecureKeyStoreInvalidCiphertext(unittest.TestCase):
 
     def test_invalid_ciphertext_returns_none(self):
         store = SecureKeyStore(storage_path=self.storage_path)
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         # Write a corrupted encrypted value directly
         store.set_key("GOOD_KEY", "good_value")
         # Now corrupt the stored data
@@ -340,8 +320,6 @@ class TestSecureKeyStoreFileOperations(unittest.TestCase):
 
     def test_save_and_load_preserves_data(self):
         store = SecureKeyStore(storage_path=self.storage_path)
-        if not store.is_available:
-            self.skipTest("cryptography package not installed")
         store.set_key("PERSIST_KEY", "persist_val")
         # Create a new store instance to read from disk
         store2 = SecureKeyStore(storage_path=self.storage_path)
@@ -394,8 +372,6 @@ class TestKeyRotation(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             storage_path = os.path.join(tmpdir, "secure_keys.json")
             store1 = SecureKeyStore(storage_path=storage_path)
-            if not store1.is_available:
-                self.skipTest("cryptography package not installed")
             store1.set_key("test_key", "secret_value")
 
             # Simulate key rotation by creating new store with same path

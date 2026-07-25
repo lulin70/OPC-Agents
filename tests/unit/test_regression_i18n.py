@@ -221,8 +221,6 @@ class TestCJKHardcodedStrings:
     @pytest.mark.parametrize("filepath", _TEST_FILES)
     def test_no_hardcoded_cjk_strings(self, filepath):
         full_path = os.path.join(os.path.dirname(__file__), "..", "..", filepath)
-        if not os.path.exists(full_path):
-            pytest.skip(f"File not found: {filepath}")
 
         violations = self._find_hardcoded_cjk_strings(full_path)
 

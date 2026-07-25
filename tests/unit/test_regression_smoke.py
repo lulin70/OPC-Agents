@@ -76,8 +76,6 @@ def test_component_syntax_valid(component_file):
     fpath = os.path.join(
         os.path.dirname(__file__), "..", "..", "frontend", component_file
     )
-    if not os.path.exists(fpath):
-        pytest.skip(f"{component_file} not found")
     with open(fpath) as f:
         source = f.read()
     try:

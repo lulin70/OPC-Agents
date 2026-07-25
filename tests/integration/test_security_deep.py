@@ -544,14 +544,9 @@ class TestCryptographicSecurity:
 
     def test_fernet_round_trip(self, tmp_path):
         """Encrypt then decrypt should return original value."""
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         store = SecureKeyStore(storage_path=str(tmp_path / "test.enc"))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         store.set_key("TEST_ROUNDTRIP", "secret-value-12345")
         result = store.get_key("TEST_ROUNDTRIP")
@@ -559,15 +554,10 @@ class TestCryptographicSecurity:
 
     def test_encrypted_file_not_plaintext(self, tmp_path):
         """Secret values must NOT appear as plaintext in the encrypted storage file."""
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         storage_path = tmp_path / "test.enc"
         store = SecureKeyStore(storage_path=str(storage_path))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         secret = "super-secret-api-key-xyz-789"
         store.set_key("MY_SECRET", secret)
@@ -596,10 +586,7 @@ class TestCryptographicSecurity:
 
     def test_different_machines_cannot_decrypt(self, tmp_path):
         """Keys encrypted on one machine should not be decryptable on another."""
-        try:
-            from opc_manager.secure_storage import SecureKeyStore, _fingerprint_cache
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore, _fingerprint_cache
 
         storage_path = tmp_path / "cross_machine.enc"
 
@@ -610,8 +597,6 @@ class TestCryptographicSecurity:
 
             ss._fingerprint_cache = "machine-alpha-001"
             store1 = SecureKeyStore(storage_path=str(storage_path))
-            if not store1.is_available:
-                pytest.skip("cryptography not installed")
             store1.set_key("CROSS_TEST", "secret-on-alpha")
         finally:
             ss._fingerprint_cache = original_cache
@@ -629,15 +614,10 @@ class TestCryptographicSecurity:
 
     def test_file_permissions_on_storage(self, tmp_path):
         """Encrypted storage file should have 0o600 permissions."""
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         storage_path = tmp_path / "perms.enc"
         store = SecureKeyStore(storage_path=str(storage_path))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         store.set_key("PERM_TEST", "value")
 
@@ -647,15 +627,10 @@ class TestCryptographicSecurity:
 
     def test_atomic_write_no_tmp_remains(self, tmp_path):
         """After successful write, no .tmp file should remain."""
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         storage_path = tmp_path / "atomic.enc"
         store = SecureKeyStore(storage_path=str(storage_path))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         store.set_key("ATOMIC_TEST", "value")
 
@@ -666,10 +641,7 @@ class TestCryptographicSecurity:
 
     def test_corrupted_encrypted_data_returns_none(self, tmp_path):
         """Corrupted/garbage data in storage should return None, not crash."""
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         storage_path = tmp_path / "corrupt.enc"
         # Write garbage data
@@ -683,34 +655,22 @@ class TestCryptographicSecurity:
         )
 
         store = SecureKeyStore(storage_path=str(storage_path))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         result = store.get_key("CORRUPT_KEY")
         assert result is None, "Corrupted data should return None, not raise exception"
 
     def test_missing_key_returns_none(self, tmp_path):
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         store = SecureKeyStore(storage_path=str(tmp_path / "missing.enc"))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         result = store.get_key("NONEXISTENT_KEY")
         assert result is None
 
     def test_remove_key(self, tmp_path):
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         store = SecureKeyStore(storage_path=str(tmp_path / "remove.enc"))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         store.set_key("TO_REMOVE", "value")
         assert store.get_key("TO_REMOVE") == "value"
@@ -719,26 +679,16 @@ class TestCryptographicSecurity:
         assert store.get_key("TO_REMOVE") is None
 
     def test_remove_nonexistent_key(self, tmp_path):
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         store = SecureKeyStore(storage_path=str(tmp_path / "rm_missing.enc"))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         assert store.remove_key("NO_SUCH_KEY") is False
 
     def test_list_keys(self, tmp_path):
-        try:
-            from opc_manager.secure_storage import SecureKeyStore
-        except ImportError:
-            pytest.skip("cryptography not installed")
+        from opc_manager.secure_storage import SecureKeyStore
 
         store = SecureKeyStore(storage_path=str(tmp_path / "list.enc"))
-        if not store.is_available:
-            pytest.skip("cryptography not installed")
 
         store.set_key("KEY_A", "val_a")
         store.set_key("KEY_B", "val_b")

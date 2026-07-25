@@ -2,7 +2,6 @@
 
 import re
 import os
-import pytest
 
 APP_PY = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "app.py")
 
@@ -38,8 +37,6 @@ def _get_bare_session_state_accesses(source):
 
 def test_no_dangerous_bare_session_access():
     """D1: st.session_state.xxx should use .get() for safety."""
-    if not os.path.exists(APP_PY):
-        pytest.skip("app.py not found")
     with open(APP_PY) as f:
         source = f.read()
 

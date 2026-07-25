@@ -440,7 +440,6 @@ class TestCollectProgressLogs:
 class TestCollectSystemLogs:
     """Test suite for system metrics collection."""
 
-    @pytest.mark.skipif(not psutil_available, reason="psutil not installed")
     @patch("psutil.cpu_percent")
     @patch("psutil.virtual_memory")
     @patch("psutil.disk_usage")
