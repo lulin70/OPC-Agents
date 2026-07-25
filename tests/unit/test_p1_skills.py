@@ -9,12 +9,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 # v0.3.4 移除的技能模块（proposal/calendar）— 仅当模块存在时才运行相关测试
 try:
     import opc_manager.proposal_skill  # noqa: F401
+
     _PROPOSAL_SKILL_AVAILABLE = True
 except ImportError:
     _PROPOSAL_SKILL_AVAILABLE = False
 
 try:
     import opc_manager.calendar_skill  # noqa: F401
+
     _CALENDAR_SKILL_AVAILABLE = True
 except ImportError:
     _CALENDAR_SKILL_AVAILABLE = False
