@@ -4,6 +4,40 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-07-25
+
+### PATCH — v0.5.3 CI 修复（Black 格式化）
+
+> v0.5.4 是 v0.5.3 CI 失败的紧急修复 PATCH。v0.5.3 模块拆分重构内容完整保留，仅修复 `consensus_checker.py` 未通过 Black 26.x 格式检查的问题（project_memory 教训："black 26.x formatting rules differ from 24.x, requiring reformatting of affected files when upgrading"）。v0.5.3 tag 因 CI 失败标记为预发布，v0.5.4 为首个 CI 全绿的正式发布版本。
+
+#### Fixed
+
+- `opc_manager/consensus_checker.py`：Black 26.x 格式化（v0.5.3 CI 在 Python 3.10/3.11/3.12 三个版本均因 `black --check` 失败）
+
+#### Changed
+
+- 版本号同步：0.5.3 → 0.5.4（17 文件：VERSION, version.py, mcp_protocol.py, Dockerfile, README x3, requirements(-dev).txt, scripts/start.sh, website/index.html x2, deploy/README.md, docs/PROJECT_STATUS.md）
+
+#### 测试验证
+
+- **Black 格式化**: 311 files all pass ✅
+- **pytest**: 4390 passed ✅（与 v0.5.3 一致，无回归）
+- **E2E**: 32 passed ✅（test_e2e_user_journeys + test_e2e_user_workflow）
+- **mypy**: 0 issues in 128 source files ✅
+- **ruff**: All checks passed ✅
+- **radon cc**: 无 D+ 函数 ✅
+
+#### 决策追溯
+
+v0.5.3 push 后 CI 因 Black 格式化失败。用户提供 3 个修复选项（删除 tag 重打 / 升 PATCH / amend+force push），选择"升 PATCH 到 v0.5.4"以避免破坏性 git 操作。v0.5.3 tag 保留为预发布标记，便于历史追溯。
+
+#### 升级指南
+
+- pip: `pip install --upgrade opc-agents==0.5.4`
+- Docker: `docker pull ghcr.io/lulin70/opc-agents:0.5.4`
+- **无破坏性 API 变更**，从 v0.5.3 升级无需代码改动
+- 从 v0.5.2 升级请参考下方 [0.5.3] 条目的升级指南
+
 ## [0.5.3] - 2026-07-25
 
 ### PATCH — 可优化项代码重构（SRP 边界清晰化）

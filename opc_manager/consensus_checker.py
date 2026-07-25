@@ -72,9 +72,7 @@ class ConsensusChecker:
         self.reflector_brain = reflector_brain
         self._consensus_consultant = consensus_consultant
 
-    def is_critical_decision_point(
-        self, context: Any, step: Any = None
-    ) -> bool:
+    def is_critical_decision_point(self, context: Any, step: Any = None) -> bool:
         """Determine whether the current step is a critical decision point.
 
         Critical decision points trigger parallel consensus voting.
@@ -99,8 +97,7 @@ class ConsensusChecker:
         skill_id = (getattr(step, "skill_id", "") or "").lower()
         action = (getattr(step, "action", "") or "").lower()
         return (
-            skill_id in CRITICAL_DECISION_SKILLS
-            or action in CRITICAL_DECISION_ACTIONS
+            skill_id in CRITICAL_DECISION_SKILLS or action in CRITICAL_DECISION_ACTIONS
         )
 
     async def parallel_consensus(
