@@ -63,7 +63,7 @@ opc-agents                      # 2. Launch
 - **🎯 Focus on 3 Core Skills**: Email / Finance / Report. Non-core skills frozen (see [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)), making each core skill genuinely great.
 - **🧠 IntentRouter 3-Way Smart Routing**: SIMPLE / COMPLEX / GREETING three-way classification. Simple tasks bypass the three sages directly — fast and cost-effective; complex tasks enter parallel voting for quality assurance.
 - **🛡 Key Decision Point Upfront Consensus Protection**: ConsensusEngine shifts from "post-hoc remedy" to "upfront gatekeeping", ExecutorBrain gives real opinions (fake opinion rules removed), ReflectorBrain upfront prediction + minority report.
-- **📊 Continuous Quality Improvement**: 4621 tests, 74%+ coverage, all CI gates passing (ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/version consistency/trilingual README consistency). D02 maturity assessment: 82 points B+.
+- **📊 Continuous Quality Improvement**: 4596 tests, 74%+ coverage, all CI gates passing (ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/version consistency/trilingual README consistency). D02 maturity assessment: 82 points B+.
 - **🔧 tool_system.py Split**: 754-line God Class split into 4 sub-modules (tool_registry + tool_handlers_fs/smtp/cmd) + Facade pattern, backward compatible, complexity reduced from D to C.
 - **🧹 Mock Anti-pattern Fix**: 56 anti-pattern Mock instances fixed (unused deps → None, internal components → SimpleNamespace), tests are more honest and failures more visible.
 - **🔒 Security Scan Clean**: pip-audit 0 vulnerabilities + Bandit 0 high-severity, 6 packages upgraded to fix 21 known vulnerabilities (pillow/pyjwt/python-multipart/soupsieve/weasyprint/pip).
@@ -403,7 +403,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # Test suite (4621 tests, 100% pass)
+├── tests/                 # Test suite (4596 tests, 100% pass)
 ├── docs/                  # Project documentation
 │   ├── API.md             # API documentation
 │   └── guides/            # Quick start guides (zh/en/jp)
@@ -423,7 +423,7 @@ OPC-Agents/
 # Install dev dependencies
 pip install -r requirements-dev.txt
 
-# Run all tests (4621 test cases)
+# Run all tests (4596 test cases)
 PYTHONPATH=. pytest tests/ -v
 
 # Run with coverage report
