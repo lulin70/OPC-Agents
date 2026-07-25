@@ -585,7 +585,7 @@ class TestHealthAndMeta:
     def test_health_endpoint(self, api_client):
         """Verify: GET /health 返回 200 + status=ok。
         Scenario: 无认证访问 /health。
-        Expected: 200，{"status": "ok", "version": "0.5.1"}。
+        Expected: 200，{"status": "ok", "version": <current_version>}。
         """
         # Act
         resp = api_client.get("/health")
@@ -594,7 +594,11 @@ class TestHealthAndMeta:
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["status"] == "ok"
-        assert body["version"] == "0.5.1"
+        # Reference __version__ from package to avoid hardcoding version
+        # numbers in tests (prevents test failure on version bumps).
+        from opc_manager.version import __version__
+
+        assert body["version"] == __version__
 
 
 # ---------------------------------------------------------------------------

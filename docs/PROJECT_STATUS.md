@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-20（v0.5.1 UI/UX 提升：Morandi 主题真正落地 + Morandi Dark 暗黑模式 + WCAG 2.1 AA 合规 + CSS 变量统一 + 官网暗黑模式。P0-P2 全部完成，4338 单元/集成测试通过，mypy 0 errors） | **版本**: v0.5.1 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-25（v0.5.2 PATCH：文档同步与可优化项评估收口。7-Role 共识评估决定不拆分 data_manager.py（152 处 import 风险）和 task_orchestrator.py（D07 评估非 God Class + 23 处测试调用私有方法）。ROADMAP_v0.5.1.md 状态同步 + PROJECT_STATUS.md §6 过期待办清理 + ROADMAP_v0.5.2.md 决策记录） | **版本**: v0.5.2 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_INITIAL_VISION_v0.4.0.md](assessments/ASSESSMENT_INITIAL_VISION_v0.4.0.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.5.1`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.5.2`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -158,10 +158,10 @@
 - ✅ 虚拟分层 — DIRECTORY_STRUCTURE.md 7 层映射 + ruff isort 软约束 + 96 个架构守护测试
 - ✅ P0+P1 成熟度问题修复（18 项：版本号同步/幽灵函数清理/pre-commit/ruff 43 错误清零/三语 README/E2E 门控等）
 
-#### 待办（v0.4.0 发布前）
+#### 已完成（v0.4.0 发布前）
 
-- v0.4.0 发布前 E2E 真实用户模拟测试复核（D05 已通过 37/37 用户旅程，发布前再跑一次）
-- v0.4.0 Release Notes 准备（强调覆盖率提升 74%→83% + Mock 系列关闭 + SQLite 锁根治 + Phase 1 100%）
+- ✅ v0.4.0 发布前 E2E 真实用户模拟测试复核（D05 通过 37/37 用户旅程，v0.4.0 已发布 tag）
+- ✅ v0.4.0 Release Notes 准备（覆盖率 74%→83% + Mock 系列关闭 + SQLite 锁根治 + Phase 1 100%，已发布）
 
 #### 已完成的大型任务（v0.3.36）
 

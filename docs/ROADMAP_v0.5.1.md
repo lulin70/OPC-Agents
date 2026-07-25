@@ -175,61 +175,61 @@ v0.5.0 (已完成)              v0.5.1 (本路线图)
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 3.1 UI_DESIGN_v0.5.1.md | Morandi Dark 色板 + a11y 方案 | 待创建 |
-| 3.2 Morandi Dark 色板 | 暖调深棕 + 灰蓝主色 | 待创建 |
-| 3.3 a11y 方案 | aria-label + 键盘 + 对比度 | 待创建 |
+| 3.1 UI_DESIGN_v0.5.1.md | Morandi Dark 色板 + a11y 方案 | ✅ 已创建（[UI_DESIGN_v0.5.1.md](architecture/UI_DESIGN_v0.5.1.md)） |
+| 3.2 Morandi Dark 色板 | 暖调深棕 + 灰蓝主色 | ✅ 已创建（§5 已实现） |
+| 3.3 a11y 方案 | aria-label + 键盘 + 对比度 | ✅ 已创建（P0-D 完成验证） |
 
-**Gate P3+P5**: 设计稿评审通过
+**Gate P3+P5**: 设计稿评审通过 ✅
 
 ### 3.4 Phase 7 - P7: 测试计划（Tester Lead）
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 7.1 a11y 测试用例 | axe-core 扫描 + aria-label | 待创建 |
-| 7.2 暗黑模式 E2E | test_theme_dark.py | 待创建 |
-| 7.3 主题切换 E2E | morandi_light ↔ morandi_dark | 待创建 |
+| 7.1 a11y 测试用例 | axe-core 扫描 + aria-label | ✅ 已创建（`tests/e2e/test_a11y_axe.py` 3 测试） |
+| 7.2 暗黑模式 E2E | test_theme_dark.py | ✅ 已创建（`tests/e2e/test_theme_dark.py` 3 测试） |
+| 7.3 主题切换 E2E | morandi_light ↔ morandi_dark | ✅ 已包含在 test_theme_dark.py |
 
-**Gate P7**: 测试计划评审通过
+**Gate P7**: 测试计划评审通过 ✅
 
 ### 3.5 Phase 8 - P8: 实现（Coder Lead）
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 8.1 morandi_tokens.css | CSS 变量提取 | 待实现 |
-| 8.2 theme_manager.py | 新增 morandi_light/dark preset | 待实现 |
-| 8.3 app.py demo banner | Morandi 渐变 | 待实现 |
-| 8.4 aria-label 补齐 | feedback/consent/install_guide | 待实现 |
-| 8.5 st.code 复制 | 替换 `<script>` | 待实现 |
-| 8.6 主题选择器简化 | 2 选项 + 高级折叠 | 待实现 |
-| 8.7 _event_emoji 重命名 | → _event_icon | 待实现 |
-| 8.8 apply_theme 防重复 | session_state 标记 | 待实现 |
-| 8.9 feedback category 可选 | 默认 "unspecified" | 待实现 |
-| 8.10 官网暗黑模式 | prefers-color-scheme + toggle | 待实现 |
+| 8.1 morandi_tokens.css | CSS 变量提取 | ✅ 已实现 |
+| 8.2 theme_manager.py | 新增 morandi_light/dark preset | ✅ 已实现 |
+| 8.3 app.py demo banner | Morandi 渐变 | ✅ 已实现 |
+| 8.4 aria-label 补齐 | feedback/consent/install_guide | ✅ 已实现 |
+| 8.5 st.code 复制 | 替换 `<script>` | ✅ 已实现 |
+| 8.6 主题选择器简化 | 2 选项 + 高级折叠 | ✅ 已实现 |
+| 8.7 _event_emoji 重命名 | → _event_icon | ✅ 已实现 |
+| 8.8 apply_theme 防重复 | session_state 标记 | ✅ 已实现 |
+| 8.9 feedback category 可选 | 默认 "unspecified" | ✅ 已实现 |
+| 8.10 官网暗黑模式 | prefers-color-scheme + toggle | ✅ 已实现 |
 
-**Gate P8**: 代码审查通过
+**Gate P8**: 代码审查通过 ✅
 
 ### 3.6 Phase 9 - P9: 测试执行（Tester Lead）
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 9.1 单元测试 | 新组件 + 主题切换 | 待执行 |
-| 9.2 a11y E2E | axe-core 扫描 | 待执行 |
-| 9.3 暗黑模式 E2E | test_theme_dark.py | 待执行 |
-| 9.4 回归测试 | 全量 pytest | 待执行 |
+| 9.1 单元测试 | 新组件 + 主题切换 | ✅ 已执行（2800 passed, 77 skipped, 0 failed） |
+| 9.2 a11y E2E | axe-core 扫描 | ✅ 已执行（3 测试通过） |
+| 9.3 暗黑模式 E2E | test_theme_dark.py | ✅ 已执行（3 测试通过） |
+| 9.4 回归测试 | 全量 pytest | ✅ 已执行（1538 集成测试 passed） |
 
-**Gate P9**: 覆盖率 ≥80% + P7 计划 100% 执行
+**Gate P9**: 覆盖率 ≥80% + P7 计划 100% 执行 ✅
 
 ### 3.7 Phase 10 - P10: 部署发布（DevOps Lead）
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 10.1 版本升级 | 0.5.0 → 0.5.1（18 处同步） | 待执行 |
-| 10.2 RELEASE_NOTES_v0.5.1.md | 发布说明 | 待创建 |
-| 10.3 CHANGELOG 更新 | 新增 [0.5.1] 条目 | 待执行 |
-| 10.4 Git commit + push | origin/main | 待执行 |
-| 10.5 Tag v0.5.1 | 触发 release.yml | 待执行 |
+| 10.1 版本升级 | 0.5.0 → 0.5.1（18 处同步） | ✅ 已执行 |
+| 10.2 RELEASE_NOTES_v0.5.1.md | 发布说明 | ✅ 已创建（`docs/releases/RELEASE_NOTES_v0.5.1.md`） |
+| 10.3 CHANGELOG 更新 | 新增 [0.5.1] 条目 | ✅ 已执行 |
+| 10.4 Git commit + push | origin/main | ✅ 已执行（commit `cede5468`） |
+| 10.5 Tag v0.5.1 | 触发 release.yml | ✅ 已执行（tag `v0.5.1` 2026-07-20） |
 
-**Gate P10**: 部署演练通过
+**Gate P10**: 部署演练通过 ✅
 
 ---
 
@@ -316,19 +316,19 @@ st.markdown(f'<span style="color:var(--morandi-star-full);">★</span>', unsafe_
 | 阶段 | Phase | 主要工作 | 产出 | 状态 |
 |------|-------|---------|------|------|
 | 文档先行 | P1+P2 | 路线图 + 架构设计 | 文档 | ✅ 完成 |
-| 设计 | P3+P5 | UI_DESIGN_v0.5.1.md | 设计稿 | ⏳ 进行中 |
-| 实现 | P8 | 10 项代码实现 | 代码 | ⏳ 待启动 |
-| 测试 | P7+P9 | 单元 + a11y + 暗黑 E2E | 测试报告 | ⏳ 待启动 |
-| 发布 | P10 | 版本升级 + Git + Tag | 上线 | ⏳ 待启动 |
+| 设计 | P3+P5 | UI_DESIGN_v0.5.1.md | 设计稿 | ✅ 完成 |
+| 实现 | P8 | 10 项代码实现 | 代码 | ✅ 完成 |
+| 测试 | P7+P9 | 单元 + a11y + 暗黑 E2E | 测试报告 | ✅ 完成 |
+| 发布 | P10 | 版本升级 + Git + Tag | 上线 | ✅ 完成（tag v0.5.1 @ 2026-07-20） |
 
 ### 6.2 关键里程碑
 
 | 里程碑 | 验收标准 | 状态 |
 |--------|---------|------|
 | M1: 文档完备 | ROADMAP + UI_DESIGN v0.5.1 | ✅ 达成 |
-| M2: 实现完成 | P0-P2 16 项代码全部完成 | ⏳ |
-| M3: 测试通过 | 单元 + a11y + 暗黑 E2E 全通过 | ⏳ |
-| M4: 上线发布 | v0.5.1 tag + Release Notes | ⏳ |
+| M2: 实现完成 | P0-P2 16 项代码全部完成 | ✅ 达成 |
+| M3: 测试通过 | 单元 + a11y + 暗黑 E2E 全通过 | ✅ 达成 |
+| M4: 上线发布 | v0.5.1 tag + Release Notes | ✅ 达成（tag v0.5.1 @ 2026-07-20） |
 
 ---
 
@@ -486,8 +486,8 @@ v0.5.0 完成后立即进行的 UI/UX 7-Role 评估，识别 16 项改进机会�
 | RELEASE_NOTES_v0.5.1.md | ✅ 完成 | `docs/releases/RELEASE_NOTES_v0.5.1.md` |
 | CHANGELOG.md 更新 | ✅ 完成 | 新增 `[0.5.1]` 条目（位于 `[Unreleased]` 之后、`[0.5.0]` 之前） |
 | ROADMAP_v0.5.1.md 推进状态 | ✅ 完成 | 本章节（§10） |
-| Git commit + push | ⏳ 待执行 | 待 origin/main |
-| Tag v0.5.1 | ⏳ 待执行 | 触发 release.yml workflow |
+| Git commit + push | ✅ 完成 | commit `cede5468` 已推送 origin/main（2026-07-20） |
+| Tag v0.5.1 | ✅ 完成 | tag `v0.5.1` 已打（2026-07-20 19:48 CST） |
 
 ### 10.8 推进状态总结
 
@@ -495,4 +495,4 @@ v0.5.0 完成后立即进行的 UI/UX 7-Role 评估，识别 16 项改进机会�
 - **技术债务**: v0.5.0 遗留 25 个 mypy errors + 15 个 ruff errors 全部清理
 - **测试验证**: 单元 + 集成 + 版本一致性 + E2E a11y + 静态检查全部通过
 - **文档完备**: Release Notes + Changelog + Roadmap 推进状态全部更新
-- **唯一待执行**: Git commit + push + Tag v0.5.1（Phase 10 最后一公里）
+- **发布完成**: v0.5.1 已通过 git tag 发布（2026-07-20），所有 Phase 10 任务闭环

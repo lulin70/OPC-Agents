@@ -1,5 +1,5 @@
 # OPC-Agents 开发依赖
-# 版本: 0.5.1
+# 版本: 0.5.2
 
 -r requirements.txt
 

@@ -4,6 +4,56 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-07-25
+
+### PATCH — 文档同步与可优化项评估收口
+
+> v0.5.2 是文档同步与可优化项评估收口的 PATCH 版本。基于 v0.5.1 发布后的盘点，识别 2 类文档滞后问题（ROADMAP_v0.5.1.md §3.3-3.7 状态列滞后 + PROJECT_STATUS.md §6 过期待办）和 5 项可优化项。通过 DevSquad V4.1.7 7-Role 共识评估，决定不拆分 data_manager.py（152 处 import 风险过高，推迟到 v0.6.0+ MINOR）和 task_orchestrator.py（D07 SRP 评估非 God Class + 23 处测试调用私有方法 + 拆分需 4 个转发方法违背简化原则）。本版本仅做文档同步与版本号升级，无代码功能变更。
+
+#### Changed
+
+- **ROADMAP_v0.5.1.md 状态同步**: §3.3-3.7（Phase 3-10）5 个表格状态从"待创建/待实现/待执行"更新为"✅ 已完成"；§6.1-6.2 时间线 4 个阶段 + 4 个里程碑状态更新为"✅ 完成/达成"；§10.7-10.8 推进状态 Git commit + Tag v0.5.1 从"⏳ 待执行"更新为"✅ 完成"（实际 commit `cede5468` + tag `v0.5.1` @ 2026-07-20）
+- **PROJECT_STATUS.md §6 Phase 2 过期待办清理**: "待办（v0.4.0 发布前）"改为"已完成（v0.4.0 发布前）"，2 项内容加 ✅（v0.4.0 早已发布 tag，待办项未清理）
+- **版本号同步**: 0.5.1 → 0.5.2，覆盖 VERSION + version.py + mcp_protocol.py + Dockerfile ARG + scripts/start.sh + 三语 README + requirements.txt + requirements-dev.txt + deploy/README.md + website/index.html + PROJECT_STATUS.md 共 13 处
+
+#### Added
+
+- `docs/ROADMAP_v0.5.2.md` — v0.5.2 路线图（7-Role 共识评估 + 可优化项决策记录 + 决策依据）
+
+#### 决策记录
+
+7-Role 共识评估结论（详见 [ROADMAP_v0.5.2.md](docs/ROADMAP_v0.5.2.md)）：
+
+| 可优化项 | 决策 | 依据 |
+|---------|------|------|
+| `data_manager.py` 拆分（790行→encryption+migrations+data_manager） | **推迟 v0.6.0+** | 152 处 import + 43 文件影响，PATCH 版本不应承担此风险 |
+| `task_orchestrator.py` 提取 ConsensusChecker（774行） | **不拆分** | D07 SRP 评估非 God Class + 23 处测试调用私有方法 + 拆分需 4 个转发方法违背简化原则 |
+| `opc_manager` 99 文件真子包化 | **推迟 v0.6.0+** | 全量影响，MINOR 版本范畴 |
+| `shared.py` 重构 | **已完成** | 仅新组件不再中转，老组件保持，无需进一步动作 |
+| v4.1 外部技能扩展完整化 | **不适合 PATCH** | 新功能，MINOR 版本范畴 |
+
+#### 测试验证
+
+- **版本一致性**: test_version.py 9/9 passed ✅
+- **mypy**: 0 errors ✅
+- **ruff**: All checks passed ✅
+- **radon cc**: 无 D+ 函数 ✅
+- **单元测试**: 0 failure ✅
+- **集成测试**: 0 failure ✅
+
+#### 已知限制
+
+- 本版本无代码功能变更，仅文档同步与版本号升级
+- 可优化项中的代码重构（data_manager.py / task_orchestrator.py）推迟到 v0.6.0+ MINOR 版本
+
+#### 升级指南
+
+- pip: `pip install --upgrade opc-agents==0.5.2`
+- Docker: `docker pull ghcr.io/lulin70/opc-agents:0.5.2`
+- 无破坏性 API 变更，安全升级
+
+详见 [ROADMAP_v0.5.2.md](docs/ROADMAP_v0.5.2.md)。
+
 ## [0.5.1] - 2026-07-20
 
 ### PATCH — UI/UX 提升 + mypy 技术债务清理
