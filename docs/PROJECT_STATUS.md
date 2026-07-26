@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-25（v0.5.4 PATCH：v0.5.3 模块拆分重构 + Black 格式化修复。data_manager.py 拆分出 data_manager_migrations.py（迁移+SQL验证+种子数据，12 函数+3 常量），data_manager.py re-export 保持 152 处 import 和 patch 路径兼容。task_orchestrator.py 提取 ConsensusChecker 类（4 方法），TaskOrchestrator 保留转发方法向后兼容，2 处 patch 路径更新。consensus_checker.py Black 格式化修复（v0.5.3 CI 失败根因）。无破坏性 API 变更） | **版本**: v0.5.4 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-25（v0.5.5 PATCH：v0.5.4 评估后修复 P0-P1 问题。P0-1 修复语言切换 bug（KeyError: 'ja_JP'/'en_US'，format_func 防御性 .get + 测试用 key 查找）。P0-2 修复 pre-commit black 版本漂移（24.8.0→26.5.1，消除 v0.5.3 CI 失败根因）。P1-3 同步测试数据（4241→4390, 77 skipped→0）。P1-4 更新 ROADMAP_v0.5.2 状态列。无破坏性 API 变更） | **版本**: v0.5.5 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_INITIAL_VISION_v0.4.0.md](assessments/ASSESSMENT_INITIAL_VISION_v0.4.0.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.5.4`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.5.5`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -48,12 +48,12 @@
 
 | 指标 | 值 | 来源 |
 |------|-----|------|
-| 测试用例总数 | 4241 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.3.36 T7 系列关闭后总数） |
-| 测试通过 | 4164 passed, 77 skipped, 0 failed | `pytest --ignore=tests/e2e --cov=opc_manager -q`（v0.3.36 验证，128.61s） |
-| 完整套件耗时 | 365s（含 e2e）/ 128s（不含 e2e） | v0.3.36 实测 |
-| 全量覆盖率 | 83% | `pytest --cov` 实测（v0.3.36：14431 stmts 2499 miss；T6 工具覆盖率补全 + T7 Mock 精准替换，CI 阈值 70%） |
-| `email_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.36 验证：237 stmts 0 miss） |
-| `finance_skill.py` 覆盖率（全量口径） | 100% | `pytest --cov` 实测（v0.3.36 验证：166 stmts 0 miss） |
+| 测试用例总数 | 4390 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.5.4 实测） |
+| 测试通过 | 4390 passed, 0 skipped, 0 failed | `pytest --ignore=tests/e2e -q`（v0.5.4 验证，127s；v0.5.3 完成全部 skip 清理） |
+| 完整套件耗时 | 127s（不含 e2e）/ ~330s（含 e2e） | v0.5.4 实测 |
+| 全量覆盖率 | 待 v0.5.5 重测 | v0.3.36 实测 83%（14431 stmts 2499 miss）；v0.5.x 系列新增模块拆分 + skip 清理，需重新测量 |
+| `email_skill.py` 覆盖率（全量口径） | 待 v0.5.5 重测 | v0.3.36 实测 100%（237 stmts 0 miss）；代码无变更，预期保持 |
+| `finance_skill.py` 覆盖率（全量口径） | 待 v0.5.5 重测 | v0.3.36 实测 100%（166 stmts 0 miss）；代码无变更，预期保持 |
 | mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |
 | flake8 违规 | 0 | `flake8 opc_manager/ tests/` = 0（Phase 2 P0 清零：opc_manager 143→0 + tests 119→0） |
 

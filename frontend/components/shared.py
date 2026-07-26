@@ -249,7 +249,7 @@ def _render_theme_selector():
     primary_selected = st.selectbox(
         _label("theme_label", "Theme"),
         options=primary_themes,
-        format_func=lambda x: primary_labels[x],
+        format_func=lambda x: primary_labels.get(x, x),
         index=primary_index,
         key="theme_primary",
     )
@@ -259,7 +259,7 @@ def _render_theme_selector():
         adv_selected = st.selectbox(
             _label("theme_advanced_label", "Legacy theme (overrides primary)"),
             options=advanced_themes,
-            format_func=lambda x: advanced_labels[x],
+            format_func=lambda x: advanced_labels.get(x, x),
             key="theme_advanced_select",
             index=None,
         )

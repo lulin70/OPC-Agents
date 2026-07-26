@@ -427,18 +427,23 @@ class TestUJ07LanguageSwitching:
         """
         _wait_for_streamlit_content(page)
 
-        # 全页查找 selectbox（侧边栏内有 2 个：主题和语言）
+        # 全页查找 selectbox（侧边栏内有 3 个：theme_primary、theme_advanced_select、lang_selector）
         selectboxes = page.locator("[data-testid='stSelectbox']")
         assert (
             selectboxes.count() >= 2
         ), f"selectbox 不足 2 个，实际: {selectboxes.count()}"
 
-        # 第二个 selectbox 是语言选择器（Language 标签）
-        lang_selector = selectboxes.nth(1)
-        lang_label = lang_selector.locator("label").inner_text()
-        assert (
-            "Language" in lang_label or "语言" in lang_label
-        ), f"第二个 selectbox 不是语言选择器: {lang_label}"
+        # Find language selector by label text (not index — index is fragile
+        # because theme_advanced_select is nested in expander and may occupy
+        # nth(1), causing locale codes to leak into theme state).
+        lang_selector = None
+        for i in range(selectboxes.count()):
+            sb = selectboxes.nth(i)
+            label = sb.locator("label").inner_text()
+            if "Language" in label or "语言" in label:
+                lang_selector = sb
+                break
+        assert lang_selector is not None, "未找到语言选择器（Language/语言标签）"
 
         # 记录切换前的导航文本（中文）
         labels_before = _get_nav_labels(page)

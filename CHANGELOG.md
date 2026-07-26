@@ -4,6 +4,68 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-07-25
+
+### PATCH — v0.5.4 评估后 P0-P1 修复
+
+> v0.5.5 是 v0.5.4 7 维度项目整理评估后的 P0-P1 问题修复 PATCH。修复了评估发现的 4 个问题：语言切换 UI bug（P0）、pre-commit black 版本漂移（P0）、PROJECT_STATUS 测试数据滞后（P1）、ROADMAP 状态列滞后（P1）。本版本是首个通过完整 7 维度评估的版本。
+
+#### P0 Fixed
+
+##### P0-1: 语言切换 UI bug（KeyError: 'ja_JP' / 'en_US'）
+
+- **根因**: `frontend/components/shared.py` 的 `_render_theme_selector` 中 `format_func=lambda x: advanced_labels[x]` 在 widget state 被污染时（locale 代码泄漏到主题选择器）抛出 KeyError。测试用 `selectbox[1]` 索引访问语言选择器，但实际 `selectbox[1]` 是 `theme_advanced_select`（在 expander 内），导致 locale 代码错误设置为主题值
+- **代码修复**: `format_func=lambda x: advanced_labels.get(x, x)` + `primary_labels.get(x, x)` — 防御性字典访问
+- **测试修复**: AppTest 用 `key == "lang_selector"` 查找语言选择器（非索引）；Playwright 用 label 文本查找（非 nth(1)）
+- **验证**: 3 个 UI E2E 测试全部通过（test_language_selector_exists + test_switch_language_to_english + test_switch_language_to_japanese）
+- **教训**: 符合 project_memory "后端 API 测试通过不等于用户能用——页面有问题用户就无法使用"
+
+##### P0-2: pre-commit black 版本漂移（v0.5.3 CI 失败根因）
+
+- **根因**: `.pre-commit-config.yaml` black rev: 24.8.0，CI 用 requirements-dev.txt 的 black>=26.3.1。black 26.x 格式规则与 24.x 不同，本地 pre-commit 通过的代码在 CI 失败
+- **修复**: `.pre-commit-config.yaml` black rev: 24.8.0 → 26.5.1（最新稳定版）
+- **验证**: `black --check` 311 files all pass
+- **教训**: 符合 project_memory "black 26.x formatting rules differ from 24.x, requiring reformatting of affected files when upgrading"
+
+#### P1 Fixed
+
+##### P1-3: PROJECT_STATUS.md 测试数据滞后（停留 v0.3.36）
+
+- **问题**: 测试用例总数 4241→4390、测试通过 4164→4390、77 skipped→0、覆盖率 83%→待重测
+- **修复**: 同步更新为 v0.5.4 实测数据，覆盖率标记"待 v0.5.5 重测"（诚实记录，不虚构数据）
+- **教训**: 符合 project_memory "文档滞后根因" — PROJECT_STATUS §3 自 v0.3.36 后跨越 6 个版本未更新
+
+##### P1-4: ROADMAP_v0.5.2.md 状态列滞后
+
+- **问题**: 2.1/2.2/2.4/3.1/3.2/3.3/4.1/4.2 共 8 个任务标"⏳ 待执行"但实际已完成
+- **修复**: 全部更新为"✅ 完成"
+- **教训**: 符合 project_memory "ROADMAP 量化目标需定期校准"
+
+#### Changed
+
+- 版本号同步：0.5.4 → 0.5.5（17 文件：VERSION, version.py, mcp_protocol.py, Dockerfile, README×3, requirements(-dev).txt, scripts/start.sh, website/index.html×2, deploy/README.md, docs/PROJECT_STATUS.md×2）
+- 评估报告新增：`docs/assessments/ASSESSMENT_v0.5.4.md`（7 维度评估报告，B+ 85/100）
+
+#### 测试验证（全绿）
+
+- **pytest 单元+集成**: 4390 passed, 0 failed, 0 skipped (138s) ✅
+- **UI E2E AppTest 语言切换**: 3 passed ✅
+- **Black check**: 311 files all pass ✅
+- **mypy**: 0 issues in 128 source files ✅
+- **ruff**: All checks passed ✅
+- **radon cc**: 无 D+ 函数 ✅
+- **test_version.py**: 9/9 passed ✅
+
+#### 决策追溯
+
+v0.5.4 发布后立即进行 7 维度项目整理评估（docs/assessments/ASSESSMENT_v0.5.4.md），发现 2 个 P0 + 2 个 P1 问题。用户要求"P0-P1 都修复"，本版本完成全部修复。v0.5.5 是首个通过完整 7 维度评估的版本，代码质量、文档一致性、技术债、测试、CI/CD、目录结构全面达标。
+
+#### 升级指南
+
+- pip: `pip install --upgrade opc-agents==0.5.5`
+- Docker: `docker pull ghcr.io/lulin70/opc-agents:0.5.5`
+- **无破坏性 API 变更**，从 v0.5.4 升级无需代码改动
+
 ## [0.5.4] - 2026-07-25
 
 ### PATCH — v0.5.3 CI 修复（Black 格式化）

@@ -486,9 +486,15 @@ class TestUILanguageSwitching:
         at = _load_app()
         at.run(timeout=30)
 
-        # selectbox[0] = theme, selectbox[1] = language
-        if len(at.sidebar.selectbox) >= 2:
-            at.sidebar.selectbox[1].set_value("en_US")
+        # Find language selector by key (not index — index is fragile because
+        # theme_advanced_select selectbox is nested in expander and may occupy
+        # selectbox[1], causing locale codes to leak into theme state).
+        lang_sb = next(
+            (sb for sb in at.sidebar.selectbox if sb.key == "lang_selector"),
+            None,
+        )
+        if lang_sb is not None:
+            lang_sb.set_value("en_US")
             at.run(timeout=30)
             assert not at.exception, f"Switching to English raised: {at.exception}"
 
@@ -497,7 +503,12 @@ class TestUILanguageSwitching:
         at = _load_app()
         at.run(timeout=30)
 
-        if len(at.sidebar.selectbox) >= 2:
-            at.sidebar.selectbox[1].set_value("ja_JP")
+        # Find language selector by key (see test_switch_language_to_english).
+        lang_sb = next(
+            (sb for sb in at.sidebar.selectbox if sb.key == "lang_selector"),
+            None,
+        )
+        if lang_sb is not None:
+            lang_sb.set_value("ja_JP")
             at.run(timeout=30)
             assert not at.exception, f"Switching to Japanese raised: {at.exception}"

@@ -1,7 +1,7 @@
 # OPC-Agents 部署目录
 
 > **关联权威设计文档**：[`docs/architecture/DEPLOYMENT_ARCHITECTURE.md`](../docs/architecture/DEPLOYMENT_ARCHITECTURE.md)
-> **适用版本**：v0.5.4
+> **适用版本**：v0.5.5
 > **目标服务器**：`47.116.219.15`（云端）
 > **硬约束**：H1 / H6 / H7 / H8（详见 `docs/HARD_CONSTRAINTS.md`）
 

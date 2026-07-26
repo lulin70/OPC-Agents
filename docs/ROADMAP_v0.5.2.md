@@ -82,25 +82,25 @@ v0.5.1（2026-07-20）完成 UI/UX 体验提升（Morandi 主题真正落地 + �
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 2.1 版本号同步 | 0.5.1 → 0.5.2（VERSION + version.py + mcp_protocol.py + README×3 + Dockerfile ARG 等 18 处） | 代码 | ⏳ 待执行 |
-| 2.2 CHANGELOG.md 新增 [0.5.2] 条目 | PATCH 类型，记录文档同步 + 可优化项评估决策 | 文档 | ⏳ 待执行 |
+| 2.1 版本号同步 | 0.5.1 → 0.5.2（VERSION + version.py + mcp_protocol.py + README×3 + Dockerfile ARG 等 18 处） | 代码 | ✅ 完成（v0.5.2 已发布，当前 v0.5.5） |
+| 2.2 CHANGELOG.md 新增 [0.5.2] 条目 | PATCH 类型，记录文档同步 + 可优化项评估决策 | 文档 | ✅ 完成 |
 | 2.3 ROADMAP_v0.5.2.md（本文档） | 决策记录与依据 | 文档 | ✅ 完成 |
-| 2.4 PROJECT_STATUS.md 更新 | 反映 v0.5.2 当前版本 | 文档 | ⏳ 待执行 |
+| 2.4 PROJECT_STATUS.md 更新 | 反映 v0.5.2 当前版本 | 文档 | ✅ 完成（v0.5.4 评估时同步更新测试数据） |
 
 ### 3.3 测试验证（必做）
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 3.1 版本一致性测试 | test_version.py 9/9 通过 | 测试 | ⏳ 待执行 |
-| 3.2 静态检查 | mypy 0 errors + ruff All checks passed + radon cc 无 D+ | 报告 | ⏳ 待执行 |
-| 3.3 全量回归测试 | 单元 + 集成测试 100% 通过 | 报告 | ⏳ 待执行 |
+| 3.1 版本一致性测试 | test_version.py 9/9 通过 | 测试 | ✅ 完成 |
+| 3.2 静态检查 | mypy 0 errors + ruff All checks passed + radon cc 无 D+ | 报告 | ✅ 完成 |
+| 3.3 全量回归测试 | 单元 + 集成测试 100% 通过 | 报告 | ✅ 完成（v0.5.5: 4390 passed） |
 
 ### 3.4 推送发布（必做）
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 4.1 Git commit + push | origin/main | 提交 | ⏳ 待执行 |
-| 4.2 Tag v0.5.2 | 触发 release.yml workflow | tag | ⏳ 待执行 |
+| 4.1 Git commit + push | origin/main | 提交 | ✅ 完成 |
+| 4.2 Tag v0.5.2 | 触发 release.yml workflow | tag | ✅ 完成 |
 
 ---
 
@@ -138,8 +138,8 @@ v0.5.1（2026-07-20）完成 UI/UX 体验提升（Morandi 主题真正落地 + �
 |------|------|
 | ROADMAP_v0.5.2.md（本文档） | ✅ |
 | ROADMAP_v0.5.1.md 状态同步 | ✅ |
-| PROJECT_STATUS.md 更新 | ⏳ |
-| CHANGELOG.md [0.5.2] 条目 | ⏳ |
+| PROJECT_STATUS.md 更新 | ✅ |
+| CHANGELOG.md [0.5.2] 条目 | ✅ |
 
 ### 5.2 质量验收
 
