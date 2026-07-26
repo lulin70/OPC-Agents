@@ -82,7 +82,7 @@ v0.5.1（2026-07-20）完成 UI/UX 体验提升（Morandi 主题真正落地 + �
 
 | 任务 | 详细 | 输出 | 状态 |
 |------|------|------|------|
-| 2.1 版本号同步 | 0.5.1 → 0.5.2（VERSION + version.py + mcp_protocol.py + README×3 + Dockerfile ARG 等 18 处） | 代码 | ✅ 完成（v0.5.2 已发布，当前 v0.5.5） |
+| 2.1 版本号同步 | 0.5.1 → 0.5.2（VERSION + version.py + mcp_protocol.py + README×3 + Dockerfile ARG 等 18 处） | 代码 | ✅ 完成（v0.5.2 已发布，当前 v0.5.6） |
 | 2.2 CHANGELOG.md 新增 [0.5.2] 条目 | PATCH 类型，记录文档同步 + 可优化项评估决策 | 文档 | ✅ 完成 |
 | 2.3 ROADMAP_v0.5.2.md（本文档） | 决策记录与依据 | 文档 | ✅ 完成 |
 | 2.4 PROJECT_STATUS.md 更新 | 反映 v0.5.2 当前版本 | 文档 | ✅ 完成（v0.5.4 评估时同步更新测试数据） |

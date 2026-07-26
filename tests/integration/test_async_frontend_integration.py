@@ -296,7 +296,15 @@ class TestPerformanceGuarantees:
             self.executor.shutdown(wait=False)
 
     def test_submit_latency_under_50ms(self):
-        """submit()延迟应<50ms（ADR-010要求）"""
+        """submit()延迟应<50ms（ADR-010要求）。
+
+        阈值说明：
+        - 平均延迟 50ms：ADR-010 性能要求
+        - 最大延迟 200ms：CI runner 比本地慢 5-10x（project_memory 教训），
+          本地典型 ~5-10ms，CI 上偶发可达 100-130ms，200ms 留 4x 余量
+        - v0.5.5 Release workflow 两次失败（102.4ms / 122.5ms），证明 100ms 阈值
+          在 CI runner 性能波动下不可靠
+        """
         self.executor = AsyncTaskExecutor()
         latencies = []
 
@@ -310,7 +318,7 @@ class TestPerformanceGuarantees:
         max_latency = max(latencies)
 
         assert avg_latency < 50, f"平均submit延迟过高: {avg_latency:.1f}ms"
-        assert max_latency < 100, f"最大submit延迟过高: {max_latency:.1f}ms"
+        assert max_latency < 200, f"最大submit延迟过高: {max_latency:.1f}ms"
         print(f"✅ submit性能: 平均={avg_latency:.1f}ms, 最大={max_latency:.1f}ms")
 
     def test_get_status_latency_under_1ms(self):
