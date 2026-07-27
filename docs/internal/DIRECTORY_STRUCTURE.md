@@ -1,24 +1,23 @@
 # OPC-Agents 目录结构 — IOC 分层映射
 
-> 生成于 v0.3.2 Phase 4，更新于 v0.3.3（轻量分层方案：仅文档，不移动文件）
+> 生成于 v0.3.2 Phase 4，更新于 v0.5.7（轻量分层方案：仅文档，不移动文件）
 >
 > 决策原因：全量目录重组需改 250+ 导入语句（74 相对导入 + 89 绝对导入 + 87 测试导入），
 > 违反 Simplicity First / Surgical Changes 原则。本文档提供导航价值，零代码风险。
 >
-> v0.3.3 更新：实测 opc_manager/ 顶层 99 个 .py（含子目录 110），tests/ 顶层 87 个 .py（含子目录 90）。
+> v0.5.7 更新：实测 opc_manager/ 顶层 119 个 .py（含子目录 136），tests/ 顶层 87 个 .py（含子目录 90）。
 >
-> P2-15 更新（2026-07-05）：StrategistBrain + ReflectorBrain God Class 拆分完成，
-> 新增 10 个独立服务模块（Facade 模式，向后兼容）。文件数 99→109。
+> v0.5.x 演进：StrategistBrain + ReflectorBrain God Class 拆分 + data_manager/task_orchestrator SRP 拆分 + morandi 主题 + MCP 模块化。
 
 ## 分层总览
 
 ```
-opc_manager/   (109 文件，P2-15 后)
+opc_manager/   (119 顶层 / 136 总计，v0.5.7)
 ├── I  — Input        (6 文件)   用户输入 → 意图识别 → 校验
-├── C  — Control     (32 文件)   业务逻辑、引擎编排、状态管理（含 P2-15 拆出的 10 个 Brain 服务）
-├── O  — Output      (21 文件)   内容生成、搜索、进度、检测
-├── S  — Skills      (24 文件)   可插拔技能模块 + 技能市场
-└── F  — Infra       (26 文件)   数据、配置、安全、监控、协议
+├── C  — Control     (42 文件)   业务逻辑、引擎编排、状态管理（含 Brain 服务拆分 + consensus_checker 等）
+├── O  — Output      (23 文件)   内容生成、搜索、进度、检测
+├── S  — Skills      (26 文件)   可插拔技能模块 + 技能市场
+└── F  — Infra       (22 文件)   数据、配置、安全、监控、协议
 
 tests/          (90 文件，P2-13 后分层)
 ├── unit/          (49 文件)   纯 mock，无 IO

@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-26（v0.5.6 PATCH：修复 v0.5.5 Release workflow 偶发失败。CI runner 性能波动导致 `test_submit_latency_under_50ms` max latency 偶发超 100ms 阈值（实测 102.4ms/122.5ms 两次失败）。根据 project_memory 教训"CI runner 比本地慢 5-10x，性能测试阈值需留 10x 余量"，将 max_latency 阈值从 100ms 调至 200ms（4x 余量）。CI workflow 全绿证明代码本身无回归。无破坏性 API 变更） | **版本**: v0.5.6 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-27（v0.5.7 PATCH：修复 v0.5.6 7 维度评估发现的 P0/P1 问题。P0：删除 MCPClient ghost feature + 统一 ruff/black/pytest-asyncio/mypy 依赖版本。P1：Dockerfile 添加阿里云镜像源（硬约束）+ 创建活跃 TECH_DEBT.md + 升级 venv 工具版本。无破坏性 API 变更） | **版本**: v0.5.7 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_INITIAL_VISION_v0.4.0.md](assessments/ASSESSMENT_INITIAL_VISION_v0.4.0.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.5.6`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.5.7`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -21,7 +21,7 @@
 
 ## 2. 模块清单
 
-### 核心包：`opc_manager/`（99 个 `.py` 文件）
+### 核心包：`opc_manager/`（119 个顶层 `.py` 文件 / 136 个总计）
 
 | 类别 | 关键模块 | 职责 |
 |------|----------|------|
@@ -51,9 +51,9 @@
 | 测试用例总数 | 4390 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.5.4 实测） |
 | 测试通过 | 4390 passed, 0 skipped, 0 failed | `pytest --ignore=tests/e2e -q`（v0.5.4 验证，127s；v0.5.3 完成全部 skip 清理） |
 | 完整套件耗时 | 127s（不含 e2e）/ ~330s（含 e2e） | v0.5.4 实测 |
-| 全量覆盖率 | 待 v0.5.6 重测 | v0.3.36 实测 83%（14431 stmts 2499 miss）；v0.5.x 系列新增模块拆分 + skip 清理，需重新测量 |
-| `email_skill.py` 覆盖率（全量口径） | 待 v0.5.6 重测 | v0.3.36 实测 100%（237 stmts 0 miss）；代码无变更，预期保持 |
-| `finance_skill.py` 覆盖率（全量口径） | 待 v0.5.6 重测 | v0.3.36 实测 100%（166 stmts 0 miss）；代码无变更，预期保持 |
+| 全量覆盖率 | 待 v0.5.7 重测 | v0.3.36 实测 83%（14431 stmts 2499 miss）；v0.5.x 系列新增模块拆分 + skip 清理，需重新测量 |
+| `email_skill.py` 覆盖率（全量口径） | 待 v0.5.7 重测 | v0.3.36 实测 100%（237 stmts 0 miss）；代码无变更，预期保持 |
+| `finance_skill.py` 覆盖率（全量口径） | 待 v0.5.7 重测 | v0.3.36 实测 100%（166 stmts 0 miss）；代码无变更，预期保持 |
 | mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |
 | flake8 违规 | 0 | `flake8 opc_manager/ tests/` = 0（Phase 2 P0 清零：opc_manager 143→0 + tests 119→0） |
 

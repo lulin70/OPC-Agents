@@ -2,7 +2,7 @@
 
 > **来源**: [Skill 生态借鉴分析](research/SKILL_ECOSYSTEM_RESEARCH.md) P0 改进项
 > **理念**: 借鉴 [Ponytail](https://github.com/DietrichGebert/ponytail) 的"永不削减"硬约束边界
-> **最后更新**: 2026-07-07 | **版本**: v0.3.4
+> **最后更新**: 2026-07-27 | **版本**: v0.5.7
 
 ---
 
@@ -80,7 +80,7 @@ OPC-Agents 采纳同一理念：**简化可以，但以下约束永不妥协**�
 |---|------|-----------|----------|------|
 | V1 | 版本号必须在所有位置（VERSION 文件、README、代码注释）保持一致 | 不一致 = 用户安装错误版本 | `tests/test_version.py` + 三语 README CI | ✅ |
 | V2 | 项目必须包含 `PROJECT_STATUS.md` 文档 | 无状态文档 = 真实进度不可追溯 | 文件存在检查 | ✅ |
-| V3 | `mcp_server.py` 必须保持一致的模块/测试计数（149/2861） | 计数漂移 = SKILL.md 与实际不符 | `tests/test_mcp_server.py` | ✅ |
+| V3 | `mcp_protocol.py` 必须保持一致的模块/测试计数 | 计数漂移 = SKILL.md 与实际不符 | `tests/test_mcp_protocol.py` | ✅ |
 
 ### 2.8 部署类（Deployment）
 

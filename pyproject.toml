@@ -61,13 +61,13 @@ dependencies = [
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
-    "pytest-asyncio>=0.21.0",
+    "pytest-asyncio>=0.21.0,<1.5.0",  # Pin <1.5.0: sync with requirements-dev.txt (event loop conflict)
     "pytest-timeout>=2.2.0",
-    "black>=25.0.0",
+    "black>=26.5.1",  # Sync with .pre-commit-config.yaml (26.5.1) and requirements-dev.txt (>=26.3.1)
     "flake8>=7.0.0",
     "bandit>=1.7.0",
     "pip-audit>=2.7.0",
-    "mypy>=1.8.0",
+    "mypy>=1.11.2,<1.12",  # Pin upper bound: sync with requirements-dev.txt (new mypy may add checks breaking CI)
     "build>=1.0.0",
     "twine>=5.0.0",
 ]

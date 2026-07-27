@@ -1,9 +1,13 @@
-ARG VERSION=0.5.6
+ARG VERSION=0.5.7
 
 # Stage 1: Builder — install build dependencies and compile
 FROM python:3.11-slim AS builder
 
 WORKDIR /build
+
+# 配置阿里云镜像源（硬约束：服务器无法访问 deb.debian.org/Fastly CDN 被墙会导致 apt-get update 卡死）
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || true
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -178,9 +178,18 @@ class TestThemeConfigs:
 
         return THEME_CONFIGS
 
-    def test_all_five_themes_exist(self):
+    def test_all_themes_exist(self):
+        """Verify all 7 themes exist (5 legacy + 2 Morandi added in v0.5.x)."""
         cfg = self._get_configs()
-        expected = {"light", "dark", "sunset", "forest", "ocean"}
+        expected = {
+            "light",
+            "dark",
+            "sunset",
+            "forest",
+            "ocean",
+            "morandi_light",
+            "morandi_dark",
+        }
         assert (
             set(cfg.keys()) == expected
         ), f"Must have exactly these themes: {expected}"

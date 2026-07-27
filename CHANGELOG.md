@@ -4,6 +4,69 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.7] - 2026-07-27
+
+### PATCH — v0.5.6 7 维度评估 P0/P1 修复
+
+> v0.5.7 修复 v0.5.6 7 维度项目整理评估发现的 P0/P1 问题。P0：删除 MCPClient ghost feature（dead code + type:ignore[attr-defined] 掩盖）+ 统一 ruff/black/pytest-asyncio/mypy 依赖版本（4 处漂移）。P1：Dockerfile 添加阿里云镜像源（硬约束违规）+ 创建活跃 TECH_DEBT.md + 升级 venv 工具版本 + 修复主题测试断言（5→7）。详见 [ASSESSMENT_v0.5.6.md](docs/assessments/ASSESSMENT_v0.5.6.md) 与 [TECH_DEBT.md](docs/TECH_DEBT.md)。
+
+#### P0 Fixed
+
+##### P0-1/P0-2: MCPClient ghost feature
+
+- **根因**: `opc_manager/skill_marketplace_external.py:410` 引用 `mcp_protocol.py` 中不存在的 `MCPClient` 类，通过 `# type: ignore[attr-defined]` + `except ImportError` 双重掩盖，功能从未工作过
+- **修复**: 删除 dead code 块（import + MCPClient 调用 + ImportError 处理），`discovered_tools` 初始化为空列表，保留外部接口可用，添加 TODO 注释指向 TECH_DEBT.md TD-001
+- **依据**: project_memory 教训"name-defined/F821 的 type:ignore 绝不能保留必须修复"，[attr-defined] 同样隐藏运行时 bug
+- **验证**: ruff 0 errors + mypy 0 errors + 相关测试通过
+
+##### P0-3: pytest-asyncio 注释/代码不一致
+
+- **根因**: `requirements-dev.txt:9` 注释说 `<1.4.0` 但代码是 `<1.5.0`；`pyproject.toml` 无上界
+- **修复**: 注释统一为 `<1.5.0`，`pyproject.toml` 添加 `<1.5.0` 上界
+
+##### P0-4: ruff 版本漂移
+
+- **根因**: `.pre-commit-config.yaml` 锁定 `v0.15.21`，`requirements-dev.txt` 要求 `>=0.15.22`
+- **修复**: `.pre-commit-config.yaml` 升级到 `v0.15.22`
+
+##### P0-5: black/mypy 版本三处不一致
+
+- **根因**: `pyproject.toml` 的 black `>=25.0.0`、mypy `>=1.8.0` 与 `requirements-dev.txt` 不一致
+- **修复**: `pyproject.toml` black `>=25.0.0` → `>=26.5.1`，mypy `>=1.8.0` → `>=1.11.2,<1.12`
+
+#### P1 Fixed
+
+##### P1-2: Dockerfile 无阿里云镜像源（硬约束违规）
+
+- **根因**: Dockerfile `apt-get update` 前未配置阿里云镜像源，服务器无法访问 `deb.debian.org`（Fastly CDN 被墙）会导致卡死
+- **修复**: 在 `apt-get update` 前添加 `sed` 替换 `deb.debian.org` → `mirrors.aliyun.com`，兼容 debian.sources 和 sources.list 两种格式
+- **依据**: project_memory 硬约束"服务器无法访问 deb.debian.org 需阿里云镜像源"
+
+##### P1-9: 无活跃 TECH_DEBT.md
+
+- **根因**: v0.3.1 到 v0.5.6 跨越 3 版本无活跃技术债追踪
+- **修复**: 创建 `docs/TECH_DEBT.md`，登记 12 项技术债（4 项已解决 / 3 项进行中 / 5 项待处理）
+- **依据**: project_memory 教训"文档滞后根因：将文档视为一次性交付物而非活文档"
+
+##### P1-10: venv 工具版本漂移
+
+- **根因**: 本地 venv 的 black 24.8.0 / ruff 0.15.21 / mypy 2.2.0 均不符合 requirements-dev.txt
+- **修复**: 升级 venv 工具版本至 black 26.5.1 / ruff 0.16.0 / mypy 1.11.2
+
+#### Changed
+
+- 主题测试断言更新：`test_all_five_themes_exist` → `test_all_themes_exist`（5 主题 → 7 主题，含 morandi_light/morandi_dark）
+- 版本号同步：0.5.6 → 0.5.7（17 文件：VERSION, version.py, mcp_protocol.py, Dockerfile, README×3, requirements(-dev).txt, scripts/start.sh, website/index.html×2, deploy/README.md, docs/PROJECT_STATUS.md×2, docs/ROADMAP_v0.5.2.md）
+
+#### 测试验证
+
+- 本地：`pytest -m "not e2e and not e2e_search and not e2e_llm and not e2e_core_skill" --timeout=60 -q` 通过
+- ruff 0 errors / black 0 reformat / mypy 0 errors
+
+#### 技术债
+
+- 详见 [TECH_DEBT.md](docs/TECH_DEBT.md)：v0.5.7 解决 TD-001~004，TD-005~012 待 v0.6.0+ 处理
+
 ## [0.5.6] - 2026-07-26
 
 ### PATCH — v0.5.5 Release workflow 偶发失败修复

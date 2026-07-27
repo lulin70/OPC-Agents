@@ -406,18 +406,15 @@ class ExternalSkillMarketplace:
         if server_id in self._mcp_connections:
             return {"success": False, "error": f"已连接该MCP服务器: {server_id}"}
 
+        # MCPClient 类尚未实现（mcp_protocol.py 仅有 MCPTool/MCPResource/
+        # MCPPrompt/MCPServer 4 个数据类）。连接 MCP 服务器并发现工具的功能
+        # 待 MCPClient 实现后补全。当前返回空工具列表，保持外部接口可用。
+        # 详见 docs/assessments/ASSESSMENT_v0.5.6.md P0-1/P0-2 与 TECH_DEBT.md TD-001。
+        discovered_tools: List[Dict[str, Any]] = []
         try:
-            from opc_manager.mcp_protocol import MCPClient  # type: ignore[attr-defined]
-
-            client = MCPClient(server_url)
-            discovered_tools = (
-                client.list_tools() if hasattr(client, "list_tools") else []
-            )
-        except ImportError:
-            discovered_tools = []
-            logger.debug("MCPClient不可用，跳过工具发现")
+            server_url.split("//")[-1].split("/")[0]  # validate URL parse
         except Exception as e:
-            logger.warning("MCP连接失败: %s", e)
+            logger.warning("MCP服务器URL解析失败: %s", e)
             return {"success": False, "error": f"MCP连接失败: {str(e)}"}
 
         caps = capabilities or [

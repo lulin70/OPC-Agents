@@ -1,4 +1,5 @@
 """Remove emojis from Python string literals and comments only."""
+
 import argparse
 import io
 import tokenize
