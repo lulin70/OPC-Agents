@@ -28,8 +28,9 @@ __all__ = [
 INSTALL_STEPS = ["download", "start", "llm_config", "license", "done"]
 
 # 各步骤的可复制命令（与 UI_DESIGN_v0.5.0.md §5.2 ASCII 线框图对齐）
+# OPC-Agents 是 PyPI 开源包，推荐 pip 安装（无需 curl 脚本）
 INSTALL_COMMANDS = {
-    "download_curl": "curl -fsSL https://promiselink.cn/install.sh | bash",
+    "download_curl": "pip install opc-agents && opc-agents start",
     "download_pip": "pip install opc-agents",
     "download_docker": "docker run -p 8000:8000 opc-agents",
     "start_cmd": "opc-agents start",

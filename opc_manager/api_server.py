@@ -37,8 +37,6 @@ app.add_middleware(
         "http://localhost:8000",
         "http://localhost:8501",
         "http://localhost:8900",
-        "https://promiselink.cn",
-        "https://*.promiselink.cn",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],

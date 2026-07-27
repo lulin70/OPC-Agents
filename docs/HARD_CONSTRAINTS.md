@@ -87,8 +87,8 @@ OPC-Agents 采纳同一理念：**简化可以，但以下约束永不妥协**�
 | # | 约束 | Rationale | 执行机制 | 状态 |
 |---|------|-----------|----------|------|
 | P1 | 项目必须包含 `scripts/start.sh` 一键启动脚本 | 非技术人员无法手动启动多步骤 | 文件存在 + `tests/test_start_script.py` | ✅ |
-| P2 | CORS 必须包含 `https://promiselink.cn` | 缺失 = 前端跨域被拒 | `api_server.py` 配置检查 | ✅ |
-| P3 | Nginx 配置必须设置 `server_name promiselink.cn` 并启用 HTTPS | 无 HTTPS = 通信明文 = 中间人攻击 | 部署检查清单 | ✅ |
+| P2 | CORS 仅允许 `http://localhost:*`（OPC-Agents 本地运行，无云端部署） | promiselink.cn 是 PromiseLink 官网，不属于 OPC-Agents | `api_server.py` 配置检查 | ✅ |
+| P3 | ~~Nginx 配置必须设置 `server_name promiselink.cn` 并启用 HTTPS~~（已废弃：OPC-Agents 不部署到 promiselink.cn） | OPC-Agents 是 PyPI 开源包，本地运行 | N/A（deploy/ 目录已删除） | ✅ |
 | P4 | 前端生产配置必须启用 API URL 和正确代理端口 | 缺失 = 前端无法连接后端 | 构建配置检查 | ✅ |
 | P5 | `coverage.json` 和 `coverage.xml` 必须加入 `.gitignore` | 生成文件误提交 = 仓库污染 | `.gitignore` 检查 | ✅ |
 
