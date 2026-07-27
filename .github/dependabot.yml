@@ -45,31 +45,11 @@ updates:
           - "httpx"
           - "psutil"
           - "playwright"
-    ignore:
-      # dev 依赖的 patch/minor 更新忽略（major 仍会通知）
-      # 理由：dev 依赖的 patch/minor 更新通常不影响生产行为，
-      # 但每次都触发 PR + CI 跑全套测试，噪音大且浪费资源。
-      # major 更新可能引入 breaking change，仍需人工 review。
-      - dependency-name: "ruff"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "black"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "mypy"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "flake8"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "bandit"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "pip-audit"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "radon"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "types-*"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "responses"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
-      - dependency-name: "psutil"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
+    # project_memory 硬约束（2026-07-26 调整）：allow patch/minor updates for dev dependencies
+    # 理由：radon 6.0→6.0.1 case proved patch updates useful;
+    # keeping deps current avoids security vuln accumulation.
+    # major 更新可能引入 breaking change，仍需人工 review（默认行为，无需 ignore）。
+
 
   # pip 安全更新：每天检查 GHSA 安全公告（不延迟到 weekly）
   - package-ecosystem: "pip"
