@@ -67,7 +67,7 @@ dev = [
     "flake8>=7.0.0",
     "bandit>=1.7.0",
     "pip-audit>=2.7.0",
-    "mypy>=1.11.2,<1.12",  # Pin upper bound: sync with requirements-dev.txt (new mypy may add checks breaking CI)
+    "mypy>=1.11.2,<2.4",  # Pin upper bound: sync with requirements-dev.txt (new mypy may add checks breaking CI)
     "build>=1.0.0",
     "twine>=5.0.0",
 ]
