@@ -26,4 +26,4 @@ pip-audit>=2.7.0
 mypy>=1.11.2,<1.12  # Pin upper bound: mypy 新版本可能引入新检查导致 CI fail（与 CI 配置统一）
 radon>=6.0.1  # Cyclomatic complexity analysis (CI non-blocking report)
 types-requests>=2.33.0.20260712  # v0.3.34 L1.1: mypy stubs for requests
-types-PyYAML>=6.0.12.20260518  # v0.3.34 L1.1: mypy stubs for PyYAML
+types-PyYAML>=6.0.12.20260724  # v0.3.34 L1.1: mypy stubs for PyYAML
