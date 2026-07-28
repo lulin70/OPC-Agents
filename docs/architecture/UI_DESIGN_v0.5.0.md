@@ -348,8 +348,8 @@ def _render_progress_dots(current_idx: int):
 def _render_step_download():
     st.markdown(f"### {_t('install_step1_title')}")
     for method_key, command in [
-        ("method1_label", "curl -fsSL https://promiselink.cn/install.sh | bash"),
-        ("method2_label", "pip install opc-agents"),
+        ("method1_label", "pip install opc-agents"),
+        ("method2_label", "pip install opc-agents && opc-agents start"),
         ("method3_label", "docker run -p 8000:8000 opc-agents"),
     ]:
         st.markdown(f"**{_t(f'install_{method_key}')}**")
@@ -454,8 +454,8 @@ P5.2 的 5 步引导为「安装前置引导」（应用首次启动前，命令
 | 满意度评分复选框 | 默认勾选 | `METRICS_SATISFACTION_ENABLED`（5 星评分） |
 | 反馈内容复选框 | 默认不勾选（用户主动选择才采集文字反馈） | `METRICS_FEEDBACK_ENABLED` |
 | 同意上报 | 默认关闭（用户在设置页主动开启） | `METRICS_EXPORT_ENABLED`（脱敏上报） |
-| 隐私政策链接 | 点击打开 `https://promiselink.cn/privacy` | - |
-| 数据处理协议链接 | 点击打开 `https://promiselink.cn/dpa` | - |
+| 隐私政策链接 | 点击打开 `https://github.com/lulin70/OPC-Agents/blob/main/docs/PRIVACY_POLICY.md` | - |
+| 数据处理协议链接 | 点击打开 `https://github.com/lulin70/OPC-Agents/blob/main/docs/DATA_PROCESSING_AGREEMENT.md` | - |
 | 不同意按钮 | 关闭弹窗，应用仍可使用；写入 `METRICS_ENABLED=False` | - |
 | 同意并继续按钮 | 保存用户选择到 `config.yaml`，关闭弹窗 | - |
 
@@ -497,8 +497,8 @@ def render_consent_dialog():
 
     # 隐私政策与数据处理协议链接
     st.markdown(
-        f"[{_t('consent_privacy_policy')}](https://promiselink.cn/privacy) | "
-        f"[{_t('consent_dpa')}](https://promiselink.cn/dpa)"
+        f"[{_t('consent_privacy_policy')}](https://github.com/lulin70/OPC-Agents/blob/main/docs/PRIVACY_POLICY.md) | "
+        f"[{_t('consent_dpa')}](https://github.com/lulin70/OPC-Agents/blob/main/docs/DATA_PROCESSING_AGREEMENT.md)"
     )
 
     # 按钮区：不同意 / 同意并继续

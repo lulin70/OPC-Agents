@@ -1,10 +1,23 @@
-# OPC-Agents 部署架构设计（v0.5.0）
+# 【已归档】PromiseLink 云端部署架构设计（v0.5.0-draft，不适用于 OPC-Agents）
+
+> **归档说明**（2026-07-27）：
+> 本文档描述的是 **PromiseLink 项目**的云端部署架构（nginx + 47.116.219.15 服务器 +
+> promiselink-pro 容器 + 官网静态文件），**不适用于 OPC-Agents**。
+>
+> OPC-Agents 是 PyPI 开源包，**本地运行**（localhost:8000），无云端部署。
+> 用户通过 `pip install opc-agents` 安装，启动后访问 `http://localhost:8000`。
+>
+> 文档保留于此仅作历史参考，描述 PromiseLink Pro 网关（`gateway.promiselink.cn`）
+> 的架构决策来源。OPC-Agents 复用该网关作为 Moka LLM 代理（见 ADR-005），
+> 但 OPC-Agents 本身不部署任何云端组件。
+>
+> 相关硬约束已更新：见 `docs/HARD_CONSTRAINTS.md` P2/P3（已废弃）。
 
 | 元数据     | 内容                                      |
 | ---------- | ----------------------------------------- |
-| 版本       | v0.5.0-draft                              |
+| 版本       | v0.5.0-draft（已归档）                    |
 | 日期       | 2026-07-19                                |
-| 状态       | 7-Role 共识                               |
+| 状态       | 7-Role 共识（仅适用于 PromiseLink）       |
 | 决策者     | DevOps Lead                               |
 | 关联路线图 | ROADMAP_v0.5.0.md §OKR-4 运营基础设施     |
 | 关联约束   | HARD_CONSTRAINTS.md                       |

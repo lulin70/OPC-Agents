@@ -452,10 +452,13 @@ OPC-Agents v0.5.0 数据采集同意书
 
 ### 7.3 数据上报（用户主动）
 
-- 用户可选择是否上报数据到 PM 邮箱（`feedback@promiselink.cn`）
+> ⚠️ **2026-07-27 更新**：原 `feedback@promiselink.cn` 是 PromiseLink 官网邮箱，**不属于 OPC-Agents**。
+> OPC-Agents 的反馈渠道改为 [GitHub Issues](https://github.com/lulin70/OPC-Agents/issues)。
+
+- 用户可选择是否上报数据到 GitHub Issues（~~原 PM 邮箱 `feedback@promiselink.cn`~~ 已废弃）
 - 上报内容：脱敏后的指标数据 + 反馈文字
-- 上报方式：自动邮件 + 附件
-- 上报频率：每日自动 + 试用结束手动
+- 上报方式：通过 GitHub Issues 提交（含截图附件）
+- 上报频率：用户主动提交 + 试用结束统一提交
 
 ### 7.4 数据隐私保护
 

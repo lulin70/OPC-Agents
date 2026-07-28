@@ -1,8 +1,17 @@
 # OPC-Agents 非技术用户图文版安装指南
 
-> **文档版本**: v0.5.0 | **日期**: 2026-07-19 | **状态**: 发布
+> **文档版本**: v0.5.0 | **日期**: 2026-07-19（2026-07-27 更新：移除 PromiseLink 官网引用） | **状态**: 发布
 > **目标读者**: 一人公司创业者、自由职业者、独立顾问
 > **预计阅读时间**: 15 分钟 | **预计安装时间**: 30 分钟
+>
+> **2026-07-27 更新说明**：
+> OPC-Agents 是 PyPI 开源包，**本地运行**（localhost:8000），无云端部署。
+> 原 `promiselink.cn` 是 PromiseLink 项目官网，**不属于 OPC-Agents**。
+> 本指南中所有 `promiselink.cn/install.sh`、`support@promiselink.cn`、`promiselink.cn/pricing` 等引用
+> 已更新为 GitHub 仓库链接或 PyPI 安装方式。
+> - 安装：`pip install opc-agents`（替代 `curl promiselink.cn/install.sh`）
+> - 反馈：[GitHub Issues](https://github.com/lulin70/OPC-Agents/issues)（替代 `support@promiselink.cn`）
+> - 文档：[GitHub 仓库](https://github.com/lulin70/OPC-Agents)（替代 `promiselink.cn`）
 
 ---
 
@@ -112,7 +121,7 @@ OPC-Agents 是用 Python 这门编程语言写出来的。你的电脑需要先�
 安装过程需要下载约 200 MB 的安装包和组件，使用过程也需要联网与 AI 对话。请确保：
 
 - 网络稳定，不会中途断线
-- 如果在公司网络，可能需要让 IT 同事放行 `promiselink.cn` 和 `api.moka-ai.com` 两个域名
+- 如果在公司网络，可能需要让 IT 同事放行 `api.moka-ai.com` 域名（OPC-Agents 通过 PromiseLink Pro 网关 `gateway.promiselink.cn` 调用 Moka AI，但该网关地址对用户透明）
 - 如果使用 Ollama 本地方案（见 §2.3 选项 A），首次下载模型需要 5-10 GB 流量
 
 ### 2.3 AI 后端选择（三选一）
@@ -242,32 +251,36 @@ OPC-Agents 本身是"手脚"，它需要一个"大脑"来思考和生成内容�
 
 ### Step 1: 下载安装包
 
-**方式 A（推荐）：从官网下载**
+**方式 A（推荐）：从 PyPI 安装（pip install）**
 
-1. 打开浏览器（Safari、Chrome、Edge 都可以）
-2. 在地址栏输入 `https://promiselink.cn/install.sh` 并回车
-3. 页面会自动识别你的电脑系统（Mac 或 Windows），推荐对应的安装包
-4. 点击"立即下载"按钮，等待下载完成（约 50 MB，1-2 分钟看网速）
+OPC-Agents 是 PyPI 开源包，打开"终端"（Mac）或"命令提示符"（Windows），执行一行命令即可安装：
 
-![下载页面](../assets/images/install-step1.png)
+```bash
+pip install opc-agents
+```
 
-**方式 B（备用）：从官网首页下载**
+- 安装过程自动完成，约 1-2 分钟看网速
+- 安装后会自动创建虚拟环境与默认配置
+- 无需访问任何官网，直接从 Python 官方包仓库下载
 
-1. 打开浏览器访问 https://promiselink.cn
-2. 在首页找到"立即下载"按钮（通常在导航栏或首屏大图上）
-3. 点击后会跳转到下载页面，选择你的系统版本
-4. 等待下载完成
+![pip 安装示意图](../assets/images/install-step1.png)
+
+**方式 B（备用）：从 GitHub 仓库下载源码**
+
+1. 打开浏览器访问 https://github.com/lulin70/OPC-Agents
+2. 点击"Code"按钮，选择"Download ZIP"
+3. 解压后进入目录，执行 `pip install -e .`
 
 **下载后做什么**：
 
-- **Mac 用户**：下载完成后会在"下载"文件夹看到 `OPC-Agents-x.x.x.pkg` 文件
-- **Windows 用户**：下载完成后会在"下载"文件夹看到 `OPC-Agents-Setup-x.x.x.exe` 文件
+- **Mac 用户**：终端执行 `pip install opc-agents`，完成后执行 `opc-agents start`
+- **Windows 用户**：命令提示符执行 `pip install opc-agents`，完成后执行 `opc-agents start`
 
 > **如果失败的应对方法**（灰粉色 #C9A9A6）：
-> - 下载速度很慢？换个网络试试，或避开晚上 8-10 点高峰期
-> - 下载到一半中断？删除已下载的文件，重新点下载链接
-> - 浏览器提示"危险文件"？这是误报，点击"保留"或"仍要下载"。OPC-Agents 是开源软件，完全安全
-> - 实在下不了？发邮件到 support@promiselink.cn，我们会把安装包直接发到你邮箱
+> - 下载速度很慢？配置 PyPI 国内镜像源：`pip install opc-agents -i https://pypi.tuna.tsinghua.edu.cn/simple`
+> - pip 命令找不到？先安装 Python 3.10+（见 §2.1 系统要求）
+> - 权限错误？Mac/Linux 用户加 `--user` 参数：`pip install --user opc-agents`
+> - 实在下不了？在 [GitHub Issues](https://github.com/lulin70/OPC-Agents/issues) 提交问题，我们会尽快回复
 
 ### Step 2: 运行安装程序
 
@@ -492,7 +505,12 @@ OPC-Agents 本身是"手脚"，它需要一个"大脑"来思考和生成内容�
 
 #### Step 1: 购买专业版许可证
 
-1. 打开浏览器访问 https://promiselink.cn/pricing
+> ⚠️ **2026-07-27 更新**：OPC-Agents 是 PyPI 开源包，**基础版免费**。
+> 下方"专业版订阅"描述的是 PromiseLink Pro 服务（通过 `gateway.promiselink.cn` 调用 Moka AI），
+> **不属于 OPC-Agents 本身**。OPC-Agents 默认通过 PromiseLink Pro 网关调用 Moka AI（免费，用户不持有 API Key），
+> 如需独立使用专业版功能，请联系 PromiseLink 项目团队。
+
+1. ~~打开浏览器访问 https://promiselink.cn/pricing~~（已废弃：PromiseLink 官网，不属于 OPC-Agents）
 2. 选择适合你的套餐（月度 99 元 / 季度 269 元 / 年度 999 元）
 3. 点击"立即购买"
 4. 使用微信、支付宝或银行卡完成支付
@@ -550,7 +568,7 @@ PL-PRO-XXXX-XXXX-XXXX
 > - 提示"密钥格式错误"？检查密钥是否复制完整，有没有少字符或多空格
 > - 提示"密钥已被使用"？说明这个密钥已经在另一台电脑激活了。如果确实是你自己激活的，先去那台电脑解绑
 > - 提示"网络错误"？检查网络连接，过 1 分钟再试
-> - 提示"密钥已过期"？联系 support@promiselink.cn 续费
+> - 提示"密钥已过期"？联系 [GitHub Issues](https://github.com/lulin70/OPC-Agents/issues) 续费（原 `support@promiselink.cn` 已废弃）
 > - 激活成功但 AI 调用失败？退出应用重新打开；如果还不行，见 §5 FAQ 第 8 题
 
 ### 4.3 专业版 vs 基础版对比
@@ -727,7 +745,7 @@ PL-PRO-XXXX-XXXX-XXXX
    - 复制时有没有多空格、少字符、少换行
    - 重新去原网站复制一遍
 2. **检查网络**：
-   - 打开浏览器访问任意网站（如 https://promiselink.cn ）看能不能正常打开
+   - 打开浏览器访问任意网站（如 https://github.com ）看能不能正常打开
    - 如果在公司网络，可能被防火墙拦截了，联系 IT 放行 `api.moka-ai.com` 或 `open.bigmodel.cn`
 3. **检查 API Key 是否还有效**：
    - 登录原网站看 API Key 状态是否"已激活"
@@ -737,7 +755,7 @@ PL-PRO-XXXX-XXXX-XXXX
 
 **如果以上都不行**：
 
-- 联系 support@promiselink.cn，邮件标题写"测试连接失败"，正文附上截图（API Key 部分打码）
+- 在 [GitHub Issues](https://github.com/lulin70/OPC-Agents/issues) 提交问题，标题写"测试连接失败"，正文附上截图（API Key 部分打码）
 
 #### Q9: 可以同时配置多个 AI 后端吗？
 
@@ -909,11 +927,10 @@ PL-PRO-XXXX-XXXX-XXXX
    - 可选：附上截图（拖拽到反馈框）
    - 点击"提交"
    - 我们会在 24-48 小时内邮件回复
-2. **邮件反馈**：
-   - 发邮件到 support@promiselink.cn
-   - 邮件标题格式：`[反馈] 简短描述`（如 `[反馈] 邮件发送功能偶尔失败`）
-   - 正文包含：问题描述、复现步骤、你的系统（Mac/Windows）、截图
-3. **GitHub Issues（适合技术人员）**：
+2. **邮件反馈**（已废弃）：
+   - ~~发邮件到 support@promiselink.cn~~（已废弃：PromiseLink 官网邮箱，不属于 OPC-Agents）
+   - 请改用 GitHub Issues 提交反馈
+3. **GitHub Issues（推荐，适合所有用户）**：
    - 访问 https://github.com/lulin70/OPC-Agents/issues
    - 点击"New issue"
    - 选择模板（Bug report / Feature request）
@@ -937,24 +954,29 @@ PL-PRO-XXXX-XXXX-XXXX
 
 ### 6.1 官方网站
 
-**网址**：https://promiselink.cn
+> ⚠️ **2026-07-27 更新**：OPC-Agents 没有独立官网，所有信息托管在 GitHub 仓库。
+
+**网址**：https://github.com/lulin70/OPC-Agents
 
 **能找到什么**：
 
-- 产品介绍和功能演示视频
-- 最新版本下载
-- 价格和购买专业版
-- 用户案例和故事
-- 官方博客（使用技巧、行业资讯）
+- 产品介绍和 README
+- 最新版本源码下载
+- Issue 反馈与功能建议
+- 用户案例和 Discussions 讨论
+- 文档与使用技巧
 
-### 6.2 邮件支持
+### 6.2 邮件支持（已废弃）
 
-**邮箱**：support@promiselink.cn
+> ⚠️ **2026-07-27 更新**：`support@promiselink.cn` 是 PromiseLink 官网邮箱，**不属于 OPC-Agents**。
+> OPC-Agents 的反馈渠道改为 [GitHub Issues](https://github.com/lulin70/OPC-Agents/issues)。
+
+**邮箱**：~~support@promiselink.cn~~（已废弃，请使用 GitHub Issues）
 
 **响应时间**：
 
-- 基础版用户：48 小时内回复
-- 专业版用户：24 小时内回复
+- 基础版用户：48 小时内回复（通过 GitHub Issues）
+- 专业版用户：24 小时内回复（通过 GitHub Issues）
 
 **邮件标题建议格式**：
 
@@ -1100,7 +1122,9 @@ PL-PRO-XXXX-XXXX-XXXX
 - 每月一次"线上Meetup"，邀请资深用户分享实战经验
 - 不定期发布新模板、新技能包
 
-**官方博客**（https://promiselink.cn/blog）：
+**官方博客**（~~https://promiselink.cn/blog~~ → GitHub Discussions）：
+
+> ⚠️ **2026-07-27 更新**：原 `promiselink.cn/blog` 已废弃，改为 GitHub Discussions。
 
 - 每周更新 2-3 篇使用技巧
 - 每月发布一次版本更新解读
@@ -1123,7 +1147,7 @@ PL-PRO-XXXX-XXXX-XXXX
 
 **推荐方式**：
 
-1. **直接分享官网**：把 https://promiselink.cn 发给朋友
+1. **直接分享官网**：把 https://github.com/lulin70/OPC-Agents 发给朋友
 2. **应用内推荐**：在"设置 → 关于"里点击"推荐给朋友"，生成你的专属推荐链接
 3. **微信群分享**：在群里@提到可能需要的朋友
 
@@ -1190,4 +1214,4 @@ OPC-Agents 不是一个"装完就完"的工具，而是你的长期"数字员工
 
 ---
 
-*最后更新：2026-07-19 | 文档版本：v0.5.0 | 维护者：OPC-Agents 团队 | 反馈邮箱：support@promiselink.cn*
+*最后更新：2026-07-27 | 文档版本：v0.5.0 | 维护者：OPC-Agents 团队 | 反馈渠道：[GitHub Issues](https://github.com/lulin70/OPC-Agents/issues)*

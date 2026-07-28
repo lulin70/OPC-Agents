@@ -41,7 +41,7 @@ ADR-004 已定义 `MetricsCollector` 作为统一埋点入口，承载 5 大商�
 | 数据格式 | `application/json; charset=utf-8` |
 | 认证 | JWT token（`Authorization: Bearer <token>`），基于现有 AuthManager |
 | 限流 | 单 IP 60 req/min，超出返回 429 |
-| CORS | `http://localhost:*` / `https://localhost:*` / `https://*.promiselink.cn` |
+| CORS | `http://localhost:8000` / `http://localhost:8501` / `http://localhost:8900`（OPC-Agents 本地运行，无云端域名；与 `api_server.py` 保持一致） |
 | 请求体上限 | 1 MB（复用 `MAX_REQUEST_BODY_BYTES`） |
 | 时间格式 | ISO 8601（`2026-07-19T10:30:00+08:00`） |
 | ID 格式 | UUID v4 |
@@ -649,10 +649,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:*", "https://localhost:*", "https://*.promiselink.cn",
+        # OPC-Agents 本地运行，仅允许 localhost（无 promiselink.cn 云端域名）
+        "http://localhost:8000",
+        "http://localhost:8501",
+        "http://localhost:8900",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

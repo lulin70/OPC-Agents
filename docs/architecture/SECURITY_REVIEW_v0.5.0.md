@@ -3,23 +3,30 @@
 | 元数据     | 内容                                                       |
 | ---------- | ---------------------------------------------------------- |
 | 版本       | v0.5.0-draft                                               |
-| 日期       | 2026-07-19                                                 |
+| 日期       | 2026-07-19（2026-07-27 更新：标注 PromiseLink 部署章节）   |
 | 状态       | 7-Role 共识                                                |
 | 决策者     | Security Lead                                              |
 | 审查阶段   | P6 安全审查（P3 API 设计 / P4 指标埋点 / P5 部署架构 之后）|
-| 关联约束   | [HARD_CONSTRAINTS.md](../HARD_CONSTRAINTS.md) S1-S5 / T1-T3 / H1-H8 |
+| 关联约束   | [HARD_CONSTRAINTS.md](../HARD_CONSTRAINTS.md) S1-S5 / T1-T3 |
+
+> **2026-07-27 更新说明**：
+> OPC-Agents 是 PyPI 开源包，**本地运行**（localhost:8000），无云端部署。
+> 原 §3"官网部署架构"审查（nginx / 47.116.219.15 / promiselink-pro 容器）
+> 描述的是 **PromiseLink 项目**的云端部署，**不适用于 OPC-Agents**。
+> 相关部署架构文档已归档至 `docs/internal/archive/DEPLOYMENT_ARCHITECTURE_PromiseLink_20260719.md`。
+> 本报告中标注"⚠️ PromiseLink 部署"的章节仅作历史参考，不是 OPC-Agents 的安全审查范围。
 
 ---
 
 ## 1. 审查范围
 
-本报告针对 OPC-Agents v0.5.0 引入的四类新增能力进行安全审查，覆盖数据采集埋点、用户反馈 API、官网部署架构、LLM 后端多路径四个维度。
+本报告针对 OPC-Agents v0.5.0 引入的四类新增能力进行安全审查，覆盖数据采集埋点、用户反馈 API、（原）官网部署架构、LLM 后端多路径四个维度。
 
 | # | 审查对象 | 输入文档 | 安全关注点 |
 |---|----------|----------|------------|
 | 1 | 数据采集埋点 | [ADR-004-metrics-collection-design.md](ADR-004-metrics-collection-design.md) | 8 项指标本地存储、脱敏上报、用户同意机制 |
 | 2 | 用户反馈 API | [API_DESIGN_feedback_and_metrics.md](API_DESIGN_feedback_and_metrics.md) | 7 端点认证授权、comment 字段 prompt injection 防护 |
-| 3 | 官网部署架构 | [DEPLOYMENT_ARCHITECTURE.md](DEPLOYMENT_ARCHITECTURE.md) | nginx 默认 server 隔离、网关 API Key、数据库监听绑定 |
+| 3 | ⚠️ ~~官网部署架构~~（PromiseLink 部署，不适用于 OPC-Agents） | [DEPLOYMENT_ARCHITECTURE_PromiseLink_20260719.md](../internal/archive/DEPLOYMENT_ARCHITECTURE_PromiseLink_20260719.md)（已归档） | nginx 默认 server 隔离、网关 API Key、数据库监听绑定 |
 | 4 | LLM 后端多路径 | [ADR-005-llm-backend-fallback-design.md](ADR-005-llm-backend-fallback-design.md) | Ollama / Moka AI / OpenAI 三路径鉴权与传输安全 |
 
 审查遵循 `HARD_CONSTRAINTS.md` §2.1 安全类（S1-S5）与 §2.2 信任边界类（T1-T3）的"永不削减"要求，任何违反硬约束的发现均标记为"阻塞发布"。
@@ -233,8 +240,8 @@ MetricsCollector.set_consent(user_id, metric_type, enabled=False)
 | 3 | 输入验证 | Pydantic v2 模型自动校验类型/长度/范围/枚举 | 通过 |
 | 4 | 输出编码 | JSON 响应（无 HTML 渲染，无 XSS 反射风险） | 通过 |
 | 5 | 限流 | 单 IP 60 req/min + `/feedback/batch` 5 req/min + `/metrics/export` 1 req/h | 通过 |
-| 6 | CORS | 仅允许 `http://localhost:*` / `https://localhost:*` / `https://*.promiselink.cn` | 通过 |
-| 7 | HTTPS | nginx 强制 HTTPS（HTTP 301 跳转），TLS 1.2/1.3 | 通过 |
+| 6 | CORS | 仅允许 `http://localhost:8000` / `http://localhost:8501` / `http://localhost:8900`（OPC-Agents 本地运行，无云端域名） | 通过 |
+| 7 | HTTPS | ⚠️ ~~nginx 强制 HTTPS~~（PromiseLink 部署，不适用于 OPC-Agents 本地运行） | N/A |
 | 8 | SQL 注入防护 | SQLAlchemy ORM 参数化查询 + Pydantic 白名单校验 | 通过 |
 
 ### 6.2 权限矩阵审查
@@ -265,29 +272,41 @@ MetricsCollector.set_consent(user_id, metric_type, enabled=False)
 
 ## 7. 部署安全审查
 
-### 7.1 部署安全检查表
+> ⚠️ **2026-07-27 更新**：本节描述的是 **PromiseLink 项目**的云端部署安全审查
+> （nginx / 47.116.219.15 / promiselink-pro 容器），**不适用于 OPC-Agents**。
+> OPC-Agents 是 PyPI 开源包，**本地运行**（localhost:8000），无云端组件。
+> 本节内容仅作历史参考，保留以追溯 PromiseLink Pro 网关（`gateway.promiselink.cn`）
+> 的安全审查决策。OPC-Agents 复用该网关作为 Moka LLM 代理（见 ADR-005）。
+
+### 7.1 部署安全检查表（⚠️ PromiseLink 部署，不适用于 OPC-Agents）
 
 | # | 检查项 | 实现方式 | 合规状态 |
 |---|--------|----------|----------|
-| 1 | nginx 安全 | HTTPS + HSTS（max-age=31536000）+ X-Frame-Options:SAMEORIGIN + X-Content-Type-Options:nosniff | 通过 |
-| 2 | 网关安全 | API Key 验证（bcrypt 哈希存储）+ JWT token + CORS 白名单 | 通过 |
-| 3 | 数据库安全 | PostgreSQL 仅监听 127.0.0.1:5432，不对外暴露 | 通过 |
-| 4 | Redis 安全 | 仅监听 127.0.0.1:6379，不对外暴露 | 通过 |
-| 5 | 服务器安全 | SSH 非默认端口 + 密钥登录 + 禁用 root + 防火墙（仅 22/80/443） | 通过 |
-| 6 | 密钥管理 | 环境变量 + `.env`（gitignore）+ 用户主机派生密钥加密 `credentials.enc` | 通过 |
+| 1 | ⚠️ nginx 安全 | ~~HTTPS + HSTS + X-Frame-Options + X-Content-Type-Options~~（PromiseLink 部署） | N/A |
+| 2 | 网关安全（OPC-Agents 复用） | API Key 验证（bcrypt 哈希存储）+ JWT token + CORS 白名单 | 通过（OPC-Agents 复用 PromiseLink Pro 网关） |
+| 3 | ⚠️ 数据库安全 | ~~PostgreSQL 仅监听 127.0.0.1:5432~~（PromiseLink 部署；OPC-Agents 本地 SQLite） | N/A |
+| 4 | ⚠️ Redis 安全 | ~~仅监听 127.0.0.1:6379~~（PromiseLink 部署；OPC-Agents 不依赖 Redis） | N/A |
+| 5 | ⚠️ 服务器安全 | ~~SSH 非默认端口 + 密钥登录 + 禁用 root + 防火墙~~（PromiseLink 部署） | N/A |
+| 6 | 密钥管理 | 环境变量 + `.env`（gitignore）+ 用户主机派生密钥加密 `credentials.enc` | 通过（OPC-Agents 本地密钥管理） |
 
-### 7.2 nginx 默认 server 隔离审查（硬约束 H7）
+### 7.2 ⚠️ nginx 默认 server 隔离审查（硬约束 H7，PromiseLink 部署，不适用于 OPC-Agents）
 
-硬约束 H7 要求默认 server 必须服务官网静态文件，禁止代理到任何应用容器。审查结果：
+> 硬约束 H7 已在 `HARD_CONSTRAINTS.md` P3 中标注为"已废弃：OPC-Agents 不部署到 promiselink.cn"。
+> 本小节内容仅作 PromiseLink 历史审查记录。
+
+原审查结果（PromiseLink）：
 
 - 默认 server 块 `root /var/www/html`，仅 `try_files $uri $uri/ =404`
 - 无任何 `proxy_pass` 指令
 - 直接 IP 访问 `http://47.116.219.15` 显示官网首页，不暴露 promiselink-pro:8001
 - 未匹配 Host 头回落到官网静态文件，防止恶意扫描触达应用容器
 
-**结论**：H7 合规。
+**结论**：H7 合规（仅适用于 PromiseLink，OPC-Agents 不适用）。
 
 ### 7.3 硬约束 H1-H8 落地审查
+
+> ⚠️ H5/H6/H7 是 PromiseLink 云端部署相关硬约束，**不适用于 OPC-Agents**。
+> OPC-Agents 部署类硬约束见 `HARD_CONSTRAINTS.md` §2.8 P1-P5。
 
 | 硬约束 | 要求 | 落地状态 |
 |--------|------|----------|
@@ -295,12 +314,13 @@ MetricsCollector.set_consent(user_id, metric_type, enabled=False)
 | H2 | 用户不持有 LLM API Key | 通过（MOKA_API_KEY 仅在云端网关环境变量） |
 | H3 | 基础版通过 relay_client 连接网关 | 通过（WSS 长连接） |
 | H4 | 基础版不含语音/图片扫描 | 通过（relay_client 代码层禁用 ASR/TTS/OCR） |
-| H5 | 网关地址统一 gateway.promiselink.cn | 通过（备案前临时 47.116.219.15:8001） |
-| H6 | 47.116.219.15 仅部署网关+官网+支撑服务 | 通过（无基础版容器/源码/前端） |
-| H7 | nginx 默认 server 仅服务静态文件 | 通过（见 §7.2） |
+| H5 | ⚠️ ~~网关地址统一 gateway.promiselink.cn~~ | N/A（PromiseLink 部署约束，OPC-Agents 仅复用网关） |
+| H6 | ⚠️ ~~47.116.219.15 仅部署网关+官网+支撑服务~~ | N/A（PromiseLink 部署约束，不适用于 OPC-Agents） |
+| H7 | ⚠️ ~~nginx 默认 server 仅服务静态文件~~ | N/A（已废弃，见 HARD_CONSTRAINTS.md P3） |
 | H8 | API keys 不写明文 | 通过（环境变量 + 加密文件） |
 
-**部署安全结论**：6 项安全检查全通过，8 项硬约束全合规。
+**部署安全结论**：OPC-Agents 适用的硬约束（H1/H2/H3/H4/H8）全部合规。
+PromiseLink 部署相关硬约束（H5/H6/H7）不适用于 OPC-Agents 本地运行模式。
 
 ---
 
@@ -351,7 +371,7 @@ LLM 返回内容可能包含：
 防护措施：
 
 - `OutputValidator` 复用 `InputValidator` 的 26 模式检测
-- LLM 输出中的 URL 经过白名单校验（仅允许 https://promiselink.cn 等）
+- LLM 输出中的 URL 经过白名单校验（OPC-Agents 本地运行，URL 白名单由用户配置，不预设 promiselink.cn）
 - LLM 输出中的代码片段经 `sanitize_html()` 转义后展示
 
 **LLM 后端安全结论**：5 项安全检查全通过。
@@ -370,7 +390,7 @@ LLM 返回内容可能包含：
 | 4 | 网关 API Key 泄露 | 高 | 低 | 中 | 环境变量注入 + 不写明文（硬约束 H8）+ bcrypt 哈希存储 + 用户主机派生密钥加密 | DevOps | 已缓解 |
 | 5 | LLM 输出注入攻击 | 中 | 中 | 中 | validators.py 输出过滤（26 模式）+ URL 白名单 + 代码片段 HTML 转义 | Security | 已缓解 |
 | 6 | JWT token 被盗用 | 中 | 低 | 中 | HTTPS 传输 + 24h 短过期 + refresh token + JWT 黑名单（Redis） | Coder | 已缓解 |
-| 7 | 限流绕过（分布式攻击） | 低 | 中 | 低 | 多层限流（nginx IP 限流 + 网关 License 限流 + API 路由限流） | DevOps | 已缓解 |
+| 7 | 限流绕过（分布式攻击） | 低 | 中 | 低 | 多层限流（⚠️ ~~nginx IP 限流~~（PromiseLink 部署）+ API 路由限流 60 req/min） | DevOps | 已缓解 |
 | 8 | 数据库 SQL 注入 | 低 | 低 | 低 | SQLAlchemy ORM 参数化查询 + Pydantic 白名单 + validators.py SQL 模式检测 | Coder | 已缓解 |
 
 ### 9.2 风险趋势
@@ -408,7 +428,7 @@ LLM 返回内容可能包含：
 5. **场景 E - 二次确认缺失**：`/metrics/export` 不携带 `X-Confirm-Export` 头，验证返回 428
 6. **场景 F - SQL 注入**：user_id 字段填入 `' OR 1=1 --`，验证返回 422
 7. **场景 G - JWT 过期**：使用过期 token 调用任意端点，验证返回 401
-8. **场景 H - 默认 server 隔离**：直接访问 `http://47.116.219.15:8001`，验证连接被拒绝
+8. **场景 H - ⚠️ 默认 server 隔离**（PromiseLink 部署，不适用于 OPC-Agents）：~~直接访问 `http://47.116.219.15:8001`，验证连接被拒绝~~（OPC-Agents 本地运行无此场景）
 
 ### 10.3 安全测试通过标准
 
@@ -432,7 +452,7 @@ LLM 返回内容可能包含：
 | Security | 同意 | 本审查报告 | 26 模式 prompt injection 检测 + 8 项风险全缓解 + 7 项法律合规 |
 | Tester | 同意 | 测试用例覆盖注入攻击 | 8 个 E2E 安全场景 + 26 模式单元测试 + 5 SQL + 10 XSS 模式 |
 | Coder | 同意 | 实现方案可行 | 复用 validators.py 现有 21 模式 + 新增 5 反馈专用模式，实现成本低 |
-| DevOps | 同意 | 部署安全检查通过 | nginx 默认 server 隔离 + 6 项部署安全检查 + 8 项硬约束全合规 |
+| DevOps | 同意 | 部署安全检查通过 | ~~nginx 默认 server 隔离~~（PromiseLink 部署，不适用于 OPC-Agents）+ 6 项部署安全检查 + 8 项硬约束全合规（其中 H5/H6/H7 不适用于 OPC-Agents 本地运行） |
 | UI | 同意 | 同意弹窗设计合理 | 4 个独立复选框 + "不同意"按钮仍可使用应用 + 设置页可撤回 |
 
 ### 11.2 共识达成时间
@@ -511,9 +531,9 @@ LLM 返回内容可能包含：
 | H2（用户不持有 LLM API Key） | §8 LLM 后端安全 | 通过 |
 | H3（relay_client 连接网关） | §7 部署安全 | 通过 |
 | H4（基础版无语音/图片） | §7.3 硬约束审查 | 通过 |
-| H5（网关地址统一） | §7 部署安全 | 通过 |
-| H6（云端仅部署网关+官网） | §7.3 硬约束审查 | 通过 |
-| H7（nginx 默认 server 隔离） | §7.2 默认 server 审查 | 通过 |
+| H5（⚠️ ~~网关地址统一~~） | §7 部署安全 | N/A（PromiseLink 部署约束，不适用于 OPC-Agents） |
+| H6（⚠️ ~~云端仅部署网关+官网~~） | §7.3 硬约束审查 | N/A（PromiseLink 部署约束，不适用于 OPC-Agents） |
+| H7（⚠️ ~~nginx 默认 server 隔离~~） | §7.2 默认 server 审查 | N/A（已废弃，见 HARD_CONSTRAINTS.md P3） |
 | H8（API keys 不写明文） | §7.3 硬约束审查 | 通过 |
 
 ## 附录 C：安全审查检查清单（Pre-release）
@@ -525,12 +545,12 @@ LLM 返回内容可能包含：
 - [ ] 10 个 XSS 模式检测全部生效
 - [ ] JWT 认证 + 权限矩阵 7 端点全部生效
 - [ ] 限流策略（60/5/1 req）全部生效
-- [ ] CORS 白名单仅允许 localhost 与 promiselink.cn
-- [ ] HTTPS 强制跳转 + TLS 1.2/1.3
-- [ ] nginx 默认 server 无 proxy_pass
-- [ ] PostgreSQL / Redis 仅监听 127.0.0.1
-- [ ] SSH 密钥登录 + 禁用 root
-- [ ] 防火墙仅放行 22/80/443
+- [ ] CORS 白名单仅允许 `http://localhost:8000/8501/8900`（OPC-Agents 本地运行，无 promiselink.cn）
+- [ ] ⚠️ ~~HTTPS 强制跳转 + TLS 1.2/1.3~~（PromiseLink 部署，OPC-Agents 本地运行不适用）
+- [ ] ⚠️ ~~nginx 默认 server 无 proxy_pass~~（PromiseLink 部署，OPC-Agents 本地运行不适用）
+- [ ] ⚠️ ~~PostgreSQL / Redis 仅监听 127.0.0.1~~（PromiseLink 部署；OPC-Agents 本地 SQLite，无 Redis）
+- [ ] ⚠️ ~~SSH 密钥登录 + 禁用 root~~（PromiseLink 部署，OPC-Agents 本地运行不适用）
+- [ ] ⚠️ ~~防火墙仅放行 22/80/443~~（PromiseLink 部署，OPC-Agents 本地运行不适用）
 - [ ] API Key 环境变量注入，无明文
 - [ ] MOKA_API_KEY 在 .env（gitignore）
 - [ ] 数据采集同意弹窗 4 复选框实现
@@ -539,8 +559,8 @@ LLM 返回内容可能包含：
 - [ ] 审计日志链式哈希 `verify_chain()` 通过
 - [ ] SQLite 文件权限 0600
 - [ ] `credentials.enc` 加密存储
-- [ ] E2E 安全测试 8 场景全部通过
-- [ ] SSL Labs 测试 promiselink.cn A+ 等级
+- [ ] E2E 安全测试 8 场景全部通过（场景 H 标注为 PromiseLink 部署，OPC-Agents 不适用）
+- [ ] ⚠️ ~~SSL Labs 测试 promiselink.cn A+ 等级~~（PromiseLink 部署，OPC-Agents 本地运行不适用）
 - [ ] bandit 安全扫描无高危项
 - [ ] 依赖锁文件无 SSH 私有仓库依赖
 

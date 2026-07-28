@@ -707,7 +707,7 @@ strategist_brain的IntentType需要扩展：
 | 5 | 继续使用意愿 | ≥60% | 深度访谈 | OKR-1 KR1.5 |
 | 6 | 推荐意愿 | ≥30% | 深度访谈 | OKR-1 KR1.6 |
 | 7 | 付费意愿 | ≥30% | 深度访谈 | OKR-1 KR1.7 |
-| 8 | 官网上线 | promiselink.cn 可访问 | 在线检查 | OKR-4 KR4.1 |
+| 8 | ~~官网上线~~ GitHub 仓库可访问 | ~~promiselink.cn 可访问~~ → https://github.com/lulin70/OPC-Agents 可访问（OPC-Agents 无独立官网，托管在 GitHub） | 在线检查 | OKR-4 KR4.1 |
 | 9 | 安装流程可走通 | 非技术用户独立安装 | 种子用户验证 | OKR-4 KR4.2 |
 | 10 | 商业指标采集 | 5 大指标都有数据（激活/升级/飞轮/付费/NPS） | 数据库查询 | OKR-2 KR2.1-2.5 |
 | 11 | 体验指标采集 | 3 大指标都有评分（对话自然度/结果满意度/主动服务度） | 数据库查询 | OKR-2 KR2.6-2.8 |
