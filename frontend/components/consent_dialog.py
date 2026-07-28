@@ -32,8 +32,12 @@ CONSENT_VERSION = "1.0"
 
 # 隐私政策与数据处理协议链接（与 UI_DESIGN_v0.5.0.md §6.3 对齐）
 # OPC-Agents 是本地运行的开源项目，隐私政策托管在 GitHub
-PRIVACY_POLICY_URL = "https://github.com/lulin70/OPC-Agents/blob/main/docs/PRIVACY_POLICY.md"
-DPA_URL = "https://github.com/lulin70/OPC-Agents/blob/main/docs/DATA_PROCESSING_AGREEMENT.md"
+PRIVACY_POLICY_URL = (
+    "https://github.com/lulin70/OPC-Agents/blob/main/docs/PRIVACY_POLICY.md"
+)
+DPA_URL = (
+    "https://github.com/lulin70/OPC-Agents/blob/main/docs/DATA_PROCESSING_AGREEMENT.md"
+)
 
 # Path to Morandi design tokens CSS (single source of truth for component colors)
 _MORANDI_TOKENS_PATH = (
