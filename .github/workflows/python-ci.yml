@@ -14,7 +14,9 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Python 3.11 job 多跑 coverage/Docker build/pip-audit/radon cc，比 3.10/3.12 多 5-7 分钟
+    # GitHub Actions hosted runners 性能波动 5-10x（lessons learned），15min 曾导致 3.11 超时取消
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
