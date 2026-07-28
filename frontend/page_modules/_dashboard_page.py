@@ -205,7 +205,12 @@ def _render_dashboard_page(demo_mode: bool = False):
     # 移动端响应式 CSS 已由 theme_manager 统一注入
 
     if demo_mode:
-        st.info(f" {_t('dash_demo_info')}")
+        st.markdown(
+            f"""<div style="background: #E8E4DC; color: #2D2D2D; padding: 10px 14px; border-radius: 8px; border-left: 4px solid #4A5A6B;">
+{_t('dash_demo_info')}
+</div>""",
+            unsafe_allow_html=True,
+        )
         _render_demo_dashboard()
         return
 

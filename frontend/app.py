@@ -100,12 +100,27 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+# WCAG AA: Ensure selectbox placeholder text has sufficient contrast (>=4.5:1)
+# Streamlit default placeholder has alpha transparency reducing contrast to ~4.08
+st.markdown(
+    """
+<style>
+.stSelectbox, .stSelectbox div, .stSelectbox span,
+[data-baseweb="select"], [data-baseweb="select"] div, [data-baseweb="select"] span {
+    color: #1A1A1A !important;
+    opacity: 1 !important;
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 if is_demo_mode():
     st.markdown(
         f"""
     <div style="
-        background: linear-gradient(90deg, #6B7B8C 0%, #A89F91 100%);
-        color: white;
+        background: #4A5A6B;
+        color: #FFFFFF;
         padding: 12px 20px;
         border-radius: 8px;
         text-align: center;

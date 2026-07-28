@@ -264,17 +264,13 @@ def render_chat_page():
     _maybe_show_shortcut_hints()
     if is_demo_mode():
         st.markdown(f"## {_t('chat_demo_mode')}")
-        st.info(f"""**{_t('chat_demo_mode_title')}** — {_t('chat_demo_mode_desc')}
-
-| {_t('chat_demo_feature')} | {_t('chat_demo_status')} |
-|------|------|
-|  {_t('nav_dashboard')} |  {_t('chat_demo_available')} |
-|  {_t('nav_settings')} |  {_t('chat_demo_available')} |
-|  {_t('nav_marketplace')} |  {_t('chat_demo_available')} |
-|  {_t('nav_chat')} / {_t('chat_task_exec')} |  {_t('chat_demo_need_key')}
-
- **{_t('chat_demo_goto_settings')}**
-""")
+        st.markdown(
+            f"""<div style="background: #E8E4DC; color: #2D2D2D; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #4A5A6B; margin-bottom: 12px;">
+<strong>{_t('chat_demo_mode_title')}</strong> — {_t('chat_demo_mode_desc')}<br/><br/>
+<strong>{_t('chat_demo_goto_settings')}</strong>
+</div>""",
+            unsafe_allow_html=True,
+        )
         st.markdown(f"### {_t('chat_demo_data_preview')}")
         demo = _get_demo_dashboard_data()
         col1, col2, col3 = st.columns(3)
