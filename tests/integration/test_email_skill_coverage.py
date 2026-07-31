@@ -127,23 +127,25 @@ def smtp_config():
 def smtp_config_path(tmp_path, monkeypatch):
     """将 email_skill 配置文件路径重定向到 tmp_path，使用真实文件 I/O 替代 Mock。
 
-    email_skill.py 中 _get_smtp_config / save_smtp_config 通过
-    os.path.dirname(os.path.dirname(__file__)) 计算配置文件目录。由于源码未
-    抽取 SMTP_CONFIG_PATH 常量（且不允许修改源码），这里通过 monkeypatch 修改
-    email_skill.__file__，使计算出的配置路径指向 tmp_path，从而让
-    os.path.exists / open / os.makedirs 全部作用于真实临时文件系统，避免
-    mock 文件系统 API 的反模式。
+    email_skill.py 中 _get_smtp_config / save_smtp_config 通过 DATA_DIR 常量
+    计算配置文件路径（Sprint 4.3 修复：从 __file__ 相对路径改为 DATA_DIR，
+    确保 OPC_DATA_DIR 环境变量生效时 email_config.json 能正确找到）。
+
+    这里通过 monkeypatch 修改 email_skill.DATA_DIR，使配置路径指向
+    tmp_path/data 子目录（与历史 fixture 行为保持一致，确保
+    test_save_smtp_config_error 能在 parent 路径上放置文件触发 OSError）。
 
     返回值是重定向后的配置文件绝对路径（tmp_path/data/email_config.json），
     测试可据此准备或校验文件内容。
     """
-    # 需要 dirname(dirname(__file__)) == tmp_path，
-    # 故令 __file__ = tmp_path/opc_manager/email_skill.py
-    fake_module_file = tmp_path / "opc_manager" / "email_skill.py"
-    monkeypatch.setattr(email_skill, "__file__", str(fake_module_file))
+    # Sprint 4.3 fix: email_skill 现在用 DATA_DIR 而非 __file__ 计算配置路径.
+    # DATA_DIR 指向 tmp_path/data，与 _get_smtp_config 中
+    # os.path.join(DATA_DIR, "email_config.json") 组合得到 tmp_path/data/email_config.json.
+    data_dir = tmp_path / "data"
+    monkeypatch.setattr(email_skill, "DATA_DIR", str(data_dir))
     # 显式设置加密密钥，保证 encrypt_field/decrypt_field 在测试内可复现往返
     monkeypatch.setenv("OPC_ENCRYPTION_KEY", "test-key-for-encryption-32chars!!")
-    return tmp_path / "data" / "email_config.json"
+    return data_dir / "email_config.json"
 
 
 def _make_mock_smtp():
