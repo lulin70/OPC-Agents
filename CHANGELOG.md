@@ -4,6 +4,45 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.8] - 2026-07-30
+
+### PATCH — Sprint 3 E2E 测试补齐
+
+> v0.5.8 是 Sprint 3 E2E 测试补齐的 PATCH 发布，对应 [E2E_REVIEW_v0.5.7.md](docs/assessments/E2E_REVIEW_v0.5.7.md) 评估与 [E2E_IMPLEMENTATION_PLAN_v0.5.7.md](docs/assessments/E2E_IMPLEMENTATION_PLAN_v0.5.7.md) 实施计划。新增 42 项 E2E 测试（API Server 认证 12 + 响应式布局 23 + 视觉回归基线 7），覆盖 Sprint 3.1/3.2/3.3 三个子任务。Sprint 3.1 dev-mode bypass 提案被拒绝（会削弱现有强认证）。无破坏性 API 变更。
+
+#### Added
+
+##### Sprint 3.1: API Server E2E 测试套件
+
+- 新增 API Server E2E 测试套件（12 项测试）：启动真实 uvicorn 服务器，验证认证与限流
+- 覆盖认证流程（valid token / invalid token / missing token / expired token）与速率限制边界
+- 基于 httpx + 真实 ASGI server，非 mock，确保端到端链路真实性
+
+##### Sprint 3.2: 响应式布局 E2E 测试
+
+- 新增响应式布局 E2E 测试（23 项测试）：覆盖 4 个视口（mobile 375×667 / tablet 768×1024 / desktop 1280×800 / FHD 1920×1080）
+- 验证各视口下 Streamlit 布局、侧边栏、组件可见性与交互行为
+- 补齐 v0.5.7 评估发现的响应式 E2E 空白
+
+##### Sprint 3.3: 视觉回归基线测试
+
+- 新增视觉回归基线测试（7 项测试）：基于 PIL 像素对比
+- 覆盖 4 个页面 + 2 个主题（light/dark）+ 侧边栏状态
+- 建立视觉基线，后续变更可自动检测 UI 回归
+
+#### Changed
+
+- Sprint 3.1 dev-mode bypass 提案 REJECTED：原提案建议为开发模式添加认证绕过以简化 E2E 测试，经评审认定会削弱现有强认证机制，予以拒绝。E2E 测试改为使用真实 token 方案，保持生产代码认证强度不变
+
+#### 测试验证
+
+- E2E 测试新增 42 项（12 + 23 + 7），全量 E2E 覆盖率提升
+- 无破坏性 API 变更，生产代码无修改
+
+#### 技术债
+
+- 详见 [TECH_DEBT.md](docs/TECH_DEBT.md)：v0.5.7 解决 TD-001~004，TD-005~012 待 v0.6.0+ 处理
+
 ## [0.5.7] - 2026-07-27
 
 ### PATCH — v0.5.6 7 维度评估 P0/P1 修复

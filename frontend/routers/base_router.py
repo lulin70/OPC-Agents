@@ -484,9 +484,75 @@ def save_deliverable(
     return filepath, deliverable_record
 
 
+def _execute_mock_path(prompt, session_ctx=None):
+    """Mock 模式简化执行路径（仅用于 E2E 测试，OPC_MOCK_LLM=true 时调用）.
+
+    跳过 AgentLoop 复杂流程，直接调用 SimpleLLMService.complete 生成内容。
+    验证 UI 渲染旅程：输入→成果物渲染→下载按钮。
+
+    从用户角度：用户输入需求 → 看到成果物 → 可下载。
+    Mock 模式不验证 AgentLoop 内部逻辑（搜索/规划/反思），
+    只验证前端 UI 渲染和用户交互。
+    """
+    try:
+        from opc_manager.simple_llm_service import SimpleLLMService
+
+        simple_llm = SimpleLLMService()
+        content = simple_llm.complete(prompt)
+
+        if not content:
+            logger.warning("[frontend-mock] Mock LLM 返回空内容")
+            return None, False, None, None, None
+
+        # 添加 meta 信息（模拟 AgentLoop 的输出格式）
+        meta_lines = [
+            " 任务类型: content_generation",
+            " Mock 模式执行（E2E 测试）",
+        ]
+        meta_str = "\n".join(meta_lines)
+        content_with_meta = f"{content}\n\n---\n*{meta_str}*"
+
+        filepath, deliverable_record = save_deliverable(
+            content=content_with_meta,
+            prompt=prompt,
+            task_type="content_generation",
+            meta={
+                "success": True,
+                "agent_loop": False,
+                "mock_mode": True,
+            },
+        )
+
+        logger.info(
+            "[frontend-mock] Mock 路径执行成功: content_len=%d, filepath=%s",
+            len(content_with_meta),
+            filepath,
+        )
+
+        return (
+            content_with_meta,
+            True,
+            filepath,
+            "content_generation",
+            deliverable_record,
+        )
+    except Exception as e:
+        logger.error("[frontend-mock] Mock 路径执行异常: %s", e)
+        return None, False, None, None, None
+
+
 def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
     """Execute task via AgentLoop (Three-Sage Architecture)"""
     import asyncio
+    import concurrent.futures
+
+    # E2E 测试支持: OPC_MOCK_LLM=true 时走简化路径，跳过 AgentLoop 复杂流程
+    # 从用户角度：E2E 验证"输入→成果物渲染→下载"的 UI 旅程，
+    # AgentLoop 内部复杂流程（搜索→规划→执行→反思）在 Mock 模式下过于脆弱
+    # （网络依赖、多步骤协调、Quality Gate 等），容易阻塞 UI 验证。
+    # Mock 模式直接调用 SimpleLLMService.complete 生成内容，验证 UI 渲染。
+    if os.environ.get("OPC_MOCK_LLM", "").lower() == "true":
+        return _execute_mock_path(prompt, session_ctx)
 
     try:
         from opc_manager.agent_loop import AgentLoop
@@ -505,25 +571,23 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
             )
         agent_loop = st.session_state.agent_loop
 
-        loop = asyncio.new_event_loop()
-        try:
-            task_result = loop.run_until_complete(
-                agent_loop.run(
-                    prompt,
-                    session_id=(
-                        getattr(session_ctx, "_session_id", None)
-                        if session_ctx
-                        else None
-                    ),
-                )
-            )
-            pending = asyncio.all_tasks(loop)
-            if pending:
-                loop.run_until_complete(
-                    asyncio.gather(*pending, return_exceptions=True)
-                )
-        finally:
-            loop.close()
+        session_id = (
+            getattr(session_ctx, "_session_id", None) if session_ctx else None
+        )
+
+        # 在独立子线程中运行 async 协程，避免事件循环冲突
+        # Bug fix: asyncio.new_event_loop() + run_until_complete() 在 Streamlit
+        # 工作线程中会报 "Cannot run the event loop while another loop is running"
+        # （Python 3.12 + Streamlit 1.57.0 环境下 _get_running_loop() 检测到冲突）
+        # 方案：用 ThreadPoolExecutor 在全新子线程中调用 asyncio.run()，
+        # 子线程没有继承父线程的事件循环状态，asyncio.run() 可正常工作
+        def _run_coro_in_subthread():
+            coro = agent_loop.run(prompt, session_id=session_id)
+            return asyncio.run(coro)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_coro_in_subthread)
+            task_result = future.result(timeout=180)
 
         if not task_result.success:
             logger.warning("[frontend] AgentLoop执行失败: %s", task_result.error)

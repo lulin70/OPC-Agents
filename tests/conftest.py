@@ -124,6 +124,14 @@ def pytest_configure(config):
         "markers", "e2e_search: Real DuckDuckGo search (no API key needed)"
     )
     config.addinivalue_line("markers", "e2e_llm: Real LLM API call (requires API key)")
+    # GAP-P0-6: Docker E2E 标记为 slow，CI 默认跳过，release workflow 跑
+    config.addinivalue_line(
+        "markers", "slow: Slow tests (Docker build, real network) — CI 默认跳过"
+    )
+    # GAP-P0-9: 视觉回归 baseline 标记
+    config.addinivalue_line(
+        "markers", "visual: Visual regression tests (screenshot baseline)"
+    )
 
 
 def pytest_collection_modifyitems(config, items):

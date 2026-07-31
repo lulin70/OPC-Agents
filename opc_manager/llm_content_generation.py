@@ -25,6 +25,8 @@ MAX_LLM_OUTPUT_LENGTH is defined locally here (used only by _call_llm_api).
 """
 
 import re
+import os
+import time
 import logging
 from typing import Callable, Dict, List, Optional, Tuple, Any
 
@@ -98,6 +100,48 @@ class LLMContentGenerationMixin:
         return GenerationResult(content="", success=False, generation_mode="llm_failed")
 
     def _call_llm_api(self, prompt: str) -> Optional[str]:
+        # E2E 测试支持: OPC_MOCK_LLM=true 时返回 mock 响应，不调用真实 API
+        # Mock 响应必须通过 Quality Gate（≥300 字符 + 数据源引用），
+        # 否则 _quality_gate 会拒绝导致 AgentLoop 返回空内容，
+        # 用户在 Chat 页面看不到任何成果物（从用户角度：输入→无响应=功能损坏）
+        if os.environ.get("OPC_MOCK_LLM", "").lower() == "true":
+            # Sprint 4.1 GAP-P0-4: 错误恢复 E2E 支持
+            # 通过文件传递错误类型（server 子进程无法读取测试进程的 os.environ）
+            from opc_manager.simple_llm_service import _read_mock_error_file
+
+            mock_error = _read_mock_error_file()
+            if mock_error:
+                raise self._make_mock_error(mock_error)
+            logger.info("[LLMContentGen] OPC_MOCK_LLM=true, returning mock response")
+            prompt_preview = prompt[:120].replace("\n", " ") if prompt else ""
+            return (
+                f"# 产品介绍文案\n\n"
+                f"## 概述\n\n"
+                f"基于用户需求 \"{prompt_preview}\"，以下是为您生成的内容方案。"
+                f"本方案聚焦于一人公司（One-Person Company）的运营场景，"
+                f"提供结构化的成果物输出。\n\n"
+                f"## 核心价值主张\n\n"
+                f"我们的产品致力于解决用户在日常工作中的效率痛点，"
+                f"通过智能化的工作流管理，帮助用户节省时间、提升产出质量。"
+                f"产品核心功能包括任务自动化、智能分析和可视化报告，"
+                f"全面覆盖独立创业者的运营需求。\n\n"
+                f"## 目标用户\n\n"
+                f"- 独立创业者和小团队\n"
+                f"- 内容创作者和咨询顾问\n"
+                f"- 需要高效管理多项目的知识工作者\n\n"
+                f"## 竞争优势\n\n"
+                f"1. 智能任务分解与优先级排序\n"
+                f"2. AI 辅助内容生成与质量检查\n"
+                f"3. 多维度数据可视化分析\n"
+                f"4. 轻量级部署，本地优先保护数据隐私\n\n"
+                f"## 参考资料\n\n"
+                f"- 来源：产品需求文档 PRD v0.5.8\n"
+                f"- 参考：用户访谈记录 2026Q2\n"
+                f"- https://example.com/opc-agents/market-research-2026\n\n"
+                f"---\n_Mock response generated at "
+                f"{time.strftime('%Y-%m-%d %H:%M:%S')} (OPC_MOCK_LLM=true)_"
+            )
+
         if self._llm_caller is not None:
             try:
                 return self._llm_caller(prompt)
@@ -210,6 +254,23 @@ class LLMContentGenerationMixin:
         except Exception as e:
             logger.error("[LLMContentGen] LLM API call exception: %s", e)
             return None
+
+    def _make_mock_error(self, error_type: str) -> Exception:
+        """构造模拟 LLM 错误异常（仅用于 E2E 测试）.
+
+        与 SimpleLLMService._make_mock_error 保持一致的关键字映射，
+        确保 chat_router.FRIENDLY_ERRORS 能正确匹配。
+        """
+        error_map = {
+            "timeout": "LLM call timeout: request exceeded 60s limit",
+            "connection": "Connection error: failed to establish connection to LLM service",
+            "api_key": "Incorrect API key: authentication failed (401)",
+            "rate_limit": "Rate limit exceeded (429): too many requests",
+            "server_500": "LLM service returned 500 Internal Server Error",
+        }
+        msg = error_map.get(error_type, f"Unknown mock error type: {error_type}")
+        logger.info("[LLMContentGen] OPC_MOCK_LLM_ERROR=%s, raising: %s", error_type, msg)
+        return RuntimeError(msg)
 
     def _get_llm_config(self) -> Tuple[Optional[str], str, str]:
         from opc_manager.simple_llm_service import discover_llm_config

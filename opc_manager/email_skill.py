@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from typing import Any, Dict, List, Optional
 
 from opc_manager.data_manager import (
+    DATA_DIR,
     encrypt_field,
     decrypt_field,
     execute_query,
@@ -35,9 +36,11 @@ RATE_LIMIT_MAX = 3
 
 
 def _get_smtp_config() -> Optional[Dict[str, Any]]:
-    config_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "data", "email_config.json"
-    )
+    # Bug fix (Sprint 2.2 E2E): 使用 DATA_DIR 而非硬编码相对路径，
+    # 确保 OPC_DATA_DIR 环境变量生效时 email_config.json 能正确找到.
+    # 之前: os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", ...)
+    # 问题: 用户设置 OPC_DATA_DIR 到自定义位置后，email 配置查找路径不变.
+    config_path = os.path.join(DATA_DIR, "email_config.json")
     if not os.path.exists(config_path):
         return None
     try:
@@ -55,9 +58,8 @@ def _get_smtp_config() -> Optional[Dict[str, Any]]:
 
 
 def save_smtp_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    config_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "data", "email_config.json"
-    )
+    # Bug fix (Sprint 2.2 E2E): 使用 DATA_DIR 保持与 _get_smtp_config 一致.
+    config_path = os.path.join(DATA_DIR, "email_config.json")
     try:
         import json
 

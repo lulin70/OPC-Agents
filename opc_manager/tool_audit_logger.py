@@ -134,6 +134,25 @@ class AuditLogger:
             logger.error("审计日志写入失败: %s", e)
 
     @classmethod
+    def flush(cls) -> None:
+        """同步刷新所有待写入的审计记录到文件.
+
+        Sprint 4.3 fix: AuditLogger.log() 在有 event loop 时走异步队列路径，
+        测试中调用 query() 前需确保队列中的记录已持久化.
+        此方法将队列中所有待写入记录同步写入文件，确保测试能查询到.
+        """
+        if cls._write_queue is None:
+            return
+        # 从队列中取出所有待写入记录，同步写入文件
+        while not cls._write_queue.empty():
+            try:
+                record = cls._write_queue.get_nowait()
+                cls._write_sync(record)
+                cls._write_queue.task_done()
+            except Exception:
+                break
+
+    @classmethod
     def query(
         cls,
         event_type: Optional[str] = None,

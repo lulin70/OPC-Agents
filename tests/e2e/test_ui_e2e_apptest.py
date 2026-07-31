@@ -249,8 +249,12 @@ class TestUIChatPageDemoMode:
         at = _load_app()
         at.run(timeout=30)
 
-        infos = " ".join(i.value for i in at.info)
-        assert len(infos) > 0, "No info message on demo chat page"
+        # Sprint 4.3 fix: chat_router.py demo 模式用 st.markdown + HTML 渲染提示，
+        # 不使用 st.info。检查 markdown 内容包含 demo 相关文本.
+        all_markdown = " ".join(m.value for m in at.markdown)
+        assert (
+            "demo" in all_markdown.lower() or "演示" in all_markdown
+        ), "Demo info not found on chat page"
 
     def test_chat_page_has_scenario_buttons(self, isolated_data_env):
         """Scenario buttons are rendered on chat page."""

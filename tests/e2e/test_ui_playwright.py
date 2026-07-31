@@ -227,27 +227,45 @@ class TestUJ02DemoMode:
     """UJ-02: Demo 模式横幅显示 → Demo 信息面板。"""
 
     def test_TC_H04_demo_banner_visible(self, page):
-        """TC-H04: Demo 横幅可见（紫色渐变背景）。
+        """TC-H04: Demo 横幅可见（Morandi 深蓝灰背景，WCAG AA 合规）。
 
-        Scenario: 用户在 Demo 模式下访问
-        Expected: 顶部显示紫色渐变横幅
+        Scenario: 用户在 Demo 模式下访问首页
+        Expected: 顶部显示 Demo 横幅，含"演示模式"/"Demo Mode"文本
+
+        注: app.py 渲染的横幅使用 background: #4A5A6B（Morandi 深蓝灰纯色，
+        WCAG AA 合规修复），非 linear-gradient。测试通过 <strong> 文本
+        定位横幅（用户视角），不依赖 CSS 实现细节。
         """
         _wait_for_streamlit_content(page)
 
-        # Demo 横幅使用 linear-gradient 样式
-        banner = page.locator("div[style*='linear-gradient']").first
-        assert banner.is_visible(), "Demo 横幅不可见"
+        # Demo 横幅含 <strong>demo_banner_title</strong>（"演示模式"/"Demo Mode"）
+        # 通过文本内容定位，避免依赖 CSS 样式实现（WCAG AA 修复后改为纯色）
+        banner_strong = page.locator(
+            "strong:has-text('演示模式'), strong:has-text('Demo Mode')"
+        ).first
+        assert banner_strong.is_visible(), (
+            "Demo 横幅不可见 — 未找到 <strong>演示模式</strong> 或 <strong>Demo Mode</strong>"
+        )
 
-        banner_text = banner.inner_text()
+        # 验证横幅父级 div 包含完整提示文案
+        banner_text = banner_strong.locator("xpath=..").inner_text()
         assert (
             "演示模式" in banner_text or "Demo" in banner_text
         ), f"横幅文本不匹配: {banner_text}"
 
     def test_TC_H05_demo_info_panel_visible(self, page):
-        """TC-H05: Demo 信息面板可见，显示功能状态表。
+        """TC-H05: Demo 信息面板可见，显示描述与引导文案。
 
         Scenario: 用户在 Demo 模式下查看 Chat 页面
-        Expected: 显示 Demo 信息面板（功能状态表）
+        Expected: 显示 Demo 信息面板（标题+描述+前往设置引导）
+
+        注: chat_router.py:265-288 渲染的 Demo 信息面板包含:
+        - "当前为演示模式" 标题（chat_demo_mode_title）
+        - "以下功能在演示模式下受限" 描述（chat_demo_mode_desc）
+        - "前往设置" 引导（chat_demo_goto_settings）
+        - 3 个 Demo metric（数据预览）
+        原 TC_H05 期望的"需要配置 API Key"是未使用的 i18n key（chat_demo_need_key），
+        从未在源码中引用，改为验证实际渲染的描述文案。
         """
         _wait_for_streamlit_content(page)
 
@@ -255,9 +273,14 @@ class TestUJ02DemoMode:
         demo_info = page.locator("text=当前为演示模式")
         assert demo_info.count() > 0, "Demo 信息面板未显示"
 
-        # 验证功能状态表存在
-        status_table = page.locator("text=需要配置 API Key")
-        assert status_table.count() > 0, "功能状态表未显示"
+        # 验证面板描述文案（chat_demo_mode_desc）
+        desc = page.locator("text=以下功能在演示模式下受限")
+        assert desc.count() > 0, "Demo 信息面板描述未显示"
+
+        # 验证引导文案（chat_demo_goto_settings: "前往  设置 → LLM配置..."）
+        # 使用正则匹配，容忍"前往"与"设置"之间的空白字符
+        goto_settings = page.locator("text=/前往\\s+设置/")
+        assert goto_settings.count() > 0, "Demo 信息面板引导文案未显示"
 
 
 # ============================================================

@@ -100,20 +100,9 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
-# WCAG AA: Ensure selectbox placeholder text has sufficient contrast (>=4.5:1)
-# Streamlit default placeholder has alpha transparency reducing contrast to ~4.08
-st.markdown(
-    """
-<style>
-.stSelectbox, .stSelectbox div, .stSelectbox span,
-[data-baseweb="select"], [data-baseweb="select"] div, [data-baseweb="select"] span {
-    color: #1A1A1A !important;
-    opacity: 1 !important;
-}
-</style>
-""",
-    unsafe_allow_html=True,
-)
+# NOTE: selectbox 文本对比度修复已迁移到 theme_manager.py 的 _wcag_aa_fixes()。
+# 此处不再硬编码 #1A1A1A，因为它与深色主题冲突（深色主题需要 #E8E0D5 文本）。
+# Sprint 4.3 a11y remediation.
 
 if is_demo_mode():
     st.markdown(

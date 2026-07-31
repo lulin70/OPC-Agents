@@ -7,12 +7,25 @@ This verifies the system works end-to-end as a real user would experience it.
 """
 
 import asyncio
+import concurrent.futures
 import os
 import unittest
 from unittest.mock import patch, MagicMock
 
 from opc_manager.task_engine_v3 import TaskEngineV3, TaskResult, TaskType
 from opc_manager.agent_loop import AgentLoop
+
+
+def _run_async(coro):
+    """在子线程中运行 async 函数，避免与 pytest-asyncio 的 event loop 冲突.
+
+    Sprint 4.3 fix: pytest-asyncio STRICT 模式下同步测试也可能在 event loop 中运行，
+    导致 asyncio.run() 抛出 RuntimeError: cannot be called from a running event loop.
+    子线程方案绕过此限制（子线程没有 event loop）.
+    """
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(asyncio.run, coro)
+        return future.result()
 
 
 def _mock_llm_complete(*args, **kwargs):
@@ -69,7 +82,7 @@ class TestE2EContentGeneration(unittest.TestCase):
                 strategist_brain=mock_strategist,
                 task_engine=TaskEngineV3(),
             )
-            result = asyncio.run(loop.run("帮我写一封邮件给客户"))
+            result = _run_async(loop.run("帮我写一封邮件给客户"))
 
         self.assertIsInstance(result, TaskResult)
         self.assertTrue(result.success)
@@ -113,7 +126,7 @@ class TestE2EContentGeneration(unittest.TestCase):
                 strategist_brain=mock_strategist,
                 task_engine=TaskEngineV3(),
             )
-            result = asyncio.run(loop.run("分析本季度销售数据"))
+            result = _run_async(loop.run("分析本季度销售数据"))
 
         self.assertIsInstance(result, TaskResult)
         self.assertTrue(result.success)
@@ -125,7 +138,7 @@ class TestE2EErrorHandling(unittest.TestCase):
     def test_empty_input_gives_clear_error(self):
         """Simulate: User submits empty input."""
         loop = AgentLoop(task_engine=TaskEngineV3())
-        result = asyncio.run(loop.run(""))
+        result = _run_async(loop.run(""))
 
         self.assertIsInstance(result, TaskResult)
         self.assertFalse(result.success)
@@ -134,7 +147,7 @@ class TestE2EErrorHandling(unittest.TestCase):
     def test_very_long_input_gives_clear_error(self):
         """Simulate: User submits extremely long input."""
         loop = AgentLoop(task_engine=TaskEngineV3())
-        result = asyncio.run(loop.run("x" * 50000))
+        result = _run_async(loop.run("x" * 50000))
 
         self.assertIsInstance(result, TaskResult)
         self.assertFalse(result.success)

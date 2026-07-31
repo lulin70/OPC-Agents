@@ -27,7 +27,8 @@ pytestmark = pytest.mark.e2e
 
 MORANDI_DARK_BG = "#1F1B16"
 MORANDI_LIGHT_BG = "#F5F2EE"
-MORANDI_PRIMARY = "#6B7B8C"
+# Sprint 4.3: primaryColor 深化 #6B7B8C → #5A6A7B for WCAG AA (ratio 4.34→5.50)
+MORANDI_PRIMARY = "#5A6A7B"
 MORANDI_DARK_TEXT = "#E8E0D5"
 
 
@@ -149,10 +150,19 @@ def _get_primary_color(page) -> str:
             if (primaryBtn) {
                 return window.getComputedStyle(primaryBtn).backgroundColor;
             }
-            // Fallback: read Streamlit CSS variable
-            const cssVar = getComputedStyle(document.documentElement)
-                .getPropertyValue('--primary-color').trim();
-            if (cssVar) return cssVar;
+            // Fallback: read Streamlit CSS variable.
+            // Sprint 4.3 fix: Streamlit 1.58.0 将 --primary-color 设置在 .stApp 而非 :root,
+            // 需要同时检查两个位置。否则回退到任意 button 的 secondary 背景色导致断言失败.
+            const candidates = [
+                document.documentElement,
+                document.querySelector('.stApp'),
+            ];
+            for (const el of candidates) {
+                if (!el) continue;
+                const cssVar = getComputedStyle(el)
+                    .getPropertyValue('--primary-color').trim();
+                if (cssVar) return cssVar;
+            }
             // Last resort: any button's background
             const anyBtn = document.querySelector('.stButton button');
             if (anyBtn) return window.getComputedStyle(anyBtn).backgroundColor;
@@ -229,15 +239,28 @@ class TestThemeSwitchingNoJump:
         """
         _wait_for_streamlit_content(page)
 
+        # Sprint 4.3 fix: 导航到设置页确保有 primary button（"保存配置" form_submit_button）.
+        # 对话页没有 primary button，_get_primary_color 回退到 secondary button 背景色，
+        # 导致断言失败（#EBE5DD 而非 #5A6A7B）.
+        radio = page.locator("[data-testid='stRadio'] label", has_text="设置").first
+        try:
+            radio.wait_for(state="attached", timeout=10000)
+            radio.click(force=True)
+            page.wait_for_timeout(2000)
+        except Exception:
+            pass  # 导航失败不阻断，让后续断言处理
+
         # 1) Start on morandi_light, capture primary color
         _select_theme_via_sidebar(page, "morandi_light")
+        page.wait_for_timeout(1500)  # 等待主题切换后 rerun
         primary_light = _get_primary_color(page)
 
         # 2) Switch to morandi_dark, capture primary color
         _select_theme_via_sidebar(page, "morandi_dark")
+        page.wait_for_timeout(1500)
         primary_dark = _get_primary_color(page)
 
-        # 3) Both should match MORANDI_PRIMARY (#6B7B8C) per UI_DESIGN §3.2.
+        # 3) Both should match MORANDI_PRIMARY (#5A6A7B) per UI_DESIGN §3.2.
         # Streamlit may render the primary button as a slightly different
         # shade when hovered/active; allow a generous tolerance.
         assert _color_matches(

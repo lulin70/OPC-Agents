@@ -267,9 +267,12 @@ def _render_theme_selector():
     # Advanced selection overrides primary when set
     selected = adv_selected if adv_selected else primary_selected
 
-    if selected != current:
-        st.session_state.theme = selected
-        apply_theme(selected)
+    # Always apply theme to ensure WCAG AA a11y CSS is injected on every rerun.
+    # apply_theme sets st.config options + injects custom CSS; both are idempotent.
+    # Without this, default theme (morandi_light) never gets CSS injected because
+    # selected == current on first load, causing WCAG AA contrast failures.
+    st.session_state.theme = selected
+    apply_theme(selected)
 
 
 def _render_language_selector():

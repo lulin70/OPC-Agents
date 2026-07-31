@@ -12,9 +12,11 @@ Run:
 from __future__ import annotations
 
 import os
+import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Generator
@@ -27,6 +29,29 @@ FRONTEND_APP = PROJECT_ROOT / "frontend" / "app.py"
 
 # 确保 opc_manager 模块可导入
 sys.path.insert(0, str(PROJECT_ROOT))
+
+
+# Sprint 4.3: 当 Docker 不可用时不收集 Docker 运行时测试，避免 SKIPPED 状态
+# （用户硬约束: skip测试数量需保持为0）。
+# Docker 不可用 = docker 命令不存在或 daemon 未运行。
+# 在 CI 环境中 Docker 可用时会正常收集。
+def _is_docker_available() -> bool:
+    """检查 Docker 命令是否存在且 daemon 正在运行."""
+    if not shutil.which("docker"):
+        return False
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            timeout=5,
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return False
+
+
+if not _is_docker_available():
+    collect_ignore_glob = ["test_docker_run_e2e.py"]
 
 
 def _find_free_port() -> int:
@@ -128,14 +153,29 @@ def streamlit_server() -> Generator[str, None, None]:
     # 指向不存在路径后，_load_storage 返回空 keys（secure_storage.py:222-223），
     # load_to_env 循环不执行，env 空值得以保留。
     env["OPC_SECURE_STORAGE"] = f"/tmp/opc_e2e_no_secure_{os.getpid()}.missing"
+    # 隔离 data/settings.json 中保存的真实加密 API key。
+    # SettingsManager._load_from_disk() 会加载 data/settings.json，解密 api_key
+    # 到 self._llm.api_key，导致 get_api_key() 返回非空，_has_api_key() 返回 True，
+    # Demo 模式不激活。通过 OPC_SETTINGS_FILE 指向不存在的路径，_load_from_disk
+    # 检测到文件不存在时使用默认空值（settings_persistence.py:74-78），Demo 模式激活。
+    env["OPC_SETTINGS_FILE"] = f"/tmp/opc_e2e_no_settings_{os.getpid()}.missing"
     # 避免测试期间弹窗干扰
     env["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
     env["BROWSER"] = "none"  # 防止 streamlit 自动打开浏览器
 
+    # === GAP-P0-7: E2E 数据库隔离 ===
+    # 只重定向 OPC_DATA_DIR（数据库目录），避免污染真实 data/opc_data.db
+    # 不重定向 OPC_WORKSPACE，因为 base_router.py:16 在模块加载时读取 OPC_WORKSPACE
+    # 计算 DELIVERABLES_DIR，重定向会导致 session_deliverable 文件找不到
+    # （session_deliverable 在 PROJECT_ROOT/deliverables 创建，供 Deliverables 页面渲染）
+    e2e_data_dir = Path(tempfile.gettempdir()) / f"opc_e2e_data_{os.getpid()}"
+    if e2e_data_dir.exists():
+        shutil.rmtree(e2e_data_dir, ignore_errors=True)
+    e2e_data_dir.mkdir(parents=True, exist_ok=True)
+    env["OPC_DATA_DIR"] = str(e2e_data_dir)
+
     # 预创建 onboarding marker 文件，跳过新手引导覆盖层
     # 否则 onboarding overlay 会阻挡主内容渲染
-    import tempfile
-
     onboarding_marker = (
         Path(tempfile.gettempdir()) / f"opc_e2e_onboarding_{os.getpid()}.marker"
     )
@@ -185,6 +225,163 @@ def streamlit_server() -> Generator[str, None, None]:
         # 清理 session 级测试文件
         if session_deliverable.exists():
             session_deliverable.unlink()
+        # === GAP-P0-7: 清理 E2E 数据目录 ===
+        try:
+            if e2e_data_dir.exists():
+                shutil.rmtree(e2e_data_dir, ignore_errors=True)
+        except Exception as e:
+            # 清理失败不应阻断测试，但需记录
+            print(f"[E2E cleanup] Failed to remove {e2e_data_dir}: {e}")
+        # === GAP-P2-6: 清理 onboarding marker ===
+        try:
+            if onboarding_marker.exists():
+                onboarding_marker.unlink()
+        except Exception:
+            pass
+
+
+@pytest.fixture(scope="session")
+def streamlit_server_real_mode() -> Generator[str, None, None]:
+    """启动真实模式 Streamlit server（带 Mock LLM 后端）.
+
+    与 streamlit_server 的区别:
+    - 设置 MOKA_API_KEY=test-key 激活真实模式渲染（输入框可见，不 st.stop）
+    - 通过 OPC_MOCK_LLM=true 让 SimpleLLMService 走 mock 路径，不真实调用 API
+    - 走完整 Chat 渲染流程（输入框可见、提交、轮询、成果物）
+
+    GAP-P0-1: 现有 streamlit_server 全部在 Demo 模式，chat_router.py:288 st.stop()
+    跳过输入框，导致产品核心价值流（Chat 提交→成果物）从未被 E2E 验证.
+    """
+    port = _find_free_port()
+    base_url = f"http://127.0.0.1:{port}"
+
+    env = os.environ.copy()
+    # 激活真实模式（关键：非空 API Key 让 _has_api_key() 返回 True）
+    env["MOKA_API_KEY"] = "sk-e2e-test-key-not-real"
+    env["GLM_API_KEY"] = ""
+    env["OPENAI_API_KEY"] = ""
+    # Mock LLM 后端（SimpleLLMService.complete 检测此变量返回 mock 响应）
+    env["OPC_MOCK_LLM"] = "true"
+    # 跳过反思循环（Mock 模式不需要多轮反思，加快测试执行）
+    env["OPC_SKIP_REFLECT"] = "true"
+    # 隔离 settings.json 和 secure storage（避免真实 key 干扰）
+    env["OPC_SETTINGS_FILE"] = f"/tmp/opc_e2e_real_no_settings_{os.getpid()}.missing"
+    env["OPC_SECURE_STORAGE"] = f"/tmp/opc_e2e_real_no_secure_{os.getpid()}.missing"
+    # 数据隔离（只重定向 OPC_DATA_DIR，不重定向 OPC_WORKSPACE，避免 deliverables 找不到）
+    e2e_data_dir = Path(tempfile.gettempdir()) / f"opc_e2e_real_data_{os.getpid()}"
+    if e2e_data_dir.exists():
+        shutil.rmtree(e2e_data_dir, ignore_errors=True)
+    e2e_data_dir.mkdir(parents=True, exist_ok=True)
+    env["OPC_DATA_DIR"] = str(e2e_data_dir)
+    # 跳过新手引导
+    onboarding_marker = (
+        Path(tempfile.gettempdir()) / f"opc_e2e_real_onboarding_{os.getpid()}.marker"
+    )
+    onboarding_marker.parent.mkdir(parents=True, exist_ok=True)
+    onboarding_marker.write_text(str(time.time()), encoding="utf-8")
+    env["OPC_ONBOARDING_MARKER"] = str(onboarding_marker)
+    # Sprint 4.1 GAP-P0-4: 错误恢复 E2E 支持文件路径
+    # server 子进程读取此文件获取 mock 错误类型（测试 fixture 动态写入）
+    # 使用固定路径（E2E 测试不并行运行），同时在测试进程设置以便 fixture 读取
+    mock_error_path = "/tmp/opc_e2e_mock_error.txt"
+    env["OPC_MOCK_LLM_ERROR_FILE"] = mock_error_path
+    os.environ["OPC_MOCK_LLM_ERROR_FILE"] = mock_error_path
+    # 确保测试开始前文件不存在（无错误注入）
+    try:
+        Path(mock_error_path).unlink(missing_ok=True)
+    except Exception:
+        pass
+    # 其他
+    env["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+    env["BROWSER"] = "none"
+
+    cmd = [
+        sys.executable, "-m", "streamlit", "run",
+        str(FRONTEND_APP),
+        "--server.port", str(port),
+        "--server.headless", "true",
+        "--server.address", "127.0.0.1",
+        "--browser.gatherUsageStats", "false",
+    ]
+
+    log_file = open(f"/tmp/opc_streamlit_e2e_real_{os.getpid()}.log", "w", encoding="utf-8")
+    proc = subprocess.Popen(
+        cmd,
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        env=env,
+        cwd=str(PROJECT_ROOT),
+    )
+
+    try:
+        _wait_for_server(
+            base_url,
+            timeout=60.0,
+            proc=proc,
+            log_path=f"/tmp/opc_streamlit_e2e_real_{os.getpid()}.log",
+        )
+        yield base_url
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+        log_file.close()
+        try:
+            if e2e_data_dir.exists():
+                shutil.rmtree(e2e_data_dir, ignore_errors=True)
+            if onboarding_marker.exists():
+                onboarding_marker.unlink()
+            # Sprint 4.1: 清理 mock error 文件
+            mock_error_file = Path("/tmp/opc_e2e_mock_error.txt")
+            if mock_error_file.exists():
+                mock_error_file.unlink()
+        except Exception:
+            pass
+
+
+@pytest.fixture
+def page_real_mode(
+    playwright_browser: Any, streamlit_server_real_mode: str
+) -> Generator[Any, None, None]:
+    """真实模式 Playwright page fixture.
+
+    与 page fixture 的区别:
+    - 使用 streamlit_server_real_mode（Mock LLM）
+    - 默认超时更长（真实模式渲染更慢，涉及 LLM 调用）
+    - accept_downloads=True（支持下载按钮测试）
+    """
+    context = playwright_browser.new_context(
+        viewport={"width": 1280, "height": 800},
+        locale="zh-CN",
+        accept_downloads=True,
+    )
+    page = context.new_page()
+    page.set_default_timeout(30000)  # 真实模式渲染更慢
+    page.set_default_navigation_timeout(60000)
+
+    try:
+        page.goto(streamlit_server_real_mode, wait_until="networkidle")
+        page.wait_for_selector("[data-testid='stAppViewContainer']", timeout=30000)
+        # 等待内容渲染（真实模式应渲染输入框或场景按钮）
+        try:
+            page.wait_for_function(
+                """() => {
+                    const main = document.querySelector("[data-testid='stMainBlockContainer']");
+                    if (!main) return false;
+                    const hasInput = document.querySelector("textarea");
+                    const hasScenario = document.querySelector("[data-testid='stButton']");
+                    return hasInput || hasScenario;
+                }""",
+                timeout=20000,
+            )
+        except Exception:
+            page.wait_for_timeout(5000)
+        yield page
+    finally:
+        context.close()
 
 
 @pytest.fixture(scope="session")

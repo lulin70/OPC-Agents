@@ -212,7 +212,11 @@ class SettingsManager(
 
     def __init__(self) -> None:
         if not self._initialized:
-            self._settings_file = Path(self.SETTINGS_FILE)
+            # 支持通过 OPC_SETTINGS_FILE 环境变量覆盖设置文件路径
+            # 用于 E2E 测试隔离（避免读取宿主机 data/settings.json 中的真实 api_key
+            # 导致 _has_api_key() 误判为 True、Demo 模式不激活）
+            settings_file = os.environ.get("OPC_SETTINGS_FILE", self.SETTINGS_FILE)
+            self._settings_file = Path(settings_file)
             self._data_lock = threading.RLock()
             self._callbacks: List[Callable[[str], None]] = []
             self._llm = LLMSettings()

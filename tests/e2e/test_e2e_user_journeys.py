@@ -9,6 +9,7 @@ Marked with @pytest.mark.integration for CI filtering.
 """
 
 import asyncio
+import concurrent.futures
 import os
 import threading
 import time
@@ -29,6 +30,18 @@ from opc_manager.audit_log import AuditLog
 from opc_manager.i18n import I18nManager
 from opc_manager.secure_storage import SecureKeyStore
 from opc_manager.data_backup import DataBackupManager
+
+
+def _run_async(coro):
+    """在子线程中运行 async 函数，避免与 pytest-asyncio 的 event loop 冲突.
+
+    Sprint 4.3 fix: pytest-asyncio STRICT 模式下同步测试也可能在 event loop 中运行，
+    导致 asyncio.run() 抛出 RuntimeError: cannot be called from a running event loop.
+    子线程方案绕过此限制（子线程没有 event loop）.
+    """
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(asyncio.run, coro)
+        return future.result()
 
 
 def _reset_data_manager_local():
@@ -501,7 +514,7 @@ class TestJourneyNewUserFirstExperience:
         # Now user can execute tasks
         with patch.dict(os.environ, {"OPC_SKIP_REFLECT": "true"}):
             loop, _ = _make_mock_agent_loop()
-            result = asyncio.run(loop.run("帮我写一封商务邮件"))
+            result = _run_async(loop.run("帮我写一封商务邮件"))
             assert isinstance(result, TaskResult)
 
 
@@ -516,14 +529,14 @@ class TestJourneyErrorRecovery:
     def test_empty_input_returns_friendly_error(self, patched_data_dir):
         """Empty input doesn't crash — returns friendly error."""
         loop = AgentLoop()
-        result = asyncio.run(loop.run(""))
+        result = _run_async(loop.run(""))
         assert not result.success
         assert "不能为空" in result.error
 
     def test_oversized_input_returns_friendly_error(self, patched_data_dir):
         """Oversized input doesn't crash — returns friendly error."""
         loop = AgentLoop()
-        result = asyncio.run(loop.run("x" * 10001))
+        result = _run_async(loop.run("x" * 10001))
         assert not result.success
         assert "最大长度" in result.error
 
@@ -534,7 +547,7 @@ class TestJourneyErrorRecovery:
 
         with patch.dict(os.environ, {"OPC_SKIP_REFLECT": "true"}):
             loop = AgentLoop(strategist_brain=mock_strategist)
-            result = asyncio.run(loop.run("帮我分析数据"))
+            result = _run_async(loop.run("帮我分析数据"))
 
         assert not result.success
         assert result.error  # Has error message
@@ -699,7 +712,14 @@ class TestJourneyAuditTrail:
         assert records[0]["operation_type"] == "settings_change"
 
     def test_audit_output_is_sanitized(self, patched_data_dir):
-        """Audit log sanitizes sensitive output data."""
+        """Verify: Audit log sanitizes sensitive API key in output_summary.
+
+        Scenario: 用户任务输出包含 API key 明文
+        Expected: 审计日志的 output_summary 中不含明文 API key
+
+        Iron Rule 4 (Side-Effect Verification): 不再用 if 条件包裹断言，
+        避免条件不满足时脱敏检查被静默跳过导致虚假通过.
+        """
         audit = AuditLog()
 
         audit.log(
@@ -712,9 +732,17 @@ class TestJourneyAuditTrail:
             status="success",
         )
 
+        # 直接断言（不再用 if 条件包裹）—— Iron Rule 4: Side-Effect Verification
         records = audit.query(session_id="session_003", limit=1)
-        if records and records[0].get("output_summary"):
-            assert "sk-secret-key-12345" not in records[0]["output_summary"]
+        assert records, "审计记录不应为空 — 说明 audit.log 未写入"
+        assert records[0].get("output_summary"), (
+            f"output_summary 不应为空 — 原始 output_data 已写入，审计应记录摘要。"
+            f"实际 records[0]={records[0]}"
+        )
+        summary = records[0]["output_summary"]
+        assert "sk-secret-key-12345" not in summary, (
+            f"审计日志泄露敏感信息 — output_summary 含明文 API key: {summary}"
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -752,5 +780,5 @@ class TestJourneyDemoMode:
         # Now can execute
         with patch.dict(os.environ, {"OPC_SKIP_REFLECT": "true"}):
             loop, _ = _make_mock_agent_loop()
-            result = asyncio.run(loop.run("帮我分析市场趋势"))
+            result = _run_async(loop.run("帮我分析市场趋势"))
             assert isinstance(result, TaskResult)

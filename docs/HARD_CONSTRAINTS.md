@@ -2,7 +2,7 @@
 
 > **来源**: [Skill 生态借鉴分析](research/SKILL_ECOSYSTEM_RESEARCH.md) P0 改进项
 > **理念**: 借鉴 [Ponytail](https://github.com/DietrichGebert/ponytail) 的"永不削减"硬约束边界
-> **最后更新**: 2026-07-27 | **版本**: v0.5.7
+> **最后更新**: 2026-07-30 | **版本**: v0.5.8
 
 ---
 

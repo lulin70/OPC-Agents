@@ -16,6 +16,31 @@ _CIRCUIT_BREAKER_THRESHOLD = 3
 LLM_TOTAL_TIMEOUT = 90
 
 
+def _read_mock_error_file() -> Optional[str]:
+    """从文件读取 mock 错误类型（E2E 测试专用）.
+
+    server 子进程无法读取测试进程的 os.environ 修改，
+    通过文件传递错误类型实现跨进程通信。
+
+    文件路径由环境变量 OPC_MOCK_LLM_ERROR_FILE 指定（conftest.py 设置）。
+    文件内容为错误类型字符串（timeout/connection/api_key/rate_limit/server_500）。
+
+    Returns:
+        Optional[str]: 错误类型字符串，或 None（无错误注入）
+    """
+    try:
+        path = os.environ.get("OPC_MOCK_LLM_ERROR_FILE")
+        if not path:
+            return None
+        if not os.path.exists(path):
+            return None
+        with open(path, encoding="utf-8") as f:
+            content = f.read().strip().lower()
+        return content if content else None
+    except Exception:
+        return None
+
+
 def discover_llm_config() -> Dict[str, Any]:
     config = {"api_key": "", "base_url": "", "model": "", "is_ollama": False}
 
@@ -229,6 +254,18 @@ class SimpleLLMService:
         if not self._api_key:
             return None
 
+        # E2E 测试支持: OPC_MOCK_LLM=true 时返回 mock 响应，不调用真实 API
+        # 用于真实模式 Chat 全链路 E2E 测试（验证输入框→提交→成果物渲染→下载）
+        # 生产环境不设置此环境变量，无影响
+        if os.environ.get("OPC_MOCK_LLM", "").lower() == "true":
+            # Sprint 4.1 GAP-P0-4: 错误恢复 E2E 支持
+            # 通过文件传递错误类型（server 子进程无法读取测试进程的 os.environ）
+            mock_error = _read_mock_error_file()
+            if mock_error:
+                raise self._make_mock_error(mock_error)
+            logger.info("[SimpleLLMService] OPC_MOCK_LLM=true, returning mock response")
+            return self._generate_mock_response(prompt)
+
         from opc_manager.utils import sanitize_for_llm, _llm_thread_semaphore
 
         prompt = sanitize_for_llm(prompt, 2000)
@@ -320,6 +357,65 @@ class SimpleLLMService:
                 return result
 
         return None
+
+    def _make_mock_error(self, error_type: str) -> Exception:
+        """构造模拟 LLM 错误异常（仅用于 E2E 测试，OPC_MOCK_LLM_ERROR 设置时调用）.
+
+        错误消息包含 chat_router.FRIENDLY_ERRORS 映射的关键字，
+        确保 chat_router 能匹配并展示对应的友好提示。
+
+        Args:
+            error_type: 错误类型 (timeout/connection/api_key/rate_limit/server_500)
+
+        Returns:
+            Exception: 包含关键字的异常实例
+        """
+        error_map = {
+            "timeout": "LLM call timeout: request exceeded 60s limit",
+            "connection": "Connection error: failed to establish connection to LLM service",
+            "api_key": "Incorrect API key: authentication failed (401)",
+            "rate_limit": "Rate limit exceeded (429): too many requests",
+            "server_500": "LLM service returned 500 Internal Server Error",
+        }
+        msg = error_map.get(error_type, f"Unknown mock error type: {error_type}")
+        logger.info("[SimpleLLMService] OPC_MOCK_LLM_ERROR=%s, raising: %s", error_type, msg)
+        return RuntimeError(msg)
+
+    def _generate_mock_response(self, prompt: str) -> str:
+        """生成 mock LLM 响应（仅用于 E2E 测试，OPC_MOCK_LLM=true 时调用）.
+
+        返回结构化 markdown，模拟真实 LLM 成果物格式，
+        让 Chat 页面能够渲染成果物区域并触发下载按钮。
+        响应内容足够丰富（>500 字符）以通过 Quality Gate 检查。
+        """
+        prompt_preview = prompt[:120].replace("\n", " ") if prompt else ""
+        return (
+            f"# 产品介绍文案\n\n"
+            f"## 概述\n\n"
+            f"基于用户需求 \"{prompt_preview}\"，以下是为您生成的内容方案。"
+            f"本方案聚焦于一人公司（One-Person Company）的运营场景，"
+            f"提供结构化的成果物输出。\n\n"
+            f"## 核心价值主张\n\n"
+            f"我们的产品致力于解决用户在日常工作中的效率痛点，"
+            f"通过智能化的工作流管理，帮助用户节省时间、提升产出质量。"
+            f"产品核心功能包括任务自动化、智能分析和可视化报告，"
+            f"全面覆盖独立创业者的运营需求。\n\n"
+            f"## 目标用户\n\n"
+            f"- 独立创业者和小团队\n"
+            f"- 内容创作者和咨询顾问\n"
+            f"- 需要高效管理多项目的知识工作者\n\n"
+            f"## 竞争优势\n\n"
+            f"1. 智能任务分解与优先级排序\n"
+            f"2. AI 辅助内容生成与质量检查\n"
+            f"3. 多维度数据可视化分析\n"
+            f"4. 轻量级部署，本地优先保护数据隐私\n\n"
+            f"## 参考资料\n\n"
+            f"- 来源：产品需求文档 PRD v0.5.8\n"
+            f"- 参考：用户访谈记录 2026Q2\n"
+            f"- https://example.com/opc-agents/market-research-2026\n\n"
+            f"---\n_Mock response generated at "
+            f"{time.strftime('%Y-%m-%d %H:%M:%S')} (OPC_MOCK_LLM=true)_"
+        )
 
     def _call_openai_compat(
         self, prompt: str, system_prompt: Optional[str], max_tokens: int, timeout: int

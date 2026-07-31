@@ -11,16 +11,16 @@ import streamlit as st
 __all__ = ["show_success", "show_error", "show_info"]
 
 
-def show_success(message: str, icon: str = ""):
+def show_success(message: str, icon: str | None = None):
     """Show a success toast notification."""
     st.toast(message, icon=icon)
 
 
-def show_error(message: str, icon: str = ""):
+def show_error(message: str, icon: str | None = None):
     """Show an error toast notification."""
     st.toast(message, icon=icon)
 
 
-def show_info(message: str, icon: str = ""):
+def show_info(message: str, icon: str | None = None):
     """Show an info toast notification."""
     st.toast(message, icon=icon)
