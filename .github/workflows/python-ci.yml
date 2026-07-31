@@ -16,7 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     # Python 3.11 job 多跑 coverage/Docker build/pip-audit/radon cc，比 3.10/3.12 多 5-7 分钟
     # GitHub Actions hosted runners 性能波动 5-10x（lessons learned），15min 曾导致 3.11 超时取消
-    timeout-minutes: 25
+    # Sprint 4.3: 新增 11 个 E2E 测试文件 (~250 测试)，E2E 总时间从 ~5min 增至 ~18min
+    # 25min 不足以跑完 unit + e2e + coverage + docker + pip-audit，提升至 40min
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -79,8 +81,9 @@ jobs:
       # 与后续单元测试中的 asyncio.run() 冲突（Python 3.12 检测到运行中循环会抛 RuntimeError）。
       # 分离运行避免事件循环污染。
       # E2E 为强制门：失败必须阻塞合并（ASSESSMENT_D01 P0-4 修复，原 || true 吞掉失败）。
+      # Sprint 4.3: per-test timeout 120s→90s + --timeout-method=thread 避免 asyncio 事件循环冲突
       run: |
-        PYTHONPATH=. pytest tests/e2e/ --tb=short -v --timeout=120 2>&1 | tee e2e-output.txt
+        PYTHONPATH=. pytest tests/e2e/ --tb=short -v --timeout=90 --timeout-method=thread 2>&1 | tee e2e-output.txt
 
     - name: Coverage report
       if: matrix.python-version == '3.11'
