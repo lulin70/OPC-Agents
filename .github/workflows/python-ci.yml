@@ -107,7 +107,10 @@ jobs:
       # P3-2: D/E/F grade functions (complexity >= 21) are now blocking.
       # All 6 former D/E functions have been refactored to C or below.
       # C grade (11-20) is reported but non-blocking; D+ (21+) fails CI.
-      if: matrix.python-version == '3.11'
+      # Sprint 4.3 fix: 添加 if: always() 确保前序测试失败时不被掩盖
+      # (2026-07-31 事件: test_singleton_thread_safe 失败导致此步骤被跳过,
+      #  掩盖了 SimpleLLMService.complete 复杂度超标 D(22))
+      if: always() && matrix.python-version == '3.11'
       run: |
         pip install radon
         echo "===== CYCLOMATIC COMPLEXITY GATE (D+ = blocking) ====="
@@ -139,17 +142,20 @@ jobs:
         " || true
 
     - name: Verify Docker build
+      # Sprint 4.3 fix: 添加 if: always() 确保前序测试失败时不被掩盖
+      if: always() && matrix.python-version == '3.11'
       run: docker build -t opc-agents-test .
-      if: matrix.python-version == '3.11'
 
     - name: Dependency vulnerability scan
+      # Sprint 4.3 fix: 添加 if: always() 确保前序测试失败时不被掩盖
+      # 安全扫描不应被测试失败掩盖（pip-audit 只依赖 requirements.txt）
+      if: always() && matrix.python-version == '3.11'
       run: |
         pip install pip-audit
         # PYSEC-2026-3447 (setuptools <83.0.0): macOS NFD file name bypass in MANIFEST.in exclude directives.
         # CI runs on ubuntu (Linux), not affected by this macOS-only vulnerability.
         # setuptools is a transitive dep of pip, not a direct dep of opc-agents.
         pip-audit --desc --ignore-vuln PYSEC-2026-3447
-      if: matrix.python-version == '3.11'
 
     - name: Display test failures
       if: always()
@@ -173,6 +179,9 @@ jobs:
         tail -50 test-output.txt || true
 
     - name: Verify version consistency
+      # Sprint 4.3 fix: 添加 if: always() 确保前序测试失败时不被掩盖
+      # 版本一致性检查只依赖 VERSION/version.py/mcp_protocol.py，不依赖测试
+      if: always()
       run: |
         VERSION_FILE=$(cat VERSION)
         VERSION_PY=$(python -c "from opc_manager.version import __version__; print(__version__)")
@@ -189,6 +198,9 @@ jobs:
         echo "✓ 版本一致性校验通过（VERSION / version.py / mcp_protocol.py = $VERSION_FILE）"
 
     - name: Verify README consistency (三语版本号/模块数/测试数对齐)
+      # Sprint 4.3 fix: 添加 if: always() 确保前序测试失败时不被掩盖
+      # README 一致性检查只依赖 README/VERSION 文件，不依赖测试运行结果
+      if: always()
       run: |
         python - <<'PYEOF'
         import re, sys, subprocess
