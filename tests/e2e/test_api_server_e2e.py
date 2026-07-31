@@ -45,7 +45,9 @@ def _find_free_port() -> int:
 
 
 @contextmanager
-def _api_server(env_overrides: dict[str, str] | None = None) -> Generator[str, None, None]:
+def _api_server(
+    env_overrides: dict[str, str] | None = None,
+) -> Generator[str, None, None]:
     """启动真实 uvicorn API server，返回 base_url.
 
     使用子进程运行 uvicorn，走真实 ASGI → HTTP 网络栈（非 TestClient）。
@@ -60,11 +62,16 @@ def _api_server(env_overrides: dict[str, str] | None = None) -> Generator[str, N
 
     proc = subprocess.Popen(
         [
-            sys.executable, "-m", "uvicorn",
+            sys.executable,
+            "-m",
+            "uvicorn",
             "opc_manager.api_server:app",
-            "--host", "127.0.0.1",
-            "--port", str(port),
-            "--log-level", "warning",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+            "--log-level",
+            "warning",
         ],
         cwd=str(_PROJECT_ROOT),
         env=env,
@@ -83,7 +90,11 @@ def _api_server(env_overrides: dict[str, str] | None = None) -> Generator[str, N
         while time.time() < deadline:
             if proc.poll() is not None:
                 # 进程已退出
-                output = proc.stdout.read().decode("utf-8", errors="ignore") if proc.stdout else ""
+                output = (
+                    proc.stdout.read().decode("utf-8", errors="ignore")
+                    if proc.stdout
+                    else ""
+                )
                 raise RuntimeError(
                     f"uvicorn 进程意外退出 (code={proc.returncode}):\n{output[-2000:]}"
                 )
@@ -100,9 +111,7 @@ def _api_server(env_overrides: dict[str, str] | None = None) -> Generator[str, N
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
-            raise RuntimeError(
-                f"API server 启动超时 30s (last error: {last_error})"
-            )
+            raise RuntimeError(f"API server 启动超时 30s (last error: {last_error})")
 
         # 持续读取 stdout 避免管道阻塞
         def _drain():
@@ -114,6 +123,7 @@ def _api_server(env_overrides: dict[str, str] | None = None) -> Generator[str, N
                     time.sleep(0.1)
 
         import threading
+
         drain_thread = threading.Thread(target=_drain, daemon=True)
         drain_thread.start()
 
@@ -128,6 +138,7 @@ def _api_server(env_overrides: dict[str, str] | None = None) -> Generator[str, N
         log_writer.close()
         # 清理临时数据目录
         import shutil
+
         shutil.rmtree(e2e_data_dir, ignore_errors=True)
 
 
@@ -147,7 +158,9 @@ class TestAPIServerHealthE2E:
         """
         with _api_server() as base_url:
             r = httpx.get(f"{base_url}/health", timeout=5.0)
-            assert r.status_code == 200, f"/health 应返回 200，实际 {r.status_code}: {r.text}"
+            assert (
+                r.status_code == 200
+            ), f"/health 应返回 200，实际 {r.status_code}: {r.text}"
             data = r.json()
             assert data["status"] == "ok", f"status 应为 ok，实际 {data.get('status')}"
             assert "version" in data, f"应包含 version 字段: {data}"
@@ -196,7 +209,9 @@ class TestAPIServerAuthRejectE2E:
                 },
                 timeout=5.0,
             )
-            assert r.status_code == 401, f"应返回 401（鉴权优先于校验），实际 {r.status_code}: {r.text}"
+            assert (
+                r.status_code == 401
+            ), f"应返回 401（鉴权优先于校验），实际 {r.status_code}: {r.text}"
 
     def test_metrics_summary_rejects_no_key(self):
         """Verify: GET /api/v1/metrics/summary 未携带 X-API-Key 返回 401."""
@@ -259,7 +274,9 @@ class TestAPIServerAuthAcceptE2E:
                 headers={"X-API-Key": test_user},
                 timeout=10.0,
             )
-            assert r.status_code == 201, f"feedback 提交应返回 201，实际 {r.status_code}: {r.text}"
+            assert (
+                r.status_code == 201
+            ), f"feedback 提交应返回 201，实际 {r.status_code}: {r.text}"
 
             # Side-Effect: 通过 API 查询验证 DB 真实写入
             r2 = httpx.get(
@@ -270,9 +287,9 @@ class TestAPIServerAuthAcceptE2E:
             )
             assert r2.status_code == 200
             rows = r2.json()
-            assert isinstance(rows, list) and len(rows) > 0, (
-                f"应至少有 1 条记录，实际 {rows}"
-            )
+            assert (
+                isinstance(rows, list) and len(rows) > 0
+            ), f"应至少有 1 条记录，实际 {rows}"
             assert rows[0]["user_id"] == test_user
             assert rows[0]["rating"] == 5
 
@@ -317,9 +334,9 @@ class TestAPIServerAuthAcceptE2E:
             rows = r.json()
             assert isinstance(rows, list)
             # 至少能查到刚才写入的
-            assert any(row["user_id"] == test_user for row in rows), (
-                f"admin 应能查到 {test_user} 的反馈，实际返回 {len(rows)} 条"
-            )
+            assert any(
+                row["user_id"] == test_user for row in rows
+            ), f"admin 应能查到 {test_user} 的反馈，实际返回 {len(rows)} 条"
 
 
 # ---------------------------------------------------------------------------
@@ -394,9 +411,9 @@ class TestAPIServerRateLimitE2E:
                     break
 
             # 应该在某次请求后开始返回 429（具体次数取决于限流窗口实现）
-            assert 429 in statuses, (
-                f"应在 60 次后出现 429，实际 statuses: {statuses[-5:]}"
-            )
+            assert (
+                429 in statuses
+            ), f"应在 60 次后出现 429，实际 statuses: {statuses[-5:]}"
             # 429 响应应包含 Retry-After 头
             # 重新发一次确认 429 头
             r_429 = httpx.get(
@@ -405,6 +422,6 @@ class TestAPIServerRateLimitE2E:
                 timeout=5.0,
             )
             if r_429.status_code == 429:
-                assert "retry-after" in {k.lower() for k in r_429.headers}, (
-                    f"429 响应应包含 Retry-After 头，实际 headers: {dict(r_429.headers)}"
-                )
+                assert "retry-after" in {
+                    k.lower() for k in r_429.headers
+                }, f"429 响应应包含 Retry-After 头，实际 headers: {dict(r_429.headers)}"

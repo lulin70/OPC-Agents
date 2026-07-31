@@ -571,9 +571,7 @@ def execute_with_agent_loop(prompt, session_ctx=None, business_type=None):
             )
         agent_loop = st.session_state.agent_loop
 
-        session_id = (
-            getattr(session_ctx, "_session_id", None) if session_ctx else None
-        )
+        session_id = getattr(session_ctx, "_session_id", None) if session_ctx else None
 
         # 在独立子线程中运行 async 协程，避免事件循环冲突
         # Bug fix: asyncio.new_event_loop() + run_until_complete() 在 Streamlit

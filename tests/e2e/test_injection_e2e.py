@@ -35,8 +35,7 @@ def _goto_deliverables(page) -> None:
         radio.wait_for(state="attached", timeout=15000)
         radio.click(force=True)
     except Exception:
-        page.evaluate(
-            """() => {
+        page.evaluate("""() => {
                 const labels = document.querySelectorAll("[data-testid='stRadio'] label");
                 for (const l of labels) {
                     if (l.textContent && l.textContent.includes('成果物')) {
@@ -45,8 +44,7 @@ def _goto_deliverables(page) -> None:
                     }
                 }
                 return false;
-            }"""
-        )
+            }""")
     page.wait_for_timeout(2500)
 
 
@@ -57,8 +55,7 @@ def _goto_chat(page) -> None:
         radio.wait_for(state="attached", timeout=10000)
         radio.click(force=True)
     except Exception:
-        page.evaluate(
-            """() => {
+        page.evaluate("""() => {
                 const labels = document.querySelectorAll("[data-testid='stRadio'] label");
                 for (const l of labels) {
                     if (l.textContent && l.textContent.includes('对话')) {
@@ -67,8 +64,7 @@ def _goto_chat(page) -> None:
                     }
                 }
                 return false;
-            }"""
-        )
+            }""")
     page.wait_for_timeout(2000)
 
 
@@ -130,12 +126,12 @@ class TestSQLInjectionE2E:
         # 2. 无 stException 渲染（上面已验证）
         # 3. 数据库表依然存在（通过验证搜索功能仍正常工作间接确认）
         body = page.locator("body").inner_text()
-        assert "SQLITE_ERROR" not in body, (
-            f"SQL 注入导致 SQLITE_ERROR 泄露。payload={payload}"
-        )
-        assert "sqlite3.OperationalError" not in body, (
-            f"SQL 注入导致 sqlite3.OperationalError 泄露。payload={payload}"
-        )
+        assert (
+            "SQLITE_ERROR" not in body
+        ), f"SQL 注入导致 SQLITE_ERROR 泄露。payload={payload}"
+        assert (
+            "sqlite3.OperationalError" not in body
+        ), f"SQL 注入导致 sqlite3.OperationalError 泄露。payload={payload}"
 
 
 # ============================================================
@@ -162,7 +158,14 @@ class TestPathTraversalE2E:
             "/etc/shadow",
             "/proc/self/environ",
         ],
-        ids=["etc-passwd", "win-ini", "url-encoded", "double-dot", "etc-shadow", "proc-environ"],
+        ids=[
+            "etc-passwd",
+            "win-ini",
+            "url-encoded",
+            "double-dot",
+            "etc-shadow",
+            "proc-environ",
+        ],
     )
     def test_path_traversal_in_input(self, page_real_mode, payload):
         """Verify: 路径穿越 payload 不读取敏感文件.
@@ -189,15 +192,11 @@ class TestPathTraversalE2E:
 
         # 验证无文件内容泄露
         body = page.locator("body").inner_text()
-        assert "root:" not in body, (
-            f"路径穿越成功读取 /etc/passwd。payload={payload}"
-        )
-        assert "[fonts]" not in body, (
-            f"路径穿越成功读取 win.ini。payload={payload}"
-        )
-        assert "root:x:" not in body, (
-            f"路径穿越成功读取 /etc/passwd (root:x: 格式)。payload={payload}"
-        )
+        assert "root:" not in body, f"路径穿越成功读取 /etc/passwd。payload={payload}"
+        assert "[fonts]" not in body, f"路径穿越成功读取 win.ini。payload={payload}"
+        assert (
+            "root:x:" not in body
+        ), f"路径穿越成功读取 /etc/passwd (root:x: 格式)。payload={payload}"
 
         # 验证无 stException 异常
         error = page.locator("[data-testid='stException']")
@@ -230,7 +229,15 @@ class TestCommandInjectionE2E:
             "&& cat /etc/shadow",
             "; rm -rf /",
         ],
-        ids=["semicolon-ls", "pipe-cat", "dollar-whoami", "backtick-id", "amp-dir", "and-cat", "semicolon-rm"],
+        ids=[
+            "semicolon-ls",
+            "pipe-cat",
+            "dollar-whoami",
+            "backtick-id",
+            "amp-dir",
+            "and-cat",
+            "semicolon-rm",
+        ],
     )
     def test_command_injection_in_input(self, page_real_mode, payload):
         """Verify: 命令注入 payload 不执行系统命令.
@@ -258,21 +265,17 @@ class TestCommandInjectionE2E:
         # 验证无命令执行结果泄露
         body = page.locator("body").inner_text()
         # /etc/passwd 内容特征
-        assert "root:x:" not in body, (
-            f"命令注入成功执行 cat /etc/passwd。payload={payload}"
-        )
+        assert (
+            "root:x:" not in body
+        ), f"命令注入成功执行 cat /etc/passwd。payload={payload}"
         # whoami/id 输出特征
-        assert "uid=" not in body, (
-            f"命令注入成功执行 id 命令。payload={payload}"
-        )
+        assert "uid=" not in body, f"命令注入成功执行 id 命令。payload={payload}"
         # ls 输出特征（drwxr-xr-x 权限位）
-        assert "drwxr" not in body, (
-            f"命令注入成功执行 ls 命令。payload={payload}"
-        )
+        assert "drwxr" not in body, f"命令注入成功执行 ls 命令。payload={payload}"
         # dir 输出特征（Windows）
-        assert "Volume in drive" not in body, (
-            f"命令注入成功执行 dir 命令。payload={payload}"
-        )
+        assert (
+            "Volume in drive" not in body
+        ), f"命令注入成功执行 dir 命令。payload={payload}"
 
         # 验证无 stException 异常
         error = page.locator("[data-testid='stException']")
@@ -331,9 +334,9 @@ class TestXSSProtectionE2E:
         page.wait_for_timeout(5000)
 
         # 验证无 dialog 弹窗（XSS 未执行）
-        assert not dialog_triggered, (
-            f"XSS payload 触发了 dialog 弹窗: {dialog_triggered}。payload={payload}"
-        )
+        assert (
+            not dialog_triggered
+        ), f"XSS payload 触发了 dialog 弹窗: {dialog_triggered}。payload={payload}"
 
         # 验证无 stException 异常
         error = page.locator("[data-testid='stException']")
@@ -342,6 +345,6 @@ class TestXSSProtectionE2E:
         # 验证页面无新增的 <script> 标签（XSS 注入检测）
         # Streamlit 自身会有 script 标签，这里只验证没有以 alert('XSS') 为内容的 script
         xss_scripts = page.locator("script:has-text('alert')")
-        assert xss_scripts.count() == 0, (
-            f"XSS payload 注入了恶意 script 标签。payload={payload}"
-        )
+        assert (
+            xss_scripts.count() == 0
+        ), f"XSS payload 注入了恶意 script 标签。payload={payload}"

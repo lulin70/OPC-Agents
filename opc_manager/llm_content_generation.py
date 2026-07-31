@@ -117,7 +117,7 @@ class LLMContentGenerationMixin:
             return (
                 f"# 产品介绍文案\n\n"
                 f"## 概述\n\n"
-                f"基于用户需求 \"{prompt_preview}\"，以下是为您生成的内容方案。"
+                f'基于用户需求 "{prompt_preview}"，以下是为您生成的内容方案。'
                 f"本方案聚焦于一人公司（One-Person Company）的运营场景，"
                 f"提供结构化的成果物输出。\n\n"
                 f"## 核心价值主张\n\n"
@@ -269,7 +269,9 @@ class LLMContentGenerationMixin:
             "server_500": "LLM service returned 500 Internal Server Error",
         }
         msg = error_map.get(error_type, f"Unknown mock error type: {error_type}")
-        logger.info("[LLMContentGen] OPC_MOCK_LLM_ERROR=%s, raising: %s", error_type, msg)
+        logger.info(
+            "[LLMContentGen] OPC_MOCK_LLM_ERROR=%s, raising: %s", error_type, msg
+        )
         return RuntimeError(msg)
 
     def _get_llm_config(self) -> Tuple[Optional[str], str, str]:

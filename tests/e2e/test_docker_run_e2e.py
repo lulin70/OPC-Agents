@@ -81,9 +81,13 @@ def _docker_container(port: int) -> Generator[str, None, None]:
     # 启动容器
     proc = subprocess.Popen(
         [
-            "docker", "run", "--rm",
-            "--name", _CONTAINER_NAME,
-            "-p", f"{port}:8501",
+            "docker",
+            "run",
+            "--rm",
+            "--name",
+            _CONTAINER_NAME,
+            "-p",
+            f"{port}:8501",
             _IMAGE_TAG,
         ],
         stdout=subprocess.PIPE,
@@ -220,6 +224,6 @@ class TestDockerRunIsolationE2E:
             if host_db.exists()
             else "not-exist"
         )
-        assert host_hash_before == host_hash_after, (
-            f"宿主机 DB 被污染: before={host_hash_before}, after={host_hash_after}"
-        )
+        assert (
+            host_hash_before == host_hash_after
+        ), f"宿主机 DB 被污染: before={host_hash_before}, after={host_hash_after}"

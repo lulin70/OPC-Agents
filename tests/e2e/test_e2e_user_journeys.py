@@ -740,9 +740,9 @@ class TestJourneyAuditTrail:
             f"实际 records[0]={records[0]}"
         )
         summary = records[0]["output_summary"]
-        assert "sk-secret-key-12345" not in summary, (
-            f"审计日志泄露敏感信息 — output_summary 含明文 API key: {summary}"
-        )
+        assert (
+            "sk-secret-key-12345" not in summary
+        ), f"审计日志泄露敏感信息 — output_summary 含明文 API key: {summary}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════

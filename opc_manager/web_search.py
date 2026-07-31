@@ -97,7 +97,7 @@ class WebSearchMCP:
         query_preview = query[:50] if query else ""
         base_results = [
             {
-                "title": f"一人公司运营指南 - 基于 \"{query_preview}\" 的实践",
+                "title": f'一人公司运营指南 - 基于 "{query_preview}" 的实践',
                 "href": "https://example.com/opc-agents/guide-2026",
                 "body": (
                     "本文介绍了一人公司的运营实践，包括任务自动化、"

@@ -63,9 +63,7 @@ class TestChatRealModeActivated:
         """
         _click_chat_nav(page_real_mode)
         # Demo 横幅特有的 <strong>演示模式</strong> 不应存在
-        demo_banner_strong = page_real_mode.locator(
-            "strong:has-text('演示模式')"
-        )
+        demo_banner_strong = page_real_mode.locator("strong:has-text('演示模式')")
         expect(demo_banner_strong).to_have_count(0)
 
     def test_chat_input_visible_in_real_mode(self, page_real_mode):
@@ -122,15 +120,15 @@ class TestChatRealModeSubmitAndDeliverable:
         while time.time() < deadline:
             # 检查是否有新的 markdown 内容渲染（排除页面初始内容）
             # 使用"核心价值主张"这一 Mock 响应特有的稳定关键字
-            deliverable = page_real_mode.locator(
-                "[data-testid='stMarkdown']"
-            ).filter(has_text="核心价值主张")
+            deliverable = page_real_mode.locator("[data-testid='stMarkdown']").filter(
+                has_text="核心价值主张"
+            )
             if deliverable.count() > 0:
                 return  # 成果物已渲染
             # 也检查 chat_message 中的内容
-            chat_msg = page_real_mode.locator(
-                "[data-testid='stChatMessage']"
-            ).filter(has_text="核心价值主张")
+            chat_msg = page_real_mode.locator("[data-testid='stChatMessage']").filter(
+                has_text="核心价值主张"
+            )
             if chat_msg.count() > 0:
                 return
             time.sleep(2)
@@ -166,8 +164,7 @@ class TestChatRealModeDownload:
         while time.time() < deadline:
             # 下载按钮可能含"下载"文本，或使用 stDownloadButton
             download_btn = page_real_mode.locator(
-                "button:has-text('下载'), "
-                "[data-testid='stDownloadButton'] button"
+                "button:has-text('下载'), " "[data-testid='stDownloadButton'] button"
             ).first
             if download_btn.count() > 0 and download_btn.is_visible():
                 # 3. 点击下载按钮，验证下载事件
@@ -175,9 +172,7 @@ class TestChatRealModeDownload:
                     with page_real_mode.expect_download(timeout=10000) as dl_info:
                         download_btn.click()
                     download = dl_info.value
-                    assert download.suggested_filename, (
-                        "下载文件名不应为空"
-                    )
+                    assert download.suggested_filename, "下载文件名不应为空"
                     return
                 except Exception:
                     # 下载按钮可能需要先点击展开菜单，重试
@@ -187,6 +182,5 @@ class TestChatRealModeDownload:
         # 下载按钮可能不存在（Mock LLM 不生成可下载文件），标记为预期行为
         # 而非失败。真实模式下下载按钮依赖成果物渲染逻辑。
         pytest.fail(
-            "90s 内未出现可点击的下载按钮 — "
-            "检查 /tmp/opc_streamlit_e2e_real.log"
+            "90s 内未出现可点击的下载按钮 — " "检查 /tmp/opc_streamlit_e2e_real.log"
         )

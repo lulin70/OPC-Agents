@@ -274,9 +274,7 @@ class TestSettingsProfileTabE2E:
         _click_tab(page, "个人信息")
 
         # 用户名输入框（placeholder 含"名字"）
-        name_input = page.locator(
-            "input[placeholder*='名字' i]"
-        ).first
+        name_input = page.locator("input[placeholder*='名字' i]").first
         expect(name_input).to_be_visible(timeout=10000)
 
     def test_profile_save_button_exists(self, page):
@@ -299,9 +297,7 @@ class TestSettingsProfileTabE2E:
         _click_tab(page, "个人信息")
 
         # 公司名称输入框（placeholder 含"公司"）
-        company_input = page.locator(
-            "input[placeholder*='公司' i]"
-        ).first
+        company_input = page.locator("input[placeholder*='公司' i]").first
         expect(company_input).to_be_visible(timeout=10000)
 
 

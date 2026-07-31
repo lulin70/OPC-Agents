@@ -251,7 +251,9 @@ class TestEmailSkillE2E:
                 subject=f"频率测试邮件 {i}",
                 body=f"第 {i} 封",
             )
-            assert result["success"], f"第 {i+1} 封应成功，实际失败: {result.get('error')}"
+            assert result[
+                "success"
+            ], f"第 {i+1} 封应成功，实际失败: {result.get('error')}"
 
         # 第 4 封应被频率限制拒绝
         result = send_email(
@@ -260,9 +262,10 @@ class TestEmailSkillE2E:
             body="应被拒绝",
         )
         assert not result["success"], "第 4 封邮件应被频率限制拒绝"
-        assert "频率" in result.get("error", "") or "rate" in result.get("error", "").lower(), (
-            f"error 应含'频率'关键字，实际: {result.get('error')}"
-        )
+        assert (
+            "频率" in result.get("error", "")
+            or "rate" in result.get("error", "").lower()
+        ), f"error 应含'频率'关键字，实际: {result.get('error')}"
 
     def test_email_invalid_address_rejected(self, isolated_db, mock_smtp_server):
         """Verify: 无效收件人地址被拒绝.
@@ -281,9 +284,9 @@ class TestEmailSkillE2E:
             body="内容",
         )
         assert not result["success"], "无效地址应被拒绝"
-        assert "无效" in result.get("error", ""), (
-            f"error 应含'无效'，实际: {result.get('error')}"
-        )
+        assert "无效" in result.get(
+            "error", ""
+        ), f"error 应含'无效'，实际: {result.get('error')}"
 
     def test_email_no_smtp_config_returns_error(self, isolated_db):
         """Verify: 未配置 SMTP 时返回明确错误.
@@ -300,9 +303,9 @@ class TestEmailSkillE2E:
             body="内容",
         )
         assert not result["success"]
-        assert "未配置" in result.get("error", ""), (
-            f"error 应含'未配置'，实际: {result.get('error')}"
-        )
+        assert "未配置" in result.get(
+            "error", ""
+        ), f"error 应含'未配置'，实际: {result.get('error')}"
 
 
 # ============================================================
@@ -337,8 +340,7 @@ class TestFinanceSkillE2E:
 
         # Side-Effect 1: DB 写入
         rows = execute_query(
-            "SELECT amount, category, source, type FROM finance_records "
-            "WHERE id=?",
+            "SELECT amount, category, source, type FROM finance_records " "WHERE id=?",
             (result["id"],),
         )
         assert rows, f"finance_records 表未找到 id={result['id']} 的记录"
@@ -416,9 +418,7 @@ class TestFinanceSkillE2E:
         report = get_monthly_report(year_month=current_month)
 
         assert report["success"], f"月报查询失败: {report.get('error')}"
-        assert report["income"] >= 3000.00, (
-            f"月报收入 {report['income']} 应 >= 3000.00"
-        )
+        assert report["income"] >= 3000.00, f"月报收入 {report['income']} 应 >= 3000.00"
 
     def test_monthly_report_empty_month_returns_zero(self, isolated_db):
         """Verify: 无记录的月份月报返回 0.
@@ -504,9 +504,9 @@ class TestReportSkillE2E:
 
         # 验证文件在 DATA_DIR/reports/ 下
         expected_dir = Path(DATA_DIR) / "reports"
-        assert file_path.parent == expected_dir, (
-            f"文件应在 {expected_dir} 下，实际在 {file_path.parent}"
-        )
+        assert (
+            file_path.parent == expected_dir
+        ), f"文件应在 {expected_dir} 下，实际在 {file_path.parent}"
 
     def test_execute_goal_dispatches_by_keyword(self, isolated_db):
         """Verify: execute_goal() 根据关键词分发到正确的报告生成函数.
@@ -519,12 +519,17 @@ class TestReportSkillE2E:
         # 测试月报关键词
         result_monthly = execute_goal("帮我生成本月月报")
         assert result_monthly["success"]
-        assert "monthly" in result_monthly["filepath"] or "月" in result_monthly["filepath"]
+        assert (
+            "monthly" in result_monthly["filepath"]
+            or "月" in result_monthly["filepath"]
+        )
 
         # 测试年报关键词
         result_annual = execute_goal("生成年度报告")
         assert result_annual["success"]
-        assert "annual" in result_annual["filepath"] or "年" in result_annual["filepath"]
+        assert (
+            "annual" in result_annual["filepath"] or "年" in result_annual["filepath"]
+        )
 
         # 测试默认（无关键词匹配 → 周报）
         result_default = execute_goal("随便生成个报告")

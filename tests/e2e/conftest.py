@@ -296,15 +296,24 @@ def streamlit_server_real_mode() -> Generator[str, None, None]:
     env["BROWSER"] = "none"
 
     cmd = [
-        sys.executable, "-m", "streamlit", "run",
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
         str(FRONTEND_APP),
-        "--server.port", str(port),
-        "--server.headless", "true",
-        "--server.address", "127.0.0.1",
-        "--browser.gatherUsageStats", "false",
+        "--server.port",
+        str(port),
+        "--server.headless",
+        "true",
+        "--server.address",
+        "127.0.0.1",
+        "--browser.gatherUsageStats",
+        "false",
     ]
 
-    log_file = open(f"/tmp/opc_streamlit_e2e_real_{os.getpid()}.log", "w", encoding="utf-8")
+    log_file = open(
+        f"/tmp/opc_streamlit_e2e_real_{os.getpid()}.log", "w", encoding="utf-8"
+    )
     proc = subprocess.Popen(
         cmd,
         stdout=log_file,

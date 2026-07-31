@@ -169,9 +169,7 @@ def _select_advanced_theme(page, theme: str) -> None:
     expanded = False
     for label in expander_labels:
         try:
-            exp = page.locator(
-                "[data-testid='stExpander']", has_text=label
-            ).first
+            exp = page.locator("[data-testid='stExpander']", has_text=label).first
             if exp.count() > 0:
                 # 检查是否已展开
                 is_expanded = exp.get_attribute("aria-expanded")
@@ -198,9 +196,9 @@ def _select_advanced_theme(page, theme: str) -> None:
     # 2. 在高级选择器中选择主题
     # 高级选择器是第二个 stSelectbox（在 expander 内）
     selectboxes = page.locator("[data-testid='stSelectbox']")
-    assert selectboxes.count() >= 2, (
-        f"未找到高级主题选择器（需要至少 2 个 selectbox，实际 {selectboxes.count()}）"
-    )
+    assert (
+        selectboxes.count() >= 2
+    ), f"未找到高级主题选择器（需要至少 2 个 selectbox，实际 {selectboxes.count()}）"
     adv_sb = selectboxes.nth(1)  # 第二个 selectbox 是高级主题
     adv_sb.click()
     page.wait_for_timeout(500)
@@ -468,9 +466,9 @@ class TestThemeContrastAA:
 
         text_nodes = page.evaluate(_CONTRAST_SCAN_JS)
         meaningful = [n for n in text_nodes if len(n["text"]) > 2]
-        assert len(meaningful) > 0, (
-            f"theme={theme}: 页面上未找到文本节点，无法验证对比度"
-        )
+        assert (
+            len(meaningful) > 0
+        ), f"theme={theme}: 页面上未找到文本节点，无法验证对比度"
 
         violations = [n for n in meaningful if n["ratio"] < 4.5]
         if violations:
@@ -500,12 +498,13 @@ class TestA11yPerPage:
         _goto_page_by_name(page, page_name)
         missing = page.evaluate(_SCAN_INTERACTIVES_JS)
         actionable_missing = [
-            m for m in missing
+            m
+            for m in missing
             if not (m["tag"] == "input" and m["type"] in ("hidden", "file"))
         ]
-        assert not actionable_missing, (
-            f"[{page_name}] 缺少标签的交互元素: {actionable_missing[:10]}"
-        )
+        assert (
+            not actionable_missing
+        ), f"[{page_name}] 缺少标签的交互元素: {actionable_missing[:10]}"
 
     def test_color_contrast_per_page(self, page, page_name):
         """Verify: 指定页面颜色对比度 >= 4.5:1.
@@ -516,9 +515,9 @@ class TestA11yPerPage:
         _goto_page_by_name(page, page_name)
         text_nodes = page.evaluate(_CONTRAST_SCAN_JS)
         meaningful = [n for n in text_nodes if len(n["text"]) > 2]
-        assert len(meaningful) > 0, (
-            f"[{page_name}] 页面上未找到文本节点，无法验证对比度"
-        )
+        assert (
+            len(meaningful) > 0
+        ), f"[{page_name}] 页面上未找到文本节点，无法验证对比度"
         violations = [n for n in meaningful if n["ratio"] < 4.5]
         if violations:
             violations.sort(key=lambda n: n["ratio"])
@@ -537,8 +536,7 @@ class TestA11yPerPage:
         _goto_page_by_name(page, page_name)
         page.keyboard.press("Tab")
         page.wait_for_timeout(500)
-        focused = page.evaluate(
-            """() => {
+        focused = page.evaluate("""() => {
                 const el = document.activeElement;
                 if (!el || el === document.body) return false;
                 const style = window.getComputedStyle(el);
@@ -549,11 +547,8 @@ class TestA11yPerPage:
                 const hasBoxShadow = boxShadow && boxShadow !== 'none';
                 const supportsFocusVisible = CSS.supports('selector(:focus-visible)');
                 return hasOutline || hasBoxShadow || supportsFocusVisible;
-            }"""
-        )
-        assert focused, (
-            f"[{page_name}] Tab 键未将焦点移到可见的聚焦元素"
-        )
+            }""")
+        assert focused, f"[{page_name}] Tab 键未将焦点移到可见的聚焦元素"
 
 
 # ============================================================
@@ -575,6 +570,4 @@ class TestThemeSwitchingNoException:
         # 等待主题应用
         page.wait_for_timeout(2000)
         error = page.locator("[data-testid='stException']")
-        assert error.count() == 0, (
-            f"切换到主题 {theme} 后出现 stException 异常"
-        )
+        assert error.count() == 0, f"切换到主题 {theme} 后出现 stException 异常"

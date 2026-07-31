@@ -127,8 +127,7 @@ def _submit_prompt(page, prompt: str = "测试错误场景") -> None:
         radio.click(force=True)
     except Exception:
         # fallback: JS click
-        page.evaluate(
-            """() => {
+        page.evaluate("""() => {
                 const labels = document.querySelectorAll("[data-testid='stRadio'] label");
                 for (const l of labels) {
                     if (l.textContent && l.textContent.includes('对话')) {
@@ -137,8 +136,7 @@ def _submit_prompt(page, prompt: str = "测试错误场景") -> None:
                     }
                 }
                 return false;
-            }"""
-        )
+            }""")
     page.wait_for_timeout(2000)
 
     # 填写并提交
@@ -215,7 +213,9 @@ class TestMockErrorFileCleanup:
         Expected: /tmp/opc_e2e_mock_error.txt 不存在或为空
         """
         # 此时不应有错误注入文件（fixture 已清理）
-        assert not _MOCK_ERROR_FILE.exists() or _MOCK_ERROR_FILE.read_text().strip() == ""
+        assert (
+            not _MOCK_ERROR_FILE.exists() or _MOCK_ERROR_FILE.read_text().strip() == ""
+        )
 
     def test_no_error_when_file_absent(self, page_real_mode):
         """Verify: 无错误文件时 LLM 正常返回 mock 响应（不抛异常）.
@@ -244,6 +244,6 @@ class TestMockErrorFileCleanup:
             page.wait_for_timeout(5000)
             # 验证无错误提示
             for error_text in ["AI助手思考时间过长", "网络连接中断", "API Key无效"]:
-                assert page.locator(f"text={error_text}").count() == 0, (
-                    f"无错误注入时不应出现错误提示: {error_text}"
-                )
+                assert (
+                    page.locator(f"text={error_text}").count() == 0
+                ), f"无错误注入时不应出现错误提示: {error_text}"

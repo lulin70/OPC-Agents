@@ -243,9 +243,9 @@ class TestUJ02DemoMode:
         banner_strong = page.locator(
             "strong:has-text('演示模式'), strong:has-text('Demo Mode')"
         ).first
-        assert banner_strong.is_visible(), (
-            "Demo 横幅不可见 — 未找到 <strong>演示模式</strong> 或 <strong>Demo Mode</strong>"
-        )
+        assert (
+            banner_strong.is_visible()
+        ), "Demo 横幅不可见 — 未找到 <strong>演示模式</strong> 或 <strong>Demo Mode</strong>"
 
         # 验证横幅父级 div 包含完整提示文案
         banner_text = banner_strong.locator("xpath=..").inner_text()

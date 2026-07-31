@@ -96,8 +96,7 @@ class TestResponsiveLayout:
         注: 排除 div/span 因为 Streamlit 框架内部用 div 做固定宽度容器
         （如侧边栏折叠按钮 icon 容器、快捷键对话框行），这些不是用户可读文本.
         """
-        truncated = viewport_page.evaluate(
-            """() => {
+        truncated = viewport_page.evaluate("""() => {
                 // 仅检查用户可读的段落/标题文本
                 const els = document.querySelectorAll("p, h1, h2, h3");
                 const truncated = [];
@@ -118,11 +117,10 @@ class TestResponsiveLayout:
                     }
                 }
                 return truncated.slice(0, 5);
-            }"""
-        )
-        assert not truncated, (
-            f"viewport={viewport_page.viewport_size} 存在用户可见文本截断: {truncated}"
-        )
+            }""")
+        assert (
+            not truncated
+        ), f"viewport={viewport_page.viewport_size} 存在用户可见文本截断: {truncated}"
 
     def test_no_content_overlap(self, viewport_page):
         """Verify: 所有 viewport 下关键元素无重叠.
@@ -131,8 +129,7 @@ class TestResponsiveLayout:
         Expected: 关键元素 bounding box 不重叠
         """
         # 检查主内容区与侧边栏不重叠
-        overlap = viewport_page.evaluate(
-            """() => {
+        overlap = viewport_page.evaluate("""() => {
                 const main = document.querySelector("[data-testid='stMainBlockContainer']");
                 const sidebar = document.querySelector("[data-testid='stSidebar']");
                 if (!main || !sidebar) return null;
@@ -149,8 +146,7 @@ class TestResponsiveLayout:
                     sidebarRect: {x: s.x, y: s.y, w: s.width, h: s.height},
                     sidebarVisible: s.width > 50 && s.x > -s.width,
                 };
-            }"""
-        )
+            }""")
         if overlap is None:
             return
         # 如果 sidebar 可见（宽度>50 且未移出屏幕），检查不与 main 重叠超过 10px²
@@ -209,9 +205,9 @@ class TestMobileSpecific:
         page.set_viewport_size({"width": 375, "height": 667})
         page.wait_for_timeout(1000)
         scroll_width = page.evaluate("document.body.scrollWidth")
-        assert scroll_width <= 385, (
-            f"手机端出现水平滚动: scrollWidth={scroll_width} > 375+10"
-        )
+        assert (
+            scroll_width <= 385
+        ), f"手机端出现水平滚动: scrollWidth={scroll_width} > 375+10"
 
 
 class TestDesktopSpecific:
