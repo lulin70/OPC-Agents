@@ -255,16 +255,10 @@ class SimpleLLMService:
             return None
 
         # E2E 测试支持: OPC_MOCK_LLM=true 时返回 mock 响应，不调用真实 API
-        # 用于真实模式 Chat 全链路 E2E 测试（验证输入框→提交→成果物渲染→下载）
-        # 生产环境不设置此环境变量，无影响
-        if os.environ.get("OPC_MOCK_LLM", "").lower() == "true":
-            # Sprint 4.1 GAP-P0-4: 错误恢复 E2E 支持
-            # 通过文件传递错误类型（server 子进程无法读取测试进程的 os.environ）
-            mock_error = _read_mock_error_file()
-            if mock_error:
-                raise self._make_mock_error(mock_error)
-            logger.info("[SimpleLLMService] OPC_MOCK_LLM=true, returning mock response")
-            return self._generate_mock_response(prompt)
+        # Sprint 4.3 refactor: 提取到 _handle_mock_mode 降低 complete 圈复杂度 (D22→C20)
+        mock_result = self._handle_mock_mode(prompt)
+        if mock_result is not None:
+            return mock_result
 
         from opc_manager.utils import sanitize_for_llm, _llm_thread_semaphore
 
@@ -328,6 +322,45 @@ class SimpleLLMService:
                 if attempt < LLM_MAX_RETRIES - 1:
                     time.sleep(min(LLM_RETRY_BACKOFF ** (attempt + 1), 10))
 
+        return self._try_fallback_providers(
+            prompt, system_prompt, max_tokens, timeout, cache, _temperature
+        )
+
+    def _handle_mock_mode(self, prompt: str) -> Optional[str]:
+        """处理 OPC_MOCK_LLM 模式，返回 mock 响应或 None.
+
+        Sprint 4.3 refactor: 从 complete() 提取，降低圈复杂度.
+        E2E 测试支持: OPC_MOCK_LLM=true 时返回 mock 响应，不调用真实 API.
+        通过文件传递错误类型（server 子进程无法读取测试进程的 os.environ）.
+
+        Returns:
+            str: mock 响应（或 raise 异常）; None 表示非 mock 模式
+        """
+        if os.environ.get("OPC_MOCK_LLM", "").lower() != "true":
+            return None
+        # Sprint 4.1 GAP-P0-4: 错误恢复 E2E 支持
+        mock_error = _read_mock_error_file()
+        if mock_error:
+            raise self._make_mock_error(mock_error)
+        logger.info("[SimpleLLMService] OPC_MOCK_LLM=true, returning mock response")
+        return self._generate_mock_response(prompt)
+
+    def _try_fallback_providers(
+        self,
+        prompt: str,
+        system_prompt: Optional[str],
+        max_tokens: int,
+        timeout: int,
+        cache: Any,
+        _temperature: float,
+    ) -> Optional[str]:
+        """尝试所有备用 LLM provider，返回第一个成功的结果.
+
+        Sprint 4.3 refactor: 从 complete() 提取，降低圈复杂度.
+
+        Returns:
+            str: 备用 provider 的响应; None 表示所有备用 provider 均失败
+        """
         all_providers = _discover_all_providers()
         primary_key = self._api_key
         for provider in all_providers:

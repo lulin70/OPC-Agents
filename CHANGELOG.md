@@ -8,7 +8,7 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ### PATCH — CI 失败修复 + MetricsCollector 线程安全加固
 
-> v0.5.9 修复 CI 失败的两个问题：(1) MetricsCollector 单例 `__init__` 并发缺陷导致 `test_singleton_thread_safe` 在 CI 环境 flaky 失败（9/10 实例，SQLite "database is locked"）；(2) 三语 README 测试数滞后（4596 → 4744），CI `Verify README consistency` 步骤失败。
+> v0.5.9 修复 CI 失败的三个问题：(1) MetricsCollector 单例 `__init__` 并发缺陷导致 `test_singleton_thread_safe` 在 CI 环境 flaky 失败（9/10 实例，SQLite "database is locked"）；(2) `SimpleLLMService.complete` 圈复杂度 D (22) 超过 CI radon cc 阈值（D+ ≥ 21 阻塞），之前因 test_singleton 失败导致 radon 步骤被跳过未检测到；(3) 三语 README 测试数滞后（4596 → 4744），CI `Verify README consistency` 步骤失败。
 
 #### Fixed
 
@@ -18,6 +18,13 @@ All notable changes to OPC-Agents will be documented in this file.
 - **修复**: 在 `__init__` 中使用 `_instance_lock` 双检锁，确保 `_connect_db()` 和 `_ensure_tables()` 只执行一次
 - **验证**: 本地 5 次运行 `test_singleton_thread_safe` 全部通过；CI 环境的 flaky 失败应消除
 - **影响**: 仅修改 `opc_manager/metrics_collector.py`，无 API 变更
+
+##### `SimpleLLMService.complete` 圈复杂度超标 (D 22 → C 15)
+
+- **根因**: Sprint 4.3 在 `complete()` 中添加 OPC_MOCK_LLM 检测逻辑 + 备用 provider 遍历，圈复杂度从 C 升至 D (22)，超过 CI radon cc 阈值 (D+ ≥ 21 阻塞)。之前因 `test_singleton_thread_safe` 失败导致 radon cc 步骤被跳过，未检测到此问题
+- **修复**: 提取 `_handle_mock_mode()` 和 `_try_fallback_providers()` 两个私有方法，将 `complete()` 复杂度从 D (22) 降至 C (15)
+- **验证**: `radon cc opc_manager/ -n D` 输出为空（无 D+ 函数）；28 个 simple_llm_service 单元测试通过
+- **影响**: 仅重构，无功能变更，无 API 变更
 
 ##### 三语 README 测试数同步
 
