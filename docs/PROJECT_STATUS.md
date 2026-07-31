@@ -1,6 +1,6 @@
 # OPC-Agents 项目状态
 
-> **最后更新**: 2026-07-30（v0.5.8 PATCH：Sprint 3 E2E 测试补齐。新增 42 项 E2E 测试（API Server 认证 12 + 响应式布局 23 + 视觉回归基线 7）。Sprint 3.1 dev-mode bypass 提案拒绝（保持强认证）。无破坏性 API 变更） | **版本**: v0.5.8 (Beta) | **许可**: MIT
+> **最后更新**: 2026-07-31（v0.5.9 PATCH：CI 失败修复 + MetricsCollector 线程安全加固。修复 `__init__` 并发缺陷导致 `test_singleton_thread_safe` flaky 失败；同步三语 README 测试数 4596→4744） | **版本**: v0.5.9 (Beta) | **许可**: MIT
 >
 > 本文档为项目当前状态的单一事实来源（Single Source of Truth），与 [README.md](../README.md) / [CHANGELOG.md](../CHANGELOG.md) / [ASSESSMENT_INITIAL_VISION_v0.4.0.md](assessments/ASSESSMENT_INITIAL_VISION_v0.4.0.md) 配套使用。
 
@@ -10,7 +10,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| 版本号 | `0.5.8`（见 [VERSION](../VERSION)） |
+| 版本号 | `0.5.9`（见 [VERSION](../VERSION)） |
 | 状态 | Beta |
 | Python 要求 | ≥ 3.10 |
 | 许可证 | MIT |
@@ -51,9 +51,9 @@
 | 测试用例总数 | 4390 collected | `pytest --co -q --ignore=tests/e2e`（unit+integration，v0.5.4 实测） |
 | 测试通过 | 4390 passed, 0 skipped, 0 failed | `pytest --ignore=tests/e2e -q`（v0.5.4 验证，127s；v0.5.3 完成全部 skip 清理） |
 | 完整套件耗时 | 127s（不含 e2e）/ ~330s（含 e2e） | v0.5.4 实测 |
-| 全量覆盖率 | 待 v0.5.8 重测 | v0.3.36 实测 83%（14431 stmts 2499 miss）；v0.5.x 系列新增模块拆分 + skip 清理，需重新测量 |
-| `email_skill.py` 覆盖率（全量口径） | 待 v0.5.8 重测 | v0.3.36 实测 100%（237 stmts 0 miss）；代码无变更，预期保持 |
-| `finance_skill.py` 覆盖率（全量口径） | 待 v0.5.8 重测 | v0.3.36 实测 100%（166 stmts 0 miss）；代码无变更，预期保持 |
+| 全量覆盖率 | 待 v0.5.9 重测 | v0.3.36 实测 83%（14431 stmts 2499 miss）；v0.5.x 系列新增模块拆分 + skip 清理，需重新测量 |
+| `email_skill.py` 覆盖率（全量口径） | 待 v0.5.9 重测 | v0.3.36 实测 100%（237 stmts 0 miss）；代码无变更，预期保持 |
+| `finance_skill.py` 覆盖率（全量口径） | 待 v0.5.9 重测 | v0.3.36 实测 100%（166 stmts 0 miss）；代码无变更，预期保持 |
 | mypy 错误数 | 0 | `MYPYPATH=src mypy -p opc_manager`（v0.3.3 已清理 516→0） |
 | flake8 违规 | 0 | `flake8 opc_manager/ tests/` = 0（Phase 2 P0 清零：opc_manager 143→0 + tests 119→0） |
 

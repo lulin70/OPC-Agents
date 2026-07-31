@@ -1,18 +1,18 @@
 # OPC-Agents 目录结构 — IOC 分层映射
 
-> 生成于 v0.3.2 Phase 4，更新于 v0.5.8（轻量分层方案：仅文档，不移动文件）
+> 生成于 v0.3.2 Phase 4，更新于 v0.5.9（轻量分层方案：仅文档，不移动文件）
 >
 > 决策原因：全量目录重组需改 250+ 导入语句（74 相对导入 + 89 绝对导入 + 87 测试导入），
 > 违反 Simplicity First / Surgical Changes 原则。本文档提供导航价值，零代码风险。
 >
-> v0.5.8 更新：实测 opc_manager/ 顶层 119 个 .py（含子目录 136），tests/ 顶层 87 个 .py（含子目录 90）。
+> v0.5.9 更新：实测 opc_manager/ 顶层 119 个 .py（含子目录 136），tests/ 顶层 87 个 .py（含子目录 90）。
 >
 > v0.5.x 演进：StrategistBrain + ReflectorBrain God Class 拆分 + data_manager/task_orchestrator SRP 拆分 + morandi 主题 + MCP 模块化。
 
 ## 分层总览
 
 ```
-opc_manager/   (119 顶层 / 136 总计，v0.5.8)
+opc_manager/   (119 顶层 / 136 总计，v0.5.9)
 ├── I  — Input        (6 文件)   用户输入 → 意图识别 → 校验
 ├── C  — Control     (42 文件)   业务逻辑、引擎编排、状态管理（含 Brain 服务拆分 + consensus_checker 等）
 ├── O  — Output      (23 文件)   内容生成、搜索、进度、检测

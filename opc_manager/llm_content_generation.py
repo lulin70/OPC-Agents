@@ -135,7 +135,7 @@ class LLMContentGenerationMixin:
                 f"3. 多维度数据可视化分析\n"
                 f"4. 轻量级部署，本地优先保护数据隐私\n\n"
                 f"## 参考资料\n\n"
-                f"- 来源：产品需求文档 PRD v0.5.8\n"
+                f"- 来源：产品需求文档 PRD v0.5.9\n"
                 f"- 参考：用户访谈记录 2026Q2\n"
                 f"- https://example.com/opc-agents/market-research-2026\n\n"
                 f"---\n_Mock response generated at "

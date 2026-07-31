@@ -1,6 +1,6 @@
 # 🚀 OPC-Agents — 一人公司的 AI 执行团队
 
-> **版本**: v0.5.8 | **状态**: Beta | **许可**: MIT
+> **版本**: v0.5.9 | **状态**: Beta | **许可**: MIT
 
 [![Beta](https://img.shields.io/badge/status-beta-blue)](https://github.com/lulin70/OPC-Agents)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -63,7 +63,7 @@ opc-agents                      # 2. 启动
 - **🎯 聚焦 3 个核心技能**：邮件 / 财务 / 报告。冻结非核心技能（详见 [docs/spec/SKILL_FREEZE_LIST.md](docs/spec/SKILL_FREEZE_LIST.md)），把每个核心技能做到真正好用。
 - **🧠 IntentRouter 三路智能路由**：SIMPLE / COMPLEX / GREETING 三路分类，简单任务直接绕过三贤者，快又省；复杂任务才进入并行投票，质量有保障。
 - **🛡 关键决策点前置共识保护**：ConsensusEngine 从"事后补救"改为"事前把关"，ExecutorBrain 给真意见（删除假意见规则），ReflectorBrain 前置预判 + 少数派报告。
-- **📊 质量持续提升**：4596 个测试，覆盖率 74%+，CI 全门禁通过（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/版本一致性/三语 README 一致性）。D02 成熟度评估 82 分 B+。
+- **📊 质量持续提升**：4744 个测试，覆盖率 74%+，CI 全门禁通过（ruff/mypy/Black/E2E/coverage/radon D+/Bandit/pip-audit/Docker build/版本一致性/三语 README 一致性）。D02 成熟度评估 82 分 B+。
 - **🔧 tool_system.py 拆分**：754 行 God Class 拆分为 4 个子模块（tool_registry + tool_handlers_fs/smtp/cmd）+ Facade 模式，向后兼容，复杂度从 D 降至 C。
 - **🧹 Mock 反模式修复**：56 处反模式 Mock 修复（unused 依赖改 None、内部组件改 SimpleNamespace），测试更诚实、失败更明显。
 - **🔒 安全扫描全绿**：pip-audit 0 漏洞 + Bandit 0 高危，6 个包升级修复 21 个已知漏洞（pillow/pyjwt/python-multipart/soupsieve/weasyprint/pip）。
@@ -202,7 +202,7 @@ OPC-Agents（One-Person Company Agents）是一个**为独立创业者、自由�
 
 ```bash
 # 1. 安装
-pip install opc-agents==0.5.8
+pip install opc-agents==0.5.9
 
 # 2. 安装加密依赖（推荐，用于邮件密码等敏感字段加密）
 pip install cryptography
@@ -412,7 +412,7 @@ OPC-Agents/
 │       ├── pdf_exporter.py
 │       ├── word_exporter.py
 │       └── image_exporter.py
-├── tests/                 # 测试套件（4596测试用例，100%通过）
+├── tests/                 # 测试套件（4744测试用例，100%通过）
 ├── docs/                  # 项目文档
 │   ├── API.md             # API文档
 │   └── guides/            # 快速开始指南（中/英/日三语）
@@ -432,7 +432,7 @@ OPC-Agents/
 # 安装开发依赖
 pip install -r requirements-dev.txt
 
-# 运行全部测试（4596个用例）
+# 运行全部测试（4744个用例）
 PYTHONPATH=. pytest tests/ -v
 
 # 运行并生成覆盖率报告

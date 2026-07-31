@@ -147,15 +147,22 @@ class MetricsCollector:
 
     def __init__(self, db_path: Optional[str] = None) -> None:
         # Guard against re-initialization when singleton already set up.
+        # Sprint 4.3 fix: 必须在 _instance_lock 内双检锁，否则多线程并发
+        # 调用 MetricsCollector() 时，__new__ 返回同一实例但 __init__ 会并发
+        # 执行 _connect_db()，触发 SQLite "database is locked" 异常（CI 环境复现率
+        # 高，本地难复现）。__new__ 的双检锁只保证实例唯一，不保证 __init__ 单次执行.
         if getattr(self, "_initialized", False):
             return
-        self._db_path: str = self._resolve_db_path(db_path)
-        self._lock = threading.Lock()
-        self._conn: Optional[sqlite3.Connection] = None
-        self._salt: str = self._resolve_anonymization_salt()
-        self._connect_db()
-        self._ensure_tables()
-        self._initialized = True
+        with type(self)._instance_lock:
+            if getattr(self, "_initialized", False):
+                return
+            self._db_path: str = self._resolve_db_path(db_path)
+            self._lock = threading.Lock()
+            self._conn: Optional[sqlite3.Connection] = None
+            self._salt: str = self._resolve_anonymization_salt()
+            self._connect_db()
+            self._ensure_tables()
+            self._initialized = True
 
     @classmethod
     def _reset_singleton(cls) -> None:

@@ -4,6 +4,33 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.9] - 2026-07-31
+
+### PATCH — CI 失败修复 + MetricsCollector 线程安全加固
+
+> v0.5.9 修复 CI 失败的两个问题：(1) MetricsCollector 单例 `__init__` 并发缺陷导致 `test_singleton_thread_safe` 在 CI 环境 flaky 失败（9/10 实例，SQLite "database is locked"）；(2) 三语 README 测试数滞后（4596 → 4744），CI `Verify README consistency` 步骤失败。
+
+#### Fixed
+
+##### MetricsCollector `__init__` 并发缺陷
+
+- **根因**: `__new__` 的双检锁只保证实例唯一，不保证 `__init__` 单次执行。多线程并发调用 `MetricsCollector()` 时，`__new__` 返回同一实例，但 `__init__` 中的 `_initialized` 检查不是原子的，多线程可同时通过检查并并发执行 `_connect_db()`，触发 SQLite "database is locked" 异常
+- **修复**: 在 `__init__` 中使用 `_instance_lock` 双检锁，确保 `_connect_db()` 和 `_ensure_tables()` 只执行一次
+- **验证**: 本地 5 次运行 `test_singleton_thread_safe` 全部通过；CI 环境的 flaky 失败应消除
+- **影响**: 仅修改 `opc_manager/metrics_collector.py`，无 API 变更
+
+##### 三语 README 测试数同步
+
+- **根因**: Sprint 4.3 新增 E2E 测试后，CI 动态计算的测试数从 4596 增至 4744，但三语 README 未同步更新
+- **修复**: 更新 README.md / README-EN.md / README-JP.md 中 9 处测试数引用（4596 → 4744）
+- **验证**: CI `Verify README consistency` 步骤应通过
+
+#### 测试验证
+
+- 单元测试 2852 passed（含 `test_singleton_thread_safe`）
+- 集成测试 1538 passed
+- ruff / black / mypy 全部通过
+
 ## [0.5.8] - 2026-07-30
 
 ### PATCH — Sprint 3 E2E 测试补齐
