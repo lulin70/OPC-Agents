@@ -15,7 +15,7 @@ sse-starlette>=1.6.0  # Required for mcp_transport.py SSE endpoint tests
 responses>=0.26.2  # v0.3.35 T7.2: HTTP mock library for test_simple_llm_service.py (replaces @patch("requests.post"))
 
 # UI E2E (真实浏览器自动化，满足 HARD_CONSTRAINTS Q1/Q2)
-playwright>=1.61.0
+playwright>=1.62.0
 
 # E2E 测试辅助
 aiosmtpd>=1.4.4  # Sprint 2.2: P0 技能 E2E — Mock SMTP 服务器（email_skill 真实发送验证）
