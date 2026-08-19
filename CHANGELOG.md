@@ -4,6 +4,58 @@ All notable changes to OPC-Agents will be documented in this file.
 
 ## [Unreleased]
 
+### E2E 测试体系加固 — TD-005 校准 + 三贤者/CarryMem E2E 补充
+
+> 本次更新填补 v0.3.0 核心架构（三贤者并行投票）与核心卖点（CarryMem 跨会话记忆）的 E2E 空白，并校准 TECH_DEBT.md 中 TD-005 的过期状态。新增 70 个 E2E 测试，全量 379 个 E2E 测试通过。
+
+#### Fixed
+
+##### TD-005 状态校准：13 个 E2E 失败已于 v0.5.7→v0.5.9 间全部修复
+
+- **问题**: [TECH_DEBT.md](docs/TECH_DEBT.md) 中 TD-005 状态停留在"🔄 进行中（v0.5.8）"，记录的 13 个 E2E 失败实际已修复，文档滞后 2 个版本
+- **校准依据**: 2026-08-01 实测全量 E2E（208 个原有测试全通过），逐项验证：
+  - 7 asyncio 事件循环冲突 → 已修复（`_run_async` 子线程模式，test_e2e_user_journeys.py 等 58 测试全通过）
+  - 3 morandi 主题缺陷 → 已修复（test_theme_dark.py 3 测试全通过）
+  - 1 过期断言（主题数 5→7）→ 已修复（test_docker_deployment.py `test_all_themes_exist` 已更新为 7 主题）
+  - 2 a11y 对比度不达标 → 已修复（test_a11y_all_themes.py 32 测试 + test_a11y_axe.py 3 测试全通过）
+- **文档更新**: [TECH_DEBT.md](docs/TECH_DEBT.md) TD-005 标记为 ✅ 已解决（v0.5.9 校准），状态总览更新为 已解决 5 / 进行中 2 / 待处理 5
+- **教训**: 符合 project_memory 教训"基于过期描述的任务需先校验前提"——TECH_DEBT.md 状态滞后导致上轮分析报告（E2E 覆盖范围与潜在盲区）误判 13 个失败仍存在
+
+#### Added
+
+##### 三贤者并行投票架构 E2E 测试（38 项）
+
+- 新增 [test_parallel_sages_e2e.py](tests/e2e/test_parallel_sages_e2e.py)（38 项测试），填补 v0.3.0 核心架构的 E2E 空白
+- 覆盖 6 个维度：
+  - **IntentRouter 三路路由**（15 测试）：GREETING/SIMPLE/COMPLEX 端到端分流 + 0 LLM 成本验证 + 未知输入默认 COMPLEX 保守策略
+  - **关键决策点识别**（8 测试）：email/report/finance 不可逆操作触发共识投票 + SIMPLE 路由跳过 + CRITICAL_DECISION_SKILLS/ACTIONS 常量覆盖
+  - **并行投票决策**（5 测试）：UNANIMOUS/MAJORITY/VETOED/ESCALATED 四种决策类型 + VETO_MIN_CONFIDENCE 边界验证
+  - **fail-close 机制**（4 测试）：并行禁用降级串行 + 串行超时 fail-close + 并行异常降级 + orchestrator 异常跳过步骤（never fail-open）
+  - **完整链路**（4 测试）：路由→关键决策点→共识投票→执行/跳过 端到端
+  - **决策日志持久化**（2 测试）：consensus_decisions 表写入 + 重启后加载
+- 测试策略：真实 ConsensusEngine/ConsensusChecker/IntentRouter（非 Mock）+ 轻量 Fake Brains（确定性、0 LLM 成本）+ `_run_async` 子线程模式
+
+##### CarryMem 跨会话记忆 E2E 测试（32 项）
+
+- 新增 [test_memory_bridge_e2e.py](tests/e2e/test_memory_bridge_e2e.py)（32 项测试），填补核心卖点"越用越懂你"的 E2E 空白
+- 使用真实 CarryMem 0.9.8（非 Mock），数据库隔离到 tmp_path
+- 覆盖 7 个维度：
+  - **初始化**（7 测试）：启用/禁用/降级/单例/is_memory_enabled 环境检测
+  - **跨会话偏好记忆**（5 测试）：remember→build_context 闭环 + 跨会话持久化 + 低质量结果纠正记忆
+  - **规则引擎**（4 测试）：match_rules + inject_rules_prompt + get_rules_for_context
+  - **飞轮成长**（5 测试）：等级提升 + 新手→传奇 + suggest_skills + cleanup_stale_memories
+  - **失败经验记录**（4 测试）：record_failure + 失败教训 + 待审核教训
+  - **数据可携带性**（4 测试）：export_user_data + get_status + 多记忆导出
+  - **TaskOrchestrator 集成**（3 测试）：规则注入到策略脑 + 优雅降级 + 偏好检索
+
+#### 测试验证
+
+- 原有 E2E 测试 309 个全通过（68 静态 + 58 集成 + 37 apptest/api + 45 主题/a11y/视觉回归 + 101 浏览器）
+- 新增 E2E 测试 70 个全通过（38 三贤者 + 32 CarryMem）
+- 全量 E2E 379 个全通过
+- ruff: 0 errors
+- mypy: tests/ 目录被 exclude（与现有测试风格一致）
+
 ## [0.5.9] - 2026-07-31
 
 ### PATCH — CI 失败修复 + MetricsCollector 线程安全加固
