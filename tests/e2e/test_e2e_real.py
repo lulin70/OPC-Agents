@@ -187,10 +187,24 @@ class TestRealSearch(unittest.TestCase):
         if not cls.search.is_available():
             raise unittest.SkipTest("DuckDuckGo search not available")
 
+    def _assert_search_returned_results(self, results, label):
+        """断言搜索有结果，失败时给出真实原因（W-1：区分"零结果"与"搜索挂了"）。
+
+        历史上此断言消息写作 "<语言> search should return results"，把 DDGS 的
+        间歇性连接超时误报为"某语言搜不到"，误导排查方向。现改为携带
+        last_status / last_error，直接指出是网络抖动还是确实零结果。
+        """
+        self.assertGreater(
+            len(results),
+            0,
+            f"{label} search returned no results "
+            f"(status={self.search.last_status}, error={self.search.last_error})",
+        )
+
     def test_chinese_search_returns_results(self):
         results = self.search.search("一人公司创业指南", max_results=5)
         self.assertIsInstance(results, list)
-        self.assertGreater(len(results), 0, "Chinese search should return results")
+        self._assert_search_returned_results(results, "Chinese")
         for r in results:
             self.assertIn("title", r)
             self.assertIn("href", r)
@@ -198,12 +212,12 @@ class TestRealSearch(unittest.TestCase):
     def test_english_search_returns_results(self):
         results = self.search.search("one person company business guide", max_results=5)
         self.assertIsInstance(results, list)
-        self.assertGreater(len(results), 0, "English search should return results")
+        self._assert_search_returned_results(results, "English")
 
     def test_japanese_search_returns_results(self):
         results = self.search.search("一人会社起業ガイド", max_results=5)
         self.assertIsInstance(results, list)
-        self.assertGreater(len(results), 0, "Japanese search should return results")
+        self._assert_search_returned_results(results, "Japanese")
 
     def test_search_result_has_required_fields(self):
         results = self.search.search("SaaS growth strategy", max_results=3)

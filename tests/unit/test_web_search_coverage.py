@@ -5,7 +5,21 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from opc_manager.web_search import WebSearchMCP
+from opc_manager.web_search import (
+    RETRY_ATTEMPTS,
+    RETRY_DELAY_SECONDS,
+    STATUS_EMPTY,
+    STATUS_FAILED,
+    STATUS_OK,
+    STATUS_UNAVAILABLE,
+    STATUS_UNSET,
+    WebSearchMCP,
+    _is_transient,
+)
+
+
+class FakeTimeoutError(Exception):
+    """模拟 ddgs.TimeoutException：非 OSError 子类，靠类名兜底判定为瞬时故障。"""
 
 
 @pytest.fixture(autouse=True)
@@ -151,3 +165,119 @@ class TestWebSearchMCPAvailable:
         instance = WebSearchMCP()
         instance._dds = None
         assert instance.is_available() is False
+
+
+@pytest.fixture
+def _fast_retry():
+    """打桩 time.sleep，避免测试等待真实退避延迟，同时断言退避确实发生。"""
+    with patch("opc_manager.web_search.time.sleep") as mock_sleep:
+        yield mock_sleep
+
+
+class TestIsTransient:
+    """W-1: 瞬时故障判定（决定是否重试）。"""
+
+    def test_os_error_and_subclasses_are_transient(self):
+        """OSError 及其子类（TimeoutError/ConnectionError）判定为瞬时。"""
+        assert _is_transient(TimeoutError("timed out")) is True
+        assert _is_transient(ConnectionResetError("reset")) is True
+
+    def test_class_name_hint_is_transient(self):
+        """非 OSError 子类（如 ddgs.TimeoutException）靠类名关键字兜底判定为瞬时。"""
+        assert _is_transient(FakeTimeoutError("timed out")) is True
+
+    def test_wrapped_os_error_in_chain_is_transient(self):
+        """异常链上的 OSError 也应被追溯判定为瞬时。"""
+        outer = RuntimeError("wrapped")
+        outer.__cause__ = ConnectionAbortedError("aborted")
+        assert _is_transient(outer) is True
+
+    def test_plain_exception_is_not_transient(self):
+        """普通编程错误不判为瞬时（重试无意义）。"""
+        assert _is_transient(RuntimeError("programming bug")) is False
+
+
+class TestWebSearchMCPRetry:
+    """W-1: 有界重试 + 失败可观测（last_status / last_error）。"""
+
+    def test_transient_failure_retried_then_succeeds(self, _fast_retry):
+        """瞬时故障应重试，成功后返回结果且状态归为 OK。"""
+        instance = WebSearchMCP()
+        mock_dds = MagicMock()
+        mock_dds.text.side_effect = [
+            FakeTimeoutError("timed out"),
+            [{"title": "T", "href": "http://a.com", "body": "B"}],
+        ]
+        instance._dds = mock_dds
+
+        results = instance.search("query")
+
+        assert len(results) == 1
+        assert results[0]["title"] == "T"
+        assert mock_dds.text.call_count == 2
+        assert instance.last_status == STATUS_OK
+        assert instance.last_error is None
+        _fast_retry.assert_called_once_with(RETRY_DELAY_SECONDS)
+
+    def test_transient_failure_retries_are_bounded(self, _fast_retry):
+        """持续瞬时故障时重试次数有上界，且失败原因可被调用方读取。"""
+        instance = WebSearchMCP()
+        mock_dds = MagicMock()
+        mock_dds.text.side_effect = FakeTimeoutError("timed out")
+        instance._dds = mock_dds
+
+        assert instance.search("query") == []
+
+        assert mock_dds.text.call_count == RETRY_ATTEMPTS
+        assert _fast_retry.call_count == RETRY_ATTEMPTS - 1
+        assert instance.last_status == STATUS_FAILED
+        assert "FakeTimeoutError" in instance.last_error
+
+    def test_non_transient_failure_not_retried(self, _fast_retry):
+        """非瞬时故障不重试（避免无意义等待）。"""
+        instance = WebSearchMCP()
+        mock_dds = MagicMock()
+        mock_dds.text.side_effect = RuntimeError("programming bug")
+        instance._dds = mock_dds
+
+        assert instance.search("query") == []
+
+        assert mock_dds.text.call_count == 1
+        _fast_retry.assert_not_called()
+        assert instance.last_status == STATUS_FAILED
+
+    def test_status_unset_before_any_search(self):
+        """Verify: 尚未搜索时状态为 UNSET。"""
+        assert WebSearchMCP().last_status == STATUS_UNSET
+
+    def test_status_empty_when_search_succeeds_without_results(self, _fast_retry):
+        """确认零结果与失败必须可区分：零结果记 EMPTY 且无错误。"""
+        instance = WebSearchMCP()
+        mock_dds = MagicMock()
+        mock_dds.text.return_value = []
+        instance._dds = mock_dds
+
+        assert instance.search("query") == []
+        assert instance.last_status == STATUS_EMPTY
+        assert instance.last_error is None
+        assert mock_dds.text.call_count == 1
+
+    def test_status_unavailable_when_not_initialized(self):
+        """Verify: ddgs 未就绪时状态为 UNAVAILABLE。"""
+        instance = WebSearchMCP()
+        instance._dds = None
+
+        assert instance.search("query") == []
+        assert instance.last_status == STATUS_UNAVAILABLE
+        assert instance.last_error
+
+    def test_status_ok_for_mock_results(self, monkeypatch):
+        """Verify: OPC_MOCK_LLM=true 的 Mock 结果路径状态为 OK。"""
+        monkeypatch.setenv("OPC_MOCK_LLM", "true")
+        instance = WebSearchMCP()
+
+        results = instance.search("query")
+
+        assert results
+        assert instance.last_status == STATUS_OK
+        assert instance.last_error is None

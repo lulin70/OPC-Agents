@@ -29,6 +29,7 @@ import re
 from typing import Dict, List, Optional, Any, TYPE_CHECKING
 
 from opc_manager.skill_models import SkillContext
+from opc_manager.web_search import STATUS_FAILED
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +171,12 @@ class SkillExecutorMixin:
     ) -> Dict[str, Any]:
         cleaned_query = re.sub(r'[<>&"\']', "", query).strip()
         if not cleaned_query:
-            return {"results": [], "count": 0, "fallback_used": False}
+            return {
+                "results": [],
+                "count": 0,
+                "fallback_used": False,
+                "search_failed": False,
+            }
 
         if self.search_processor is not None:
             try:
@@ -187,6 +193,7 @@ class SkillExecutorMixin:
                     ],
                     "count": len(processed.results),
                     "fallback_used": processed.fallback_used,
+                    "search_failed": self._search_failed(),
                 }
             except Exception as e:
                 logger.warning("搜索增强失败，使用降级: %s", e)
@@ -203,7 +210,15 @@ class SkillExecutorMixin:
             ],
             "count": len(raw_results),
             "fallback_used": False,
+            "search_failed": self._search_failed(),
         }
+
+    def _search_failed(self) -> bool:
+        """W-1：底层搜索（含有界重试）是否失败。
+
+        让调用方区分「确实没搜到」与「搜索挂了」——后者不应被当成零结果静默消费。
+        """
+        return getattr(self._web_search, "last_status", None) == STATUS_FAILED
 
     async def _do_web_search(self, query: str, max_results: int) -> list:
         try:
@@ -221,6 +236,13 @@ class SkillExecutorMixin:
                 results = await loop.run_in_executor(
                     None, self._web_search.search, query, max_results
                 )
+                # W-1：搜索失败仍返回 []（兼容既有契约），但要把原因写进日志，
+                # 避免"搜索挂了"与"没搜到"在可观测性上不可区分。
+                if not results and self._search_failed():
+                    logger.warning(
+                        "Web搜索失败（有界重试已耗尽），返回空结果: %s",
+                        getattr(self._web_search, "last_error", None),
+                    )
                 return results
         except Exception as e:
             logger.warning("Web搜索失败: %s", e)

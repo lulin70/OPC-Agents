@@ -490,6 +490,56 @@ class TestTaskEngineEdgeCases(unittest.TestCase):
         self.assertGreaterEqual(stats_after["hits"], stats_before["hits"])
 
 
+class _FakeWebSearch:
+    """W-1 测试替身：与真实 WebSearchMCP 对齐的 search/last_status 接口。"""
+
+    def __init__(self, status="FAILED", error="FakeTimeoutError: timed out"):
+        self.last_status = status
+        self.last_error = error
+        self.search_count = 0
+
+    def search(self, query, max_results=8):
+        self.search_count += 1
+        return []
+
+
+class TestSearchFailureNotCached(unittest.TestCase):
+    """W-1：搜索失败（有界重试耗尽）不得被缓存成"零结果"。"""
+
+    def setUp(self):
+        self.engine = TaskEngineV3()
+        self.engine._search_processor = None
+
+    def test_failed_search_is_not_cached(self):
+        """失败结果不写缓存：第二次调用仍真实访问底层搜索，抖动不会冻结 TTL 时长"""
+        fake = _FakeWebSearch()
+        self.engine.web_search = fake
+
+        self.engine._search("瞬时失败查询", max_results=3)
+        self.assertIsNone(self.engine._search_cache.get("瞬时失败查询", 3))
+
+        self.engine._search("瞬时失败查询", max_results=3)
+        self.assertEqual(fake.search_count, 2)
+
+    def test_failed_search_logs_reason(self):
+        """失败原因写入日志，可被运维观测"""
+        self.engine.web_search = _FakeWebSearch()
+        with self.assertLogs(
+            "opc_manager.task_engine_v3_search", level="WARNING"
+        ) as cm:
+            self.engine._search("失败查询", max_results=3)
+        self.assertTrue(
+            any("bounded retries exhausted" in m for m in cm.output),
+            f"应记录失败原因，实际: {cm.output}",
+        )
+
+    def test_non_failed_empty_search_is_still_cached(self):
+        """对照组：非失败状态（如 EMPTY）的零结果仍按既有策略缓存"""
+        self.engine.web_search = _FakeWebSearch(status="EMPTY", error=None)
+        self.engine._search("正常空查询", max_results=3)
+        self.assertIsNotNone(self.engine._search_cache.get("正常空查询", 3))
+
+
 class TestFollowUpDetection(unittest.TestCase):
     """追问意图识别测试 — Sprint2 P0: 多轮对话增强"""
 
