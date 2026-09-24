@@ -64,6 +64,54 @@
 | 1.3 | CRM 解冻：按 SKILL_FREEZE_LIST §5 清单（移除 FROZEN 标记、解锁 10 方法、lifecycle_tracker、DormantScanner 集成） | 覆盖率 ≥80%；`tests/e2e/test_crm_e2e.py` 40 测试通过；集成可开关，关闭时本地 CRM 完整可用 | `pytest --cov=opc_manager.crm_skill` + E2E |
 | 1.4 | 批次回归：全量测试 + CI 门禁不回退（现有 11 项） | 0 regression | 全量 pytest + CI 绿后合并 main |
 
+### 批次 1 追加项 W — web_search 静默降级可观测化（2026-09-24 用户决策）
+
+> **触发**：B0.1 全量回归剩 2 failed，其一为 `test_e2e_real.py::TestRealSearch::test_japanese_search_returns_results`。
+> **深挖结论（证据）**：① 直接调用 `ddgs.DDGS().text()` 对同一日语 query 连跑 5 次 **5/5 成功**（16/20/20/10.5/25s），失败与语言无关；② 复现测试的连续 5 查询序列，失败出现在**第 2 条英文 query**（`TimeoutException: ConnectTimeout`），即 DDGS 聚合器**间歇性连接超时**（样本约 1/5），随机命中任一查询；③ `WebSearchMCP.search()` 捕获全部异常后**静默返回 `[]`**，且该契约被单测 `test_search_exception_returns_empty` 锁定；④ 生产调用方 `skill_executors._do_web_search` 再吞一层，同样返回 `[]`，全链路**无重试**。
+> **真实用户影响**：一次瞬时超时 → 成果物**零来源**且用户无任何提示、无法诊断（不是"没搜到"，是"搜挂了"）。
+> **测试侧缺陷**：断言消息 `"Japanese search should return results"` 把网络超时**误报为语言问题**。
+
+| 项 | 内容 | 验收标准 | 校验方法 |
+|---|---|---|---|
+| W-1 | `opc_manager/web_search.py`：对**瞬时网络异常**做**有界重试**（有限次数 + 短退避），并把"重试后仍失败"变成**可观测信号**（调用方可区分"零来源"与"搜索失败"），同时保持最终仍返回 `[]` 的既有契约以兼容既有生产调用方 | 单测全绿；重试次数有上界；失败可被调用方区分；既有 `test_search_exception_returns_empty` 契约不被破坏 | `pytest tests/unit/test_web_search_coverage.py -v` + 新增重试/可观测单测 |
+| W-2 | 修正 `tests/e2e/test_e2e_real.py` 误导性断言消息（网络失败不再表述为语言问题） | 断言消息如实描述失败原因 | 人工复核 + e2e 复跑 |
+| W-3 | 同步生产调用方：`skill_executors._execute_search` 输出新增 `search_failed` 字段、`_do_web_search` 失败留告警；`task_engine_v3_search._search()` 失败时**不写缓存**（避免一次抖动被冻结成 5 分钟"零结果"）并记录原因 | 调用方能区分"零结果/搜索失败"；失败结果不进缓存；既有 `Tuple[List, List]` 与 `fallback_used` 契约不变 | 新增调用方单测（`test_skill_executors.py` / `test_task_engine_v3.py`） |
+
+> **据实校正**：原始表述为"3 个生产调用方"。实测探查后确认真实调用方只有 **2 个**——`skill_executors` 与 `task_engine_v3_search`；`tool_system._execute_web_search` 是**纯占位实现**（返回 `example.com` 假结果、根本不构造 `WebSearchMCP`），不构成调用方，故不改。
+
+#### W 系列实施证据（2026-09-24，实际命令输出）
+
+| 校验 | 命令 | 结果 |
+|---|---|---|
+| W-1/W-2 单测 | `pytest tests/unit/test_web_search_coverage.py -q` | `23 passed in 0.70s`（含新增重试上界/瞬时判定/last_status 11 项） |
+| W-3 调用方单测 | `pytest tests/integration/test_task_engine_v3.py::TestSearchFailureNotCached tests/integration/test_skill_executors.py -q` | `104 passed in 0.82s` |
+| W-2 e2e 稳定性 | `pytest tests/e2e/test_e2e_real.py::TestRealSearch -q`（连续 2 次） | 两次均 `5 passed`（84.98s / 104.46s）→ 有界重试消除了间歇超时抖动 |
+| 门禁 mypy（CI 同参） | `mypy opc_manager/ --ignore-missing-imports --follow-imports=silent` | `Success: no issues found in 130 source files` |
+| 门禁 black（CI 同参） | `black --check --target-version py310 <11 个改动文件>` | `11 files would be left unchanged` |
+| 门禁 radon D+ | `radon cc opc_manager/ -s -n D` | 空输出 = PASS |
+| W5 全量回归 | `pytest -q`（全量 4894 项） | `4894 passed, 8 warnings in 1649.15s (0:27:29)`，`EXIT=0` |
+
+> **门禁可信度附带发现（2026-09-24）**：本批次提交在 push 后**从未触发 CI**（`gh run list` 无 `feature/v1.0.0-batch1` 记录，主 CI 只在 main/PR 上跑），因此"已 push"不等于"已过门禁"。核验本地四门禁时发现两类**先于本分支存在**的红：
+> ① `black --check` 在 main 上即为红（`gh run view 35564847359` → 3 个 job 的 `Check formatting with Black` 全部 failure，可溯源至 `f9f4c50`）；
+> ② `Verify README consistency` 同为既有红（同一 run 三处 failure，日志为 `测试数 4814 未找到`，而三语 README 实际写的是 `4744`）。
+> ③ `mypy` 检出本批次自身引入的 3 个错误（`scheduler.py` 重复定义 `_iso`/`_from_iso`、`promiselink_client.py` union-attr），已当场修复，不再遗留。
+
+#### 既有红修复（2026-09-24，用户指令"修好了再继续推进"）
+
+**根因**：`f9f4c50`（main 上增补 E2E 测试）之后，测试数与文件数已变，但三语 README 未同步；同时该提交的 2 个 e2e 文件未过 black。两者在 main 上持续为红，与 v1.0.0 批次无关，但会掩盖本分支自身的门禁问题。
+
+| # | 门禁 | 性质 | 修复动作 | 校验证据 |
+|---|---|---|---|---|
+| ① | black | 既有红（2 文件，非本批次） | `black --target-version py310` 格式化 `test_memory_bridge_e2e.py` / `test_parallel_sages_e2e.py` | `327 files would be left unchanged`（全仓） |
+| ② | README 一致性 | 既有红（三语） | 三语 README 测试数 `4744`→`4894`（含 JP 文件数 `100`→`137`）；用 CI 原样 heredoc 脚本复跑 | `✓ 三语 README 一致性校验通过（版本 0.5.9, 模块 99, 测试 4894）` |
+| ③ | ruff | 本批次自身引入（blocking） | `promiselink_client.py` 删未用 `List`（F401）、删死代码 `url`（F841，实际请求走 `httpx.Client(base_url=...)` + 相对路径，等价）；测试文件删未用 `ClientResult` | `All checks passed!` / `ruff_exit=0` |
+| ④ | mypy | 本批次自身引入 | 见上 ③ | `Success: no issues found in 130 source files` |
+| ⑤ | bandit（`-r opc_manager/ -ll -ii`） | 本批次自身引入（3 处 B608 Medium/Medium） | `scheduler.py`：`get_task`/`due_tasks` 插值为内部类常量 `_SELECT_COLUMNS`、值走 `?` 绑定 → 真误报，按 repo 既有约定加 `# nosec B608 — <理由>`；`_update_fields` 插值的是**调用方列名** → 真实薄弱点，**补 `_UPDATABLE_COLUMNS` 白名单 + 校验**（不写"声称有白名单但实际没有"的注释），并新增拒绝/放行两条单测 | `bandit_exit=0`；Medium 由 6 降至 3（余下 3 条未达 `-ll -ii` 阈值） |
+| ⑥ | 版本一致性 | — | 无改动，复跑确认 | `VERSION=0.5.9 py=0.5.9 mcp=0.5.9` → OK |
+| ⑦ | radon D+ | — | 无新增 | 空输出 = PASS |
+
+> **教训（与 project_memory 门禁可信度条目呼应）**：CI 只在 main/PR 触发，feature 分支 push 不触发 → "已 push"被误当"已过门禁"，导致 ruff/mypy/black/bandit 四类问题被掩盖。**任何"门禁通过"的结论必须先确认该门禁真的执行了、且检查范围没被 flag 削掉。**
+
 ### 批次 2 — 事件驱动（ENH-PL 反馈到达后）
 反馈 → 共识决策（改 TDD 或不改）→ **先更文档再动码** → 实现被阻塞功能（ENH-PL-01 双向承诺分析等）。
 
@@ -105,6 +153,8 @@ UI（技能市场 6 技能、CRM 标签页、关系推进卡、Onboarding）→ 
 | 2026-09-21 | 初版；DevSquad 五角色共识通过；批次 0 完成闭环 |
 | 2026-09-21 | 增补 B0 基线修复（B0.1 事件循环泄漏 / B0.2 matplotlib 沙箱）；纳入炼刀对标四改进项 IMP-1~4 及批次映射 |
 | 2026-09-23 | B0.1 根因定位并修复：Playwright Sync API 的 greenlet 事件循环占用主线程 running-loop 标记 → `playwright_browser` 由 session 级收敛为 module 级；补二分证据链；临时探针插件用后即删不入库 |
+| 2026-09-24 | 批次 1 追加项 W 完成（W-1 有界重试 + 失败可观测 / W-2 e2e 断言消息如实化 / W-3 两个真实生产调用方同步，第三个经查为占位实现）；补 W 系列实施证据表；记录门禁可信度附带发现（本分支从未触发 CI、main 上 black 与 README 一致性门禁为既有红、本批次 mypy 3 错已修） |
+| 2026-09-24 | 按用户指令修复"既有红"：main 上 black（2 个 e2e 文件）与三语 README 一致性（测试数 4744→4894、JP 文件数 100→137）由红转绿；并清除本批次自身引入的 ruff（3 处 F401/F841）与 bandit（3 处 B608，其中 `_update_fields` 补真实列名白名单）问题；本地全门禁复跑全绿 |
 
 ---
 

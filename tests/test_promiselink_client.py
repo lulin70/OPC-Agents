@@ -15,7 +15,6 @@ import pytest
 
 from opc_manager.promiselink_client import (
     CIRCUIT_FAILURE_THRESHOLD,
-    ClientResult,
     ClientState,
     PromiseLinkClient,
 )
@@ -96,7 +95,9 @@ class TestStates:
         assert result.state is ClientState.UNCONFIGURED
 
     def test_available_after_health_ok(self):
-        handler, _ = json_handler([("GET", "/api/v1/health", 200, {"status": "ok"}, None)])
+        handler, _ = json_handler(
+            [("GET", "/api/v1/health", 200, {"status": "ok"}, None)]
+        )
         client = make_client(transport=httpx.MockTransport(handler))
         result = client.health()
         assert result.success is True
@@ -304,7 +305,9 @@ class TestCircuitBreaker:
 
 class TestSchemaValidation:
     def test_missing_required_key_is_schema_mismatch(self):
-        handler, _ = json_handler([("GET", "/api/v1/health", 200, {"unexpected": 1}, None)])
+        handler, _ = json_handler(
+            [("GET", "/api/v1/health", 200, {"unexpected": 1}, None)]
+        )
         client = make_client(transport=httpx.MockTransport(handler))
         result = client.health()
         assert result.state is ClientState.SCHEMA_MISMATCH
@@ -312,7 +315,9 @@ class TestSchemaValidation:
         assert "缺少字段" in result.error
 
     def test_list_expectation_violation(self):
-        handler, _ = json_handler([("GET", "/api/v1/entities", 200, {"not": "a list"}, None)])
+        handler, _ = json_handler(
+            [("GET", "/api/v1/entities", 200, {"not": "a list"}, None)]
+        )
         client = make_client(transport=httpx.MockTransport(handler))
         result = client.list_entities()
         assert result.state is ClientState.SCHEMA_MISMATCH
@@ -340,7 +345,12 @@ class TestSchemaValidation:
 
 class TestRoutesAndForbiddenPaths:
     def test_forbidden_paths_not_wrapped(self):
-        forbidden = ["dormant_days", "analyze_bidirectional", "generate_nudge", "nudges"]
+        forbidden = [
+            "dormant_days",
+            "analyze_bidirectional",
+            "generate_nudge",
+            "nudges",
+        ]
         for name in forbidden:
             assert not hasattr(PromiseLinkClient, name)
 

@@ -20,7 +20,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 import httpx
 
@@ -105,7 +105,8 @@ class PromiseLinkClient:
         sleep_fn: Callable[[float], None] = time.sleep,
         enabled: Optional[bool] = None,
     ) -> None:
-        self._base_url = (base_url or os.environ.get(BASE_URL_ENV, "")).rstrip("/")
+        resolved_base_url = base_url or os.environ.get(BASE_URL_ENV) or ""
+        self._base_url = resolved_base_url.rstrip("/")
         self._explicit_token = token
         self._timeout_seconds = timeout_seconds
         self._max_retries = max_retries
@@ -140,7 +141,9 @@ class PromiseLinkClient:
 
             return SecureKeyStore().get_key(TOKEN_KEYSTORE_NAME)
         except Exception as exc:  # pragma: no cover - keystore 环境异常
-            logger.warning("[PromiseLinkClient] keystore 读取失败: %s", type(exc).__name__)
+            logger.warning(
+                "[PromiseLinkClient] keystore 读取失败: %s", type(exc).__name__
+            )
             return None
 
     def is_configured(self) -> bool:
@@ -227,17 +230,24 @@ class PromiseLinkClient:
             return result
 
         if not self._enabled:
-            return finish(ClientResult(False, ClientState.DISABLED, error="PromiseLink 未启用"))
+            return finish(
+                ClientResult(False, ClientState.DISABLED, error="PromiseLink 未启用")
+            )
         if not self.is_configured():
             return finish(
-                ClientResult(False, ClientState.UNCONFIGURED, error="缺少 PROMISELINK_BASE_URL 或 Token")
+                ClientResult(
+                    False,
+                    ClientState.UNCONFIGURED,
+                    error="缺少 PROMISELINK_BASE_URL 或 Token",
+                )
             )
         if self._circuit_open():
             return finish(
-                ClientResult(False, ClientState.CIRCUIT_OPEN, error="连续失败熔断中，稍后重试")
+                ClientResult(
+                    False, ClientState.CIRCUIT_OPEN, error="连续失败熔断中，稍后重试"
+                )
             )
 
-        url = f"{self._base_url}{API_PREFIX}{path}"
         headers = {"Authorization": f"Bearer {self._resolve_token()}"}
 
         attempt = 0
@@ -260,7 +270,11 @@ class PromiseLinkClient:
                 if attempt > self._max_retries:
                     self._record_failure()
                     return finish(
-                        ClientResult(False, ClientState.DEGRADED, error=f"网络错误: {type(exc).__name__}")
+                        ClientResult(
+                            False,
+                            ClientState.DEGRADED,
+                            error=f"网络错误: {type(exc).__name__}",
+                        )
                     )
                 self._sleep_fn(self._backoff_base_seconds * (2 ** (attempt - 1)))
                 continue
@@ -278,8 +292,10 @@ class PromiseLinkClient:
                         )
                     )
                 retry_after = response.headers.get("Retry-After")
-                delay = float(retry_after) if retry_after and retry_after.replace(".", "", 1).isdigit() else (
-                    self._backoff_base_seconds * (2 ** (attempt - 1))
+                delay = (
+                    float(retry_after)
+                    if retry_after and retry_after.replace(".", "", 1).isdigit()
+                    else (self._backoff_base_seconds * (2 ** (attempt - 1)))
                 )
                 self._sleep_fn(delay)
                 continue
@@ -318,7 +334,14 @@ class PromiseLinkClient:
                 return finish(data)
 
             self._record_success()
-            return finish(ClientResult(True, ClientState.AVAILABLE, data=data, status_code=response.status_code))
+            return finish(
+                ClientResult(
+                    True,
+                    ClientState.AVAILABLE,
+                    data=data,
+                    status_code=response.status_code,
+                )
+            )
 
     @staticmethod
     def _validate_schema(
@@ -411,7 +434,10 @@ class PromiseLinkClient:
         注意：参数名固定为 min_days，禁止使用 §3.2 禁用的 dormant_days。
         """
         return self._request(
-            "GET", "/entities/dormant", params={"min_days": min_days}, required_list=True
+            "GET",
+            "/entities/dormant",
+            params={"min_days": min_days},
+            required_list=True,
         )
 
     def get_entity(self, entity_id: str) -> ClientResult:
@@ -424,7 +450,9 @@ class PromiseLinkClient:
 
     def get_relationship_brief(self, entity_id: str) -> ClientResult:
         """GET /api/v1/persons/{entity_id}/relationship-brief/aggregated — 关系卡。"""
-        return self._request("GET", f"/persons/{entity_id}/relationship-brief/aggregated")
+        return self._request(
+            "GET", f"/persons/{entity_id}/relationship-brief/aggregated"
+        )
 
     def list_todos(
         self, status: Optional[str] = None, page: Optional[int] = None

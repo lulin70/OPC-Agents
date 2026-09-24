@@ -155,6 +155,25 @@ class TestTaskRepositorySafety:
         with pytest.raises(ValueError, match="schedule_type"):
             _make_task(task_repo, schedule_type="shell")
 
+    def test_update_fields_rejects_non_whitelist_column(self, repos):
+        """_update_fields 动态拼接列名，必须拒绝白名单外的列（B608 收口）。
+
+        若此校验缺失，列名可被污染成任意 SQL 片段。
+        """
+        task_repo, _ = repos
+        task = _make_task(task_repo)
+        with pytest.raises(ValueError, match="不允许更新的字段"):
+            task_repo._update_fields(task.id, {"enabled = 1, name": "x"})
+
+    def test_update_fields_accepts_whitelist_columns(self, repos):
+        """对照组：白名单内列正常更新，保证收口未误伤既有写回路径。"""
+        task_repo, _ = repos
+        task = _make_task(task_repo)
+        task_repo._update_fields(
+            task.id, {"enabled": 1, "updated_at": "2026-01-01T00:00:00"}
+        )
+        assert task_repo.get_task(task.id).enabled == 1
+
     def test_invalid_timezone_rejected(self, repos):
         task_repo, _ = repos
         with pytest.raises(Exception):
@@ -358,9 +377,7 @@ class TestSchedulerTick:
     def test_blocked_task_parks_until_manual_review(self, repos):
         task_repo, exec_repo = repos
         task = _enabled_task(task_repo, schedule_expression="interval:10")
-        runner = _runner(
-            task_repo, exec_repo, handler=lambda p: "r", guard=_veto_guard
-        )
+        runner = _runner(task_repo, exec_repo, handler=lambda p: "r", guard=_veto_guard)
         service = SchedulerService(task_repo, exec_repo, runner=runner)
         service.tick(now=task.next_run_at + timedelta(minutes=1))
         reloaded = task_repo.get_task(task.id)
@@ -389,20 +406,35 @@ def test_schema_columns_match_tdd(db_path):
     ScheduledTaskRepository(db_path).close()
     TaskExecutionRepository(db_path).close()
     task_cols = {
-        row[1]
-        for row in conn.execute("PRAGMA table_info(scheduled_tasks)").fetchall()
+        row[1] for row in conn.execute("PRAGMA table_info(scheduled_tasks)").fetchall()
     }
     exec_cols = {
-        row[1]
-        for row in conn.execute("PRAGMA table_info(task_executions)").fetchall()
+        row[1] for row in conn.execute("PRAGMA table_info(task_executions)").fetchall()
     }
     conn.close()
     assert task_cols == {
-        "id", "name", "schedule_type", "schedule_expression", "task_type",
-        "parameters_json", "enabled", "timezone", "next_run_at", "last_run_at",
-        "created_at", "updated_at",
+        "id",
+        "name",
+        "schedule_type",
+        "schedule_expression",
+        "task_type",
+        "parameters_json",
+        "enabled",
+        "timezone",
+        "next_run_at",
+        "last_run_at",
+        "created_at",
+        "updated_at",
     }
     assert exec_cols == {
-        "id", "task_id", "started_at", "finished_at", "status", "result_ref",
-        "error_code", "retry_count", "consensus_status", "trace_id",
+        "id",
+        "task_id",
+        "started_at",
+        "finished_at",
+        "status",
+        "result_ref",
+        "error_code",
+        "retry_count",
+        "consensus_status",
+        "trace_id",
     }

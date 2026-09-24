@@ -47,7 +47,6 @@ from opc_manager.constants import (
 from opc_manager.intent_classifier import IntentCategory, IntentRouter
 from opc_manager.task_orchestrator import RouteDecision
 
-
 # ─── 辅助：子线程运行 async（避免事件循环冲突）──────────────────────────
 
 
@@ -164,7 +163,9 @@ class SlowBrain:
             "confidence": 0.9,
         }
 
-    def predict_consequence(self, context_dict: Dict, planned_action: str = "") -> Opinion:
+    def predict_consequence(
+        self, context_dict: Dict, planned_action: str = ""
+    ) -> Opinion:
         import time
 
         time.sleep(SERIAL_OP_TIMEOUT + 5)
@@ -428,9 +429,7 @@ class TestParallelVotingDecisions:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         assert decision.approved is True
         assert decision.decision_type == DecisionType.UNANIMOUS
@@ -446,9 +445,7 @@ class TestParallelVotingDecisions:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         assert decision.approved is False
         assert decision.decision_type == DecisionType.VETOED
@@ -464,9 +461,7 @@ class TestParallelVotingDecisions:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         assert decision.approved is True
         # 2 AGREE + 1 CONDITIONAL, 0 DISAGREE → MAJORITY (agree_count > total/2)
@@ -487,9 +482,7 @@ class TestParallelVotingDecisions:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         # 1 AGREE + 2 DISAGREE（低置信度不否决）→ ESCALATED
         assert decision.approved is False
@@ -505,9 +498,7 @@ class TestParallelVotingDecisions:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         # 2 AGREE + 1 低置信度 DISAGREE → MAJORITY（非 VETOED）
         assert decision.approved is True
@@ -537,9 +528,7 @@ class TestFailCloseMechanism:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         # 串行正常执行应返回有效决策（非超时）
         assert isinstance(decision, Decision)
@@ -561,9 +550,7 @@ class TestFailCloseMechanism:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         assert decision.approved is False
         assert decision.decision_type == DecisionType.ESCALATED
@@ -584,9 +571,7 @@ class TestFailCloseMechanism:
         ctx = _make_context("发邮件给张总")
         step = FakeStep(skill_id="email", action="send")
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         # 异常后降级到串行，串行正常执行 → 有效决策
         assert isinstance(decision, Decision)
@@ -659,9 +644,7 @@ class TestFullSagePipeline:
         assert checker.is_critical_decision_point(ctx, step) is True
 
         # Step 3: 并行投票
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         # Step 4: 批准执行
         assert decision.approved is True
@@ -681,9 +664,7 @@ class TestFullSagePipeline:
         step = FakeStep(skill_id="email", action="send")
         assert checker.is_critical_decision_point(ctx, step) is True
 
-        decision = _run_async(
-            checker.parallel_consensus(ctx, "execute_step", step)
-        )
+        decision = _run_async(checker.parallel_consensus(ctx, "execute_step", step))
 
         # 否决 → 不执行
         assert decision.approved is False
@@ -731,12 +712,24 @@ class TestConsensusDecisionLogPersistence:
 
         # 提交一组意见触发决策和日志记录
         opinions = [
-            Opinion(brain_type="strategist", opinion_type=OpinionType.AGREE,
-                    reasoning="test", confidence=0.9),
-            Opinion(brain_type="executor", opinion_type=OpinionType.AGREE,
-                    reasoning="test", confidence=0.85),
-            Opinion(brain_type="reflector", opinion_type=OpinionType.AGREE,
-                    reasoning="test", confidence=0.8),
+            Opinion(
+                brain_type="strategist",
+                opinion_type=OpinionType.AGREE,
+                reasoning="test",
+                confidence=0.9,
+            ),
+            Opinion(
+                brain_type="executor",
+                opinion_type=OpinionType.AGREE,
+                reasoning="test",
+                confidence=0.85,
+            ),
+            Opinion(
+                brain_type="reflector",
+                opinion_type=OpinionType.AGREE,
+                reasoning="test",
+                confidence=0.8,
+            ),
         ]
         engine.collect_opinions(opinions)
 
@@ -752,12 +745,24 @@ class TestConsensusDecisionLogPersistence:
         """重启后应从数据库加载历史决策日志。"""
         engine1 = ConsensusEngine()
         opinions = [
-            Opinion(brain_type="strategist", opinion_type=OpinionType.AGREE,
-                    reasoning="persist test", confidence=0.9),
-            Opinion(brain_type="executor", opinion_type=OpinionType.AGREE,
-                    reasoning="persist test", confidence=0.85),
-            Opinion(brain_type="reflector", opinion_type=OpinionType.AGREE,
-                    reasoning="persist test", confidence=0.8),
+            Opinion(
+                brain_type="strategist",
+                opinion_type=OpinionType.AGREE,
+                reasoning="persist test",
+                confidence=0.9,
+            ),
+            Opinion(
+                brain_type="executor",
+                opinion_type=OpinionType.AGREE,
+                reasoning="persist test",
+                confidence=0.85,
+            ),
+            Opinion(
+                brain_type="reflector",
+                opinion_type=OpinionType.AGREE,
+                reasoning="persist test",
+                confidence=0.8,
+            ),
         ]
         engine1.collect_opinions(opinions)
         initial_count = len(engine1.get_decision_log())

@@ -179,7 +179,9 @@ class ScheduleParser:
             try:
                 minutes = int(minutes_raw)
             except ValueError as exc:
-                raise ScheduleParseError(f"interval 语法: interval:N，收到 {expression}") from exc
+                raise ScheduleParseError(
+                    f"interval 语法: interval:N，收到 {expression}"
+                ) from exc
             if minutes < 1:
                 raise ScheduleParseError(f"interval 分钟数必须 >= 1: {expression}")
             return after + timedelta(minutes=minutes)
@@ -190,7 +192,9 @@ class ScheduleParser:
                 hour_raw, minute_raw = time_raw.split(":")
                 hour, minute = int(hour_raw), int(minute_raw)
             except ValueError as exc:
-                raise ScheduleParseError(f"daily 语法: daily HH:MM，收到 {expression}") from exc
+                raise ScheduleParseError(
+                    f"daily 语法: daily HH:MM，收到 {expression}"
+                ) from exc
             fields = _parse_cron(f"{minute} {hour} * * *")
         else:
             fields = _parse_cron(expression)
@@ -229,18 +233,6 @@ class ScheduledTask:
     updated_at: Optional[datetime] = None
 
 
-def _iso(dt: Optional[datetime]) -> Optional[str]:
-    if dt is None:
-        return None
-    return dt.strftime(_DB_DATE_FORMAT)
-
-
-def _from_iso(raw: Optional[str]) -> Optional[datetime]:
-    if not raw:
-        return None
-    return datetime.strptime(raw, _DB_DATE_FORMAT)
-
-
 class ScheduledTaskRepository:
     """SQLite 持久化：scheduled_tasks 表（TDD §5.5），重启后任务不丢。"""
 
@@ -253,8 +245,7 @@ class ScheduledTaskRepository:
 
     def _ensure_table(self) -> None:
         with self._lock:
-            self._conn.execute(
-                """
+            self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS scheduled_tasks (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
@@ -269,8 +260,7 @@ class ScheduledTaskRepository:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 )
-                """
-            )
+                """)
             self._conn.commit()
 
     def close(self) -> None:
@@ -298,9 +288,7 @@ class ScheduledTaskRepository:
         except (TypeError, ValueError) as exc:
             raise ValueError(f"parameters 必须可 JSON 序列化: {exc}") from exc
         if len(params_json.encode("utf-8")) > MAX_PARAMS_JSON_BYTES:
-            raise ValueError(
-                f"parameters_json 超过 {MAX_PARAMS_JSON_BYTES} 字节上限"
-            )
+            raise ValueError(f"parameters_json 超过 {MAX_PARAMS_JSON_BYTES} 字节上限")
         ScheduleParser.next_after(schedule_expression, datetime.now())  # 可解析性校验
 
         now_text = _iso(_utcnow())
@@ -373,10 +361,16 @@ class ScheduledTaskRepository:
         "enabled, timezone, next_run_at, last_run_at, created_at, updated_at"
     )
 
+    # _update_fields 动态拼接列名，故以白名单收口：任何未列出的列名直接拒绝，
+    # 使"列名不可被外部输入污染"成为代码保证而非约定（bandit B608）。
+    _UPDATABLE_COLUMNS = frozenset(
+        {"enabled", "next_run_at", "last_run_at", "updated_at"}
+    )
+
     def get_task(self, task_id: str) -> Optional[ScheduledTask]:
         with self._lock:
             row = self._conn.execute(
-                f"SELECT {self._SELECT_COLUMNS} FROM scheduled_tasks WHERE id = ?",
+                f"SELECT {self._SELECT_COLUMNS} FROM scheduled_tasks WHERE id = ?",  # nosec B608 — column list is an internal class constant, values parameterized
                 (task_id,),
             ).fetchone()
         return self._row_to_task(row) if row else None
@@ -395,18 +389,21 @@ class ScheduledTaskRepository:
             rows = self._conn.execute(
                 f"""SELECT {self._SELECT_COLUMNS} FROM scheduled_tasks
                     WHERE enabled = 1 AND next_run_at IS NOT NULL AND next_run_at <= ?
-                    ORDER BY next_run_at""",
+                    ORDER BY next_run_at""",  # nosec B608 — column list is an internal class constant, values parameterized
                 (_iso(now),),
             ).fetchall()
         return [self._row_to_task(row) for row in rows]
 
     def _update_fields(self, task_id: str, updates: Dict[str, Any]) -> None:
+        unknown = set(updates) - self._UPDATABLE_COLUMNS
+        if unknown:
+            raise ValueError(f"不允许更新的字段: {sorted(unknown)}")
         sets = ", ".join(f"{column} = ?" for column in updates)
         values = list(updates.values())
         values.append(task_id)
         with self._lock:
             self._conn.execute(
-                f"UPDATE scheduled_tasks SET {sets} WHERE id = ?",
+                f"UPDATE scheduled_tasks SET {sets} WHERE id = ?",  # nosec B608 — column names validated against _UPDATABLE_COLUMNS whitelist, values parameterized
                 tuple(values),
             )
             self._conn.commit()
@@ -455,9 +452,7 @@ class ScheduledTaskRepository:
 
     def delete_task(self, task_id: str) -> None:
         with self._lock:
-            self._conn.execute(
-                "DELETE FROM scheduled_tasks WHERE id = ?", (task_id,)
-            )
+            self._conn.execute("DELETE FROM scheduled_tasks WHERE id = ?", (task_id,))
             self._conn.commit()
 
 
@@ -473,8 +468,7 @@ class TaskExecutionRepository:
 
     def _ensure_table(self) -> None:
         with self._lock:
-            self._conn.execute(
-                """
+            self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS task_executions (
                     id TEXT PRIMARY KEY,
                     task_id TEXT NOT NULL,
@@ -487,8 +481,7 @@ class TaskExecutionRepository:
                     consensus_status TEXT,
                     trace_id TEXT NOT NULL
                 )
-                """
-            )
+                """)
             self._conn.commit()
 
     def close(self) -> None:
@@ -612,7 +605,9 @@ class ScheduledTaskRunner:
         except DecisionVetoError as exc:
             return self._record_blocked(task, "VETOED", str(exc), trace_id)
         except Exception as exc:  # guard 异常一律 fail-close（TDD §5.3）
-            return self._record_blocked(task, "GUARD_ERROR", type(exc).__name__, trace_id)
+            return self._record_blocked(
+                task, "GUARD_ERROR", type(exc).__name__, trace_id
+            )
 
         handler = self._handlers.get(task.task_type)
         if handler is None:
@@ -711,7 +706,9 @@ class SchedulerService:
         if self._thread is not None and self._thread.is_alive():
             return
         self._stop_event.clear()
-        self._thread = threading.Thread(target=self._loop, daemon=True, name="opc-scheduler")
+        self._thread = threading.Thread(
+            target=self._loop, daemon=True, name="opc-scheduler"
+        )
         self._thread.start()
 
     def stop(self, timeout: float = 5.0) -> None:
@@ -743,7 +740,9 @@ class SchedulerService:
             outcomes.append(outcome)
         return outcomes
 
-    def _compute_next_run(self, task: ScheduledTask, now: datetime) -> Optional[datetime]:
+    def _compute_next_run(
+        self, task: ScheduledTask, now: datetime
+    ) -> Optional[datetime]:
         """now 为 naive UTC；在任务时区内计算下次触发后转回 naive UTC 存储。"""
         try:
             tz = ZoneInfo(task.timezone)
