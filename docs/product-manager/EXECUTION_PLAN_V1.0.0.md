@@ -112,6 +112,60 @@
 
 > **教训（与 project_memory 门禁可信度条目呼应）**：CI 只在 main/PR 触发，feature 分支 push 不触发 → "已 push"被误当"已过门禁"，导致 ruff/mypy/black/bandit 四类问题被掩盖。**任何"门禁通过"的结论必须先确认该门禁真的执行了、且检查范围没被 flag 削掉。**
 
+### 批次 1.3（T7）CRM 解冻 — 事实校正与设计（2026-09-24）
+
+> **动工前核查（实际命令输出）**，先校正 SSOT（SKILL_FREEZE_LIST §5）中三处与代码事实不符的描述，避免按错误前提施工。
+
+| # | SSOT 描述 | 代码事实 | 处置 |
+|---|---|---|---|
+| ① | §5.1「移除 `crm_skill.py` 文件顶部 `# [FROZEN v0.3.0]` 标记」「解锁所有方法（移除 `# [FROZEN v0.3.0] add_customer` 等注释）」 | 文件内**不存在**任何 per-method `# [FROZEN]` 注释；只有文件头 `"""[SEMI-FROZEN v0.3.0] ..."""` 模块 docstring | 解冻动作 = 改写模块 docstring；SSOT §5.1 该两条合并为一条 |
+| ② | §5.1 方法名：`update_customer` / `list_customers` / `add_interaction` / `list_interactions` / `add_followup_reminder` | 实际实现名：`update_customer_status` / `search_customers` / `add_deal` / `get_follow_ups` / `add_follow_up`（`add_deal` 即"合作记录"） | **不重命名**（`email_skill`/`report_skill` 与 64 项既有单测均按现名引用，重命名属破坏性改动且非本批次目标）；改为在 SSOT 补"SSOT 名义 → 实际实现名"映射表 |
+| ③ | §5.2「当前约 40%，需补约 40 个测试」 | 实测 `pytest tests/unit/test_crm_skill.py --cov=opc_manager.crm_skill` = **249 stmts / 24 miss / 90%**，64 passed | 存量覆盖率**已达标**（≥80%）；本批次只需为**新增代码**（PromiseLink 集成 + `lifecycle_tracker`）补测，不虚报补测数量 |
+
+**集成路径校正**：`DormantScanner` 是 **PromiseLink 侧**服务（`services/dormant_scanner.py`），OPC-Agents 侧不存在该类。OPC-Agents 的集成点只能是既有 `PromiseLinkClient`：
+- 沉默客户 → `PromiseLinkClient.list_dormant_entities(min_days)`（`GET /api/v1/entities/dormant?min_days=N`，TDD §3.1 已校准）
+- 生命周期 → `PromiseLinkClient.get_entity_stage_info(entity_id)`（`GET /api/v1/entities/{id}/stage-info`）
+
+> `PROMISELINK_REUSE_PLAN.md` §3.2 的示例代码基于旧设想的 `PromiseLinkConfig` / `get_promiselink_client()` / `self` 方法，与批次 1.1 落地的实际客户端签名不一致 → **以 `promiselink_client.py` 实际契约为准**，示例代码不作为施工依据。
+
+**设计（最小改动，向后兼容）**：
+
+| 项 | 设计 | 理由 |
+|---|---|---|
+| 集成开关 | 复用 `PromiseLinkClient()` 读 `PROMISELINK_ENABLED`（默认 `false`），crm_skill 只新增一个模块级 `_get_client()` 工厂，**不新增重复配置项** | 配置单一来源；`PROMISELINK_ENABLED=false` 默认值已在批次 1.1 落地 |
+| `get_silent_customers(days)` | 本地查询结果**保持不变**（`success`/`customers`/`count`/`silent_days` 四个键语义不变）；集成可用时**追加** `promiselink`（映射后的实体 + `reactivation_score`/`icebreaker_topic`）与 `source="promiselink"`；不可用或失败时**追加** `promiselink_state`（DISABLED/UNCONFIGURED/DEGRADED…显式给出），本地结果不受影响 | 既有 2 项单测与 `report_skill` 调用方零回归；失败不静默（SKILL_FREEZE_LIST §八） |
+| `lifecycle_tracker(customer_id="", name="", entity_id="")` | 本地生命周期视图（status / last_contact / silent_days / deal_count / follow_up_count / stage）**始终可用**；仅当显式传入 `entity_id` 且集成可用时，追加 `promiselink_stage`（stage-info 原始 payload） | 本地 CRM 无 entity_id 字段，不强做隐式映射；关闭集成时能力完整 |
+
+**验收标准（T7）**：
+- [x] `crm_skill.py` 不含 `[SEMI-FROZEN v0.3.0]` 标记
+- [x] 覆盖率 ≥80%（实测口径：`pytest tests/unit/test_crm_skill.py --cov=opc_manager.crm_skill`）
+- [x] `tests/e2e/test_crm_e2e.py` 通过（模拟真实用户走完 录入→查→合作→跟进→沉默→统计 链路）
+- [x] 集成关闭（`PROMISELINK_ENABLED` 未设置）时本地 CRM 完整可用；集成开启且 PromiseLink 可用/降级两条路径均有测试
+- [x] 既有 64 项 CRM 单测 0 regression；本地五门禁 + 全量回归绿
+
+**实施证据（T7，真实命令输出）**：
+
+| 检查项 | 命令 | 实际输出 |
+|---|---|---|
+| 存量单测无回归 | `pytest tests/unit/test_crm_skill.py -q` | `64 passed`（改动前基线，改后并入下列 93 项） |
+| 单测 + 覆盖率 | `pytest tests/unit/test_crm_skill.py -q --cov=opc_manager.crm_skill` | `93 passed`；`crm_skill.py 317 stmts / 24 miss / 92%` |
+| E2E 全链路 | `pytest tests/e2e/test_crm_e2e.py -q` | `43 passed` |
+| 收集总数 | `pytest --co -q --no-header` | `4966 tests collected`（原 4894 → +29 单测 +43 E2E） |
+| 三语 README 一致性 | CI 原样 heredoc 脚本 | `✓ 三语 README 一致性校验通过（版本 0.5.9, 模块 99, 测试 4966）` |
+| ruff | `ruff check opc_manager/ frontend/ tests/` | `All checks passed!`（exit 0） |
+| black | `black --check --target-version py310 <3 个改动文件>` | `3 files would be left unchanged.`（exit 0） |
+| mypy | `mypy opc_manager/ --ignore-missing-imports --follow-imports=silent` | `Success: no issues found in 130 source files`（exit 0） |
+| bandit | `bandit -r opc_manager/ -ll -ii` | 仅 nosec 提示，无告警（exit 0） |
+| radon cc ≥D | `radon cc opc_manager/ -s -n D` | 空输出（exit 0） |
+| 全量回归 | `pytest -q` | 见下方"实施记录"（W5/T7 全量结果） |
+
+**实施记录（T7）**：
+- 代码：`opc_manager/crm_skill.py` — 模块 docstring 改写（移除 `[SEMI-FROZEN v0.3.0]`）；新增 `_get_client()` 工厂 + `_client_state()` / `_map_dormant_entity()` / `_promiselink_dormant()` / `_promiselink_stage()`；`get_silent_customers` 追加集成片段；新增 `lifecycle_tracker()` 与 `_silent_days_since()` / `_STAGE_LABELS`。
+- 测试：`tests/unit/test_crm_skill.py` 64 → 93（+29，覆盖 6 态集成分支与 lifecycle 全分支）；新增 `tests/e2e/test_crm_e2e.py`（43 项，真实 SQLite + 真实 `PromiseLinkClient` + `httpx.MockTransport`，不打真实网络）。
+- 设计取舍：`stage` 直接取 `_STAGE_LABELS[status]` 而不做 `未知` 兜底——`customers.status` 受 DB `CHECK` 约束为 5 个枚举值，兜底分支不可达（首版写的兜底与对应用例已删除，避免"测试造数据迁就代码"）。
+- 文档：三语 README 测试数 4894 → 4966、JP 测试文件数 137 → 138；本文件与 `SKILL_FREEZE_LIST_V1.0.0.md` §5/§6 勾选。
+- 未纳入 T7（属批次 3 UI）：`SKILL_FREEZE_LIST` §5.3 文档层中 API.md / README 功能位同步、§5.4 UI 层（技能市场 / Settings / 主导航 / 关系推进卡 / Onboarding）。
+
 ### 批次 2 — 事件驱动（ENH-PL 反馈到达后）
 反馈 → 共识决策（改 TDD 或不改）→ **先更文档再动码** → 实现被阻塞功能（ENH-PL-01 双向承诺分析等）。
 
@@ -155,6 +209,7 @@ UI（技能市场 6 技能、CRM 标签页、关系推进卡、Onboarding）→ 
 | 2026-09-23 | B0.1 根因定位并修复：Playwright Sync API 的 greenlet 事件循环占用主线程 running-loop 标记 → `playwright_browser` 由 session 级收敛为 module 级；补二分证据链；临时探针插件用后即删不入库 |
 | 2026-09-24 | 批次 1 追加项 W 完成（W-1 有界重试 + 失败可观测 / W-2 e2e 断言消息如实化 / W-3 两个真实生产调用方同步，第三个经查为占位实现）；补 W 系列实施证据表；记录门禁可信度附带发现（本分支从未触发 CI、main 上 black 与 README 一致性门禁为既有红、本批次 mypy 3 错已修） |
 | 2026-09-24 | 按用户指令修复"既有红"：main 上 black（2 个 e2e 文件）与三语 README 一致性（测试数 4744→4894、JP 文件数 100→137）由红转绿；并清除本批次自身引入的 ruff（3 处 F401/F841）与 bandit（3 处 B608，其中 `_update_fields` 补真实列名白名单）问题；本地全门禁复跑全绿 |
+| 2026-09-24 | 批次 1.3（T7）CRM 解冻施工完成：docstring 去 `[SEMI-FROZEN]`、新增 `lifecycle_tracker`、`get_silent_customers` 集成增强（六态显式 `promiselink_state`，本地四键语义不变）；单测 64→93、覆盖率 92%、新增 `tests/e2e/test_crm_e2e.py` 43 项（真实 SQLite + 真实 `PromiseLinkClient` + `MockTransport`）；测试数 4894→4966 同步三语 README；补 T7 实施证据表；§5.3/§5.4 与整体解冻验收前三项归属批次 3 |
 
 ---
 

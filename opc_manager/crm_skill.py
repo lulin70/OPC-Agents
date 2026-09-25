@@ -1,12 +1,16 @@
-"""[SEMI-FROZEN v0.3.0] Partially frozen — only referenced methods maintained.
+"""客户管理技能（CRM）。
 
-Frozen on: 2026-06-19
-Maintained methods (referenced by core skills):
-  - get_customer (referenced by email_skill)
-  - get_customer_stats (referenced by report_skill)
-  - get_silent_customers (referenced by report_skill)
-Other methods are frozen and not actively maintained.
-Revival: See docs/spec/SKILL_FREEZE_LIST.md
+生命周期：
+  - v0.3.0 起曾以「半冻结」方式仅维护被引用的 3 个方法
+    （get_customer / get_customer_stats / get_silent_customers）。
+  - v1.0.0 批次 1.3 解冻：全量方法恢复维护，并新增 PromiseLink 集成。
+    解冻依据：docs/spec/SKILL_FREEZE_LIST_V1.0.0.md §5
+
+PromiseLink 集成（默认关闭，由 PROMISELINK_ENABLED 控制）：
+  - get_silent_customers  → PromiseLinkClient.list_dormant_entities(min_days)
+  - lifecycle_tracker(entity_id=...) → PromiseLinkClient.get_entity_stage_info(entity_id)
+集成不可用时本地能力完整，并以 promiselink_state 显式给出原因（不静默降级）。
+契约来源：docs/architecture/TDD_V1.0.0.md §3.1 / §3.4
 """
 
 import logging
@@ -29,6 +33,87 @@ from opc_manager.utils import SECONDS_PER_DAY
 logger = logging.getLogger(__name__)
 
 SILENT_THRESHOLD_DAYS = 30
+
+# PromiseLink DormantContactItem 中允许映射到本地的字段（白名单，不整包透传）
+_DORMANT_FIELDS = (
+    "entity_id",
+    "name",
+    "company",
+    "dormant_days",
+    "reactivation_score",
+    "icebreaker_topic",
+    "relationship_stage",
+    "last_interaction",
+    "reason",
+)
+
+
+def _get_client() -> Any:
+    """模块级 PromiseLink 客户端工厂。
+
+    复用批次 1.1 落地的 PromiseLinkClient（读 PROMISELINK_ENABLED，默认 false），
+    不新增重复配置项；测试可 monkeypatch 本工厂注入 MockTransport 客户端。
+    """
+    from opc_manager.promiselink_client import PromiseLinkClient
+
+    return PromiseLinkClient()
+
+
+def _client_state(client: Any) -> str:
+    """取客户端状态字符串（ClientState.value）。"""
+    state = client.state()
+    return getattr(state, "value", str(state))
+
+
+def _map_dormant_entity(item: Any) -> Dict[str, Any]:
+    """PromiseLink DormantContactItem → 本地字段（仅白名单字段）。"""
+    if not isinstance(item, dict):
+        return {"raw": item}
+    return {key: item.get(key) for key in _DORMANT_FIELDS}
+
+
+def _promiselink_dormant(days: int) -> Dict[str, Any]:
+    """沉默客户集成片段。
+
+    可用 → {"promiselink": [...], "source": "promiselink"}
+    不可用/失败 → {"promiselink_state": "<STATE>"}（显式给出，不静默）
+    """
+    try:
+        client = _get_client()
+        state = _client_state(client)
+        if state != "AVAILABLE":
+            return {"promiselink_state": state}
+        result = client.list_dormant_entities(min_days=days)
+        if not result.success:
+            return {"promiselink_state": result.state.value}
+        items = result.data or []
+        return {
+            "promiselink": [_map_dormant_entity(item) for item in items],
+            "source": "promiselink",
+        }
+    except Exception as e:
+        logger.warning("PromiseLink 沉默客户集成失败: %s", type(e).__name__)
+        return {"promiselink_state": "DEGRADED"}
+
+
+def _promiselink_stage(entity_id: str) -> Dict[str, Any]:
+    """生命周期集成片段。
+
+    可用 → {"promiselink_stage": <payload>}
+    不可用/失败 → {"promiselink_state": "<STATE>"}（显式给出，不静默）
+    """
+    try:
+        client = _get_client()
+        state = _client_state(client)
+        if state != "AVAILABLE":
+            return {"promiselink_state": state}
+        result = client.get_entity_stage_info(entity_id)
+        if not result.success:
+            return {"promiselink_state": result.state.value}
+        return {"promiselink_stage": result.data}
+    except Exception as e:
+        logger.warning("PromiseLink 生命周期集成失败: %s", type(e).__name__)
+        return {"promiselink_state": "DEGRADED"}
 
 
 def _encrypt_customer_fields(customer: Dict[str, Any]) -> Dict[str, Any]:
@@ -220,6 +305,12 @@ def add_deal(
 
 
 def get_silent_customers(days: int = SILENT_THRESHOLD_DAYS) -> Dict[str, Any]:
+    """本地沉默客户扫描（四个本地键语义保持稳定）。
+
+    本地键：success / customers / count / silent_days
+    集成可用时追加 promiselink + source="promiselink"；
+    不可用时追加 promiselink_state（显式原因），本地结果不受影响。
+    """
     cutoff = time.strftime(
         "%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - days * SECONDS_PER_DAY)
     )
@@ -228,12 +319,83 @@ def get_silent_customers(days: int = SILENT_THRESHOLD_DAYS) -> Dict[str, Any]:
         (cutoff,),
     )
     decrypted_rows = [_decrypt_customer_fields(r) for r in rows]
-    return {
+    result: Dict[str, Any] = {
         "success": True,
         "customers": decrypted_rows,
         "count": len(decrypted_rows),
         "silent_days": days,
     }
+    result.update(_promiselink_dormant(days))
+    return result
+
+
+_STAGE_LABELS = {
+    "potential": "潜在客户",
+    "first_deal": "首次合作",
+    "active": "活跃",
+    "silent": "沉默",
+    "lost": "流失",
+}
+
+
+def _silent_days_since(last_contact: str) -> int:
+    """距 last_contact 的天数；缺失或无法解析时返回 0。"""
+    if not last_contact:
+        return 0
+    try:
+        parsed = time.strptime(last_contact, "%Y-%m-%dT%H:%M:%S")
+    except ValueError:
+        return 0
+    return max(0, int((time.time() - time.mktime(parsed)) // SECONDS_PER_DAY))
+
+
+def lifecycle_tracker(
+    customer_id: str = "", name: str = "", entity_id: str = ""
+) -> Dict[str, Any]:
+    """客户生命周期视图（本地能力始终可用，与 PromiseLink 开关无关）。
+
+    本地字段：customer_id / name / company / status / stage / last_contact /
+    silent_days / deal_count / follow_up_count
+    仅当显式传入 entity_id 且集成可用时追加 promiselink_stage。
+    """
+    init_db()
+    if customer_id:
+        rows = execute_query("SELECT * FROM customers WHERE id=?", (customer_id,))
+    elif name:
+        rows = execute_query(
+            "SELECT * FROM customers WHERE name LIKE ?", (f"%{name}%",)
+        )
+    else:
+        return {"success": False, "error": "请提供客户ID或姓名"}
+    if not rows:
+        return {"success": False, "error": "未找到客户"}
+
+    customer = _decrypt_customer_fields(rows[0])
+    cid = customer["id"]
+    deal_rows = execute_query(
+        "SELECT COUNT(*) AS cnt FROM deals WHERE customer_id=?", (cid,)
+    )
+    follow_rows = execute_query(
+        "SELECT COUNT(*) AS cnt FROM follow_ups WHERE customer_id=?", (cid,)
+    )
+    status = customer.get("status", "")
+    last_contact = customer.get("last_contact", "")
+    result: Dict[str, Any] = {
+        "success": True,
+        "customer_id": cid,
+        "name": customer.get("name", ""),
+        "company": customer.get("company", ""),
+        "status": status,
+        # customers.status 受 DB CHECK 约束（5 个枚举值），无需兜底分支
+        "stage": _STAGE_LABELS[status],
+        "last_contact": last_contact,
+        "silent_days": _silent_days_since(last_contact),
+        "deal_count": deal_rows[0]["cnt"] if deal_rows else 0,
+        "follow_up_count": follow_rows[0]["cnt"] if follow_rows else 0,
+    }
+    if entity_id:
+        result.update(_promiselink_stage(entity_id))
+    return result
 
 
 def update_customer_status(customer_id: str, status: str) -> Dict[str, Any]:
