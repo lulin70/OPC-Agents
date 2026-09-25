@@ -1,8 +1,5 @@
 """CRM Skill 覆盖率补充测试
 
-目标：将 crm_skill.py 覆盖率从 14.8% 提升到 ≥70%
-验证 P2 重构（execute_goal D(26)→C(13) 拆分的辅助函数）
-
 覆盖范围：
 - _clean_name_from_goal — 名称清理（纯函数）
 - _handle_follow_up — 跟进意图
@@ -16,12 +13,17 @@
 - update_customer_status — 状态更新
 - _parse_customer_from_text — 文本解析
 - undo_add_customer / undo_add_deal / undo_add_follow_up — 撤销操作
+- PromiseLink 集成（v1.0.0 批次 1.3 解冻新增）：
+  _get_client / _map_dormant_entity / _promiselink_dormant / _promiselink_stage /
+  get_silent_customers 集成分支 / lifecycle_tracker 全分支
 
 数据库使用临时目录 (OPC_DATA_DIR=tmp_path)，不污染真实数据。
+PromiseLink 相关用例使用最小替身客户端，不发真实网络请求。
 """
 
 import pytest
 
+import opc_manager.crm_skill as crm_skill
 import opc_manager.data_manager as dm
 from opc_manager.crm_skill import (
     _clean_name_from_goal,
@@ -38,6 +40,7 @@ from opc_manager.crm_skill import (
     get_customer_stats,
     get_follow_ups,
     get_silent_customers,
+    lifecycle_tracker,
     search_customers,
     undo_add_customer,
     undo_add_deal,
@@ -635,3 +638,312 @@ class TestUndoFunctions:
         """Verify: undo deal with no records succeeds (no-op)."""
         result = undo_add_deal()
         assert result["success"]
+
+
+# ---------------------------------------------------------------------------
+# PromiseLink 集成（v1.0.0 批次 1.3 解冻新增）
+# ---------------------------------------------------------------------------
+
+
+class _FakeState:
+    def __init__(self, value: str):
+        self.value = value
+
+
+class _FakeResult:
+    def __init__(self, success: bool, state: str, data=None):
+        self.success = success
+        self.state = _FakeState(state)
+        self.data = data
+
+
+class _FakeClient:
+    """crm_skill 用到的 PromiseLinkClient 最小替身（无网络）。"""
+
+    def __init__(self, state="AVAILABLE", result=None, raise_on=""):
+        self._state = _FakeState(state)
+        self._result = result
+        self._raise_on = raise_on
+        self.calls = []
+
+    def state(self):
+        return self._state
+
+    def list_dormant_entities(self, min_days):
+        self.calls.append(("list_dormant_entities", min_days))
+        if self._raise_on == "list_dormant_entities":
+            raise RuntimeError("boom")
+        return self._result
+
+    def get_entity_stage_info(self, entity_id):
+        self.calls.append(("get_entity_stage_info", entity_id))
+        if self._raise_on == "get_entity_stage_info":
+            raise RuntimeError("boom")
+        return self._result
+
+
+def _inject_client(monkeypatch, client):
+    """把 crm_skill 的模块级工厂替换为返回指定替身客户端。"""
+    monkeypatch.setattr(crm_skill, "_get_client", lambda: client)
+
+
+class TestGetClientFactory:
+    def test_disabled_by_default(self, monkeypatch):
+        """Verify: 未设置 PROMISELINK_ENABLED 时客户端为 DISABLED。"""
+        monkeypatch.delenv("PROMISELINK_ENABLED", raising=False)
+        monkeypatch.delenv("PROMISELINK_BASE_URL", raising=False)
+        monkeypatch.delenv("PROMISELINK_TOKEN", raising=False)
+        assert crm_skill._get_client().state().value == "DISABLED"
+
+    def test_enabled_without_config_is_unconfigured(self, monkeypatch):
+        """Verify: 开启但缺 base_url/token 时为 UNCONFIGURED。"""
+        monkeypatch.setenv("PROMISELINK_ENABLED", "true")
+        monkeypatch.delenv("PROMISELINK_BASE_URL", raising=False)
+        monkeypatch.delenv("PROMISELINK_TOKEN", raising=False)
+        assert crm_skill._get_client().state().value == "UNCONFIGURED"
+
+
+class TestMapDormantEntity:
+    def test_whitelist_only(self):
+        """Verify: 仅映射白名单字段，未知字段不透传。"""
+        mapped = crm_skill._map_dormant_entity(
+            {
+                "entity_id": "e1",
+                "name": "张三",
+                "reactivation_score": 0.78,
+                "icebreaker_topic": "上次聊到的展会",
+                "secret_internal_field": "不应出现",
+            }
+        )
+        assert mapped["entity_id"] == "e1"
+        assert mapped["reactivation_score"] == 0.78
+        assert mapped["icebreaker_topic"] == "上次聊到的展会"
+        assert "secret_internal_field" not in mapped
+
+    def test_non_dict_item(self):
+        """Verify: 非 dict 载荷原样放入 raw，不抛异常。"""
+        assert crm_skill._map_dormant_entity("oops") == {"raw": "oops"}
+
+
+class TestGetSilentCustomersIntegration:
+    def test_local_keys_intact_when_disabled(self, temp_db, monkeypatch):
+        """Verify: 集成关闭时本地四键语义不变，且显式给出 DISABLED。"""
+        _seed_customer(name="张三")
+        dm.execute_write(
+            "UPDATE customers SET last_contact=? WHERE name=?",
+            ("2020-01-01T00:00:00", "张三"),
+        )
+        _inject_client(monkeypatch, _FakeClient(state="DISABLED"))
+        result = get_silent_customers()
+        assert result["success"] is True
+        assert result["count"] == 1
+        assert result["silent_days"] == 30
+        assert result["promiselink_state"] == "DISABLED"
+        assert "promiselink" not in result
+        assert "source" not in result
+
+    def test_unconfigured_state_reported(self, temp_db, monkeypatch):
+        """Verify: 未配置时显式给出 UNCONFIGURED。"""
+        _inject_client(monkeypatch, _FakeClient(state="UNCONFIGURED"))
+        result = get_silent_customers()
+        assert result["promiselink_state"] == "UNCONFIGURED"
+
+    def test_available_appends_mapped_entities(self, temp_db, monkeypatch):
+        """Verify: 可用时追加 promiselink 列表与 source，且 min_days 透传。"""
+        client = _FakeClient(
+            state="AVAILABLE",
+            result=_FakeResult(
+                True,
+                "AVAILABLE",
+                data=[
+                    {
+                        "entity_id": "e1",
+                        "name": "李四",
+                        "dormant_days": 92,
+                        "reactivation_score": 0.78,
+                        "icebreaker_topic": "展会",
+                    }
+                ],
+            ),
+        )
+        _inject_client(monkeypatch, client)
+        result = get_silent_customers(days=45)
+        assert result["source"] == "promiselink"
+        assert result["promiselink"][0]["name"] == "李四"
+        assert result["promiselink"][0]["reactivation_score"] == 0.78
+        assert result["silent_days"] == 45
+        assert client.calls == [("list_dormant_entities", 45)]
+
+    def test_available_with_empty_payload(self, temp_db, monkeypatch):
+        """Verify: 可用但无沉默实体时返回空列表（不报错）。"""
+        _inject_client(
+            monkeypatch,
+            _FakeClient(
+                state="AVAILABLE", result=_FakeResult(True, "AVAILABLE", data=None)
+            ),
+        )
+        result = get_silent_customers()
+        assert result["promiselink"] == []
+        assert result["source"] == "promiselink"
+
+    def test_available_but_request_degrades(self, temp_db, monkeypatch):
+        """Verify: 请求失败时给出 DEGRADED，本地结果仍可用。"""
+        _inject_client(
+            monkeypatch,
+            _FakeClient(state="AVAILABLE", result=_FakeResult(False, "DEGRADED")),
+        )
+        result = get_silent_customers()
+        assert result["success"] is True
+        assert result["promiselink_state"] == "DEGRADED"
+
+    def test_schema_mismatch_reported(self, temp_db, monkeypatch):
+        """Verify: schema 不匹配时显式给出 SCHEMA_MISMATCH。"""
+        _inject_client(
+            monkeypatch,
+            _FakeClient(
+                state="AVAILABLE", result=_FakeResult(False, "SCHEMA_MISMATCH")
+            ),
+        )
+        result = get_silent_customers()
+        assert result["promiselink_state"] == "SCHEMA_MISMATCH"
+
+    def test_client_factory_raises_degrades(self, temp_db, monkeypatch):
+        """Verify: 工厂本身抛异常时不冒泡，降级为 DEGRADED。"""
+
+        def _boom():
+            raise RuntimeError("factory down")
+
+        monkeypatch.setattr(crm_skill, "_get_client", _boom)
+        result = get_silent_customers()
+        assert result["success"] is True
+        assert result["promiselink_state"] == "DEGRADED"
+
+
+class TestSilentDaysSince:
+    def test_empty_returns_zero(self):
+        assert crm_skill._silent_days_since("") == 0
+
+    def test_unparsable_returns_zero(self):
+        assert crm_skill._silent_days_since("not-a-date") == 0
+
+    def test_old_date_counts_days(self):
+        assert crm_skill._silent_days_since("2020-01-01T00:00:00") > 1000
+
+
+class TestLifecycleTracker:
+    def test_by_customer_id(self, temp_db):
+        """Verify: 本地生命周期视图字段齐全。"""
+        cid = _seed_customer(name="张三", company="测试公司")
+        result = lifecycle_tracker(customer_id=cid)
+        assert result["success"] is True
+        assert result["customer_id"] == cid
+        assert result["name"] == "张三"
+        assert result["company"] == "测试公司"
+        assert result["status"] == "potential"
+        assert result["stage"] == "潜在客户"
+        assert result["deal_count"] == 0
+        assert result["follow_up_count"] == 0
+        assert result["silent_days"] == 0
+
+    def test_by_name(self, temp_db):
+        """Verify: 按姓名可查到生命周期视图。"""
+        _seed_customer(name="李四")
+        result = lifecycle_tracker(name="李四")
+        assert result["success"] is True
+        assert result["name"] == "李四"
+
+    def test_missing_args(self, temp_db):
+        """Verify: 未给 ID/姓名时返回错误。"""
+        result = lifecycle_tracker()
+        assert result["success"] is False
+        assert "请提供" in result["error"]
+
+    def test_not_found(self, temp_db):
+        """Verify: 客户不存在时返回错误。"""
+        result = lifecycle_tracker(customer_id="no-such-id")
+        assert result["success"] is False
+
+    def test_counts_and_stage_reflect_data(self, temp_db):
+        """Verify: 合作/跟进计数与状态映射正确。"""
+        cid = _seed_customer(name="张总")
+        add_deal(cid, "首单合作", amount=1000, status="closed_won")
+        add_follow_up(cid, "回访一次")
+        result = lifecycle_tracker(customer_id=cid)
+        assert result["deal_count"] == 1
+        assert result["follow_up_count"] == 1
+        assert result["status"] == "first_deal"
+        assert result["stage"] == "首次合作"
+
+    @pytest.mark.parametrize(
+        "status,label",
+        [
+            ("potential", "潜在客户"),
+            ("first_deal", "首次合作"),
+            ("active", "活跃"),
+            ("silent", "沉默"),
+            ("lost", "流失"),
+        ],
+    )
+    def test_stage_label_covers_all_statuses(self, temp_db, status, label):
+        """Verify: 5 个受约束状态各有对应中文阶段标签。"""
+        cid = _seed_customer(name="王五")
+        assert update_customer_status(cid, status)["success"]
+        result = lifecycle_tracker(customer_id=cid)
+        assert result["status"] == status
+        assert result["stage"] == label
+
+    def test_no_entity_id_skips_promiselink(self, temp_db, monkeypatch):
+        """Verify: 不传 entity_id 时不触碰 PromiseLink（无网络副作用）。"""
+        cid = _seed_customer(name="张三")
+        client = _FakeClient(
+            state="AVAILABLE", result=_FakeResult(True, "AVAILABLE", {})
+        )
+        _inject_client(monkeypatch, client)
+        result = lifecycle_tracker(customer_id=cid)
+        assert "promiselink_stage" not in result
+        assert "promiselink_state" not in result
+        assert client.calls == []
+
+    def test_entity_id_with_integration_disabled(self, temp_db, monkeypatch):
+        """Verify: 传 entity_id 但集成关闭时显式给出 DISABLED。"""
+        cid = _seed_customer(name="张三")
+        _inject_client(monkeypatch, _FakeClient(state="DISABLED"))
+        result = lifecycle_tracker(customer_id=cid, entity_id="e1")
+        assert result["promiselink_state"] == "DISABLED"
+        assert "promiselink_stage" not in result
+
+    def test_entity_id_available_appends_stage(self, temp_db, monkeypatch):
+        """Verify: 集成可用时追加 promiselink_stage 原始载荷。"""
+        cid = _seed_customer(name="张三")
+        payload = {"stage": "active", "since": "2026-01-01"}
+        client = _FakeClient(
+            state="AVAILABLE", result=_FakeResult(True, "AVAILABLE", data=payload)
+        )
+        _inject_client(monkeypatch, client)
+        result = lifecycle_tracker(customer_id=cid, entity_id="e1")
+        assert result["promiselink_stage"] == payload
+        assert client.calls == [("get_entity_stage_info", "e1")]
+
+    def test_entity_id_available_but_request_fails(self, temp_db, monkeypatch):
+        """Verify: 请求失败时给出显式状态，本地视图不受影响。"""
+        cid = _seed_customer(name="张三")
+        _inject_client(
+            monkeypatch,
+            _FakeClient(
+                state="AVAILABLE", result=_FakeResult(False, "SCHEMA_MISMATCH")
+            ),
+        )
+        result = lifecycle_tracker(customer_id=cid, entity_id="e1")
+        assert result["success"] is True
+        assert result["promiselink_state"] == "SCHEMA_MISMATCH"
+
+    def test_entity_id_client_raises_degrades(self, temp_db, monkeypatch):
+        """Verify: 客户端抛异常时不冒泡，降级为 DEGRADED。"""
+        cid = _seed_customer(name="张三")
+        _inject_client(
+            monkeypatch,
+            _FakeClient(state="AVAILABLE", raise_on="get_entity_stage_info"),
+        )
+        result = lifecycle_tracker(customer_id=cid, entity_id="e1")
+        assert result["success"] is True
+        assert result["promiselink_state"] == "DEGRADED"

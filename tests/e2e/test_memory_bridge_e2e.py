@@ -22,7 +22,6 @@
 - E2E_REVIEW_v0.5.7.md：CarryMem 核心卖点完全无 E2E 覆盖
 """
 
-
 import pytest
 
 from opc_manager.memory_bridge import (
@@ -31,7 +30,6 @@ from opc_manager.memory_bridge import (
     get_memory_bridge,
     is_memory_enabled,
 )
-
 
 # ─── Fixtures ────────────────────────────────────────────────────────────
 

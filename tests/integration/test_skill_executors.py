@@ -145,7 +145,9 @@ class FakeToolSystem:
 class FakeWebSearch:
     """Real fake WebSearch replacing MagicMock for _web_search attribute."""
 
-    def __init__(self, available=True, results=None, exc=None):
+    def __init__(
+        self, available=True, results=None, exc=None, last_status="OK", last_error=None
+    ):
         self._available = available
         self._results = (
             results
@@ -156,6 +158,9 @@ class FakeWebSearch:
         self.search_count = 0
         self.last_query = None
         self.last_max_results = None
+        # W-1：与真实 WebSearchMCP 对齐，供调用方区分"零结果"与"搜索失败"
+        self.last_status = last_status
+        self.last_error = last_error
 
     def is_available(self):
         return self._available
@@ -329,6 +334,32 @@ class TestExecuteSearch(unittest.TestCase):
         result = _run(self.mixin._execute_search("测试", max_results=3))
         self.assertIn("results", result)
 
+    def test_search_failed_flag_false_on_success(self):
+        """W-1：搜索成功时 search_failed 为 False"""
+        result = _run(self.mixin._execute_search("测试"))
+        self.assertFalse(result["search_failed"])
+
+    def test_search_failed_flag_true_when_backend_failed(self):
+        """W-1：底层搜索失败（重试耗尽）时 search_failed 为 True，调用方可识别"""
+        self.mixin._web_search = FakeWebSearch(
+            available=True,
+            results=[],
+            last_status="FAILED",
+            last_error="FakeTimeoutError: timed out",
+        )
+        result = _run(self.mixin._execute_search("测试"))
+        self.assertTrue(result["search_failed"])
+
+    def test_search_failed_flag_false_for_genuine_empty(self):
+        """W-1：确实没搜到（EMPTY）不得被误报为失败"""
+        self.processor._results = []
+        self.mixin._web_search = FakeWebSearch(
+            available=True, results=[], last_status="EMPTY"
+        )
+        result = _run(self.mixin._execute_search("测试"))
+        self.assertFalse(result["search_failed"])
+        self.assertEqual(result["count"], 0)
+
 
 # ---------------------------------------------------------------------------
 # Test: _do_web_search
@@ -367,6 +398,31 @@ class TestDoWebSearch(unittest.TestCase):
             available=True, exc=Exception("network error")
         )
         result = _run(self.mixin._do_web_search("测试", 5))
+        self.assertEqual(result, [])
+
+    def test_logs_warning_when_backend_failed(self):
+        """W-1：底层搜索失败时必须留下可观测的告警（含失败原因）"""
+        self.mixin._web_search = FakeWebSearch(
+            available=True,
+            results=[],
+            last_status="FAILED",
+            last_error="FakeTimeoutError: timed out",
+        )
+        with self.assertLogs("opc_manager.skill_executors", level="WARNING") as cm:
+            result = _run(self.mixin._do_web_search("测试", 5))
+        self.assertEqual(result, [])
+        self.assertTrue(
+            any("FakeTimeoutError" in message for message in cm.output),
+            f"告警中应包含失败原因，实际: {cm.output}",
+        )
+
+    def test_no_warning_for_genuine_empty_result(self):
+        """W-1：确实没搜到（EMPTY）不产生失败告警，避免告警噪音"""
+        self.mixin._web_search = FakeWebSearch(
+            available=True, results=[], last_status="EMPTY"
+        )
+        with self.assertNoLogs("opc_manager.skill_executors", level="WARNING"):
+            result = _run(self.mixin._do_web_search("测试", 5))
         self.assertEqual(result, [])
 
 

@@ -393,9 +393,20 @@ def page_real_mode(
         context.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def playwright_browser() -> Generator[Any, None, None]:
-    """会话级 Playwright Chromium 浏览器实例。"""
+    """模块级 Playwright Chromium 浏览器实例。
+
+    必须是 module 级，不能是 session 级（B0.1）：
+    Playwright Sync API 的事件循环用 greenlet 运行在**主线程**内，而 asyncio 的
+    "running loop" 标记存放在 threading.local 中——同一 OS 线程的所有 greenlet
+    共享该标记。因此只要 ``sync_playwright()`` 上下文处于打开状态，主线程就被
+    视为"正在 event loop 内"，任何在主线程调用 ``asyncio.run()`` 的用例都会抛
+    ``RuntimeError: asyncio.run() cannot be called from a running event loop``。
+    收敛到 module 级后，浏览器模块结束即关闭上下文、标记复位，不再污染后续
+    （尤其是 tests/unit 下的）非浏览器用例。
+    详见 EXECUTION_PLAN_V1.0.0.md B0.1。
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:

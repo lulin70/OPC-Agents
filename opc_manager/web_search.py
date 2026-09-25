@@ -5,24 +5,61 @@ Provides free web search without requiring API keys.
 Falls back gracefully when network is unavailable.
 
 E2E 测试支持: OPC_MOCK_LLM=true 时返回 Mock 搜索结果，避免网络依赖。
+
+可靠性（W-1）：DDGS 聚合器会间歇性抛出连接超时（实测约 1/5 概率，与查询语言无关），
+瞬时抖动不应被静默降级为"零结果"。因此对失败做**有界重试**，并在重试耗尽后通过
+`last_status` / `last_error` 把失败**暴露给调用方**，使其能区分"确实没搜到"与"搜索挂了"。
 """
 
 import os
+import time
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+# 有界重试：初次 + 2 次重试。DDGS 超时为瞬时抖动，短退避后可显著降低"零结果"概率
+RETRY_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 0.5
+
+# last_status 取值：调用方据此区分"确实没搜到"与"搜索挂了"
+STATUS_UNSET = "UNSET"  # 尚未执行过搜索
+STATUS_OK = "OK"  # 返回了结果
+STATUS_EMPTY = "EMPTY"  # 搜索成功但确认零结果
+STATUS_FAILED = "FAILED"  # 重试耗尽仍失败，原因见 last_error
+STATUS_UNAVAILABLE = "UNAVAILABLE"  # ddgs 未安装/未初始化
+
+# 类名关键字：命中即视为瞬时网络故障（DDGS 的 TimeoutException 并非 OSError 子类，
+# 故除类型判断外还需按类名兜底）。非瞬时异常（如编程错误）不做无意义重试。
+_TRANSIENT_HINTS = ("timeout", "timedout", "connection", "unavailable", "ratelimit")
+
+
+def _is_transient(exc: BaseException) -> bool:
+    """判断异常是否为瞬时网络故障（值得重试）。沿异常链追溯。"""
+    seen: set = set()
+    current: Optional[BaseException] = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, OSError):  # 含 TimeoutError / ConnectionError
+            return True
+        if any(hint in type(current).__name__.lower() for hint in _TRANSIENT_HINTS):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
 
 
 class WebSearchMCP:
     """DuckDuckGo-based web search provider
 
     Uses the duckduckgo-search library for free, API-key-free web search.
-    Falls back to empty results on any failure.
+    Falls back to empty results on any failure, while recording why via
+    `last_status` / `last_error` (W-1 observability).
     """
 
     def __init__(self) -> None:
         self._dds = None
+        self.last_status: str = STATUS_UNSET
+        self.last_error: Optional[str] = None
         try:
             # 优先使用新包名 ddgs
             try:
@@ -58,33 +95,58 @@ class WebSearchMCP:
             logger.info(
                 "[WebSearchMCP] OPC_MOCK_LLM=true, returning mock search results"
             )
+            self.last_status = STATUS_OK
+            self.last_error = None
             return self._generate_mock_results(query, max_results)
 
         if not self._dds:
             logger.debug("[WebSearchMCP] Not initialized, returning empty results")
+            self.last_status = STATUS_UNAVAILABLE
+            self.last_error = "ddgs/duckduckgo-search 未安装或初始化失败"
             return []
 
         if not query or not query.strip():
+            self.last_status = STATUS_EMPTY
+            self.last_error = None
             return []
 
-        try:
-            results = []
-            raw = self._dds.text(query, max_results=max_results)
-            for item in raw:
-                results.append(
-                    {
-                        "title": item.get("title", ""),
-                        "href": item.get("href", ""),
-                        "body": item.get("body", ""),
-                    }
+        last_exc: Optional[BaseException] = None
+        for attempt in range(1, RETRY_ATTEMPTS + 1):
+            try:
+                results = []
+                raw = self._dds.text(query, max_results=max_results)
+                for item in raw:
+                    results.append(
+                        {
+                            "title": item.get("title", ""),
+                            "href": item.get("href", ""),
+                            "body": item.get("body", ""),
+                        }
+                    )
+                logger.info(
+                    f"[WebSearchMCP] Search '{query[:30]}...' returned {len(results)} results"
                 )
-            logger.info(
-                f"[WebSearchMCP] Search '{query[:30]}...' returned {len(results)} results"
-            )
-            return results
-        except Exception as e:
-            logger.warning(f"[WebSearchMCP] Search failed for '{query[:30]}...': {e}")
-            return []
+                self.last_status = STATUS_OK if results else STATUS_EMPTY
+                self.last_error = None
+                return results
+            except Exception as e:  # noqa: BLE001 — 第三方库异常类型不稳定，统一归口
+                last_exc = e
+                if not _is_transient(e):
+                    break  # 非瞬时故障（如编程错误），重试无意义
+                if attempt < RETRY_ATTEMPTS:
+                    logger.warning(
+                        f"[WebSearchMCP] 第 {attempt}/{RETRY_ATTEMPTS} 次搜索失败"
+                        f"（{type(e).__name__}: {e}），{RETRY_DELAY_SECONDS}s 后重试"
+                    )
+                    time.sleep(RETRY_DELAY_SECONDS)
+
+        # 重试耗尽仍失败：保持返回 []（兼容既有调用方），但让失败可被识别（W-1）
+        self.last_status = STATUS_FAILED
+        self.last_error = f"{type(last_exc).__name__}: {last_exc}"
+        logger.warning(
+            f"[WebSearchMCP] Search failed for '{query[:30]}...': {last_exc}"
+        )
+        return []
 
     def _generate_mock_results(
         self, query: str, max_results: int

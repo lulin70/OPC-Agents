@@ -105,18 +105,23 @@ v1.0.0 阶段对 v0.3.4 冻结清单做出以下调整：
 
 **解冻清单**：
 
-| 方法 | v0.3.4 状态 | v1.0.0 状态 | 说明 |
-|------|------------|------------|------|
-| `get_customer` | ✅ 维护 | ✅ 维持 | 客户详情 |
-| `get_customer_stats` | ✅ 维护 | ✅ 维持 | 客户统计 |
-| `get_silent_customers` | ✅ 维护 | ✅ 增强 | 集成 PromiseLink DormantScanner |
-| `add_customer` | 🔶 半冻结 | ✅ **解冻** | 添加客户档案 |
-| `update_customer` | 🔶 半冻结 | ✅ **解冻** | 更新客户档案 |
-| `list_customers` | 🔶 半冻结 | ✅ **解冻** | 客户列表（分页/搜索/过滤）|
-| `add_interaction` | 🔶 半冻结 | ✅ **解冻** | 合作记录 |
-| `list_interactions` | 🔶 半冻结 | ✅ **解冻** | 合作记录查询 |
-| `add_followup_reminder` | 🔶 半冻结 | ✅ **解冻** | 跟进提醒 |
-| `lifecycle_tracker` | 🔶 半冻结 | ✅ **解冻** | 客户生命周期 |
+> **方法名映射（2026-09-24 校正）**：本表"规划名义"与代码实际实现名不一致（规划时命名未与代码对齐）。
+> 处置为**保留代码现有实现名**（`email_skill`/`report_skill` 与既有单测均按现名引用，重命名属破坏性改动），
+> 本表补"实际实现名"列以消除歧义。
+
+| 规划名义 | **实际实现名** | v0.3.4 状态 | v1.0.0 状态 | 说明 |
+|------|------------|------------|------------|------|
+| `get_customer` | `get_customer` | ✅ 维护 | ✅ 维持 | 客户详情 |
+| `get_customer_stats` | `get_customer_stats` | ✅ 维护 | ✅ 维持 | 客户统计 |
+| `get_silent_customers` | `get_silent_customers` | ✅ 维护 | ✅ 增强 | 集成 PromiseLink `list_dormant_entities`（DormantScanner 为 PromiseLink 侧服务）|
+| `add_customer` | `add_customer` | 🔶 半冻结 | ✅ **解冻** | 添加客户档案 |
+| `update_customer` | `update_customer_status` | 🔶 半冻结 | ✅ **解冻** | 更新客户状态 |
+| `list_customers` | `search_customers` | 🔶 半冻结 | ✅ **解冻** | 客户列表（搜索/过滤）|
+| `add_interaction` | `add_deal` | 🔶 半冻结 | ✅ **解冻** | 合作记录 |
+| `list_interactions` | `get_customer`（含 `deals`）| 🔶 半冻结 | ✅ **解冻** | 合作记录查询随客户详情返回 |
+| `add_followup_reminder` | `add_follow_up` | 🔶 半冻结 | ✅ **解冻** | 跟进记录 |
+| （未列入） | `get_follow_ups` | — | ✅ **解冻** | 跟进记录查询 |
+| `lifecycle_tracker` | `lifecycle_tracker` | 🔶 半冻结 | ✅ **解冻** | 客户生命周期（本地视图 + 可选 PromiseLink `stage-info`）|
 
 ### 2.2 task_manager 维持半冻结（v1.1.0 解冻）
 
@@ -171,19 +176,26 @@ dashboard_skill → crm_skill + task_skill (dashboard冻结，依赖不影响)
 
 ### 5.1 代码层
 
-- [ ] 移除 `crm_skill.py` 文件顶部 `# [FROZEN v0.3.0]` 标记
-- [ ] 解锁所有方法（移除 `# [FROZEN v0.3.0] add_customer` 等注释）
-- [ ] 新增 `lifecycle_tracker` 方法（基于 PromiseLink `/entities/{id}/stage-info`）
-- [ ] 集成 PromiseLink DormantScanner 调用 `get_silent_customants` 方法
-- [ ] 添加 `PROMISELINK_ENABLED=false` 默认配置
+> **2026-09-24 校正**：原第 1、2 条描述与代码事实不符——`crm_skill.py` 内**不存在** per-method `# [FROZEN v0.3.0]` 注释，只有文件头 `"""[SEMI-FROZEN v0.3.0] ..."""` 模块 docstring。两行已合并为一条。
+
+- [x] 改写 `crm_skill.py` 模块 docstring（移除 `[SEMI-FROZEN v0.3.0]` 标记）
+- [x] 新增 `lifecycle_tracker` 方法（本地生命周期视图 + 可选 PromiseLink `/entities/{id}/stage-info`）
+- [x] 增强 `get_silent_customers`：集成 PromiseLink `PromiseLinkClient.list_dormant_entities(min_days)`（`DormantScanner` 为 PromiseLink 侧服务，OPC-Agents 侧集成点为既有客户端）
+- [x] `PROMISELINK_ENABLED=false` 默认配置（**已在批次 1.1 落地于 `promiselink_client.py`**；crm_skill 仅新增模块级 `_get_client()` 工厂复用，不重复定义配置）
+
+> 施工完成：2026-09-24（T7）。集成不可用/失败时统一以 `promiselink_state` 显式给出六态之一，本地结果键语义不变。
 
 ### 5.2 测试层
 
-- [ ] 补齐 CRM 测试覆盖率 ≥80%（当前约 40%，需补充 ~40 个测试）
-- [ ] 新增 `tests/e2e/test_crm_e2e.py`（40 测试）
-- [ ] 验证 PromiseLink Mock + 真实实例两路径
+> **2026-09-24 校正**：原描述「当前约 40%」与实测不符。实测 `pytest tests/unit/test_crm_skill.py --cov=opc_manager.crm_skill` = **249 stmts / 24 miss / 90%**（64 passed）→ 存量覆盖率**已达标**，不存在"需补充 ~40 个测试"的缺口。本批次只为**新增代码**补测。
+
+- [x] 覆盖率维持 ≥80%（实测：`93 passed`，`crm_skill.py 317 stmts / 24 miss / 92%`）
+- [x] 新增 `tests/e2e/test_crm_e2e.py`：模拟真实用户走完 **录入 → 查询 → 合作 → 跟进 → 沉默客户 → 统计 → 生命周期** 完整链路（实测 `43 passed`）
+- [x] 验证 PromiseLink 集成两路径：**关闭/不可用（本地降级）** 与 **可用/降级（`DEGRADED`）**，均用 `httpx.MockTransport` 而非打真实网络（另覆盖 `SCHEMA_MISMATCH` / `CIRCUIT_OPEN` / `UNCONFIGURED`）
 
 ### 5.3 文档层
+
+> 归属批次 3（与 UI 同步收口），非 T7 范围。PRD_V5 已含 F-CRM-01~06 与 US-CRM-01/02、USER_STORIES 已含 US49-51 映射（现状核对，非本批次产出）。
 
 - [ ] [PRD_V5.md](../product-manager/PRD_V5.md) 标注 CRM 活跃
 - [ ] [USER_STORIES.md](../product-manager/USER_STORIES.md) 新增 8 个 CRM 用户故事
@@ -204,19 +216,20 @@ dashboard_skill → crm_skill + task_skill (dashboard冻结，依赖不影响)
 
 ### CRM 解冻验收
 
-- [ ] `crm_skill.py` 不含 `# [FROZEN v0.3.0]` 标记
-- [ ] 所有方法可调用且有测试
-- [ ] 测试覆盖率 ≥80%
-- [ ] E2E 测试通过（40 测试）
-- [ ] PromiseLink 集成可启用可关闭
-- [ ] 集成关闭时本地 CRM 能力完整可用
+- [x] `crm_skill.py` 不含 `[SEMI-FROZEN v0.3.0]` 标记（模块 docstring 已改写）
+- [x] 所有方法可调用且有测试
+- [x] 测试覆盖率 ≥80%（实测 92%，口径见 §5.2）
+- [x] `tests/e2e/test_crm_e2e.py` 通过（43 passed，模拟真实用户全链路）
+- [x] PromiseLink 集成可启用可关闭
+- [x] 集成关闭时本地 CRM 能力完整可用
+- [x] 集成可用/降级两条路径均有测试且失败不静默（输出含显式 `promiselink_state`）
 
 ### 整体解冻验收
 
-- [ ] PRD_V5 / SKILL_FREEZE_LIST / USER_STORIES 三文档一致
-- [ ] 技能市场显示 6 核心技能（email/finance/report/crm/task_manager/scheduler）
-- [ ] 6 个冻结技能在技能市场隐藏
-- [ ] 现有 11 项 CI 门禁不回退
+- [ ] PRD_V5 / SKILL_FREEZE_LIST / USER_STORIES 三文档一致（批次 3）
+- [ ] 技能市场显示 6 核心技能（email/finance/report/crm/task_manager/scheduler）（批次 3）
+- [ ] 6 个冻结技能在技能市场隐藏（批次 3）
+- [x] 现有 11 项 CI 门禁不回退（本地五门禁 + 三语 README 一致性脚本复跑全绿）
 
 ---
 
@@ -228,6 +241,8 @@ dashboard_skill → crm_skill + task_skill (dashboard冻结，依赖不影响)
 | 2026-07-06 | v0.3.4 | 移除 3 个冻结技能残留（calendar/proposal/tax_reminder）|
 | 2026-08-01 | v1.0.0 | CRM 主动解冻 + 新增 scheduler 核心技能 |
 | 2026-09-21 | v1.0.0 | 新增 §八 Skill 输出结构化约束（周榜信号 4，DevSquad 共识采纳）|
+| 2026-09-24 | v1.0.0 | §5 施工前事实校正：① 无 per-method `[FROZEN]` 注释（仅模块 docstring）；② §2.1 补"规划名义→实际实现名"映射（保留代码现名，不重命名）；③ 覆盖率实测 90%（非"约 40%"）；④ 集成点校正为 `PromiseLinkClient.list_dormant_entities` / `get_entity_stage_info`（`DormantScanner` 属 PromiseLink 侧）；⑤ `PROMISELINK_ENABLED=false` 已在批次 1.1 落地 |
+| 2026-09-24 | v1.0.0 | §5.1/§5.2/§六 CRM 解冻验收施工完成（T7）：docstring 去冻结标记、`lifecycle_tracker` 新增、`get_silent_customers` 集成增强（六态显式 `promiselink_state`）；单测 64→93、覆盖率 92%、新增 `test_crm_e2e.py` 43 项；§5.3/§5.4 与"整体解冻验收"前三条标注归属批次 3 |
 
 ---
 

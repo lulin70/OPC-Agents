@@ -17,6 +17,8 @@ import re
 import logging
 from typing import Any, Dict, List, Tuple, Optional, TYPE_CHECKING
 
+from opc_manager.web_search import STATUS_FAILED
+
 if TYPE_CHECKING:
     # Lazy imports under TYPE_CHECKING to avoid circular imports and runtime
     # cost. These attributes are provided at runtime by the TaskEngineV3
@@ -68,6 +70,8 @@ class TaskEngineSearchMixin:
         - web_search not initialized → Return empty list (no error)
         - Search process exception → Log and return empty list (doesn't interrupt flow)
         - [v3.5 new] SearchResultProcessor exception → Return raw search results (no worse than v3.4)
+        - [W-1] Search failed after bounded retries → Return empty list, log the reason,
+          and skip cache write (a transient failure must not be frozen into a cached "zero result")
 
         Args:
             query: Search keywords
@@ -91,6 +95,20 @@ class TaskEngineSearchMixin:
             return results, sources
         try:
             raw_results = self.web_search.search(query, max_results=max_results)
+
+            # W-1：底层搜索失败（有界重试已耗尽）时不得写缓存——空结果若被缓存，
+            # 会把一次瞬时抖动放大成持续数分钟的"零结果"，且期间无法恢复（TTL 内无重试）。
+            search_failed = (
+                not raw_results
+                and getattr(self.web_search, "last_status", None) == STATUS_FAILED
+            )
+            if search_failed:
+                logger.warning(
+                    "[TaskEngineV3] Search '%s...' failed (bounded retries exhausted), "
+                    "returning empty without caching: %s",
+                    query[:30],
+                    getattr(self.web_search, "last_error", None),
+                )
 
             try:
                 from opc_manager.search_processor import SearchResultProcessor
@@ -125,7 +143,8 @@ class TaskEngineSearchMixin:
                 )
                 results = raw_results
 
-            self._search_cache.set(query, max_results, results)
+            if not search_failed:
+                self._search_cache.set(query, max_results, results)
             sources = [
                 {"title": r.get("title", ""), "url": r.get("href", "")}
                 for r in results
