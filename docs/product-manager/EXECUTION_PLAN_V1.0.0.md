@@ -210,6 +210,7 @@ UI（技能市场 6 技能、CRM 标签页、关系推进卡、Onboarding）→ 
 | 2026-09-24 | 批次 1 追加项 W 完成（W-1 有界重试 + 失败可观测 / W-2 e2e 断言消息如实化 / W-3 两个真实生产调用方同步，第三个经查为占位实现）；补 W 系列实施证据表；记录门禁可信度附带发现（本分支从未触发 CI、main 上 black 与 README 一致性门禁为既有红、本批次 mypy 3 错已修） |
 | 2026-09-24 | 按用户指令修复"既有红"：main 上 black（2 个 e2e 文件）与三语 README 一致性（测试数 4744→4894、JP 文件数 100→137）由红转绿；并清除本批次自身引入的 ruff（3 处 F401/F841）与 bandit（3 处 B608，其中 `_update_fields` 补真实列名白名单）问题；本地全门禁复跑全绿 |
 | 2026-09-24 | 批次 1.3（T7）CRM 解冻施工完成：docstring 去 `[SEMI-FROZEN]`、新增 `lifecycle_tracker`、`get_silent_customers` 集成增强（六态显式 `promiselink_state`，本地四键语义不变）；单测 64→93、覆盖率 92%、新增 `tests/e2e/test_crm_e2e.py` 43 项（真实 SQLite + 真实 `PromiseLinkClient` + `MockTransport`）；测试数 4894→4970 同步三语 README（CI 含 Docker E2E；本地无 Docker 时为 4966）；补 T7 实施证据表；§5.3/§5.4 与整体解冻验收前三项归属批次 3 |
+| 2026-09-25 | T8 README 首屏定位完成：中/英/日统一呈现“早报 → 沉默客户 → 跟进动作 → 邮件/任务交付 → 记录结果”的运营岗工作闭环，并保留研究、方案、财务等通用成果物定位；PR #30 已经真实 CI 三版本矩阵全绿并合并 `main`。 |
 
 ---
 

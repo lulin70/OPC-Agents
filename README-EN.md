@@ -19,8 +19,10 @@
 
 **⚡ Core Flow**:
 ```
-You state requirement → AI analyzes + searches + generates → You get deliverable (report/plan/copy/email...)
+Morning brief → Dormant customers → Follow-up action → Email/task delivery → Recorded result
 ```
+
+**🎯 Operator Workflow**: Start each day with the morning brief, identify dormant customers, generate and confirm a follow-up action, deliver it by email or task, then write the result back to the customer lifecycle; research, plans, finance, and other deliverables remain available.
 
 **🚀 3-Step Quickstart**:
 ```bash
