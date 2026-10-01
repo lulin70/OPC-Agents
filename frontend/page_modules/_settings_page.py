@@ -85,7 +85,9 @@ def _render_briefing_settings(settings):
 
     briefing = settings.briefing
     st.markdown("### 经营早报订阅")
-    st.caption("当前版本只生成本地 Markdown 草稿，不会自动发送邮件。")
+    st.caption(
+        "定时任务只生成本地 Markdown 和可审阅邮件草稿；发送前必须由用户确认，不会自动触发 SMTP。"
+    )
     with st.form("briefing_config_form"):
         enabled = st.checkbox("启用每日经营早报", value=briefing.enabled)
         recipient_email = st.text_input(

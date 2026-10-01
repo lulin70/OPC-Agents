@@ -57,6 +57,38 @@ def test_render_morning_brief_markdown_contains_operator_sections():
     assert "pending：3 个" in markdown
 
 
+def test_build_morning_brief_email_draft_requires_recipient_and_body():
+    assert morning_brief.build_morning_brief_email_draft("# brief", "") == {
+        "success": False,
+        "error": "早报邮件缺少收件人邮箱",
+    }
+    assert morning_brief.build_morning_brief_email_draft("", "owner@example.com") == {
+        "success": False,
+        "error": "早报邮件正文不能为空",
+    }
+
+
+def test_deliver_morning_brief_email_requires_confirmation(monkeypatch):
+    send_email = Mock()
+    monkeypatch.setattr("opc_manager.email_skill.send_email", send_email)
+    result = morning_brief.deliver_morning_brief_email(
+        {"recipient": "owner@example.com", "subject": "早报", "body": "正文"}
+    )
+    assert result == {"success": False, "error": "发送早报邮件前必须确认"}
+    send_email.assert_not_called()
+
+
+def test_deliver_morning_brief_email_sends_only_after_confirmation(monkeypatch):
+    send_email = Mock(return_value={"success": True, "id": "email-1"})
+    monkeypatch.setattr("opc_manager.email_skill.send_email", send_email)
+    result = morning_brief.deliver_morning_brief_email(
+        {"recipient": "owner@example.com", "subject": "早报", "body": "正文"},
+        confirmed=True,
+    )
+    assert result["success"] is True
+    send_email.assert_called_once_with("owner@example.com", "早报", "正文")
+
+
 def test_handle_morning_brief_saves_local_draft_and_audits(monkeypatch, tmp_path):
     output = tmp_path / "morning_brief.md"
     monkeypatch.setattr(
@@ -82,6 +114,38 @@ def test_handle_morning_brief_saves_local_draft_and_audits(monkeypatch, tmp_path
     audit_log.log.assert_called_once()
 
     assert result == str(output)
+
+
+def test_handle_morning_brief_never_sends_email(monkeypatch, tmp_path):
+    output = tmp_path / "morning_brief.md"
+    monkeypatch.setattr(
+        morning_brief,
+        "collect_morning_brief_data",
+        lambda **_: {
+            "generated_at": "2026-09-30T08:00:00",
+            "finance": {"monthly": {}, "trend": []},
+            "crm": {"stats": {}, "silent": {"count": 0, "customers": []}},
+            "tasks": {"items": [], "by_status": {}},
+            "audit_log": [],
+            "errors": [],
+        },
+    )
+    monkeypatch.setattr(
+        morning_brief, "save_morning_brief_draft", lambda _: str(output)
+    )
+    save_email_draft = Mock()
+    monkeypatch.setattr(
+        morning_brief, "save_morning_brief_email_draft", save_email_draft
+    )
+    audit_log = Mock()
+    monkeypatch.setattr(morning_brief, "AuditLog", Mock(return_value=audit_log))
+
+    result = morning_brief.handle_morning_brief(
+        {"scope": "default", "recipient_email": "owner@example.com"}
+    )
+
+    assert result == str(output)
+    save_email_draft.assert_called_once()
 
 
 def test_ensure_morning_brief_task_creates_and_enables_task(monkeypatch, tmp_path):

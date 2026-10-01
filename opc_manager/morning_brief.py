@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import atexit
+import json
 import logging
 import os
 import threading
@@ -149,6 +150,51 @@ def save_morning_brief_draft(markdown: str) -> str:
     return str(path)
 
 
+def build_morning_brief_email_draft(
+    markdown: str,
+    recipient_email: str,
+    subject: str = "每日经营早报",
+) -> Dict[str, Any]:
+    """Build a reviewable email draft without performing delivery."""
+    recipient = recipient_email.strip()
+    if not recipient:
+        return {"success": False, "error": "早报邮件缺少收件人邮箱"}
+    if not markdown.strip():
+        return {"success": False, "error": "早报邮件正文不能为空"}
+    return {
+        "success": True,
+        "recipient": recipient,
+        "subject": subject.strip() or "每日经营早报",
+        "body": markdown,
+    }
+
+
+def save_morning_brief_email_draft(draft: Dict[str, Any]) -> str:
+    """Persist a local email draft; this function never contacts SMTP."""
+    _DELIVERABLES_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{datetime.now():%Y%m%d_%H%M%S}_morning_brief_email.json"
+    path = _DELIVERABLES_DIR / filename
+    path.write_text(json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8")
+    return str(path)
+
+
+def deliver_morning_brief_email(
+    draft: Dict[str, Any], confirmed: bool = False
+) -> Dict[str, Any]:
+    """Send only an explicitly confirmed draft through the email skill."""
+    if not confirmed:
+        return {"success": False, "error": "发送早报邮件前必须确认"}
+    if not draft.get("recipient") or not draft.get("body"):
+        return {"success": False, "error": "早报邮件草稿不完整"}
+    from opc_manager.email_skill import send_email
+
+    return send_email(
+        draft["recipient"],
+        draft.get("subject", "每日经营早报"),
+        draft["body"],
+    )
+
+
 def handle_morning_brief(parameters: Dict[str, Any]) -> str:
     """Scheduler handler: aggregate data and save a local draft only."""
     started = datetime.now()
@@ -156,7 +202,13 @@ def handle_morning_brief(parameters: Dict[str, Any]) -> str:
         scope=str(parameters.get("scope", "default")),
         limit=int(parameters.get("limit", 10)),
     )
-    path = save_morning_brief_draft(render_morning_brief_markdown(data))
+    markdown = render_morning_brief_markdown(data)
+    path = save_morning_brief_draft(markdown)
+    recipient_email = str(parameters.get("recipient_email", "")).strip()
+    if recipient_email:
+        email_draft = build_morning_brief_email_draft(markdown, recipient_email)
+        if email_draft["success"]:
+            save_morning_brief_email_draft(email_draft)
     AuditLog().log(
         session_id="scheduler",
         operation_type="morning_brief_generated",

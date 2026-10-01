@@ -314,6 +314,31 @@ class TestUJ09CRMJourney:
         assert "# 经营早报" in brief_path.read_text(encoding="utf-8")
         assert page.locator("[data-testid='stException']").count() == 0
 
+    def test_TC_H17_morning_brief_email_confirmation_user_journey(self, page):
+        """验证早报邮件先生成草稿，再经用户确认尝试发送。"""
+        _wait_for_streamlit_content(page)
+        _click_nav(page, "设置")
+        page.get_by_role("tab", name="经营早报", exact=True).click()
+        page.get_by_text("经营早报订阅", exact=True).wait_for(timeout=10000)
+        page.get_by_label("收件邮箱（预留）", exact=True).fill("owner@example.com")
+        page.get_by_role("button", name="保存早报设置", exact=True).click()
+        page.wait_for_timeout(1500)
+
+        _click_nav(page, "客户管理")
+        page.get_by_role("heading", name="客户管理").wait_for()
+        page.get_by_role("button", name="立即生成早报").click()
+        page.get_by_text("早报邮件草稿", exact=True).wait_for(timeout=15000)
+        assert page.get_by_label("早报收件人").input_value() == "owner@example.com"
+        assert page.get_by_label("早报邮件正文").input_value().startswith("# 经营早报")
+
+        page.get_by_role("button", name="申请发送早报邮件").click()
+        page.get_by_text("早报邮件尚未发送，请再次点击确认发送", exact=True).wait_for(
+            timeout=10000
+        )
+        page.get_by_role("button", name="确认发送早报邮件").click()
+        page.get_by_text("早报邮件未发送：", exact=False).wait_for(timeout=10000)
+        assert page.locator("[data-testid='stException']").count() == 0
+
 
 # ============================================================
 # UJ-02: Demo 模式横幅 (P0)

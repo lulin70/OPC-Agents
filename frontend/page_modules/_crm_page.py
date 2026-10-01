@@ -20,10 +20,13 @@ from opc_manager.crm_skill import (
 )
 from opc_manager.email_skill import send_email
 from opc_manager.morning_brief import (
+    build_morning_brief_email_draft,
+    deliver_morning_brief_email,
     ensure_morning_brief_task,
     get_morning_brief_status,
     run_morning_brief_now,
 )
+from opc_manager.settings import get_settings
 from opc_manager.promiselink_client import ClientState, PromiseLinkClient
 
 _STATUS_OPTIONS = ["potential", "first_deal", "active", "silent", "lost"]
@@ -283,6 +286,49 @@ def _render_promiselink_status(client: PromiseLinkClient) -> None:
     st.info(reason)
 
 
+def _render_morning_brief_email_delivery() -> None:
+    draft = st.session_state.get("crm_morning_brief_email_draft")
+    if not draft:
+        return
+    st.markdown("#### 早报邮件草稿")
+    st.caption("草稿已保存到本地；Scheduler 不会自动发送 SMTP。")
+    recipient = st.text_input(
+        "早报收件人",
+        value=draft.get("recipient", ""),
+        key="crm_morning_brief_email_recipient",
+    )
+    subject = st.text_input(
+        "早报邮件主题",
+        value=draft.get("subject", "每日经营早报"),
+        key="crm_morning_brief_email_subject",
+    )
+    body = st.text_area(
+        "早报邮件正文",
+        value=draft.get("body", ""),
+        height=240,
+        key="crm_morning_brief_email_body",
+    )
+    if st.button("申请发送早报邮件", key="crm_request_morning_brief_email"):
+        st.session_state.crm_morning_brief_email_pending = {
+            "recipient": recipient,
+            "subject": subject,
+            "body": body,
+        }
+        st.warning("早报邮件尚未发送，请再次点击确认发送")
+
+    pending = st.session_state.get("crm_morning_brief_email_pending")
+    if not pending:
+        return
+    st.info(f"待确认早报邮件：{pending['recipient']} · {pending['subject']}")
+    if st.button("确认发送早报邮件", key="crm_confirm_morning_brief_email"):
+        result = deliver_morning_brief_email(pending, confirmed=True)
+        if result.get("success"):
+            st.session_state.pop("crm_morning_brief_email_pending", None)
+            st.success("早报邮件已发送")
+        else:
+            st.error(f"早报邮件未发送：{result.get('error', '未知错误')}")
+
+
 def _register_deliverable(path: str) -> None:
     filename = Path(path).name
     deliverables = st.session_state.setdefault("deliverables", [])
@@ -332,9 +378,19 @@ def _render_morning_brief(client: PromiseLinkClient) -> None:
         result = run_morning_brief_now()
         if result.get("success"):
             _register_deliverable(result["path"])
+            markdown = Path(result["path"]).read_text(encoding="utf-8")
+            recipient = st.session_state.get(
+                "crm_morning_brief_email_recipient",
+                get_settings().briefing.recipient_email,
+            )
+            draft = build_morning_brief_email_draft(markdown, recipient)
+            if draft.get("success"):
+                st.session_state.crm_morning_brief_email_draft = draft
             st.success("经营早报已生成，可在成果物页面查看")
         else:
             st.error(f"经营早报生成失败：{result.get('error', '未知错误')}")
+
+    _render_morning_brief_email_delivery()
 
     if not st.button("刷新早报", key="crm_refresh_morning_brief"):
         st.caption("点击刷新查看今日经营摘要")
