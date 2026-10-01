@@ -243,6 +243,7 @@ with st.sidebar:
         "growth": PageKey.GROWTH,
         "marketplace": PageKey.MARKETPLACE,
         "settings": PageKey.SETTINGS,
+        "crm": PageKey.CRM,
     }
     selected = st.radio(
         "Navigation",

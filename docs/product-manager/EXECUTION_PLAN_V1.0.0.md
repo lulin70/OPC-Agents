@@ -211,6 +211,12 @@ UI（技能市场 6 技能、CRM 标签页、关系推进卡、Onboarding）→ 
 | 2026-09-24 | 按用户指令修复"既有红"：main 上 black（2 个 e2e 文件）与三语 README 一致性（测试数 4744→4894、JP 文件数 100→137）由红转绿；并清除本批次自身引入的 ruff（3 处 F401/F841）与 bandit（3 处 B608，其中 `_update_fields` 补真实列名白名单）问题；本地全门禁复跑全绿 |
 | 2026-09-24 | 批次 1.3（T7）CRM 解冻施工完成：docstring 去 `[SEMI-FROZEN]`、新增 `lifecycle_tracker`、`get_silent_customers` 集成增强（六态显式 `promiselink_state`，本地四键语义不变）；单测 64→93、覆盖率 92%、新增 `tests/e2e/test_crm_e2e.py` 43 项（真实 SQLite + 真实 `PromiseLinkClient` + `MockTransport`）；测试数 4894→4970 同步三语 README（CI 含 Docker E2E；本地无 Docker 时为 4966）；补 T7 实施证据表；§5.3/§5.4 与整体解冻验收前三项归属批次 3 |
 | 2026-09-25 | T8 README 首屏定位完成：中/英/日统一呈现“早报 → 沉默客户 → 跟进动作 → 邮件/任务交付 → 记录结果”的运营岗工作闭环，并保留研究、方案、财务等通用成果物定位；PR #30 已经真实 CI 三版本矩阵全绿并合并 `main`。 |
+| 2026-09-25 | 批次 3 CRM UI 验证推进：独立 CRM 一级导航与页面已接入；新增 CRM Playwright 用户旅程并完成真实浏览器专项通过；PromiseLink live smoke 已登记 `slow` marker 并接入 weekly workflow（未配置真实服务时明确跳过）；CRM 单测与后端 E2E 复验 136 passed。 |
+| 2026-09-25 | IMP-2 首版完成：CRM 页面增加 PromiseLink 六态状态卡（状态码、中文状态、用户可见原因与本地降级说明）；新增页面单测，CRM 单测 + 后端 E2E 共 138 passed；真实 Streamlit + Playwright CRM 用户旅程通过。 |
+| 2026-09-25 | IMP-1 最小闭环推进：CRM 页面新增经营早报入口（PromiseLink 可用时同步 `/dashboard/morning-brief`，否则展示本地沉默客户汇总）与跟进草稿生成/确认流程；页面单测 3 passed，真实 CRM Playwright 用户旅程 1 passed。 |
+| 2026-09-26 | IMP-1 交付闭环继续推进：CRM 跟进草稿新增邮件交付区；发送前先进入待确认状态，确认后统一调用 `email_skill.send_email()`，仅在真实发送成功后写入 CRM 跟进记录；未配置 SMTP 时明确展示发送失败，不伪造成功。真实 Streamlit + Chromium 全量 UI E2E `22 passed`；CRM 专项 `1 passed`；CRM 后端回归 `139 passed`；email skill 集成 `61 passed`；Ruff/Black 通过。 |
+| 2026-09-30 | IMP-3 本地早报最小切片完成：新增无 Streamlit 依赖的经营数据聚合、Markdown 草稿成果物、`morning_brief` Scheduler handler、SQLite 调度与执行历史，并在 CRM 页面提供“启用每日早报”和“立即生成早报”。早报/CRM/Scheduler 回归 `41 passed`；相关 Ruff/Black 通过；真实 Chromium 用户旅程验证“立即生成早报 → 成果物页面 → morning_brief 内容落盘” `1 passed`。当前仍为本地草稿交付，未启用自动 SMTP 发送。 |
+| 2026-10-01 | 结构化早报订阅与 UI 回归完成：`briefing` Settings JSON 持久化、唯一 `morning_brief` 任务同步、时间/时区/scope/启停更新均已覆盖；非法时区已 fail-closed。Settings/Scheduler 专项 `127 passed`，真实 Chromium Settings 订阅路径 `1 passed`；修复 CRM 草稿版本化 widget 状态与成果物搜索测试定位；真实 Streamlit + Chromium 全量 UI E2E `24 passed`；Ruff、mypy、Bandit、Black 全部通过。当前仍保持本地 Markdown 草稿交付，未启用自动 SMTP 发送；工作区尚未提交。 |
 
 ---
 

@@ -4,6 +4,7 @@
   "nav_growth": "Growth",
   "nav_marketplace": "Skills",
   "nav_settings": "Settings",
+  "nav_crm": "CRM",
   "settings_llm": "LLM Config",
   "settings_smtp": "SMTP Config",
   "settings_api_keys": "API Keys",

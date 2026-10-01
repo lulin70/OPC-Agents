@@ -68,6 +68,7 @@ class SettingsOperationsMixin:
         _llm: "LLMSettings"
         _smtp: "SMTPSettings"
         _profile: "ProfileSettings"
+        _briefing: Any
         # ``threading.RLock()`` returns a ``_RLock`` instance (typeshed-private
         # name); ``Any`` keeps the annotation portable across typeshed versions
         # while still documenting intent for readers.
@@ -156,6 +157,12 @@ class SettingsOperationsMixin:
             return bool(self._security.encryption_key)
         elif category == SettingsCategory.PROFILE:
             return bool(self._profile.user_name)
+        elif category == SettingsCategory.BRIEFING:
+            return bool(
+                self._briefing.enabled
+                and self._briefing.recipient_email
+                and self._briefing.schedule_time
+            )
         return False
 
     def register_callback(self, callback: Callable[[str], None]) -> None:
@@ -217,6 +224,7 @@ class SettingsOperationsMixin:
                 "auto_generated": self._security.auto_generated,
             },
             "profile": self._profile.__dict__.copy(),
+            "briefing": self._briefing.__dict__.copy(),
         }
 
     def reset_to_defaults(self, category: Optional[SettingsCategory] = None) -> bool:
@@ -234,6 +242,7 @@ class SettingsOperationsMixin:
         # default instances and to compare enum members.
         from opc_manager.settings import (
             LLMSettings,
+            MorningBriefSettings,
             SMTPSettings,
             ProfileSettings,
             SettingsCategory,
@@ -245,6 +254,8 @@ class SettingsOperationsMixin:
             self._smtp = SMTPSettings()
         if category is None or category == SettingsCategory.PROFILE:
             self._profile = ProfileSettings()
+        if category is None or category == SettingsCategory.BRIEFING:
+            self._briefing = MorningBriefSettings()
 
         self._save_to_disk()
         return True

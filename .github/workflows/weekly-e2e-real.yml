@@ -10,6 +10,8 @@ jobs:
   real-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      PROMISELINK_LIVE_SMOKE: ${{ secrets.PROMISELINK_LIVE_SMOKE }}
 
     steps:
     - uses: actions/checkout@v7
@@ -38,6 +40,23 @@ jobs:
     - name: Run integration E2E tests
       run: |
         PYTHONPATH=. pytest tests/e2e/test_integration_e2e.py -v --tb=long 2>&1 | tee -a e2e-output.txt
+
+    - name: Install Playwright browser
+      run: |
+        python -m playwright install chromium --with-deps
+
+    - name: Run CRM UI journey E2E
+      run: |
+        PYTHONPATH=. pytest tests/e2e/test_ui_playwright.py -k 'CRM or crm' -v --tb=long 2>&1 | tee -a e2e-output.txt
+
+    - name: Run PromiseLink live smoke when configured
+      if: ${{ env.PROMISELINK_LIVE_SMOKE == '1' }}
+      env:
+        PROMISELINK_ENABLED: ${{ secrets.PROMISELINK_ENABLED }}
+        PROMISELINK_BASE_URL: ${{ secrets.PROMISELINK_BASE_URL }}
+        PROMISELINK_TOKEN: ${{ secrets.PROMISELINK_TOKEN }}
+      run: |
+        PYTHONPATH=. pytest tests/e2e/test_promiselink_live_smoke.py -v --tb=long 2>&1 | tee -a e2e-output.txt
 
     - name: Upload E2E report artifact
       if: always()
@@ -73,7 +92,7 @@ jobs:
               ``,
               `**失败时间**: ${date}`,
               `**运行链接**: ${runUrl}`,
-              `**测试范围**: tests/e2e/test_e2e_real.py -m e2e_core_skill`,
+              `**测试范围**: core skill、integration、CRM UI journey、PromiseLink live smoke（如已配置）`,
               ``,
               `### 可能影响`,
               `核心技能（email/finance/report）可能存在问题，需要人工排查。`,

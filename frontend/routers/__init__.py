@@ -10,6 +10,7 @@ class PageKey(Enum):
     GROWTH = "growth"
     MARKETPLACE = "marketplace"
     SETTINGS = "settings"
+    CRM = "crm"
 
 
 PAGE_LABELS = {
@@ -19,6 +20,7 @@ PAGE_LABELS = {
     PageKey.GROWTH: None,
     PageKey.MARKETPLACE: None,
     PageKey.SETTINGS: None,
+    PageKey.CRM: None,
 }
 
 
@@ -34,6 +36,7 @@ def get_page_label(key: PageKey, t_func=None):
         PageKey.GROWTH: "nav_growth",
         PageKey.MARKETPLACE: "nav_marketplace",
         PageKey.SETTINGS: "nav_settings",
+        PageKey.CRM: "nav_crm",
     }
     i18n_key = key_map.get(key)
     if i18n_key and t_func:
@@ -67,3 +70,7 @@ def navigate(page_key: PageKey):
         from .settings_router import render_settings_page
 
         render_settings_page()
+    elif page_key == PageKey.CRM:
+        from .crm_router import render_crm_page
+
+        render_crm_page()

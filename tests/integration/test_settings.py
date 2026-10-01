@@ -804,6 +804,114 @@ class TestCallbackNotification:
         ), "Good callback should execute despite bad callback error"
 
 
+class TestBriefingSettings:
+    """Test structured morning-brief subscription settings."""
+
+    def test_briefing_defaults(self, temp_settings_dir):
+        settings = get_settings()
+
+        assert settings.briefing.enabled is False
+        assert settings.briefing.recipient_email == ""
+        assert settings.briefing.schedule_time == "08:00"
+        assert settings.briefing.timezone == "Asia/Shanghai"
+        assert settings.briefing.scope == "default"
+
+    def test_update_briefing_persists_and_reloads(self, temp_settings_dir):
+        settings = get_settings()
+        result = settings.update_briefing(
+            enabled=True,
+            recipient_email="owner@example.com",
+            schedule_time="09:30",
+            timezone="Asia/Tokyo",
+            scope="sales",
+        )
+
+        assert result is True
+        with open(SettingsManager.SETTINGS_FILE, "r", encoding="utf-8") as file:
+            saved_data = json.load(file)
+        assert saved_data["briefing"] == {
+            "enabled": True,
+            "recipient_email": "owner@example.com",
+            "schedule_time": "09:30",
+            "timezone": "Asia/Tokyo",
+            "scope": "sales",
+        }
+
+        SettingsManager._instance = None
+        reloaded = get_settings()
+        assert reloaded.briefing.enabled is True
+        assert reloaded.briefing.recipient_email == "owner@example.com"
+        assert reloaded.briefing.schedule_time == "09:30"
+        assert reloaded.briefing.timezone == "Asia/Tokyo"
+        assert reloaded.briefing.scope == "sales"
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"schedule_time": "24:00"},
+            {"schedule_time": "08:60"},
+            {"schedule_time": "not-a-time"},
+            {"timezone": "Mars/Olympus"},
+            {"scope": ""},
+            {"scope": "   "},
+            {"enabled": 1},
+            {"recipient_email": None},
+            {"scope": None},
+        ],
+    )
+    def test_invalid_briefing_update_fails_closed(self, temp_settings_dir, kwargs):
+        settings = get_settings()
+        before = settings.briefing.__dict__.copy()
+
+        assert settings.update_briefing(**kwargs) is False
+        assert settings.briefing.__dict__ == before
+
+    def test_unknown_briefing_field_fails_closed(self, temp_settings_dir):
+        settings = get_settings()
+
+        assert settings.update_briefing(unknown_field="value") is False
+        assert settings.briefing.scope == "default"
+
+    def test_export_includes_briefing(self, temp_settings_dir):
+        settings = get_settings()
+        settings.update_briefing(recipient_email="owner@example.com", scope="finance")
+
+        exported = settings.export_settings()
+
+        assert exported["briefing"] == {
+            "enabled": False,
+            "recipient_email": "owner@example.com",
+            "schedule_time": "08:00",
+            "timezone": "Asia/Shanghai",
+            "scope": "finance",
+        }
+
+    def test_reset_briefing_category(self, temp_settings_dir):
+        settings = get_settings()
+        settings.update_briefing(
+            enabled=True,
+            recipient_email="owner@example.com",
+            schedule_time="10:15",
+            timezone="Asia/Tokyo",
+            scope="sales",
+        )
+
+        assert settings.reset_to_defaults(category=SettingsCategory.BRIEFING) is True
+        assert settings.briefing.enabled is False
+        assert settings.briefing.recipient_email == ""
+        assert settings.briefing.schedule_time == "08:00"
+        assert settings.briefing.timezone == "Asia/Shanghai"
+        assert settings.briefing.scope == "default"
+
+    def test_briefing_update_notifies_callback(self, temp_settings_dir):
+        settings = get_settings()
+        callback_categories = []
+        settings.register_callback(callback_categories.append)
+
+        assert settings.update_briefing(scope="sales") is True
+        assert callback_categories == ["briefing"]
+
+
 class TestThreadSafety:
     """Test suite for concurrent access safety validation."""
 

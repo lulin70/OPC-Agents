@@ -4,6 +4,7 @@
   "nav_growth": "成长",
   "nav_marketplace": "技能市场",
   "nav_settings": "设置",
+  "nav_crm": "客户管理",
   "settings_llm": "LLM 配置",
   "settings_smtp": "SMTP 配置",
   "settings_api_keys": "API 密钥",

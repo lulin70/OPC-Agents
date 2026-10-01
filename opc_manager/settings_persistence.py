@@ -29,7 +29,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from opc_manager.config import LLM_PROVIDERS
 
@@ -56,6 +56,7 @@ class SettingsPersistenceMixin:
         _smtp: "SMTPSettings"
         _security: "SecuritySettings"
         _profile: "ProfileSettings"
+        _briefing: Any
         _fernet: "Optional[Fernet]"
 
         def _encrypt_value(self, plaintext: str) -> str: ...
@@ -86,6 +87,7 @@ class SettingsPersistenceMixin:
                 "smtp": self._smtp,
                 "security": self._security,
                 "profile": self._profile,
+                "briefing": self._briefing,
             }
 
             for category, obj in category_map.items():
@@ -130,6 +132,7 @@ class SettingsPersistenceMixin:
                     "auto_generated": self._security.auto_generated,
                 },
                 "profile": self._profile.__dict__.copy(),
+                "briefing": self._briefing.__dict__.copy(),
             }
 
             tmp_path = self._settings_file.with_suffix(".tmp")

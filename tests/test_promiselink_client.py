@@ -364,6 +364,23 @@ class TestRoutesAndForbiddenPaths:
         assert calls[0].url.params["min_days"] == "30"
         assert "dormant_days" not in str(calls[0].url.params)
 
+    def test_dormant_accepts_paginated_items_response(self):
+        handler, _ = json_handler(
+            [
+                (
+                    "GET",
+                    "/api/v1/entities/dormant",
+                    200,
+                    {"items": [{"entity_id": "e1"}], "total": 1},
+                    None,
+                )
+            ]
+        )
+        client = make_client(transport=httpx.MockTransport(handler))
+        result = client.list_dormant_entities(min_days=30)
+        assert result.success is True
+        assert result.data == [{"entity_id": "e1"}]
+
     def test_get_entity_stage_info_path(self):
         handler, calls = json_handler(
             [("GET", "/api/v1/entities/e1/stage-info", 200, {"stage": "dormant"}, None)]

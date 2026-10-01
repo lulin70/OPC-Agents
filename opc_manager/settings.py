@@ -55,6 +55,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from opc_manager.config import LLM_PROVIDERS
 from opc_manager.settings_encryption import SettingsEncryptionMixin
@@ -72,6 +73,7 @@ class SettingsCategory(Enum):
     API_KEYS = "api_keys"
     SECURITY = "security"
     PROFILE = "profile"
+    BRIEFING = "briefing"
 
 
 @dataclass
@@ -144,6 +146,17 @@ class ProfileSettings:
     company_name: str = ""
     timezone: str = "Asia/Shanghai"
     language: str = "zh_CN"
+
+
+@dataclass
+class MorningBriefSettings:
+    """Structured subscription settings for the local morning brief."""
+
+    enabled: bool = False
+    recipient_email: str = ""
+    schedule_time: str = "08:00"
+    timezone: str = "Asia/Shanghai"
+    scope: str = "default"
 
 
 SMTP_PRESETS = {
@@ -223,6 +236,7 @@ class SettingsManager(
             self._smtp = SMTPSettings()
             self._security = SecuritySettings()
             self._profile = ProfileSettings()
+            self._briefing = MorningBriefSettings()
             self._fernet = None
             self._ensure_encryption_key()
             self._init_fernet()
@@ -248,6 +262,11 @@ class SettingsManager(
     def profile(self) -> ProfileSettings:
         """Access user profile settings."""
         return self._profile
+
+    @property
+    def briefing(self) -> MorningBriefSettings:
+        """Access structured morning-brief subscription settings."""
+        return self._briefing
 
     def get_encryption_key(self) -> str:
         """获取加密密钥，供其他模块使用（不通过 os.environ）。
@@ -428,6 +447,43 @@ class SettingsManager(
         self._notify_callbacks("profile")
         return True
 
+    def update_briefing(self, **kwargs: Any) -> bool:
+        """Update and persist the structured morning-brief subscription."""
+        valid_fields = {
+            "enabled",
+            "recipient_email",
+            "schedule_time",
+            "timezone",
+            "scope",
+        }
+        unknown = set(kwargs) - valid_fields
+        if unknown:
+            logger.warning("Unknown briefing setting fields: %s", sorted(unknown))
+            return False
+
+        values = {field: getattr(self._briefing, field) for field in valid_fields}
+        values.update(kwargs)
+        if not isinstance(values["enabled"], bool):
+            return False
+        if not isinstance(values["recipient_email"], str):
+            return False
+        if not isinstance(values["scope"], str) or not values["scope"].strip():
+            return False
+        try:
+            hour, minute = values["schedule_time"].split(":")
+            if not (0 <= int(hour) <= 23 and 0 <= int(minute) <= 59):
+                return False
+            values["schedule_time"] = f"{int(hour):02d}:{int(minute):02d}"
+            ZoneInfo(values["timezone"])
+        except (AttributeError, TypeError, ValueError, ZoneInfoNotFoundError):
+            return False
+
+        for field, value in values.items():
+            setattr(self._briefing, field, value)
+        self._save_to_disk()
+        self._notify_callbacks("briefing")
+        return True
+
     def get_smtp_preset(self, name: str) -> Dict[str, Any]:
         """Get SMTP preset configuration by provider name.
 
@@ -471,6 +527,7 @@ __all__ = [
     "SMTPSettings",
     "SecuritySettings",
     "ProfileSettings",
+    "MorningBriefSettings",
     "SMTP_PRESETS",
     "SettingsManager",
     "get_settings",

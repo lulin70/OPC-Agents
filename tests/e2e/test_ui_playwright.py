@@ -3,7 +3,8 @@
 满足 HARD_CONSTRAINTS.md Q1/Q2 要求：发布前必须做模拟真实用户使用的测试。
 
 覆盖核心用户旅程（Demo 模式）：
-- UJ-01: 启动 App → 侧边栏导航 6 个页面
+- UJ-01: 启动 App → 侧边栏导航 7 个页面
+- UJ-09: CRM 新增客户 → 搜索选择 → 跟进记录 → 生命周期指标
 - UJ-02: Demo 模式横幅显示 → Demo 信息面板
 - UJ-03: Chat 输入框可见
 - UJ-04: Deliverables 页面 → 下载按钮（关闭 FD-004）
@@ -20,6 +21,7 @@ from __future__ import annotations
 
 import time
 import urllib.request
+from pathlib import Path
 
 import pytest
 
@@ -34,7 +36,7 @@ pytestmark = pytest.mark.e2e
 def _click_nav(page, label: str, timeout: int = 25000) -> None:
     """通过侧边栏 radio 导航到指定页面。
 
-    Streamlit radio 渲染 7 个 label（第一个是 "Navigation" 标题），后续 6 个是实际页面。
+    Streamlit radio 渲染 8 个 label（第一个是 "Navigation" 标题），后续 7 个是实际页面。
     多层 fallback：force click → reload → JavaScript click。
     """
     deadline = time.time() + (timeout / 1000)
@@ -161,7 +163,7 @@ def _wait_for_streamlit_content(page, timeout: int = 15000) -> None:
 
 
 class TestUJ01AppLaunchAndNavigation:
-    """UJ-01: 启动 App → 侧边栏导航 6 个页面。"""
+    """UJ-01: 启动 App → 侧边栏导航 7 个页面。"""
 
     def test_TC_H01_app_loads_without_error(self, page):
         """TC-H01: App 启动无错误，标题显示，主容器可见。
@@ -184,38 +186,133 @@ class TestUJ01AppLaunchAndNavigation:
         exceptions = page.locator("[data-testid='stException']")
         assert exceptions.count() == 0, "页面存在 Streamlit 异常"
 
-    def test_TC_H02_sidebar_navigation_has_6_options(self, page):
-        """TC-H02: 侧边栏 radio 有 6 个页面选项（过滤 "Navigation" 标题）。
+    def test_TC_H02_sidebar_navigation_has_7_options(self, page):
+        """TC-H02: 侧边栏 radio 有 7 个页面选项（过滤 "Navigation" 标题）。
 
         Scenario: 用户查看侧边栏
-        Expected: 6 个导航选项可见
+        Expected: 7 个导航选项可见
         """
         _wait_for_streamlit_content(page)
 
         labels = _get_nav_labels(page)
-        assert len(labels) == 6, f"期望 6 个导航选项，实际 {len(labels)}: {labels}"
+        assert len(labels) == 7, f"期望 7 个导航选项，实际 {len(labels)}: {labels}"
 
-        expected_zh = ["对话", "成果物", "Dashboard", "成长", "技能市场", "设置"]
+        expected_zh = [
+            "对话",
+            "成果物",
+            "Dashboard",
+            "成长",
+            "技能市场",
+            "设置",
+            "客户管理",
+        ]
         for label in expected_zh:
             assert any(
                 label in nav for nav in labels
             ), f"导航选项 '{label}' 未找到，实际: {labels}"
 
     def test_TC_H03_all_pages_navigable(self, page):
-        """TC-H03: 依次点击 6 个导航项，每个页面渲染无异常。
+        """TC-H03: 依次点击 7 个导航项，每个页面渲染无异常。
 
         Scenario: 用户逐个点击侧边栏导航
         Expected: 每个页面都能正常渲染，无异常
         """
         _wait_for_streamlit_content(page)
 
-        nav_labels = ["对话", "成果物", "Dashboard", "成长", "技能市场", "设置"]
+        nav_labels = [
+            "对话",
+            "成果物",
+            "Dashboard",
+            "成长",
+            "技能市场",
+            "设置",
+            "客户管理",
+        ]
 
         for label in nav_labels:
             _click_nav(page, label)
             # 验证无异常
             exceptions = page.locator("[data-testid='stException']")
             assert exceptions.count() == 0, f"导航到 '{label}' 时出现异常"
+
+
+# ============================================================
+# UJ-09: CRM 用户旅程 (P0)
+# ============================================================
+
+
+class TestUJ09CRMJourney:
+    """UJ-09: 新增客户 → 选择客户 → 跟进记录 → 生命周期指标。"""
+
+    def test_TC_H14_crm_customer_follow_up_lifecycle(self, page):
+        """验证运营岗可在 CRM 页面完成一次最小客户跟进闭环。"""
+        _wait_for_streamlit_content(page)
+        _click_nav(page, "客户管理")
+
+        page.get_by_role("heading", name="客户管理").wait_for()
+        page.get_by_text("PromiseLink 状态", exact=True).wait_for()
+        page.get_by_text("未启用", exact=True).wait_for()
+        page.get_by_text("当前使用本地 CRM 数据", exact=True).wait_for()
+        add_customer_form = page.locator("[data-testid='stForm']").filter(
+            has=page.get_by_role("button", name="保存客户")
+        )
+        add_customer_form.get_by_label("姓名").fill("Playwright 客户")
+        add_customer_form.get_by_label("公司").fill("E2E 示例公司")
+        add_customer_form.get_by_label("职位").fill("运营负责人")
+        add_customer_form.get_by_label("电话").fill("13800138000")
+        add_customer_form.get_by_label("邮箱").fill("playwright@example.com")
+        add_customer_form.get_by_role("button", name="保存客户").click()
+
+        # 保存后页面会 rerun，持久化后的客户详情是稳定的用户可见证据。
+        page.get_by_text("Playwright 客户", exact=False).first.wait_for(timeout=10000)
+        for metric_label in ("生命周期", "沉默天数", "成交数", "跟进数"):
+            page.get_by_text(metric_label, exact=True).wait_for(timeout=10000)
+
+        page.get_by_label("跟进内容").fill("完成首次电话沟通")
+        page.get_by_role("button", name="保存跟进").click()
+        # 跟进保存同样会 rerun，验证跟进历史而不是短暂 success toast。
+        page.get_by_text("完成首次电话沟通", exact=False).wait_for(timeout=10000)
+
+        page.get_by_role("button", name="生成跟进草稿").click()
+        page.get_by_text("已生成跟进草稿，请确认或修改后保存。", exact=True).wait_for(
+            timeout=10000
+        )
+        draft = page.get_by_label("跟进内容")
+        assert draft.input_value().startswith("您好，想跟进一下")
+
+        page.get_by_text("邮件交付", exact=True).click()
+        email_body = page.get_by_label("邮件正文")
+        assert email_body.input_value().startswith("您好，想跟进一下")
+        page.get_by_role("button", name="发送跟进邮件").click()
+        page.get_by_text("邮件尚未发送，请再次点击确认发送", exact=True).wait_for(
+            timeout=10000
+        )
+        page.get_by_role("button", name="确认发送跟进邮件").click()
+        page.get_by_text("邮件未发送：", exact=False).wait_for(timeout=10000)
+        assert page.locator("[data-testid='stException']").count() == 0
+
+        page.get_by_role("button", name="刷新早报").click()
+        page.get_by_text("本地早报：沉默客户", exact=False).wait_for(timeout=10000)
+        assert page.locator("[data-testid='stException']").count() == 0
+
+    def test_TC_H15_morning_brief_to_deliverable(self, page):
+        """验证用户可生成本地早报并在成果物页面查看。"""
+        _wait_for_streamlit_content(page)
+        _click_nav(page, "客户管理")
+
+        page.get_by_role("heading", name="客户管理").wait_for()
+        page.get_by_role("button", name="立即生成早报").click()
+        page.get_by_text("经营早报已生成，可在成果物页面查看", exact=True).wait_for(
+            timeout=15000
+        )
+
+        _click_nav(page, "成果物")
+        page.get_by_text("morning_brief", exact=False).first.wait_for(timeout=10000)
+        brief_path = next(
+            path for path in Path("deliverables").glob("*_morning_brief.md")
+        )
+        assert "# 经营早报" in brief_path.read_text(encoding="utf-8")
+        assert page.locator("[data-testid='stException']").count() == 0
 
 
 # ============================================================
@@ -429,6 +526,85 @@ class TestUJ06Settings:
         exceptions = page.locator("[data-testid='stException']")
         assert exceptions.count() == 0, "Settings 页面有异常"
 
+    def test_TC_H16_briefing_subscription_user_journey(self, page):
+        """验证用户可通过 UI 配置、修改并停用结构化经营早报订阅。"""
+        _wait_for_streamlit_content(page)
+        _click_nav(page, "设置")
+        page.wait_for_selector("[data-testid='stTabs']", timeout=15000)
+
+        def open_briefing_tab():
+            page.get_by_role("tab", name="经营早报", exact=True).click()
+            page.get_by_text("经营早报订阅", exact=True).wait_for(timeout=10000)
+
+        def briefing_form():
+            return page.locator("[data-testid='stForm']").filter(
+                has=page.get_by_role("button", name="保存早报设置", exact=True)
+            )
+
+        def set_briefing_enabled(enabled: bool):
+            checkbox = page.locator("[data-testid='stCheckbox']").filter(
+                has_text="启用每日经营早报"
+            )
+            input_control = checkbox.locator("input[type='checkbox']")
+            if input_control.is_checked() != enabled:
+                checkbox.locator("label").click(force=True)
+
+        def set_briefing_time(value: str):
+            briefing_form().locator(
+                "[data-testid='stTimeInput'] [role='combobox']"
+            ).click()
+            page.locator("[role='option']:visible", has_text=value).first.click()
+
+        def select_briefing_option(label: str, value: str):
+            widget = (
+                briefing_form()
+                .locator("[data-testid='stSelectbox']")
+                .filter(has_text=label)
+            )
+            widget.locator("[role='combobox']").click()
+            page.locator("[role='option']:visible", has_text=value).first.click()
+
+        def save_briefing_settings():
+            page.get_by_role("button", name="保存早报设置", exact=True).click()
+            page.wait_for_timeout(2000)
+            _click_nav(page, "设置")
+            page.wait_for_selector("[data-testid='stTabs']", timeout=15000)
+            open_briefing_tab()
+
+        # 先通过 UI 清理同一 server session 可能残留的订阅状态。
+        open_briefing_tab()
+        set_briefing_enabled(False)
+        page.get_by_label("收件邮箱（预留）", exact=True).fill("")
+        set_briefing_time("08:00")
+        select_briefing_option("时区", "Asia/Shanghai")
+        page.get_by_label("数据范围", exact=True).fill("default")
+        save_briefing_settings()
+        assert page.get_by_text("调度状态：已停用", exact=False).is_visible()
+
+        # 配置并保存启用状态。
+        set_briefing_enabled(True)
+        page.get_by_label("收件邮箱（预留）", exact=True).fill("owner@example.com")
+        set_briefing_time("09:30")
+        select_briefing_option("时区", "Asia/Shanghai")
+        page.get_by_label("数据范围", exact=True).fill("default")
+        save_briefing_settings()
+        assert page.get_by_text("调度状态：已启用", exact=False).is_visible()
+        assert page.locator("[data-testid='stException']").count() == 0
+
+        # 修改时间和数据范围后再次保存，确认订阅仍然启用。
+        set_briefing_enabled(True)
+        set_briefing_time("10:15")
+        page.get_by_label("数据范围", exact=True).fill("sales")
+        save_briefing_settings()
+        assert page.get_by_text("调度状态：已启用", exact=False).is_visible()
+        assert page.locator("[data-testid='stException']").count() == 0
+
+        # 最后通过 UI 取消订阅并保存，确认调度状态已停用。
+        set_briefing_enabled(False)
+        save_briefing_settings()
+        assert page.get_by_text("调度状态：已停用", exact=False).is_visible()
+        assert page.locator("[data-testid='stException']").count() == 0
+
 
 # ============================================================
 # UJ-07: 多语言切换 (P1)
@@ -544,9 +720,11 @@ class TestErrorCases:
         page.wait_for_timeout(2000)
 
         # Deliverables 搜索框（TC_E03 已验证可用）
-        search_input = page.locator(
-            "input[placeholder*='搜索'], input[placeholder*='search']"
-        ).first
+        search_input = (
+            page.locator("[data-testid='stTextInput']")
+            .filter(has_text="搜索成果物")
+            .locator("input")
+        )
         assert search_input.is_visible(), "Deliverables 搜索框不可见"
 
         # 记录搜索结果展开器数量
@@ -641,7 +819,15 @@ class TestBoundaryCases:
         """
         _wait_for_streamlit_content(page)
 
-        nav_labels = ["对话", "成果物", "Dashboard", "成长", "技能市场", "设置"]
+        nav_labels = [
+            "对话",
+            "成果物",
+            "Dashboard",
+            "成长",
+            "技能市场",
+            "设置",
+            "客户管理",
+        ]
 
         # 快速切换（短 timeout，不重试，模拟用户快速点击）
         for _ in range(2):

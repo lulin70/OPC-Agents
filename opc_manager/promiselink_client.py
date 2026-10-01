@@ -357,14 +357,16 @@ class PromiseLinkClient:
                 error="响应不是合法 JSON",
             )
         if required_list:
-            if not isinstance(payload, list):
-                return ClientResult(
-                    False,
-                    ClientState.SCHEMA_MISMATCH,
-                    status_code=response.status_code,
-                    error="响应契约不匹配: 期望列表",
-                )
-            return payload
+            if isinstance(payload, list):
+                return payload
+            if isinstance(payload, dict) and isinstance(payload.get("items"), list):
+                return payload["items"]
+            return ClientResult(
+                False,
+                ClientState.SCHEMA_MISMATCH,
+                status_code=response.status_code,
+                error="响应契约不匹配: 期望列表或包含 items 列表的分页对象",
+            )
         if required_keys and not isinstance(payload, dict):
             return ClientResult(
                 False,

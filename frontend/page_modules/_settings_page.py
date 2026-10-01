@@ -49,6 +49,7 @@ def _create_settings_page():
             _t("settings_api_keys"),
             _t("settings_security"),
             _t("settings_profile"),
+            "经营早报",
             _t("settings_backup"),
         ]
     )
@@ -69,7 +70,88 @@ def _create_settings_page():
         _render_profile_settings(settings)
 
     with settings_tabs[5]:
+        _render_briefing_settings(settings)
+
+    with settings_tabs[6]:
         _render_data_backup_settings()
+
+
+def _render_briefing_settings(settings):
+    """Render structured local morning-brief subscription settings."""
+    from opc_manager.morning_brief import (
+        get_morning_brief_status,
+        sync_morning_brief_task,
+    )
+
+    briefing = settings.briefing
+    st.markdown("### 经营早报订阅")
+    st.caption("当前版本只生成本地 Markdown 草稿，不会自动发送邮件。")
+    with st.form("briefing_config_form"):
+        enabled = st.checkbox("启用每日经营早报", value=briefing.enabled)
+        recipient_email = st.text_input(
+            "收件邮箱（预留）",
+            value=briefing.recipient_email,
+            help="用于后续邮件草稿/发送流程；当前不会触发 SMTP 外发。",
+        )
+        schedule_time = st.time_input(
+            "生成时间",
+            value=datetime.strptime(briefing.schedule_time, "%H:%M").time(),
+        )
+        timezone = st.selectbox(
+            "时区",
+            [
+                "Asia/Shanghai",
+                "Asia/Tokyo",
+                "Asia/Singapore",
+                "Europe/London",
+                "America/New_York",
+                "America/Los_Angeles",
+            ],
+            index=(
+                [
+                    "Asia/Shanghai",
+                    "Asia/Tokyo",
+                    "Asia/Singapore",
+                    "Europe/London",
+                    "America/New_York",
+                    "America/Los_Angeles",
+                ].index(briefing.timezone)
+                if briefing.timezone
+                in {
+                    "Asia/Shanghai",
+                    "Asia/Tokyo",
+                    "Asia/Singapore",
+                    "Europe/London",
+                    "America/New_York",
+                    "America/Los_Angeles",
+                }
+                else 0
+            ),
+        )
+        scope = st.text_input("数据范围", value=briefing.scope)
+        submitted = st.form_submit_button("保存早报设置", type="primary")
+
+    if submitted:
+        updated = settings.update_briefing(
+            enabled=enabled,
+            recipient_email=recipient_email.strip(),
+            schedule_time=schedule_time.strftime("%H:%M"),
+            timezone=timezone,
+            scope=scope.strip(),
+        )
+        if not updated:
+            st.error("早报设置无效，请检查时间、时区和数据范围。")
+        else:
+            sync_morning_brief_task(settings.briefing)
+            st.success("早报设置已保存，调度任务已同步。")
+            st.rerun()
+
+    status = get_morning_brief_status()
+    if status.get("configured"):
+        state = "已启用" if status.get("enabled") else "已停用"
+        st.info(f"调度状态：{state}；下次执行：{status.get('next_run_at') or '未安排'}")
+    else:
+        st.info("尚未创建早报调度任务。")
 
 
 def _render_llm_settings(settings):

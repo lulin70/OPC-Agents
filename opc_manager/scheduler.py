@@ -326,6 +326,51 @@ class ScheduledTaskRepository:
             self._conn.commit()
         return task
 
+    def update_task_config(
+        self,
+        task_id: str,
+        *,
+        schedule_expression: str,
+        timezone_name: str,
+        parameters: Dict[str, Any],
+    ) -> ScheduledTask:
+        """Update a task's schedule and parameters with full validation."""
+        task = self.get_task(task_id)
+        if task is None:
+            raise KeyError(f"任务不存在: {task_id}")
+        ZoneInfo(timezone_name)
+        params = dict(parameters)
+        params_json = json.dumps(params, ensure_ascii=False)
+        if len(params_json.encode("utf-8")) > MAX_PARAMS_JSON_BYTES:
+            raise ValueError(f"parameters_json 超过 {MAX_PARAMS_JSON_BYTES} 字节上限")
+        ScheduleParser.next_after(schedule_expression, datetime.now())
+        next_run_at = None
+        if task.enabled:
+            next_run = ScheduleParser.next_after(
+                schedule_expression, datetime.now(tz=ZoneInfo(timezone_name))
+            )
+            next_run_at = _iso(_to_utc_naive(next_run))
+        now_text = _iso(_utcnow())
+        with self._lock:
+            self._conn.execute(
+                """
+                UPDATE scheduled_tasks
+                SET schedule_expression = ?, parameters_json = ?, timezone = ?,
+                    next_run_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    schedule_expression,
+                    params_json,
+                    timezone_name,
+                    next_run_at,
+                    now_text,
+                    task_id,
+                ),
+            )
+            self._conn.commit()
+        return self.get_task(task_id)  # type: ignore[return-value]
+
     def _row_to_task(self, row: tuple) -> ScheduledTask:
         (
             task_id,

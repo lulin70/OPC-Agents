@@ -202,6 +202,87 @@ class TestTaskRepositorySafety:
 
 
 # ---------------------------------------------------------------------------
+# ScheduledTaskRepository.update_task_config — 任务配置更新
+# ---------------------------------------------------------------------------
+
+
+class TestUpdateTaskConfig:
+    def test_enabled_task_updates_schedule_timezone_parameters_and_next_run(
+        self, repos
+    ):
+        task_repo, _ = repos
+        task = _enabled_task(task_repo, schedule_expression="daily 08:00")
+        previous_next_run = task.next_run_at
+
+        updated = task_repo.update_task_config(
+            task.id,
+            schedule_expression="daily 09:30",
+            timezone_name="America/New_York",
+            parameters={"scope": "finance", "limit": 5},
+        )
+
+        assert updated.schedule_expression == "daily 09:30"
+        assert updated.timezone == "America/New_York"
+        assert updated.parameters == {"scope": "finance", "limit": 5}
+        assert updated.enabled is True
+        assert updated.next_run_at is not None
+        assert updated.next_run_at != previous_next_run
+
+    def test_disabled_task_update_leaves_next_run_empty(self, repos):
+        task_repo, _ = repos
+        task = _make_task(task_repo)
+
+        updated = task_repo.update_task_config(
+            task.id,
+            schedule_expression="daily 09:30",
+            timezone_name="Asia/Tokyo",
+            parameters={"scope": "default"},
+        )
+
+        assert updated.enabled is False
+        assert updated.next_run_at is None
+
+    def test_update_task_config_rejects_invalid_expression_timezone_and_size(
+        self, repos
+    ):
+        task_repo, _ = repos
+        task = _make_task(task_repo)
+
+        with pytest.raises(ScheduleParseError):
+            task_repo.update_task_config(
+                task.id,
+                schedule_expression="daily 25:00",
+                timezone_name="Asia/Shanghai",
+                parameters={},
+            )
+        with pytest.raises(Exception):
+            task_repo.update_task_config(
+                task.id,
+                schedule_expression="daily 09:00",
+                timezone_name="Mars/Olympus",
+                parameters={},
+            )
+        with pytest.raises(ValueError, match="上限"):
+            task_repo.update_task_config(
+                task.id,
+                schedule_expression="daily 09:00",
+                timezone_name="Asia/Shanghai",
+                parameters={"blob": "x" * 11000},
+            )
+
+    def test_update_task_config_missing_task_raises_key_error(self, repos):
+        task_repo, _ = repos
+
+        with pytest.raises(KeyError):
+            task_repo.update_task_config(
+                "missing-task",
+                schedule_expression="daily 09:00",
+                timezone_name="Asia/Shanghai",
+                parameters={},
+            )
+
+
+# ---------------------------------------------------------------------------
 # 持久化与重启恢复（TDD：重启后任务不丢）
 # ---------------------------------------------------------------------------
 

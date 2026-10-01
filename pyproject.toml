@@ -128,6 +128,7 @@ markers = [
     "e2e_llm: Real LLM API call (requires MOKA_API_KEY or GLM_API_KEY)",
     "e2e_core_skill: Real E2E for 3 core skills (email/finance/report, requires LLM API key)",
     "security: Security-focused tests (injection, XSS, leakage)",
+    "slow: Tests that make real external requests or require extended runtime",
 ]
 addopts = "-v --tb=short --strict-markers"
 
