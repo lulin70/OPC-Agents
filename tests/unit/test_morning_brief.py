@@ -4,6 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 
+from opc_manager.confirmer import ConfirmationResult
+from opc_manager.consensus_engine import Decision, DecisionType
 from opc_manager.settings import MorningBriefSettings
 import opc_manager.morning_brief as morning_brief
 
@@ -78,12 +80,77 @@ def test_deliver_morning_brief_email_requires_confirmation(monkeypatch):
     send_email.assert_not_called()
 
 
-def test_deliver_morning_brief_email_sends_only_after_confirmation(monkeypatch):
+def _approved_decision():
+    return Decision(
+        decision_type=DecisionType.UNANIMOUS,
+        approved=True,
+        reasoning="三贤者一致同意",
+        confidence=1.0,
+    )
+
+
+def _rejected_decision():
+    return Decision(
+        decision_type=DecisionType.VETOED,
+        approved=False,
+        reasoning="执行脑否决",
+        confidence=0.9,
+    )
+
+
+def _confirmed():
+    return ConfirmationResult(
+        confirmed=True, method="user_confirmation", user_choice="approve"
+    )
+
+
+def test_deliver_morning_brief_email_rejects_user_confirmation(monkeypatch):
+    send_email = Mock()
+    monkeypatch.setattr("opc_manager.email_skill.send_email", send_email)
+    result = morning_brief.deliver_morning_brief_email(
+        {"recipient": "owner@example.com", "subject": "早报", "body": "正文"},
+        confirmation=ConfirmationResult(
+            confirmed=False, method="user_confirmation", user_choice="reject"
+        ),
+        consensus_check=Mock(return_value=_approved_decision()),
+    )
+    assert result["success"] is False
+    send_email.assert_not_called()
+
+
+def test_deliver_morning_brief_email_rejects_consensus_veto(monkeypatch):
+    send_email = Mock()
+    monkeypatch.setattr("opc_manager.email_skill.send_email", send_email)
+    result = morning_brief.deliver_morning_brief_email(
+        {"recipient": "owner@example.com", "subject": "早报", "body": "正文"},
+        confirmation=_confirmed(),
+        consensus_check=Mock(return_value=_rejected_decision()),
+    )
+    assert result["success"] is False
+    send_email.assert_not_called()
+
+
+def test_deliver_morning_brief_email_rejects_consensus_exception(monkeypatch):
+    send_email = Mock()
+    monkeypatch.setattr("opc_manager.email_skill.send_email", send_email)
+    result = morning_brief.deliver_morning_brief_email(
+        {"recipient": "owner@example.com", "subject": "早报", "body": "正文"},
+        confirmation=_confirmed(),
+        consensus_check=Mock(side_effect=RuntimeError("consensus unavailable")),
+    )
+    assert result["success"] is False
+    send_email.assert_not_called()
+
+
+def test_deliver_morning_brief_email_sends_after_confirmation_and_consensus(
+    monkeypatch,
+):
     send_email = Mock(return_value={"success": True, "id": "email-1"})
     monkeypatch.setattr("opc_manager.email_skill.send_email", send_email)
     result = morning_brief.deliver_morning_brief_email(
         {"recipient": "owner@example.com", "subject": "早报", "body": "正文"},
-        confirmed=True,
+        confirmation=_confirmed(),
+        consensus_check=Mock(return_value=_approved_decision()),
     )
     assert result["success"] is True
     send_email.assert_called_once_with("owner@example.com", "早报", "正文")

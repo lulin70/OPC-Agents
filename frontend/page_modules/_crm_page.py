@@ -18,6 +18,7 @@ from opc_manager.crm_skill import (
     lifecycle_tracker,
     search_customers,
 )
+from opc_manager.confirmer import ConfirmationResult
 from opc_manager.email_skill import send_email
 from opc_manager.morning_brief import (
     build_morning_brief_email_draft,
@@ -321,7 +322,12 @@ def _render_morning_brief_email_delivery() -> None:
         return
     st.info(f"待确认早报邮件：{pending['recipient']} · {pending['subject']}")
     if st.button("确认发送早报邮件", key="crm_confirm_morning_brief_email"):
-        result = deliver_morning_brief_email(pending, confirmed=True)
+        confirmation = ConfirmationResult(
+            confirmed=True,
+            method="user_confirmation",
+            user_choice="approve",
+        )
+        result = deliver_morning_brief_email(pending, confirmation=confirmation)
         if result.get("success"):
             st.session_state.pop("crm_morning_brief_email_pending", None)
             st.success("早报邮件已发送")

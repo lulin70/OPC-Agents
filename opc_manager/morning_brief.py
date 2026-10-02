@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import atexit
+import asyncio
+import concurrent.futures
+import inspect
 import json
 import logging
 import os
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from opc_manager.audit_log import AuditLog
+from opc_manager.confirmer import Confirmer, ConfirmationResult
 from opc_manager.data_manager import DATA_DIR, init_db
 from opc_manager.scheduler import (
     ScheduledTaskRepository,
@@ -178,14 +182,112 @@ def save_morning_brief_email_draft(draft: Dict[str, Any]) -> str:
     return str(path)
 
 
+def _run_sync(awaitable: Awaitable[Any]) -> Any:
+    """Run an awaitable without nesting an event loop in the current thread."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(awaitable)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(asyncio.run, awaitable).result()
+
+
+async def _return_confirmation(
+    confirmation: Optional[ConfirmationResult], _: Any
+) -> ConfirmationResult:
+    if isinstance(confirmation, ConfirmationResult):
+        return confirmation
+    return ConfirmationResult(confirmed=False, method="no_confirmation")
+
+
+async def _default_morning_brief_consensus(draft: Dict[str, Any]) -> Any:
+    """Run the existing AgentLoop/ConsensusChecker path for email delivery."""
+    from opc_manager.agent_loop import AgentLoop
+    from opc_manager.strategist_brain import Step
+
+    loop = AgentLoop()
+    context = {
+        "user_input": f"发送经营早报邮件给 {draft['recipient']}",
+        "metadata": {"route_category": "complex"},
+    }
+    step = Step(
+        id="morning_brief_email",
+        skill_id="email",
+        description="send morning brief email",
+        parameters=draft,
+    )
+    return await loop._parallel_consensus(context, "send_email", step)
+
+
+def _consensus_is_approved(decision: Any) -> bool:
+    """Accept only an explicit approved decision; all malformed results fail closed."""
+    if decision is None or not getattr(decision, "approved", False):
+        return False
+    decision_type = getattr(getattr(decision, "decision_type", None), "value", "")
+    return decision_type not in {"vetoed", "escalated"}
+
+
 def deliver_morning_brief_email(
-    draft: Dict[str, Any], confirmed: bool = False
+    draft: Dict[str, Any],
+    confirmation: Optional[ConfirmationResult] = None,
+    *,
+    confirmer: Optional[Confirmer] = None,
+    confirm_callback: Optional[Callable[[Any], Awaitable[ConfirmationResult]]] = None,
+    consensus_check: Optional[Callable[[Dict[str, Any]], Any]] = None,
+    session_id: str = "morning-brief-email",
 ) -> Dict[str, Any]:
-    """Send only an explicitly confirmed draft through the email skill."""
-    if not confirmed:
-        return {"success": False, "error": "发送早报邮件前必须确认"}
+    """Send an email only after explicit user confirmation and sage approval."""
     if not draft.get("recipient") or not draft.get("body"):
         return {"success": False, "error": "早报邮件草稿不完整"}
+
+    async def callback(request: Any) -> ConfirmationResult:
+        if confirm_callback is not None:
+            result = confirm_callback(request)
+            if inspect.isawaitable(result):
+                result = await result
+            if isinstance(result, ConfirmationResult):
+                return result
+            return ConfirmationResult(confirmed=False, method="invalid_confirmation")
+        return await _return_confirmation(confirmation, request)
+
+    try:
+        confirmation_result = _run_sync(
+            (confirmer or Confirmer()).check_confirmation(
+                session_id=session_id,
+                intent_type="EMAIL",
+                goal=f"发送经营早报邮件给 {draft['recipient']}",
+                confidence=0.0,
+                params={
+                    "recipient": draft["recipient"],
+                    "subject": draft.get("subject", "每日经营早报"),
+                },
+                confirm_callback=callback,
+            )
+        )
+    except Exception as exc:
+        logger.warning("早报邮件确认异常，拒绝发送: %s", exc)
+        return {"success": False, "error": "早报邮件确认失败"}
+
+    if (
+        not isinstance(confirmation_result, ConfirmationResult)
+        or not confirmation_result.confirmed
+        or confirmation_result.method == "auto"
+    ):
+        return {"success": False, "error": "发送早报邮件前必须确认"}
+
+    try:
+        checker = consensus_check or _default_morning_brief_consensus
+        decision = checker(draft)
+        if inspect.isawaitable(decision):
+            decision = _run_sync(decision)
+    except Exception as exc:
+        logger.warning("早报邮件共识异常，拒绝发送: %s", exc)
+        return {"success": False, "error": "早报邮件共识检查失败"}
+
+    if not _consensus_is_approved(decision):
+        return {"success": False, "error": "三贤者未批准早报邮件发送"}
+
     from opc_manager.email_skill import send_email
 
     return send_email(

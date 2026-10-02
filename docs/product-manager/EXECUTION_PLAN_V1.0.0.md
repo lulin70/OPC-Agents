@@ -218,6 +218,7 @@ UI（技能市场 6 技能、CRM 标签页、关系推进卡、Onboarding）→ 
 | 2026-09-30 | IMP-3 本地早报最小切片完成：新增无 Streamlit 依赖的经营数据聚合、Markdown 草稿成果物、`morning_brief` Scheduler handler、SQLite 调度与执行历史，并在 CRM 页面提供“启用每日早报”和“立即生成早报”。早报/CRM/Scheduler 回归 `41 passed`；相关 Ruff/Black 通过；真实 Chromium 用户旅程验证“立即生成早报 → 成果物页面 → morning_brief 内容落盘” `1 passed`。当前仍为本地草稿交付，未启用自动 SMTP 发送。 |
 | 2026-10-01 | 结构化早报订阅与 UI 回归完成：`briefing` Settings JSON 持久化、唯一 `morning_brief` 任务同步、时间/时区/scope/启停更新均已覆盖；非法时区已 fail-closed。Settings/Scheduler 专项 `127 passed`，真实 Chromium Settings 订阅路径 `1 passed`；修复 CRM 草稿版本化 widget 状态与成果物搜索测试定位；真实 Streamlit + Chromium 全量 UI E2E `24 passed`；Ruff、mypy、Bandit、Black 全部通过。当前仍保持本地 Markdown 草稿交付，未启用自动 SMTP 发送；工作区尚未提交。 |
 | 2026-10-01 | IMP-3 安全最小切片完成：早报生成同时创建本地可审阅 JSON 邮件草稿；Scheduler 只生成 Markdown/草稿，不调用 SMTP；CRM UI 增加“申请发送→确认发送”两阶段流程，确认后复用 `email_skill.send_email()`，未配置 SMTP 时明确失败。新增早报草稿/确认发送/调度边界单测与真实 Chromium 用户路径；专项 `55 passed`，早报邮件 UI E2E `1 passed`，Ruff/Black 通过。三贤者通用 Scheduler fail-close 与现有关键决策测试保持未回退；直接接入 `Confirmer`/三贤者与真实 SMTP 成功验证仍为 IMP-3 后续项。 |
+| 2026-10-01 | IMP-3 关键决策保护完成：`deliver_morning_brief_email()` 现在强制经过 `Confirmer.check_confirmation(intent_type="EMAIL", confidence=0.0)`，再经过现有 `AgentLoop._parallel_consensus()` 的 email 关键决策点；拒绝、自动确认、veto、escalated、共识异常和 malformed decision 均 fail-close，只有显式用户确认 + approved consensus 才调用 `email_skill.send_email()`。专项验证：早报/Scheduler/三贤者 `93 passed`，CRM/邮件/确认集成 `130 passed`，真实 Streamlit + Chromium 全量 UI E2E `25 passed`（含早报邮件用户路径），Ruff/Black/git diff check 通过。真实 SMTP 成功投递与幂等防重复发送仍是后续项。 |
 
 ---
 
