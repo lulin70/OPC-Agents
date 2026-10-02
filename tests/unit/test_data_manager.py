@@ -456,6 +456,69 @@ class TestMigrationAddColumn:
         ]
         assert "tasks" in tables or "audit_log" in tables
 
+    def test_migration_creates_email_delivery_claims_at_v8(self, temp_db):
+        init_db()
+        conn = _get_conn()
+        table = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' "
+            "AND name='email_delivery_claims'"
+        ).fetchone()
+        version = conn.execute(
+            "SELECT value FROM _meta WHERE key='db_version'"
+        ).fetchone()
+
+        assert table is not None
+        assert version[0] == "8"
+
+    def test_email_delivery_claim_is_idempotent_and_token_bound(self, temp_db):
+        from opc_manager.data_manager import (
+            claim_email_delivery,
+            complete_email_delivery,
+            get_email_delivery,
+        )
+
+        init_db()
+        body_hash = "body-hash"
+        first = claim_email_delivery(
+            "brief-key",
+            "morning_brief",
+            "owner@example.com",
+            "早报",
+            body_hash,
+            "2026-10-02T08:00:00",
+        )
+        blocked = claim_email_delivery(
+            "brief-key",
+            "morning_brief",
+            "owner@example.com",
+            "早报",
+            body_hash,
+            "2026-10-02T08:00:01",
+        )
+
+        assert first["status"] == "claimed"
+        assert blocked["status"] == "in_progress"
+        assert (
+            complete_email_delivery(
+                "brief-key",
+                "wrong-token",
+                success=True,
+                now="2026-10-02T08:00:02",
+            )
+            is False
+        )
+        assert (
+            complete_email_delivery(
+                "brief-key",
+                first["claim_token"],
+                success=True,
+                now="2026-10-02T08:00:03",
+                email_history_id="email-1",
+            )
+            is True
+        )
+        assert get_email_delivery("brief-key")["status"] == "sent"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "--tb=short"])

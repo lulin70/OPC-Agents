@@ -7,6 +7,7 @@ import sqlite3
 import stat
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -518,6 +519,124 @@ def execute_write_returning(sql: str, params: tuple = ()) -> Optional[int]:
         cursor = conn.execute(sql, params)
         conn.commit()
         return cursor.lastrowid
+
+
+@_ensure_db
+def claim_email_delivery(
+    delivery_key: str,
+    delivery_type: str,
+    to_addr: str,
+    subject: str,
+    body_hash: str,
+    now: str,
+) -> Dict[str, Any]:
+    """Atomically claim a delivery key before an external SMTP side effect."""
+    if not delivery_key or not body_hash:
+        return {"status": "invalid"}
+    with _db_lock:
+        conn = _get_conn()
+        claim_token = uuid.uuid4().hex
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            existing = conn.execute(
+                "SELECT * FROM email_delivery_claims WHERE delivery_key=?",
+                (delivery_key,),
+            ).fetchone()
+            if existing is not None:
+                if existing["body_hash"] != body_hash:
+                    conn.rollback()
+                    return {"status": "conflict"}
+                if existing["status"] == "sent":
+                    conn.commit()
+                    return {
+                        "status": "already_sent",
+                        "email_history_id": existing["email_history_id"],
+                    }
+                if existing["status"] == "sending":
+                    conn.commit()
+                    return {"status": "in_progress"}
+                conn.execute(
+                    "UPDATE email_delivery_claims SET status='sending', "
+                    "claim_token=?, attempts=attempts+1, claimed_at=?, "
+                    "failed_at=NULL, last_error=NULL, updated_at=? "
+                    "WHERE delivery_key=? AND status='failed'",
+                    (claim_token, now, now, delivery_key),
+                )
+                conn.commit()
+                return {"status": "claimed", "claim_token": claim_token}
+
+            conn.execute(
+                "INSERT INTO email_delivery_claims "
+                "(delivery_key,delivery_type,to_addr,subject,body_hash,status,"
+                "claim_token,attempts,claimed_at,created_at,updated_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    delivery_key,
+                    delivery_type,
+                    to_addr,
+                    subject,
+                    body_hash,
+                    "sending",
+                    claim_token,
+                    1,
+                    now,
+                    now,
+                    now,
+                ),
+            )
+            conn.commit()
+            return {"status": "claimed", "claim_token": claim_token}
+        except sqlite3.Error:
+            conn.rollback()
+            raise
+
+
+@_ensure_db
+def complete_email_delivery(
+    delivery_key: str,
+    claim_token: str,
+    *,
+    success: bool,
+    now: str,
+    email_history_id: str = "",
+    error: str = "",
+) -> bool:
+    """Finalize a delivery claim only when owned by the current sender."""
+    status = "sent" if success else "failed"
+    query = (
+        "UPDATE email_delivery_claims SET status=?, sent_at=?, "
+        "email_history_id=?, last_error=?, updated_at=? "
+        "WHERE delivery_key=? AND claim_token=? AND status='sending'"
+        if success
+        else "UPDATE email_delivery_claims SET status=?, failed_at=?, "
+        "email_history_id=?, last_error=?, updated_at=? "
+        "WHERE delivery_key=? AND claim_token=? AND status='sending'"
+    )
+    with _db_lock:
+        conn = _get_conn()
+        cursor = conn.execute(
+            query,
+            (
+                status,
+                now,
+                email_history_id,
+                error,
+                now,
+                delivery_key,
+                claim_token,
+            ),
+        )
+        conn.commit()
+        return cursor.rowcount == 1
+
+
+@_ensure_db
+def get_email_delivery(delivery_key: str) -> Optional[Dict[str, Any]]:
+    """Return a persisted delivery claim for diagnostics and tests."""
+    rows = execute_query(
+        "SELECT * FROM email_delivery_claims WHERE delivery_key=?", (delivery_key,)
+    )
+    return rows[0] if rows else None
 
 
 def backup_db() -> Optional[str]:

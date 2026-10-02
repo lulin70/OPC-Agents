@@ -59,6 +59,17 @@ def test_render_morning_brief_markdown_contains_operator_sections():
     assert "pending：3 个" in markdown
 
 
+def test_build_morning_brief_email_draft_contains_stable_delivery_key():
+    first = morning_brief.build_morning_brief_email_draft(
+        "# brief", "Owner@Example.com", "早报"
+    )
+    second = morning_brief.build_morning_brief_email_draft(
+        "# brief", "owner@example.com", "早报"
+    )
+    assert first["delivery_key"] == second["delivery_key"]
+    assert first["delivery_key"].startswith("morning_brief:")
+
+
 def test_build_morning_brief_email_draft_requires_recipient_and_body():
     assert morning_brief.build_morning_brief_email_draft("# brief", "") == {
         "success": False,
@@ -146,14 +157,16 @@ def test_deliver_morning_brief_email_sends_after_confirmation_and_consensus(
     monkeypatch,
 ):
     send_email = Mock(return_value={"success": True, "id": "email-1"})
-    monkeypatch.setattr("opc_manager.email_skill.send_email", send_email)
+    monkeypatch.setattr("opc_manager.email_skill.send_morning_brief_email", send_email)
     result = morning_brief.deliver_morning_brief_email(
         {"recipient": "owner@example.com", "subject": "早报", "body": "正文"},
         confirmation=_confirmed(),
         consensus_check=Mock(return_value=_approved_decision()),
     )
     assert result["success"] is True
-    send_email.assert_called_once_with("owner@example.com", "早报", "正文")
+    send_email.assert_called_once()
+    assert send_email.call_args.args == ("owner@example.com", "早报", "正文")
+    assert send_email.call_args.kwargs["delivery_key"].startswith("morning_brief:")
 
 
 def test_handle_morning_brief_saves_local_draft_and_audits(monkeypatch, tmp_path):

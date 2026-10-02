@@ -307,6 +307,39 @@ class TestEmailSkillE2E:
             "error", ""
         ), f"error 应含'未配置'，实际: {result.get('error')}"
 
+    def test_morning_brief_idempotency_delivers_one_message(
+        self, isolated_db, mock_smtp_server
+    ):
+        """Verify: 已确认早报重复投递只进入本地 SMTP 收件箱一次."""
+        from opc_manager.data_manager import get_email_delivery
+        from opc_manager.email_skill import send_morning_brief_email
+
+        host, port, received = mock_smtp_server
+        _save_smtp_config_for_test(host, port, isolated_db["data_dir"])
+        delivery_key = "morning_brief:2026-10-02:owner@example.com:e2e"
+
+        first = send_morning_brief_email(
+            "owner@example.com",
+            "E2E 经营早报",
+            "# 经营早报\\n\\n正文",
+            delivery_key=delivery_key,
+        )
+        second = send_morning_brief_email(
+            "owner@example.com",
+            "E2E 经营早报",
+            "# 经营早报\\n\\n正文",
+            delivery_key=delivery_key,
+        )
+
+        assert first["success"] is True, first
+        assert second["success"] is True
+        assert second["status"] == "already_sent"
+        assert len(received) == 1
+        assert _decode_mime_header(received[0]["Subject"]) == "E2E 经营早报"
+        claim = get_email_delivery(delivery_key)
+        assert claim["status"] == "sent"
+        assert claim["attempts"] == 1
+
 
 # ============================================================
 # Finance 技能 E2E

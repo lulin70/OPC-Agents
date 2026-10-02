@@ -28,8 +28,10 @@
 """
 
 import asyncio
+import hashlib
 import json
 import smtplib
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -56,6 +58,7 @@ from opc_manager.email_skill import (
     save_smtp_config,
     send_email,
     send_email_async,
+    send_morning_brief_email,
     undo_send_email,
 )
 from opc_manager.tool_system import AuditLogger
@@ -330,6 +333,142 @@ class TestSendEmail:
         result = send_email("user@test.com", "subject", big_body)
         assert result["success"] is False
         assert "大小限制" in result["error"]
+
+    @patch("opc_manager.email_skill.send_email")
+    def test_morning_brief_idempotency_short_circuits_sent(
+        self, mock_send_email, temp_db
+    ):
+        dm.init_db()
+        key = "morning_brief:2026-10-02:owner@example.com:abc"
+        body = "正文"
+        body_hash = hashlib.sha256(body.encode("utf-8")).hexdigest()
+        claim = dm.claim_email_delivery(
+            key,
+            "morning_brief",
+            "owner@example.com",
+            "早报",
+            body_hash,
+            "2026-10-02T08:00:00",
+        )
+        dm.complete_email_delivery(
+            key,
+            claim["claim_token"],
+            success=True,
+            now="2026-10-02T08:00:01",
+            email_history_id="email-1",
+        )
+
+        result = send_morning_brief_email(
+            "owner@example.com", "早报", body, delivery_key=key
+        )
+        assert result["status"] == "already_sent"
+        assert mock_send_email.call_count == 0
+
+    @patch("opc_manager.email_skill.send_email")
+    def test_morning_brief_idempotency_claims_and_completes(
+        self, mock_send_email, temp_db
+    ):
+        dm.init_db()
+        mock_send_email.return_value = {"success": True, "id": "email-2"}
+        key = "morning_brief:2026-10-02:owner@example.com:def"
+
+        result = send_morning_brief_email(
+            "owner@example.com", "早报", "正文", delivery_key=key
+        )
+
+        assert result["success"] is True
+        assert mock_send_email.call_count == 1
+        claim = dm.get_email_delivery(key)
+        assert claim["status"] == "sent"
+        assert claim["attempts"] == 1
+        assert claim["email_history_id"] == "email-2"
+
+    @patch("opc_manager.email_skill.send_email")
+    def test_morning_brief_in_progress_blocks_duplicate(self, mock_send_email, temp_db):
+        dm.init_db()
+        key = "morning_brief:2026-10-02:owner@example.com:ghi"
+        body = "正文"
+        claim = dm.claim_email_delivery(
+            key,
+            "morning_brief",
+            "owner@example.com",
+            "早报",
+            hashlib.sha256(body.encode("utf-8")).hexdigest(),
+            "2026-10-02T08:00:00",
+        )
+
+        result = send_morning_brief_email(
+            "owner@example.com", "早报", body, delivery_key=key
+        )
+
+        assert result["status"] == "in_progress"
+        assert mock_send_email.call_count == 0
+        assert claim["status"] == "claimed"
+
+    @patch("opc_manager.email_skill.send_email")
+    def test_morning_brief_failed_claim_can_retry(self, mock_send_email, temp_db):
+        dm.init_db()
+        key = "morning_brief:2026-10-02:owner@example.com:jkl"
+        body = "正文"
+        mock_send_email.side_effect = [
+            {"success": False, "error": "SMTP down"},
+            {"success": True, "id": "email-3"},
+        ]
+
+        first = send_morning_brief_email(
+            "owner@example.com", "早报", body, delivery_key=key
+        )
+        second = send_morning_brief_email(
+            "owner@example.com", "早报", body, delivery_key=key
+        )
+
+        assert first["success"] is False
+        assert second["success"] is True
+        claim = dm.get_email_delivery(key)
+        assert claim["status"] == "sent"
+        assert claim["attempts"] == 2
+
+    @patch("opc_manager.email_skill.send_email")
+    def test_morning_brief_content_conflict_blocks_smtp(self, mock_send_email, temp_db):
+        dm.init_db()
+        key = "morning_brief:2026-10-02:owner@example.com:mno"
+        mock_send_email.return_value = {"success": False, "error": "SMTP down"}
+        first = send_morning_brief_email(
+            "owner@example.com", "早报", "正文 A", delivery_key=key
+        )
+        assert first["success"] is False
+        mock_send_email.reset_mock()
+
+        result = send_morning_brief_email(
+            "owner@example.com", "早报", "正文 B", delivery_key=key
+        )
+
+        assert result["status"] == "conflict"
+        assert mock_send_email.call_count == 0
+
+    def test_morning_brief_concurrent_claim_only_one_wins(self, temp_db):
+        dm.init_db()
+        key = "morning_brief:2026-10-02:owner@example.com:pqr"
+        body_hash = hashlib.sha256("正文".encode("utf-8")).hexdigest()
+
+        def claim():
+            return dm.claim_email_delivery(
+                key,
+                "morning_brief",
+                "owner@example.com",
+                "早报",
+                body_hash,
+                "2026-10-02T08:00:00",
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(lambda _: claim(), range(2)))
+
+        assert sorted(result["status"] for result in results) == [
+            "claimed",
+            "in_progress",
+        ]
+        assert dm.get_email_delivery(key)["attempts"] == 1
 
     def test_send_no_smtp_config(self, temp_db, smtp_config_path):
         dm.init_db()

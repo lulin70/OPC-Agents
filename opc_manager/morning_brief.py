@@ -5,14 +5,17 @@ from __future__ import annotations
 import atexit
 import asyncio
 import concurrent.futures
+import hashlib
 import inspect
 import json
 import logging
 import os
 import threading
+from collections.abc import Coroutine
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, cast
+from zoneinfo import ZoneInfo
 
 from opc_manager.audit_log import AuditLog
 from opc_manager.confirmer import Confirmer, ConfirmationResult
@@ -145,6 +148,21 @@ def render_morning_brief_markdown(data: Dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def build_morning_brief_idempotency_key(
+    markdown: str,
+    recipient_email: str,
+    subject: str = "每日经营早报",
+    timezone: str = "Asia/Shanghai",
+) -> str:
+    """Build a stable key for one recipient's brief version on a local date."""
+    recipient = recipient_email.strip().lower()
+    local_date = datetime.now(ZoneInfo(timezone)).date().isoformat()
+    content_hash = hashlib.sha256(
+        f"{subject.strip()}\x00{markdown}".encode("utf-8")
+    ).hexdigest()[:32]
+    return f"morning_brief:{local_date}:{recipient}:{content_hash}"
+
+
 def save_morning_brief_draft(markdown: str) -> str:
     """Persist a scheduled brief as a deliverable visible to the operator."""
     _DELIVERABLES_DIR.mkdir(parents=True, exist_ok=True)
@@ -165,11 +183,17 @@ def build_morning_brief_email_draft(
         return {"success": False, "error": "早报邮件缺少收件人邮箱"}
     if not markdown.strip():
         return {"success": False, "error": "早报邮件正文不能为空"}
+    normalized_subject = subject.strip() or "每日经营早报"
     return {
         "success": True,
         "recipient": recipient,
-        "subject": subject.strip() or "每日经营早报",
+        "subject": normalized_subject,
         "body": markdown,
+        "delivery_key": build_morning_brief_idempotency_key(
+            markdown,
+            recipient,
+            normalized_subject,
+        ),
     }
 
 
@@ -182,7 +206,7 @@ def save_morning_brief_email_draft(draft: Dict[str, Any]) -> str:
     return str(path)
 
 
-def _run_sync(awaitable: Awaitable[Any]) -> Any:
+def _run_sync(awaitable: Coroutine[Any, Any, Any]) -> Any:
     """Run an awaitable without nesting an event loop in the current thread."""
     try:
         asyncio.get_running_loop()
@@ -243,11 +267,11 @@ def deliver_morning_brief_email(
 
     async def callback(request: Any) -> ConfirmationResult:
         if confirm_callback is not None:
-            result = confirm_callback(request)
-            if inspect.isawaitable(result):
-                result = await result
-            if isinstance(result, ConfirmationResult):
-                return result
+            outcome: Any = confirm_callback(request)
+            if inspect.isawaitable(outcome):
+                outcome = await outcome
+            if isinstance(outcome, ConfirmationResult):
+                return outcome
             return ConfirmationResult(confirmed=False, method="invalid_confirmation")
         return await _return_confirmation(confirmation, request)
 
@@ -280,7 +304,7 @@ def deliver_morning_brief_email(
         checker = consensus_check or _default_morning_brief_consensus
         decision = checker(draft)
         if inspect.isawaitable(decision):
-            decision = _run_sync(decision)
+            decision = _run_sync(cast(Coroutine[Any, Any, Any], decision))
     except Exception as exc:
         logger.warning("早报邮件共识异常，拒绝发送: %s", exc)
         return {"success": False, "error": "早报邮件共识检查失败"}
@@ -288,12 +312,20 @@ def deliver_morning_brief_email(
     if not _consensus_is_approved(decision):
         return {"success": False, "error": "三贤者未批准早报邮件发送"}
 
-    from opc_manager.email_skill import send_email
+    from opc_manager.email_skill import send_morning_brief_email
 
-    return send_email(
+    return send_morning_brief_email(
         draft["recipient"],
         draft.get("subject", "每日经营早报"),
         draft["body"],
+        delivery_key=draft.get(
+            "delivery_key",
+            build_morning_brief_idempotency_key(
+                draft["body"],
+                draft["recipient"],
+                draft.get("subject", "每日经营早报"),
+            ),
+        ),
     )
 
 

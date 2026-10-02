@@ -13,6 +13,8 @@ from opc_manager.data_manager import (
     DATA_DIR,
     encrypt_field,
     decrypt_field,
+    claim_email_delivery,
+    complete_email_delivery,
     execute_query,
     execute_write,
     gen_id,
@@ -214,6 +216,80 @@ def send_email(
             return {"success": False, "error": f"邮件发送失败(重试3次): {e}"}
 
     return {"success": False, "error": "邮件发送失败"}
+
+
+def send_morning_brief_email(
+    to: str,
+    subject: str,
+    body: str,
+    *,
+    delivery_key: str,
+) -> Dict[str, Any]:
+    """Send a confirmed morning brief with persistent at-most-once claiming."""
+    if not isinstance(delivery_key, str) or not delivery_key.strip():
+        return {"success": False, "error": "早报邮件 delivery_key 不能为空"}
+    delivery_key = delivery_key.strip()
+    to = _sanitize_email_field(to)
+    subject = _sanitize_email_field(subject)
+    body_hash = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    now = time.strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        claim = claim_email_delivery(
+            delivery_key,
+            "morning_brief",
+            to,
+            subject,
+            body_hash,
+            now,
+        )
+    except Exception as exc:
+        logger.warning("早报邮件幂等 claim 失败，拒绝发送: %s", exc)
+        return {"success": False, "error": "早报邮件发送状态记录失败"}
+
+    if claim["status"] == "already_sent":
+        return {
+            "success": True,
+            "status": "already_sent",
+            "message": f"早报邮件已发送至 {to}",
+            "id": claim.get("email_history_id", ""),
+        }
+    if claim["status"] == "in_progress":
+        return {
+            "success": False,
+            "status": "in_progress",
+            "error": "早报邮件发送处理中",
+        }
+    if claim["status"] == "conflict":
+        return {
+            "success": False,
+            "status": "conflict",
+            "error": "早报邮件投递内容不一致",
+        }
+    if claim["status"] != "claimed":
+        return {"success": False, "error": "早报邮件投递 claim 无效"}
+
+    claim_token = claim["claim_token"]
+    try:
+        result = send_email(to, subject, body)
+    except Exception as exc:
+        complete_email_delivery(
+            delivery_key,
+            claim_token,
+            success=False,
+            now=time.strftime("%Y-%m-%dT%H:%M:%S"),
+            error=type(exc).__name__,
+        )
+        raise
+
+    complete_email_delivery(
+        delivery_key,
+        claim_token,
+        success=bool(result.get("success")),
+        now=time.strftime("%Y-%m-%dT%H:%M:%S"),
+        email_history_id=str(result.get("id", "")),
+        error=str(result.get("error", "")),
+    )
+    return result
 
 
 async def send_email_async(

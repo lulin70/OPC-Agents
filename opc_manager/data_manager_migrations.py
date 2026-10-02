@@ -26,7 +26,7 @@ from typing import Callable
 logger = logging.getLogger(__name__)
 
 # Current schema version. Bump when adding new migrations.
-_db_version = 7
+_db_version = 8
 
 # SQL identifier whitelist (prevents injection in dynamic SQL).
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -100,6 +100,8 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
             _migrate_v5_to_v6(conn)
         if current < 7:
             _migrate_v6_to_v7(conn)
+        if current < 8:
+            _migrate_v7_to_v8(conn)
         conn.execute(
             "INSERT OR REPLACE INTO _meta (key, value) VALUES ('db_version', ?)",
             (str(_db_version),),
@@ -183,6 +185,37 @@ def _migrate_v6_to_v7(conn: sqlite3.Connection) -> None:
     """
     _add_column_if_not_exists(conn, "audit_log", "prev_hash", "TEXT DEFAULT ''")
     _add_column_if_not_exists(conn, "audit_log", "current_hash", "TEXT DEFAULT ''")
+
+
+def _migrate_v7_to_v8(conn: sqlite3.Connection) -> None:
+    """v7→v8: persistent idempotency state for confirmed morning-brief delivery.
+
+    Stores delivery claims so retries can resume safely without sending duplicate
+    morning briefs.
+    """
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS email_delivery_claims (
+            delivery_key TEXT PRIMARY KEY,
+            delivery_type TEXT NOT NULL,
+            to_addr TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            body_hash TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('sending','sent','failed')),
+            claim_token TEXT,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            claimed_at TEXT,
+            sent_at TEXT,
+            failed_at TEXT,
+            last_error TEXT,
+            email_history_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_email_delivery_claims_status "
+        "ON email_delivery_claims(status, updated_at)"
+    )
 
 
 def _seed_categories(conn: sqlite3.Connection, gen_id_fn: Callable[[], str]) -> None:
