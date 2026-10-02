@@ -13,16 +13,33 @@ GAP-P0-9: 无 screenshot baseline 对比，UI 变更无法自动检测.
   - 首次运行自动生成 baseline（测试通过）
   - 后续运行对比 baseline，diff 像素比 > 1% 则失败
   - 设置 UPDATE_SNAPSHOTS=true 环境变量可重新生成 baseline
+
+隔离设计:
+  使用模块级 visual_server（OPC_WORKSPACE 指向一次性临时工作区），
+  而非共享 streamlit_server：后者复用真实 PROJECT_ROOT/deliverables，
+  该目录内容随开发过程变化，导致基线对比出现环境性假阳性
+  （如 deliverables 基线在真实目录文件数变化后稳定复现 1.49% 漂移）。
 """
 
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
+import time
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 from PIL import Image, ImageChops
 from playwright.sync_api import Page
+
+from tests.e2e.conftest import (
+    FRONTEND_APP,
+    PROJECT_ROOT,
+    _find_free_port,
+    _wait_for_server,
+)
 
 pytestmark = [pytest.mark.e2e, pytest.mark.visual]
 
@@ -30,12 +47,19 @@ _BASELINE_DIR = Path(__file__).parent / "__screenshots__"
 _DIFF_THRESHOLD = 0.01  # 1% 像素差异阈值
 
 
-def _goto_page(page: Page, label: str) -> None:
-    """导航到指定页面（通过侧边栏 radio）."""
+def _goto_page(page: Page, label: str, wait_text: str) -> None:
+    """导航到指定页面（通过侧边栏 radio）并等待目标页特有内容渲染.
+
+    固定 sleep 无法保证 Streamlit rerun 完成：冷启动服务器上存在竞态，
+    曾拍到未完成切换的上一页内容（dashboard 基线混入聊天页的
+    操作提示气泡与 Demo 横幅，导致 18% 假性像素差异）。
+    等待目标页特有文本保证导航完成后再截图。
+    """
     radio = page.locator("[data-testid='stRadio'] label", has_text=label).first
     radio.wait_for(state="attached", timeout=15000)
     radio.click(force=True)
-    page.wait_for_timeout(3000)  # 等待渲染稳定
+    page.wait_for_selector(f"text={wait_text}", timeout=15000)
+    page.wait_for_timeout(1000)  # 等待图表等异步组件渲染稳定
 
 
 def _close_dialogs(page: Page) -> None:
@@ -116,6 +140,85 @@ def _compare_or_save_baseline(page: Page, name: str) -> None:
     Path(diff_path).unlink(missing_ok=True)
 
 
+@pytest.fixture(scope="module")
+def visual_server(tmp_path_factory) -> Generator[str, None, None]:
+    """隔离工作区的 Streamlit server，保证视觉基线跨环境确定。
+
+    - OPC_WORKSPACE 指向一次性临时目录：base_router.py 在模块加载时读取
+      该变量计算 DELIVERABLES_DIR 与 CHAT_HISTORY_FILE，页面数据因此确定
+    - deliverables/ 预置固定内容文件，Deliverables 页渲染不受本地工作区影响
+    - Demo 模式与数据隔离配方与 conftest.streamlit_server 保持一致
+    """
+    workspace = tmp_path_factory.mktemp("opc_visual_workspace")
+    deliverables_dir = workspace / "deliverables"
+    deliverables_dir.mkdir()
+    (
+        deliverables_dir / "20260714_120000_content_generation_E2E_test_deliverable.md"
+    ).write_text(
+        "# E2E 测试成果物\n\n这是 Playwright E2E 测试自动创建的成果物文件。\n\n"
+        "## 内容\n\n用于验证搜索框和下载按钮功能。\n",
+        encoding="utf-8",
+    )
+
+    port = _find_free_port()
+    base_url = f"http://127.0.0.1:{port}"
+
+    env = os.environ.copy()
+    env["OPC_WORKSPACE"] = str(workspace)
+    # 清空 API key 并隔离本地加密存储，确保 Demo 模式激活（与 conftest 配方一致）
+    env["MOKA_API_KEY"] = ""
+    env["GLM_API_KEY"] = ""
+    env["OPENAI_API_KEY"] = ""
+    env["OPC_SECURE_STORAGE"] = str(workspace / "no_secure.missing")
+    env["OPC_SETTINGS_FILE"] = str(workspace / "no_settings.missing")
+    env["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+    env["BROWSER"] = "none"
+
+    e2e_data_dir = workspace / "opc_data"
+    e2e_data_dir.mkdir(parents=True, exist_ok=True)
+    env["OPC_DATA_DIR"] = str(e2e_data_dir)
+
+    onboarding_marker = workspace / "onboarding.marker"
+    onboarding_marker.write_text(str(time.time()), encoding="utf-8")
+    env["OPC_ONBOARDING_MARKER"] = str(onboarding_marker)
+
+    log_path = workspace / "streamlit.log"
+    log_file = open(log_path, "w", encoding="utf-8")
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "streamlit",
+            "run",
+            str(FRONTEND_APP),
+            "--server.port",
+            str(port),
+            "--server.headless",
+            "true",
+            "--server.address",
+            "127.0.0.1",
+            "--browser.gatherUsageStats",
+            "false",
+        ],
+        stdout=log_file,
+        stderr=subprocess.STDOUT,
+        env=env,
+        cwd=str(PROJECT_ROOT),
+    )
+
+    try:
+        _wait_for_server(base_url, timeout=60.0, proc=proc, log_path=str(log_path))
+        yield base_url
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+        log_file.close()
+
+
 class TestVisualRegressionBaseline:
     """建立 4 个核心页面的 baseline 截图.
 
@@ -124,39 +227,39 @@ class TestVisualRegressionBaseline:
     更新 baseline: UPDATE_SNAPSHOTS=true pytest tests/e2e/test_visual_regression.py -v
     """
 
-    def test_homepage_baseline(self, page, streamlit_server):
+    def test_homepage_baseline(self, page, visual_server):
         """Verify: 首页与 baseline 一致（1% 容差）."""
         page.wait_for_selector("[data-testid='stAppViewContainer']", timeout=20000)
         page.wait_for_timeout(3000)
         _close_dialogs(page)
         _compare_or_save_baseline(page, "homepage")
 
-    def test_dashboard_baseline(self, page, streamlit_server):
+    def test_dashboard_baseline(self, page, visual_server):
         """Verify: Dashboard 页面与 baseline 一致."""
-        _goto_page(page, "Dashboard")
+        _goto_page(page, "Dashboard", "数据仪表盘")
         _compare_or_save_baseline(page, "dashboard")
 
-    def test_settings_baseline(self, page, streamlit_server):
+    def test_settings_baseline(self, page, visual_server):
         """Verify: Settings 页面与 baseline 一致."""
-        _goto_page(page, "设置")
+        _goto_page(page, "设置", "系统设置")
         _compare_or_save_baseline(page, "settings")
 
-    def test_deliverables_baseline(self, page, streamlit_server):
+    def test_deliverables_baseline(self, page, visual_server):
         """Verify: Deliverables 页面与 baseline 一致."""
-        _goto_page(page, "成果物")
+        _goto_page(page, "成果物", "搜索成果物")
         _compare_or_save_baseline(page, "deliverables")
 
 
 class TestVisualRegressionTheme:
     """主题视觉回归（light + dark）— 验证主题切换不破坏布局."""
 
-    def test_light_theme_baseline(self, page, streamlit_server):
+    def test_light_theme_baseline(self, page, visual_server):
         """Verify: 浅色主题首页 baseline（默认主题）."""
         page.wait_for_timeout(3000)
         _close_dialogs(page)
         _compare_or_save_baseline(page, "theme_light")
 
-    def test_dark_theme_baseline(self, page, streamlit_server):
+    def test_dark_theme_baseline(self, page, visual_server):
         """Verify: 深色主题首页 baseline."""
         _close_dialogs(page)
 
@@ -186,7 +289,7 @@ class TestVisualRegressionTheme:
 class TestVisualRegressionSidebar:
     """侧边栏展开状态视觉回归."""
 
-    def test_sidebar_expanded_baseline(self, page, streamlit_server):
+    def test_sidebar_expanded_baseline(self, page, visual_server):
         """Verify: 侧边栏展开状态首页 baseline."""
         page.wait_for_timeout(3000)
         _close_dialogs(page)

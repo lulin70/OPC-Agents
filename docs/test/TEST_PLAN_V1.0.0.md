@@ -139,6 +139,9 @@
 | S-E13 | 任务参数注入 | 拒绝 shell/Python 表达式 |
 | S-E14 | 执行历史审计 | trace/status/error 完整 |
 | S-E15 | 并发触发同一任务 | 互斥，不重复执行 |
+| S-E16 | 已确认早报重复确认 | 相同 `delivery_key` 只允许一个 SMTP claim；已发送或发送中请求不再次调用 SMTP |
+| S-E17 | 早报发送失败后显式重试 | `failed` claim 可重新 claim，attempts 递增；内容 hash 冲突拒绝发送 |
+| S-E18 | 早报 claim 并发竞争 | 多线程/多标签页竞争同一 delivery key 时只有一个 `claimed`，其余进入 `in_progress` |
 
 ---
 
@@ -223,6 +226,7 @@
 ```bash
 pytest -m e2e tests/e2e/ -q
 pytest tests/integration/ -q
+pytest tests/integration/test_email_skill_coverage.py tests/unit/test_data_manager.py tests/unit/test_morning_brief.py -q
 ruff check .
 mypy opc_manager
 bandit -r opc_manager
@@ -237,6 +241,12 @@ pip-audit
 - Docker 构建、重启、卷恢复验证
 - 不允许用 `skip`、`xfail` 或修改断言隐藏失败
 - 测试报告保存实际命令输出和环境信息
+
+视觉回归基线维护规则（`tests/e2e/test_visual_regression.py`）：
+
+- 视觉回归使用模块级 `visual_server`（`OPC_WORKSPACE` 指向一次性临时工作区，`deliverables/` 预置确定性内容），不得回退到复用真实 `PROJECT_ROOT/deliverables` 的共享服务器——那会随本地工作区内容漂移产生环境性假阳性（2026-10-02 实证：基线捕获时 287 个成果物 vs 后续 10 个，1.49% 稳定假漂移）
+- 页面导航必须等待目标页特有文本（Dashboard→"数据仪表盘"、设置→"系统设置"、成果物→"搜索成果物"）替代固定 sleep；固定 sleep 在冷启动服务器上存在竞态，曾拍到未完成切换的上一页内容造成 18% 假性差异
+- 基线漂移时先看 diff 图归因（动态内容 / 渲染偏移 / 真实 UI 变更），确认非本变更引入的 UI 回归后用 `UPDATE_SNAPSHOTS=true pytest tests/e2e/test_visual_regression.py -v` 重建，并连续复跑 ≥2 次验证确定性
 
 ---
 

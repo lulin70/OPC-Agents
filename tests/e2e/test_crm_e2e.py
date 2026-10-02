@@ -499,10 +499,14 @@ class TestPromiseLinkIntegration:
         assert seen == ["45"]
 
     def test_36_dormant_schema_mismatch_is_explicit(self, crm_env, monkeypatch):
-        """Verify: 响应契约不匹配 → SCHEMA_MISMATCH，本地结果不受影响。"""
+        """Verify: 响应契约不匹配 → SCHEMA_MISMATCH，本地结果不受影响。
+
+        真实 PromiseLink 服务返回 `{"items": [...]}` 分页对象，客户端已将其
+        作为合法契约；此处使用既非列表也无 items 列表的真正非法形态。
+        """
         _inject_client(
             monkeypatch,
-            _mock_client(lambda request: httpx.Response(200, json={"items": []})),
+            _mock_client(lambda request: httpx.Response(200, json={"records": []})),
         )
         result = get_silent_customers()
         assert result["success"] is True
